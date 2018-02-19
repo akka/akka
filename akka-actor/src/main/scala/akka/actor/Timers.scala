@@ -7,6 +7,7 @@ package akka.actor
 import akka.util.JavaDurationConverters._
 import scala.concurrent.duration.FiniteDuration
 import akka.annotation.DoNotInherit
+import akka.dispatch.Envelope
 import akka.util.OptionVal
 
 /**
@@ -40,12 +41,13 @@ trait Timers extends Actor {
     msg match {
       case timerMsg: TimerSchedulerImpl.TimerMsg ⇒
         _timers.interceptTimerMsg(timerMsg) match {
-          case OptionVal.Some(m) if this.isInstanceOf[Stash] ⇒
-            // this is important for stash interaction, as stash will look directly at currentMessage #24557
-            actorCell.currentMessage = actorCell.currentMessage.copy(message = m)
-            super.aroundReceive(receive, m)
+          case OptionVal.Some(m: AutoReceivedMessage) ⇒
+            context.asInstanceOf[ActorCell].autoReceiveMessage(Envelope(m, self))
           case OptionVal.Some(m) ⇒
-            // avoid the extra allocation if not using stash
+            if (this.isInstanceOf[Stash]) {
+              // this is important for stash interaction, as stash will look directly at currentMessage #24557
+              actorCell.currentMessage = actorCell.currentMessage.copy(message = m)
+            }
             super.aroundReceive(receive, m)
           case OptionVal.None ⇒ // discard
         }
