@@ -277,7 +277,7 @@ class TimersAndStashSpec extends AkkaSpec {
     timers.startSingleTimer("key", "scheduled", 50.millis)
     def receive: Receive = stashing
     def notStashing: Receive = {
-      case msg           ⇒ probe ! msg
+      case msg ⇒ probe ! msg
     }
 
     def stashing: Receive = {
