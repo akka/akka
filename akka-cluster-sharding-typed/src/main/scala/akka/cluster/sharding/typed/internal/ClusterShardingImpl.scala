@@ -123,14 +123,6 @@ import akka.japi.function.{ Function ⇒ JFunction }
     extractor:          ShardingMessageExtractor[E, A],
     allocationStrategy: Option[ShardAllocationStrategy]): ActorRef[E] = {
 
-    val typeNames = if (settings.shouldHostShard(cluster)) regions else proxies
-
-    typeNames.get(typeKey.name) match {
-      case messageClassName: String if typeKey.asInstanceOf[EntityTypeKeyImpl[_]].messageClassName != messageClassName ⇒
-        throw new IllegalArgumentException(s"${typeKey.name} already spawned for $messageClassName")
-      case _ ⇒ ()
-    }
-
     val extractorAdapter = new ExtractorAdapter(extractor)
     val extractEntityId: ShardRegion.ExtractEntityId = {
       // TODO is it possible to avoid the double evaluation of entityId
@@ -175,7 +167,15 @@ import akka.japi.function.{ Function ⇒ JFunction }
           extractShardId)
       }
 
-    typeNames.put(typeKey.name, typeKey.asInstanceOf[EntityTypeKeyImpl[A]].messageClassName)
+    val messageClassName = typeKey.asInstanceOf[EntityTypeKeyImpl[A]].messageClassName
+
+    val typeNames = if (settings.shouldHostShard(cluster)) regions else proxies
+
+    typeNames.putIfAbsent(typeKey.name, messageClassName) match {
+      case spawnedMessageClassName: String if messageClassName != spawnedMessageClassName ⇒
+        throw new IllegalArgumentException(s"${typeKey.name} already spawned for $spawnedMessageClassName")
+      case _ ⇒ ()
+    }
 
     ActorRefAdapter(ref)
   }
