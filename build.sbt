@@ -253,6 +253,7 @@ lazy val docs = project("docs")
       "project.name" -> "Akka HTTP",
       "akka.version" -> Dependencies.akkaVersion.value,
       "akka25.version" -> Dependencies.akka25Version,
+      "alpn-agent.version" -> Dependencies.alpnAgentVersion,
       "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scaladoc.version" -> scalaVersion.value,
