@@ -34,7 +34,8 @@ You can join these groups and chats to discuss and ask Akka related questions:
 - Mailing list: [![google groups: akka-user][groups-user-badge]][groups-user]
 - Chat room about *using* Akka HTTP: [![gitter: akka/akka][gitter-user-badge]][gitter-user]
 - Q&A: [![stackoverflow: #akka-http][stackoverflow-badge]][stackoverflow]
-- Issue tracker: [![github: akka/akka-http][github-issues-badge]][github-issues]
+- Issue tracker: [![github: akka/akka-http][github-issues-badge]][github-issues] (Please use the issue
+  tracker for bugs and reasonable feature requests. Please ask usage questions on the other channels.)
 
 All of our forums, chat rooms, and issue trackers are governed by our [Code Of Conduct](CODE_OF_CONDUCT.md).
 
