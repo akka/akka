@@ -93,10 +93,10 @@ ALPN support comes with the JVM starting from version 9. If you're on a previous
 
 ### manually
 
-This agent can be loaded with the JVM option `-javaagent:/path/to/jetty-alpn-agent-2.0.6.jar`.
+This agent can be loaded with the JVM option `-javaagent:/path/to/jetty-alpn-agent-2.0.7.jar`.
 
 ```
-  java -javaagent:/path/to/jetty-alpn-agent-2.0.6.jar -jar app.jar
+  java -javaagent:/path/to/jetty-alpn-agent-2.0.7.jar -jar app.jar
 ```
 
 ### sbt
