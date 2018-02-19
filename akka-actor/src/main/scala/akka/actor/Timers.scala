@@ -39,9 +39,12 @@ trait Timers extends Actor {
     msg match {
       case timerMsg: TimerSchedulerImpl.TimerMsg ⇒
         _timers.interceptTimerMsg(timerMsg) match {
-          case OptionVal.Some(m) ⇒
+          case OptionVal.Some(m) if this.isInstanceOf[Stash] ⇒
             // this is important for stash interaction, as stash will look directly at currentMessage #24557
-            actorCell.currentMessage = Envelope(m, sender())
+            actorCell.currentMessage = actorCell.currentMessage.copy(message = m)
+            super.aroundReceive(receive, m)
+          case OptionVal.Some(m) ⇒
+            // avoid the extra allocation if not using stash
             super.aroundReceive(receive, m)
           case OptionVal.None ⇒ // discard
         }

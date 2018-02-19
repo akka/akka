@@ -292,7 +292,7 @@ class TimersAndStashSpec extends AkkaSpec {
 
   "Timers combined with stashing" should {
 
-    "something" in {
+    "work" in {
       val probe = TestProbe()
       val actor = system.actorOf(Props(new ActorWithTimerAndStash(probe.ref)))
       probe.expectMsg("saw-scheduled")
