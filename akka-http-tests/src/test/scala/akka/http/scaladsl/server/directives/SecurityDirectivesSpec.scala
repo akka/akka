@@ -85,6 +85,11 @@ class SecurityDirectivesSpec extends RoutingSpec {
         dontOAuth2Auth { echoComplete }
       } ~> check { rejection shouldEqual AuthenticationFailedRejection(CredentialsRejected, oAuth2Challenge) }
     }
+    "reject unauthenticated requests without Authorization header but with access_token URI parameter with an AuthenticationFailedRejection" in {
+      Get("?access_token=myToken") ~> {
+        dontOAuth2Auth { echoComplete }
+      } ~> check { rejection shouldEqual AuthenticationFailedRejection(CredentialsRejected, oAuth2Challenge) }
+    }
     "reject requests with a Basic Authorization header with 401" in {
       Get() ~> Authorization(BasicHttpCredentials("Alice", "")) ~> Route.seal {
         dontBasicAuth { echoComplete }
@@ -103,8 +108,13 @@ class SecurityDirectivesSpec extends RoutingSpec {
         header[`WWW-Authenticate`] shouldEqual Some(`WWW-Authenticate`(oAuth2Challenge))
       }
     }
-    "extract the object representing the user identity created by successful authentication" in {
+    "extract the object representing the user identity created by successful authentication with Authorization header" in {
       Get() ~> Authorization(OAuth2BearerToken("myToken")) ~> {
+        doOAuth2Auth { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "myToken" }
+    }
+    "extract the object representing the user identity created by successful authentication with access_token URI parameter" in {
+      Get("?access_token=myToken") ~> {
         doOAuth2Auth { echoComplete }
       } ~> check { responseAs[String] shouldEqual "myToken" }
     }

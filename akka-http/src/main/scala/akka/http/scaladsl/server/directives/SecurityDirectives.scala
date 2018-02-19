@@ -145,12 +145,22 @@ trait SecurityDirectives {
    */
   def authenticateOAuth2Async[T](realm: String, authenticator: AsyncAuthenticator[T]): AuthenticationDirective[T] =
     extractExecutionContext.flatMap { implicit ec ⇒
-      authenticateOrRejectWithChallenge[OAuth2BearerToken, T] { cred ⇒
+      def extractAccessTokenParameterAsBearerToken = {
+        import akka.http.scaladsl.server.Directives._
+        parameter('access_token.?).map(_.map(OAuth2BearerToken))
+      }
+      val extractCreds: Directive1[Option[OAuth2BearerToken]] =
+        extractCredentials.flatMap {
+          case Some(c: OAuth2BearerToken) ⇒ provide(Some(c))
+          case _                          ⇒ extractAccessTokenParameterAsBearerToken
+        }
+
+      extractCredentialsAndAuthenticateOrRejectWithChallenge[OAuth2BearerToken, T](extractCreds, { cred ⇒
         authenticator(Credentials(cred)).fast.map {
           case Some(t) ⇒ AuthenticationResult.success(t)
           case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
         }
-      }
+      })
     }
 
   /**
@@ -183,19 +193,32 @@ trait SecurityDirectives {
    * to the inner route. If the function returns `Left(challenge)` the request is rejected with an
    * [[AuthenticationFailedRejection]] that contains this challenge to be added to the response.
    *
+   * You can supply a directive to extract the credentials (to support alternative ways of providing credentials).
+   *
+   * @group security
+   */
+  private def extractCredentialsAndAuthenticateOrRejectWithChallenge[C <: HttpCredentials, T](
+    extractCredentials: Directive1[Option[C]],
+    authenticator:      Option[C] ⇒ Future[AuthenticationResult[T]]): AuthenticationDirective[T] =
+    extractCredentials.flatMap { cred ⇒
+      onSuccess(authenticator(cred)).flatMap {
+        case Right(user) ⇒ provide(user)
+        case Left(challenge) ⇒
+          val cause = if (cred.isEmpty) CredentialsMissing else CredentialsRejected
+          reject(AuthenticationFailedRejection(cause, challenge)): Directive1[T]
+      }
+    }
+
+  /**
+   * Lifts an authenticator function into a directive. The authenticator function gets passed in credentials from the
+   * [[Authorization]] header of the request. If the function returns `Right(user)` the user object is provided
+   * to the inner route. If the function returns `Left(challenge)` the request is rejected with an
+   * [[AuthenticationFailedRejection]] that contains this challenge to be added to the response.
+   *
    * @group security
    */
   def authenticateOrRejectWithChallenge[T](authenticator: Option[HttpCredentials] ⇒ Future[AuthenticationResult[T]]): AuthenticationDirective[T] =
-    extractExecutionContext.flatMap { implicit ec ⇒
-      extractCredentials.flatMap { cred ⇒
-        onSuccess(authenticator(cred)).flatMap {
-          case Right(user) ⇒ provide(user)
-          case Left(challenge) ⇒
-            val cause = if (cred.isEmpty) CredentialsMissing else CredentialsRejected
-            reject(AuthenticationFailedRejection(cause, challenge)): Directive1[T]
-        }
-      }
-    }
+    extractCredentialsAndAuthenticateOrRejectWithChallenge(extractCredentials, authenticator)
 
   /**
    * Lifts an authenticator function into a directive. Same as `authenticateOrRejectWithChallenge`
@@ -205,7 +228,7 @@ trait SecurityDirectives {
    */
   def authenticateOrRejectWithChallenge[C <: HttpCredentials: ClassTag, T](
     authenticator: Option[C] ⇒ Future[AuthenticationResult[T]]): AuthenticationDirective[T] =
-    authenticateOrRejectWithChallenge[T](cred ⇒ authenticator(cred collect { case c: C ⇒ c }))
+    extractCredentialsAndAuthenticateOrRejectWithChallenge(extractCredentials.map(_ collect { case c: C ⇒ c }), authenticator)
 
   /**
    * Applies the given authorization check to the request.
