@@ -766,7 +766,7 @@ private[http] object `Sec-WebSocket-Extensions` extends ModeledCompanion[`Sec-We
  */
 @InternalApi
 private[http] final case class `Sec-WebSocket-Extensions`(extensions: immutable.Seq[WebSocketExtension])
-  extends ResponseHeader {
+  extends RequestResponseHeader {
   require(extensions.nonEmpty, "Sec-WebSocket-Extensions.extensions must not be empty")
   import `Sec-WebSocket-Extensions`.extensionsRenderer
   protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ extensions
