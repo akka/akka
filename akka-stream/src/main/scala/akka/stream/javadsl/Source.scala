@@ -471,8 +471,8 @@ object Source {
    * Example:
    *
    * {{{
-   * Source<Apple, NotUsed> apples = null;
-   * Source<Orange, NotUsed> oranges = null;
+   * Source<Apple, NotUsed> apples = Source.single(new Apple());
+   * Source<Orange, NotUsed> oranges = Source.single(new Orange());
    * Source<Fruit, NotUsed> appleFruits = Source.upcast(apples);
    * Source<Fruit, NotUsed> orangeFruits = Source.upcast(oranges);
    *
