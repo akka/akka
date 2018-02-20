@@ -11,8 +11,7 @@ import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
 import akka.stream.*;
-import akka.stream.testkit.TestSubscriber;
-import akka.stream.testkit.javadsl.TestSink;
+import akka.stream.scaladsl.FlowSpec;
 import akka.util.ConstantFun;
 import akka.stream.stage.*;
 import akka.testkit.AkkaSpec;
@@ -444,6 +443,19 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals("A");
     probe.expectMsgEquals("B");
     probe.expectMsgEquals("C");
+  }
+
+  @Test
+  public void mustBeAbleToUseCollectType() throws Exception{
+    final TestKit probe = new TestKit(system);
+    final Iterable<FlowSpec.Apple> input = Collections.singletonList(new FlowSpec.Apple());
+    final Source<FlowSpec.Apple,?> appleSource = Source.from(input);
+    final Source<FlowSpec.Fruit,?> fruitSource = appleSource.collectType(FlowSpec.Fruit.class);
+    fruitSource.collectType(FlowSpec.Apple.class).collectType(FlowSpec.Apple.class)
+            .runForeach((elem) -> {
+              probe.getRef().tell(elem,ActorRef.noSender());
+            },materializer);
+    probe.expectMsgAnyClassOf(FlowSpec.Apple.class);
   }
 
   @Test

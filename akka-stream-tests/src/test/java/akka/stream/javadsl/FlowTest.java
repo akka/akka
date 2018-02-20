@@ -10,6 +10,7 @@ import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.stream.*;
+import akka.stream.scaladsl.FlowSpec;
 import akka.util.ConstantFun;
 import akka.stream.javadsl.GraphDSL.Builder;
 import akka.stream.stage.*;
@@ -680,6 +681,18 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals("A");
     probe.expectMsgEquals("B");
     probe.expectMsgEquals("C");
+  }
+
+  @Test
+  public void mustBeAbleToUseCollectType() throws Exception{
+    final TestKit probe = new TestKit(system);
+    final Iterable<FlowSpec.Apple> input = Collections.singletonList(new FlowSpec.Apple());
+    final Flow<FlowSpec.Apple,FlowSpec.Fruit,NotUsed> fruitFlow = Flow.of(FlowSpec.Apple.class)
+            .collectType(FlowSpec.Fruit.class);
+    Source.from(input).via(fruitFlow.collectType(FlowSpec.Apple.class).collectType(FlowSpec.Fruit.class))
+            .collectType(FlowSpec.Apple.class)
+            .runForeach((apple) -> probe.getRef().tell(apple,ActorRef.noSender()),materializer);
+    probe.expectMsgAnyClassOf(FlowSpec.Apple.class);
   }
 
   @Test
