@@ -88,7 +88,7 @@ class FlowGroupBySpec extends StreamSpec {
     "work in the happy case" in assertAllStagesStopped {
       new SubstreamsSupport(groupCount = 2) {
         val s1 = StreamPuppet(getSubFlow(1).runWith(Sink.asPublisher(false)))
-        masterSubscriber.expectNoMsg(100.millis)
+        masterSubscriber.expectNoMessage(100.millis)
 
         s1.expectNoMsg(100.millis)
         s1.request(1)

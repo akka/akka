@@ -1570,6 +1570,15 @@ trait FlowOps[+Out, +Mat] {
   }
 
   /**
+   * Similar to [[groupBy]] however allows creating a specific kind of [[Sink]] for each of the keys.
+   * This can be useful when routing different groups to different [[FileIO]] sinks or other element-dependent target sinks.
+   */
+  def groupByUnique[K](maxSubstreams: Int, extractKey: Out => K, initSink: K => Sink[Out, Any]): Closed = {
+    via(new GroupByUnsafe(maxSubstreams, extractKey, initSink))
+      .to(Sink.ignore)
+  }
+
+  /**
    * This operation applies the given predicate to all incoming elements and
    * emits them to a stream of output streams, always beginning a new one with
    * the current element if the given predicate returns true for it. This means
