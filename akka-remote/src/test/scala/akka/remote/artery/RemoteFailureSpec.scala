@@ -2,10 +2,19 @@ package akka.remote.artery
 
 import akka.remote.EndpointDisassociatedException
 import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestEvent }
-
 import scala.concurrent.duration._
 
+import akka.testkit.DeadLettersFilter
+import akka.testkit.TestEvent.Mute
+
+object RemoteFailureSpec {
+  final case class Ping(s: String)
+}
+
 class RemoteFailureSpec extends ArteryMultiNodeSpec with ImplicitSender {
+  import RemoteFailureSpec._
+
+  system.eventStream.publish(Mute(DeadLettersFilter(classOf[Ping])(occurrences = Int.MaxValue)))
 
   "Remoting" should {
 
@@ -29,12 +38,12 @@ class RemoteFailureSpec extends ArteryMultiNodeSpec with ImplicitSender {
 
       // first everything is up and running
       1 to n foreach { x ⇒
-        localSelection ! "ping"
-        remoteSelections(x % remoteSystems.size) ! "ping"
+        localSelection ! Ping("1")
+        remoteSelections(x % remoteSystems.size) ! Ping("1")
       }
 
       within(5.seconds) {
-        receiveN(n * 2) foreach { reply ⇒ reply should ===("ping") }
+        receiveN(n * 2) foreach { reply ⇒ reply should ===(Ping("1")) }
       }
 
       // then we shutdown remote systems to simulate broken connections
@@ -43,13 +52,13 @@ class RemoteFailureSpec extends ArteryMultiNodeSpec with ImplicitSender {
       }
 
       1 to n foreach { x ⇒
-        localSelection ! "ping"
-        remoteSelections(x % remoteSystems.size) ! "ping"
+        localSelection ! Ping("2")
+        remoteSelections(x % remoteSystems.size) ! Ping("2")
       }
 
       // ping messages to localEcho should go through even though we use many different broken connections
       within(5.seconds) {
-        receiveN(n) foreach { reply ⇒ reply should ===("ping") }
+        receiveN(n) foreach { reply ⇒ reply should ===(Ping("2")) }
       }
 
     }
