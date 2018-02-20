@@ -386,8 +386,6 @@ akka.remote.artery {
     enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
 
     random-number-generator = "AES128CounterSecureRNG"
-
-    hostname-verification = on
   }
 }
 ```
@@ -426,8 +424,36 @@ valid certificate by compromising any node with certificates issued by the same 
 
 It's recommended that you enable hostname verification with
 `akka.remote.artery.ssl.config-ssl-engine.hostname-verification=on`.
-When enabled it will verify that the destination hostname matches the hostname in the peer's credentials.
-An application could be exploited with URL spoofing if the hostname is not verified.
+When enabled it will verify that the destination hostname matches the hostname in the peer's certificate.
+
+You have a few choices how to set up certificates and hostname verification:
+
+* Have a single set of keys and a single certificate for all nodes and *disable* hostname checking
+    * The single set of keys and the single certificate is distributed to all nodes. The certificate can
+      be self-signed as it is distributed both as a certificate for authentication but also as the trusted certificate.
+    * If the keys/certificate are lost, someone else can connect to your cluster.
+    * Adding nodes to the cluster is simple as the key material can just be deployed / distributed to the new node.
+* Have a single set of keys and a single certificate for all nodes that contains all of the host names and *enable*
+  hostname checking.
+    * This means that only the hosts mentioned in the certificate can connect to the cluster.
+    * It cannot be checked, though, if the node you talk to is actually the node it is supposed to be (or if it is one
+      of the other nodes). This seems like a minor restriction as you'll have to trust all cluster nodes the same in an
+      Akka cluster anyway.
+    * The certificate can be self-signed in which case the same single certificate is distributed and trusted on all
+      nodes (but see the next bullet)
+    * Adding a new node means that its host name needs to conform to the trusted host names in the certificate.
+      That either means to foresee new hosts, use a wildcard certificate, or use a full CA in the first place,
+      so you can later issue more certificates if more nodes are to be added (but then you already get into the
+      territory of the next solution).
+    * If a certificate is stolen, it can only be used to connect to the cluster from a node reachable via a hostname
+      that is trusted in the certificate. It would require tampering with DNS to allow other nodes to get access to
+      the cluster (however, tampering DNS might be easier in an internal setting than on internet scale).
+* Have a CA and then keys/certificates, one for each node, and *enable*  host name checking.
+    * Basically like internet HTTPS but that you only trust the internal CA and then issue certificates for each new node.
+    * Needs a PKI, the CA certificate is trusted on all nodes, the individual certificates are used for authentication.
+    * Only the CA certificate and the key/certificate for a node is distributed.
+    * If keys/certificates are stolen, only the same node can access the cluster (unless DNS is tampered with as well).
+      You can revoke single certificates.
 
 See also a description of the settings in the @ref:[Remote Configuration](#remote-configuration-artery) section.
 
