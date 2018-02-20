@@ -84,7 +84,8 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
     else
       log.warning(LogMarker.Security, "TLS/SSL hostname verification is disabled. " +
         "Please configure akka.remote.artery.ssl.config-ssl-engine.hostname-verification=on " +
-        "and ensure the X.509 certificate on the host is correct to remove this warning.")
+        "and ensure the X.509 certificate on the host is correct to remove this warning. " +
+        "See Akka reference documentation for more information.")
 
     constructContext()
   }
