@@ -195,7 +195,7 @@ final class Source[+Out, +Mat](
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.
    */
-  def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)
+  def asJava[O >: Out, M >: Mat]: javadsl.Source[O, M] = new javadsl.Source[O, M](this.asInstanceOf[Source[O, M]])
 
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.

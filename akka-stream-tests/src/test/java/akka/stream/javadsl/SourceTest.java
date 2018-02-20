@@ -47,6 +47,21 @@ public class SourceTest extends StreamTest {
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("SourceTest",
     AkkaSpec.testConf());
 
+
+  interface Fruit {}
+  static class Apple implements Fruit {};
+  static class Orange implements Fruit {};
+
+  // compile only test
+  public void mustBeAbleToUpCast() {
+    Source<Apple, NotUsed> apples = null;
+    Source<Orange, NotUsed> oranges = null;
+    Source<Fruit, NotUsed> appleFruits = Source.upcast(apples);
+    Source<Fruit, NotUsed> orangeFruits = Source.upcast(oranges);
+
+    Source<Fruit, NotUsed> fruits = appleFruits.merge(orangeFruits);
+  }
+
   @Test
   public void mustBeAbleToUseSimpleOperators() {
     final TestKit probe = new TestKit(system);
@@ -849,14 +864,10 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustBeAbleToUseIdleInject() throws Exception {
     Integer result =
-        Source.maybe()
-            .keepAlive(Duration.create(1, "second"), new Creator<Integer>() {
-              public Integer create() {
-                return 0;
-              }
-            })
+        Source.<Integer>maybe()
+            .keepAlive(Duration.create(1, "second"), () -> 0)
             .takeWithin(Duration.create(1500, "milliseconds"))
-            .runWith(Sink.<Integer>head(), materializer)
+            .runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     assertEquals((Object) 0, result);
