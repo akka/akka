@@ -2,6 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
+package aeron
 
 import java.io.File
 import java.util.concurrent.CyclicBarrier
@@ -258,7 +259,7 @@ abstract class AeronStreamLatencySpec
             envelope
           }
 
-        val queueValue = Source.fromGraph(new SendQueue[Unit])
+        val queueValue = Source.fromGraph(new SendQueue[Unit](system.deadLetters))
           .via(sendFlow)
           .to(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
           .run()

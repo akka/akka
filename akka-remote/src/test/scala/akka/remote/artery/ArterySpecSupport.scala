@@ -9,6 +9,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.remote.RARP
 import akka.testkit.AkkaSpec
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.Outcome
 
@@ -46,7 +47,24 @@ object ArterySpecSupport {
    * Artery enabled, flight recorder enabled, dynamic selection of port on localhost.
    * Combine with [[FlightRecorderSpecIntegration]] or remember to delete flight recorder file if using manually
    */
-  def defaultConfig = newFlightRecorderConfig.withFallback(staticArteryRemotingConfig)
+  def defaultConfig = newFlightRecorderConfig
+    .withFallback(staticArteryRemotingConfig)
+    .withFallback(tlsConfig) // TLS only used if transport=tls-tcp
+
+  // set the test key-store and trust-store properties
+  // TLS only used if transport=tls-tcp, which can be set from specific tests or
+  // System properties (e.g. jenkins job)
+  lazy val tlsConfig: Config = {
+    val trustStore = getClass.getClassLoader.getResource("truststore").getPath
+    val keyStore = getClass.getClassLoader.getResource("keystore").getPath
+
+    ConfigFactory.parseString(s"""
+      akka.remote.artery.ssl.config-ssl-engine {
+        key-store = "$keyStore"
+        trust-store = "$trustStore"
+      }
+    """)
+  }
 
 }
 

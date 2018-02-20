@@ -24,7 +24,7 @@ import akka.pattern.after
 import akka.remote._
 import akka.remote.DaemonMsgCreate
 import akka.remote.QuarantinedEvent
-import akka.remote.artery.AeronSink.GaveUpMessageException
+import akka.remote.artery.aeron.AeronSink.GaveUpMessageException
 import akka.remote.artery.ArteryTransport.{ AeronTerminated, ShuttingDown }
 import akka.remote.artery.Encoder.OutboundCompressionAccess
 import akka.remote.artery.Encoder.AccessOutboundCompressionFailed
@@ -516,7 +516,7 @@ private[remote] class Association(
     val streamKillSwitch = KillSwitches.shared("outboundControlStreamKillSwitch")
 
     val (queueValue, (control, completed)) =
-      Source.fromGraph(new SendQueue[OutboundEnvelope])
+      Source.fromGraph(new SendQueue[OutboundEnvelope](transport.system.deadLetters))
         .via(streamKillSwitch.flow)
         .toMat(transport.outboundControl(this))(Keep.both)
         .run()(materializer)
@@ -529,7 +529,7 @@ private[remote] class Association(
     materializing.countDown()
 
     updateStreamMatValues(ControlQueueIndex, streamKillSwitch, completed)
-    attachStreamRestart("Outbound control stream", ControlQueueIndex, controlQueueSize,
+    attachOutboundStreamRestart("Outbound control stream", ControlQueueIndex, controlQueueSize,
       completed, () ⇒ runOutboundControlStream())
   }
 
@@ -555,7 +555,7 @@ private[remote] class Association(
       val streamKillSwitch = KillSwitches.shared("outboundMessagesKillSwitch")
 
       val (queueValue, testMgmt, changeCompression, completed) =
-        Source.fromGraph(new SendQueue[OutboundEnvelope])
+        Source.fromGraph(new SendQueue[OutboundEnvelope](transport.system.deadLetters))
           .via(streamKillSwitch.flow)
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
           .toMat(transport.outbound(this))({ case ((a, b), (c, d)) ⇒ (a, b, c, d) }) // "keep all, exploded"
@@ -568,7 +568,7 @@ private[remote] class Association(
       outboundCompressionAccess = Vector(changeCompression)
 
       updateStreamMatValues(OrdinaryQueueIndex, streamKillSwitch, completed)
-      attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
+      attachOutboundStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
         completed, () ⇒ runOutboundOrdinaryMessagesStream())
 
     } else {
@@ -582,7 +582,7 @@ private[remote] class Association(
 
       val streamKillSwitch = KillSwitches.shared("outboundMessagesKillSwitch")
 
-      val lane = Source.fromGraph(new SendQueue[OutboundEnvelope])
+      val lane = Source.fromGraph(new SendQueue[OutboundEnvelope](transport.system.deadLetters))
         .via(streamKillSwitch.flow)
         .via(transport.outboundTestFlow(this))
         .viaMat(transport.outboundLane(this))(Keep.both)
@@ -593,9 +593,9 @@ private[remote] class Association(
           case ((q, c), w) ⇒ (q, c, w)
         }
 
-      val (mergeHub, aeronSinkCompleted) = MergeHub.source[EnvelopeBuffer]
+      val (mergeHub, transportSinkCompleted) = MergeHub.source[EnvelopeBuffer]
         .via(streamKillSwitch.flow)
-        .toMat(transport.aeronSink(this))(Keep.both).run()(materializer)
+        .toMat(transport.outboundTransportSink(this))(Keep.both).run()(materializer)
 
       val values: Vector[(SendQueue.QueueValue[OutboundEnvelope], Encoder.OutboundCompressionAccess, Future[Done])] =
         (0 until outboundLanes).map { _ ⇒
@@ -610,9 +610,9 @@ private[remote] class Association(
       Future.firstCompletedOf(laneCompletedValues).failed.foreach { reason ⇒
         streamKillSwitch.abort(reason)
       }
-      (laneCompletedValues :+ aeronSinkCompleted).foreach(_.foreach { _ ⇒ streamKillSwitch.shutdown() })
+      (laneCompletedValues :+ transportSinkCompleted).foreach(_.foreach { _ ⇒ streamKillSwitch.shutdown() })
 
-      val allCompleted = Future.sequence(laneCompletedValues).flatMap(_ ⇒ aeronSinkCompleted)
+      val allCompleted = Future.sequence(laneCompletedValues).flatMap(_ ⇒ transportSinkCompleted)
 
       queueValues.zip(wrappers).zipWithIndex.foreach {
         case ((q, w), i) ⇒
@@ -623,7 +623,7 @@ private[remote] class Association(
 
       outboundCompressionAccess = compressionAccessValues
 
-      attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
+      attachOutboundStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
         allCompleted, () ⇒ runOutboundOrdinaryMessagesStream())
     }
   }
@@ -637,7 +637,7 @@ private[remote] class Association(
 
     val streamKillSwitch = KillSwitches.shared("outboundLargeMessagesKillSwitch")
 
-    val (queueValue, completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
+    val (queueValue, completed) = Source.fromGraph(new SendQueue[OutboundEnvelope](transport.system.deadLetters))
       .via(streamKillSwitch.flow)
       .via(transport.outboundTestFlow(this))
       .toMat(transport.outboundLarge(this))(Keep.both)
@@ -649,12 +649,12 @@ private[remote] class Association(
     queuesVisibility = true // volatile write for visibility of the queues array
 
     updateStreamMatValues(LargeQueueIndex, streamKillSwitch, completed)
-    attachStreamRestart("Outbound large message stream", LargeQueueIndex, largeQueueSize,
+    attachOutboundStreamRestart("Outbound large message stream", LargeQueueIndex, largeQueueSize,
       completed, () ⇒ runOutboundLargeMessagesStream())
   }
 
-  private def attachStreamRestart(streamName: String, queueIndex: Int, queueCapacity: Int,
-                                  streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
+  private def attachOutboundStreamRestart(streamName: String, queueIndex: Int, queueCapacity: Int,
+                                          streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
 
     def lazyRestart(): Unit = {
       outboundCompressionAccess = Vector.empty
@@ -668,6 +668,11 @@ private[remote] class Association(
     }
 
     implicit val ec = materializer.executionContext
+    streamCompleted.foreach { _ ⇒
+      // shutdown as expected
+      // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
+      materializing.countDown()
+    }
     streamCompleted.failed.foreach {
       case ArteryTransport.ShutdownSignal ⇒
         // shutdown as expected
@@ -692,7 +697,9 @@ private[remote] class Association(
         if (queueIndex == ControlQueueIndex) {
           cause match {
             case _: HandshakeTimeoutException ⇒ // ok, quarantine not possible without UID
-            case _                            ⇒ quarantine("Outbound control stream restarted")
+            case _ ⇒
+              // FIXME can we avoid quarantine if all system messages have been delivered?
+              quarantine("Outbound control stream restarted")
           }
         }
 
