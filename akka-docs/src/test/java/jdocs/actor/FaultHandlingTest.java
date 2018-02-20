@@ -29,6 +29,7 @@ import scala.concurrent.Await;
 
 //#supervisor
 import akka.japi.pf.DeciderBuilder;
+import static akka.actor.SupervisorStrategy;
 
 //#supervisor
 
