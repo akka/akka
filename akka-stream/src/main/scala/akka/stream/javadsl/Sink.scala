@@ -288,7 +288,7 @@ object Sink {
  * A `Sink` is a set of stream processing steps that has one open input.
  * Can be used as a `Subscriber`
  */
-final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
+final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
 
   override def shape: SinkShape[In] = delegate.shape
   override def traversalBuilder: LinearTraversalBuilder = delegate.traversalBuilder

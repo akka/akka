@@ -464,7 +464,6 @@ object Source {
       (s: S) ⇒ read.apply(s).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext),
       (s: S) ⇒ close.apply(s).toScala))
 
-
   /**
    * Upcast a stream of elements to a stream of supertypes of that element. Useful in combination with
    * fan-in combinators where you do not want to pay the cost of casting each element in a `map`.
@@ -479,8 +478,12 @@ object Source {
    *
    * Source<Fruit, NotUsed> fruits = appleFruits.merge(orangeFruits);
    * }}}
+   *
+   * @tparam SuperOut a supertype to the type of elements in stream
+   * @return A source with the supertype as elements
    */
-  def upcast[U, T <: U, Mat](source: Source[T, Mat]): Source[U, Mat] = source.asInstanceOf[Source[U, Mat]]
+  def upcast[SuperOut, Out <: SuperOut, Mat](source: Source[Out, Mat]): Source[SuperOut, Mat] =
+    source.asInstanceOf[Source[SuperOut, Mat]]
 
 }
 

@@ -21,6 +21,18 @@ import java.util.concurrent.CompletionStage
 
 import scala.reflect.ClassTag
 
+object SubFlow {
+  /**
+   * Upcast a stream of elements to a stream of supertypes of that element. Useful in combination with
+   * fan-in combinators where you do not want to pay the cost of casting each element in a `map`.
+   *
+   * @tparam SuperOut a supertype to the type of element flowing out of the flow
+   * @return A flow that accepts `In` and outputs elements of the super type
+   */
+  def upcast[In, SuperOut, Out <: SuperOut, M](flow: SubFlow[In, Out, M]): SubFlow[In, SuperOut, M] =
+    flow.asInstanceOf[SubFlow[In, SuperOut, M]]
+}
+
 /**
  * A “stream of streams” sub-flow of data elements, e.g. produced by `groupBy`.
  * SubFlows cannot contribute to the super-flow’s materialized value since they
@@ -548,7 +560,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels
    */
-  def intersperse[T >: Out](start: T, inject: T, end: T): SubFlow[In, T, Mat] =
+  def intersperse(start: Out, inject: Out, end: Out): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.intersperse(start, inject, end))
 
   /**
@@ -573,7 +585,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels
    */
-  def intersperse[T >: Out](inject: T): SubFlow[In, T, Mat] =
+  def intersperse(inject: Out): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.intersperse(inject))
 
   /**
@@ -749,7 +761,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * '''Cancels when''' downstream cancels
    *
    */
-  def recover[T >: Out](pf: PartialFunction[Throwable, T]): SubFlow[In, T, Mat] =
+  def recover(pf: PartialFunction[Throwable, Out]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.recover(pf))
 
   /**
@@ -773,7 +785,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    */
   @deprecated("Use recoverWithRetries instead.", "2.4.4")
-  def recoverWith[T >: Out](pf: PartialFunction[Throwable, _ <: Graph[SourceShape[T], NotUsed]]): SubFlow[In, T, Mat @uncheckedVariance] =
+  def recoverWith(pf: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]]): SubFlow[In, Out, Mat @uncheckedVariance] =
     new SubFlow(delegate.recoverWith(pf))
 
   /**
@@ -799,7 +811,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * '''Cancels when''' downstream cancels
    *
    */
-  def recoverWithRetries[T >: Out](attempts: Int, pf: PartialFunction[Throwable, _ <: Graph[SourceShape[T], NotUsed]]): SubFlow[In, T, Mat @uncheckedVariance] =
+  def recoverWithRetries(attempts: Int, pf: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.recoverWithRetries(attempts, pf))
 
   /**
@@ -920,7 +932,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    *
    */
-  def conflate[O2 >: Out](aggregate: function.Function2[O2, O2, O2]): SubFlow[In, O2, Mat] =
+  def conflate(aggregate: function.Function2[Out, Out, Out]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.conflate(aggregate.apply))
 
   /**
@@ -1107,7 +1119,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels
    */
-  def concat[T >: Out, M](that: Graph[SourceShape[T], M]): SubFlow[In, T, Mat] =
+  def concat[M](that: Graph[SourceShape[Out], M]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.concat(that))
 
   /**
@@ -1128,7 +1140,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels
    */
-  def prepend[T >: Out, M](that: Graph[SourceShape[T], M]): SubFlow[In, T, Mat] =
+  def prepend[M](that: Graph[SourceShape[Out], M]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.prepend(that))
 
   /**
@@ -1153,7 +1165,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    * '''Cancels when''' downstream cancels and additionally the alternative is cancelled as soon as an element passes
    *                    by from this stream.
    */
-  def orElse[T >: Out, M](secondary: Graph[SourceShape[T], M]): javadsl.SubFlow[In, T, Mat] =
+  def orElse[M](secondary: Graph[SourceShape[Out], M]): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.orElse(secondary))
 
   /**
@@ -1215,7 +1227,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels
    */
-  def merge[T >: Out](that: Graph[SourceShape[T], _]): SubFlow[In, T, Mat] =
+  def merge(that: Graph[SourceShape[Out], _]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.merge(that))
 
   /**
@@ -1241,7 +1253,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels
    */
-  def interleave[T >: Out](that: Graph[SourceShape[T], _], segmentSize: Int): SubFlow[In, T, Mat] =
+  def interleave(that: Graph[SourceShape[Out], _], segmentSize: Int): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.interleave(that, segmentSize))
 
   /**
@@ -1259,7 +1271,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels
    */
-  def mergeSorted[U >: Out, M](that: Graph[SourceShape[U], M], comp: Comparator[U]): javadsl.SubFlow[In, U, Mat] =
+  def mergeSorted[M](that: Graph[SourceShape[Out], M], comp: Comparator[Out]): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.mergeSorted(that)(Ordering.comparatorToOrdering(comp)))
 
   /**
@@ -1387,7 +1399,7 @@ class SubFlow[-In, +Out, +Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flo
    *
    * '''Cancels when''' downstream cancels
    */
-  def keepAlive[U >: Out](maxIdle: FiniteDuration, injectedElem: function.Creator[U]): SubFlow[In, U, Mat] =
+  def keepAlive(maxIdle: FiniteDuration, injectedElem: function.Creator[Out]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.keepAlive(maxIdle, () ⇒ injectedElem.create()))
 
   /**

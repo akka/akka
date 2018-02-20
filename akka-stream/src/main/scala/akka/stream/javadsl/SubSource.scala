@@ -23,6 +23,14 @@ import scala.compat.java8.FutureConverters._
 import scala.reflect.ClassTag
 
 /**
+ * * Upcast a stream of elements to a stream of supertypes of that element. Useful in combination with
+ * fan-in combinators where you do not want to pay the cost of casting each element in a `map`.
+ */
+object SubSource {
+  def upcast[U, T <: U, Mat](source: SubSource[T, Mat]): SubSource[U, Mat] = source.asInstanceOf[SubSource[U, Mat]]
+}
+
+/**
  * A “stream of streams” sub-flow of data elements, e.g. produced by `groupBy`.
  * SubFlows cannot contribute to the super-flow’s materialized value since they
  * are materialized later, during the runtime of the flow graph processing.

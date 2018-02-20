@@ -52,8 +52,7 @@ public class SourceTest extends StreamTest {
   static class Apple implements Fruit {};
   static class Orange implements Fruit {};
 
-  // compile only test
-  public void mustBeAbleToUpCast() {
+  public void compileOnlyUpcast() {
     Source<Apple, NotUsed> apples = null;
     Source<Orange, NotUsed> oranges = null;
     Source<Fruit, NotUsed> appleFruits = Source.upcast(apples);
