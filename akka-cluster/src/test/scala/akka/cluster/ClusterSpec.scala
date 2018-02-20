@@ -73,7 +73,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       awaitAssert(clusterView.status should ===(MemberStatus.Up))
     }
 
-    "publish inital state as snapshot to subscribers" in {
+    "publish initial state as snapshot to subscribers" in {
       try {
         cluster.subscribe(testActor, ClusterEvent.InitialStateAsSnapshot, classOf[ClusterEvent.MemberEvent])
         expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
@@ -82,7 +82,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       }
     }
 
-    "publish inital state as events to subscribers" in {
+    "publish initial state as events to subscribers" in {
       try {
         cluster.subscribe(testActor, ClusterEvent.InitialStateAsEvents, classOf[ClusterEvent.MemberEvent])
         expectMsgClass(classOf[ClusterEvent.MemberUp])
