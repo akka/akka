@@ -518,19 +518,6 @@ to provide back pressure onto the sink.
 
 ---------------------------------------------------------------
 
-### actorSubscriber
-
-Create an actor from a `Props` upon materialization, where the actor implements `ActorSubscriber`, which will
-receive the elements from the stream.
-
-Materializes into an `ActorRef` to the created actor.
-
-**cancels** when the actor terminates
-
-**backpressures** depends on the actor implementation
-
----------------------------------------------------------------
-
 ### asPublisher
 
 Integration with Reactive Streams, materializes into a `org.reactivestreams.Publisher`.
@@ -725,6 +712,8 @@ Attaches the given `Sink` to this `Flow`, meaning that elements that pass throug
 **backpressures** when downstream or `Sink` backpressures
 
 **completes** when upstream completes
+
+**cancels** when downstream or `Sink` cancels
 
 ---------------------------------------------------------------
 

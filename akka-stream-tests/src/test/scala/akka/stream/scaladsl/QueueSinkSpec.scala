@@ -10,7 +10,7 @@ import akka.stream.{ ActorMaterializer, StreamDetachedException }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
@@ -126,11 +126,12 @@ class QueueSinkSpec extends StreamSpec {
       val streamElementCount = bufferSize + 4
       val sink = Sink.queue[Int]()
         .withAttributes(inputBuffer(bufferSize, bufferSize))
-      val (probe, queue) = Source(1 to streamElementCount)
-        .alsoToMat(Flow[Int].take(bufferSize).watchTermination()(Keep.right).to(Sink.ignore))(Keep.right)
-        .toMat(sink)(Keep.both)
+      val bufferFullProbe = Promise[akka.Done.type]
+      val queue = Source(1 to streamElementCount)
+        .alsoTo(Flow[Int].drop(bufferSize - 1).to(Sink.foreach(_ ⇒ bufferFullProbe.trySuccess(akka.Done))))
+        .toMat(sink)(Keep.right)
         .run()
-      probe.futureValue should ===(akka.Done)
+      bufferFullProbe.future.futureValue should ===(akka.Done)
       for (i ← 1 to streamElementCount) {
         queue.pull() pipeTo testActor
         expectMsg(Some(i))
