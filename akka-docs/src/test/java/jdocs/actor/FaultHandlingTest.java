@@ -88,10 +88,11 @@ public class FaultHandlingTest extends AbstractJavaTest {
     //#strategy2
     private static SupervisorStrategy strategy =
       new OneForOneStrategy(10, Duration.create(1, TimeUnit.MINUTES), DeciderBuilder.
-        match(ArithmeticException.class, e -> resume()).
-        match(NullPointerException.class, e -> restart()).
-        match(IllegalArgumentException.class, e -> stop()).
-        matchAny(o -> escalate()).build());
+        match(ArithmeticException.class, e -> SupervisorStrategy.resume()).
+        match(NullPointerException.class, e -> SupervisorStrategy.restart()).
+        match(IllegalArgumentException.class, e -> SupervisorStrategy.stop()).
+        matchAny(o -> SupervisorStrategy.escalate())
+        .build());
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
