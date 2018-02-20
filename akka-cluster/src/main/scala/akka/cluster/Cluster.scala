@@ -62,6 +62,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   import InfoLogger._
   import settings._
 
+  private val joinConfigCompatChecker: JoinConfigCompatChecker = JoinConfigCompatChecker.load(system, settings)
   /**
    * The address including a `uid` of this cluster member.
    * The `uid` is needed to be able to distinguish different
@@ -167,7 +168,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   // create supervisor for daemons under path "/system/cluster"
   private val clusterDaemons: ActorRef = {
-    system.systemActorOf(Props(classOf[ClusterDaemon], settings).
+    system.systemActorOf(Props(classOf[ClusterDaemon], settings, joinConfigCompatChecker).
       withDispatcher(UseDispatcher).withDeploy(Deploy.local), name = "cluster")
   }
 
