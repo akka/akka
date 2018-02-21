@@ -60,6 +60,12 @@ public interface HttpMessage {
     <T extends HttpHeader> Optional<T> getHeader(Class<T> headerClass);
 
     /**
+     * An iterable containing all headers of the given class
+     * of this message.
+     */
+    <T extends HttpHeader> Iterable<T> getHeaders(Class<T> headerClass);
+
+    /**
      * The entity of this message.
      */
     ResponseEntity entity();

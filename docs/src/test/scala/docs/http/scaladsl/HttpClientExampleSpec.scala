@@ -388,27 +388,26 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     //#collecting-headers-example
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
-    import akka.http.scaladsl.model.headers.{ HttpCookie, `Set-Cookie` }
+    import akka.http.scaladsl.model.headers.`Set-Cookie`
     import akka.http.scaladsl.model._
     import akka.stream.ActorMaterializer
 
+    import scala.concurrent.ExecutionContextExecutor
     import scala.concurrent.Future
 
     object Client {
       def main(args: Array[String]): Unit = {
-        implicit val system = ActorSystem()
-        implicit val materializer = ActorMaterializer()
-        implicit val executionContext = system.dispatcher
+        implicit val system: ActorSystem = ActorSystem()
+        implicit val materializer: ActorMaterializer = ActorMaterializer()
+        implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
         val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
 
         responseFuture.map {
-          case HttpResponse(StatusCodes.OK, headers, entity, _) =>
-            val setCookies: Seq[HttpCookie] = headers.collect {
-              case `Set-Cookie`(x) ⇒ x
-            }
+          case response @ HttpResponse(StatusCodes.OK, _, _, _) =>
+            val setCookies = response.headers[`Set-Cookie`]
             println(s"Cookies set by a server: $setCookies")
-            entity.discardBytes()
+            response.discardEntityBytes()
           case _ => sys.error("something wrong")
         }
       }

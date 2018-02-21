@@ -7,6 +7,7 @@ package docs.http.javadsl;
 import akka.Done;
 import akka.actor.*;
 import akka.http.javadsl.model.headers.HttpCredentials;
+import akka.http.javadsl.model.headers.SetCookie;
 import akka.util.ByteString;
 import scala.concurrent.ExecutionContextExecutor;
 import akka.stream.javadsl.*;
@@ -31,15 +32,6 @@ import akka.http.javadsl.model.*;
 import scala.concurrent.duration.FiniteDuration;
 //#manual-entity-consume-example-1
 
-//#collecting-headers-example
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import akka.http.javadsl.model.headers.SetCookie;
-//#collecting-headers-example
-
-
 //#single-request-in-actor-example
 import akka.actor.AbstractActor;
 import akka.http.javadsl.Http;
@@ -59,7 +51,7 @@ import static akka.pattern.PatternsCS.pipe;
 public class HttpClientExampleDocTest {
 
   static HttpResponse responseFromSomewhere() {
-    return null;
+    return HttpResponse.create();
   }
 
   void manualEntityComsumeExample() {
@@ -80,6 +72,7 @@ public class HttpClientExampleDocTest {
       .map(transformEachLine::apply)
       .runWith(FileIO.toPath(new File("/tmp/example.out").toPath()), materializer);
     //#manual-entity-consume-example-1
+    system.terminate();
   }
 
   private static class ConsumeExample2 {
@@ -129,6 +122,7 @@ public class HttpClientExampleDocTest {
       System.out.println("Entity discarded completely!");
     });
     //#manual-entity-discard-example-1
+    system.terminate();
   }
 
   void manualEntityDiscardExample2() {
@@ -145,6 +139,7 @@ public class HttpClientExampleDocTest {
       System.out.println("Entity discarded completely!");
     });
     //#manual-entity-discard-example-2
+    system.terminate();
   }
 
 
@@ -173,6 +168,7 @@ public class HttpClientExampleDocTest {
                     .via(connectionFlow)
                     .runWith(Sink.<HttpResponse>head(), materializer);
     //#outgoing-connection-example
+    system.terminate();
   }
 
   // compile only test
@@ -184,6 +180,7 @@ public class HttpClientExampleDocTest {
       Http.get(system)
           .singleRequest(HttpRequest.create("http://akka.io"));
     //#single-request-example
+    system.terminate();
   }
 
   // compile only test
@@ -226,6 +223,7 @@ public class HttpClientExampleDocTest {
                   system.log());
 
     //#https-proxy-example-single-request
+    system.terminate();
   }
 
   // compile only test
@@ -251,6 +249,7 @@ public class HttpClientExampleDocTest {
                   system.log());
 
     //#auth-https-proxy-example-single-request
+    system.terminate();
   }
 
   // compile only test
@@ -262,14 +261,12 @@ public class HttpClientExampleDocTest {
     //#collecting-headers-example
     final HttpResponse response = responseFromSomewhere();
 
-    List<SetCookie> setCookies = StreamSupport.stream(response.getHeaders().spliterator(), false)
-      .filter(SetCookie.class::isInstance)
-      .map(SetCookie.class::cast)
-      .collect(Collectors.toList());
+    final Iterable<SetCookie> setCookies = response.getHeaders(SetCookie.class);
 
     System.out.println("Cookies set by a server: " + setCookies);
-
     response.discardEntityBytes(materializer);
     //#collecting-headers-example
+    system.terminate();
   }
+
 }
