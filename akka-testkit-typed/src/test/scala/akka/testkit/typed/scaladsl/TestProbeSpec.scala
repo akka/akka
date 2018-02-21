@@ -10,6 +10,24 @@ import scala.concurrent.duration._
 
 class TestProbeSpec extends TestKit with WordSpecLike with Matchers with BeforeAndAfterAll {
 
+  def compileOnlyApiTest(): Unit = {
+    val probe = TestProbe[AnyRef]()
+    probe.fishForMessage(100.millis) {
+      case _ ⇒ FishingOutcomes.complete
+    }
+    probe.awaitAssert({
+      "result"
+    })
+    probe.expectMessageType[String]
+    probe.expectMessage("whoa")
+    probe.expectNoMessage()
+    probe.expectNoMessage(300.millis)
+    probe.expectTerminated(system.deadLetters, 100.millis)
+    probe.within(100.millis) {
+      "result"
+    }
+  }
+
   "The test probe" must {
 
     "allow probing for actor stop when actor already stopped" in {
@@ -44,8 +62,8 @@ class TestProbeSpec extends TestKit with WordSpecLike with Matchers with BeforeA
       probe.ref ! "two"
 
       val result = probe.fishForMessage(300.millis) {
-        case "one" ⇒ FishingOutcomes.Continue
-        case "two" ⇒ FishingOutcomes.Complete
+        case "one" ⇒ FishingOutcomes.continue
+        case "two" ⇒ FishingOutcomes.complete
       }
 
       result should ===(List("one", "two"))
@@ -60,8 +78,8 @@ class TestProbeSpec extends TestKit with WordSpecLike with Matchers with BeforeA
 
       intercept[AssertionError] {
         probe.fishForMessage(300.millis) {
-          case "one" ⇒ FishingOutcomes.Continue
-          case "two" ⇒ FishingOutcomes.Fail("not the fish I'm looking for")
+          case "one" ⇒ FishingOutcomes.continue
+          case "two" ⇒ FishingOutcomes.fail("not the fish I'm looking for")
         }
       }
     }
@@ -74,7 +92,7 @@ class TestProbeSpec extends TestKit with WordSpecLike with Matchers with BeforeA
 
       intercept[AssertionError] {
         probe.fishForMessage(300.millis) {
-          case "one" ⇒ FishingOutcomes.Continue
+          case "one" ⇒ FishingOutcomes.continue
         }
       }
     }
@@ -86,7 +104,7 @@ class TestProbeSpec extends TestKit with WordSpecLike with Matchers with BeforeA
 
       intercept[AssertionError] {
         probe.fishForMessage(300.millis) {
-          case "one" ⇒ FishingOutcomes.Continue
+          case "one" ⇒ FishingOutcomes.continue
         }
       }
     }

@@ -15,15 +15,7 @@ import scala.util.control.NoStackTrace
 /**
  * Exception without stack trace to use for verifying exceptions in tests
  */
-case class TE(message: String) extends RuntimeException(message) with NoStackTrace
-
-/**
- * Not for user extension.
- *
- * Instances are available from `FishingOutcomes` in the respective dsls: [[akka.testkit.typed.scaladsl.FishingOutcomes]]
- * and [[akka.testkit.typed.javadsl.FishingOutcomes]]
- */
-@DoNotInherit abstract class FishingOutcome private[akka] ()
+final case class TE(message: String) extends RuntimeException(message) with NoStackTrace
 
 object TestKit {
 

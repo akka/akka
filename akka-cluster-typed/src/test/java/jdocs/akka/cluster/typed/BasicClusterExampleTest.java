@@ -58,15 +58,15 @@ public class BasicClusterExampleTest { // extends JUnitSuite {
       Cluster cluster2 = Cluster.get(system2);
 
       //#cluster-subscribe
-      TestProbe<ClusterEvent.MemberEvent> testProbe = new TestProbe<>(system);
+      TestProbe<ClusterEvent.MemberEvent> testProbe = TestProbe.create(system);
       cluster.subscriptions().tell(Subscribe.create(testProbe.ref(), ClusterEvent.MemberEvent.class));
       //#cluster-subscribe
 
       //#cluster-leave-example
       cluster.manager().tell(Leave.create(cluster2.selfMember().address()));
-      testProbe.expectMessageType(ClusterEvent.MemberLeft.class);
-      testProbe.expectMessageType(ClusterEvent.MemberExited.class);
-      testProbe.expectMessageType(ClusterEvent.MemberRemoved.class);
+      testProbe.expectMessageClass(ClusterEvent.MemberLeft.class);
+      testProbe.expectMessageClass(ClusterEvent.MemberExited.class);
+      testProbe.expectMessageClass(ClusterEvent.MemberRemoved.class);
       //#cluster-leave-example
 
     } finally {

@@ -148,7 +148,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
     new FunctionRef[U](
       self.path / i.ref.path.name,
       (msg, _) ⇒ { val m = f(msg); if (m != null) { selfInbox.ref ! m; i.ref ! msg } },
-      (self) ⇒ selfInbox.ref.sorry.sendSystem(internal.DeathWatchNotification(self, null)))
+      (self) ⇒ selfInbox.ref.sorry.sendSystem(DeathWatchNotification(self, null)))
   }
 
   /**
