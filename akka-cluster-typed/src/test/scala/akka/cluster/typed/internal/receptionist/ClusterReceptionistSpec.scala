@@ -100,7 +100,10 @@ class ClusterReceptionistSpec extends ActorTestKit
   implicit val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
 
-  val testKit2 = new TestKit(system.name, system.settings.config)
+  val testKit2 = new ActorTestKit {
+    override def name = ClusterReceptionistSpec.this.system.name
+    override def config = ClusterReceptionistSpec.this.system.settings.config
+  }
   val system2 = testKit2.system
   val clusterNode2 = Cluster(system2)
 
@@ -122,7 +125,7 @@ class ClusterReceptionistSpec extends ActorTestKit
       system.receptionist ! Register(PingKey, service, regProbe.ref)
       regProbe.expectMessage(Registered(PingKey, service))
 
-      val Listing(PingKey, remoteServiceRefs) = regProbe2.expectMessageType[Listing[PingProtocol]]
+      val PingKey.Listing(remoteServiceRefs) = regProbe2.expectMessageType[Listing]
       val theRef = remoteServiceRefs.head
       theRef ! Ping(regProbe2.ref)
       regProbe2.expectMessage(Pong)
@@ -143,7 +146,7 @@ class ClusterReceptionistSpec extends ActorTestKit
       system2.receptionist ! Register(PingKey, service2, regProbe2.ref)
       regProbe2.expectMessage(Registered(PingKey, service2))
 
-      val Listing(PingKey, remoteServiceRefs) = regProbe.expectMessageType[Listing[PingProtocol]]
+      val remoteServiceRefs = regProbe.expectMessageType[Listing].serviceInstances(PingKey)
       val theRef = remoteServiceRefs.head
       theRef ! Ping(regProbe.ref)
       regProbe.expectMessage(Pong)
@@ -157,6 +160,6 @@ class ClusterReceptionistSpec extends ActorTestKit
 
   override def afterAll(): Unit = {
     super.afterAll()
-    TestKit.shutdown(system2, 10.seconds)
+    ActorTestKit.shutdown(system2, 10.seconds)
   }
 }
