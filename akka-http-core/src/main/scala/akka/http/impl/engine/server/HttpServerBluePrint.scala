@@ -219,7 +219,7 @@ private[http] object HttpServerBluePrint {
           start.copy(uri = effectiveUri)
         } catch {
           case e: IllegalUriException ⇒
-            MessageStartError(StatusCodes.BadRequest, ErrorInfo("Request is missing required `Host` header", e.getMessage))
+            MessageStartError(StatusCodes.BadRequest, e.info)
         }
       case x ⇒ x
     }
@@ -442,6 +442,9 @@ private[http] object HttpServerBluePrint {
               }
               val info = ErrorInfo(summary, "Consider increasing the value of akka.http.server.parsing.max-content-length")
               finishWithIllegalRequestError(StatusCodes.RequestEntityTooLarge, info)
+
+            case IllegalUriException(errorInfo) ⇒
+              finishWithIllegalRequestError(StatusCodes.BadRequest, errorInfo)
 
             case NonFatal(e) ⇒
               log.error(e, "Internal server error, sending 500 response")

@@ -22,7 +22,7 @@ class HttpMessageSpec extends WordSpec with Matchers {
       HttpRequest.effectiveUri(Uri("/relative"), hostHeader.toList, securedConnection = false, Host(""))
 
     thrown should have message
-      s"Cannot establish effective URI of request to `/relative`, request has a relative URI and $details; " +
+      s"Cannot establish effective URI of request to `/relative`, request has a relative URI and $details: " +
       "consider setting `akka.http.server.default-host-header`"
   }
 
@@ -46,6 +46,16 @@ class HttpMessageSpec extends WordSpec with Matchers {
 
     "throw IllegalUriException for relative URI with empty Host header and no default Host header" in {
       failWithNoHostHeader(Some(Host("")), "an empty `Host` header")
+    }
+
+    "throw IllegalUriException for an invalid URI schema" in {
+      an[IllegalUriException] should be thrownBy
+        HttpRequest(uri = Uri("htp://example.com"))
+    }
+
+    "throw IllegalUriException for empty URI" in {
+      an[IllegalUriException] should be thrownBy
+        HttpRequest(uri = Uri())
     }
   }
 
