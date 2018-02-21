@@ -4,18 +4,18 @@
 package akka.stream.impl.io
 
 import java.nio.channels.FileChannel
-import java.nio.file.{ Path, OpenOption }
+import java.nio.file.{ OpenOption, Path }
 
 import akka.Done
 import akka.actor.{ ActorLogging, Deploy, Props }
 import akka.annotation.InternalApi
-import akka.stream.IOResult
+import akka.stream.{ AbruptIOTerminationException, IOResult }
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
 import akka.util.ByteString
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Promise
-import scala.util.{ Failure, Success }
+import scala.util.{ Failure, Success, Try }
 
 /** INTERNAL API */
 @InternalApi private[akka] object FileSubscriber {
@@ -46,7 +46,7 @@ import scala.util.{ Failure, Success }
     super.preStart()
   } catch {
     case ex: Exception ⇒
-      closeAndComplete(IOResult(bytesWritten, Failure(ex)))
+      closeAndComplete(Success(IOResult(bytesWritten, Failure(ex))))
       cancel()
   }
 
@@ -56,33 +56,37 @@ import scala.util.{ Failure, Success }
         bytesWritten += chan.write(bytes.asByteBuffer)
       } catch {
         case ex: Exception ⇒
-          closeAndComplete(IOResult(bytesWritten, Failure(ex)))
+          closeAndComplete(Success(IOResult(bytesWritten, Failure(ex))))
           cancel()
       }
 
     case ActorSubscriberMessage.OnError(ex) ⇒
       log.error(ex, "Tearing down FileSink({}) due to upstream error", f)
-      closeAndComplete(IOResult(bytesWritten, Failure(ex)))
+      closeAndComplete(Failure(AbruptIOTerminationException(IOResult(bytesWritten, Success(Done)), ex)))
       context.stop(self)
 
     case ActorSubscriberMessage.OnComplete ⇒ context.stop(self)
   }
 
   override def postStop(): Unit = {
-    closeAndComplete(IOResult(bytesWritten, Success(Done)))
+    closeAndComplete(Success(IOResult(bytesWritten, Success(Done))))
     super.postStop()
   }
 
-  private def closeAndComplete(result: IOResult): Unit = {
+  private def closeAndComplete(result: Try[IOResult]): Unit = {
     try {
       // close the channel/file before completing the promise, allowing the
       // file to be deleted, which would not work (on some systems) if the
       // file is still open for writing
       if (chan ne null) chan.close()
-      completionPromise.trySuccess(result)
+      completionPromise.tryComplete(result)
     } catch {
-      case ex: Exception ⇒
-        completionPromise.trySuccess(IOResult(bytesWritten, Failure(ex)))
+      case closingException: Exception ⇒ result match {
+        case Success(ioResult) ⇒
+          val statusWithClosingException = ioResult.status.transform(d ⇒ Failure(closingException), ex ⇒ Failure(closingException.initCause(ex)))
+          completionPromise.trySuccess(ioResult.copy(status = statusWithClosingException))
+        case Failure(ex) ⇒ completionPromise.tryFailure(closingException.initCause(ex))
+      }
     }
   }
 }

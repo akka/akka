@@ -8,7 +8,7 @@ import java.io.OutputStream
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ AbruptIOTerminationException, ActorMaterializer, ActorMaterializerSettings }
 import akka.testkit.TestProbe
 import akka.util.ByteString
 
@@ -39,13 +39,23 @@ class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "close underlying stream when error received" in assertAllStagesStopped {
       val p = TestProbe()
-      Source.failed(new TE("Boom!"))
+      Source.failed(TE("Boom!"))
         .runWith(StreamConverters.fromOutputStream(() ⇒ new OutputStream {
           override def write(i: Int): Unit = ()
           override def close() = p.ref ! "closed"
         }))
 
       p.expectMsg("closed")
+    }
+
+    "complete materialized value with the error" in assertAllStagesStopped {
+      val completion = Source.failed(TE("Boom!"))
+        .runWith(StreamConverters.fromOutputStream(() ⇒ new OutputStream {
+          override def write(i: Int): Unit = ()
+          override def close() = ()
+        }))
+
+      completion.failed.futureValue shouldBe an[AbruptIOTerminationException]
     }
 
     "close underlying stream when completion received" in assertAllStagesStopped {
