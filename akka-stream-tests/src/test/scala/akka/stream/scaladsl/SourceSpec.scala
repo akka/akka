@@ -384,4 +384,67 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       closed should ===(true)
     }
   }
+
+  "Source pre-materialization" must {
+
+    "materialize the source and connect it to a publisher" in {
+      val matValPoweredSource = Source.maybe[Int]
+      val (mat, src) = matValPoweredSource.preMaterialize()
+
+      val probe = src.runWith(TestSink.probe[Int])
+
+      probe.request(1)
+      mat.success(Some(42))
+      probe.expectNext(42)
+      probe.expectComplete()
+    }
+
+    "allow for multiple downstream materialized sources" in {
+      val matValPoweredSource = Source.queue[String](Int.MaxValue, OverflowStrategy.fail)
+      val (mat, src) = matValPoweredSource.preMaterialize()
+
+      val probe1 = src.runWith(TestSink.probe[String])
+      val probe2 = src.runWith(TestSink.probe[String])
+
+      probe1.request(1)
+      probe2.request(1)
+      mat.offer("One").futureValue
+      probe1.expectNext("One")
+      probe2.expectNext("One")
+    }
+
+    "survive cancellations of downstream materialized sources" in {
+      val matValPoweredSource = Source.queue[String](Int.MaxValue, OverflowStrategy.fail)
+      val (mat, src) = matValPoweredSource.preMaterialize()
+
+      val probe1 = src.runWith(TestSink.probe[String])
+      src.runWith(Sink.cancelled)
+
+      probe1.request(1)
+      mat.offer("One").futureValue
+      probe1.expectNext("One")
+    }
+
+    "propagate failures to downstream materialized sources" in {
+      val matValPoweredSource = Source.queue[String](Int.MaxValue, OverflowStrategy.fail)
+      val (mat, src) = matValPoweredSource.preMaterialize()
+
+      val probe1 = src.runWith(TestSink.probe[String])
+      val probe2 = src.runWith(TestSink.probe[String])
+
+      mat.fail(new RuntimeException("boom"))
+
+      probe1.expectSubscription()
+      probe2.expectSubscription()
+
+      probe1.expectError().getMessage should ===("boom")
+      probe2.expectError().getMessage should ===("boom")
+    }
+
+    "correctly propagate materialization failures" in {
+      val matValPoweredSource = Source.empty.mapMaterializedValue(_ ⇒ throw new RuntimeException("boom"))
+
+      a[RuntimeException] shouldBe thrownBy(matValPoweredSource.preMaterialize())
+    }
+  }
 }
