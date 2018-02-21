@@ -92,10 +92,17 @@ private[http] final class HttpRequestParser(
               }
             case c ⇒ parseCustomMethod(ix + 1, sb.append(c))
           }
-        } else throw new ParsingException(
-          BadRequest,
-          ErrorInfo("Unsupported HTTP method", s"HTTP method too long (started with '${sb.toString}'). " +
-            "Increase `akka.http.server.parsing.max-method-length` to support HTTP methods with more characters."))
+        } else {
+          if (sb.length > 0 && sb.charAt(0) == 0x16)
+            throw new ParsingException(
+              BadRequest,
+              ErrorInfo("Unsupported HTTP method", s"The HTTP method started with 0x16 rather than any known HTTP method. " +
+                "Perhaps this was an HTTPS request sent to an HTTP endpoint?"))
+          else throw new ParsingException(
+            BadRequest,
+            ErrorInfo("Unsupported HTTP method", s"HTTP method too long (started with '${sb.toString}'). " +
+              "Increase `akka.http.server.parsing.max-method-length` to support HTTP methods with more characters."))
+        }
 
       @tailrec def parseMethod(meth: HttpMethod, ix: Int = 1): Int =
         if (ix == meth.value.length)

@@ -39,7 +39,7 @@ import org.scalatest.concurrent.Eventually.eventually
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loggers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = ERROR
+    akka.loglevel = WARNING
     akka.stdout-loglevel = ERROR
     windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
@@ -430,8 +430,10 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         performValidRequest()
         assertCounters(0, 1)
 
-        performFaultyRequest()
-        assertCounters(0, 2)
+        EventFilter.warning(pattern = "Illegal HTTP message start", occurrences = 1) intercept {
+          performFaultyRequest()
+          assertCounters(0, 2)
+        }
 
         performValidRequest()
         assertCounters(0, 3)
@@ -576,10 +578,12 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
           .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
           .futureValue
 
-      Http()
-        .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
-        .futureValue
-        .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
+      EventFilter.warning(pattern = "Hostname verification failed", occurrences = 1) intercept {
+        Http()
+          .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
+          .futureValue
+          .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
+      }
 
       serverBinding.unbind()
     }
@@ -704,6 +708,19 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
         connSourceSub.cancel()
       }
+    }
+
+    "produce a useful error message when connecting to a HTTP endpoint over HTTPS" in Utils.assertAllStagesStopped {
+      val dummyFlow = Flow.fromFunction((_: HttpRequest) ⇒ ???)
+
+      val binding = Http().bindAndHandle(dummyFlow, "127.0.0.1", port = 0).futureValue
+      val uri = "https://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
+
+      EventFilter.warning(pattern = "Perhaps this was an HTTPS request sent to an HTTP endpoint", occurrences = 6) intercept {
+        Await.ready(Http().singleRequest(HttpRequest(uri = uri)), 30.seconds)
+      }
+
+      Await.result(binding.unbind(), 10.seconds)
     }
   }
 
