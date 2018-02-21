@@ -14,7 +14,7 @@ import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.scaladsl.{ FileIO, Sink, Source }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import akka.stream.{ ActorAttributes, ActorMaterializer, ActorMaterializerSettings, IOResult }
+import akka.stream._
 import akka.util.{ ByteString, Timeout }
 import com.google.common.jimfs.{ Configuration, Jimfs }
 import org.scalatest.BeforeAndAfterAll
@@ -204,6 +204,20 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       }
     }
 
+    "complete materialized future with an exception when upstream fails" in assertAllStagesStopped {
+      targetFile { f ⇒
+        val completion = Source(TestByteStrings)
+          .map { bytes ⇒
+            if (bytes.contains('b')) throw new Error("bees!")
+            bytes
+          }
+          .runWith(FileIO.toPath(f))
+
+        val ex = intercept[AbruptIOTerminationException] { Await.result(completion, 3.seconds) }
+        ex.ioResult.count should equal(1001)
+        checkFileContents(f, TestLines.takeWhile(!_.contains('b')).mkString(""))
+      }
+    }
   }
 
   private def targetFile(block: Path ⇒ Unit, create: Boolean = true) {
