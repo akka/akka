@@ -27,7 +27,7 @@ public class ActorTestKitTest extends JUnitSuite {
   @Test
   public void testKitShouldSpawnActor() throws Exception {
     final CompletableFuture<Done> started = new CompletableFuture<>();
-    testKit.spawn(Behaviors.deferred((ctx) -> {
+    testKit.spawn(Behaviors.setup((ctx) -> {
       started.complete(Done.getInstance());
       return Behaviors.same();
     }));

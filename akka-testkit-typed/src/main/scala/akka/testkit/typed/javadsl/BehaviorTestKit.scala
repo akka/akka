@@ -33,7 +33,7 @@ object BehaviorTestKit {
 @DoNotInherit
 abstract class BehaviorTestKit[T] {
   /**
-   * Requests the oldest [[Effect]] or [[akka.testkit.typed.Effect.NoEffects]] if no effects
+   * Requests the oldest [[Effect]] or [[akka.testkit.typed.javadsl.Effects.noEffects]] if no effects
    * have taken place. The effect is consumed, subsequent calls won't
    * will not include this effect.
    */
@@ -66,6 +66,13 @@ abstract class BehaviorTestKit[T] {
    * The current behavior, can change any time `run` is called
    */
   def currentBehavior: Behavior[T]
+
+  /**
+   * Returns the current behavior as it was returned from processing the previous message.
+   * For example if [[Behavior.unhandled]] is returned it will be kept here, but not in
+   * [[currentBehavior]].
+   */
+  def returnedBehavior: Behavior[T]
 
   /**
    * Is the current behavior alive or stopped

@@ -26,7 +26,9 @@ private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior
 
   // really this should be private, make so when we port out tests that need it
   private[akka] val ctx = new EffectfulActorContext[T](_name)
-  private var current = Behavior.validateAsInitial(Behavior.undefer(_initialBehavior, ctx))
+
+  private var currentUncanonical = _initialBehavior
+  private var current = Behavior.validateAsInitial(Behavior.start(_initialBehavior, ctx))
 
   override def retrieveEffect(): Effect = ctx.effectQueue.poll() match {
     case null ⇒ NoEffects
@@ -61,6 +63,7 @@ private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior
     }
   }
 
+  def returnedBehavior: Behavior[T] = currentUncanonical
   def currentBehavior: Behavior[T] = current
   def isAlive: Boolean = Behavior.isAlive(current)
 
@@ -75,7 +78,8 @@ private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior
 
   override def run(msg: T): Unit = {
     try {
-      current = Behavior.canonicalize(Behavior.interpretMessage(current, ctx, msg), current, ctx)
+      currentUncanonical = Behavior.interpretMessage(current, ctx, msg)
+      current = Behavior.canonicalize(currentUncanonical, current, ctx)
       ctx.executionContext match {
         case controlled: ControlledExecutor ⇒ controlled.runAll()
         case _                              ⇒
@@ -85,7 +89,8 @@ private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior
 
   override def signal(signal: Signal): Unit = {
     try {
-      current = Behavior.canonicalize(Behavior.interpretSignal(current, ctx, signal), current, ctx)
+      currentUncanonical = Behavior.interpretSignal(current, ctx, signal)
+      current = Behavior.canonicalize(currentUncanonical, current, ctx)
     } catch handleException
   }
 

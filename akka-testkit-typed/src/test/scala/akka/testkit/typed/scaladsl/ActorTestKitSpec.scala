@@ -21,7 +21,7 @@ class ActorTestKitSpec extends WordSpec with Matchers with ActorTestKit with Sca
 
     "spawn an actor" in {
       val sawMessage = Promise[Boolean]()
-      val ref = spawn(Behaviors.deferred[AnyRef] { ctx ⇒
+      val ref = spawn(Behaviors.setup[AnyRef] { ctx ⇒
         sawMessage.trySuccess(true)
         Behaviors.empty
       })
@@ -31,7 +31,7 @@ class ActorTestKitSpec extends WordSpec with Matchers with ActorTestKit with Sca
 
     "spawn a named actor" in {
       val spawnedWithName = Promise[String]()
-      val ref = spawn(Behaviors.deferred[AnyRef] { ctx ⇒
+      val ref = spawn(Behaviors.setup[AnyRef] { ctx ⇒
         spawnedWithName.trySuccess(ctx.self.path.name)
         Behaviors.empty
       }, "name")
