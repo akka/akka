@@ -132,6 +132,7 @@ private[remote] class OutboundHandshake(
         scheduleOnce(InjectHandshakeTick, injectHandshakeInterval)
         val env: OutboundEnvelope = outboundEnvelopePool.acquire().init(
           recipient = OptionVal.None, message = HandshakeReq(outboundContext.localAddress, outboundContext.remoteAddress), sender = OptionVal.None)
+        outboundContext.associationState.lastUsedTimestamp.set(System.nanoTime())
         push(out, env)
       }
 
