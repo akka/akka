@@ -145,14 +145,14 @@ public class PersistentActorTest extends TestKit {
 
 
   private PersistentBehavior<Command, Incremented, State> counter(String persistenceId, ActorRef<Pair<State, Incremented>> probe) {
-    ActorRef<String> loggingProbe = new TestProbe<String>(system()).ref();
+    ActorRef<String> loggingProbe = TestProbe.create(String.class, system()).ref();
     return counter(persistenceId, probe, loggingProbe, (s, i, l) -> false);
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(String persistenceId) {
     return counter(persistenceId,
-      new TestProbe<Pair<State, Incremented>>(system()).ref(),
-      new TestProbe<String>(system()).ref(),
+      TestProbe.<Pair<State, Incremented>>create(system()).ref(),
+      TestProbe.<String>create(system()).ref(),
       (s, i, l) -> false);
   }
 
@@ -161,8 +161,8 @@ public class PersistentActorTest extends TestKit {
     Function3<State, Incremented, Long, Boolean> snapshot
   ) {
     return counter(persistenceId,
-      new TestProbe<Pair<State, Incremented>>(system()).ref(),
-      new TestProbe<String>(system()).ref(), snapshot);
+      TestProbe.<Pair<State, Incremented>>create(system()).ref(),
+      TestProbe.<String>create(system()).ref(), snapshot);
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(
@@ -176,7 +176,7 @@ public class PersistentActorTest extends TestKit {
     String persistentId,
     ActorRef<Pair<State, Incremented>> eventProbe,
     Function3<State, Incremented, Long, Boolean> snapshot) {
-    return counter(persistentId, eventProbe, new TestProbe<String>(system()).ref(), snapshot);
+    return counter(persistentId, eventProbe, TestProbe.<String>create(system()).ref(), snapshot);
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(
@@ -253,7 +253,7 @@ public class PersistentActorTest extends TestKit {
   @Test
   public void persistEvents() {
     ActorRef<Command> c = spawn(counter("c2"));
-    TestProbe<State> probe = new TestProbe<>(system());
+    TestProbe<State> probe = TestProbe.create(system());
     c.tell(Increment.instance);
     c.tell(new GetValue(probe.ref()));
     probe.expectMessage(new State(1, singletonList(0)));
@@ -262,7 +262,7 @@ public class PersistentActorTest extends TestKit {
   @Test
   public void replyStoredEvents() {
     ActorRef<Command> c = spawn(counter("c2"));
-    TestProbe<State> probe = new TestProbe<>(system());
+    TestProbe<State> probe = TestProbe.create(system());
     c.tell(Increment.instance);
     c.tell(Increment.instance);
     c.tell(Increment.instance);
@@ -279,7 +279,7 @@ public class PersistentActorTest extends TestKit {
 
   @Test
   public void handleTerminatedSignal() {
-    TestProbe<Pair<State, Incremented>> eventHandlerProbe = new TestProbe<>(system());
+    TestProbe<Pair<State, Incremented>> eventHandlerProbe = TestProbe.create(system());
     ActorRef<Command> c = spawn(counter("c2", eventHandlerProbe.ref()));
     c.tell(Increment.instance);
     c.tell(new IncrementLater());
@@ -289,7 +289,7 @@ public class PersistentActorTest extends TestKit {
 
   @Test
   public void handleReceiveTimeout() {
-    TestProbe<Pair<State, Incremented>> eventHandlerProbe = new TestProbe<>(system());
+    TestProbe<Pair<State, Incremented>> eventHandlerProbe = TestProbe.create(system());
     ActorRef<Command> c = spawn(counter("c1", eventHandlerProbe.ref()));
     c.tell(new Increment100OnTimeout());
     eventHandlerProbe.expectMessage(Pair.create(emptyState, timeoutEvent));
@@ -297,8 +297,8 @@ public class PersistentActorTest extends TestKit {
 
   @Test
   public void chainableSideEffectsWithEvents() {
-    TestProbe<Pair<State, Incremented>> eventHandlerProbe = new TestProbe<>(system());
-    TestProbe<String> loggingProbe = new TestProbe<>(system());
+    TestProbe<Pair<State, Incremented>> eventHandlerProbe = TestProbe.create(system());
+    TestProbe<String> loggingProbe = TestProbe.create(system());
     ActorRef<Command> c = spawn(counter("c1", eventHandlerProbe.ref(), loggingProbe.ref()));
     c.tell(new EmptyEventsListAndThenLog());
     loggingProbe.expectMessage(loggingOne);
@@ -311,11 +311,11 @@ public class PersistentActorTest extends TestKit {
     c.tell(Increment.instance);
     c.tell(Increment.instance);
     c.tell(Increment.instance);
-    TestProbe<State> probe = new TestProbe<>(system());
+    TestProbe<State> probe = TestProbe.create(system());
     c.tell(new GetValue(probe.ref()));
     probe.expectMessage(new State(3, Arrays.asList(0, 1, 2)));
 
-    TestProbe<Pair<State, Incremented>> eventProbe = new TestProbe<>(system());
+    TestProbe<Pair<State, Incremented>> eventProbe = TestProbe.create(system());
     snapshoter = counter("c11", eventProbe.ref(), (s, e, l) -> s.value % 2 == 0);
     ActorRef<Command> c2 = spawn(snapshoter);
     // First 2 are snapshot
@@ -326,7 +326,7 @@ public class PersistentActorTest extends TestKit {
 
   @Test
   public void stopThenLog() {
-    TestProbe<State> probe = new TestProbe<>(system());
+    TestProbe<State> probe = TestProbe.create(system());
     ActorRef<Command> c = spawn(counter("c12"));
     c.tell(new StopThenLog());
     probe.expectTerminated(c, FiniteDuration.create(1, TimeUnit.SECONDS));

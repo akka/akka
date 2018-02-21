@@ -3,137 +3,79 @@
  */
 package akka.testkit.typed.scaladsl
 
-import scala.concurrent.duration._
-import java.util.concurrent.BlockingDeque
-
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
-import akka.actor.typed.scaladsl.Behaviors
-import java.util.concurrent.LinkedBlockingDeque
-import java.util.concurrent.atomic.AtomicInteger
-
+import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.annotation.DoNotInherit
-import akka.util.Timeout
-import akka.util.PrettyDuration.PrettyPrintableDuration
-
-import scala.concurrent.Await
+import akka.testkit.typed.internal.TestProbeImpl
 import akka.testkit.typed.{ FishingOutcome, TestKitSettings }
-import akka.util.BoxedType
 
-import scala.annotation.tailrec
+import scala.concurrent.duration._
 import scala.reflect.ClassTag
-import scala.util.control.NonFatal
+import scala.collection.immutable
+
+object FishingOutcomes {
+  /**
+   * Complete fishing and return all messages up until this
+   */
+  val complete = FishingOutcome.Complete
+  /**
+   * Consume this message, collect it into the result, and continue with the next message
+   */
+  val continue = FishingOutcome.Continue
+  /**
+   * Consume this message, but do not collect it into the result, and continue with the next message
+   */
+  val continueAndIgnore = FishingOutcome.ContinueAndIgnore
+  /**
+   * Fail fishing with a custom error message
+   */
+  def fail(msg: String) = FishingOutcome.Fail(msg)
+}
 
 object TestProbe {
-  private val testActorId = new AtomicInteger(0)
-
   def apply[M]()(implicit system: ActorSystem[_]): TestProbe[M] =
     apply(name = "testProbe")
 
   def apply[M](name: String)(implicit system: ActorSystem[_]): TestProbe[M] =
-    new TestProbe(name)
+    new TestProbeImpl[M](name, system)
 
-  private case class WatchActor[U](actor: ActorRef[U])
-  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] = Behaviors.immutable[M] { (ctx, msg) ⇒
-    msg match {
-      case WatchActor(ref) ⇒ ctx.watch(ref)
-      case other           ⇒ queue.offerLast(other)
-    }
-    Behaviors.same
-  }.onSignal {
-    case (_, t: Terminated) ⇒
-      terminations.offerLast(t)
-      Behaviors.same
-  }
 }
 
-object FishingOutcomes {
+/**
+ * Create instances through the factories in the [[TestProbe]] companion.
+ *
+ * A test probe is essentially a queryable mailbox which can be used in place of an actor and the received
+ * messages can then be asserted
+ *
+ * Not for user extension
+ */
+@DoNotInherit trait TestProbe[M] {
+
+  implicit protected def settings: TestKitSettings
 
   /**
-   * Consume this message, collect it into the result, and continue with the next message
+   * ActorRef for this TestProbe
    */
-  case object Continue extends FishingOutcome
-
-  /**
-   * Consume this message, but do not collect it into the result, and continue with the next message
-   */
-  case object ContinueAndIgnore extends FishingOutcome
-
-  /**
-   * Complete fishing and return this message
-   */
-  case object Complete extends FishingOutcome
-
-  /**
-   * Fail fishing with a custom error message
-   */
-  case class Fail(error: String) extends FishingOutcome
-}
-
-class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
-
-  import TestProbe._
-  private implicit val settings = TestKitSettings(system)
-  private val queue = new LinkedBlockingDeque[M]
-  private val terminations = new LinkedBlockingDeque[Terminated]
-
-  private var end: Duration = Duration.Undefined
-
-  /**
-   * if last assertion was expectNoMessage, disable timing failure upon within()
-   * block end.
-   */
-  private var lastWasNoMessage = false
-
-  private var lastMessage: Option[M] = None
-
-  val testActor: ActorRef[M] = {
-    implicit val timeout = Timeout(3.seconds)
-    val futRef = system.systemActorOf(TestProbe.testActor(queue, terminations), s"$name-${testActorId.incrementAndGet()}")
-    Await.result(futRef, timeout.duration + 1.second)
-  }
-
-  /**
-   * Shorthand to get the `testActor`.
-   */
-  def ref: ActorRef[M] = testActor
-
-  /**
-   * Obtain current time (`System.nanoTime`) as Duration.
-   */
-  protected def now: FiniteDuration = System.nanoTime.nanos
+  def ref: ActorRef[M]
 
   /**
    * Obtain time remaining for execution of the innermost enclosing `within`
    * block or missing that it returns the properly dilated default for this
    * case from settings (key "akka.actor.typed.test.single-expect-default").
    */
-  def remainingOrDefault = remainingOr(settings.SingleExpectDefaultTimeout.dilated)
+  def remainingOrDefault: FiniteDuration
 
   /**
    * Obtain time remaining for execution of the innermost enclosing `within`
    * block or throw an [[AssertionError]] if no `within` block surrounds this
    * call.
    */
-  def remaining: FiniteDuration = end match {
-    case f: FiniteDuration ⇒ f - now
-    case _                 ⇒ throw new AssertionError("`remaining` may not be called outside of `within`")
-  }
+  def remaining: FiniteDuration
 
   /**
    * Obtain time remaining for execution of the innermost enclosing `within`
    * block or missing that it returns the given duration.
    */
-  def remainingOr(duration: FiniteDuration): FiniteDuration = end match {
-    case x if x eq Duration.Undefined ⇒ duration
-    case x if !x.isFinite             ⇒ throw new IllegalArgumentException("`end` cannot be infinite")
-    case f: FiniteDuration            ⇒ f - now
-  }
-
-  private def remainingOrDilated(max: Duration): FiniteDuration = max match {
-    case x if x eq Duration.Undefined ⇒ remainingOrDefault
-    case x if !x.isFinite             ⇒ throw new IllegalArgumentException("max duration cannot be infinite")
-    case f: FiniteDuration            ⇒ f.dilated
-  }
+  def remainingOr(duration: FiniteDuration): FiniteDuration
 
   /**
    * Execute code block while bounding its execution time between `min` and
@@ -151,38 +93,20 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
    * }
    * }}}
    */
-  def within[T](min: FiniteDuration, max: FiniteDuration)(f: ⇒ T): T = {
-    val _max = max.dilated
-    val start = now
-    val rem = if (end == Duration.Undefined) Duration.Inf else end - start
-    assert(rem >= min, s"required min time $min not possible, only ${rem.pretty} left")
-
-    lastWasNoMessage = false
-
-    val max_diff = _max min rem
-    val prev_end = end
-    end = start + max_diff
-
-    val ret = try f finally end = prev_end
-
-    val diff = now - start
-    assert(min <= diff, s"block took ${diff.pretty}, should at least have been $min")
-    if (!lastWasNoMessage) {
-      assert(diff <= max_diff, s"block took ${diff.pretty}, exceeding ${max_diff.pretty}")
-    }
-
-    ret
-  }
-
+  def within[T](min: FiniteDuration, max: FiniteDuration)(f: ⇒ T): T =
+    within_internal(min, max, f)
   /**
    * Same as calling `within(0 seconds, max)(f)`.
    */
-  def within[T](max: FiniteDuration)(f: ⇒ T): T = within(Duration.Zero, max)(f)
+  def within[T](max: FiniteDuration)(f: ⇒ T): T =
+    within_internal(Duration.Zero, max, f)
+
+  protected def within_internal[T](min: FiniteDuration, max: FiniteDuration, f: ⇒ T): T
 
   /**
    * Same as `expectMessage(remainingOrDefault, obj)`, but correctly treating the timeFactor.
    */
-  def expectMessage[T <: M](obj: T): T = expectMessage_internal(remainingOrDefault, obj)
+  def expectMessage[T <: M](obj: T): T
 
   /**
    * Receive one message from the test actor and assert that it equals the
@@ -191,7 +115,7 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
    *
    * @return the received object
    */
-  def expectMessage[T <: M](max: FiniteDuration, obj: T): T = expectMessage_internal(max.dilated, obj)
+  def expectMessage[T <: M](max: FiniteDuration, obj: T): T
 
   /**
    * Receive one message from the test actor and assert that it equals the
@@ -200,53 +124,19 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
    *
    * @return the received object
    */
-  def expectMessage[T <: M](max: FiniteDuration, hint: String, obj: T): T = expectMessage_internal(max.dilated, obj, Some(hint))
-
-  private def expectMessage_internal[T <: M](max: Duration, obj: T, hint: Option[String] = None): T = {
-    val o = receiveOne(max)
-    val hintOrEmptyString = hint.map(": " + _).getOrElse("")
-    assert(o != null, s"timeout ($max) during expectMessage while waiting for $obj" + hintOrEmptyString)
-    assert(obj == o, s"expected $obj, found $o" + hintOrEmptyString)
-    o.asInstanceOf[T]
-  }
-
-  /**
-   * Receive one message from the internal queue of the TestActor. If the given
-   * duration is zero, the queue is polled (non-blocking).
-   *
-   * This method does NOT automatically scale its Duration parameter!
-   */
-  private def receiveOne(max: Duration): M = {
-    val message =
-      if (max == Duration.Zero) {
-        queue.pollFirst
-      } else if (max.isFinite) {
-        queue.pollFirst(max.length, max.unit)
-      } else {
-        queue.takeFirst
-      }
-    lastWasNoMessage = false
-    lastMessage = if (message == null) None else Some(message)
-    message
-  }
+  def expectMessage[T <: M](max: FiniteDuration, hint: String, obj: T): T
 
   /**
    * Assert that no message is received for the specified time.
    * Supplied value is not dilated.
    */
-  def expectNoMessage(max: FiniteDuration) { expectNoMessage_internal(max) }
+  def expectNoMessage(max: FiniteDuration): Unit
 
   /**
    * Assert that no message is received. Waits for the default period configured as `akka.actor.typed.test.expect-no-message-default`
    * That value is dilated.
    */
-  def expectNoMessage() { expectNoMessage_internal(settings.ExpectNoMessageDefaultTimeout.dilated) }
-
-  private def expectNoMessage_internal(max: FiniteDuration) {
-    val o = receiveOne(max)
-    assert(o == null, s"received unexpected message $o")
-    lastWasNoMessage = true
-  }
+  def expectNoMessage(): Unit
 
   /**
    * Same as `expectMessageType[T](remainingOrDefault)`, but correctly treating the timeFactor.
@@ -255,29 +145,21 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
     expectMessageClass_internal(remainingOrDefault, t.runtimeClass.asInstanceOf[Class[T]])
 
   /**
-   * Receive one message from the test actor and assert that it conforms to the
-   * given type (after erasure). Wait time is bounded by the given duration,
-   * with an [[AssertionError]] being thrown in case of timeout.
-   *
-   * @return the received object
+   * Expect a message of type T to arrive within `max` or fail. `max` is dilated.
    */
   def expectMessageType[T <: M](max: FiniteDuration)(implicit t: ClassTag[T]): T =
     expectMessageClass_internal(max.dilated, t.runtimeClass.asInstanceOf[Class[T]])
 
-  private[akka] def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
-    val o = receiveOne(max)
-    assert(o != null, s"timeout ($max) during expectMessageClass waiting for $c")
-    assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass} ($o)")
-    o.asInstanceOf[C]
-  }
+  protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C
 
   /**
    * Allows for flexible matching of multiple messages within a timeout, the fisher function is fed each incoming
    * message, and returns one of the following effects to decide on what happens next:
    *
-   *  * [[FishingOutcomes.Continue]] - continue with the next message given that the timeout has not been reached
-   *  * [[FishingOutcomes.Complete]] - successfully complete and return the message
-   *  * [[FishingOutcomes.Fail]] - fail the test with a custom message
+   *  * [[FishingOutcomes.continue]] - continue with the next message given that the timeout has not been reached
+   *  * [[FishingOutcomes.continueAndIgnore]] - continue and do not save the message in the returned list
+   *  * [[FishingOutcomes.complete]] - successfully complete and return the message
+   *  * [[FishingOutcomes.fail]] - fail the test with a custom message
    *
    * Additionally failures includes the list of messages consumed. If a message of type `M` but not of type `T` is
    * received this will also fail the test, additionally if the `fisher` function throws a match error the error
@@ -288,56 +170,22 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
    *            The timeout is dilated.
    * @return The messages accepted in the order they arrived
    */
-  def fishForMessage(max: FiniteDuration, hint: String = "")(fisher: M ⇒ FishingOutcome): List[M] = {
-    // not tailrec but that should be ok
-    def loop(timeout: FiniteDuration, seen: List[M]): List[M] = {
-      val start = System.nanoTime()
-      val msg = receiveOne(timeout)
-      try {
-        fisher(msg) match {
-          case FishingOutcomes.Complete    ⇒ (msg :: seen).reverse
-          case FishingOutcomes.Fail(error) ⇒ throw new AssertionError(s"$error, hint: $hint")
-          case continue ⇒
-            val newTimeout =
-              if (timeout.isFinite()) timeout - (System.nanoTime() - start).nanos
-              else timeout
-            if (newTimeout.toMillis <= 0) {
-              throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
-            } else {
-              continue match {
-                case FishingOutcomes.Continue          ⇒ loop(newTimeout, msg :: seen)
-                case FishingOutcomes.ContinueAndIgnore ⇒ loop(newTimeout, seen)
-              }
+  def fishForMessage(max: FiniteDuration, hint: String)(fisher: M ⇒ FishingOutcome): immutable.Seq[M] =
+    fishForMessage_internal(max, hint, fisher)
 
-            }
-        }
-      } catch {
-        case ex: MatchError ⇒ throw new AssertionError(
-          s"Unexpected message $msg while fishing for messages, " +
-            s"seen messages ${seen.reverse}, hint: $hint", ex)
-      }
-    }
+  /**
+   * Same as the other `fishForMessage` but with no hint
+   */
+  def fishForMessage(max: FiniteDuration)(fisher: M ⇒ FishingOutcome): immutable.Seq[M] =
+    fishForMessage(max, "")(fisher)
 
-    loop(max.dilated, Nil)
-  }
+  protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): immutable.Seq[M]
 
   /**
    * Expect the given actor to be stopped or stop withing the given timeout or
    * throw an [[AssertionError]].
    */
-  def expectTerminated[U](actorRef: ActorRef[U], max: FiniteDuration): Unit = {
-    testActor.asInstanceOf[ActorRef[AnyRef]] ! WatchActor(actorRef)
-    val message =
-      if (max == Duration.Zero) {
-        terminations.pollFirst
-      } else if (max.isFinite) {
-        terminations.pollFirst(max.length, max.unit)
-      } else {
-        terminations.takeFirst
-      }
-    assert(message != null, s"timeout ($max) during expectStop waiting for actor [${actorRef.path}] to stop")
-    assert(message.ref == actorRef, s"expected [${actorRef.path}] to stop, but saw [${message.ref.path}] stop")
-  }
+  def expectTerminated[U](actorRef: ActorRef[U], max: FiniteDuration): Unit
 
   /**
    * Evaluate the given assert every `interval` until it does not throw an exception and return the
@@ -351,29 +199,5 @@ class TestProbe[M](name: String)(implicit system: ActorSystem[_]) {
    * Note that the timeout is scaled using Duration.dilated,
    * which uses the configuration entry "akka.test.timefactor".
    */
-  def awaitAssert[A](a: ⇒ A, max: Duration = Duration.Undefined, interval: Duration = 100.millis): A = {
-    val _max = remainingOrDilated(max)
-    val stop = now + _max
-
-    @tailrec
-    def poll(t: Duration): A = {
-      val result: A =
-        try {
-          a
-        } catch {
-          case NonFatal(e) ⇒
-            if ((now + t) >= stop) throw e
-            else null.asInstanceOf[A]
-        }
-
-      if (result != null) result
-      else {
-        Thread.sleep(t.toMillis)
-        poll((stop - now) min interval)
-      }
-    }
-
-    poll(_max min interval)
-  }
-
+  def awaitAssert[A](a: ⇒ A, max: Duration = Duration.Undefined, interval: Duration = 100.millis): A
 }
