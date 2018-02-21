@@ -119,8 +119,10 @@ object ClusterShardingSpec {
 
 }
 
-class ClusterShardingSpec extends ActorTestKit("ClusterShardingSpec", ClusterShardingSpec.config) with TypedAkkaSpecWithShutdown {
+class ClusterShardingSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   import ClusterShardingSpec._
+
+  override def config = ClusterShardingSpec.config
 
   val sharding = ClusterSharding(system)
 
