@@ -117,10 +117,13 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
 
     immutable[AllCommands] { (ctx, msg) ⇒
       msg match {
-        case Register(key, serviceInstance, replyTo) ⇒
+        case Register(key, serviceInstance, maybeReplyTo) ⇒
           ctx.log.debug("Actor was registered: {} {}", key, serviceInstance)
           watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
-          replyTo ! Registered(key, serviceInstance)
+          maybeReplyTo match {
+            case Some(replyTo) => replyTo ! Registered(key, serviceInstance)
+            case None =>
+          }
           externalInterface.onRegister(key, serviceInstance)
 
           updateRegistry(Set(key), _.inserted(key)(serviceInstance))

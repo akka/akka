@@ -117,11 +117,32 @@ object Receptionist extends ExtensionId[Receptionist] {
    *
    * Registration will be acknowledged with the [[Registered]] message to the given replyTo actor.
    */
-  final case class Register[T](key: ServiceKey[T], serviceInstance: ActorRef[T], replyTo: ActorRef[Registered[T]]) extends Command
+  final case class Register[T](key: ServiceKey[T], serviceInstance: ActorRef[T], replyTo: Option[ActorRef[Registered[T]]]) extends Command {
+
+    /**
+     * Java API: A Register message without Ack that the service was registered
+     */
+    def this(key: ServiceKey[T], service: ActorRef[T]) = this(key, service, None)
+    /**
+     * Java API: A Register message with Ack that the service was registered
+     */
+    def this(key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Registered[T]]) = this(key, service, Some(replyTo))
+
+  }
   object Register {
-    /** Auxiliary constructor to be used with the ask pattern */
-    def apply[T](key: ServiceKey[T], service: ActorRef[T]): ActorRef[Registered[T]] ⇒ Register[T] =
-      replyTo ⇒ Register(key, service, replyTo)
+
+    /**
+     * Create a Register without Ack that the service was registered
+     */
+    def apply[T](key: ServiceKey[T], service: ActorRef[T]): Register[T] = new Register(key, service, None)
+
+    /**
+     * Create a Register with an actor that will get an ack that the service was registered
+     */
+    def apply[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Registered[T]]): Register[T] =
+      new Register(key, service, Some(replyTo))
+
+
   }
 
   /**

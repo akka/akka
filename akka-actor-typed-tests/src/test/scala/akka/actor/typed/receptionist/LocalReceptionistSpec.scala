@@ -45,7 +45,7 @@ class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with 
       val testkit = BehaviorTestkit(receptionistBehavior)
       val a = TestInbox[ServiceA]("a")
       val r = TestInbox[Registered[_]]("r")
-      testkit.run(Register(ServiceKeyA, a.ref)(r.ref))
+      testkit.run(Register(ServiceKeyA, a.ref, r.ref))
       testkit.retrieveEffect() // watching however that is implemented
       r.receiveMsg() should be(Registered(ServiceKeyA, a.ref))
       val q = TestInbox[Listing[ServiceA]]("q")
@@ -59,7 +59,7 @@ class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with 
       val testkit = BehaviorTestkit(receptionistBehavior)
       val a = TestInbox[ServiceA]("a")
       val r = TestInbox[Registered[_]]("r")
-      testkit.run(Register(ServiceKeyA, a.ref)(r.ref))
+      testkit.run(Register(ServiceKeyA, a.ref, r.ref))
       r.receiveMsg() should be(Registered(ServiceKeyA, a.ref))
       val b = TestInbox[ServiceB]("b")
       testkit.run(Register(ServiceKeyB, b.ref)(r.ref))
@@ -76,7 +76,7 @@ class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with 
       val testkit = BehaviorTestkit(receptionistBehavior)
       val a1 = TestInbox[ServiceA]("a1")
       val r = TestInbox[Registered[_]]("r")
-      testkit.run(Register(ServiceKeyA, a1.ref)(r.ref))
+      testkit.run(Register(ServiceKeyA, a1.ref, r.ref))
       r.receiveMsg() should be(Registered(ServiceKeyA, a1.ref))
       val a2 = TestInbox[ServiceA]("a2")
       testkit.run(Register(ServiceKeyA, a2.ref)(r.ref))
@@ -154,7 +154,7 @@ class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with 
     "work with ask" in {
       val receptionist = spawn(receptionistBehavior)
       val serviceA = spawn(behaviorA)
-      val f: Future[Registered[ServiceA]] = receptionist ? Register(ServiceKeyA, serviceA)
+      val f: Future[Registered[ServiceA]] = receptionist ? (Register(ServiceKeyA, serviceA, _))
       f.futureValue should be(Registered(ServiceKeyA, serviceA))
     }
 

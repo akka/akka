@@ -94,7 +94,7 @@ object PingPongExample {
 
   val pingService: Behavior[Ping] =
     Behaviors.setup { ctx ⇒
-      ctx.system.receptionist ! Receptionist.Register(PingServiceKey, ctx.self, ctx.system.deadLetters)
+      ctx.system.receptionist ! Receptionist.Register(PingServiceKey, ctx.self)
       Behaviors.immutable[Ping] { (_, msg) ⇒
         msg match {
           case Ping(replyTo) ⇒

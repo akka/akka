@@ -31,7 +31,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
     static Behavior<Ping> pingService() {
       return Behaviors.setup((ctx) -> {
         ctx.getSystem().receptionist()
-          .tell(new Receptionist.Register<>(PingServiceKey, ctx.getSelf(), ctx.getSystem().deadLetters()));
+          .tell(new Receptionist.Register<>(PingServiceKey, ctx.getSelf()));
         return Behaviors.immutable(Ping.class)
           .onMessage(Ping.class, (c, msg) -> {
             msg.replyTo.tell(new Pong());
