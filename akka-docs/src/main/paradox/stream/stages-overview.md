@@ -211,16 +211,6 @@ Defers creation and materialization of a `CompletionStage` until there is demand
 
 ---------------------------------------------------------------
 
-### actorPublisher
-
-Wrap an actor extending `ActorPublisher` as a source.
-
-**emits** depends on the actor implementation
-
-**completes** when the actor stops
-
----------------------------------------------------------------
-
 ### actorRef
 
 Materialize an `ActorRef`, sending messages to it will emit them on the stream. The actor contain
