@@ -50,9 +50,11 @@ object ClusterSingletonPersistenceSpec {
 
 }
 
-class ClusterSingletonPersistenceSpec extends ActorTestKit(ClusterSingletonPersistenceSpec.config) with TypedAkkaSpecWithShutdown {
+class ClusterSingletonPersistenceSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   import ClusterSingletonPersistenceSpec._
   import akka.actor.typed.scaladsl.adapter._
+
+  override def config = ClusterSingletonPersistenceSpec.config
 
   implicit val s = system
 

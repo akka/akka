@@ -32,7 +32,9 @@ object ClusterApiSpec {
     """)
 }
 
-class ClusterApiSpec extends ActorTestKit("ClusterApiSpec", ClusterApiSpec.config) with TypedAkkaSpecWithShutdown with ScalaFutures {
+class ClusterApiSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with ScalaFutures {
+
+  override def config = ClusterApiSpec.config
 
   val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)

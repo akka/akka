@@ -82,9 +82,11 @@ object RemoteContextAskSpec {
 
 }
 
-class RemoteContextAskSpec extends ActorTestKit(RemoteContextAskSpec.config) with TypedAkkaSpecWithShutdown {
+class RemoteContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   import RemoteContextAskSpec._
+
+  override def config = RemoteContextAskSpec.config
 
   "Asking another actor through the ActorContext across remoting" must {
 

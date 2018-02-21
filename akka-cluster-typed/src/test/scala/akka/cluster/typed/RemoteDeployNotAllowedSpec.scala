@@ -42,7 +42,9 @@ object RemoteDeployNotAllowedSpec {
     """).withFallback(config)
 }
 
-class RemoteDeployNotAllowedSpec extends ActorTestKit(RemoteDeployNotAllowedSpec.config) with TypedAkkaSpecWithShutdown {
+class RemoteDeployNotAllowedSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+
+  override def config = RemoteDeployNotAllowedSpec.config
 
   "Typed cluster" must {
 

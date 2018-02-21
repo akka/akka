@@ -116,7 +116,9 @@ object ReplicatorSpec {
 
 }
 
-class ReplicatorSpec extends ActorTestKit(ReplicatorSpec.config) with TypedAkkaSpecWithShutdown with Eventually {
+class ReplicatorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
+
+  override def config = ReplicatorSpec.config
 
   import ReplicatorSpec._
 

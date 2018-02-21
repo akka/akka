@@ -85,8 +85,10 @@ object ClusterReceptionistSpec {
   val PingKey = ServiceKey[PingProtocol]("pingy")
 }
 
-class ClusterReceptionistSpec extends ActorTestKit("ClusterReceptionistSpec", ClusterReceptionistSpec.config)
+class ClusterReceptionistSpec extends ActorTestKit
   with TypedAkkaSpecWithShutdown {
+
+  override def config = ClusterReceptionistSpec.config
 
   import ClusterReceptionistSpec._
 

@@ -83,8 +83,10 @@ object ClusterSingletonApiSpec {
   }
 }
 
-class ClusterSingletonApiSpec extends ActorTestKit("ClusterSingletonApiSpec", ClusterSingletonApiSpec.config) with TypedAkkaSpecWithShutdown {
+class ClusterSingletonApiSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   import ClusterSingletonApiSpec._
+
+  override def config = ClusterSingletonApiSpec.config
 
   implicit val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
