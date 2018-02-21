@@ -22,6 +22,7 @@ import org.junit.Test;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import akka.actor.ActorSystem;
+import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import akka.dispatch.Futures;
 import akka.stream.*;
@@ -269,6 +270,22 @@ public class FlowDocTest extends AbstractJavaTest {
       return c;
     });
     //#flow-mat-combine
+  }
+
+  @Test
+  public void sourcePreMaterialization() {
+    //#source-prematerialization
+    Source<String, ActorRef> matValuePoweredSource =
+        Source.actorRef(100, OverflowStrategy.fail());
+
+    Pair<ActorRef, Source<String, NotUsed>> actorRefSourcePair =
+        matValuePoweredSource.preMaterialize(mat);
+
+    actorRefSourcePair.first().tell("Hello!", ActorRef.noSender());
+
+    // pass source around for materialization
+    actorRefSourcePair.second().runWith(Sink.foreach(System.out::println), mat);
+    //#source-prematerialization
   }
 
   public void fusingAndAsync() {

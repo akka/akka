@@ -5,7 +5,7 @@ package docs.stream
 
 import akka.{ Done, NotUsed }
 import akka.actor.{ Actor, ActorSystem, Cancellable }
-import akka.stream.{ ActorMaterializer, ClosedShape, FlowShape, Materializer }
+import akka.stream.{ ActorMaterializer, ClosedShape, FlowShape, Materializer, OverflowStrategy }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
@@ -229,6 +229,20 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
       .map(_ * 2)
       .to(Sink.ignore)
     //#flow-async
+  }
+
+  "source pre-materialization" in {
+    //#source-prematerialization
+    val matValuePoweredSource =
+      Source.actorRef[String](bufferSize = 100, overflowStrategy = OverflowStrategy.fail)
+
+    val (actorRef, source) = matValuePoweredSource.preMaterialize()
+
+    actorRef ! "Hello!"
+
+    // pass source around for materialization
+    source.runWith(Sink.foreach(println))
+    //#source-prematerialization
   }
 }
 

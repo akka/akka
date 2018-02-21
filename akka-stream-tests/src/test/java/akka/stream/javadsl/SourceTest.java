@@ -884,4 +884,9 @@ public class SourceTest extends StreamTest {
     final Source<Integer, NotUsed> f = Source.<Integer>empty().divertTo(Sink.ignore(), e -> true);
     final Source<Integer, String> f2 = Source.<Integer>empty().divertToMat(Sink.ignore(), e -> true, (i, n) -> "foo");
   }
+
+  @Test
+  public void mustBeAbleToUsePreMaterialize() {
+    final Pair<NotUsed, Source<Integer, NotUsed>> p = Source.<Integer>empty().preMaterialize(materializer);
+  }
 }
