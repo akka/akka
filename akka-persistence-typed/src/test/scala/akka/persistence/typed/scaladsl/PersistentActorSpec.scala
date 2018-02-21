@@ -148,11 +148,9 @@ object PersistentActorSpec {
 
 class PersistentActorSpec extends ActorTestKit with Eventually with TypedAkkaSpecWithShutdown {
 
-  override val config = PersistentActorSpec.config
+  override def config = PersistentActorSpec.config
 
   import PersistentActorSpec._
-
-  implicit val testSettings = TestKitSettings(system)
 
   "A typed persistent actor" must {
 
