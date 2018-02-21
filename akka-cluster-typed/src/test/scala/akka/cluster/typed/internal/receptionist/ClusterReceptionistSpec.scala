@@ -118,7 +118,7 @@ class ClusterReceptionistSpec extends TestKit("ClusterReceptionistSpec", Cluster
       system.receptionist ! Register(PingKey, service, regProbe.ref)
       regProbe.expectMessage(Registered(PingKey, service))
 
-      val Listing(PingKey, remoteServiceRefs) = regProbe2.expectMessageType[Listing[PingProtocol]]
+      val PingKey.Listing(remoteServiceRefs) = regProbe2.expectMessageType[Listing]
       val theRef = remoteServiceRefs.head
       theRef ! Ping(regProbe2.ref)
       regProbe2.expectMessage(Pong)
