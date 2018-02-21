@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 public class ActorContextAskTest extends JUnitSuite {
 
   @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource(ActorContextAskTest.class, AkkaSpec.testConf());
+  public static final TestKitJunitResource testKit = new TestKitJunitResource(AkkaSpec.testConf());
 
   static class Ping {
     final ActorRef<Pong> respondTo;

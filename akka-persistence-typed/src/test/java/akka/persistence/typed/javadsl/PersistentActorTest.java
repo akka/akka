@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class PersistentActorTest {
 
   @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource(PersistentActorTest.class, PersistentActorSpec$.MODULE$.config());
+  public static final TestKitJunitResource testKit = new TestKitJunitResource(PersistentActorSpec$.MODULE$.config());
 
   static final Incremented timeoutEvent = new Incremented(100);
   static final State emptyState = new State(0, Collections.emptyList());

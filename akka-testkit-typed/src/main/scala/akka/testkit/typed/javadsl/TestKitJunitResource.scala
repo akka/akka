@@ -21,7 +21,7 @@ import org.junit.rules.ExternalResource
  * {{{
  * public class MyActorTest {
  *   @ClassRule
- *   public static final TestKitResource testKit = new TestKitResource(MyActorTest.class);
+ *   public static final TestKitResource testKit = new TestKitResource();
  *
  *   @Test
  *   public void testBlah() throws Exception {
@@ -34,6 +34,8 @@ import org.junit.rules.ExternalResource
 class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
 
   def this() = this(ActorTestKit.create(classOf[TestKitJunitResource]))
+  def this(customConfig: Config) = this(ActorTestKit.create(classOf[TestKitJunitResource], customConfig))
+
   def this(testClass: Class[_]) = this(ActorTestKit.create())
   def this(testClass: Class[_], customConfig: Config) = this(ActorTestKit.create(testClass, customConfig))
 

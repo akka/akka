@@ -23,7 +23,7 @@ import static akka.actor.typed.javadsl.Behaviors.*;
 public class WatchTest extends JUnitSuite {
 
   @ClassRule
-  public static TestKitJunitResource testKit = new TestKitJunitResource(WatchTest.class);
+  public static TestKitJunitResource testKit = new TestKitJunitResource();
 
   interface Message { }
 

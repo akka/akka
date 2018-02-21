@@ -22,7 +22,6 @@ public class ActorLoggingTest extends JUnitSuite {
 
   @ClassRule
   public static final TestKitJunitResource testKit = new TestKitJunitResource(
-    ActorLoggingTest.class,
     ConfigFactory.parseString(
     "akka.loglevel = INFO\n" +
       "akka.loggers = [\"akka.testkit.TestEventListener\"]"

@@ -22,9 +22,7 @@ import akka.testkit.typed.javadsl.TestProbe;
 public class ManualTimerExampleTest extends JUnitSuite {
 
   @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource(
-    ManualTimerExampleTest.class,
-    ManualTime.config());
+  public static final TestKitJunitResource testKit = new TestKitJunitResource(ManualTime.config());
 
   private final ManualTime manualTime = ManualTime.get(testKit.system());
 
