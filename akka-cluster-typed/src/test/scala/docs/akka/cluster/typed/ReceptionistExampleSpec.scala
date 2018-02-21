@@ -14,19 +14,20 @@ import org.scalatest.WordSpec
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable.Set
+import scala.reflect.ClassTag
 
 object RandomRouter {
 
-  def router[T](serviceKey: ServiceKey[T]): Behavior[T] =
+  def router[T: ClassTag](serviceKey: ServiceKey[T]): Behavior[T] =
     Behaviors.setup[Any] { ctx ⇒
       ctx.system.receptionist ! Receptionist.Subscribe(serviceKey, ctx.self)
 
       def routingBehavior(routees: Vector[ActorRef[T]]): Behavior[Any] =
         Behaviors.immutable { (_, msg) ⇒
           msg match {
-            case Listing(_, services: Set[ActorRef[T]]) ⇒
+            case serviceKey.Listing(services) ⇒
               routingBehavior(services.toVector)
-            case other: T @unchecked ⇒
+            case other: T ⇒
               if (routees.isEmpty)
                 Behaviors.unhandled
               else {
@@ -57,7 +58,7 @@ object RandomRouter {
       def routingBehavior(routees: Vector[ActorRef[T]], unreachable: Set[Address]): Behavior[Any] =
         Behaviors.immutable { (_, msg) ⇒
           msg match {
-            case Listing(_, services: Set[ActorRef[T]]) ⇒
+            case serviceKey.Listing(services: Set[ActorRef[T]]) ⇒
               routingBehavior(services.toVector, unreachable)
             case WrappedReachabilityEvent(event) ⇒ event match {
               case UnreachableMember(m) ⇒
@@ -94,7 +95,7 @@ object PingPongExample {
 
   val pingService: Behavior[Ping] =
     Behaviors.setup { ctx ⇒
-      ctx.system.receptionist ! Receptionist.Register(PingServiceKey, ctx.self, ctx.system.deadLetters)
+      ctx.system.receptionist ! Receptionist.Register(PingServiceKey, ctx.self)
       Behaviors.immutable[Ping] { (_, msg) ⇒
         msg match {
           case Ping(replyTo) ⇒
@@ -116,12 +117,12 @@ object PingPongExample {
   //#pinger
 
   //#pinger-guardian
-  val guardian: Behavior[Listing[Ping]] = Behaviors.setup { ctx ⇒
+  val guardian: Behavior[Nothing] = Behaviors.setup[Listing] { ctx ⇒
     ctx.system.receptionist ! Receptionist.Subscribe(PingServiceKey, ctx.self)
     val ps = ctx.spawnAnonymous(pingService)
     ctx.watch(ps)
-    Behaviors.immutablePartial[Listing[Ping]] {
-      case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty ⇒
+    Behaviors.immutablePartial[Listing] {
+      case (_, PingServiceKey.Listing(listings)) if listings.nonEmpty ⇒
         listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
         Behaviors.same
     } onSignal {
@@ -129,15 +130,15 @@ object PingPongExample {
         println("Ping service has shut down")
         Behaviors.stopped
     }
-  }
+  }.narrow
   //#pinger-guardian
 
   //#pinger-guardian-pinger-service
-  val guardianJustPingService: Behavior[Listing[Ping]] = Behaviors.setup { ctx ⇒
+  val guardianJustPingService: Behavior[Nothing] = Behaviors.setup[Listing] { ctx ⇒
     val ps = ctx.spawnAnonymous(pingService)
     ctx.watch(ps)
-    Behaviors.immutablePartial[Listing[Ping]] {
-      case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty ⇒
+    Behaviors.immutablePartial[Listing] {
+      case (c, PingServiceKey.Listing(listings)) if listings.nonEmpty ⇒
         listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
         Behaviors.same
     } onSignal {
@@ -145,18 +146,18 @@ object PingPongExample {
         println("Ping service has shut down")
         Behaviors.stopped
     }
-  }
+  }.narrow
   //#pinger-guardian-pinger-service
 
   //#pinger-guardian-just-pinger
-  val guardianJustPinger: Behavior[Listing[Ping]] = Behaviors.setup { ctx ⇒
+  val guardianJustPinger: Behavior[Nothing] = Behaviors.setup[Listing] { ctx ⇒
     ctx.system.receptionist ! Receptionist.Subscribe(PingServiceKey, ctx.self)
-    Behaviors.immutablePartial[Listing[Ping]] {
-      case (c, Listing(PingServiceKey, listings)) if listings.nonEmpty ⇒
+    Behaviors.immutablePartial[Listing] {
+      case (c, PingServiceKey.Listing(listings)) if listings.nonEmpty ⇒
         listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
         Behaviors.same
     }
-  }
+  }.narrow
   //#pinger-guardian-just-pinger
 
 }
@@ -190,15 +191,15 @@ class ReceptionistExampleSpec extends WordSpec with ScalaFutures {
 
   "A local basic example" must {
     "show register" in {
-      val system = ActorSystem(guardian, "PingPongExample")
+      val system = ActorSystem[Nothing](guardian, "PingPongExample")
       system.whenTerminated.futureValue
     }
   }
 
   "A remote basic example" must {
     "show register" in {
-      val system1 = ActorSystem(guardianJustPingService, "PingPongExample", clusterConfig)
-      val system2 = ActorSystem(guardianJustPinger, "PingPongExample", clusterConfig)
+      val system1 = ActorSystem[Nothing](guardianJustPingService, "PingPongExample", clusterConfig)
+      val system2 = ActorSystem[Nothing](guardianJustPinger, "PingPongExample", clusterConfig)
 
       val cluster1 = Cluster(system1)
       val cluster2 = Cluster(system2)
