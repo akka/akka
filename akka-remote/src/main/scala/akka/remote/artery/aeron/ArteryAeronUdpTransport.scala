@@ -24,6 +24,7 @@ import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransportException
 import akka.remote.artery.compress._
 import akka.stream.KillSwitches
+import akka.stream.SharedKillSwitch
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
@@ -72,12 +73,12 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     startMediaDriver()
     startAeron()
     startAeronErrorLog()
-    topLevelFREvents.loFreq(Transport_AeronErrorLogStarted, NoMetaData)
+    topLevelFlightRecorder.loFreq(Transport_AeronErrorLogStarted, NoMetaData)
     if (settings.LogAeronCounters) {
       startAeronCounterLog()
     }
     taskRunner.start()
-    topLevelFREvents.loFreq(Transport_TaskRunnerStarted, NoMetaData)
+    topLevelFlightRecorder.loFreq(Transport_TaskRunnerStarted, NoMetaData)
   }
 
   private def startMediaDriver(): Unit = {
@@ -119,7 +120,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
       val driver = MediaDriver.launchEmbedded(driverContext)
       log.info("Started embedded media driver in directory [{}]", driver.aeronDirectoryName)
-      topLevelFREvents.loFreq(Transport_MediaDriverStarted, driver.aeronDirectoryName())
+      topLevelFlightRecorder.loFreq(Transport_MediaDriverStarted, driver.aeronDirectoryName())
       if (!mediaDriver.compareAndSet(None, Some(driver))) {
         throw new IllegalStateException("media driver started more than once")
       }
@@ -145,7 +146,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       try {
         if (settings.Advanced.DeleteAeronDirectory) {
           IoUtil.delete(new File(driver.aeronDirectoryName), false)
-          topLevelFREvents.loFreq(Transport_MediaFileDeleted, NoMetaData)
+          topLevelFlightRecorder.loFreq(Transport_MediaFileDeleted, NoMetaData)
         }
       } catch {
         case NonFatal(e) ⇒
@@ -285,11 +286,17 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     }
   }
 
-  override protected def outboundTransportSink(outboundContext: OutboundContext, streamId: Int,
-                                               bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
+  override protected def outboundTransportSink(
+    outboundContext: OutboundContext,
+    streamId:        Int,
+    bufferPool:      EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
     val giveUpAfter =
       if (streamId == ControlStreamId) settings.Advanced.GiveUpSystemMessageAfter
       else settings.Advanced.GiveUpMessageAfter
+    // TODO: Note that the AssociationState.controlStreamIdleKillSwitch in control stream is not used for the
+    // Aeron transport. Would be difficult to handle the Future[Done] materialized value.
+    // If we want to stop for Aeron also it is probably easier to stop the publication inside the
+    // AeronSink, i.e. not using a KillSwitch.
     Sink.fromGraph(new AeronSink(outboundChannel(outboundContext.remoteAddress), streamId, aeron, taskRunner,
       bufferPool, giveUpAfter, createFlightRecorderEventSink()))
   }
@@ -395,10 +402,10 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   override protected def shutdownTransport(): Future[Done] = {
     import system.dispatcher
     taskRunner.stop().map { _ ⇒
-      topLevelFREvents.loFreq(Transport_Stopped, NoMetaData)
+      topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
       if (aeronErrorLogTask != null) {
         aeronErrorLogTask.cancel()
-        topLevelFREvents.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
+        topLevelFlightRecorder.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
       }
       if (aeron != null) aeron.close()
       if (aeronErrorLog != null) aeronErrorLog.close()

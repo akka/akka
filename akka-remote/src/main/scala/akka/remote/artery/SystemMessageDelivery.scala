@@ -31,7 +31,6 @@ import scala.util.control.NoStackTrace
  * INTERNAL API
  */
 private[remote] object SystemMessageDelivery {
-  // FIXME serialization of these messages
   final case class SystemMessageEnvelope(message: AnyRef, seqNo: Long, ackReplyTo: UniqueAddress) extends ArteryMessage
   final case class Ack(seqNo: Long, from: UniqueAddress) extends Reply
   final case class Nack(seqNo: Long, from: UniqueAddress) extends Reply
@@ -89,19 +88,14 @@ private[remote] class SystemMessageDelivery(
               pull(in) // onPull from downstream already called
           }.invoke
         }
-
-        outboundContext.controlSubject.stopped.onComplete {
-          getAsyncCallback[Try[Done]] {
-            case Success(_)     ⇒ completeStage()
-            case Failure(cause) ⇒ failStage(cause)
-          }.invoke
-        }
       }
 
       override def postStop(): Unit = {
-        // TODO quarantine will currently always be done when control stream is terminated, see issue #21359
+        val pendingCount = unacknowledged.size
         sendUnacknowledgedToDeadLetters()
         unacknowledged.clear()
+        if (pendingCount > 0)
+          outboundContext.quarantine(s"SystemMessageDelivery stopped with [$pendingCount] pending system messages.")
         outboundContext.controlSubject.detach(this)
       }
 
@@ -131,6 +125,14 @@ private[remote] class SystemMessageDelivery(
           case nack: Nack ⇒ if (nack.from.address == remoteAddress) nackCallback.invoke(nack)
           case _          ⇒ // not interested
         }
+      }
+
+      // ControlMessageObserver, external call
+      override def controlSubjectCompleted(signal: Try[Done]): Unit = {
+        getAsyncCallback[Try[Done]] {
+          case Success(_)     ⇒ completeStage()
+          case Failure(cause) ⇒ failStage(cause)
+        }.invoke(signal)
       }
 
       private val ackCallback = getAsyncCallback[Ack] { reply ⇒
