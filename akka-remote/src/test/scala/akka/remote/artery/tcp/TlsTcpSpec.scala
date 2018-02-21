@@ -159,6 +159,11 @@ class TlsTcpWithHostnameVerificationSpec extends ArteryMultiNodeSpec(
 
   "Artery with TLS/TCP and hostname-verification=on" must {
     "reject invalid" in {
+      // this test only makes sense with tls-tcp transport
+      val arterySettings = ArterySettings(system.settings.config.getConfig("akka.remote.artery"))
+      if (!arterySettings.Enabled || arterySettings.Transport != ArterySettings.TlsTcp)
+        pending
+
       systemB.actorOf(TestActors.echoActorProps, "echo")
       system.actorSelection(rootB / "user" / "echo") ! Identify("echo")
       expectNoMessage(2.seconds)
