@@ -3,6 +3,8 @@
  */
 package akka.actor.typed.internal.receptionist
 
+import akka.actor.Address
+import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -37,16 +39,16 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
    * Interface to allow plugging of external service discovery infrastructure in to the existing receptionist API.
    */
   trait ExternalInterface[State] {
-    def onRegister[T](key: ServiceKey[T], address: ActorRef[T]): Unit
-    def onUnregister[T](key: ServiceKey[T], address: ActorRef[T]): Unit
+    def onRegister[T](key: ServiceKey[T], ref: ActorRef[T]): Unit
+    def onUnregister[T](key: ServiceKey[T], ref: ActorRef[T]): Unit
     def onExternalUpdate(update: State)
 
     final case class RegistrationsChangedExternally(changes: Map[AbstractServiceKey, Set[ActorRef[_]]], state: State) extends ReceptionistInternalCommand
   }
 
   object LocalExternalInterface extends ExternalInterface[LocalServiceRegistry] {
-    def onRegister[T](key: ServiceKey[T], address: ActorRef[T]): Unit = ()
-    def onUnregister[T](key: ServiceKey[T], address: ActorRef[T]): Unit = ()
+    def onRegister[T](key: ServiceKey[T], ref: ActorRef[T]): Unit = ()
+    def onUnregister[T](key: ServiceKey[T], ref: ActorRef[T]): Unit = ()
     def onExternalUpdate(update: LocalServiceRegistry): Unit = ()
   }
 
@@ -60,8 +62,12 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
   }
 
   sealed abstract class ReceptionistInternalCommand extends InternalCommand
-  final case class RegisteredActorTerminated[T](key: ServiceKey[T], address: ActorRef[T]) extends ReceptionistInternalCommand
-  final case class SubscriberTerminated[T](key: ServiceKey[T], address: ActorRef[Listing[T]]) extends ReceptionistInternalCommand
+  final case class RegisteredActorTerminated[T](key: ServiceKey[T], ref: ActorRef[T]) extends ReceptionistInternalCommand
+  object NodesRemoved {
+    val empty = NodesRemoved(Set.empty)
+  }
+  final case class NodesRemoved(addresses: Set[Address]) extends ReceptionistInternalCommand
+  final case class SubscriberTerminated[T](key: ServiceKey[T], ref: ActorRef[Listing[T]]) extends ReceptionistInternalCommand
 
   type SubscriptionsKV[K <: AbstractServiceKey] = ActorRef[Listing[K#Protocol]]
   type SubscriptionRegistry = TypedMultiMap[AbstractServiceKey, SubscriptionsKV]
@@ -147,6 +153,44 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
           ctx.log.debug("Registered actor terminated: {} {}", key, serviceInstance)
           externalInterface.onUnregister(key, serviceInstance)
           updateRegistry(Set(key), _.removed(key)(serviceInstance))
+
+        case NodesRemoved(addresses) ⇒
+          if (addresses.isEmpty)
+            Behaviors.same
+          else {
+            import akka.actor.typed.scaladsl.adapter._
+            val localAddress = ctx.system.toUntyped.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+
+            def isOnRemovedNode(ref: ActorRef[_]): Boolean = {
+              if (ref.path.address.hasLocalScope) addresses(localAddress)
+              else addresses(ref.path.address)
+            }
+
+            var changedKeys = Set.empty[AbstractServiceKey]
+            val newRegistry: LocalServiceRegistry = {
+              serviceRegistry.keySet.foldLeft(serviceRegistry) {
+                case (reg, key) ⇒
+                  val values = reg.get(key)
+                  val newValues = values.filterNot(isOnRemovedNode)
+                  if (values.size == newValues.size) reg // no change
+                  else {
+                    changedKeys += key
+                    // FIXME: get rid of casts
+                    reg.setAll(key)(newValues.asInstanceOf[Set[ActorRef[key.Protocol]]])
+                  }
+              }
+            }
+
+            if (changedKeys.isEmpty)
+              Behaviors.same
+            else {
+              if (ctx.log.isDebugEnabled)
+                ctx.log.debug(
+                  "Node(s) [{}] removed, updated keys [{}]",
+                  addresses.mkString(","), changedKeys.map(_.asServiceKey.id).mkString(","))
+              updateRegistry(changedKeys, _ ⇒ newRegistry)
+            }
+          }
 
         case Subscribe(key, subscriber) ⇒
           watchWith(ctx, subscriber, SubscriberTerminated(key, subscriber))
