@@ -47,8 +47,7 @@ object ReceptionistApiSpec {
 
     Behaviors.setup[Any] { ctx ⇒
       // oneoff ask inside of actor, this should be a rare use case
-      // FIXME not good friends with type inference here (I think this is #24511)
-      ctx.ask(system.receptionist)((ref: ActorRef[Receptionist.Listing]) ⇒ Receptionist.Find(key, ref)) {
+      ctx.ask(system.receptionist)(Receptionist.Find(key)) {
         case Success(key.Listing(services)) ⇒ services // Set[ActorRef[String]] !!
         case _                              ⇒ "unexpected"
       }

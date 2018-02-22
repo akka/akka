@@ -52,8 +52,8 @@ object ServiceKey {
   /**
    * Scala API: Creates a service key. The given ID should uniquely define a service with a given protocol.
    */
-  def apply[T: ClassTag](id: String): ServiceKey[T] =
-    ReceptionistImpl.DefaultServiceKey(id, implicitly[ClassTag[T]].runtimeClass.getName)
+  def apply[T](id: String)(implicit classTag: ClassTag[T]): ServiceKey[T] =
+    ReceptionistImpl.DefaultServiceKey(id, classTag.runtimeClass.getName)
 
   /**
    * Java API: Creates a service key. The given ID should uniquely define a service with a given protocol.
@@ -209,8 +209,11 @@ object Receptionist extends ExtensionId[Receptionist] {
    * Confirmation that the given [[akka.actor.typed.ActorRef]] has been associated with the [[ServiceKey]].
    *
    * Can not be pattern matched from Scala, use [[ServiceKey.Registered]] instead
+   *
+   * Not for user extension
    */
-  trait Registered {
+  @DoNotInherit
+  sealed trait Registered {
 
     def isForKey(key: ServiceKey[_]): Boolean
 
@@ -279,6 +282,10 @@ object Receptionist extends ExtensionId[Receptionist] {
     def apply[T](key: ServiceKey[T], replyTo: ActorRef[Listing]): Command =
       new MessageImpls.Find(key, replyTo)
 
+    /**
+     * Special factory to make using Find with ask easier
+     */
+    def apply[T](key: ServiceKey[T]): ActorRef[Listing] ⇒ Command = ref ⇒ new MessageImpls.Find(key, ref)
   }
 
   /**
@@ -296,7 +303,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * Not for user extension.
    */
   @DoNotInherit
-  trait Listing {
+  sealed trait Listing {
     /** Scala API */
     def key: ServiceKey[_]
     /** Java API */
