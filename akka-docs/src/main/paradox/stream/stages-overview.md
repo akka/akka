@@ -201,6 +201,16 @@ Defers creation and materialization of a `Source` until there is demand.
 
 ---------------------------------------------------------------
 
+### lazilyAsync
+
+Defers creation and materialization of a `CompletionStage` until there is demand.
+
+**emits** the future completes
+
+**completes** after the future has completed
+
+---------------------------------------------------------------
+
 ### actorRef
 
 Materialize an `ActorRef`, sending messages to it will emit them on the stream. The actor contain
