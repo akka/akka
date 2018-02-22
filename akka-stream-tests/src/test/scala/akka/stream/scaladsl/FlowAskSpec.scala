@@ -114,6 +114,19 @@ class FlowAskSpec extends StreamSpec {
       c.expectNext(Reply(3))
       c.expectComplete()
     }
+    "produce asked elements (simple ask)" in assertAllStagesStopped {
+      val c = TestSubscriber.manualProbe[Reply]()
+      implicit val ec = system.dispatcher
+      val p = Source(1 to 3).ask[Reply](replyOnInts).runWith(Sink.fromSubscriber(c))
+      val sub = c.expectSubscription()
+      sub.request(2)
+      c.expectNext(Reply(1))
+      c.expectNext(Reply(2))
+      c.expectNoMessage(200.millis)
+      sub.request(2)
+      c.expectNext(Reply(3))
+      c.expectComplete()
+    }
     "produce asked elements, when replies are akka.actor.Status.Success" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Reply]()
       implicit val ec = system.dispatcher
