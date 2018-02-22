@@ -34,7 +34,7 @@ class StartStopActor1 extends AbstractActor {
   @Override
   public void preStart() {
     System.out.println("first started");
-    getContext().actorOf(Props.create(StartStopActor2.class), "second");
+    getContext().actorOf(Props.create(() -> new StartStopActor2()), "second");
   }
 
   @Override
@@ -75,7 +75,7 @@ class StartStopActor2 extends AbstractActor {
 
 //#supervise
 class SupervisingActor extends AbstractActor {
-  ActorRef child = getContext().actorOf(Props.create(SupervisedActor.class), "supervised-actor");
+  ActorRef child = getContext().actorOf(Props.create(() -> new SupervisedActor()), "supervised-actor");
 
   @Override
   public Receive createReceive() {
@@ -115,7 +115,7 @@ public class ActorHierarchyExperiments {
   public static void main(String[] args) throws java.io.IOException {
     ActorSystem system = ActorSystem.create("testSystem");
 
-    ActorRef firstRef = system.actorOf(Props.create(PrintMyActorRefActor.class), "first-actor");
+    ActorRef firstRef = system.actorOf(Props.create(() -> new PrintMyActorRefActor()), "first-actor");
     System.out.println("First: " + firstRef);
     firstRef.tell("printit", ActorRef.noSender());
 
