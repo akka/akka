@@ -9,8 +9,7 @@ import java.nio.file.{ OpenOption, Path }
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.SinkModule
-import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
-import akka.stream.ActorAttributes.Dispatcher
+import akka.stream.ActorAttributes.resolveDispatcher
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -34,12 +33,8 @@ import scala.concurrent.{ Future, Promise }
     val ioResultPromise = Promise[IOResult]()
     val props = FileSubscriber.props(f, ioResultPromise, maxInputBufferSize, startPosition, options)
 
-    val dispatcher = context.effectiveAttributes.mandatoryAttribute[Dispatcher] match {
-      case IODispatcher     ⇒ ActorMaterializerHelper.downcast(context.materializer).settings.blockingIoDispatcher
-      case Dispatcher(name) ⇒ name
-    }
+    val ref = materializer.actorOf(context, props.withDispatcher(resolveDispatcher(context)))
 
-    val ref = materializer.actorOf(context, props.withDispatcher(dispatcher))
     (akka.stream.actor.ActorSubscriber[ByteString](ref), ioResultPromise.future)
   }
 
@@ -65,12 +60,9 @@ import scala.concurrent.{ Future, Promise }
 
     val maxInputBufferSize = context.effectiveAttributes.mandatoryAttribute[Attributes.InputBuffer].max
 
-    val dispatcher = context.effectiveAttributes.mandatoryAttribute[Dispatcher] match {
-      case IODispatcher     ⇒ ActorMaterializerHelper.downcast(context.materializer).settings.blockingIoDispatcher
-      case Dispatcher(name) ⇒ name
-    }
-
-    val props = OutputStreamSubscriber.props(os, ioResultPromise, maxInputBufferSize, autoFlush).withDispatcher(dispatcher)
+    val props = OutputStreamSubscriber
+      .props(os, ioResultPromise, maxInputBufferSize, autoFlush)
+      .withDispatcher(resolveDispatcher(context))
 
     val ref = materializer.actorOf(context, props)
     (akka.stream.actor.ActorSubscriber[ByteString](ref), ioResultPromise.future)
