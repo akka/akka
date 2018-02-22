@@ -1,14 +1,13 @@
-package docs.akka.typed.testing.sync
+package akka.testkit.typed.scaladsl
 
 //#imports
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
-import akka.testkit.typed._
-import akka.testkit.typed.Effect._
+import akka.testkit.typed.scaladsl.Effects._
 //#imports
 import org.scalatest.{ Matchers, WordSpec }
 
-object BasicSyncTestingSpec {
+object SyncTestingExampleSpec {
   //#child
   val childActor = Behaviors.immutable[String] { (_, _) ⇒
     Behaviors.same[String]
@@ -46,15 +45,15 @@ object BasicSyncTestingSpec {
 
 }
 
-class BasicSyncTestingSpec extends WordSpec with Matchers {
+class SyncTestingExampleSpec extends WordSpec with Matchers {
 
-  import BasicSyncTestingSpec._
+  import SyncTestingExampleSpec._
 
   "Typed actor synchronous testing" must {
 
     "record spawning" in {
       //#test-child
-      val testKit = BehaviorTestkit(myBehavior)
+      val testKit = BehaviorTestKit(myBehavior)
       testKit.run(CreateChild("child"))
       testKit.expectEffect(Spawned(childActor, "child"))
       //#test-child
@@ -62,7 +61,7 @@ class BasicSyncTestingSpec extends WordSpec with Matchers {
 
     "record spawning anonymous" in {
       //#test-anonymous-child
-      val testKit = BehaviorTestkit(myBehavior)
+      val testKit = BehaviorTestKit(myBehavior)
       testKit.run(CreateAnonymousChild)
       testKit.expectEffect(SpawnedAnonymous(childActor))
       //#test-anonymous-child
@@ -70,29 +69,29 @@ class BasicSyncTestingSpec extends WordSpec with Matchers {
 
     "record message sends" in {
       //#test-message
-      val testKit = BehaviorTestkit(myBehavior)
+      val testKit = BehaviorTestKit(myBehavior)
       val inbox = TestInbox[String]()
       testKit.run(SayHello(inbox.ref))
-      inbox.expectMsg("hello")
+      inbox.expectMessage("hello")
       //#test-message
     }
 
     "send a message to a spawned child" in {
       //#test-child-message
-      val testKit = BehaviorTestkit(myBehavior)
+      val testKit = BehaviorTestKit(myBehavior)
       testKit.run(SayHelloToChild("child"))
       val childInbox = testKit.childInbox[String]("child")
-      childInbox.expectMsg("hello")
+      childInbox.expectMessage("hello")
       //#test-child-message
     }
 
     "send a message to an anonymous spawned child" in {
       //#test-child-message-anonymous
-      val testKit = BehaviorTestkit(myBehavior)
+      val testKit = BehaviorTestKit(myBehavior)
       testKit.run(SayHelloToAnonymousChild)
       // Anonymous actors are created as: $a $b etc
       val childInbox = testKit.childInbox[String](s"$$a")
-      childInbox.expectMsg("hello stranger")
+      childInbox.expectMessage("hello stranger")
       //#test-child-message-anonymous
     }
   }

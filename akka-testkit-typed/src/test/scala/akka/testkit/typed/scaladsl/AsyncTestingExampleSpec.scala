@@ -1,12 +1,10 @@
-package docs.akka.typed.testing.async
+package akka.testkit.typed.scaladsl
 
-import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed._
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl._
-import org.scalatest._
+import akka.actor.typed.scaladsl.Behaviors
+import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 
-object BasicAsyncTestingSpec {
+object AsyncTestingExampleSpec {
   //#under-test
   case class Ping(msg: String, response: ActorRef[Pong])
   case class Pong(msg: String)
@@ -22,11 +20,10 @@ object BasicAsyncTestingSpec {
 }
 
 //#test-header
-class BasicAsyncTestingSpec extends TestKit("BasicTestingSpec")
-  with WordSpecLike with BeforeAndAfterAll {
+class AsyncTestingExampleSpec extends WordSpec with ActorTestKit with BeforeAndAfterAll {
   //#test-header
 
-  import BasicAsyncTestingSpec._
+  import AsyncTestingExampleSpec._
 
   "A testkit" must {
     "support verifying a response" in {
@@ -49,6 +46,6 @@ class BasicAsyncTestingSpec extends TestKit("BasicTestingSpec")
   }
 
   //#test-shutdown
-  override def afterAll(): Unit = shutdown()
+  override def afterAll(): Unit = shutdownTestKit()
   //#test-shutdown
 }

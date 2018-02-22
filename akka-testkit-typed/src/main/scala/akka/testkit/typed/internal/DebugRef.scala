@@ -1,11 +1,12 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
  */
-package akka.actor.typed
-package internal
+package akka.testkit.typed.internal
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
+import akka.actor.typed.ActorRef
+import akka.actor.typed.internal.{ ActorRefImpl, SystemMessage }
 import akka.annotation.InternalApi
 import akka.{ actor ⇒ a }
 
@@ -14,7 +15,7 @@ import scala.annotation.tailrec
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class DebugRef[T](override val path: a.ActorPath, override val isLocal: Boolean)
+@InternalApi private[akka] final class DebugRef[T](override val path: a.ActorPath, override val isLocal: Boolean)
   extends ActorRef[T] with ActorRefImpl[T] {
 
   private val q = new ConcurrentLinkedQueue[Either[SystemMessage, T]]

@@ -65,7 +65,6 @@ object Dependencies {
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.6.0" // ApacheV2, OpenLDAP Public License
 
-    // For akka-http-testkit-java
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
     // For Java 8 Conversions
@@ -118,6 +117,8 @@ object Dependencies {
 
       val levelDB = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided" // ApacheV2
       val levelDBNative = "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % "optional;provided" // New BSD
+
+      val junit = Compile.junit % "optional;provided;test"
     }
 
   }
@@ -132,6 +133,8 @@ object Dependencies {
 
   val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath,
     Test.mockito, Test.scalacheck.value, Test.jimfs)
+
+  val typedTestkit = l ++= Seq(Provided.junit)
 
   val remote = l ++= Seq(netty, aeronDriver, aeronClient, Test.junit, Test.scalatest.value, Test.jimfs)
 

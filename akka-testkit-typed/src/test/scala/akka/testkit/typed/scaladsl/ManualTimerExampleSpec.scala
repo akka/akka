@@ -1,16 +1,16 @@
-package akka.actor.typed
+package akka.testkit.typed.scaladsl
 
 //#manual-scheduling-simple
-import scala.concurrent.duration._
-
 import akka.actor.typed.scaladsl.Behaviors
-
 import org.scalatest.WordSpecLike
 
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.{ ManualTime, TestProbe }
+import scala.concurrent.duration._
 
-class ManualTimerSpec extends TestKit(ManualTime.config) with ManualTime with WordSpecLike {
+class ManualTimerExampleSpec extends AbstractActorSpec {
+
+  override def config = ManualTime.config
+
+  val manualTime = ManualTime()
 
   "A timer" must {
     "schedule non-repeated ticks" in {
@@ -28,12 +28,12 @@ class ManualTimerSpec extends TestKit(ManualTime.config) with ManualTime with Wo
 
       spawn(behavior)
 
-      scheduler.expectNoMessageFor(9.millis, probe)
+      manualTime.expectNoMessageFor(9.millis, probe)
 
-      scheduler.timePasses(2.millis)
+      manualTime.timePasses(2.millis)
       probe.expectMessage(Tock)
 
-      scheduler.expectNoMessageFor(10.seconds, probe)
+      manualTime.expectNoMessageFor(10.seconds, probe)
     }
     //#manual-scheduling-simple
 
@@ -53,9 +53,9 @@ class ManualTimerSpec extends TestKit(ManualTime.config) with ManualTime with Wo
       spawn(behavior)
 
       for (_ ← Range(0, 5)) {
-        scheduler.expectNoMessageFor(9.millis, probe)
+        manualTime.expectNoMessageFor(9.millis, probe)
 
-        scheduler.timePasses(1.milli)
+        manualTime.timePasses(1.milli)
         probe.expectMessage(Tock)
       }
     }
@@ -78,7 +78,7 @@ class ManualTimerSpec extends TestKit(ManualTime.config) with ManualTime with Wo
               probe.ref ! Tock(n)
               Behaviors.same
             case SlowThenBump(nextCount) ⇒
-              scheduler.timePasses(interval)
+              manualTime.timePasses(interval)
               timer.startPeriodicTimer("T", Tick(nextCount), interval)
               Behaviors.same
           }
@@ -87,14 +87,14 @@ class ManualTimerSpec extends TestKit(ManualTime.config) with ManualTime with Wo
 
       val ref = spawn(behavior)
 
-      scheduler.timePasses(11.millis)
+      manualTime.timePasses(11.millis)
       probe.expectMessage(Tock(1))
 
       // next Tock(1) enqueued in mailboxed, but should be discarded because of new timer
       ref ! SlowThenBump(2)
-      scheduler.expectNoMessageFor(interval, probe)
+      manualTime.expectNoMessageFor(interval, probe)
 
-      scheduler.timePasses(interval)
+      manualTime.timePasses(interval)
       probe.expectMessage(Tock(2))
     }
 
