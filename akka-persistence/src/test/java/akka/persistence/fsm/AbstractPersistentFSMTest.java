@@ -24,6 +24,8 @@ import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 
+import static akka.persistence.fsm.PersistentFSM.FSMState;
+
 import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.UserState;
 import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.ShoppingCart;
 import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.Item;
@@ -588,5 +590,58 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             throw new RuntimeException("Unhandled");
         }
         //#customer-apply-event
+    }
+
+    enum PFSMState implements FSMState {
+
+        STARTED;
+
+        @Override
+        public String identifier() {
+            return this.name();
+        }
+    }
+
+    public static class PFSMwithLog extends AbstractPersistentFSM<PFSMState, Integer, Integer> {
+        {
+            startWith(PFSMState.STARTED, 0);
+
+            when(PFSMState.STARTED,
+                    matchEvent(String.class, (command, currentData) -> {
+                        sender().tell("started", getSelf());
+                        return stay();
+                    })
+            );
+
+            onTransition(this::transitionLogger); // this is tested command
+        }
+
+        private void transitionLogger(PFSMState from, PFSMState to) {
+            System.out.println("transition from " + from + " to " + to);
+        }
+
+        @Override
+        public Class<Integer> domainEventClass() {
+            return Integer.class;
+        }
+
+        @Override
+        public Integer applyEvent(final Integer domainEvent, final Integer currentData) {
+            return 0;
+        }
+
+        @Override
+        public String persistenceId() {
+            return "id";
+        }
+    }
+
+    @Test
+    public void testCreationOfActorCallingOnTransitionWithVoidFunction() {
+        new TestKit(system) {{
+            ActorRef persistentActor = system.actorOf(Props.create(PFSMwithLog.class));
+            persistentActor.tell("check", getRef());
+            expectMsg(duration("1000 millis"), "started");
+        }};
     }
 }
