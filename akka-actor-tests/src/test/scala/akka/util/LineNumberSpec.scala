@@ -40,6 +40,10 @@ class LineNumberSpec extends AkkaSpec {
         LineNumbers(partial) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 19, 21))
       }
 
+      "work for `def`" in {
+        LineNumbers(method("foo")) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 24, 26))
+      }
+
     }
 
     "writing Java" must {
@@ -47,12 +51,12 @@ class LineNumberSpec extends AkkaSpec {
 
       "work for small functions" in {
         // because how java Lambdas are implemented/designed
-        LineNumbers(l.f1()) should ===(NoSourceInfo)
+        LineNumbers(l.f1()) should ===(SourceFileLines("LineNumberSpecCodeForJava.java", 19, 19))
       }
 
       "work for larger functions" in {
         // because how java Lambdas are implemented/designed
-        LineNumbers(l.f2()) should ===(NoSourceInfo)
+        LineNumbers(l.f2()) should ===(SourceFileLines("LineNumberSpecCodeForJava.java", 24, 25))
       }
 
       "work for anonymous classes" in {
