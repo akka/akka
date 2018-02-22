@@ -6,12 +6,14 @@ package akka.stream.scaladsl
 import java.util.Optional
 import java.util.concurrent.{ CompletableFuture, CompletionStage, TimeUnit }
 
+import akka.actor.ActorSystem
 import akka.{ Done, NotUsed }
 import akka.stream.Attributes._
 import akka.stream._
 import akka.stream.javadsl
 import akka.stream.stage._
 import akka.stream.testkit._
+import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
 
 object AttributesSpec {
@@ -76,10 +78,12 @@ object AttributesSpec {
     }
   }
 
-  class ThreadNameSnitchingStage(initialDispatcher: String) extends GraphStage[SourceShape[String]] {
+  class ThreadNameSnitchingStage(initialDispatcher: Option[String]) extends GraphStage[SourceShape[String]] {
+    def this(initialDispatcher: String) = this(Some(initialDispatcher))
     val out = Outlet[String]("out")
     override val shape = SourceShape.of(out)
-    override protected def initialAttributes: Attributes = ActorAttributes.dispatcher(initialDispatcher)
+    override protected def initialAttributes: Attributes =
+      initialDispatcher.fold(Attributes.none)(name ⇒ ActorAttributes.dispatcher(name))
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       setHandler(out, new OutHandler {
         def onPull(): Unit = {
@@ -105,7 +109,10 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
       }
       throughput = 1
     }
-  """).withFallback(Utils.UnboundedMailboxConfig)) {
+  """)
+  // we need to revert to the regular mailbox or else the test suite will complain
+  // about using non-test worthy dispatchers
+  .withFallback(Utils.UnboundedMailboxConfig)) {
 
   import AttributesSpec._
 
@@ -491,4 +498,69 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     }
 
   }
+
+  "the default dispatcher attributes" must {
+
+    val config = ConfigFactory.parseString(s"""
+        my-dispatcher {
+          type = Dispatcher
+          executor = "thread-pool-executor"
+          thread-pool-executor {
+            fixed-pool-size = 1
+          }
+          throughput = 1
+        }
+        my-io-dispatcher = $${my-dispatcher}
+        akka.stream.materializer.dispatcher = "my-dispatcher"
+        akka.stream.materializer.blocking-io-dispatcher = "my-io-dispatcher"
+      """)
+      // we need to revert to the regular mailbox or else the test suite will complain
+      // about using non-test worthy dispatchers
+      .withFallback(Utils.UnboundedMailboxConfig).resolve()
+
+    "allow for specifying a custom default dispatcher" in {
+
+      val system = ActorSystem("AttributesSpec-default-dispatcher-override", config)
+      try {
+
+        val mat = ActorMaterializer()(system)
+        val threadName =
+          Source.fromGraph(new ThreadNameSnitchingStage(None)).runWith(Sink.head)(mat)
+
+        threadName.futureValue should startWith("AttributesSpec-default-dispatcher-override-my-dispatcher-")
+
+      } finally {
+        TestKit.shutdownActorSystem(system)
+      }
+    }
+
+    "use the default-io-dispatcher by default" in {
+
+      val threadName =
+        Source.fromGraph(new ThreadNameSnitchingStage(None)
+          // FIXME surprising that we don't have something shorter than this
+          .addAttributes(Attributes.none and ActorAttributes.IODispatcher)).runWith(Sink.head)
+
+      threadName.futureValue should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
+    }
+
+    "allow for specifying a custom default io-dispatcher" in {
+
+      val system = ActorSystem("AttributesSpec-io-dispatcher-override", config)
+      try {
+
+        val mat = ActorMaterializer()(system)
+        val threadName =
+          Source.fromGraph(new ThreadNameSnitchingStage(None)
+            // FIXME surprising that we don't have something shorter than this
+            .addAttributes(Attributes.none and ActorAttributes.IODispatcher)).runWith(Sink.head)(mat)
+
+        threadName.futureValue should startWith("AttributesSpec-io-dispatcher-override-my-io-dispatcher-")
+
+      } finally {
+        TestKit.shutdownActorSystem(system)
+      }
+    }
+  }
+
 }

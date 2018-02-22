@@ -56,6 +56,8 @@ abstract class Materializer {
    * within Sources, Sinks, etc. This [[scala.concurrent.ExecutionContextExecutor]]
    * can be used by parts of the flow to submit processing jobs for execution,
    * run Future callbacks, etc.
+   *
+   * Note that this is not necessarily the same execution context the stream stage itself is running on.
    */
   implicit def executionContext: ExecutionContextExecutor
 
