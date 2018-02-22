@@ -961,4 +961,24 @@ public class FlowTest extends StreamTest {
     final Flow<Integer, Integer, NotUsed> f = Flow.of(Integer.class).divertTo(Sink.ignore(), e -> true);
     final Flow<Integer, Integer, String> f2 = Flow.of(Integer.class).divertToMat(Sink.ignore(), e -> true, (i, n) -> "foo");
   }
+
+  @Test
+  public void mustBeAbleToUseLazyInit() throws Exception {
+    final CompletionStage<Flow<Integer, Integer, NotUsed>> future = new CompletableFuture<Flow<Integer, Integer, NotUsed>>();
+    future.toCompletableFuture().complete(Flow.fromFunction((id) -> id));
+    Creator<NotUsed> ignoreFunction = new Creator<NotUsed>() {
+      @Override
+      public NotUsed create() throws Exception {
+        return NotUsed.getInstance();
+      }
+    };
+
+    Integer result =
+            Source.range(1, 10)
+                    .via(Flow.lazyInit((i) -> future, ignoreFunction))
+                    .runWith(Sink.<Integer>head(), materializer)
+                    .toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assertEquals((Object) 1, result);
+  }
 }
