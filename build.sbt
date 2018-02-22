@@ -1,14 +1,14 @@
 import akka.AutomaticModuleName
 
-enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish)
-disablePlugins(MimaPlugin)
-
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import spray.boilerplate.BoilerplatePlugin
 import akka.AkkaBuild._
-import akka.{AkkaBuild, Dependencies, GitHub, OSGi, Protobuf, SigarLoader, VersionGenerator}
+import akka.{AkkaBuild, Dependencies, GitHub, OSGi, Protobuf, SigarLoader, VersionGenerator, CopyrightHeader, CopyrightHeaderWithPr}
 import sbt.Keys.{initialCommands, parallelExecution}
+
+enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeaderWithPr)
+disablePlugins(MimaPlugin)
 
 initialize := {
   // Load system properties from a file to make configuration from Jenkins easier
@@ -49,6 +49,9 @@ lazy val root = Project(
 ).aggregate(aggregatedProjects: _*)
  .settings(rootSettings: _*)
  .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, akkaScalaNightly, docs))
+ .settings(
+    unmanagedSources in(Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get
+  )
 
 lazy val actor = akkaModule("akka-actor")
   .settings(Dependencies.actor)
@@ -80,7 +83,7 @@ lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   // remove dependencies that we have to build ourselves (Scala STM)
   .aggregate(aggregatedProjects diff List[ProjectReference](agent, docs): _*)
   .disablePlugins(MimaPlugin)
-  .disablePlugins(ValidatePullRequest, MimaPlugin)
+  .disablePlugins(ValidatePullRequest, MimaPlugin, CopyrightHeaderWithPr)
 
 lazy val benchJmh = akkaModule("akka-bench-jmh")
   .dependsOn(
@@ -92,8 +95,8 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
     ).map(_ % "compile->compile;compile->test;provided->provided"): _*
   )
   .settings(Dependencies.benchJmh)
-  .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish)
-  .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest)
+  .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
+  .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderWithPr)
 
 lazy val camel = akkaModule("akka-camel")
   .dependsOn(actor, slf4j, testkit % "test->test")

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.typed
 
 import java.util.concurrent.ConcurrentLinkedQueue
