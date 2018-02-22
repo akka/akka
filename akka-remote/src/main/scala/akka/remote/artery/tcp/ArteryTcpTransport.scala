@@ -171,10 +171,10 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
     Flow[EnvelopeBuffer]
       .map { env ⇒
-        // TODO Possible performance improvement, could we reduce the copying of bytes?
-        afr.hiFreq(TcpOutbound_Sent, env.byteBuffer.limit)
-        val size = env.byteBuffer.limit
+        val size = env.byteBuffer.limit()
+        afr.hiFreq(TcpOutbound_Sent, size)
 
+        // TODO Possible performance improvement, could we reduce the copying of bytes?
         val bytes = ByteString(env.byteBuffer)
         bufferPool.release(env)
 
