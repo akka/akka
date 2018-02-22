@@ -1,18 +1,19 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
-package jdocs.akka.typed.testing.async;
+package akka.testkit.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.testkit.typed.javadsl.ActorTestKit;
 import akka.testkit.typed.javadsl.TestProbe;
-import akka.testkit.typed.TestKit;
 import org.junit.AfterClass;
 import org.junit.Test;
 
 //#test-header
-public class BasicAsyncTestingTest extends TestKit {
+public class AsyncTestingExampleTest {
+  final static ActorTestKit testKit = ActorTestKit.create(AsyncTestingExampleTest.class);
 //#test-header
 
   //#under-test
@@ -42,15 +43,15 @@ public class BasicAsyncTestingTest extends TestKit {
   //#test-shutdown
   @AfterClass
   public void cleanup() {
-    this.shutdown();
+    testKit.shutdownTestKit();
   }
   //#test-shutdown
 
   @Test
   public void testVerifyingAResponse() {
     //#test-spawn
-    TestProbe<Pong> probe = TestProbe.create(system());
-    ActorRef<Ping> pinger = spawn(echoActor, "ping");
+    TestProbe<Pong> probe = testKit.createTestProbe();
+    ActorRef<Ping> pinger = testKit.spawn(echoActor, "ping");
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMessage(new Pong("hello"));
     //#test-spawn
@@ -59,8 +60,8 @@ public class BasicAsyncTestingTest extends TestKit {
   @Test
   public void testVerifyingAResponseAnonymous() {
     //#test-spawn-anonymous
-    TestProbe<Pong> probe = TestProbe.create(system());
-    ActorRef<Ping> pinger = spawn(echoActor);
+    TestProbe<Pong> probe = testKit.createTestProbe();
+    ActorRef<Ping> pinger = testKit.spawn(echoActor);
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMessage(new Pong("hello"));
     //#test-spawn-anonymous

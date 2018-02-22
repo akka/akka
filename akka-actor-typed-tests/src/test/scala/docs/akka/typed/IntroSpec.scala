@@ -11,7 +11,7 @@ import akka.NotUsed
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
-import akka.testkit.typed.TestKit
+import akka.testkit.typed.scaladsl.ActorTestKit
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
@@ -100,7 +100,7 @@ object IntroSpec {
 
 }
 
-class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class IntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   import IntroSpec._
 

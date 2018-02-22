@@ -8,7 +8,6 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
-
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.PostStop
@@ -16,8 +15,7 @@ import akka.actor.typed.Props
 import akka.actor.typed.TestException
 import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.testkit.EventFilter
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 object MessageAdapterSpec {
@@ -36,8 +34,9 @@ object MessageAdapterSpec {
     """)
 }
 
-class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAkkaSpecWithShutdown {
+class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
+  override def config = MessageAdapterSpec.config
   implicit val untyped = system.toUntyped // FIXME no typed event filter yet
 
   "Message adapters" must {

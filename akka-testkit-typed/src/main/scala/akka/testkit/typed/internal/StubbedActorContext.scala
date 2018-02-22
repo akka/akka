@@ -1,26 +1,28 @@
-package akka.testkit.typed
+package akka.testkit.typed.internal
 
-import akka.actor.InvalidMessageException
-import akka.{ actor ⇒ untyped }
 import akka.actor.typed._
+import akka.actor.typed.internal._
+import akka.actor.typed.internal.adapter.LoggerAdapterImpl
+import akka.actor.{ ActorPath, InvalidMessageException }
+import akka.annotation.InternalApi
+import akka.event.Logging
+import akka.event.Logging.LogLevel
 import akka.util.{ Helpers, OptionVal }
-import akka.{ actor ⇒ a }
+import akka.{ actor ⇒ untyped }
 
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
-import akka.annotation.InternalApi
-import akka.actor.typed.internal._
-import akka.actor.typed.internal.adapter.LoggerAdapterImpl
-import akka.event.Logging.{ Info, LogEvent, LogLevel }
-import akka.event.{ Logging, LoggingAdapter }
 
 /**
+ * INTERNAL API
+ *
  * A local synchronous ActorRef that invokes the given function for every message send.
  * This reference cannot watch other references.
  */
+@InternalApi
 private[akka] final class FunctionRef[-T](
-  _path:      a.ActorPath,
+  _path:      ActorPath,
   send:       (T, FunctionRef[T]) ⇒ Unit,
   _terminate: FunctionRef[T] ⇒ Unit)
   extends ActorRef[T] with ActorRefImpl[T] {
@@ -74,8 +76,6 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
  * An [[ActorContext]] for synchronous execution of a [[Behavior]] that
  * provides only stubs for the effects an Actor can perform and replaces
  * created child Actors by a synchronous Inbox (see `Inbox.sync`).
- *
- * See [[BehaviorTestkit]] for more advanced uses.
  */
 @InternalApi private[akka] class StubbedActorContext[T](
   val name: String) extends ActorContextImpl[T] {
@@ -83,11 +83,11 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] val selfInbox = TestInbox[T](name)
+  @InternalApi private[akka] val selfInbox = new TestInboxImpl[T](name)
 
   override val self = selfInbox.ref
   override val system = new ActorSystemStub("StubbedActorContext")
-  private var _children = TreeMap.empty[String, TestInbox[_]]
+  private var _children = TreeMap.empty[String, TestInboxImpl[_]]
   private val childName = Iterator from 0 map (Helpers.base64(_))
   private val loggingAdapter = new StubbedLogger
 
@@ -97,7 +97,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
   override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ref)
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
-    val i = TestInbox[U](childName.next())
+    val i = new TestInboxImpl[U](childName.next())
     _children += i.ref.path.name → i
     i.ref
   }
@@ -106,7 +106,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
       case Some(_) ⇒ throw untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
         // FIXME correct child path for the Inbox ref
-        val i = TestInbox[U](name)
+        val i = new TestInboxImpl[U](name)
         _children += name → i
         i.ref
     }
@@ -142,7 +142,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
   @InternalApi private[akka] def internalSpawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
 
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
-    val i = TestInbox[U](n)
+    val i = new TestInboxImpl[U](n)
     _children += i.ref.path.name → i
 
     new FunctionRef[U](
@@ -155,8 +155,8 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
    * Retrieve the inbox representing the given child actor. The passed ActorRef must be one that was returned
    * by one of the spawn methods earlier.
    */
-  def childInbox[U](child: ActorRef[U]): TestInbox[U] = {
-    val inbox = _children(child.path.name).asInstanceOf[TestInbox[U]]
+  def childInbox[U](child: ActorRef[U]): TestInboxImpl[U] = {
+    val inbox = _children(child.path.name).asInstanceOf[TestInboxImpl[U]]
     if (inbox.ref != child) throw new IllegalArgumentException(s"$child is not a child of $this")
     inbox
   }
@@ -164,7 +164,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String, cause: Op
   /**
    * Retrieve the inbox representing the child actor with the given name.
    */
-  def childInbox[U](name: String): Option[TestInbox[U]] = _children.get(name).map(_.asInstanceOf[TestInbox[U]])
+  def childInbox[U](name: String): Option[TestInboxImpl[U]] = _children.get(name).map(_.asInstanceOf[TestInboxImpl[U]])
 
   /**
    * Remove the given inbox from the list of children, for example after

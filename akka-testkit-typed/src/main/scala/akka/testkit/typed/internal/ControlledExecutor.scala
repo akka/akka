@@ -1,13 +1,19 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
  */
-package akka.actor.typed.internal
+package akka.testkit.typed.internal
 
 import java.util.LinkedList
 
+import akka.annotation.InternalApi
+
 import scala.concurrent.ExecutionContextExecutor
 
-class ControlledExecutor extends ExecutionContextExecutor {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final class ControlledExecutor extends ExecutionContextExecutor {
   private val tasks = new LinkedList[Runnable]
 
   def queueSize: Int = tasks.size()

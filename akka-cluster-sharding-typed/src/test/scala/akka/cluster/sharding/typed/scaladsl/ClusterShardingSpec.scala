@@ -21,8 +21,7 @@ import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.cluster.typed.Leave
 import akka.serialization.SerializerWithStringManifest
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.time.Span
@@ -120,8 +119,10 @@ object ClusterShardingSpec {
 
 }
 
-class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterShardingSpec.config) with TypedAkkaSpecWithShutdown {
+class ClusterShardingSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   import ClusterShardingSpec._
+
+  override def config = ClusterShardingSpec.config
 
   val sharding = ClusterSharding(system)
 
@@ -129,7 +130,7 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
   val sharding2 = ClusterSharding(system2)
 
   override def afterAll(): Unit = {
-    TestKit.shutdown(system2, 5.seconds)
+    ActorTestKit.shutdown(system2, 5.seconds)
     super.afterAll()
   }
 
