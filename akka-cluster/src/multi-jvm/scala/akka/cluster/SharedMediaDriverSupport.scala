@@ -12,7 +12,7 @@ import scala.util.control.NonFatal
 
 import akka.remote.RemoteSettings
 import akka.remote.artery.ArterySettings
-import akka.remote.artery.TaskRunner
+import akka.remote.artery.aeron.TaskRunner
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import com.typesafe.config.ConfigFactory

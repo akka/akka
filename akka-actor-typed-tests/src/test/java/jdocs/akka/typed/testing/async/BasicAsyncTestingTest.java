@@ -49,7 +49,7 @@ public class BasicAsyncTestingTest extends TestKit {
   @Test
   public void testVerifyingAResponse() {
     //#test-spawn
-    TestProbe<Pong> probe = new TestProbe<>(system());
+    TestProbe<Pong> probe = TestProbe.create(system());
     ActorRef<Ping> pinger = spawn(echoActor, "ping");
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMessage(new Pong("hello"));
@@ -59,7 +59,7 @@ public class BasicAsyncTestingTest extends TestKit {
   @Test
   public void testVerifyingAResponseAnonymous() {
     //#test-spawn-anonymous
-    TestProbe<Pong> probe = new TestProbe<>(system());
+    TestProbe<Pong> probe = TestProbe.create(system());
     ActorRef<Ping> pinger = spawn(echoActor);
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMessage(new Pong("hello"));

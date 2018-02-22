@@ -130,6 +130,11 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           else persistentActor
 
         val readHighestSequenceNrFrom = math.max(0L, fromSequenceNr - 1)
+        /*
+         * The API docs for the [[AsyncRecovery]] say not to rely on asyncReadHighestSequenceNr
+         * being called before a call to asyncReplayMessages even tho it currently always is. The Cassandra
+         * plugin does rely on this so if you change this change the Cassandra plugin.
+         */
         breaker.withCircuitBreaker(asyncReadHighestSequenceNr(persistenceId, readHighestSequenceNrFrom))
           .flatMap { highSeqNr ⇒
             val toSeqNr = math.min(toSequenceNr, highSeqNr)

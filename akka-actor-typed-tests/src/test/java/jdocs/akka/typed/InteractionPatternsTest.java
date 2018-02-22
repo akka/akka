@@ -8,7 +8,7 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.*;
-import akka.testkit.typed.scaladsl.TestProbe;
+import akka.testkit.typed.javadsl.TestProbe;
 import akka.util.Timeout;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
@@ -323,7 +323,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   @Test
   public void timers() throws Exception {
     final ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "timers-sample");
-    TestProbe<Batch> probe = new TestProbe<>("batcher", system);
+    TestProbe<Batch> probe = TestProbe.create("batcher", system);
     ActorRef<Msg> bufferer = Await.result(system.systemActorOf(
       behavior(probe.ref(), new FiniteDuration(1, TimeUnit.SECONDS), 10),
       "batcher", Props.empty(), akka.util.Timeout.apply(1, TimeUnit.SECONDS)),

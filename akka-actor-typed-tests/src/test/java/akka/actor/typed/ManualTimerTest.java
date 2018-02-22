@@ -14,14 +14,14 @@ import akka.actor.typed.javadsl.Behaviors;
 import org.junit.Test;
 
 import akka.testkit.typed.TestKit;
-import akka.testkit.typed.ExplicitlyTriggeredScheduler;
+import akka.testkit.typed.javadsl.ExplicitlyTriggeredScheduler;
 import akka.testkit.typed.javadsl.TestProbe;
 
 public class ManualTimerTest extends TestKit {
   ExplicitlyTriggeredScheduler scheduler;
 
   public ManualTimerTest() {
-    super(parseString("akka.scheduler.implementation = \"akka.testkit.typed.ExplicitlyTriggeredScheduler\""));
+    super(parseString("akka.scheduler.implementation = \"akka.testkit.typed.javadsl.ExplicitlyTriggeredScheduler\""));
     this.scheduler = (ExplicitlyTriggeredScheduler) system().scheduler();
   }
 
@@ -30,7 +30,7 @@ public class ManualTimerTest extends TestKit {
 
   @Test
   public void testScheduleNonRepeatedTicks() {
-    TestProbe<Tock> probe = new TestProbe<>(system());
+    TestProbe<Tock> probe = TestProbe.create(system());
     Behavior<Tick> behavior = Behaviors.withTimers(timer -> {
       timer.startSingleTimer("T", new Tick(), Duration.create(10, TimeUnit.MILLISECONDS));
       return Behaviors.immutable( (ctx, tick) -> {
@@ -44,7 +44,7 @@ public class ManualTimerTest extends TestKit {
     scheduler.expectNoMessageFor(Duration.create(9, TimeUnit.MILLISECONDS), probe);
 
     scheduler.timePasses(Duration.create(2, TimeUnit.MILLISECONDS));
-    probe.expectMessageType(Tock.class);
+    probe.expectMessageClass(Tock.class);
 
     scheduler.expectNoMessageFor(Duration.create(10, TimeUnit.SECONDS), probe);
   }

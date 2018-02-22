@@ -457,7 +457,7 @@ import scala.util.{ Failure, Success, Try }
 /**
  * INTERNAL API
  */
-@InternalApi private[stream] object TlsUtils {
+@InternalApi private[akka] object TlsUtils {
   def applySessionParameters(engine: SSLEngine, sessionParameters: NegotiateNewSession): Unit = {
     sessionParameters.enabledCipherSuites foreach (cs ⇒ engine.setEnabledCipherSuites(cs.toArray))
     sessionParameters.enabledProtocols foreach (p ⇒ engine.setEnabledProtocols(p.toArray))

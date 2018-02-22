@@ -5,11 +5,13 @@ package akka.cluster.protobuf
 
 import akka.cluster._
 import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
+import akka.cluster.InternalClusterAction.CompatibleConfig
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
 import akka.routing.RoundRobinPool
 
 import collection.immutable.SortedSet
 import akka.testkit.{ AkkaSpec, TestKit }
+import com.typesafe.config.ConfigFactory
 
 class ClusterMessageSerializerSpec extends AkkaSpec(
   "akka.actor.provider = cluster") {
@@ -52,8 +54,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A")))
       checkSerialization(ClusterUserAction.Leave(address))
       checkSerialization(ClusterUserAction.Down(address))
-      checkSerialization(InternalClusterAction.InitJoin)
-      checkSerialization(InternalClusterAction.InitJoinAck(address))
+      checkSerialization(InternalClusterAction.InitJoin(ConfigFactory.empty))
+      checkSerialization(InternalClusterAction.InitJoinAck(address, CompatibleConfig(ConfigFactory.empty)))
       checkSerialization(InternalClusterAction.InitJoinNack(address))
       checkSerialization(ClusterHeartbeatSender.Heartbeat(address))
       checkSerialization(ClusterHeartbeatSender.HeartbeatRsp(uniqueAddress))

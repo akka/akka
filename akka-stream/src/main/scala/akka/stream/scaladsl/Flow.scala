@@ -22,6 +22,8 @@ import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
 import akka.annotation.DoNotInherit
 
+import scala.reflect.ClassTag
+
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
@@ -923,6 +925,25 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def collect[T](pf: PartialFunction[Out, T]): Repr[T] = via(Collect(pf))
+
+  /**
+   * Transform this stream by testing the type of each of the elements
+   * on which the element is an instance of the provided type as they pass through this processing step.
+   *
+   * Non-matching elements are filtered out.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the element is an instance of the provided type
+   *
+   * '''Backpressures when''' the element is an instance of the provided type and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def collectType[T](implicit tag: ClassTag[T]): Repr[T] =
+    collect { case c if tag.runtimeClass.isInstance(c) ⇒ c.asInstanceOf[T] }
 
   /**
    * Chunk up this stream into groups of the given size, with the last group
@@ -2287,14 +2308,14 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Completes when''' upstream completes
    *
-   * '''Cancels when''' downstream and Sink cancel
+   * '''Cancels when''' downstream or Sink cancels
    */
   def alsoTo(that: Graph[SinkShape[Out], _]): Repr[Out] = via(alsoToGraph(that))
 
   protected def alsoToGraph[M](that: Graph[SinkShape[Out], M]): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
     GraphDSL.create(that) { implicit b ⇒ r ⇒
       import GraphDSL.Implicits._
-      val bcast = b.add(Broadcast[Out](2))
+      val bcast = b.add(Broadcast[Out](2, eagerCancel = true))
       bcast.out(1) ~> r
       FlowShape(bcast.in, bcast.out(0))
     }

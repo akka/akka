@@ -3,6 +3,7 @@
  */
 
 package akka.remote.artery
+package aeron
 
 import java.util.concurrent.TimeUnit.{ MICROSECONDS, MILLISECONDS }
 

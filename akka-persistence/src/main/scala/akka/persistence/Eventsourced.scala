@@ -7,7 +7,7 @@ package akka.persistence
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ ActorCell, DeadLetter, StashOverflowException }
+import akka.actor.{ Actor, ActorCell, DeadLetter, StashOverflowException }
 import akka.annotation.InternalApi
 import akka.dispatch.Envelope
 import akka.event.{ Logging, LoggingAdapter }
@@ -459,7 +459,13 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     }
 
     private val recoveryBehavior: Receive = {
-      val _receiveRecover = receiveRecover
+      val _receiveRecover = try receiveRecover catch {
+        case NonFatal(e) ⇒
+          try onRecoveryFailure(e, Some(e))
+          finally context.stop(self)
+          returnRecoveryPermit()
+          Actor.emptyBehavior
+      }
 
       {
         case PersistentRepr(payload, _) if recoveryRunning && _receiveRecover.isDefinedAt(payload) ⇒

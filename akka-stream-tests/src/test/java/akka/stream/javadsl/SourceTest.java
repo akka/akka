@@ -11,8 +11,7 @@ import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
 import akka.stream.*;
-import akka.stream.testkit.TestSubscriber;
-import akka.stream.testkit.javadsl.TestSink;
+import akka.stream.scaladsl.FlowSpec;
 import akka.util.ConstantFun;
 import akka.stream.stage.*;
 import akka.testkit.AkkaSpec;
@@ -447,6 +446,19 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseCollectType() throws Exception{
+    final TestKit probe = new TestKit(system);
+    final Iterable<FlowSpec.Apple> input = Collections.singletonList(new FlowSpec.Apple());
+    final Source<FlowSpec.Apple,?> appleSource = Source.from(input);
+    final Source<FlowSpec.Fruit,?> fruitSource = appleSource.collectType(FlowSpec.Fruit.class);
+    fruitSource.collectType(FlowSpec.Apple.class).collectType(FlowSpec.Apple.class)
+            .runForeach((elem) -> {
+              probe.getRef().tell(elem,ActorRef.noSender());
+            },materializer);
+    probe.expectMsgAnyClassOf(FlowSpec.Apple.class);
+  }
+
+  @Test
   public void mustWorkFromFuture() throws Exception {
     final Iterable<String> input = Arrays.asList("A", "B", "C");
     CompletionStage<String> future1 = Source.from(input).runWith(Sink.<String>head(), materializer);
@@ -871,5 +883,10 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseDivertTo() {
     final Source<Integer, NotUsed> f = Source.<Integer>empty().divertTo(Sink.ignore(), e -> true);
     final Source<Integer, String> f2 = Source.<Integer>empty().divertToMat(Sink.ignore(), e -> true, (i, n) -> "foo");
+  }
+
+  @Test
+  public void mustBeAbleToUsePreMaterialize() {
+    final Pair<NotUsed, Source<Integer, NotUsed>> p = Source.<Integer>empty().preMaterialize(materializer);
   }
 }

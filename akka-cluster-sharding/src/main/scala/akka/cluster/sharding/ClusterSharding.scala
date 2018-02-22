@@ -22,7 +22,6 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.Cluster
-import akka.cluster.ddata.DistributedData
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.pattern.BackoffSupervisor
 import akka.util.ByteString
@@ -35,7 +34,6 @@ import scala.util.control.NonFatal
 import akka.actor.Status
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
-import akka.stream.{ Inlet, Outlet }
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 
@@ -663,7 +661,6 @@ private[akka] class ClusterShardingGuardian extends Actor {
       extractShardId) ⇒
       try {
         val encName = URLEncoder.encode(s"${typeName}Proxy", ByteString.UTF_8)
-        val cName = coordinatorSingletonManagerName(encName)
         val cPath = coordinatorPath(URLEncoder.encode(typeName, ByteString.UTF_8))
         // it must be possible to start several proxies, one per data center
         val actorName = dataCenter match {

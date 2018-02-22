@@ -264,3 +264,41 @@ abstract class AbstractTimerSpec extends AkkaSpec {
     }
   }
 }
+
+object TimersAndStashSpec {
+
+  case object StopStashing
+
+}
+class TimersAndStashSpec extends AkkaSpec {
+  import TimersAndStashSpec._
+
+  class ActorWithTimerAndStash(probe: ActorRef) extends Actor with Timers with Stash {
+    timers.startSingleTimer("key", "scheduled", 50.millis)
+    def receive: Receive = stashing
+    def notStashing: Receive = {
+      case msg ⇒ probe ! msg
+    }
+
+    def stashing: Receive = {
+      case StopStashing ⇒
+        context.become(notStashing)
+        unstashAll()
+      case "scheduled" ⇒
+        probe ! "saw-scheduled"
+        stash()
+    }
+  }
+
+  "Timers combined with stashing" should {
+
+    "work" in {
+      val probe = TestProbe()
+      val actor = system.actorOf(Props(new ActorWithTimerAndStash(probe.ref)))
+      probe.expectMsg("saw-scheduled")
+      actor ! StopStashing
+      probe.expectMsg("scheduled")
+    }
+  }
+
+}

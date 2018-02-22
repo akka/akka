@@ -8,6 +8,8 @@ import java.util.ArrayDeque
 
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.util.Try
+
 import akka.Done
 import akka.stream.Attributes
 import akka.stream.FlowShape
@@ -62,7 +64,6 @@ private[remote] object InboundControlJunction {
   private[remote] trait ControlMessageSubject {
     def attach(observer: ControlMessageObserver): Future[Done]
     def detach(observer: ControlMessageObserver): Unit
-    def stopped: Future[Done]
   }
 
   private[remote] trait ControlMessageObserver {
@@ -72,6 +73,8 @@ private[remote] object InboundControlJunction {
      * of the envelope is always a `ControlMessage`.
      */
     def notify(inboundEnvelope: InboundEnvelope): Unit
+
+    def controlSubjectCompleted(signal: Try[Done]): Unit
   }
 
   // messages for the stream callback
@@ -93,7 +96,6 @@ private[remote] class InboundControlJunction
   override val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val stoppedPromise = Promise[Done]()
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler with ControlMessageSubject {
 
       private var observers: Vector[ControlMessageObserver] = Vector.empty
@@ -106,7 +108,10 @@ private[remote] class InboundControlJunction
           observers = observers.filterNot(_ == observer)
       }
 
-      override def postStop(): Unit = stoppedPromise.success(Done)
+      override def postStop(): Unit = {
+        observers.foreach(_.controlSubjectCompleted(Try(Done)))
+        observers = Vector.empty
+      }
 
       // InHandler
       override def onPush(): Unit = {
@@ -134,8 +139,6 @@ private[remote] class InboundControlJunction
       override def detach(observer: ControlMessageObserver): Unit =
         callback.invoke(Dettach(observer))
 
-      override def stopped: Future[Done] =
-        stoppedPromise.future
     }
 
     (logic, logic)

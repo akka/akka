@@ -5,6 +5,7 @@ package akka.remote
 
 import java.util.UUID
 
+import akka.remote.artery.ArterySpecSupport
 import akka.remote.testkit.{ FlightRecordingSupport, MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.{ DefaultTimeout, ImplicitSender }
 import com.typesafe.config.ConfigFactory
@@ -21,6 +22,7 @@ object RemotingMultiNodeSpec {
           destination=target/flight-recorder-${UUID.randomUUID().toString}.afr
         }
       """)
+      .withFallback(ArterySpecSupport.tlsConfig) // TLS only used if transport=tls-tcp
 
 }
 

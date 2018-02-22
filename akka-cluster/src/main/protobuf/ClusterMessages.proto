@@ -41,13 +41,50 @@ message Welcome {
 
 /**
  * InitJoin
- * Sends Empty
  */
+message InitJoin {
+  optional string currentConfig = 1;
+}
 
 /**
  * InitJoinAck
- * Sends an Address
  */
+message InitJoinAck {
+  required Address address = 1;
+  optional ConfigCheck configCheck = 2;
+}
+
+message ConfigCheck {
+  extensions 100 to 102;
+
+  enum Type {
+    UncheckedConfig = 1;
+    IncompatibleConfig = 2;
+    CompatibleConfig = 3;
+  }
+  required Type type = 1;
+
+  optional string clusterConfig = 2;
+}
+
+message UncheckedConfig {
+  extend ConfigCheck {
+    required UncheckedConfig checkConfig = 100;
+  }
+}
+
+message IncompatibleConfig {
+  extend ConfigCheck {
+    required IncompatibleConfig checkConfig = 101;
+  }
+}
+
+message CompatibleConfig {
+  extend ConfigCheck {
+    required CompatibleConfig checkConfig = 102;
+  }
+  required string clusterConfig = 2;
+}
 
 /**
  * InitJoinNack
@@ -186,7 +223,7 @@ message VectorClock {
 /**
  * An empty message
  */
- message Empty {
+message Empty {
  }
 
 /**
@@ -213,18 +250,18 @@ message UniqueAddress {
  * Cluster routing
  ****************************************/
 
- message ClusterRouterPool {
+message ClusterRouterPool {
    required Pool pool = 1;
    required ClusterRouterPoolSettings settings = 2;
  }
 
- message Pool {
+message Pool {
    required uint32 serializerId = 1;
    required string manifest = 2;
    required bytes data = 3;
  }
 
- message ClusterRouterPoolSettings {
+message ClusterRouterPoolSettings {
    required uint32 totalInstances = 1;
    required uint32 maxInstancesPerNode = 2;
    required bool allowLocalRoutees = 3;

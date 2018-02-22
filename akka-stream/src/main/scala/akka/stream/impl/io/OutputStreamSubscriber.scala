@@ -10,7 +10,7 @@ import akka.Done
 import akka.actor.{ ActorLogging, Deploy, Props }
 import akka.annotation.InternalApi
 import akka.stream.actor.{ ActorSubscriberMessage, WatermarkRequestStrategy }
-import akka.stream.IOResult
+import akka.stream.{ AbruptIOTerminationException, IOResult }
 import akka.util.ByteString
 
 import scala.concurrent.Promise
@@ -49,7 +49,7 @@ import scala.util.{ Failure, Success }
 
     case ActorSubscriberMessage.OnError(ex) ⇒
       log.error(ex, "Tearing down OutputStreamSink due to upstream error, wrote bytes: {}", bytesWritten)
-      completionPromise.success(IOResult(bytesWritten, Failure(ex)))
+      completionPromise.failure(AbruptIOTerminationException(IOResult(bytesWritten, Success(Done)), ex))
       context.stop(self)
 
     case ActorSubscriberMessage.OnComplete ⇒

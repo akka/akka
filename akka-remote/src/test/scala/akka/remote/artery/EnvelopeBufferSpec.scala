@@ -49,7 +49,10 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
     override def runNextActorRefAdvertisement(): Unit = ???
     override def runNextClassManifestAdvertisement(): Unit = ???
+    override def currentOriginUids: Set[Long] = ???
   }
+
+  val version = ArteryTransport.HighestVersion
 
   "EnvelopeBuffer" must {
     val headerOut = HeaderBuilder.in(TestCompressor)
@@ -64,7 +67,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
     val originUid = 1L
 
     "be able to encode and decode headers with compressed literals" in {
-      headerIn setVersion 1
+      headerIn setVersion version
       headerIn setUid 42
       headerIn setSerializer 4
       headerIn setRecipientActorRef minimalRef("compressable1")
@@ -78,7 +81,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       envelope.byteBuffer.flip()
       envelope.parseHeader(headerOut)
 
-      headerOut.version should ===(1)
+      headerOut.version should ===(version)
       headerOut.uid should ===(42)
       headerOut.inboundActorRefCompressionTableVersion should ===(28.toByte)
       headerOut.inboundClassManifestCompressionTableVersion should ===(35.toByte)
@@ -94,7 +97,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       val senderRef = minimalRef("uncompressable0")
       val recipientRef = minimalRef("uncompressable11")
 
-      headerIn setVersion 1
+      headerIn setVersion version
       headerIn setUid 42
       headerIn setSerializer 4
       headerIn setSenderActorRef senderRef
@@ -113,7 +116,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       envelope.byteBuffer.flip()
       envelope.parseHeader(headerOut)
 
-      headerOut.version should ===(1)
+      headerOut.version should ===(version)
       headerOut.uid should ===(42)
       headerOut.serializer should ===(4)
       headerOut.senderActorRefPath should ===(OptionVal.Some("akka://EnvelopeBufferSpec/uncompressable0"))
@@ -126,7 +129,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
     "be able to encode and decode headers with mixed literals" in {
       val recipientRef = minimalRef("uncompressable1")
 
-      headerIn setVersion 1
+      headerIn setVersion version
       headerIn setUid 42
       headerIn setSerializer 4
       headerIn setSenderActorRef minimalRef("reallylongcompressablestring")
@@ -141,7 +144,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       envelope.byteBuffer.flip()
       envelope.parseHeader(headerOut)
 
-      headerOut.version should ===(1)
+      headerOut.version should ===(version)
       headerOut.uid should ===(42)
       headerOut.serializer should ===(4)
       headerOut.senderActorRef(originUid).get.path.toSerializationFormat should ===("akka://EnvelopeBufferSpec/reallylongcompressablestring")
@@ -152,7 +155,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
       val senderRef = minimalRef("uncompressable0")
 
-      headerIn setVersion 3
+      headerIn setVersion version
       headerIn setUid Long.MinValue
       headerIn setSerializer -1
       headerIn setSenderActorRef senderRef
@@ -168,7 +171,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       envelope.byteBuffer.flip()
       envelope.parseHeader(headerOut)
 
-      headerOut.version should ===(3)
+      headerOut.version should ===(version)
       headerOut.uid should ===(Long.MinValue)
       headerOut.serializer should ===(-1)
       headerOut.senderActorRefPath should ===(OptionVal.Some("akka://EnvelopeBufferSpec/uncompressable0"))
@@ -181,7 +184,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
     "be able to encode and decode headers with mixed literals and payload" in {
       val payload = ByteString("Hello Artery!")
 
-      headerIn setVersion 1
+      headerIn setVersion version
       headerIn setUid 42
       headerIn setSerializer 4
       headerIn setSenderActorRef minimalRef("reallylongcompressablestring")
@@ -194,7 +197,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
 
       envelope.parseHeader(headerOut)
 
-      headerOut.version should ===(1)
+      headerOut.version should ===(version)
       headerOut.uid should ===(42)
       headerOut.serializer should ===(4)
       headerOut.senderActorRef(originUid).get.path.toSerializationFormat should ===("akka://EnvelopeBufferSpec/reallylongcompressablestring")

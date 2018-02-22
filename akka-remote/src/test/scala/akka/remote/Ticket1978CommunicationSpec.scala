@@ -66,7 +66,8 @@ object Configuration {
 
       rng.nextInt() // Has to work
       val sRng = settings.SSLRandomNumberGenerator
-      rng.getAlgorithm == sRng || (throw new NoSuchAlgorithmException(sRng))
+      if (rng.getAlgorithm != sRng && sRng != "")
+        throw new NoSuchAlgorithmException(sRng)
 
       val engine = NettySSLSupport(settings, NoMarkerLogging, isClient = true).getEngine
       val gotAllSupported = enabled.toSet diff engine.getSupportedCipherSuites.toSet
