@@ -684,6 +684,16 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseCollectType() throws Exception {
+    final TestKit probe = new TestKit(system);
+    final Iterable<FlowSpec.Fruit> input = Arrays.asList(new FlowSpec.Apple(), new FlowSpec.Orange());
+
+    Source.from(input).via(Flow.of(FlowSpec.Fruit.class).collectType(FlowSpec.Apple.class))
+        .runForeach((apple) -> probe.getRef().tell(apple, ActorRef.noSender()), materializer);
+    probe.expectMsgAnyClassOf(FlowSpec.Apple.class);
+  }
+
+  @Test
   public void mustBeAbleToRecover() throws Exception {
     final TestPublisher.ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
     final TestKit probe = new TestKit(system);

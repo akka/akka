@@ -2,6 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
+package aeron
 
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger

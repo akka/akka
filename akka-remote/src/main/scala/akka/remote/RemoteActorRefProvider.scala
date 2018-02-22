@@ -9,23 +9,28 @@ import akka.actor._
 import akka.dispatch.sysmsg._
 import akka.event.{ EventStream, Logging, LoggingAdapter }
 import akka.event.Logging.Error
-import akka.serialization.{ Serialization, SerializationExtension }
 import akka.pattern.pipe
 
 import scala.util.control.NonFatal
+
 import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
 
 import scala.util.control.Exception.Catcher
 import scala.concurrent.Future
+
 import akka.ConfigurationException
 import akka.annotation.InternalApi
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.remote.artery.ArteryTransport
+import akka.remote.artery.aeron.ArteryAeronUdpTransport
+import akka.remote.artery.ArterySettings
+import akka.remote.artery.ArterySettings.AeronUpd
 import akka.util.OptionVal
 import akka.remote.artery.OutboundEnvelope
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.remote.serialization.ActorRefResolveCache
 import akka.remote.serialization.ActorRefResolveThreadLocalCache
+import akka.remote.artery.tcp.ArteryTcpTransport
 
 /**
  * INTERNAL API
@@ -203,7 +208,13 @@ private[akka] class RemoteActorRefProvider(
         local.registerExtraNames(Map(("remote", d)))
         d
       },
-      transport = if (remoteSettings.Artery.Enabled) new ArteryTransport(system, this) else new Remoting(system, this))
+      transport =
+        if (remoteSettings.Artery.Enabled) remoteSettings.Artery.Transport match {
+          case ArterySettings.AeronUpd ⇒ new ArteryAeronUdpTransport(system, this)
+          case ArterySettings.Tcp      ⇒ new ArteryTcpTransport(system, this, tlsEnabled = false)
+          case ArterySettings.TlsTcp   ⇒ new ArteryTcpTransport(system, this, tlsEnabled = true)
+        }
+        else new Remoting(system, this))
 
     _internals = internals
     remotingTerminator ! internals

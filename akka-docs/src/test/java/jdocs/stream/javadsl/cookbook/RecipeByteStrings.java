@@ -82,10 +82,8 @@ public class RecipeByteStrings extends RecipeTest {
               setHandler(out, new AbstractOutHandler(){
                 @Override
                 public void onPull() throws Exception {
-                  if (isClosed(in)) emitChunk();
-                  else pull(in);
+                  emitChunk();
                 }
-
               });
 
               setHandler(in, new AbstractInHandler() {

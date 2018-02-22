@@ -201,13 +201,13 @@ Defers creation and materialization of a `Source` until there is demand.
 
 ---------------------------------------------------------------
 
-### actorPublisher
+### lazilyAsync
 
-Wrap an actor extending `ActorPublisher` as a source.
+Defers creation and materialization of a `CompletionStage` until there is demand.
 
-**emits** depends on the actor implementation
+**emits** the future completes
 
-**completes** when the actor stops
+**completes** after the future has completed
 
 ---------------------------------------------------------------
 
@@ -508,19 +508,6 @@ to provide back pressure onto the sink.
 
 ---------------------------------------------------------------
 
-### actorSubscriber
-
-Create an actor from a `Props` upon materialization, where the actor implements `ActorSubscriber`, which will
-receive the elements from the stream.
-
-Materializes into an `ActorRef` to the created actor.
-
-**cancels** when the actor terminates
-
-**backpressures** depends on the actor implementation
-
----------------------------------------------------------------
-
 ### asPublisher
 
 Integration with Reactive Streams, materializes into a `org.reactivestreams.Publisher`.
@@ -716,6 +703,8 @@ Attaches the given `Sink` to this `Flow`, meaning that elements that pass throug
 
 **completes** when upstream completes
 
+**cancels** when downstream or `Sink` cancels
+
 ---------------------------------------------------------------
 
 ### map
@@ -791,6 +780,23 @@ value is passed downstream. Can often replace `filter` followed by `map` to achi
 **backpressures** the partial function is defined for the element and downstream backpressures
 
 **completes** when upstream completes
+
+---------------------------------------------------------------
+
+### collectType 
+
+Transform this stream by testing the type of each of the elements on which the element is an instance of 
+the provided type as they pass through this processing step. Non-matching elements are filtered out.
+
+Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+
+'''Emits when''' the element is an instance of the provided type
+
+'''Backpressures when''' the element is an instance of the provided type and downstream backpressures
+
+'''Completes when''' upstream completes
+
+'''Cancels when''' downstream cancels
 
 ---------------------------------------------------------------
 

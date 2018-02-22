@@ -238,6 +238,27 @@ akka.loggers = [akka.testkit.TestEventListener]
 
 @@@
 
+### Overriding behavior
+
+Sometimes you want to 'hook into' your actor to be able to test some internals.
+Usually it is better to test an actors' external interface, but for example if
+you want to test timing-sensitive behavior this can come in handy. Say for
+instance you want to test an actor that schedules a task:
+
+Scala
+:  @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #timer }
+
+Java
+:  @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #timer }
+
+You can override the method that does the scheduling in your test:
+
+Scala
+:  @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #timer-test }
+
+Java
+:  @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #timer-test }
+
 <a id="testkit-within"></a>
 ### Timing Assertions
 

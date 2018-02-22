@@ -801,7 +801,7 @@ trait TestKitBase {
    */
   def shutdown(
     actorSystem:          ActorSystem = system,
-    duration:             Duration    = 5.seconds.dilated.min(10.seconds),
+    duration:             Duration    = 10.seconds.dilated.min(10.seconds),
     verifySystemShutdown: Boolean     = false) {
     TestKit.shutdownActorSystem(actorSystem, duration, verifySystemShutdown)
   }

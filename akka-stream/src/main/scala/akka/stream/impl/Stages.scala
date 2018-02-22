@@ -74,6 +74,7 @@ import akka.stream._
     val flattenMerge = name("flattenMerge")
     val recoverWith = name("recoverWith")
     val broadcast = name("broadcast")
+    val wireTap = name("wireTap")
     val balance = name("balance")
     val zip = name("zip")
     val zipN = name("zipN")

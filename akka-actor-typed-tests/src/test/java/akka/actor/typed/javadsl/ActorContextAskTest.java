@@ -42,9 +42,9 @@ public class ActorContextAskTest extends JUnitSuite {
     final ActorRef<Ping> pingPong = Adapter.spawnAnonymous(system, pingPongBehavior);
 
 
-    final TestProbe<Object> probe = new TestProbe<>(Adapter.toTyped(system));
+    final TestProbe<Object> probe = TestProbe.create(Adapter.toTyped(system));
 
-    final Behavior<Object> snitch = Behaviors.deferred((ActorContext<Object> ctx) -> {
+    final Behavior<Object> snitch = Behaviors.setup((ActorContext<Object> ctx) -> {
       ctx.ask(Pong.class,
           pingPong,
           new Timeout(3, TimeUnit.SECONDS),
@@ -62,7 +62,7 @@ public class ActorContextAskTest extends JUnitSuite {
 
     Adapter.spawnAnonymous(system, snitch);
 
-    probe.expectMessageType(Pong.class);
+    probe.expectMessageClass(Pong.class);
   }
 
 

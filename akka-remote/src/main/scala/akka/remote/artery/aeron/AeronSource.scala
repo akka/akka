@@ -2,6 +2,7 @@
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 package akka.remote.artery
+package aeron
 
 import scala.annotation.tailrec
 import akka.stream.Attributes
@@ -117,7 +118,7 @@ private[remote] class AeronSource(
         try sub.close() catch {
           case e: DriverTimeoutException ⇒
             // media driver was shutdown
-            log.debug("DriverTimeout when closing subscription. {}", e.getMessage)
+            log.debug("DriverTimeout when closing subscription. {}", e)
         } finally
           flightRecorder.loFreq(AeronSource_Stopped, channelMetadata)
       }

@@ -25,7 +25,15 @@ object RemoteDeathWatchSpec {
                 /watchers.remote = "akka://other@localhost:$otherPort"
             }
         }
-        remote.watch-failure-detector.acceptable-heartbeat-pause = 3s
+        test.filter-leeway = 10s
+        remote.watch-failure-detector.acceptable-heartbeat-pause = 2s
+
+        # reduce handshake timeout for quicker test of unknownhost, but
+        # must still be longer than failure detection
+        remote.artery.advanced {
+          handshake-timeout = 10 s
+          image-liveness-timeout = 9 seconds
+        }
     }
     """).withFallback(ArterySpecSupport.defaultConfig)
 }
@@ -55,6 +63,7 @@ class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.conf
 
         system.actorOf(Props(new Actor {
           context.watch(ref)
+
           def receive = {
             case Terminated(r) ⇒ testActor ! r
           }
@@ -78,6 +87,10 @@ class RemoteDeathWatchSpec extends ArteryMultiNodeSpec(RemoteDeathWatchSpec.conf
   }
 
   "receive ActorIdentity(None) when identified node is unknown host" in {
+    // TODO There is a timing difference between Aeron and TCP. AeronSink will throw exception
+    // immediately in constructor from aeron.addPublication when UnknownHostException. That will trigger
+    // this immediately. With TCP it will trigger after handshake timeout. Can we see the UnknownHostException
+    // reason somehow and fail the stream immediately for that case?
     val path = RootActorPath(Address("akka", system.name, "unknownhost2", 2552)) / "user" / "subject"
     system.actorSelection(path) ! Identify(path)
     expectMsg(60.seconds, ActorIdentity(path, None))

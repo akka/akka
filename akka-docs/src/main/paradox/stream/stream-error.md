@@ -13,6 +13,28 @@ In many cases you may want to avoid complete stream failure, this can be done in
 In addition to these built in tools for error handling, a common pattern is to wrap the stream 
 inside an actor, and have the actor restart the entire stream on failure.
  
+## Logging errors
+
+`log()` enables logging of a stream, which is typically useful for error logging. 
+The below stream fails with `ArithmeticException` when the element `0` goes through the `map` stage, 
+
+Scala
+:   @@snip [RecipeLoggingElements.scala]($code$/scala/docs/stream/cookbook/RecipeLoggingElements.scala) { #log-error }
+
+Java
+:   @@snip [RecipeLoggingElements.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java) { #log-error }
+
+
+and error messages like below will be logged. 
+
+```
+[error logging] Upstream failed.
+java.lang.ArithmeticException: / by zero
+```
+
+If you want to control logging levels on each element, completion, and failure, you can find more details 
+in @ref:[Logging in streams](stream-cookbook.md#logging-in-streams).
+
 ## Recover
 
 `recover` allows you to emit a final element and then complete the stream on an upstream failure.
@@ -104,9 +126,25 @@ Java
 :   @@snip [RestartDocTest.java]($code$/java/jdocs/stream/RestartDocTest.java) { #with-kill-switch }
 
 Sinks and flows can also be supervised, using @scala[`akka.stream.scaladsl.RestartSink` and `akka.stream.scaladsl.RestartFlow`] 
-@java[`akka.stream.scaladsl.RestartSink` and `akka.stream.scaladsl.RestartFlow`]. The `RestartSink` is restarted when 
+@java[`akka.stream.javadsl.RestartSink` and `akka.stream.javadsl.RestartFlow`]. The `RestartSink` is restarted when
 it cancels, while the `RestartFlow` is restarted when either the in port cancels, the out port completes, or the out
  port sends an error.
+
+@@@ note
+
+Care should be taken when using `GraphStage`s that conditionally propagate termination signals inside a 
+`RestartSource`, `RestartSink` or `RestartFlow`.  
+
+An example is a `Broadcast` stage with the default `eagerCancel = false` where 
+some of the outlets are for side-effecting branches (that do not re-join e.g. via a `Merge`). 
+A failure on a side branch will not terminate the supervised stream which will 
+not be restarted. Conversely, a failure on the main branch can trigger a restart but leave behind old
+running instances of side branches.
+
+In this example `eagerCancel` should probably be set to `true`, or, when only a single side branch is used, `alsoTo`
+or `divertTo` should be considered as alternatives.
+
+@@@
 
 ## Supervision Strategies
 

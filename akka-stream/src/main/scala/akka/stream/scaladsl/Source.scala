@@ -88,6 +88,15 @@ final class Source[+Out, +Mat](
     new Source[Out, Mat2](traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]), shape)
 
   /**
+   * Materializes this Source, immediately returning (1) its materialized value, and (2) a new Source
+   * that can be used to consume elements from the newly materialized Source.
+   */
+  def preMaterialize()(implicit materializer: Materializer): (Mat, ReprMat[Out, NotUsed]) = {
+    val (mat, pub) = toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
+    (mat, Source.fromPublisher(pub))
+  }
+
+  /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a [[akka.stream.scaladsl.Sink#publisher]].
    */
@@ -411,6 +420,16 @@ object Source {
    */
   def lazily[T, M](create: () ⇒ Source[T, M]): Source[T, Future[M]] =
     Source.fromGraph(new LazySource[T, M](create))
+
+  /**
+   * Creates a `Source` from supplied future factory that is not called until downstream demand. When source gets
+   * materialized the materialized future is completed with the value from the factory. If downstream cancels or fails
+   * without any demand the create factory is never called and the materialized `Future` is failed.
+   *
+   * @see [[Source.lazily]]
+   */
+  def lazilyAsync[T](create: () ⇒ Future[T]): Source[T, Future[NotUsed]] =
+    lazily(() ⇒ fromFuture(create()))
 
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]

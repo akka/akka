@@ -63,39 +63,43 @@ class StreamTcpDocSpec extends AkkaSpec {
 
   "initial server banner echo server" in {
     val localhost = SocketUtil.temporaryServerAddress()
+
     val connections = Tcp().bind(localhost.getHostString, localhost.getPort)
     val serverProbe = TestProbe()
 
     import akka.stream.scaladsl.Framing
+    val binding =
+      //#welcome-banner-chat-server
+      connections.to(Sink.foreach { connection ⇒
+
+        // server logic, parses incoming commands
+        val commandParser = Flow[String].takeWhile(_ != "BYE").map(_ + "!")
+
+        import connection._
+        val welcomeMsg = s"Welcome to: $localAddress, you are: $remoteAddress!"
+        val welcome = Source.single(welcomeMsg)
+
+        val serverLogic = Flow[ByteString]
+          .via(Framing.delimiter(
+            ByteString("\n"),
+            maximumFrameLength = 256,
+            allowTruncation = true))
+          .map(_.utf8String)
+          //#welcome-banner-chat-server
+          .map { command ⇒ serverProbe.ref ! command; command }
+          //#welcome-banner-chat-server
+          .via(commandParser)
+          // merge in the initial banner after parser
+          .merge(welcome)
+          .map(_ + "\n")
+          .map(ByteString(_))
+
+        connection.handleWith(serverLogic)
+      }).run()
     //#welcome-banner-chat-server
 
-    connections.runForeach { connection ⇒
-
-      // server logic, parses incoming commands
-      val commandParser = Flow[String].takeWhile(_ != "BYE").map(_ + "!")
-
-      import connection._
-      val welcomeMsg = s"Welcome to: $localAddress, you are: $remoteAddress!"
-      val welcome = Source.single(welcomeMsg)
-
-      val serverLogic = Flow[ByteString]
-        .via(Framing.delimiter(
-          ByteString("\n"),
-          maximumFrameLength = 256,
-          allowTruncation = true))
-        .map(_.utf8String)
-        //#welcome-banner-chat-server
-        .map { command ⇒ serverProbe.ref ! command; command }
-        //#welcome-banner-chat-server
-        .via(commandParser)
-        // merge in the initial banner after parser
-        .merge(welcome)
-        .map(_ + "\n")
-        .map(ByteString(_))
-
-      connection.handleWith(serverLogic)
-    }
-    //#welcome-banner-chat-server
+    // make sure server is started before we connect
+    binding.futureValue
 
     import akka.stream.scaladsl.Framing
 
@@ -108,6 +112,7 @@ class StreamTcpDocSpec extends AkkaSpec {
     }
 
     {
+      // just for docs, never actually used
       //#repl-client
       val connection = Tcp().outgoingConnection("127.0.0.1", 8888)
       //#repl-client
@@ -132,8 +137,11 @@ class StreamTcpDocSpec extends AkkaSpec {
         .map(_ ⇒ readLine("> "))
         .via(replParser)
 
-      connection.join(repl).run()
+      val connected = connection.join(repl).run()
       //#repl-client
+
+      // make sure we have a connection or fail already here
+      connected.futureValue
     }
 
     serverProbe.expectMsg("Hello world")

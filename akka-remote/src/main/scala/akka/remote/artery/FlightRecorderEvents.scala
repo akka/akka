@@ -11,7 +11,7 @@ private[remote] object FlightRecorderEvents {
 
   // Top level remoting events
   val Transport_MediaDriverStarted = 0
-  val Transport_AeronStarted = 1
+  val Transport_Started = 1
   val Transport_AeronErrorLogStarted = 2
   val Transport_TaskRunnerStarted = 3
   val Transport_UniqueAddressSet = 4
@@ -24,6 +24,11 @@ private[remote] object FlightRecorderEvents {
   val Transport_MediaFileDeleted = 11
   val Transport_FlightRecorderClose = 12
   val Transport_SendQueueOverflow = 13
+  val Transport_StopIdleOutbound = 14
+  val Transport_Quarantined = 15
+  val Transport_RemovedQuarantined = 16
+  val Transport_RestartOutbound = 17
+  val Transport_RestartInbound = 18
 
   // Aeron Sink events
   val AeronSink_Started = 50
@@ -51,10 +56,18 @@ private[remote] object FlightRecorderEvents {
   val Compression_Inbound_RunActorRefAdvertisement = 94
   val Compression_Inbound_RunClassManifestAdvertisement = 95
 
+  val TcpOutbound_Connected = 150
+  val TcpOutbound_Sent = 151
+
+  val TcpInbound_Bound = 170
+  val TcpInbound_Unbound = 171
+  val TcpInbound_Connected = 172
+  val TcpInbound_Received = 173
+
   // Used for presentation of the entries in the flight recorder
   lazy val eventDictionary = Map(
     Transport_MediaDriverStarted → "Transport: Media driver started",
-    Transport_AeronStarted → "Transport: Aeron started",
+    Transport_Started → "Transport: started",
     Transport_AeronErrorLogStarted → "Transport: Aeron error log started",
     Transport_TaskRunnerStarted → "Transport: Task runner started",
     Transport_UniqueAddressSet → "Transport: Unique address set",
@@ -67,6 +80,11 @@ private[remote] object FlightRecorderEvents {
     Transport_MediaFileDeleted → "Transport: Media file deleted",
     Transport_FlightRecorderClose → "Transport: Flight recorder closed",
     Transport_SendQueueOverflow → "Transport: Send queue overflow",
+    Transport_StopIdleOutbound -> "Transport: Remove idle outbound",
+    Transport_Quarantined -> "Transport: Quarantined association",
+    Transport_RemovedQuarantined -> "Transport: Removed idle quarantined association",
+    Transport_RestartOutbound -> "Transport: Restart outbound",
+    Transport_RestartInbound -> "Transport: Restart outbound",
 
     // Aeron Sink events
     AeronSink_Started → "AeronSink: Started",
@@ -92,7 +110,18 @@ private[remote] object FlightRecorderEvents {
     Compression_CompressedManifest → "Compression: Compressed manifest",
     Compression_AllocatedManifestCompressionId → "Compression: Allocated manifest compression id",
     Compression_Inbound_RunActorRefAdvertisement → "InboundCompression: Run class manifest compression advertisement",
-    Compression_Inbound_RunClassManifestAdvertisement → "InboundCompression: Run class manifest compression advertisement")
-    .map { case (int, str) ⇒ int.toLong → str }
+    Compression_Inbound_RunClassManifestAdvertisement → "InboundCompression: Run class manifest compression advertisement",
+
+    // TCP outbound events
+    TcpOutbound_Connected -> "TCP out: Connected",
+    TcpOutbound_Sent -> "TCP out: Sent message",
+
+    // TCP inbound events
+    TcpInbound_Bound -> "TCP in: Bound",
+    TcpInbound_Unbound -> "TCP in: Unbound",
+    TcpInbound_Connected -> "TCP in: New connection",
+    TcpInbound_Received -> "TCP in: Received message"
+
+  ).map { case (int, str) ⇒ int.toLong → str }
 
 }

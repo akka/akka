@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import com.typesafe.config.ConfigFactory;
 
+import akka.actor.AbstractActorWithTimers;
 import akka.actor.ActorKilledException;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -29,6 +30,7 @@ import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.AbstractActor;
+import akka.actor.AbstractActor.Receive;
 import akka.testkit.TestActor.AutoPilot;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
@@ -37,6 +39,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class TestKitDocTest extends AbstractJavaTest {
 
@@ -71,6 +74,29 @@ public class TestKitDocTest extends AbstractJavaTest {
     assertTrue(actor.testMe());
   }
   //#test-actor-ref
+
+  //#timer
+  static class TestTimerActor extends AbstractActorWithTimers {
+    private static Object SCHED_KEY = "SchedKey";
+    static final class TriggerScheduling {
+    }
+    static final class ScheduledMessage {
+    }
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(TriggerScheduling.class, msg -> triggerScheduling())
+        .build();
+    }
+    void triggerScheduling() {
+      getTimers().startSingleTimer(
+        SCHED_KEY,
+        new ScheduledMessage(),
+        Duration.create(500, TimeUnit.MILLISECONDS)
+      );
+    }
+  }
+  //#timer
 
   @Test
   public void demonstrateAsk() throws Exception {
@@ -258,7 +284,7 @@ public class TestKitDocTest extends AbstractJavaTest {
             .build();
         }
       }
-      
+
       // create a test probe
       final TestKit probe = new TestKit(system);
 
@@ -347,6 +373,23 @@ public class TestKitDocTest extends AbstractJavaTest {
       assertEquals(getRef(), getLastSender());
     }};
     //#test-probe-forward
+  }
+
+  @Test
+  public void demonstrateUsingInheritenceToTestTimers() {
+    //#timer-test
+    new TestKit(system) {{
+      final TestKit probe = new TestKit(system);
+      final ActorRef target = system.actorOf(Props.create(TestTimerActor.class, () -> new TestTimerActor() {
+        @Override
+        void triggerScheduling() {
+          probe.getRef().tell(new ScheduledMessage(), getSelf());
+        }
+      }));
+      target.tell(new TestTimerActor.TriggerScheduling(), ActorRef.noSender());
+      probe.expectMsgClass(TestTimerActor.ScheduledMessage.class);
+    }};
+    //#timer-test
   }
 
   @Test

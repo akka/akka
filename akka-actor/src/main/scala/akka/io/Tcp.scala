@@ -17,6 +17,7 @@ import akka.util.{ ByteString, Helpers }
 import akka.util.Helpers.Requiring
 import akka.actor._
 import java.lang.{ Iterable ⇒ JIterable }
+import java.nio.file.Path
 
 import akka.annotation.InternalApi
 
@@ -340,6 +341,15 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
   }
 
   /**
+   * @see [[WritePath]]
+   */
+  @deprecated("Use WritePath instead", "2.5.10")
+  final case class WriteFile(filePath: String, position: Long, count: Long, ack: Event) extends SimpleWriteCommand {
+    require(position >= 0, "WriteFile.position must be >= 0")
+    require(count > 0, "WriteFile.count must be > 0")
+  }
+
+  /**
    * Write `count` bytes starting at `position` from file at `filePath` to the connection.
    * The count must be &gt; 0. The connection actor will reply with a [[CommandFailed]]
    * message if the write could not be enqueued. If [[SimpleWriteCommand#wantsAck]]
@@ -349,7 +359,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * or have been sent!</b> Unfortunately there is no way to determine whether
    * a particular write has been sent by the O/S.
    */
-  final case class WriteFile(filePath: String, position: Long, count: Long, ack: Event) extends SimpleWriteCommand {
+  final case class WritePath(path: Path, position: Long, count: Long, ack: Event) extends SimpleWriteCommand {
     require(position >= 0, "WriteFile.position must be >= 0")
     require(count > 0, "WriteFile.count must be > 0")
   }

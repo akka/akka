@@ -3,7 +3,7 @@ package akka.testkit.typed
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
-import akka.annotation.ApiMayChange
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.testkit.typed.TestKit._
 import akka.util.Timeout
 import com.typesafe.config.Config
@@ -15,7 +15,7 @@ import scala.util.control.NoStackTrace
 /**
  * Exception without stack trace to use for verifying exceptions in tests
  */
-case class TE(message: String) extends RuntimeException(message) with NoStackTrace
+final case class TE(message: String) extends RuntimeException(message) with NoStackTrace
 
 object TestKit {
 

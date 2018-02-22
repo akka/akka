@@ -101,7 +101,7 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
         private final case class WrappedBackendResponse(response: Backend.Response) extends Command
 
         def translator(backend: ActorRef[Backend.Request]): Behavior[Command] =
-          Behaviors.deferred[Command] { ctx ⇒
+          Behaviors.setup[Command] { ctx ⇒
             val backendResponseMapper: ActorRef[Backend.Response] =
               ctx.messageAdapter(rsp ⇒ WrappedBackendResponse(rsp))
 
@@ -224,7 +224,7 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
     // this is a part of the protocol that is internal to the actor itself
     case class AdaptedResponse(message: String) extends DaveMessage
 
-    def daveBehavior(hal: ActorRef[HalCommand]) = Behaviors.deferred[DaveMessage] { ctx ⇒
+    def daveBehavior(hal: ActorRef[HalCommand]) = Behaviors.setup[DaveMessage] { ctx ⇒
 
       // asking someone requires a timeout, if the timeout hits without response
       // the ask is failed with a TimeoutException
@@ -321,7 +321,7 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
       // we don't _really_ care about the actor protocol here as nobody will send us
       // messages except for responses to our queries, so we just accept any kind of message
       // but narrow that to more limited types then we interact
-      Behaviors.deferred[AnyRef] { ctx ⇒
+      Behaviors.setup[AnyRef] { ctx ⇒
         var wallet: Option[Wallet] = None
         var keys: Option[Keys] = None
 
@@ -379,13 +379,15 @@ class InteractionPatternsSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
     import akka.actor.typed.scaladsl.AskPattern._
 
-    // asking someone requires a timeout, if the timeout hits without response
+    // asking someone requires a timeout and a scheduler, if the timeout hits without response
     // the ask is failed with a TimeoutException
     implicit val timeout: Timeout = 3.seconds
-    // the response callback will be executed on this execution context
-    import system.executionContext
+    implicit val scheduler = system.scheduler
 
     val result: Future[Cookies] = cookieActorRef ? (ref ⇒ GiveMeCookies(ref))
+
+    // the response callback will be executed on this execution context
+    import system.executionContext
 
     result.onComplete {
       case Success(cookies) ⇒ println("Yay, cookies!")

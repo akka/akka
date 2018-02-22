@@ -72,7 +72,6 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
       val a = system.actorOf(Props(new ActorWithMaterializer(p)).withDispatcher("akka.test.stream-dispatcher"))
 
       p.expectMsg("hello")
-      p.expectMsg("one")
       a ! PoisonPill
       val Failure(ex) = p.expectMsgType[Try[Done]]
     }
@@ -101,7 +100,9 @@ object ActorMaterializerSpec {
     implicit val mat = ActorMaterializer(settings)(context)
 
     Source.repeat("hello")
-      .alsoTo(Flow[String].take(1).to(Sink.actorRef(p.ref, "one")))
+      .take(1)
+      .concat(Source.maybe)
+      .map(p.ref ! _)
       .runWith(Sink.onComplete(signal ⇒ {
         p.ref ! signal
       }))

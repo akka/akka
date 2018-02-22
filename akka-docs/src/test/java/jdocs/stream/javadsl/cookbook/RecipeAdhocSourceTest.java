@@ -18,6 +18,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.Ignore;
+import scala.concurrent.Await;
 import scala.concurrent.Promise;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
@@ -99,8 +100,8 @@ public class RecipeAdhocSourceTest extends RecipeTest {
           .run(mat);
 
         probe.requestNext("a");
-        Thread.sleep(500);
-        assertEquals(true, shutdown.isCompleted());
+        Thread.sleep(300);
+        Await.result(shutdown.future(), duration("3 seconds"));
       }
     };
   }
@@ -156,8 +157,8 @@ public class RecipeAdhocSourceTest extends RecipeTest {
 
         probe.requestNext("a");
         assertEquals(1, startedCount.get());
-        Thread.sleep(500);
-        assertEquals(true, shutdown.isCompleted());
+        Thread.sleep(200);
+        Await.result(shutdown.future(), duration("3 seconds"));
       }
     };
   }
