@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets
 import java.util.Optional
 import java.util.concurrent.TimeUnit
 
-import akka.Done
+import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.dispatch.Dispatchers
 import akka.remote.WireFormats.AddressData
@@ -46,6 +46,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case Kill                                 ⇒ ParameterlessSerializedMessage
     case RemoteWatcher.Heartbeat              ⇒ ParameterlessSerializedMessage
     case Done                                 ⇒ ParameterlessSerializedMessage
+    case NotUsed                              ⇒ ParameterlessSerializedMessage
     case hbrsp: RemoteWatcher.HeartbeatRsp    ⇒ serializeHeartbeatRsp(hbrsp)
     case rs: RemoteScope                      ⇒ serializeRemoteScope(rs)
     case LocalScope                           ⇒ ParameterlessSerializedMessage
@@ -288,6 +289,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val KillManifest = "K"
   private val RemoteWatcherHBManifest = "RWHB"
   private val DoneManifest = "DONE"
+  private val NotUsedManifest = "NU"
   private val AddressManifest = "AD"
   private val UniqueAddressManifest = "UD"
   private val RemoteWatcherHBRespManifest = "RWHR"
@@ -319,6 +321,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     KillManifest → ((_) ⇒ Kill),
     RemoteWatcherHBManifest → ((_) ⇒ RemoteWatcher.Heartbeat),
     DoneManifest → ((_) ⇒ Done),
+    NotUsedManifest → ((_) ⇒ NotUsed),
     AddressManifest → deserializeAddressData,
     UniqueAddressManifest → deserializeUniqueAddress,
     RemoteWatcherHBRespManifest → deserializeHeartbeatRsp,
@@ -352,6 +355,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       case Kill                               ⇒ KillManifest
       case RemoteWatcher.Heartbeat            ⇒ RemoteWatcherHBManifest
       case Done                               ⇒ DoneManifest
+      case NotUsed                            ⇒ NotUsedManifest
       case _: Address                         ⇒ AddressManifest
       case _: UniqueAddress                   ⇒ UniqueAddressManifest
       case _: RemoteWatcher.HeartbeatRsp      ⇒ RemoteWatcherHBRespManifest
