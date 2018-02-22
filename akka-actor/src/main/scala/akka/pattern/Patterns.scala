@@ -282,6 +282,14 @@ object PatternsCS {
 
   import scala.concurrent.duration._
 
+  private object ExplicitAskImpl extends ExplicitAskSupport {
+    def explicitAsk(
+      actor:          ActorRef,
+      messageFactory: japi.function.Function[ActorRef, Any],
+      timeout:        Timeout): CompletionStage[AnyRef] =
+      ask(actor, (ref: ActorRef) ⇒ messageFactory(ref))(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
+  }
+
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[java.util.concurrent.CompletionStage]]
@@ -328,9 +336,13 @@ object PatternsCS {
    *   },
    *   timeout);
    * }}}
+   *
+   * @param actor          the actor to be asked
+   * @param messageFactory function taking an actor ref and returning the message to be sent
+   * @param timeout        the timeout for the response before failing the returned completion stage
    */
-  def ask(actor: ActorRef, messageFactory: japi.Function[ActorRef, Any], timeout: Timeout): CompletionStage[AnyRef] =
-    scalaAsk(actor, messageFactory.apply _)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
+  def explicitAsk(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeout: Timeout): CompletionStage[AnyRef] =
+    ExplicitAskImpl.explicitAsk(actor, messageFactory, timeout)
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -378,9 +390,13 @@ object PatternsCS {
    *   },
    *   timeout);
    * }}}
+   *
+   * @param actor          the actor to be asked
+   * @param messageFactory function taking an actor ref and returning the message to be sent
+   * @param timeout        the timeout for the response before failing the returned completion stage
    */
-  def ask(actor: ActorRef, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
-    scalaAsk(actor, messageFactory.apply _)(Timeout(timeoutMillis.millis)).toJava.asInstanceOf[CompletionStage[AnyRef]]
+  def explicitAsk(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
+    explicitAsk(actor, messageFactory, Timeout(timeoutMillis.millis))
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
