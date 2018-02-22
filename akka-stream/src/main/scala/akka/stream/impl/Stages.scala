@@ -130,6 +130,7 @@ import akka.stream._
     val actorSubscriberSink = name("actorSubscriberSink")
     val queueSink = name("queueSink")
     val lazySink = name("lazySink")
+    val lazyFlow = name("lazyFlow")
     val lazySource = name("lazySource")
     val outputStreamSink = name("outputStreamSink") and IODispatcher
     val inputStreamSink = name("inputStreamSink") and IODispatcher

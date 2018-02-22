@@ -1112,6 +1112,33 @@ also be sent to the wire-tap `Sink` if there is demand.
 
 ---------------------------------------------------------------
 
+### lazyInit
+
+Creates a real `Flow` upon receiving the first element by calling relevant `flowFactory` given as an argument.
+Internal `Flow` will not be created if there are no elements, because of completion or error.
+The materialized value of the `Flow` will be the materialized value of the created internal flow.
+
+If `flowFactory` throws an exception and the supervision decision is
+`akka.stream.Supervision.Stop` the materialized value of the flow will be completed with
+the result of the `fallback` argument. For all other supervision options it will
+try to create flow with the next element.
+
+The `fallback` will be executed when there was no elements and completed is received from upstream
+or when there was an exception either thrown by the `flowFactory` or during the internal flow
+materialization process.
+
+Adheres to the `ActorAttributes.SupervisionStrategy` attribute.
+
+**emits** when the internal flow is successfully created and it emits
+
+**backpressures** when the internal flow is successfully created and it backpressures
+
+**completes** when upstream completes and all elements have been emitted from the internal flow
+
+**cancels** when downstream cancels
+
+---------------------------------------------------------------
+
 <br/>
 
 ## Flow stages composed of Sinks and Sources
