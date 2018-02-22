@@ -15,8 +15,6 @@ import akka.actor.typed.scaladsl.Behaviors.same
 import akka.actor.typed.scaladsl.ActorContext
 import akka.util.TypedMultiMap
 
-import scala.reflect.ClassTag
-
 /**
  * Marker interface to use with dynamic access
  *

@@ -133,7 +133,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * Internal API
    */
   @InternalApi
-  object MessageImpls {
+  private[akka] object MessageImpls {
     // some trixery here to provide a nice _and_ safe API in the face
     // of type erasure, more type safe factory methods for each message
     // is the user API below while still hiding the type parameter so that
