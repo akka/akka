@@ -57,6 +57,7 @@ trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
     awaitAssert({
       val actual = storage.findMany(persistenceId, nextInd, msgs.size)
     })
+    ???
   }
 
   override def expectPersistedInAnyOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit = ???
