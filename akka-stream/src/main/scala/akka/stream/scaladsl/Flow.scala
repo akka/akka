@@ -9,7 +9,7 @@ import akka.Done
 import akka.stream.impl._
 import akka.stream.impl.fusing._
 import akka.stream.stage._
-import akka.util.ConstantFun
+import akka.util.{ ConstantFun, Timeout }
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -19,7 +19,11 @@ import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
+import akka.actor.ActorRef
 import akka.annotation.DoNotInherit
+
+import scala.annotation.implicitNotFound
+import scala.reflect.ClassTag
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -493,6 +497,34 @@ object Flow {
       FlowShape(bidi.in1, bidi.out2)
     })
   // format: ON
+
+  /**
+   * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
+   * if there are no elements, because of completion or error.
+   * The materialized value of the `Flow` will be the materialized
+   * value of the created internal flow.
+   *
+   * If `flowFactory` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Stop]] the materialized value of the flow will be completed with
+   * the result of the `fallback`. For all other supervision options it will
+   * try to create flow with the next element.
+   *
+   * `fallback` will be executed when there was no elements and completed is received from upstream
+   * or when there was an exception either thrown by the `flowFactory` or during the internal flow
+   * materialization process.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the internal flow is successfully created and it emits
+   *
+   * '''Backpressures when''' the internal flow is successfully created and it backpressures
+   *
+   * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def lazyInit[I, O, M](flowFactory: I ⇒ Future[Flow[I, O, M]], fallback: () ⇒ M): Flow[I, O, M] =
+    Flow.fromGraph(new LazyFlow[I, O, M](flowFactory, fallback))
 }
 
 object RunnableGraph {
@@ -816,6 +848,114 @@ trait FlowOps[+Out, +Mat] {
   def mapAsyncUnordered[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T] = via(MapAsyncUnordered(parallelism, f))
 
   /**
+   * Use the `ask` pattern to send a request-reply message to the target `ref` actor.
+   * If any of the asks times out it will fail the stream with a [[akka.pattern.AskTimeoutException]].
+   *
+   * Do not forget to include the expected response type in the method call, like so:
+   *
+   * {{{
+   * flow.ask[ExpectedReply](ref)
+   * }}}
+   *
+   * otherwise `Nothing` will be assumed, which is most likely not what you want.
+   *
+   * Defaults to parallelism of 2 messages in flight, since while one ask message may be being worked on, the second one
+   * still be in the mailbox, so defaulting to sending the second one a bit earlier than when first ask has replied maintains
+   * a slightly healthier throughput.
+   *
+   * The mapTo class parameter is used to cast the incoming responses to the expected response type.
+   *
+   * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
+   * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+   *
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the futures (in submission order) created by the ask pattern internally are completed
+   *
+   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
+   *
+   * '''Fails when''' the passed in actor terminates, or a timeout is exceeded in any of the asks performed
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
+  def ask[S](ref: ActorRef)(implicit timeout: Timeout, tag: ClassTag[S]): Repr[S] =
+    ask(2)(ref)(timeout, tag)
+
+  /**
+   * Use the `ask` pattern to send a request-reply message to the target `ref` actor.
+   * If any of the asks times out it will fail the stream with a [[akka.pattern.AskTimeoutException]].
+   *
+   * Do not forget to include the expected response type in the method call, like so:
+   *
+   * {{{
+   * flow.ask[ExpectedReply](parallelism = 4)(ref)
+   * }}}
+   *
+   * otherwise `Nothing` will be assumed, which is most likely not what you want.
+   *
+   * Parallelism limits the number of how many asks can be "in flight" at the same time.
+   * Please note that the elements emitted by this stage are in-order with regards to the asks being issued
+   * (i.e. same behaviour as mapAsync).
+   *
+   * The mapTo class parameter is used to cast the incoming responses to the expected response type.
+   *
+   * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
+   * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+   *
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the futures (in submission order) created by the ask pattern internally are completed
+   *
+   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
+   *
+   * '''Fails when''' the passed in actor terminates, or a timeout is exceeded in any of the asks performed
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
+  def ask[S](parallelism: Int)(ref: ActorRef)(implicit timeout: Timeout, tag: ClassTag[S]): Repr[S] = {
+    val askFlow = Flow[Out]
+      .watch(ref)
+      .mapAsync(parallelism) { el ⇒
+        akka.pattern.ask(ref).?(el)(timeout).mapTo[S](tag)
+      }
+      .recover[S] {
+        // the purpose of this recovery is to change the name of the stage in that exception
+        // we do so in order to help users find which stage caused the failure -- "the ask stage"
+        case ex: WatchedActorTerminatedException ⇒
+          throw new WatchedActorTerminatedException("ask()", ex.ref)
+      }
+      .named("ask")
+
+    via(askFlow)
+  }
+
+  /**
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * '''Emits when''' upstream emits
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Fails when''' the watched actor terminates
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def watch(ref: ActorRef): Repr[Out] =
+    via(Watch(ref))
+
+  /**
    * Only pass on those elements that satisfy the given predicate.
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
@@ -922,6 +1062,25 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def collect[T](pf: PartialFunction[Out, T]): Repr[T] = via(Collect(pf))
+
+  /**
+   * Transform this stream by testing the type of each of the elements
+   * on which the element is an instance of the provided type as they pass through this processing step.
+   *
+   * Non-matching elements are filtered out.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the element is an instance of the provided type
+   *
+   * '''Backpressures when''' the element is an instance of the provided type and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def collectType[T](implicit tag: ClassTag[T]): Repr[T] =
+    collect { case c if tag.runtimeClass.isInstance(c) ⇒ c.asInstanceOf[T] }
 
   /**
    * Chunk up this stream into groups of the given size, with the last group
@@ -2286,14 +2445,14 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Completes when''' upstream completes
    *
-   * '''Cancels when''' downstream and Sink cancel
+   * '''Cancels when''' downstream or Sink cancels
    */
   def alsoTo(that: Graph[SinkShape[Out], _]): Repr[Out] = via(alsoToGraph(that))
 
   protected def alsoToGraph[M](that: Graph[SinkShape[Out], M]): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
     GraphDSL.create(that) { implicit b ⇒ r ⇒
       import GraphDSL.Implicits._
-      val bcast = b.add(Broadcast[Out](2))
+      val bcast = b.add(Broadcast[Out](2, eagerCancel = true))
       bcast.out(1) ~> r
       FlowShape(bcast.in, bcast.out(0))
     }

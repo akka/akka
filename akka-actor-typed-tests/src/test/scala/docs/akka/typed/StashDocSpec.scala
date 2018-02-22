@@ -6,13 +6,11 @@ package docs.akka.typed
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
-
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.BehaviorTestkit
-import akka.testkit.typed.TestInbox
+import akka.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox }
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
@@ -34,7 +32,7 @@ object StashDocSpec {
     private final case class DBError(cause: Throwable) extends Command
 
     def behavior(id: String, db: DB): Behavior[Command] =
-      Behaviors.deferred[Command] { ctx ⇒
+      Behaviors.setup[Command] { ctx ⇒
 
         val buffer = StashBuffer[Command](capacity = 100)
 
@@ -109,23 +107,23 @@ class StashDocSpec extends WordSpec with Matchers {
         override def save(id: String, value: String): Future[Done] = Future.successful(Done)
         override def load(id: String): Future[String] = Future.successful("TheValue")
       }
-      val testKit = BehaviorTestkit(DataAccess.behavior(id = "17", db))
+      val testKit = BehaviorTestKit(DataAccess.behavior(id = "17", db))
       val getInbox = TestInbox[String]()
       testKit.run(DataAccess.Get(getInbox.ref))
-      val initialStateMsg = testKit.selfInbox().receiveMsg()
+      val initialStateMsg = testKit.selfInbox().receiveMessage()
       testKit.run(initialStateMsg)
-      getInbox.expectMsg("TheValue")
+      getInbox.expectMessage("TheValue")
 
       val saveInbox = TestInbox[Done]()
       testKit.run(DataAccess.Save("UpdatedValue", saveInbox.ref))
       testKit.run(DataAccess.Get(getInbox.ref))
-      val saveSuccessMsg = testKit.selfInbox().receiveMsg()
+      val saveSuccessMsg = testKit.selfInbox().receiveMessage()
       testKit.run(saveSuccessMsg)
-      saveInbox.expectMsg(Done)
-      getInbox.expectMsg("UpdatedValue")
+      saveInbox.expectMessage(Done)
+      getInbox.expectMessage("UpdatedValue")
 
       testKit.run(DataAccess.Get(getInbox.ref))
-      getInbox.expectMsg("UpdatedValue")
+      getInbox.expectMessage("UpdatedValue")
 
     }
   }

@@ -16,6 +16,8 @@ import akka.util.OptionVal
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
 
+import akka.stream.Attributes.LogLevels
+
 /**
  * INTERNAL API
  *
@@ -347,7 +349,12 @@ import scala.util.control.NonFatal
         def reportStageError(e: Throwable): Unit = {
           if (activeStage == null) throw e
           else {
-            log.error(e, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), e.getMessage)
+            val loggingEnabled = activeStage.attributes.get[LogLevels] match {
+              case Some(levels) ⇒ levels.onFailure != LogLevels.Off
+              case None         ⇒ true
+            }
+            if (loggingEnabled)
+              log.error(e, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), e.getMessage)
             activeStage.failStage(e)
 
             // Abort chasing

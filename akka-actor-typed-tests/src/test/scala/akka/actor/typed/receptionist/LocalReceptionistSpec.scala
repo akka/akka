@@ -5,15 +5,15 @@ package akka.actor.typed.receptionist
 
 import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist._
-import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.testkit.typed.{ BehaviorTestkit, TestInbox, TestKit, TestKitSettings }
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.scaladsl.Behaviors
+import akka.testkit.typed.TestKitSettings
+import akka.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox, ActorTestKit, TestProbe }
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Future
 
-class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with Eventually {
+class LocalReceptionistSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
 
   trait ServiceA
   val ServiceKeyA = ServiceKey[ServiceA]("service-a")
@@ -42,50 +42,50 @@ class LocalReceptionistSpec extends TestKit with TypedAkkaSpecWithShutdown with 
   "A local receptionist" must {
 
     "register a service" in {
-      val testkit = BehaviorTestkit(receptionistBehavior)
+      val testkit = BehaviorTestKit(receptionistBehavior)
       val a = TestInbox[ServiceA]("a")
       val r = TestInbox[Registered[_]]("r")
       testkit.run(Register(ServiceKeyA, a.ref)(r.ref))
       testkit.retrieveEffect() // watching however that is implemented
-      r.receiveMsg() should be(Registered(ServiceKeyA, a.ref))
+      r.receiveMessage() should be(Registered(ServiceKeyA, a.ref))
       val q = TestInbox[Listing[ServiceA]]("q")
       testkit.run(Find(ServiceKeyA)(q.ref))
       testkit.retrieveAllEffects() should be(Nil)
-      q.receiveMsg() should be(Listing(ServiceKeyA, Set(a.ref)))
+      q.receiveMessage() should be(Listing(ServiceKeyA, Set(a.ref)))
       assertEmpty(a, r, q)
     }
 
     "register two services" in {
-      val testkit = BehaviorTestkit(receptionistBehavior)
+      val testkit = BehaviorTestKit(receptionistBehavior)
       val a = TestInbox[ServiceA]("a")
       val r = TestInbox[Registered[_]]("r")
       testkit.run(Register(ServiceKeyA, a.ref)(r.ref))
-      r.receiveMsg() should be(Registered(ServiceKeyA, a.ref))
+      r.receiveMessage() should be(Registered(ServiceKeyA, a.ref))
       val b = TestInbox[ServiceB]("b")
       testkit.run(Register(ServiceKeyB, b.ref)(r.ref))
-      r.receiveMsg() should be(Registered(ServiceKeyB, b.ref))
+      r.receiveMessage() should be(Registered(ServiceKeyB, b.ref))
       val q = TestInbox[Listing[_]]("q")
       testkit.run(Find(ServiceKeyA)(q.ref))
-      q.receiveMsg() should be(Listing(ServiceKeyA, Set(a.ref)))
+      q.receiveMessage() should be(Listing(ServiceKeyA, Set(a.ref)))
       testkit.run(Find(ServiceKeyB)(q.ref))
-      q.receiveMsg() should be(Listing(ServiceKeyB, Set(b.ref)))
+      q.receiveMessage() should be(Listing(ServiceKeyB, Set(b.ref)))
       assertEmpty(a, b, r, q)
     }
 
     "register two services with the same key" in {
-      val testkit = BehaviorTestkit(receptionistBehavior)
+      val testkit = BehaviorTestKit(receptionistBehavior)
       val a1 = TestInbox[ServiceA]("a1")
       val r = TestInbox[Registered[_]]("r")
       testkit.run(Register(ServiceKeyA, a1.ref)(r.ref))
-      r.receiveMsg() should be(Registered(ServiceKeyA, a1.ref))
+      r.receiveMessage() should be(Registered(ServiceKeyA, a1.ref))
       val a2 = TestInbox[ServiceA]("a2")
       testkit.run(Register(ServiceKeyA, a2.ref)(r.ref))
-      r.receiveMsg() should be(Registered(ServiceKeyA, a2.ref))
+      r.receiveMessage() should be(Registered(ServiceKeyA, a2.ref))
       val q = TestInbox[Listing[_]]("q")
       testkit.run(Find(ServiceKeyA)(q.ref))
-      q.receiveMsg() should be(Listing(ServiceKeyA, Set(a1.ref, a2.ref)))
+      q.receiveMessage() should be(Listing(ServiceKeyA, Set(a1.ref, a2.ref)))
       testkit.run(Find(ServiceKeyB)(q.ref))
-      q.receiveMsg() should be(Listing(ServiceKeyB, Set.empty[ActorRef[ServiceB]]))
+      q.receiveMessage() should be(Listing(ServiceKeyB, Set.empty[ActorRef[ServiceB]]))
       assertEmpty(a1, a2, r, q)
     }
 

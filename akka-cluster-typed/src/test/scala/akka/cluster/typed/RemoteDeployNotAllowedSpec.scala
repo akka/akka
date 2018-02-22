@@ -6,9 +6,9 @@ package akka.cluster.typed
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.duration._
 
 object RemoteDeployNotAllowedSpec {
@@ -42,7 +42,9 @@ object RemoteDeployNotAllowedSpec {
     """).withFallback(config)
 }
 
-class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.config) with TypedAkkaSpecWithShutdown {
+class RemoteDeployNotAllowedSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+
+  override def config = RemoteDeployNotAllowedSpec.config
 
   "Typed cluster" must {
 
@@ -62,7 +64,7 @@ class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.conf
             // this should throw
             try {
               ctx.spawn(
-                Behaviors.deferred[AnyRef] { ctx ⇒ Behaviors.empty },
+                Behaviors.setup[AnyRef] { ctx ⇒ Behaviors.empty },
                 name)
             } catch {
               case ex: Exception ⇒ probe.ref ! ex
@@ -72,7 +74,7 @@ class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.conf
           case SpawnAnonymous ⇒
             // this should throw
             try {
-              ctx.spawnAnonymous(Behaviors.deferred[AnyRef] { ctx ⇒ Behaviors.empty })
+              ctx.spawnAnonymous(Behaviors.setup[AnyRef] { ctx ⇒ Behaviors.empty })
             } catch {
               case ex: Exception ⇒ probe.ref ! ex
             }
@@ -93,7 +95,7 @@ class RemoteDeployNotAllowedSpec extends TestKit(RemoteDeployNotAllowedSpec.conf
         system2 ! SpawnAnonymous
         probe.expectMessageType[Exception].getMessage should ===("Remote deployment not allowed for typed actors")
       } finally {
-        TestKit.shutdown(system2, 5.seconds)
+        ActorTestKit.shutdown(system2, 5.seconds)
       }
     }
   }

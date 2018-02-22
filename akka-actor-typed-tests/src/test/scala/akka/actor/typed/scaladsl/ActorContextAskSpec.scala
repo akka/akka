@@ -6,8 +6,7 @@ package akka.actor.typed.scaladsl
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ ActorRef, PostStop, Props, TypedAkkaSpecWithShutdown }
 import akka.testkit.EventFilter
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.TimeoutException
@@ -30,7 +29,9 @@ object ActorContextAskSpec {
     """)
 }
 
-class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with TypedAkkaSpecWithShutdown {
+class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+
+  override def config = ActorContextAskSpec.config
 
   implicit val untyped = system.toUntyped // FIXME no typed event filter yet
 
@@ -47,7 +48,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
 
       val probe = TestProbe[AnyRef]()
 
-      val snitch = Behaviors.deferred[Pong] { (ctx) ⇒
+      val snitch = Behaviors.setup[Pong] { (ctx) ⇒
 
         // Timeout comes from TypedAkkaSpec
 
@@ -86,7 +87,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
         }
       ))
 
-      val snitch = Behaviors.deferred[AnyRef] { (ctx) ⇒
+      val snitch = Behaviors.setup[AnyRef] { (ctx) ⇒
         ctx.ask(pingPong)(Ping) {
           case Success(msg) ⇒ throw new NotImplementedError(msg.toString)
           case Failure(x)   ⇒ x
@@ -114,7 +115,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
 
     "deal with timeouts in ask" in {
       val probe = TestProbe[AnyRef]()
-      val snitch = Behaviors.deferred[AnyRef] { (ctx) ⇒
+      val snitch = Behaviors.setup[AnyRef] { (ctx) ⇒
 
         ctx.ask[String, String](system.deadLetters)(ref ⇒ "boo") {
           case Success(m) ⇒ m

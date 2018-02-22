@@ -3,17 +3,20 @@
  */
 package akka.remote.artery
 
-import java.io.File
 import java.net.InetSocketAddress
-import java.nio.channels.{ DatagramChannel, FileChannel }
+import java.nio.channels.DatagramChannel
+import java.nio.channels.FileChannel
+import java.nio.channels.ServerSocketChannel
 import java.nio.file.Path
-import java.util.UUID
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
@@ -23,21 +26,25 @@ import scala.util.control.NonFatal
 
 import akka.Done
 import akka.NotUsed
-import akka.actor._
 import akka.actor.Actor
-import akka.actor.Cancellable
 import akka.actor.Props
+import akka.actor._
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import akka.remote._
-import akka.remote.artery.AeronSource.ResourceLifecycle
-import akka.remote.artery.ArteryTransport.ShuttingDown
+import akka.remote.AddressUidExtension
+import akka.remote.RemoteActorRef
+import akka.remote.RemoteActorRefProvider
+import akka.remote.RemoteTransport
+import akka.remote.ThisActorSystemQuarantinedEvent
+import akka.remote.UniqueAddress
+import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.Encoder.OutboundCompressionAccess
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
-import akka.remote.artery.compress._
 import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
+import akka.remote.artery.compress._
+import akka.remote.artery.aeron.AeronSource
 import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
 import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
 import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
@@ -49,20 +56,8 @@ import akka.stream.SharedKillSwitch
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
 import akka.util.OptionVal
 import akka.util.WildcardIndex
-import io.aeron._
-import io.aeron.driver.MediaDriver
-import io.aeron.driver.ThreadingMode
-import io.aeron.exceptions.ConductorServiceTimeoutException
-import io.aeron.exceptions.DriverTimeoutException
-import org.agrona.{ DirectBuffer, ErrorHandler, IoUtil }
-import org.agrona.concurrent.BackoffIdleStrategy
-import akka.remote.artery.Decoder.InboundCompressionAccess
-import io.aeron.status.ChannelEndpointStatus
-import org.agrona.collections.IntObjConsumer
-import org.agrona.concurrent.status.CountersReader.MetaData
 
 /**
  * INTERNAL API
@@ -107,6 +102,8 @@ private[remote] object AssociationState {
     new AssociationState(
       incarnation = 1,
       uniqueRemoteAddressPromise = Promise(),
+      lastUsedTimestamp = new AtomicLong(System.nanoTime()),
+      controlIdleKillSwitch = OptionVal.None,
       quarantined = ImmutableLongMap.empty[QuarantinedTimestamp])
 
   final case class QuarantinedTimestamp(nanoTime: Long) {
@@ -121,6 +118,8 @@ private[remote] object AssociationState {
 private[remote] final class AssociationState(
   val incarnation:                Int,
   val uniqueRemoteAddressPromise: Promise[UniqueAddress],
+  val lastUsedTimestamp:          AtomicLong, // System.nanoTime timestamp
+  val controlIdleKillSwitch:      OptionVal[SharedKillSwitch],
   val quarantined:                ImmutableLongMap[AssociationState.QuarantinedTimestamp]) {
 
   import AssociationState.QuarantinedTimestamp
@@ -148,7 +147,8 @@ private[remote] final class AssociationState(
   }
 
   def newIncarnation(remoteAddressPromise: Promise[UniqueAddress]): AssociationState =
-    new AssociationState(incarnation + 1, remoteAddressPromise, quarantined)
+    new AssociationState(incarnation + 1, remoteAddressPromise,
+      lastUsedTimestamp = new AtomicLong(System.nanoTime()), controlIdleKillSwitch, quarantined)
 
   def newQuarantined(): AssociationState =
     uniqueRemoteAddressPromise.future.value match {
@@ -156,6 +156,8 @@ private[remote] final class AssociationState(
         new AssociationState(
           incarnation,
           uniqueRemoteAddressPromise,
+          lastUsedTimestamp = new AtomicLong(System.nanoTime()),
+          controlIdleKillSwitch,
           quarantined = quarantined.updated(a.uid, QuarantinedTimestamp(System.nanoTime())))
       case _ ⇒ this
     }
@@ -169,10 +171,14 @@ private[remote] final class AssociationState(
 
   def isQuarantined(uid: Long): Boolean = quarantined.contains(uid)
 
+  def withControlIdleKillSwitch(killSwitch: OptionVal[SharedKillSwitch]): AssociationState =
+    new AssociationState(incarnation, uniqueRemoteAddressPromise, lastUsedTimestamp,
+      controlIdleKillSwitch = killSwitch, quarantined)
+
   override def toString(): String = {
     val a = uniqueRemoteAddressPromise.future.value match {
       case Some(Success(a)) ⇒ a
-      case Some(Failure(e)) ⇒ s"Failure(${e.getMessage})"
+      case Some(Failure(e)) ⇒ s"Failure($e)"
       case None             ⇒ "unknown"
     }
     s"AssociationState($incarnation, $a)"
@@ -205,6 +211,11 @@ private[remote] trait OutboundContext {
    * address of this association. It will be sent over the control sub-channel.
    */
   def sendControl(message: ControlMessage): Unit
+
+  /**
+   * @return `true` if any of the streams are active (not stopped due to idle)
+   */
+  def isOrdinaryMessageStreamActive(): Boolean
 
   /**
    * An outbound stage can listen to control messages
@@ -285,26 +296,19 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
 /**
  * INTERNAL API
  */
-private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
+private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
   extends RemoteTransport(_system, _provider) with InboundContext {
-  import ArteryTransport.AeronTerminated
-  import ArteryTransport.ShutdownSignal
-  import ArteryTransport.InboundStreamMatValues
+  import ArteryTransport._
   import FlightRecorderEvents._
 
   // these vars are initialized once in the start method
   @volatile private[this] var _localAddress: UniqueAddress = _
   @volatile private[this] var _bindAddress: UniqueAddress = _
   @volatile private[this] var _addresses: Set[Address] = _
-  @volatile private[this] var materializer: Materializer = _
-  @volatile private[this] var controlMaterializer: Materializer = _
+  @volatile protected var materializer: Materializer = _
+  @volatile protected var controlMaterializer: Materializer = _
   @volatile private[this] var controlSubject: ControlMessageSubject = _
   @volatile private[this] var messageDispatcher: MessageDispatcher = _
-  private[this] val mediaDriver = new AtomicReference[Option[MediaDriver]](None)
-  @volatile private[this] var aeron: Aeron = _
-  @volatile private[this] var aeronErrorLogTask: Cancellable = _
-  @volatile private[this] var aeronCounterTask: Cancellable = _
-  @volatile private[this] var areonErrorLog: AeronErrorLog = _
 
   override val log: LoggingAdapter = Logging(system, getClass.getName)
 
@@ -319,7 +323,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
    *
    * Use `inboundCompressionAccess` (provided by the materialized `Decoder`) to call into the compression infrastructure.
    */
-  private[this] val _inboundCompressions = {
+  protected val _inboundCompressions = {
     if (settings.Advanced.Compression.Enabled) {
       val eventSink = createFlightRecorderEventSink(synchr = false)
       new InboundCompressionsImpl(system, this, settings.Advanced.Compression, eventSink)
@@ -329,6 +333,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   @volatile private[this] var _inboundCompressionAccess: OptionVal[InboundCompressionAccess] = OptionVal.None
   /** Only access compression tables via the CompressionAccess */
   def inboundCompressionAccess: OptionVal[InboundCompressionAccess] = _inboundCompressionAccess
+  protected def setInboundCompressionAccess(a: InboundCompressionAccess): Unit =
+    _inboundCompressionAccess = OptionVal(a)
 
   def bindAddress: UniqueAddress = _bindAddress
   override def localAddress: UniqueAddress = _localAddress
@@ -336,17 +342,16 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   override def addresses: Set[Address] = _addresses
   override def localAddressForRemote(remote: Address): Address = defaultAddress
 
-  private val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
+  protected val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
 
   // keyed by the streamId
-  private[this] val streamMatValues = new AtomicReference(Map.empty[Int, InboundStreamMatValues])
+  protected val streamMatValues = new AtomicReference(Map.empty[Int, InboundStreamMatValues])
   private[this] val hasBeenShutdown = new AtomicBoolean(false)
 
   private val testState = new SharedTestState
 
-  private val inboundLanes = settings.Advanced.InboundLanes
+  protected val inboundLanes = settings.Advanced.InboundLanes
 
-  // TODO use WildcardIndex.isEmpty when merged from master
   val largeMessageChannelEnabled: Boolean =
     !settings.LargeMessageDestinations.wildcardTree.isEmpty ||
       !settings.LargeMessageDestinations.doubleWildcardTree.isEmpty
@@ -361,26 +366,24 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       .insert(Array("system", "cluster", "core", "daemon", "crossDcHeartbeatSender"), NotUsed)
       .insert(Array("system", "cluster", "heartbeatReceiver"), NotUsed)
 
-  private def inboundChannel = s"aeron:udp?endpoint=${_bindAddress.address.host.get}:${_bindAddress.address.port.get}"
-  private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
-
-  private val controlStreamId = 1
-  private val ordinaryStreamId = 2
-  private val largeStreamId = 3
-
-  private val taskRunner = new TaskRunner(system, settings.Advanced.IdleCpuLevel)
-
   private val restartCounter = new RestartCounter(settings.Advanced.InboundMaxRestarts, settings.Advanced.InboundRestartTimeout)
 
-  private val envelopeBufferPool = new EnvelopeBufferPool(settings.Advanced.MaximumFrameSize, settings.Advanced.BufferPoolSize)
-  private val largeEnvelopeBufferPool = new EnvelopeBufferPool(settings.Advanced.MaximumLargeFrameSize, settings.Advanced.LargeBufferPoolSize)
+  protected val envelopeBufferPool = new EnvelopeBufferPool(settings.Advanced.MaximumFrameSize, settings.Advanced.BufferPoolSize)
+  protected val largeEnvelopeBufferPool =
+    if (largeMessageChannelEnabled)
+      new EnvelopeBufferPool(settings.Advanced.MaximumLargeFrameSize, settings.Advanced.LargeBufferPoolSize)
+    else // not used
+      new EnvelopeBufferPool(0, 2)
 
   private val inboundEnvelopePool = ReusableInboundEnvelope.createObjectPool(capacity = 16)
   // The outboundEnvelopePool is shared among all outbound associations
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity =
     settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
 
-  private val topLevelFREvents =
+  /**
+   * Thread-safe flight recorder for top level events.
+   */
+  val topLevelFlightRecorder: EventSink =
     createFlightRecorderEventSink(synchr = true)
 
   def createFlightRecorderEventSink(synchr: Boolean = false): EventSink = {
@@ -405,32 +408,27 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       priorityMessageDestinations,
       outboundEnvelopePool))
 
+  def remoteAddresses: Set[Address] = associationRegistry.allAssociations.map(_.remoteAddress)
+
   override def settings: ArterySettings = provider.remoteSettings.Artery
 
   override def start(): Unit = {
     if (system.settings.JvmShutdownHooks)
       Runtime.getRuntime.addShutdownHook(shutdownHook)
 
-    startMediaDriver()
-    startAeron()
-    topLevelFREvents.loFreq(Transport_AeronStarted, NoMetaData)
-    startAeronErrorLog()
-    topLevelFREvents.loFreq(Transport_AeronErrorLogStarted, NoMetaData)
-    if (settings.LogAeronCounters) {
-      startAeronCounterLog()
-    }
-    taskRunner.start()
-    topLevelFREvents.loFreq(Transport_TaskRunnerStarted, NoMetaData)
+    startTransport()
+    topLevelFlightRecorder.loFreq(Transport_Started, NoMetaData)
 
+    val udp = settings.Transport == ArterySettings.AeronUpd
     val port =
       if (settings.Canonical.Port == 0) {
         if (settings.Bind.Port != 0) settings.Bind.Port // if bind port is set, use bind port instead of random
-        else ArteryTransport.autoSelectPort(settings.Canonical.Hostname)
+        else ArteryTransport.autoSelectPort(settings.Canonical.Hostname, udp)
       } else settings.Canonical.Port
 
     val bindPort = if (settings.Bind.Port == 0) {
       if (settings.Canonical.Port == 0) port // canonical and bind ports are zero. Use random port for both
-      else ArteryTransport.autoSelectPort(settings.Bind.Hostname)
+      else ArteryTransport.autoSelectPort(settings.Bind.Hostname, udp)
     } else settings.Bind.Port
 
     _localAddress = UniqueAddress(
@@ -443,7 +441,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       AddressUidExtension(system).longAddressUid)
 
     // TODO: This probably needs to be a global value instead of an event as events might rotate out of the log
-    topLevelFREvents.loFreq(Transport_UniqueAddressSet, _localAddress.toString().getBytes("US-ASCII"))
+    topLevelFlightRecorder.loFreq(Transport_UniqueAddressSet, _localAddress.toString())
 
     materializer = ActorMaterializer.systemMaterializer(settings.Advanced.MaterializerSettings, "remote", system)
     controlMaterializer = ActorMaterializer.systemMaterializer(
@@ -451,13 +449,46 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       "remoteControl", system)
 
     messageDispatcher = new MessageDispatcher(system, provider)
-    topLevelFREvents.loFreq(Transport_MaterializerStarted, NoMetaData)
+    topLevelFlightRecorder.loFreq(Transport_MaterializerStarted, NoMetaData)
 
     runInboundStreams()
-    blockUntilChannelActive()
-    topLevelFREvents.loFreq(Transport_StartupFinished, NoMetaData)
+    topLevelFlightRecorder.loFreq(Transport_StartupFinished, NoMetaData)
 
-    log.info("Remoting started; listening on address: [{}] with UID [{}]", localAddress.address, localAddress.uid)
+    startRemoveQuarantinedAssociationTask()
+
+    log.info(
+      "Remoting started with transport [Artery {}]; listening on address [{}] with UID [{}]",
+      settings.Transport, localAddress.address, localAddress.uid)
+  }
+
+  protected def startTransport(): Unit
+
+  protected def runInboundStreams(): Unit
+
+  private def startRemoveQuarantinedAssociationTask(): Unit = {
+    val removeAfter = settings.Advanced.RemoveQuarantinedAssociationAfter
+    val interval = removeAfter / 2
+    system.scheduler.schedule(removeAfter, interval) {
+      if (!isShutdown)
+        associationRegistry.removeUnusedQuarantined(removeAfter)
+    }(system.dispatcher)
+  }
+
+  // Select inbound lane based on destination to preserve message order,
+  // Also include the uid of the sending system in the hash to spread
+  // "hot" destinations, e.g. ActorSelection anchor.
+  protected val inboundLanePartitioner: InboundEnvelope ⇒ Int = env ⇒ {
+    env.recipient match {
+      case OptionVal.Some(r) ⇒
+        val a = r.path.uid
+        val b = env.originUid
+        val hashA = 23 + a
+        val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
+        math.abs(hash) % inboundLanes
+      case OptionVal.None ⇒
+        // the lane is set by the DuplicateHandshakeReq stage, otherwise 0
+        env.lane
+    }
   }
 
   private lazy val shutdownHook = new Thread {
@@ -479,229 +510,8 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     }
   }
 
-  private def startMediaDriver(): Unit = {
-    if (settings.Advanced.EmbeddedMediaDriver) {
-      val driverContext = new MediaDriver.Context
-      if (settings.Advanced.AeronDirectoryName.nonEmpty) {
-        driverContext.aeronDirectoryName(settings.Advanced.AeronDirectoryName)
-      } else {
-        // create a random name but include the actor system name for easier debugging
-        val uniquePart = UUID.randomUUID().toString
-        val randomName = s"${CommonContext.AERON_DIR_PROP_DEFAULT}-${system.name}-$uniquePart"
-        driverContext.aeronDirectoryName(randomName)
-      }
-      driverContext.clientLivenessTimeoutNs(settings.Advanced.ClientLivenessTimeout.toNanos)
-      driverContext.imageLivenessTimeoutNs(settings.Advanced.ImageLivenessTimeout.toNanos)
-      driverContext.driverTimeoutMs(settings.Advanced.DriverTimeout.toMillis)
-
-      val idleCpuLevel = settings.Advanced.IdleCpuLevel
-      if (idleCpuLevel == 10) {
-        driverContext
-          .threadingMode(ThreadingMode.DEDICATED)
-          .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
-          .receiverIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
-          .senderIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
-      } else if (idleCpuLevel == 1) {
-        driverContext
-          .threadingMode(ThreadingMode.SHARED)
-          .sharedIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
-      } else if (idleCpuLevel <= 7) {
-        driverContext
-          .threadingMode(ThreadingMode.SHARED_NETWORK)
-          .sharedNetworkIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
-      } else {
-        driverContext
-          .threadingMode(ThreadingMode.DEDICATED)
-          .receiverIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
-          .senderIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
-      }
-
-      val driver = MediaDriver.launchEmbedded(driverContext)
-      log.info("Started embedded media driver in directory [{}]", driver.aeronDirectoryName)
-      topLevelFREvents.loFreq(Transport_MediaDriverStarted, driver.aeronDirectoryName().getBytes("US-ASCII"))
-      if (!mediaDriver.compareAndSet(None, Some(driver))) {
-        throw new IllegalStateException("media driver started more than once")
-      }
-    }
-  }
-
-  private def aeronDir: String = mediaDriver.get match {
-    case Some(driver) ⇒ driver.aeronDirectoryName
-    case None         ⇒ settings.Advanced.AeronDirectoryName
-  }
-
-  private def stopMediaDriver(): Unit = {
-    // make sure we only close the driver once or we will crash the JVM
-    val maybeDriver = mediaDriver.getAndSet(None)
-    maybeDriver.foreach { driver ⇒
-      // this is only for embedded media driver
-      try driver.close() catch {
-        case NonFatal(e) ⇒
-          // don't think driver.close will ever throw, but just in case
-          log.warning("Couldn't close Aeron embedded media driver due to [{}]", e.getMessage)
-      }
-
-      try {
-        if (settings.Advanced.DeleteAeronDirectory) {
-          IoUtil.delete(new File(driver.aeronDirectoryName), false)
-          topLevelFREvents.loFreq(Transport_MediaFileDeleted, NoMetaData)
-        }
-      } catch {
-        case NonFatal(e) ⇒
-          log.warning(
-            "Couldn't delete Aeron embedded media driver files in [{}] due to [{}]",
-            driver.aeronDirectoryName, e.getMessage)
-      }
-    }
-  }
-
-  // TODO: Add FR events
-  private def startAeron(): Unit = {
-    val ctx = new Aeron.Context
-
-    ctx.driverTimeoutMs(settings.Advanced.DriverTimeout.toMillis)
-
-    ctx.availableImageHandler(new AvailableImageHandler {
-      override def onAvailableImage(img: Image): Unit = {
-        if (log.isDebugEnabled)
-          log.debug(s"onAvailableImage from ${img.sourceIdentity} session ${img.sessionId}")
-      }
-    })
-    ctx.unavailableImageHandler(new UnavailableImageHandler {
-      override def onUnavailableImage(img: Image): Unit = {
-        if (log.isDebugEnabled)
-          log.debug(s"onUnavailableImage from ${img.sourceIdentity} session ${img.sessionId}")
-
-        // freeSessionBuffer in AeronSource FragmentAssembler
-        streamMatValues.get.valuesIterator.foreach {
-          case InboundStreamMatValues(resourceLife, _) ⇒ resourceLife.onUnavailableImage(img.sessionId)
-        }
-      }
-    })
-
-    ctx.errorHandler(new ErrorHandler {
-      private val fatalErrorOccured = new AtomicBoolean
-
-      override def onError(cause: Throwable): Unit = {
-        cause match {
-          case e: ConductorServiceTimeoutException ⇒ handleFatalError(e)
-          case e: DriverTimeoutException           ⇒ handleFatalError(e)
-          case _: AeronTerminated                  ⇒ // already handled, via handleFatalError
-          case _ ⇒
-            log.error(cause, s"Aeron error, ${cause.getMessage}")
-        }
-      }
-
-      private def handleFatalError(cause: Throwable): Unit = {
-        if (fatalErrorOccured.compareAndSet(false, true)) {
-          if (!isShutdown) {
-            log.error(cause, "Fatal Aeron error {}. Have to terminate ActorSystem because it lost contact with the " +
-              "{} Aeron media driver. Possible configuration properties to mitigate the problem are " +
-              "'client-liveness-timeout' or 'driver-timeout'. {}",
-              Logging.simpleName(cause),
-              if (settings.Advanced.EmbeddedMediaDriver) "embedded" else "external",
-              cause.getMessage)
-            taskRunner.stop()
-            aeronErrorLogTask.cancel()
-            if (settings.LogAeronCounters) aeronCounterTask.cancel()
-            system.terminate()
-            throw new AeronTerminated(cause)
-          }
-        } else
-          throw new AeronTerminated(cause)
-      }
-    })
-
-    ctx.aeronDirectoryName(aeronDir)
-    aeron = Aeron.connect(ctx)
-  }
-
-  private def blockUntilChannelActive(): Unit = {
-    val counterIdForInboundChannel = findCounterId(s"rcv-channel: $inboundChannel")
-    val waitInterval = 200
-    val retries = math.max(1, settings.Bind.BindTimeout.toMillis / waitInterval)
-    retry(retries)
-
-    @tailrec def retry(retries: Long): Unit = {
-      val status = aeron.countersReader().getCounterValue(counterIdForInboundChannel)
-      if (status == ChannelEndpointStatus.ACTIVE) {
-        log.debug("Inbound channel is now active")
-      } else if (status == ChannelEndpointStatus.ERRORED) {
-        areonErrorLog.logErrors(log, 0L)
-        stopMediaDriver()
-        throw new RemoteTransportException("Inbound Aeron channel is in errored state. See Aeron logs for details.")
-      } else if (status == ChannelEndpointStatus.INITIALIZING && retries > 0) {
-        Thread.sleep(waitInterval)
-        retry(retries - 1)
-      } else {
-        areonErrorLog.logErrors(log, 0L)
-        stopMediaDriver()
-        throw new RemoteTransportException("Timed out waiting for Aeron transport to bind. See Aeoron logs.")
-      }
-    }
-  }
-
-  private def findCounterId(label: String): Int = {
-    var counterId = -1
-    aeron.countersReader().forEach(new IntObjConsumer[String] {
-      def accept(i: Int, l: String): Unit = {
-        if (label == l)
-          counterId = i
-      }
-    })
-    if (counterId == -1) {
-      throw new RuntimeException(s"Unable to found counterId for label: $label")
-    } else {
-      counterId
-    }
-  }
-
-  // TODO Add FR Events
-  private def startAeronErrorLog(): Unit = {
-    areonErrorLog = new AeronErrorLog(new File(aeronDir, CncFileDescriptor.CNC_FILE), log)
-    val lastTimestamp = new AtomicLong(0L)
-    import system.dispatcher
-    aeronErrorLogTask = system.scheduler.schedule(3.seconds, 5.seconds) {
-      if (!isShutdown) {
-        val newLastTimestamp = areonErrorLog.logErrors(log, lastTimestamp.get)
-        lastTimestamp.set(newLastTimestamp + 1)
-      }
-    }
-  }
-
-  private def startAeronCounterLog(): Unit = {
-    import system.dispatcher
-    aeronCounterTask = system.scheduler.schedule(5.seconds, 5.seconds) {
-      if (!isShutdown && log.isDebugEnabled) {
-        aeron.countersReader.forEach(new MetaData() {
-          def accept(counterId: Int, typeId: Int, keyBuffer: DirectBuffer, label: String): Unit = {
-            val value = aeron.countersReader().getCounterValue(counterId)
-            log.debug("Aeron Counter {}: {} {}]", counterId, value, label)
-          }
-        })
-      }
-    }
-  }
-
-  private def runInboundStreams(): Unit = {
-    runInboundControlStream()
-    runInboundOrdinaryMessagesStream()
-
-    if (largeMessageChannelEnabled) {
-      runInboundLargeMessagesStream()
-    }
-  }
-
-  private def runInboundControlStream(): Unit = {
-    if (isShutdown) throw ShuttingDown
-    val (resourceLife, ctrl, completed) =
-      aeronSource(controlStreamId, envelopeBufferPool)
-        .via(inboundFlow(settings, NoInboundCompressions))
-        .toMat(inboundControlSink)({ case (a, (c, d)) ⇒ (a, c, d) })
-        .run()(controlMaterializer)
-
+  protected def attachControlMessageObserver(ctrl: ControlMessageSubject): Unit = {
     controlSubject = ctrl
-
     controlSubject.attach(new ControlMessageObserver {
       override def notify(inboundEnvelope: InboundEnvelope): Unit = {
         try {
@@ -774,89 +584,13 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
           case ShuttingDown ⇒ // silence it
         }
       }
+
+      override def controlSubjectCompleted(signal: Try[Done]): Unit = ()
     })
 
-    updateStreamMatValues(controlStreamId, resourceLife, completed)
-    attachStreamRestart("Inbound control stream", completed, () ⇒ runInboundControlStream())
   }
 
-  private def runInboundOrdinaryMessagesStream(): Unit = {
-    if (isShutdown) throw ShuttingDown
-
-    val (resourceLife, inboundCompressionAccesses, completed) =
-      if (inboundLanes == 1) {
-        aeronSource(ordinaryStreamId, envelopeBufferPool)
-          .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
-          .toMat(inboundSink(envelopeBufferPool))({ case ((a, b), c) ⇒ (a, b, c) })
-          .run()(materializer)
-
-      } else {
-        val hubKillSwitch = KillSwitches.shared("hubKillSwitch")
-        val source: Source[InboundEnvelope, (ResourceLifecycle, InboundCompressionAccess)] =
-          aeronSource(ordinaryStreamId, envelopeBufferPool)
-            .via(hubKillSwitch.flow)
-            .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
-            .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
-
-        // Select lane based on destination to preserve message order,
-        // Also include the uid of the sending system in the hash to spread
-        // "hot" destinations, e.g. ActorSelection anchor.
-        val partitioner: InboundEnvelope ⇒ Int = env ⇒ {
-          env.recipient match {
-            case OptionVal.Some(r) ⇒
-              val a = r.path.uid
-              val b = env.originUid
-              val hashA = 23 + a
-              val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
-              math.abs(hash) % inboundLanes
-            case OptionVal.None ⇒
-              // the lane is set by the DuplicateHandshakeReq stage, otherwise 0
-              env.lane
-          }
-        }
-
-        val (resourceLife, compressionAccess, hub) =
-          source
-            .toMat(Sink.fromGraph(new FixedSizePartitionHub[InboundEnvelope](partitioner, inboundLanes,
-              settings.Advanced.InboundHubBufferSize)))({ case ((a, b), c) ⇒ (a, b, c) })
-            .run()(materializer)
-
-        val lane = inboundSink(envelopeBufferPool)
-        val completedValues: Vector[Future[Done]] =
-          (0 until inboundLanes).map { _ ⇒
-            hub.toMat(lane)(Keep.right).run()(materializer)
-          }(collection.breakOut)
-
-        import system.dispatcher
-
-        // tear down the upstream hub part if downstream lane fails
-        // lanes are not completed with success by themselves so we don't have to care about onSuccess
-        Future.firstCompletedOf(completedValues).failed.foreach { reason ⇒ hubKillSwitch.abort(reason) }
-
-        val allCompleted = Future.sequence(completedValues).map(_ ⇒ Done)
-
-        (resourceLife, compressionAccess, allCompleted)
-      }
-
-    _inboundCompressionAccess = OptionVal(inboundCompressionAccesses)
-
-    updateStreamMatValues(ordinaryStreamId, resourceLife, completed)
-    attachStreamRestart("Inbound message stream", completed, () ⇒ runInboundOrdinaryMessagesStream())
-  }
-
-  private def runInboundLargeMessagesStream(): Unit = {
-    if (isShutdown) throw ShuttingDown
-
-    val (resourceLife, completed) = aeronSource(largeStreamId, largeEnvelopeBufferPool)
-      .via(inboundLargeFlow(settings))
-      .toMat(inboundSink(largeEnvelopeBufferPool))(Keep.both)
-      .run()(materializer)
-
-    updateStreamMatValues(largeStreamId, resourceLife, completed)
-    attachStreamRestart("Inbound large message stream", completed, () ⇒ runInboundLargeMessagesStream())
-  }
-
-  private def attachStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
+  protected def attachInboundStreamRestart(streamName: String, streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
     implicit val ec = materializer.executionContext
     streamCompleted.failed.foreach {
       case ShutdownSignal     ⇒ // shutdown as expected
@@ -868,6 +602,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       case cause ⇒
         if (restartCounter.restart()) {
           log.error(cause, "{} failed. Restarting it. {}", streamName, cause.getMessage)
+          topLevelFlightRecorder.loFreq(Transport_RestartInbound, s"$localAddress - $streamName")
           restart()
         } else {
           log.error(cause, "{} failed and restarted {} times within {} seconds. Terminating system. {}",
@@ -902,28 +637,15 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     import system.dispatcher
 
     killSwitch.abort(ShutdownSignal)
-    topLevelFREvents.loFreq(Transport_KillSwitchPulled, NoMetaData)
+    topLevelFlightRecorder.loFreq(Transport_KillSwitchPulled, NoMetaData)
     for {
-      _ ← streamsCompleted
-      _ ← taskRunner.stop()
+      _ ← streamsCompleted.recover { case _ ⇒ Done }
+      _ ← shutdownTransport().recover { case _ ⇒ Done }
     } yield {
-      topLevelFREvents.loFreq(Transport_Stopped, NoMetaData)
-
       // no need to explicitly shut down the contained access since it's lifecycle is bound to the Decoder
       _inboundCompressionAccess = OptionVal.None
 
-      if (aeronErrorLogTask != null) {
-        aeronErrorLogTask.cancel()
-        topLevelFREvents.loFreq(Transport_AeronErrorLogTaskStopped, NoMetaData)
-      }
-      if (aeron != null) aeron.close()
-      if (areonErrorLog != null) areonErrorLog.close()
-      if (mediaDriver.get.isDefined) {
-        stopMediaDriver()
-
-      }
-      topLevelFREvents.loFreq(Transport_FlightRecorderClose, NoMetaData)
-
+      topLevelFlightRecorder.loFreq(Transport_FlightRecorderClose, NoMetaData)
       flightRecorder.foreach(_.close())
       afrFileChannel.foreach(_.force(true))
       afrFileChannel.foreach(_.close())
@@ -931,12 +653,9 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
     }
   }
 
-  private def updateStreamMatValues(streamId: Int, aeronSourceLifecycle: AeronSource.ResourceLifecycle, completed: Future[Done]): Unit = {
-    implicit val ec = materializer.executionContext
-    updateStreamMatValues(streamId, InboundStreamMatValues(aeronSourceLifecycle, completed.recover { case _ ⇒ Done }))
-  }
+  protected def shutdownTransport(): Future[Done]
 
-  @tailrec private def updateStreamMatValues(streamId: Int, values: InboundStreamMatValues): Unit = {
+  @tailrec final protected def updateStreamMatValues(streamId: Int, values: InboundStreamMatValues): Unit = {
     val prev = streamMatValues.get()
     if (!streamMatValues.compareAndSet(prev, prev + (streamId → values))) {
       updateStreamMatValues(streamId, values)
@@ -1008,8 +727,7 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
 
   override def completeHandshake(peer: UniqueAddress): Future[Done] = {
     try {
-      val a = associationRegistry.setUID(peer)
-      a.completeHandshake(peer)
+      associationRegistry.setUID(peer).completeHandshake(peer)
     } catch {
       case ShuttingDown ⇒ Future.successful(Done) // silence it
     }
@@ -1024,43 +742,36 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   }
 
   def outboundLarge(outboundContext: OutboundContext): Sink[OutboundEnvelope, Future[Done]] =
-    createOutboundSink(largeStreamId, outboundContext, largeEnvelopeBufferPool)
+    createOutboundSink(LargeStreamId, outboundContext, largeEnvelopeBufferPool)
       .mapMaterializedValue { case (_, d) ⇒ d }
 
   def outbound(outboundContext: OutboundContext): Sink[OutboundEnvelope, (OutboundCompressionAccess, Future[Done])] =
-    createOutboundSink(ordinaryStreamId, outboundContext, envelopeBufferPool)
+    createOutboundSink(OrdinaryStreamId, outboundContext, envelopeBufferPool)
 
   private def createOutboundSink(streamId: Int, outboundContext: OutboundContext,
                                  bufferPool: EnvelopeBufferPool): Sink[OutboundEnvelope, (OutboundCompressionAccess, Future[Done])] = {
 
-    outboundLane(outboundContext, bufferPool)
-      .toMat(aeronSink(outboundContext, streamId, bufferPool))(Keep.both)
+    outboundLane(outboundContext, bufferPool, streamId)
+      .toMat(outboundTransportSink(outboundContext, streamId, bufferPool))(Keep.both)
   }
 
-  def aeronSink(outboundContext: OutboundContext): Sink[EnvelopeBuffer, Future[Done]] =
-    aeronSink(outboundContext, ordinaryStreamId, envelopeBufferPool)
+  def outboundTransportSink(outboundContext: OutboundContext): Sink[EnvelopeBuffer, Future[Done]] =
+    outboundTransportSink(outboundContext, OrdinaryStreamId, envelopeBufferPool)
 
-  private def aeronSink(outboundContext: OutboundContext, streamId: Int,
-                        bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
-
-    val giveUpAfter =
-      if (streamId == controlStreamId) settings.Advanced.GiveUpSystemMessageAfter
-      else settings.Advanced.GiveUpMessageAfter
-    Sink.fromGraph(new AeronSink(outboundChannel(outboundContext.remoteAddress), streamId, aeron, taskRunner,
-      bufferPool, giveUpAfter, createFlightRecorderEventSink()))
-  }
+  protected def outboundTransportSink(outboundContext: OutboundContext, streamId: Int,
+                                      bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]]
 
   def outboundLane(outboundContext: OutboundContext): Flow[OutboundEnvelope, EnvelopeBuffer, OutboundCompressionAccess] =
-    outboundLane(outboundContext, envelopeBufferPool)
+    outboundLane(outboundContext, envelopeBufferPool, OrdinaryStreamId)
 
   private def outboundLane(
     outboundContext: OutboundContext,
-    bufferPool:      EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, OutboundCompressionAccess] = {
+    bufferPool:      EnvelopeBufferPool, streamId: Int): Flow[OutboundEnvelope, EnvelopeBuffer, OutboundCompressionAccess] = {
 
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, settings.Advanced.HandshakeTimeout,
         settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval))
-      .viaMat(createEncoder(bufferPool))(Keep.right)
+      .viaMat(createEncoder(bufferPool, streamId))(Keep.right)
   }
 
   def outboundControl(outboundContext: OutboundContext): Sink[OutboundEnvelope, (OutboundControlIngress, Future[Done])] = {
@@ -1073,24 +784,21 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       // note that System messages must not be dropped before the SystemMessageDelivery stage
       .via(outboundTestFlow(outboundContext))
       .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.right)
-      .via(createEncoder(envelopeBufferPool))
-      .toMat(new AeronSink(outboundChannel(outboundContext.remoteAddress), controlStreamId, aeron, taskRunner,
-        envelopeBufferPool, Duration.Inf, createFlightRecorderEventSink()))(Keep.both)
+      .via(createEncoder(envelopeBufferPool, ControlStreamId))
+      .toMat(outboundTransportSink(outboundContext, ControlStreamId, envelopeBufferPool))(Keep.both)
 
     // TODO we can also add scrubbing stage that would collapse sys msg acks/nacks and remove duplicate Quarantine messages
   }
 
-  def createEncoder(pool: EnvelopeBufferPool): Flow[OutboundEnvelope, EnvelopeBuffer, OutboundCompressionAccess] =
-    Flow.fromGraph(new Encoder(localAddress, system, outboundEnvelopePool, pool, settings.LogSend))
+  def createEncoder(pool: EnvelopeBufferPool, streamId: Int): Flow[OutboundEnvelope, EnvelopeBuffer, OutboundCompressionAccess] =
+    Flow.fromGraph(new Encoder(localAddress, system, outboundEnvelopePool, pool, streamId, settings.LogSend,
+      settings.Version))
 
-  def aeronSource(streamId: Int, pool: EnvelopeBufferPool): Source[EnvelopeBuffer, AeronSource.ResourceLifecycle] =
-    Source.fromGraph(new AeronSource(inboundChannel, streamId, aeron, taskRunner, pool,
-      createFlightRecorderEventSink(), aeronSourceSpinningStrategy))
+  def createDecoder(settings: ArterySettings, compressions: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] =
+    Flow.fromGraph(new Decoder(this, system, localAddress, settings, compressions, inboundEnvelopePool))
 
-  private def aeronSourceSpinningStrategy: Int =
-    if (settings.Advanced.InboundLanes > 1 || // spinning was identified to be the cause of massive slowdowns with multiple lanes, see #21365
-      settings.Advanced.IdleCpuLevel < 5) 0 // also don't spin for small IdleCpuLevels
-    else 50 * settings.Advanced.IdleCpuLevel - 240
+  def createDeserializer(bufferPool: EnvelopeBufferPool): Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
+    Flow.fromGraph(new Deserializer(this, system, bufferPool))
 
   val messageDispatcherSink: Sink[InboundEnvelope, Future[Done]] = Sink.foreach[InboundEnvelope] { m ⇒
     messageDispatcher.dispatch(m)
@@ -1099,12 +807,6 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
       case _                          ⇒
     }
   }
-
-  def createDecoder(settings: ArterySettings, compressions: InboundCompressions, bufferPool: EnvelopeBufferPool): Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] =
-    Flow.fromGraph(new Decoder(this, system, localAddress, settings, bufferPool, compressions, inboundEnvelopePool))
-
-  def createDeserializer(bufferPool: EnvelopeBufferPool): Flow[InboundEnvelope, InboundEnvelope, NotUsed] =
-    Flow.fromGraph(new Deserializer(this, system, bufferPool))
 
   // Checks for termination hint messages and sends an ACK for those (not processing them further)
   // Purpose of this stage is flushing, the sender can wait for the ACKs up to try flushing
@@ -1135,15 +837,12 @@ private[remote] class ArteryTransport(_system: ExtendedActorSystem, _provider: R
   def inboundFlow(settings: ArterySettings, compressions: InboundCompressions): Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] = {
     Flow[EnvelopeBuffer]
       .via(killSwitch.flow)
-      .viaMat(createDecoder(settings, compressions, envelopeBufferPool))(Keep.right)
+      .viaMat(createDecoder(settings, compressions))(Keep.right)
   }
 
   // large messages flow does not use compressions, since the message size dominates the size anyway
-  def inboundLargeFlow(settings: ArterySettings): Flow[EnvelopeBuffer, InboundEnvelope, NotUsed] = {
-    Flow[EnvelopeBuffer]
-      .via(killSwitch.flow)
-      .via(createDecoder(settings, NoInboundCompressions, largeEnvelopeBufferPool))
-  }
+  def inboundLargeFlow(settings: ArterySettings): Flow[EnvelopeBuffer, InboundEnvelope, Any] =
+    inboundFlow(settings, NoInboundCompressions)
 
   def inboundControlSink: Sink[InboundEnvelope, (ControlMessageSubject, Future[Done])] = {
     Flow[InboundEnvelope]
@@ -1191,7 +890,11 @@ private[remote] object ArteryTransport {
 
   val ProtocolName = "akka"
 
-  val Version: Byte = 0
+  // Note that the used version of the header format for outbound messages is defined in
+  // `ArterySettings.Version` because that may depend on configuration settings.
+  // This is the highest supported version on receiving (decoding) side.
+  // ArterySettings.Version can be lower than this HighestVersion to support rolling upgrades.
+  val HighestVersion: Byte = 0
 
   class AeronTerminated(e: Throwable) extends RuntimeException(e)
 
@@ -1201,15 +904,34 @@ private[remote] object ArteryTransport {
   object ShuttingDown extends RuntimeException with NoStackTrace
 
   final case class InboundStreamMatValues(
-    aeronSourceLifecycle: AeronSource.ResourceLifecycle,
+    aeronSourceLifecycle: Option[AeronSource.ResourceLifecycle],
     completed:            Future[Done])
 
-  def autoSelectPort(hostname: String): Int = {
-    val socket = DatagramChannel.open().socket()
-    socket.bind(new InetSocketAddress(hostname, 0))
-    val port = socket.getLocalPort
-    socket.close()
-    port
+  def autoSelectPort(hostname: String, udp: Boolean): Int = {
+    if (udp) {
+      val socket = DatagramChannel.open().socket()
+      socket.bind(new InetSocketAddress(hostname, 0))
+      val port = socket.getLocalPort
+      socket.close()
+      port
+    } else {
+      val socket = ServerSocketChannel.open().socket()
+      socket.bind(new InetSocketAddress(hostname, 0))
+      val port = socket.getLocalPort
+      socket.close()
+      port
+    }
   }
+
+  val ControlStreamId = 1
+  val OrdinaryStreamId = 2
+  val LargeStreamId = 3
+
+  def streamName(streamId: Int): String =
+    streamId match {
+      case ControlStreamId ⇒ "control"
+      case LargeStreamId   ⇒ "large message"
+      case _               ⇒ "message"
+    }
 
 }

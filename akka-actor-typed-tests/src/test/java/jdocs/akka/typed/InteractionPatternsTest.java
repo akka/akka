@@ -3,13 +3,12 @@
  */
 package jdocs.akka.typed;
 
-import akka.NotUsed;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.*;
-import akka.testkit.typed.scaladsl.TestProbe;
+import akka.testkit.typed.javadsl.TestProbe;
 import akka.util.Timeout;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
@@ -324,7 +323,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   @Test
   public void timers() throws Exception {
     final ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "timers-sample");
-    TestProbe<Batch> probe = new TestProbe<>("batcher", system);
+    TestProbe<Batch> probe = TestProbe.create("batcher", system);
     ActorRef<Msg> bufferer = Await.result(system.systemActorOf(
       behavior(probe.ref(), new FiniteDuration(1, TimeUnit.SECONDS), 10),
       "batcher", Props.empty(), akka.util.Timeout.apply(1, TimeUnit.SECONDS)),
@@ -376,7 +375,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   }
 
   public static Behavior<DaveProtocol> daveBehavior(final ActorRef<HalCommand> hal) {
-    return Behaviors.deferred((ActorContext<DaveProtocol> ctx) -> {
+    return Behaviors.setup((ActorContext<DaveProtocol> ctx) -> {
 
       // asking someone requires a timeout, if the timeout hits without response
       // the ask is failed with a TimeoutException
@@ -444,6 +443,8 @@ public class InteractionPatternsTest extends JUnitSuite {
     CompletionStage<Cookies> result = AskPattern.ask(
       cookieActorRef,
       GiveMeCookies::new,
+      // asking someone requires a timeout and a scheduler, if the timeout hits without response
+      // the ask is failed with a TimeoutException
       Timeout.apply(3, TimeUnit.SECONDS),
       system.scheduler());
 
@@ -505,7 +506,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
   // actor behavior
   public Behavior<HomeCommand> homeBehavior() {
-    return Behaviors.deferred((ctx) -> {
+    return Behaviors.setup((ctx) -> {
       final ActorRef<GetKeys> keyCabinet = ctx.spawn(keyCabinetBehavior, "key-cabinet");
       final ActorRef<GetWallet> drawer = ctx.spawn(drawerBehavior, "drawer");
 

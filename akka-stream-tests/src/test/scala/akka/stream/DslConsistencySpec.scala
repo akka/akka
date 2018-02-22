@@ -33,7 +33,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
   val jRunnableGraphClass: Class[_] = classOf[akka.stream.javadsl.RunnableGraph[_]]
   val sRunnableGraphClass: Class[_] = classOf[akka.stream.scaladsl.RunnableGraph[_]]
 
-  val ignore =
+  val ignore: Set[String] =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
       Set("productArity", "canEqual", "productPrefix", "copy", "productIterator", "productElement") ++
       Set("create", "apply", "ops", "appendJava", "andThen", "andThenMat", "isIdentity", "withAttributes", "transformMaterializing") ++
@@ -42,13 +42,17 @@ class DslConsistencySpec extends WordSpec with Matchers {
   val graphHelpers = Set("zipGraph", "zipWithGraph", "mergeGraph", "mergeSortedGraph", "interleaveGraph", "concatGraph", "prependGraph", "alsoToGraph", "wireTapGraph", "orElseGraph", "divertToGraph")
   val allowMissing: Map[Class[_], Set[String]] = Map(
     jFlowClass → graphHelpers,
-    jSourceClass → graphHelpers,
+    jSourceClass → (graphHelpers ++ Set("watch", "ask")),
     // Java subflows can only be nested using .via and .to (due to type system restrictions)
-    jSubFlowClass → (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow")),
-    jSubSourceClass → (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow")),
+    jSubFlowClass → (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow", "watch", "ask")),
+    jSubSourceClass → (graphHelpers ++ Set("groupBy", "splitAfter", "splitWhen", "subFlow", "watch", "ask")),
+
     sFlowClass → Set("of"),
-    sSourceClass → Set("adapt", "from"),
+    sSourceClass → Set("adapt", "from", "watch"),
     sSinkClass → Set("adapt"),
+    sSubFlowClass → Set(),
+    sSubSourceClass → Set(),
+
     sRunnableGraphClass → Set("builder"))
 
   def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorMaterializer])

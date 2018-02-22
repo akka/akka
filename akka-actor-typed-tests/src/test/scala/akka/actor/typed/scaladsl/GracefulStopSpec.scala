@@ -6,10 +6,9 @@ package scaladsl
 
 import akka.Done
 import akka.NotUsed
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 
-final class GracefulStopSpec extends TestKit with TypedAkkaSpecWithShutdown {
+final class GracefulStopSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   "Graceful stop" must {
 
@@ -17,7 +16,7 @@ final class GracefulStopSpec extends TestKit with TypedAkkaSpecWithShutdown {
       val probe = TestProbe[String]("probe")
 
       val behavior =
-        Behaviors.deferred[akka.NotUsed] { context ⇒
+        Behaviors.setup[akka.NotUsed] { context ⇒
           val c1 = context.spawn[NotUsed](Behaviors.onSignal {
             case (_, PostStop) ⇒
               probe.ref ! "child-done"
@@ -50,7 +49,7 @@ final class GracefulStopSpec extends TestKit with TypedAkkaSpecWithShutdown {
       val probe = TestProbe[Done]("probe")
 
       val behavior =
-        Behaviors.deferred[akka.NotUsed] { context ⇒
+        Behaviors.setup[akka.NotUsed] { context ⇒
           // do not spawn any children
           Behaviors.stopped {
             Behaviors.onSignal {

@@ -315,7 +315,7 @@ class HubSpec extends StreamSpec {
 
       // sending the first element is in a race with downstream subscribing
       // give a bit of time for the downstream to complete subscriptions
-      Thread.sleep(50)
+      Thread.sleep(100)
 
       (1 to 8) foreach (upstream.sendNext(_))
 
@@ -582,7 +582,7 @@ class HubSpec extends StreamSpec {
 
       // to make sure downstream subscriptions are done before
       // starting to send elements
-      Thread.sleep(50)
+      Thread.sleep(100)
 
       (0 until 16) foreach (upstream.sendNext(_))
 

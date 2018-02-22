@@ -7,7 +7,6 @@ package akka.cluster.sharding.typed.scaladsl
 import java.nio.charset.StandardCharsets
 
 import scala.concurrent.duration._
-
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorRefResolver
@@ -17,15 +16,12 @@ import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.MemberStatus
-import akka.cluster.sharding.typed.ClusterShardingSettings
-import akka.cluster.sharding.typed.ShardingEnvelope
-import akka.cluster.sharding.typed.ShardingMessageExtractor
+import akka.cluster.sharding.typed.{ ClusterShardingSettings, ShardingEnvelope, ShardingMessageExtractor }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.cluster.typed.Leave
 import akka.serialization.SerializerWithStringManifest
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.time.Span
@@ -123,8 +119,10 @@ object ClusterShardingSpec {
 
 }
 
-class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterShardingSpec.config) with TypedAkkaSpecWithShutdown {
+class ClusterShardingSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   import ClusterShardingSpec._
+
+  override def config = ClusterShardingSpec.config
 
   val sharding = ClusterSharding(system)
 
@@ -132,7 +130,7 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
   val sharding2 = ClusterSharding(system2)
 
   override def afterAll(): Unit = {
-    TestKit.shutdown(system2, 5.seconds)
+    ActorTestKit.shutdown(system2, 5.seconds)
     super.afterAll()
   }
 
@@ -248,20 +246,20 @@ class ClusterShardingSpec extends TestKit("ClusterShardingSpec", ClusterSharding
       }
     }
 
-    //    "04 fail if starting sharding for already used typeName, but with wrong type" in  {
-    //      val ex = intercept[Exception] {
-    //        sharding.spawn(
-    //          Actor.empty[String],
-    //          Props.empty,
-    //          "example-02",
-    //          ClusterShardingSettings(adaptedSystem),
-    //          10,
-    //          "STOP"
-    //        )
-    //      }
-    //
-    //      ex.getMessage should include("already started")
-    //    }
+    "fail if starting sharding for already used typeName, but with a different type" in {
+      // sharding has been already started with EntityTypeKey[TestProtocol]("envelope-shard")
+      val ex = intercept[Exception] {
+        sharding.spawn(
+          _ ⇒ behaviorWithId,
+          Props.empty,
+          EntityTypeKey[IdTestProtocol]("envelope-shard"),
+          ClusterShardingSettings(system),
+          10,
+          IdStopPlz())
+      }
+
+      ex.getMessage should include("already spawned")
+    }
 
     "EntityRef - tell" in {
       val charlieRef = sharding.entityRefFor(typeKey, "charlie")

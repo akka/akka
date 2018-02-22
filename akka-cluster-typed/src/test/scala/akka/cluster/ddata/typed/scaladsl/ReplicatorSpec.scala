@@ -12,7 +12,7 @@ import akka.cluster.Cluster
 import akka.cluster.ddata.typed.scaladsl.Replicator._
 import akka.cluster.ddata.{ GCounter, GCounterKey, ReplicatedData }
 import akka.testkit.typed.scaladsl._
-import akka.testkit.typed.{ TestKit, TestKitSettings }
+import akka.testkit.typed.TestKitSettings
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
@@ -43,7 +43,7 @@ object ReplicatorSpec {
   val Key = GCounterKey("counter")
 
   def client(replicator: ActorRef[Replicator.Command])(implicit cluster: Cluster): Behavior[ClientCommand] =
-    Behaviors.deferred[ClientCommand] { ctx ⇒
+    Behaviors.setup[ClientCommand] { ctx ⇒
 
       val updateResponseAdapter: ActorRef[Replicator.UpdateResponse[GCounter]] =
         ctx.messageAdapter(InternalUpdateResponse.apply)
@@ -116,7 +116,9 @@ object ReplicatorSpec {
 
 }
 
-class ReplicatorSpec extends TestKit(ReplicatorSpec.config) with TypedAkkaSpecWithShutdown with Eventually {
+class ReplicatorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
+
+  override def config = ReplicatorSpec.config
 
   import ReplicatorSpec._
 

@@ -4,20 +4,15 @@
 package akka.cluster.typed
 
 import akka.actor.InvalidMessageException
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Behavior
-import akka.actor.typed.{ PostStop, Terminated }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.TestInbox
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, PostStop, Terminated }
+import akka.testkit.typed.scaladsl.TestInbox
 import com.typesafe.config.ConfigFactory
 import org.scalatest._
-import org.scalatest.concurrent.Eventually
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 
+import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
-import scala.concurrent.Future
-import scala.concurrent.Promise
 import scala.util.control.NonFatal
 
 class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll

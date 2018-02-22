@@ -38,7 +38,7 @@ public class ActorCompile {
   Behavior<MyMsg> actor5 = ignore();
   Behavior<MyMsg> actor6 = tap((ctx, signal) -> {}, (ctx, msg) -> {}, actor5);
   Behavior<MyMsgA> actor7 = actor6.narrow();
-  Behavior<MyMsg> actor8 = deferred(ctx -> {
+  Behavior<MyMsg> actor8 = setup(ctx -> {
     final ActorRef<MyMsg> self = ctx.getSelf();
     return monitor(self, ignore());
   });

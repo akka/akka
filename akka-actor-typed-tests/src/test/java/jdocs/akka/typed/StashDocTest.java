@@ -11,8 +11,8 @@ import akka.Done;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.testkit.typed.BehaviorTestkit;
-import akka.testkit.typed.TestInbox;
+import akka.testkit.typed.javadsl.TestInbox;
+import akka.testkit.typed.javadsl.BehaviorTestKit;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -88,7 +88,7 @@ public class StashDocTest extends JUnitSuite {
     }
 
     Behavior<Command> behavior() {
-      return Behaviors.deferred(ctx -> {
+      return Behaviors.setup(ctx -> {
         db.load(id)
             .whenComplete((value, cause) -> {
             if (cause == null)
@@ -178,23 +178,23 @@ public class StashDocTest extends JUnitSuite {
       }
     };
     final DataAccess dataAccess = new DataAccess("17", db);
-    BehaviorTestkit<DataAccess.Command> testKit = BehaviorTestkit.create(dataAccess.behavior());
-    TestInbox<String> getInbox = TestInbox.apply("getInbox");
-    testKit.run(new DataAccess.Get(getInbox.ref()));
-    DataAccess.Command initialStateMsg = testKit.selfInbox().receiveMsg();
+    BehaviorTestKit<DataAccess.Command> testKit = BehaviorTestKit.create(dataAccess.behavior());
+    TestInbox<String> getInbox = TestInbox.create("getInbox");
+    testKit.run(new DataAccess.Get(getInbox.getRef()));
+    DataAccess.Command initialStateMsg = testKit.selfInbox().receiveMessage();
     testKit.run(initialStateMsg);
-    getInbox.expectMsg("TheValue");
+    getInbox.expectMessage("TheValue");
 
-    TestInbox<Done> saveInbox = TestInbox.apply("saveInbox");
-    testKit.run(new DataAccess.Save("UpdatedValue", saveInbox.ref()));
-    testKit.run(new DataAccess.Get(getInbox.ref()));
-    DataAccess.Command saveSuccessMsg = testKit.selfInbox().receiveMsg();
+    TestInbox<Done> saveInbox = TestInbox.create("saveInbox");
+    testKit.run(new DataAccess.Save("UpdatedValue", saveInbox.getRef()));
+    testKit.run(new DataAccess.Get(getInbox.getRef()));
+    DataAccess.Command saveSuccessMsg = testKit.selfInbox().receiveMessage();
     testKit.run(saveSuccessMsg);
-    saveInbox.expectMsg(Done.getInstance());
-    getInbox.expectMsg("UpdatedValue");
+    saveInbox.expectMessage(Done.getInstance());
+    getInbox.expectMessage("UpdatedValue");
 
-    testKit.run(new DataAccess.Get(getInbox.ref()));
-    getInbox.expectMsg("UpdatedValue");
+    testKit.run(new DataAccess.Get(getInbox.getRef()));
+    getInbox.expectMessage("UpdatedValue");
   }
 
 }

@@ -13,12 +13,10 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.testkit.TimingTest
 import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl._
+import akka.testkit.typed.scaladsl.{ ActorTestKit, _ }
 import org.scalatest.WordSpecLike
 
-class TimerSpec extends TestKit("TimerSpec")
-  with WordSpecLike {
+class TimerSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShutdown {
 
   sealed trait Command
   case class Tick(n: Int) extends Command
@@ -36,8 +34,6 @@ class TimerSpec extends TestKit("TimerSpec")
   case object Cancelled extends Event
 
   class Exc extends RuntimeException("simulated exc") with NoStackTrace
-
-  implicit val testSettings = TestKitSettings(system)
 
   val interval = 1.second
 
@@ -146,10 +142,10 @@ class TimerSpec extends TestKit("TimerSpec")
       ref ! Cancel
       probe.fishForMessage(3.seconds) {
         // we don't know that we will see exactly one tock
-        case _: Tock   ⇒ FishingOutcomes.Continue
+        case _: Tock   ⇒ FishingOutcomes.continue
         // but we know that after we saw Cancelled we won't see any more
-        case Cancelled ⇒ FishingOutcomes.Complete
-        case msg       ⇒ FishingOutcomes.Fail(s"unexpected msg: $msg")
+        case Cancelled ⇒ FishingOutcomes.complete
+        case msg       ⇒ FishingOutcomes.fail(s"unexpected msg: $msg")
       }
       probe.expectNoMessage(interval + 100.millis.dilated)
 

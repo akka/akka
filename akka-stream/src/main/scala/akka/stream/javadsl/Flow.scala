@@ -3,7 +3,7 @@
  */
 package akka.stream.javadsl
 
-import akka.util.ConstantFun
+import akka.util.{ ConstantFun, Timeout }
 import akka.{ Done, NotUsed }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, function }
@@ -16,7 +16,12 @@ import akka.japi.Util
 import java.util.Comparator
 import java.util.concurrent.CompletionStage
 
+import akka.actor.ActorRef
+import akka.dispatch.ExecutionContexts
+import akka.stream.impl.fusing.LazyFlow
+
 import scala.compat.java8.FutureConverters._
+import scala.reflect.ClassTag
 
 object Flow {
 
@@ -199,6 +204,36 @@ object Flow {
     sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2],
     combine: function.Function2[M1, M2, M]): Flow[I, O, M] =
     new Flow(scaladsl.Flow.fromSinkAndSourceCoupledMat(sink, source)(combinerToScala(combine)))
+
+  /**
+   * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
+   * if there are no elements, because of completion or error.
+   * The materialized value of the `Flow` will be the materialized
+   * value of the created internal flow.
+   *
+   * If `flowFactory` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Stop]] the materialized value of the flow will be completed with
+   * the result of the `fallback`. For all other supervision options it will
+   * try to create flow with the next element.
+   *
+   * `fallback` will be executed when there was no elements and completed is received from upstream
+   * or when there was an exception either thrown by the `flowFactory` or during the internal flow
+   * materialization process.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the internal flow is successfully created and it emits
+   *
+   * '''Backpressures when''' the internal flow is successfully created and it backpressures
+   *
+   * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def lazyInit[I, O, M](flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]], fallback: function.Creator[M]): Flow[I, O, M] =
+    Flow.fromGraph(new LazyFlow[I, O, M](
+      t ⇒ flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
+      () ⇒ fallback.create()))
 }
 
 /** Create a `Flow` which can process elements of type `T`. */
@@ -494,10 +529,10 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * '''Emits when''' the CompletionStage returned by the provided function finishes for the next element in sequence
    *
-   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream
+   * '''Backpressures when''' the number of CompletionStages reaches the configured parallelism and the downstream
    * backpressures or the first future is not completed
    *
-   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
+   * '''Completes when''' upstream completes and all CompletionStages have been completed and all elements have been emitted
    *
    * '''Cancels when''' downstream cancels
    *
@@ -529,9 +564,9 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * '''Emits when''' any of the CompletionStages returned by the provided function complete
    *
-   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   * '''Backpressures when''' the number of CompletionStages reaches the configured parallelism and the downstream backpressures
    *
-   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
+   * '''Completes when''' upstream completes and all CompletionStages have been completed and all elements have been emitted
    *
    * '''Cancels when''' downstream cancels
    *
@@ -539,6 +574,82 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   def mapAsyncUnordered[T](parallelism: Int, f: function.Function[Out, CompletionStage[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapAsyncUnordered(parallelism)(x ⇒ f(x).toScala))
+
+  /**
+   * Use the `ask` pattern to send a request-reply message to the target `ref` actor.
+   * If any of the asks times out it will fail the stream with a [[akka.pattern.AskTimeoutException]].
+   *
+   * The `mapTo` class parameter is used to cast the incoming responses to the expected response type.
+   *
+   * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
+   * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+   *
+   * Defaults to parallelism of 2 messages in flight, since while one ask message may be being worked on, the second one
+   * still be in the mailbox, so defaulting to sending the second one a bit earlier than when first ask has replied maintains
+   * a slightly healthier throughput.
+   *
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' any of the CompletionStages returned by the provided function complete
+   *
+   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
+   *
+   * '''Fails when''' the passed in actor terminates, or a timeout is exceeded in any of the asks performed
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def ask[S](ref: ActorRef, mapTo: Class[S], timeout: Timeout): javadsl.Flow[In, S, Mat] =
+    ask(2, ref, mapTo, timeout)
+
+  /**
+   * Use the `ask` pattern to send a request-reply message to the target `ref` actor.
+   * If any of the asks times out it will fail the stream with a [[akka.pattern.AskTimeoutException]].
+   *
+   * The `mapTo` class parameter is used to cast the incoming responses to the expected response type.
+   *
+   * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
+   * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+   *
+   * Parallelism limits the number of how many asks can be "in flight" at the same time.
+   * Please note that the elements emitted by this stage are in-order with regards to the asks being issued
+   * (i.e. same behaviour as mapAsync).
+   *
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' any of the CompletionStages returned by the provided function complete
+   *
+   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
+   *
+   * '''Fails when''' the passed in actor terminates, or a timeout is exceeded in any of the asks performed
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def ask[S](parallelism: Int, ref: ActorRef, mapTo: Class[S], timeout: Timeout): javadsl.Flow[In, S, Mat] =
+    new Flow(delegate.ask[S](parallelism)(ref)(timeout, ClassTag(mapTo)))
+
+  /**
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * '''Emits when''' upstream emits
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Fails when''' the watched actor terminates
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def watch(ref: ActorRef): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.watch(ref))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
@@ -590,6 +701,24 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    */
   def collect[T](pf: PartialFunction[Out, T]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.collect(pf))
+
+  /**
+   * Transform this stream by testing the type of each of the elements
+   * on which the element is an instance of the provided type as they pass through this processing step.
+   * Non-matching elements are filtered out.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the element is an instance of the provided type
+   *
+   * '''Backpressures when''' the element is an instance of the provided type and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def collectType[T](clazz: Class[T]): javadsl.Flow[In, T, Mat] =
+    new Flow(delegate.collectType[T](ClassTag[T](clazz)))
 
   /**
    * Chunk up this stream into groups of the given size, with the last group
@@ -1676,7 +1805,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
    *
    * '''Completes when''' upstream completes
    *
-   * '''Cancels when''' downstream cancels
+   * '''Cancels when''' downstream or Sink cancels
    */
   def alsoTo(that: Graph[SinkShape[Out], _]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.alsoTo(that))

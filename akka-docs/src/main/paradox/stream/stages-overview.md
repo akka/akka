@@ -201,13 +201,13 @@ Defers creation and materialization of a `Source` until there is demand.
 
 ---------------------------------------------------------------
 
-### actorPublisher
+### lazilyAsync
 
-Wrap an actor extending `ActorPublisher` as a source.
+Defers creation and materialization of a `CompletionStage` until there is demand.
 
-**emits** depends on the actor implementation
+**emits** the future completes
 
-**completes** when the actor stops
+**completes** after the future has completed
 
 ---------------------------------------------------------------
 
@@ -508,19 +508,6 @@ to provide back pressure onto the sink.
 
 ---------------------------------------------------------------
 
-### actorSubscriber
-
-Create an actor from a `Props` upon materialization, where the actor implements `ActorSubscriber`, which will
-receive the elements from the stream.
-
-Materializes into an `ActorRef` to the created actor.
-
-**cancels** when the actor terminates
-
-**backpressures** depends on the actor implementation
-
----------------------------------------------------------------
-
 ### asPublisher
 
 Integration with Reactive Streams, materializes into a `org.reactivestreams.Publisher`.
@@ -716,6 +703,8 @@ Attaches the given `Sink` to this `Flow`, meaning that elements that pass throug
 
 **completes** when upstream completes
 
+**cancels** when downstream or `Sink` cancels
+
 ---------------------------------------------------------------
 
 ### map
@@ -791,6 +780,23 @@ value is passed downstream. Can often replace `filter` followed by `map` to achi
 **backpressures** the partial function is defined for the element and downstream backpressures
 
 **completes** when upstream completes
+
+---------------------------------------------------------------
+
+### collectType 
+
+Transform this stream by testing the type of each of the elements on which the element is an instance of 
+the provided type as they pass through this processing step. Non-matching elements are filtered out.
+
+Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+
+'''Emits when''' the element is an instance of the provided type
+
+'''Backpressures when''' the element is an instance of the provided type and downstream backpressures
+
+'''Completes when''' upstream completes
+
+'''Cancels when''' downstream cancels
 
 ---------------------------------------------------------------
 
@@ -1106,6 +1112,66 @@ also be sent to the wire-tap `Sink` if there is demand.
 
 ---------------------------------------------------------------
 
+### lazyInit
+
+Creates a real `Flow` upon receiving the first element by calling relevant `flowFactory` given as an argument.
+Internal `Flow` will not be created if there are no elements, because of completion or error.
+The materialized value of the `Flow` will be the materialized value of the created internal flow.
+
+If `flowFactory` throws an exception and the supervision decision is
+`akka.stream.Supervision.Stop` the materialized value of the flow will be completed with
+the result of the `fallback` argument. For all other supervision options it will
+try to create flow with the next element.
+
+The `fallback` will be executed when there was no elements and completed is received from upstream
+or when there was an exception either thrown by the `flowFactory` or during the internal flow
+materialization process.
+
+Adheres to the `ActorAttributes.SupervisionStrategy` attribute.
+
+**emits** when the internal flow is successfully created and it emits
+
+**backpressures** when the internal flow is successfully created and it backpressures
+
+**completes** when upstream completes and all elements have been emitted from the internal flow
+
+**completes** when upstream completes and all futures have been completed and all elements have been emitted
+
+---------------------------------------------------------------
+
+### watch
+
+Watch a specific `ActorRef` and signal a failure downstream once the actor terminates.
+The signaled failure will be an @java[@javadoc:[WatchedActorTerminatedException](akka.stream.WatchedActorTerminatedException)]
+@scala[@scaladoc[WatchedActorTerminatedException](akka.stream.WatchedActorTerminatedException)].
+
+**emits** when upstream emits
+
+**backpressures** when downstream backpressures
+
+**completes** when upstream completes
+
+---------------------------------------------------------------
+
+### ask
+
+Specialized stage implementing the @scala[@extref[ask](github:akka-actor/src/main/scala/akka/pattern/AskSupport.scala)]@java[@extref[ask](github:akka-actor/src/main/scala/akka/pattern/Patterns.scala)] pattern for inter-op with untyped actors.
+
+The stream will be failed using an an @java[@javadoc:[WatchedActorTerminatedException](akka.stream.WatchedActorTerminatedException)]
+@scala[@scaladoc[WatchedActorTerminatedException](akka.stream.WatchedActorTerminatedException)] if the target actor terminates,
+or with an @java[@javadoc:[WatchedActorTerminatedException](akka.pattern.AskTimeoutException)] @scala[@scaladoc[WatchedActorTerminatedException](akka.pattern.AskTimeoutException)] if any of the asks times out.
+
+**emits** when the futures (in submission order) created by the ask pattern internally are completed 
+
+**backpressures** when the number of futures reaches the configured parallelism and the downstream backpressures
+
+**fails** when the passed in actor terminates, or a timeout is exceeded in any of the asks performed
+
+**completes** when upstream completes and all futures have been completed and all elements have been emitted
+
+
+---------------------------------------------------------------
+
 <br/>
 
 ## Flow stages composed of Sinks and Sources
@@ -1181,6 +1247,28 @@ If a @scala[`Future`] @java[`CompletionStage`] fails, the stream also fails (unl
 **backpressures** when the number of @scala[`Future` s] @java[`CompletionStage` s] reaches the configured parallelism and the downstream backpressures
 
 **completes** upstream completes and all @scala[`Future` s] @java[`CompletionStage` s] has been completed  and all elements has been emitted
+
+---------------------------------------------------------------
+
+### ask
+
+Use the `ask` pattern to send a request-reply message to the target `ref` actor.
+If any of the asks times out it will fail the stream with a [[akka.pattern.AskTimeoutException]].
+
+The `mapTo` class parameter is used to cast the incoming responses to the expected response type.
+
+Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
+An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+
+Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+
+**emits** when the ask @scala[`Future`] @java[`CompletionStage`] returned by the provided function finishes for the next element in sequence
+
+
+**backpressures** when the number of ask @scala[`Future` s] @java[`CompletionStage` s] reaches the configured parallelism and the downstream backpressures
+
+**completes** when upstream completes and all ask @scala[`Future` s] @java[`CompletionStage` s] has been completed and all elements has been emitted
+
 
 ---------------------------------------------------------------
 

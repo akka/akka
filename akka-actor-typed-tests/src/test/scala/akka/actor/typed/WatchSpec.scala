@@ -7,11 +7,10 @@ import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import akka.testkit.typed.TestKit
 import com.typesafe.config.ConfigFactory
 
 object WatchSpec {
@@ -32,8 +31,10 @@ object WatchSpec {
   case class StartWatchingWith(watchee: ActorRef[Stop.type], msg: CustomTerminationMessage) extends Message
 }
 
-class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
+class WatchSpec extends ActorTestKit
   with TypedAkkaSpecWithShutdown {
+
+  override def config = WatchSpec.config
   implicit def untypedSystem = system.toUntyped
 
   import WatchSpec._
@@ -73,7 +74,7 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
       case class Failed(t: Terminated) // we need to wrap it as it is handled specially
       val probe = TestProbe[Any]()
       val ex = new TestException("boom")
-      val parent = spawn(Behaviors.deferred[Any] { ctx ⇒
+      val parent = spawn(Behaviors.setup[Any] { ctx ⇒
         val child = ctx.spawn(Behaviors.immutable[Any]((ctx, msg) ⇒
           throw ex
         ), "child")
@@ -99,8 +100,8 @@ class WatchSpec extends TestKit("WordSpec", WatchSpec.config)
       case class Failed(t: Terminated) // we need to wrap it as it is handled specially
       val probe = TestProbe[Any]()
       val ex = new TestException("boom")
-      val grossoBosso = spawn(Behaviors.deferred[Any] { ctx ⇒
-        val middleManagement = ctx.spawn(Behaviors.deferred[Any] { ctx ⇒
+      val grossoBosso = spawn(Behaviors.setup[Any] { ctx ⇒
+        val middleManagement = ctx.spawn(Behaviors.setup[Any] { ctx ⇒
           val sixPackJoe = ctx.spawn(Behaviors.immutable[Any]((ctx, msg) ⇒
             throw ex
           ), "joe")

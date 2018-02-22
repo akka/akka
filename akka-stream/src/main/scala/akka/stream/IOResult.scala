@@ -4,6 +4,8 @@
 package akka.stream
 
 import akka.Done
+
+import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -48,3 +50,10 @@ object IOResult {
   def createFailed(count: Long, ex: Throwable): IOResult =
     new IOResult(count, Failure(ex))
 }
+
+/**
+ * This exception signals that a stream has been completed by an onError signal
+ * while there was still IO operations in progress.
+ */
+final case class AbruptIOTerminationException(ioResult: IOResult, cause: Throwable)
+  extends RuntimeException("Stream terminated without completing IO operation.", cause) with NoStackTrace

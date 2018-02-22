@@ -4,8 +4,7 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 
 object StashSpec {
   sealed trait Command
@@ -19,7 +18,7 @@ object StashSpec {
   final case class GetStashSize(replyTo: ActorRef[Int]) extends Command
 
   val immutableStash: Behavior[Command] =
-    Behaviors.deferred[Command] { _ ⇒
+    Behaviors.setup[Command] { _ ⇒
       val buffer = StashBuffer[Command](capacity = 10)
 
       def active(processed: Vector[String]): Behavior[Command] =
@@ -186,7 +185,7 @@ class MutableStashSpec extends StashSpec {
   def behaviorUnderTest: Behavior[Command] = Behaviors.mutable(ctx ⇒ new MutableStash(ctx))
 }
 
-abstract class StashSpec extends TestKit with TypedAkkaSpecWithShutdown {
+abstract class StashSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   import StashSpec._
 
   def testQualifier: String

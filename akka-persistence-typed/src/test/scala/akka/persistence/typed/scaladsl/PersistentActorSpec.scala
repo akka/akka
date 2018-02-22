@@ -8,7 +8,7 @@ import akka.actor.typed.{ ActorRef, ActorSystem, SupervisorStrategy, Terminated,
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.typed.scaladsl.PersistentBehaviors._
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
-import akka.testkit.typed.{ TestKit, TestKitSettings }
+import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
@@ -146,11 +146,11 @@ object PersistentActorSpec {
 
 }
 
-class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Eventually with TypedAkkaSpecWithShutdown {
+class PersistentActorSpec extends ActorTestKit with Eventually with TypedAkkaSpecWithShutdown {
+
+  override def config = PersistentActorSpec.config
 
   import PersistentActorSpec._
-
-  implicit val testSettings = TestKitSettings(system)
 
   "A typed persistent actor" must {
 
@@ -362,7 +362,7 @@ class PersistentActorSpec extends TestKit(PersistentActorSpec.config) with Event
 
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {
       val probe = TestProbe[String]()
-      val w = Behaviors.deferred[Any] { (ctx) ⇒
+      val w = Behaviors.setup[Any] { (ctx) ⇒
         ctx.watch(toWatch)
         Behaviors.immutable[Any] { (_, _) ⇒ Behaviors.same }
           .onSignal {

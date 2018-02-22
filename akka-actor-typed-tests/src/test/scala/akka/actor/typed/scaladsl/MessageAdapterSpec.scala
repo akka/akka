@@ -8,7 +8,6 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
-
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.PostStop
@@ -16,8 +15,7 @@ import akka.actor.typed.Props
 import akka.actor.typed.TestException
 import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.testkit.EventFilter
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 object MessageAdapterSpec {
@@ -36,8 +34,9 @@ object MessageAdapterSpec {
     """)
 }
 
-class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAkkaSpecWithShutdown {
+class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
+  override def config = MessageAdapterSpec.config
   implicit val untyped = system.toUntyped // FIXME no typed event filter yet
 
   "Message adapters" must {
@@ -56,7 +55,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       val probe = TestProbe[AnotherPong]()
 
-      val snitch = Behaviors.deferred[AnotherPong] { (ctx) ⇒
+      val snitch = Behaviors.setup[AnotherPong] { (ctx) ⇒
 
         val replyTo = ctx.messageAdapter[Response](_ ⇒
           AnotherPong(ctx.self.path.name, Thread.currentThread().getName))
@@ -109,7 +108,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       val probe = TestProbe[Wrapped]()
 
-      val snitch = Behaviors.deferred[Wrapped] { (ctx) ⇒
+      val snitch = Behaviors.setup[Wrapped] { (ctx) ⇒
 
         ctx.messageAdapter[Response](pong ⇒ Wrapped(qualifier = "wrong", pong)) // this is replaced
         val replyTo1: ActorRef[Response] = ctx.messageAdapter(pong ⇒ Wrapped(qualifier = "1", pong))
@@ -154,7 +153,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       val probe = TestProbe[Wrapped]()
 
-      val snitch = Behaviors.deferred[Wrapped] { (ctx) ⇒
+      val snitch = Behaviors.setup[Wrapped] { (ctx) ⇒
 
         val replyTo1 = ctx.messageAdapter[Pong1](pong ⇒ Wrapped(qualifier = "1", pong))
         pingPong ! Ping1(replyTo1)
@@ -191,7 +190,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       val probe = TestProbe[Any]()
 
-      val snitch = Behaviors.deferred[Wrapped] { (ctx) ⇒
+      val snitch = Behaviors.setup[Wrapped] { (ctx) ⇒
 
         var count = 0
         val replyTo = ctx.messageAdapter[Pong] { pong ⇒

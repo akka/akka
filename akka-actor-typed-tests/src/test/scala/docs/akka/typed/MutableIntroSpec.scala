@@ -10,7 +10,8 @@ import java.nio.charset.StandardCharsets
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.ActorContext
-import akka.testkit.typed.TestKit
+import akka.testkit.typed.scaladsl.ActorTestKit
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
 //#imports
@@ -87,7 +88,7 @@ object MutableIntroSpec {
 
 }
 
-class MutableIntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class MutableIntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   import MutableIntroSpec._
 
@@ -114,7 +115,7 @@ class MutableIntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
       //#chatroom-main
       val main: Behavior[String] =
-        Behaviors.deferred { ctx ⇒
+        Behaviors.setup { ctx ⇒
           val chatRoom = ctx.spawn(ChatRoom.behavior(), "chatroom")
           val gabblerRef = ctx.spawn(gabbler, "gabbler")
           ctx.watch(gabblerRef)
