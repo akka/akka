@@ -124,10 +124,8 @@ is idle or at low message rates. There is no encryption for Aeron.
 The TCP and TLS transport is implemented using Akka Streams TCP/TLS. This is the choice
 when encryption is needed, but it can also be used with plain TCP without TLS. It's also
 the obvious choice when UDP can't be used.
-It has very good performance (high throughput and low latency) but not as good as the Aeron transport.
-It is using less CPU than Aeron when the system is idle or at low message rates.
-This has not been verified yet, but it might scale better for many connections than the Aereon
-transport, which can be of importance for large clusters with 100s or even 1000s of nodes.
+It has very good performance (high throughput and low latency) but latency at high throughput
+might not be as good as the Aeron transport.
 
 @@@ note
 
