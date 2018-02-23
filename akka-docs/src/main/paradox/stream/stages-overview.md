@@ -1191,7 +1191,7 @@ for example most useful in handling websocket connections.
 
 ### Flow.fromSinkAndSourceCoupled
 
-Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow them them.
+Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow between them.
 Similar to `Flow.fromSinkAndSource` however couples the termination of these two stages.
 
 E.g. if the emitted `Flow` gets a cancellation, the `Source` of course is cancelled,
