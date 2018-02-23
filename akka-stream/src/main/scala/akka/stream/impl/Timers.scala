@@ -32,13 +32,10 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
    */
   private[akka] def timeoutCheckInterval(timeout: FiniteDuration): FiniteDuration = {
     import scala.concurrent.duration._
-    FiniteDuration(
-      math.min(
-        math.min(
-          math.max(timeout.toNanos / 8, 100.millis.toNanos),
-          timeout.toNanos / 2),
-        1.second.toNanos),
-      TimeUnit.NANOSECONDS)
+    if (timeout > 1.second) 1.second
+    else {
+      FiniteDuration(math.min(math.max(timeout.toNanos / 8, 100.millis.toNanos), timeout.toNanos / 2), TimeUnit.NANOSECONDS)
+    }
   }
 
   final class Initial[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
