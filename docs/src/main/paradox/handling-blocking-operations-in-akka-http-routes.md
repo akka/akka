@@ -89,7 +89,7 @@ my-blocking-dispatcher {
   thread-pool-executor {
     fixed-pool-size = 16
   }
-  throughput = 100
+  throughput = 1
 }
 ```
 
