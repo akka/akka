@@ -22,7 +22,8 @@ trait CopyrightHeader extends AutoPlugin {
             HeaderFileType.scala       -> cStyleComment,
             HeaderFileType.java        -> cStyleComment,
             HeaderFileType("template") -> cStyleComment
-          )
+          ),
+          compile := compile.dependsOn(HeaderPlugin.autoImport.headerCreate).value
         )
       )
     }
