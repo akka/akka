@@ -22,8 +22,7 @@ object ParadoxSupport {
       lazy val scanner = new FastClasspathScanner("akka").addClassLoader(classloader).scan()
       val allClasses = scanner.getNamesOfAllClasses.asScala.toVector
       Def.task { Seq(
-        { _: Writer.Context ⇒ new UnidocDirective(allClasses) },
-        { context: Writer.Context ⇒ new UnidocRefDirective(context.location.tree.label, context.properties) }
+        { _: Writer.Context ⇒ new UnidocDirective(allClasses) }
       )}
     }.value
   )
@@ -41,7 +40,8 @@ object ParadoxSupport {
 
       val label = node.label.replaceAll("\\\\_", "_")
       val labelWithoutGenericParameters = label.split("\\[")(0)
-      val labelWithJavaGenerics = label.replaceAll("\\[", "&lt;").replaceAll("\\]", "&gt;").replace('_', '?')
+      val scalaLabel = if(label.contains('.')) label.split('.').last else label
+      val javaLabel = scalaLabel.replaceAll("\\[", "&lt;").replaceAll("\\]", "&gt;").replace('_', '?')
       val matches = allClasses.filter(_.endsWith('.' + labelWithoutGenericParameters))
       matches.size match {
         case 0 =>
@@ -49,30 +49,18 @@ object ParadoxSupport {
         case 1 if matches(0).contains("adsl") =>
           throw new java.lang.IllegalStateException(s"Match for $label only found in one language: ${matches(0)}")
         case 1 =>
-          syntheticNode("scala", label, matches(0)).accept(visitor)
-          syntheticNode("java", labelWithJavaGenerics, matches(0)).accept(visitor)
+          syntheticNode("scala", scalaLabel, matches(0)).accept(visitor)
+          syntheticNode("java", javaLabel, matches(0)).accept(visitor)
         case 2 if matches.forall(_.contains("adsl")) =>
           matches.foreach(m => {
             if (!m.contains("javadsl"))
-              syntheticNode("scala", label, m).accept(visitor)
+              syntheticNode("scala", scalaLabel, m).accept(visitor)
             if (!m.contains("scaladsl"))
-              syntheticNode("java", labelWithJavaGenerics, m).accept(visitor)
+              syntheticNode("java", javaLabel, m).accept(visitor)
           })
         case n =>
           throw new java.lang.IllegalStateException(s"$n matches found for $label, but not javadsl/scaladsl: ${matches.mkString(", ")}")
       }
-    }
-  }
-
-  class UnidocRefDirective(page: Page, variables: Map[String, String]) extends InlineDirective("unidocRef") {
-    def render(node: DirectiveNode, visitor: Visitor, printer: Printer): Unit = {
-      printer.print(s"""<span class="group-scala">""")
-      ScaladocDirective(page, variables).render(node, visitor, printer)
-      printer.print(s"</span>")
-
-      printer.print(s"""<span class="group-java">""")
-      JavadocDirective(page, variables).render(node, visitor, printer)
-      printer.print(s"</span>")
     }
   }
 }
