@@ -27,7 +27,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 @InternalApi private[akka] object Timers {
 
   /**
-   * Given a timeout computes how often we check should be run without causing
+   * Given a timeout computes how often the check should be run without causing
    * excessive load or loosing timeout precision.
    */
   private[akka] def timeoutCheckInterval(timeout: FiniteDuration): FiniteDuration = {
