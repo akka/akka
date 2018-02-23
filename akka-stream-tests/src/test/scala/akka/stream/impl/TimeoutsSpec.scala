@@ -367,12 +367,12 @@ class TimeoutChecksSpec extends WordSpecLike with Matchers {
       Timers.timeoutCheckInterval(800.millis) should ===(100.millis)
     }
 
-    "run every 8th of the value for timeouts for timeouts between 800ms and 8s" in {
-      Timers.timeoutCheckInterval(801.millis).toNanos should ===(801.millis.toNanos / 8)
+    "run every 8th of the value for timeouts for timeouts under 1s" in {
+      Timers.timeoutCheckInterval(999.millis).toNanos should ===(999.millis.toNanos / 8)
     }
 
-    "run every 1s for timeouts over 8s" in {
-      Timers.timeoutCheckInterval(8001.millis) should ===(1.second)
+    "run every 1s for timeouts over 1s" in {
+      Timers.timeoutCheckInterval(1001.millis) should ===(1.second)
     }
 
   }
