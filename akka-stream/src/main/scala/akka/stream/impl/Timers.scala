@@ -25,10 +25,19 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
  *  - otherwise, these streams do not interfere with the element flow, ordinary completion or failure
  */
 @InternalApi private[akka] object Timers {
-  private def idleTimeoutCheckInterval(timeout: FiniteDuration): FiniteDuration = {
+
+  /**
+   * Given a timeout computes how often we check should be run without causing
+   * excessive load or loosing timeout precision.
+   */
+  private[akka] def timeoutCheckInterval(timeout: FiniteDuration): FiniteDuration = {
     import scala.concurrent.duration._
     FiniteDuration(
-      math.min(math.max(timeout.toNanos / 8, 100.millis.toNanos), timeout.toNanos / 2),
+      math.min(
+        math.min(
+          math.max(timeout.toNanos / 8, 100.millis.toNanos),
+          timeout.toNanos / 2),
+        1.second.toNanos),
       TimeUnit.NANOSECONDS)
   }
 
@@ -100,7 +109,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
           if (nextDeadline - System.nanoTime < 0)
             failStage(new TimeoutException(s"No elements passed in the last $timeout."))
 
-        override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, idleTimeoutCheckInterval(timeout))
+        override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, timeoutCheckInterval(timeout))
       }
 
     override def toString = "IdleTimeout"
@@ -132,7 +141,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
           if (waitingDemand && (nextDeadline - System.nanoTime < 0))
             failStage(new TimeoutException(s"No demand signalled in the last $timeout."))
 
-        override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, idleTimeoutCheckInterval(timeout))
+        override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, timeoutCheckInterval(timeout))
       }
 
     override def toString = "BackpressureTimeout"
@@ -160,17 +169,21 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
         if (nextDeadline - System.nanoTime < 0)
           failStage(new TimeoutException(s"No elements passed in the last $timeout."))
 
-      override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, idleTimeoutCheckInterval(timeout))
+      override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, timeoutCheckInterval(timeout))
 
       class IdleBidiHandler[P](in: Inlet[P], out: Outlet[P]) extends InHandler with OutHandler {
         override def onPush(): Unit = {
           onActivity()
           push(out, grab(in))
         }
+
         override def onPull(): Unit = pull(in)
+
         override def onUpstreamFinish(): Unit = complete(out)
+
         override def onDownstreamFinish(): Unit = cancel(in)
       }
+
     }
 
     override def toString = "IdleTimeoutBidi"
@@ -263,4 +276,5 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   }
 
   case object GraphStageLogicTimer
+
 }

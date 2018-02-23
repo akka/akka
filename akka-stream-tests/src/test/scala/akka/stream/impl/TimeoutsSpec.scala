@@ -4,12 +4,15 @@
 
 package akka.stream.impl
 
-import java.util.concurrent.TimeoutException
+import java.util.concurrent.{ TimeUnit, TimeoutException }
+
 import akka.Done
 import akka.stream.scaladsl._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream._
+import org.scalatest.{ Matchers, WordSpecLike }
+
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 
@@ -349,6 +352,27 @@ class TimeoutsSpec extends StreamSpec {
       upRead.expectSubscriptionAndError(te)
       downRead.expectSubscriptionAndError(te)
       downWrite.expectCancellation()
+    }
+
+  }
+
+}
+
+class TimeoutChecksSpec extends WordSpecLike with Matchers {
+
+  "Timeout check interval" must {
+    import scala.concurrent.duration.{ Duration, FiniteDuration }
+
+    "run twice for timeouts under 800ms" in {
+      Timers.timeoutCheckInterval(800.millis) should ===(100.millis)
+    }
+
+    "run every 8th of the value for timeouts for timeouts between 800ms and 8s" in {
+      Timers.timeoutCheckInterval(801.millis).toNanos should ===(801.millis.toNanos / 8)
+    }
+
+    "run every 1s for timeouts over 8s" in {
+      Timers.timeoutCheckInterval(8001.millis) should ===(1.second)
     }
 
   }
