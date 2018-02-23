@@ -178,12 +178,9 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
         }
 
         override def onPull(): Unit = pull(in)
-
         override def onUpstreamFinish(): Unit = complete(out)
-
         override def onDownstreamFinish(): Unit = cancel(in)
       }
-
     }
 
     override def toString = "IdleTimeoutBidi"
@@ -276,5 +273,4 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   }
 
   case object GraphStageLogicTimer
-
 }
