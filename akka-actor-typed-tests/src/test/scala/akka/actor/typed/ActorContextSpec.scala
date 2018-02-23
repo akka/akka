@@ -4,10 +4,11 @@
 package akka.actor.typed
 
 import akka.actor.typed.scaladsl.Behaviors._
-import akka.actor.typed.scaladsl.{ Behaviors, AskPattern }
+import akka.actor.typed.scaladsl.{ AskPattern, Behaviors }
 import akka.actor.{ ActorInitializationException, DeadLetterSuppression, InvalidMessageException }
 import akka.testkit.AkkaSpec
 import akka.testkit.TestEvent.Mute
+import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalactic.CanEqual
 
@@ -316,6 +317,8 @@ object ActorContextSpec {
 
 abstract class ActorContextSpec extends TypedAkkaSpec {
   import ActorContextSpec._
+
+  implicit val timeout = Timeout(3.seconds)
 
   val config = ConfigFactory.parseString(
     """

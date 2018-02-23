@@ -4,6 +4,8 @@
 
 package akka.cluster.typed.internal.receptionist
 
+import scala.concurrent.duration._
+
 import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.ddata.DistributedData
@@ -21,9 +23,15 @@ import akka.actor.typed.receptionist.Receptionist.AllCommands
 import akka.actor.typed.receptionist.Receptionist.Command
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.ActorContext
-
 import scala.language.existentials
 import scala.language.higherKinds
+
+import akka.actor.typed.ActorSystem
+import akka.actor.Address
+import akka.cluster.ClusterEvent
+import akka.cluster.ClusterEvent.MemberRemoved
+import akka.util.Helpers.toRootLowerCase
+import com.typesafe.config.Config
 
 /** Internal API */
 @InternalApi
@@ -54,19 +62,45 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     def apply(map: ORMultiMap[ServiceKey[_], ActorRef[_]]): ServiceRegistry = TypedORMultiMap[ServiceKey, ActorRef](map)
   }
 
+  private case object RemoveTick
+
   def behavior: Behavior[Command] = clusterBehavior
-  val clusterBehavior: Behavior[Command] = ReceptionistImpl.init(clusteredReceptionist())
+  val clusterBehavior: Behavior[Command] = ReceptionistImpl.init(ctx ⇒ clusteredReceptionist(ctx))
+
+  object ClusterReceptionistSettings {
+    def apply(system: ActorSystem[_]): ClusterReceptionistSettings =
+      apply(system.settings.config.getConfig("akka.cluster.typed.receptionist"))
+
+    def apply(config: Config): ClusterReceptionistSettings = {
+      val writeTimeout = 5.seconds // the timeout is not important
+      val writeConsistency = {
+        val key = "write-consistency"
+        toRootLowerCase(config.getString(key)) match {
+          case "local"    ⇒ Replicator.WriteLocal
+          case "majority" ⇒ Replicator.WriteMajority(writeTimeout)
+          case "all"      ⇒ Replicator.WriteAll(writeTimeout)
+          case _          ⇒ Replicator.WriteTo(config.getInt(key), writeTimeout)
+        }
+      }
+      ClusterReceptionistSettings(
+        writeConsistency,
+        pruningInterval = config.getDuration("pruning-interval", MILLISECONDS).millis
+      )
+    }
+  }
 
   case class ClusterReceptionistSettings(
-    writeConsistency: WriteConsistency = Replicator.WriteLocal
-  )
+    writeConsistency: WriteConsistency,
+    pruningInterval:  FiniteDuration)
 
   /**
    * Returns an ReceptionistImpl.ExternalInterface that synchronizes registered services with
    */
-  def clusteredReceptionist(settings: ClusterReceptionistSettings = ClusterReceptionistSettings())(ctx: ActorContext[AllCommands]): ReceptionistImpl.ExternalInterface[ServiceRegistry] = {
+  def clusteredReceptionist(ctx: ActorContext[AllCommands]): ReceptionistImpl.ExternalInterface[ServiceRegistry] = {
     import akka.actor.typed.scaladsl.adapter._
     val untypedSystem = ctx.system.toUntyped
+
+    val settings = ClusterReceptionistSettings(ctx.system)
 
     val replicator = DistributedData(untypedSystem).replicator
     implicit val cluster = Cluster(untypedSystem)
@@ -107,7 +141,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       }
     }
 
-    val adapter: ActorRef[Replicator.ReplicatorMessage] =
+    val replicatorMessageAdapter: ActorRef[Replicator.ReplicatorMessage] =
       ctx.messageAdapter[Replicator.ReplicatorMessage] {
         case changed @ Replicator.Changed(ReceptionistKey) ⇒
           val value = changed.get(ReceptionistKey)
@@ -117,7 +151,42 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           externalInterface.RegistrationsChangedExternally(changes, newState)
       }
 
-    replicator ! Replicator.Subscribe(ReceptionistKey, adapter.toUntyped)
+    replicator ! Replicator.Subscribe(ReceptionistKey, replicatorMessageAdapter.toUntyped)
+
+    // remove entries when members are removed
+    val clusterEventMessageAdapter: ActorRef[MemberRemoved] =
+      ctx.messageAdapter[MemberRemoved] {
+        case MemberRemoved(member, _) ⇒
+          // ok to update from several nodes but more efficient to try to do it from one node
+          if (cluster.state.leader.contains(cluster.selfAddress)) {
+            if (member.address == cluster.selfAddress) NodesRemoved.empty
+            else NodesRemoved(Set(member.address))
+          } else
+            NodesRemoved.empty
+      }
+
+    cluster.subscribe(clusterEventMessageAdapter.toUntyped, ClusterEvent.InitialStateAsEvents, classOf[MemberRemoved])
+
+    // also periodic cleanup in case removal from ORMultiMap is skipped due to concurrent update,
+    // which is possible for OR CRDTs
+    val removeTickMessageAdapter: ActorRef[RemoveTick.type] =
+      ctx.messageAdapter[RemoveTick.type] { _ ⇒
+        // ok to update from several nodes but more efficient to try to do it from one node
+        if (cluster.state.leader.contains(cluster.selfAddress)) {
+          val allAddressesInState: Set[Address] = state.map.entries.flatMap {
+            case (_, values) ⇒
+              // don't care about local (empty host:port addresses)
+              values.collect { case ref if ref.path.address.hasGlobalScope ⇒ ref.path.address }
+          }(collection.breakOut)
+          val clusterAddresses = cluster.state.members.map(_.address)
+          val diff = allAddressesInState diff clusterAddresses
+          if (diff.isEmpty) NodesRemoved.empty else NodesRemoved(diff)
+        } else
+          NodesRemoved.empty
+      }
+
+    ctx.system.scheduler.schedule(settings.pruningInterval, settings.pruningInterval,
+      removeTickMessageAdapter.toUntyped, RemoveTick)(ctx.system.executionContext)
 
     externalInterface
   }

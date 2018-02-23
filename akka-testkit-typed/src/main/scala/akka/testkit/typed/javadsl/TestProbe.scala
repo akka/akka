@@ -72,6 +72,11 @@ abstract class TestProbe[M] {
   def ref: ActorRef[M]
 
   /**
+   * ActorRef for this TestProbe
+   */
+  def getRef(): ActorRef[M] = ref
+
+  /**
    * Obtain time remaining for execution of the innermost enclosing `within`
    * block or missing that it returns the properly dilated default for this
    * case from settings (key "akka.actor.typed.test.single-expect-default").

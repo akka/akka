@@ -20,7 +20,7 @@ import akka.util.{ BoxedType, Timeout }
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 @InternalApi
 private[akka] object TestProbeImpl {

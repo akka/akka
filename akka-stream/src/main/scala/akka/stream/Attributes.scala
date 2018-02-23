@@ -368,7 +368,8 @@ object ActorAttributes {
   final case class Dispatcher(dispatcher: String) extends MandatoryAttribute
   final case class SupervisionStrategy(decider: Supervision.Decider) extends MandatoryAttribute
 
-  val IODispatcher: Dispatcher = ActorAttributes.Dispatcher("akka.stream.default-blocking-io-dispatcher")
+  // this is actually a config key that needs reading and itself will contain the actual dispatcher name
+  val IODispatcher: Dispatcher = ActorAttributes.Dispatcher("akka.stream.blocking-io-dispatcher")
 
   /**
    * Specifies the name of the dispatcher. This also adds an async boundary.

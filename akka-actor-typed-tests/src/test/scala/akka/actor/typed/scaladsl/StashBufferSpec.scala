@@ -4,10 +4,9 @@
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed.Behavior
-import akka.testkit.typed.EffectfulActorContext
-import akka.testkit.typed.TestInbox
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import akka.testkit.typed.internal.EffectfulActorContext
+import akka.testkit.typed.scaladsl.TestInbox
+import org.scalatest.{ Matchers, WordSpec }
 
 class StashBufferSpec extends WordSpec with Matchers {
 
@@ -95,7 +94,7 @@ class StashBufferSpec extends WordSpec with Matchers {
         }
 
       buffer.unstashAll(ctx, behavior(""))
-      valueInbox.expectMsg("m1m2m3")
+      valueInbox.expectMessage("m1m2m3")
       buffer.isEmpty should ===(true)
     }
 
@@ -118,7 +117,7 @@ class StashBufferSpec extends WordSpec with Matchers {
         }
 
       buffer.unstashAll(ctx, behavior(""))
-      valueInbox.expectMsg("m1m2m3")
+      valueInbox.expectMessage("m1m2m3")
       buffer.isEmpty should ===(true)
     }
 
@@ -147,7 +146,7 @@ class StashBufferSpec extends WordSpec with Matchers {
       // the call is made, not unstash new messages added to the buffer while
       // unstashing.
       val b2 = buffer.unstashAll(ctx, behavior(""))
-      valueInbox.expectMsg("m1m3")
+      valueInbox.expectMessage("m1m3")
       buffer.size should ===(1)
       buffer.head should ===("m2")
 

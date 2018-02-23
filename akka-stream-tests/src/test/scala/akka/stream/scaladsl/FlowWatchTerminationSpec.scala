@@ -56,7 +56,7 @@ class FlowWatchTerminationSpec extends StreamSpec {
       sinkProbe.request(5)
       sourceProbe.sendNext(1)
       sinkProbe.expectNext(1)
-      expectNoMsg(300.millis)
+      expectNoMessage(300.millis)
 
       sourceProbe.sendComplete()
       expectMsg(Done)

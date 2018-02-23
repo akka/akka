@@ -20,4 +20,9 @@ object LineNumberSpecCodeForScala {
     case "a" ⇒
     case "b" ⇒
   }
+
+  def method(s: String) = () ⇒ {
+    println(s)
+    Integer.parseInt(s)
+  }
 }

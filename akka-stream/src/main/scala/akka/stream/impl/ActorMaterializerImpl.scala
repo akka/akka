@@ -44,11 +44,12 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
    * INTERNAL API
    */
   @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
-    // if the props already have a dispatcher set we respect that, if not
-    // we take it from the attributes
     val effectiveProps =
       if (props.dispatcher == Dispatchers.DefaultDispatcherId)
         props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
+      else if (props.dispatcher == ActorAttributes.IODispatcher.dispatcher)
+        // this one is actually not a dispatcher but a relative config key pointing containing the actual dispatcher name
+        props.withDispatcher(settings.blockingIoDispatcher)
       else props
     actorOf(effectiveProps, context.islandName)
   }

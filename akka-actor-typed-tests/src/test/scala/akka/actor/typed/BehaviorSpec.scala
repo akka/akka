@@ -4,13 +4,13 @@
 package akka.actor.typed
 
 import akka.actor.typed.scaladsl.{ Behaviors ⇒ SActor }
-import akka.actor.typed.javadsl.{ Behaviors ⇒ JActor, ActorContext ⇒ JActorContext }
+import akka.actor.typed.javadsl.{ ActorContext ⇒ JActorContext, Behaviors ⇒ JActor }
 import akka.japi.function.{ Function ⇒ F1e, Function2 ⇒ F2, Procedure2 ⇒ P2 }
 import akka.japi.pf.{ FI, PFBuilder }
 import java.util.function.{ Function ⇒ F1 }
 
 import akka.Done
-import akka.testkit.typed.{ BehaviorTestkit, TestInbox }
+import akka.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox }
 
 object BehaviorSpec {
   sealed trait Command {
@@ -69,12 +69,12 @@ object BehaviorSpec {
 
     case class Init(behv: Behavior[Command], inbox: TestInbox[Event], aux: Aux) {
       def mkCtx(): Setup = {
-        val testkit = BehaviorTestkit(behv)
+        val testkit = BehaviorTestKit(behv)
         inbox.receiveAll()
         Setup(testkit, inbox, aux)
       }
     }
-    case class Setup(testKit: BehaviorTestkit[Command], inbox: TestInbox[Event], aux: Aux)
+    case class Setup(testKit: BehaviorTestKit[Command], inbox: TestInbox[Event], aux: Aux)
 
     def init(): Init = {
       val inbox = TestInbox[Event]("evt")

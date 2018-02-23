@@ -87,8 +87,8 @@ class TcpFramingSpec extends AkkaSpec with ImplicitSender {
         val frames = Source.fromIterator(() ⇒ rechunk(bytes)).via(framingFlow).runWith(Sink.seq).futureValue
         frames.size should ===(numberOfFrames)
         frames.foreach { frame ⇒
-          frame.byteBuffer.limit should ===(payload5.size)
-          val payload = new Array[Byte](frame.byteBuffer.limit)
+          frame.byteBuffer.limit() should ===(payload5.size)
+          val payload = new Array[Byte](frame.byteBuffer.limit())
           frame.byteBuffer.get(payload)
           ByteString(payload) should ===(payload5)
           frame.streamId should ===(3)
