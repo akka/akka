@@ -25,7 +25,7 @@ class LineNumberSpec extends AkkaSpec {
           // because how scala 2.12 does the same as Java Lambdas
           result should ===(NoSourceInfo)
         else
-          result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 12, 12))
+          result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 13, 13))
       }
 
       "work for larger functions" in {
@@ -34,15 +34,15 @@ class LineNumberSpec extends AkkaSpec {
           // because how scala 2.12 does the same as Java Lambdas
           result should ===(NoSourceInfo)
         else
-          result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 14, 16))
+          result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 15, 17))
       }
 
       "work for partial functions" in {
-        LineNumbers(partial) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 19, 21))
+        LineNumbers(partial) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 20, 22))
       }
 
       "work for `def`" in {
-        LineNumbers(method("foo")) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 24, 26))
+        LineNumbers(method("foo")) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 25, 27))
       }
 
     }
@@ -52,16 +52,16 @@ class LineNumberSpec extends AkkaSpec {
 
       "work for small functions" in {
         // because how java Lambdas are implemented/designed
-        LineNumbers(l.f1()) should ===(SourceFileLines("LineNumberSpecCodeForJava.java", 19, 19))
+        LineNumbers(l.f1()) should ===(SourceFileLines("LineNumberSpecCodeForJava.java", 20, 20))
       }
 
       "work for larger functions" in {
         // because how java Lambdas are implemented/designed
-        LineNumbers(l.f2()) should ===(SourceFileLines("LineNumberSpecCodeForJava.java", 24, 25))
+        LineNumbers(l.f2()) should ===(SourceFileLines("LineNumberSpecCodeForJava.java", 25, 26))
       }
 
       "work for anonymous classes" in {
-        LineNumbers(l.f3()) should ===(SourceFileLines("LineNumberSpecCodeForJava.java", 30, 35))
+        LineNumbers(l.f3()) should ===(SourceFileLines("LineNumberSpecCodeForJava.java", 31, 36))
       }
 
     }
