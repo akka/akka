@@ -74,7 +74,7 @@ object ParadoxSupport {
           })
         case n =>
           throw new java.lang.IllegalStateException(
-            s"$n matches found for $label, but not javadsl/scaladsl: ${matches.mkString(", ")}. " +
+            s"$n matches found for @unidoc[$label], but not javadsl/scaladsl: ${matches.mkString(", ")}. " +
               s"You may want to use the fully qualified class name as @unidoc[fqcn] instead of @unidoc[${label}]."
           )
       }
