@@ -3,7 +3,7 @@
 An actor system that is not part of the cluster can communicate with actors
 somewhere in the cluster via this @unidoc[ClusterClient]. The client can of course be part of
 another cluster. It only needs to know the location of one (or more) nodes to use as initial
-contact points. It will establish a connection to a @unidoc[client.ClusterReceptionist] somewhere in
+contact points. It will establish a connection to a @unidoc[akka.cluster.client.ClusterReceptionist] somewhere in
 the cluster. It will monitor the connection to the receptionist and establish a new
 connection if the link goes down. When looking for a new receptionist it uses fresh
 contact points retrieved from previous establishment, or periodically refreshed contacts,
@@ -23,11 +23,11 @@ to `remote` or `cluster` when using
 the cluster client.
 
 The receptionist is supposed to be started on all nodes, or all nodes with specified role,
-in the cluster. The receptionist can be started with the @unidoc[ClusterClientReceptionist] extension
+in the cluster. The receptionist can be started with the @unidoc[akka.cluster.client.ClusterReceptionist] extension
 or as an ordinary actor.
 
 You can send messages via the @unidoc[ClusterClient] to any actor in the cluster that is registered
-in the @unidoc[DistributedPubSubMediator] used by the @unidoc[client.ClusterReceptionist].
+in the @unidoc[DistributedPubSubMediator] used by the @unidoc[akka.cluster.client.ClusterReceptionist].
 The @unidoc[ClusterClientReceptionist] provides methods for registration of actors that
 should be reachable from the client. Messages are wrapped in `ClusterClient.Send`,
 @scala[@scaladoc[`ClusterClient.SendToAll`](akka.cluster.client.ClusterClient$)]@java[`ClusterClient.SendToAll`] or @scala[@scaladoc[`ClusterClient.Publish`](akka.cluster.client.ClusterClient$)]@java[`ClusterClient.Publish`].
