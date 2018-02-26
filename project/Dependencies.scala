@@ -19,8 +19,6 @@ object Dependencies {
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
   val alpnAgentVersion = "2.0.7"
 
-  val akka25Version = "2.5.9"
-
   lazy val akkaVersion = settingKey[String]("The version of Akka to use.")
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val specs2Version = settingKey[String]("The version of Specs2 to use")
@@ -29,7 +27,6 @@ object Dependencies {
   val Versions = Seq(
     crossScalaVersions := Seq("2.12.4", "2.11.12"),
     scalaVersion := crossScalaVersions.value.head,
-    akkaVersion := System.getProperty("akka.build.version", akka25Version),
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.13.5"),
     scalaTestVersion := "3.0.5",
     specs2Version := "4.0.2"
