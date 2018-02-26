@@ -1,0 +1,2 @@
+# #24604 Deduplicate logic for IODispatcher
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.ActorAttributes$Dispatcher$")
