@@ -54,7 +54,9 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         var trailer:            Option[ParsedHeadersFrame] = None
       ) extends InHandler {
         private def inlet: SubSinkInlet[_] = maybeInlet.get
-        def canSend = (buffer.nonEmpty && outboundWindowLeft > 0) || (upstreamClosed && !endStreamSent)
+
+        /** Designates whether nextFrame can be called to get the next frame. */
+        def canSend: Boolean = buffer.nonEmpty && outboundWindowLeft > 0
 
         def registerIncomingData(inlet: SubSinkInlet[_]): Unit = {
           require(!maybeInlet.isDefined)
