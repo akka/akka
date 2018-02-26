@@ -736,7 +736,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
       case _ ⇒
 
-        val props = ActorGraphInterpreter.props(shell).withDispatcher(ActorAttributes.resolveDispatcher(effectiveAttributes, settings))
+        val props = ActorGraphInterpreter.props(shell).withDispatcher(ActorAttributes.Dispatcher.resolve(effectiveAttributes, settings))
 
         val actorName = fullIslandName match {
           case OptionVal.Some(n) ⇒ n
@@ -879,7 +879,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (NotUsed, Any) = {
     val tls = mod.asInstanceOf[TlsModule]
 
-    val dispatcher = ActorAttributes.resolveDispatcher(attributes, materializer.settings)
+    val dispatcher = ActorAttributes.Dispatcher.resolve(attributes, materializer.settings)
     val maxInputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer].max
 
     val props =

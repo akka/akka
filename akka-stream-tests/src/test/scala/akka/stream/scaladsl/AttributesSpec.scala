@@ -564,13 +564,13 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     "resolve the dispatcher attribute" in {
       import ActorAttributes._
 
-      resolveDispatcher(dispatcher("my-dispatcher"), materializer.settings) should be("my-dispatcher")
+      Dispatcher.resolve(dispatcher("my-dispatcher"), materializer.settings) should be("my-dispatcher")
     }
 
     "resolve the blocking io dispatcher attribute" in {
       import ActorAttributes._
 
-      resolveDispatcher(Attributes(IODispatcher), materializer.settings) should be("akka.stream.default-blocking-io-dispatcher")
+      Dispatcher.resolve(Attributes(IODispatcher), materializer.settings) should be("akka.stream.default-blocking-io-dispatcher")
     }
   }
 

@@ -365,27 +365,29 @@ object ActorAttributes {
   import Attributes._
   final case class Dispatcher(dispatcher: String) extends MandatoryAttribute
 
+  object Dispatcher {
+    /**
+     * Resolves the dispatcher's name with a fallback to the default blocking IO dispatcher.
+     * Note that `IODispatcher.dispatcher` is not used here as the config used to create [[ActorMaterializerSettings]]
+     * is not easily accessible, instead the name is taken from `settings.blockingIoDispatcher`
+     */
+    def resolve(attributes: Attributes, settings: ActorMaterializerSettings): String =
+      attributes.mandatoryAttribute[Dispatcher] match {
+        case IODispatcher           ⇒ settings.blockingIoDispatcher
+        case Dispatcher(dispatcher) ⇒ dispatcher
+      }
+
+    /**
+     * Resolves the dispatcher name with a fallback to the default blocking IO dispatcher.
+     */
+    def resolve(context: MaterializationContext): String =
+      resolve(context.effectiveAttributes, ActorMaterializerHelper.downcast(context.materializer).settings)
+  }
+
   final case class SupervisionStrategy(decider: Supervision.Decider) extends MandatoryAttribute
 
   // this is actually a config key that needs reading and itself will contain the actual dispatcher name
   val IODispatcher: Dispatcher = ActorAttributes.Dispatcher("akka.stream.materializer.blocking-io-dispatcher")
-
-  /**
-   * Resolves the dispatcher's name with a fallback to the default blocking IO dispatcher.
-   * Note that `IODispatcher.dispatcher` is not used here as the config used to create [[ActorMaterializerSettings]]
-   * is not easily accessible, instead the name is taken from `settings.blockingIoDispatcher`
-   */
-  def resolveDispatcher(attributes: Attributes, settings: ActorMaterializerSettings): String =
-    attributes.mandatoryAttribute[Dispatcher] match {
-      case IODispatcher           ⇒ settings.blockingIoDispatcher
-      case Dispatcher(dispatcher) ⇒ dispatcher
-    }
-
-  /**
-   * Resolves the dispatcher name with a fallback to the default blocking IO dispatcher.
-   */
-  def resolveDispatcher(context: MaterializationContext): String =
-    resolveDispatcher(context.effectiveAttributes, ActorMaterializerHelper.downcast(context.materializer).settings)
 
   /**
    * Specifies the name of the dispatcher. This also adds an async boundary.

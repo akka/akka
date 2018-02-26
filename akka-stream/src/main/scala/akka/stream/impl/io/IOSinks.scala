@@ -7,9 +7,9 @@ import java.io.OutputStream
 import java.nio.file.{ OpenOption, Path }
 
 import akka.annotation.InternalApi
+import akka.stream.ActorAttributes.Dispatcher
 import akka.stream._
 import akka.stream.impl.SinkModule
-import akka.stream.ActorAttributes.resolveDispatcher
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -33,7 +33,7 @@ import scala.concurrent.{ Future, Promise }
     val ioResultPromise = Promise[IOResult]()
     val props = FileSubscriber.props(f, ioResultPromise, maxInputBufferSize, startPosition, options)
 
-    val ref = materializer.actorOf(context, props.withDispatcher(resolveDispatcher(context)))
+    val ref = materializer.actorOf(context, props.withDispatcher(Dispatcher.resolve(context)))
 
     (akka.stream.actor.ActorSubscriber[ByteString](ref), ioResultPromise.future)
   }
@@ -62,7 +62,7 @@ import scala.concurrent.{ Future, Promise }
 
     val props = OutputStreamSubscriber
       .props(os, ioResultPromise, maxInputBufferSize, autoFlush)
-      .withDispatcher(resolveDispatcher(context))
+      .withDispatcher(Dispatcher.resolve(context))
 
     val ref = materializer.actorOf(context, props)
     (akka.stream.actor.ActorSubscriber[ByteString](ref), ioResultPromise.future)
