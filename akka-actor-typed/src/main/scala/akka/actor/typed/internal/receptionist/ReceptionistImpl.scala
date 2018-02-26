@@ -10,6 +10,7 @@ import akka.annotation.InternalApi
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.Terminated
+import akka.actor.typed.internal.receptionist.ReceptionistMessages.{ AllCommands, InternalCommand }
 import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
@@ -64,13 +65,13 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
 
   sealed abstract class ReceptionistInternalCommand extends InternalCommand
   final case class RegisteredActorTerminated[T](key: ServiceKey[T], ref: ActorRef[T]) extends ReceptionistInternalCommand
-  final case class SubscriberTerminated[T](key: ServiceKey[T], ref: ActorRef[MessageImpls.Listing[T]]) extends ReceptionistInternalCommand
+  final case class SubscriberTerminated[T](key: ServiceKey[T], ref: ActorRef[ReceptionistMessages.Listing[T]]) extends ReceptionistInternalCommand
   object NodesRemoved {
     val empty = NodesRemoved(Set.empty)
   }
   final case class NodesRemoved(addresses: Set[Address]) extends ReceptionistInternalCommand
 
-  type SubscriptionsKV[K <: AbstractServiceKey] = ActorRef[MessageImpls.Listing[K#Protocol]]
+  type SubscriptionsKV[K <: AbstractServiceKey] = ActorRef[ReceptionistMessages.Listing[K#Protocol]]
   type SubscriptionRegistry = TypedMultiMap[AbstractServiceKey, SubscriptionsKV]
 
   private[akka] def init[State](externalInterfaceFactory: ActorContext[AllCommands] ⇒ ExternalInterface[State]): Behavior[Command] =
@@ -112,7 +113,7 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
 
       def notifySubscribersFor[T](key: AbstractServiceKey): Unit = {
         val newListing = newRegistry.get(key)
-        subscriptions.get(key).foreach(_ ! MessageImpls.Listing(key.asServiceKey, newListing))
+        subscriptions.get(key).foreach(_ ! ReceptionistMessages.Listing(key.asServiceKey, newListing))
       }
 
       changedKeysHint foreach notifySubscribersFor
@@ -120,22 +121,22 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
     }
 
     def replyWithListing[T](key: ServiceKey[T], replyTo: ActorRef[Listing]): Unit =
-      replyTo ! MessageImpls.Listing(key, serviceRegistry get key)
+      replyTo ! ReceptionistMessages.Listing(key, serviceRegistry get key)
 
     immutable[AllCommands] { (ctx, msg) ⇒
       msg match {
-        case MessageImpls.Register(key, serviceInstance, maybeReplyTo) ⇒
+        case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) ⇒
           ctx.log.debug("Actor was registered: {} {}", key, serviceInstance)
           watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
           maybeReplyTo match {
-            case Some(replyTo) ⇒ replyTo ! MessageImpls.Registered(key, serviceInstance)
+            case Some(replyTo) ⇒ replyTo ! ReceptionistMessages.Registered(key, serviceInstance)
             case None          ⇒
           }
           externalInterface.onRegister(key, serviceInstance)
 
           updateRegistry(Set(key), _.inserted(key)(serviceInstance))
 
-        case MessageImpls.Find(key, replyTo) ⇒
+        case ReceptionistMessages.Find(key, replyTo) ⇒
           replyWithListing(key, replyTo)
 
           same
@@ -196,7 +197,7 @@ private[akka] object ReceptionistImpl extends ReceptionistBehaviorProvider {
             }
           }
 
-        case MessageImpls.Subscribe(key, subscriber) ⇒
+        case ReceptionistMessages.Subscribe(key, subscriber) ⇒
           watchWith(ctx, subscriber, SubscriberTerminated(key, subscriber))
 
           // immediately reply with initial listings to the new subscriber

@@ -5,7 +5,6 @@
 package akka.cluster.typed.internal.receptionist
 
 import scala.concurrent.duration._
-
 import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.ddata.DistributedData
@@ -19,15 +18,15 @@ import akka.actor.typed.internal.receptionist.ReceptionistBehaviorProvider
 import akka.actor.typed.internal.receptionist.ReceptionistImpl
 import akka.actor.typed.internal.receptionist.ReceptionistImpl._
 import akka.actor.typed.receptionist.Receptionist.AbstractServiceKey
-import akka.actor.typed.receptionist.Receptionist.AllCommands
 import akka.actor.typed.receptionist.Receptionist.Command
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.ActorContext
+
 import scala.language.existentials
 import scala.language.higherKinds
-
 import akka.actor.typed.ActorSystem
 import akka.actor.Address
+import akka.actor.typed.internal.receptionist.ReceptionistMessages.AllCommands
 import akka.cluster.ClusterEvent
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.util.Helpers.toRootLowerCase

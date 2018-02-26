@@ -9,9 +9,8 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
-import akka.actor.typed.internal.receptionist.ReceptionistBehaviorProvider
-import akka.actor.typed.internal.receptionist.ReceptionistImpl
-import akka.actor.typed.receptionist.Receptionist.{ Find, Registered }
+import akka.actor.typed.internal.receptionist.ReceptionistMessages.AllCommands
+import akka.actor.typed.internal.receptionist.{ ReceptionistBehaviorProvider, ReceptionistImpl, ReceptionistMessages }
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -119,61 +118,12 @@ object Receptionist extends ExtensionId[Receptionist] {
     def asServiceKey: ServiceKey[Protocol]
   }
 
-  /** Internal superclass for external and internal commands */
-  @InternalApi
-  sealed private[akka] abstract class AllCommands
-
   /**
    * The set of commands accepted by a Receptionist.
+   *
+   * Not for user Extension
    */
-  sealed abstract class Command extends AllCommands
-  @InternalApi
-  private[typed] abstract class InternalCommand extends AllCommands
-
-  /**
-   * Internal API
-   */
-  @InternalApi
-  private[akka] object MessageImpls {
-    // some trixery here to provide a nice _and_ safe API in the face
-    // of type erasure, more type safe factory methods for each message
-    // is the user API below while still hiding the type parameter so that
-    // users don't incorrecly match against it
-
-    final case class Register[T] private[akka] (
-      key:             ServiceKey[T],
-      serviceInstance: ActorRef[T],
-      replyTo:         Option[ActorRef[Receptionist.Registered]]) extends Command
-
-    final case class Registered[T] private[akka] (key: ServiceKey[T], _serviceInstance: ActorRef[T]) extends Receptionist.Registered {
-      def isForKey(key: ServiceKey[_]): Boolean = key == this.key
-      def serviceInstance[M](key: ServiceKey[M]): ActorRef[M] = {
-        if (key != this.key) throw new IllegalArgumentException(s"Wrong key [$key] used, must use listing key [${this.key}]")
-        _serviceInstance.asInstanceOf[ActorRef[M]]
-      }
-
-      def getServiceInstance[M](key: ServiceKey[M]): ActorRef[M] =
-        serviceInstance(key)
-    }
-
-    final case class Find[T] private[akka] (key: ServiceKey[T], replyTo: ActorRef[Receptionist.Listing]) extends Command
-
-    final case class Listing[T] private[akka] (key: ServiceKey[T], _serviceInstances: Set[ActorRef[T]]) extends Receptionist.Listing {
-
-      def isForKey(key: ServiceKey[_]): Boolean = key == this.key
-
-      def serviceInstances[M](key: ServiceKey[M]): Set[ActorRef[M]] = {
-        if (key != this.key) throw new IllegalArgumentException(s"Wrong key [$key] used, must use listing key [${this.key}]")
-        _serviceInstances.asInstanceOf[Set[ActorRef[M]]]
-      }
-
-      def getServiceInstances[M](key: ServiceKey[M]): java.util.Set[ActorRef[M]] =
-        serviceInstances(key).asJava
-    }
-
-    final case class Subscribe[T] private[akka] (key: ServiceKey[T], subscriber: ActorRef[Receptionist.Listing]) extends Command
-
-  }
+  @DoNotInherit abstract class Command extends AllCommands
 
   /**
    * Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]. Multiple
@@ -189,12 +139,12 @@ object Receptionist extends ExtensionId[Receptionist] {
      * Create a Register without Ack that the service was registered
      */
     def apply[T](key: ServiceKey[T], service: ActorRef[T]): Command =
-      new MessageImpls.Register[T](key, service, None)
+      new ReceptionistMessages.Register[T](key, service, None)
     /**
      * Create a Register with an actor that will get an ack that the service was registered
      */
     def apply[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Registered]): Command =
-      new MessageImpls.Register[T](key, service, Some(replyTo))
+      new ReceptionistMessages.Register[T](key, service, Some(replyTo))
   }
   /**
    * Java API: A Register message without Ack that the service was registered
@@ -214,7 +164,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * Not for user extension
    */
   @DoNotInherit
-  sealed trait Registered {
+  trait Registered {
 
     def isForKey(key: ServiceKey[_]): Boolean
 
@@ -240,7 +190,7 @@ object Receptionist extends ExtensionId[Receptionist] {
      * Scala API
      */
     def apply[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Registered =
-      new MessageImpls.Registered(key, serviceInstance)
+      new ReceptionistMessages.Registered(key, serviceInstance)
 
   }
   /**
@@ -261,7 +211,7 @@ object Receptionist extends ExtensionId[Receptionist] {
      * Scala API:
      */
     def apply[T](key: ServiceKey[T], subscriber: ActorRef[Listing]): Command =
-      new MessageImpls.Subscribe(key, subscriber)
+      new ReceptionistMessages.Subscribe(key, subscriber)
 
   }
 
@@ -281,12 +231,12 @@ object Receptionist extends ExtensionId[Receptionist] {
   object Find {
     /** Scala API: */
     def apply[T](key: ServiceKey[T], replyTo: ActorRef[Listing]): Command =
-      new MessageImpls.Find(key, replyTo)
+      new ReceptionistMessages.Find(key, replyTo)
 
     /**
      * Special factory to make using Find with ask easier
      */
-    def apply[T](key: ServiceKey[T]): ActorRef[Listing] ⇒ Command = ref ⇒ new MessageImpls.Find(key, ref)
+    def apply[T](key: ServiceKey[T]): ActorRef[Listing] ⇒ Command = ref ⇒ new ReceptionistMessages.Find(key, ref)
   }
 
   /**
@@ -304,7 +254,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * Not for user extension.
    */
   @DoNotInherit
-  sealed trait Listing {
+  trait Listing {
     /** Scala API */
     def key: ServiceKey[_]
     /** Java API */
@@ -330,7 +280,7 @@ object Receptionist extends ExtensionId[Receptionist] {
   object Listing {
     /** Scala API: */
     def apply[T](key: ServiceKey[T], serviceInstances: Set[ActorRef[T]]): Listing =
-      new MessageImpls.Listing[T](key, serviceInstances)
+      new ReceptionistMessages.Listing[T](key, serviceInstances)
 
   }
 
