@@ -19,3 +19,4 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.No
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.coding.NoCoding.decode")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.Encoder.encode")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.Decoder.decode")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.coding.Decoder.decode")
