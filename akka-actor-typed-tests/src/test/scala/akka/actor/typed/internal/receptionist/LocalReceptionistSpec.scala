@@ -2,14 +2,15 @@
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.typed.receptionist
+package akka.actor.typed.internal.receptionist
 
 import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist._
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox, ActorTestKit, TestProbe }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, BehaviorTestKit, TestInbox, TestProbe }
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Future
@@ -32,18 +33,16 @@ class LocalReceptionistSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
     }
   }
 
-  import akka.actor.typed.internal.receptionist.ReceptionistImpl.{ localOnlyBehavior ⇒ receptionistBehavior }
-
   implicit val testSettings = TestKitSettings(system)
 
   abstract class TestSetup {
-    val receptionist = spawn(receptionistBehavior)
+    val receptionist = spawn(LocalReceptionist.behavior)
   }
 
   "A local receptionist" must {
 
     "register a service" in {
-      val testkit = BehaviorTestKit(receptionistBehavior)
+      val testkit = BehaviorTestKit(LocalReceptionist.behavior)
       val a = TestInbox[ServiceA]("a")
       val r = TestInbox[Registered]("r")
       testkit.run(Register(ServiceKeyA, a.ref, r.ref))
@@ -57,7 +56,7 @@ class LocalReceptionistSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
     }
 
     "register two services" in {
-      val testkit = BehaviorTestKit(receptionistBehavior)
+      val testkit = BehaviorTestKit(LocalReceptionist.behavior)
       val a = TestInbox[ServiceA]("a")
       val r = TestInbox[Registered]("r")
       testkit.run(Register(ServiceKeyA, a.ref, r.ref))
@@ -74,7 +73,7 @@ class LocalReceptionistSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
     }
 
     "register two services with the same key" in {
-      val testkit = BehaviorTestKit(receptionistBehavior)
+      val testkit = BehaviorTestKit(LocalReceptionist.behavior)
       val a1 = TestInbox[ServiceA]("a1")
       val r = TestInbox[Registered]("r")
       testkit.run(Register(ServiceKeyA, a1.ref, r.ref))
@@ -153,7 +152,7 @@ class LocalReceptionistSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
     }
 
     "work with ask" in {
-      val receptionist = spawn(receptionistBehavior)
+      val receptionist = spawn(LocalReceptionist.behavior)
       val serviceA = spawn(behaviorA)
       val f: Future[Registered] = receptionist ? (Register(ServiceKeyA, serviceA, _))
       f.futureValue should be(Registered(ServiceKeyA, serviceA))

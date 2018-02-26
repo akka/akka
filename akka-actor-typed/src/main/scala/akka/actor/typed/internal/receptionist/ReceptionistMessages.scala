@@ -21,14 +21,6 @@ private[akka] object ReceptionistMessages {
   // of type erasure, more type safe factory methods for each message
   // is the user API below while still hiding the type parameter so that
   // users don't incorrectly match against it
-
-  /** Internal superclass for external and internal commands */
-  @InternalApi
-  abstract class AllCommands
-
-  @InternalApi
-  abstract class InternalCommand extends AllCommands
-
   final case class Register[T] private[akka] (
     key:             ServiceKey[T],
     serviceInstance: ActorRef[T],

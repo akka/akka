@@ -4,13 +4,9 @@
 
 package akka.actor.typed.receptionist
 
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Extension
-import akka.actor.typed.ExtensionId
-import akka.actor.typed.internal.receptionist.ReceptionistMessages.AllCommands
-import akka.actor.typed.internal.receptionist.{ ReceptionistBehaviorProvider, ReceptionistImpl, ReceptionistMessages }
+import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
+import akka.actor.typed.internal.receptionist._
+import akka.annotation.DoNotInherit
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -25,25 +21,20 @@ class Receptionist(system: ActorSystem[_]) extends Extension {
   }
 
   val ref: ActorRef[Receptionist.Command] = {
-    val behavior =
-      if (hasCluster)
+    val provider: ReceptionistBehaviorProvider =
+      if (hasCluster) {
         system.dynamicAccess
           .createInstanceFor[ReceptionistBehaviorProvider]("akka.cluster.typed.internal.receptionist.ClusterReceptionist$", Nil)
           .recover {
             case ex ⇒
-              system.log.error(
-                ex,
-                "ClusterReceptionist could not be loaded dynamically. Make sure you have all required binaries on the classpath.")
-              ReceptionistImpl
-          }.get.behavior
-
-      else ReceptionistImpl.localOnlyBehavior
+              throw new RuntimeException("ClusterReceptionist could not be loaded dynamically. Make sure you have all required binaries on the classpath.")
+          }.get
+      } else LocalReceptionist
 
     ActorRef(
-      system.systemActorOf(behavior, "receptionist")(
+      system.systemActorOf(provider.behavior, "receptionist")(
         // FIXME: where should that timeout be configured? Shouldn't there be a better `Extension`
         //        implementation that does this dance for us?
-
         10.seconds))
   }
 }
@@ -53,13 +44,13 @@ object ServiceKey {
    * Scala API: Creates a service key. The given ID should uniquely define a service with a given protocol.
    */
   def apply[T](id: String)(implicit classTag: ClassTag[T]): ServiceKey[T] =
-    ReceptionistImpl.DefaultServiceKey(id, classTag.runtimeClass.getName)
+    DefaultServiceKey(id, classTag.runtimeClass.getName)
 
   /**
    * Java API: Creates a service key. The given ID should uniquely define a service with a given protocol.
    */
   def create[T](clazz: Class[T], id: String): ServiceKey[T] =
-    ReceptionistImpl.DefaultServiceKey(id, clazz.getName)
+    DefaultServiceKey(id, clazz.getName)
 
 }
 
@@ -68,8 +59,11 @@ object ServiceKey {
  * T, meaning that it signifies that the type T is the entry point into the
  * protocol spoken by that service (think of it as the set of first messages
  * that a client could send).
+ *
+ * Not for user extension, see factories in companion object: [[ServiceKey#create]] and [[ServiceKey#apply]]
  */
-abstract class ServiceKey[T] extends Receptionist.AbstractServiceKey { key ⇒
+@DoNotInherit
+abstract class ServiceKey[T] extends AbstractServiceKey { key ⇒
   type Protocol = T
   def id: String
   def asServiceKey: ServiceKey[T] = this
@@ -98,32 +92,20 @@ abstract class ServiceKey[T] extends Receptionist.AbstractServiceKey { key ⇒
  * publish their identity together with the protocols that they implement. Other
  * Actors need only know the Receptionist’s identity in order to be able to use
  * the services of the registered Actors.
+ *
+ * These are the messages (and the extension) for interacting with the receptionist.
+ * The receptionist is easiest accessed through the system: [[ActorSystem.receptionist]]
  */
 object Receptionist extends ExtensionId[Receptionist] {
   def createExtension(system: ActorSystem[_]): Receptionist = new Receptionist(system)
   def get(system: ActorSystem[_]): Receptionist = apply(system)
 
   /**
-   * Internal representation of [[ServiceKey]] which is needed
-   * in order to use a TypedMultiMap (using keys with a type parameter does not
-   * work in Scala 2.x).
-   *
-   * Internal API
-   */
-  @InternalApi
-  private[akka] sealed abstract class AbstractServiceKey {
-    type Protocol
-
-    /** Type-safe down-cast */
-    def asServiceKey: ServiceKey[Protocol]
-  }
-
-  /**
    * The set of commands accepted by a Receptionist.
    *
    * Not for user Extension
    */
-  @DoNotInherit abstract class Command extends AllCommands
+  @DoNotInherit abstract class Command
 
   /**
    * Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]. Multiple
