@@ -52,7 +52,7 @@ private[akka] object ClusterMessageSerializer {
 /**
  * Protobuf serializer of cluster messages.
  */
-class ClusterMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
+final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
   import ClusterMessageSerializer._
   private lazy val serialization = SerializationExtension(system)
 
@@ -144,7 +144,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
   private def uniqueAddressFromBinary(bytes: Array[Byte]): UniqueAddress =
     uniqueAddressFromProto(cm.UniqueAddress.parseFrom(bytes))
 
-  private def addressToProto(address: Address): cm.Address.Builder = address match {
+  private[akka] def addressToProto(address: Address): cm.Address.Builder = address match {
     case Address(protocol, actorSystem, Some(host), Some(port)) ⇒
       cm.Address.newBuilder().setSystem(actorSystem).setHostname(host).setPort(port).setProtocol(protocol)
     case _ ⇒ throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")

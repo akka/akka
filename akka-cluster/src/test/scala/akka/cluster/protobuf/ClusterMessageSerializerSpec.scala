@@ -82,7 +82,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       checkSerialization(InternalClusterAction.Welcome(uniqueAddress, g2))
     }
 
-    "be compatible with wire format of version 2.5.9 (using Init singleton instead of class)" in {
+    "be compatible with wire format of version 2.5.9 (using InitJoin singleton instead of class)" in {
       // we must use the old singleton class name so that the other side will see an InitJoin
       // but discard the config as it does not know about the config check
       val oldClassName = "akka.cluster.InternalClusterAction$InitJoin$"
@@ -95,6 +95,18 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       // also, for good measure the 2.5.10+ class name
       val deserialized2 = serializer.fromBinary(Array.emptyByteArray, classOf[InternalClusterAction.InitJoin].getName)
       deserialized2 shouldBe an[InternalClusterAction.InitJoin]
+    }
+
+    "be compatible with wire format of version 2.5.9 (using serialized address for InitJoinAck)" in {
+      // we must use the old singleton class name so that the other side will see an InitJoin
+      // but discard the config as it does not know about the config check
+      val initJoinAck = InternalClusterAction.InitJoinAck(
+        Address("akka.tcp", "cluster", "127.0.0.1", 2552),
+        InternalClusterAction.UncheckedConfig)
+      val serializedinInitJoinAckPre2510 = serializer.addressToProto(initJoinAck.address).build().toByteArray
+
+      val deserialized = serializer.fromBinary(serializedinInitJoinAckPre2510, ClusterMessageSerializer.InitJoinAckManifest)
+      deserialized shouldEqual initJoinAck
     }
 
     "be compatible with wire format of version 2.5.3 (using use-role instead of use-roles)" in {
