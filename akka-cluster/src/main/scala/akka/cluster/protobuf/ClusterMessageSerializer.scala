@@ -259,13 +259,11 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
     try {
       val i = cm.InitJoinAck.parseFrom(bytes)
       val configCheck =
-        if (i.hasConfigCheck) {
-          i.getConfigCheck.getType match {
-            case cm.ConfigCheck.Type.CompatibleConfig   ⇒ CompatibleConfig(ConfigFactory.parseString(i.getConfigCheck.getClusterConfig))
-            case cm.ConfigCheck.Type.IncompatibleConfig ⇒ IncompatibleConfig
-            case cm.ConfigCheck.Type.UncheckedConfig    ⇒ UncheckedConfig
-          }
-        } else UncheckedConfig
+        i.getConfigCheck.getType match {
+          case cm.ConfigCheck.Type.CompatibleConfig   ⇒ CompatibleConfig(ConfigFactory.parseString(i.getConfigCheck.getClusterConfig))
+          case cm.ConfigCheck.Type.IncompatibleConfig ⇒ IncompatibleConfig
+          case cm.ConfigCheck.Type.UncheckedConfig    ⇒ UncheckedConfig
+        }
 
       InternalClusterAction.InitJoinAck(addressFromProto(i.getAddress), configCheck)
     } catch {
