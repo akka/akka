@@ -258,17 +258,23 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
   }
 
   private def deserializeInitJoinAck(bytes: Array[Byte]): InternalClusterAction.InitJoinAck = {
-    val i = cm.InitJoinAck.parseFrom(bytes)
-    val configCheck =
-      if (i.hasConfigCheck) {
-        i.getConfigCheck.getType match {
-          case cm.ConfigCheck.Type.CompatibleConfig   ⇒ CompatibleConfig(ConfigFactory.parseString(i.getConfigCheck.getClusterConfig))
-          case cm.ConfigCheck.Type.IncompatibleConfig ⇒ IncompatibleConfig
-          case cm.ConfigCheck.Type.UncheckedConfig    ⇒ UncheckedConfig
-        }
-      } else UncheckedConfig
+    try {
+      val i = cm.InitJoinAck.parseFrom(bytes)
+      val configCheck =
+        if (i.hasConfigCheck) {
+          i.getConfigCheck.getType match {
+            case cm.ConfigCheck.Type.CompatibleConfig ⇒ CompatibleConfig(ConfigFactory.parseString(i.getConfigCheck.getClusterConfig))
+            case cm.ConfigCheck.Type.IncompatibleConfig ⇒ IncompatibleConfig
+            case cm.ConfigCheck.Type.UncheckedConfig ⇒ UncheckedConfig
+          }
+        } else UncheckedConfig
 
-    InternalClusterAction.InitJoinAck(addressFromProto(i.getAddress), configCheck)
+      InternalClusterAction.InitJoinAck(addressFromProto(i.getAddress), configCheck)
+    } catch {
+      case ex: akka.protobuf.InvalidProtocolBufferException =>
+        // nodes previous to 2.5.9 sends just an address
+        InternalClusterAction.InitJoinAck(addressFromBinary(bytes), UncheckedConfig)
+    }
   }
 
   private def deserializeExitingConfirmed(bytes: Array[Byte]): InternalClusterAction.ExitingConfirmed = {
