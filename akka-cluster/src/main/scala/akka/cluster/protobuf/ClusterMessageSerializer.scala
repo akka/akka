@@ -16,7 +16,6 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Deadline
-import java.io.NotSerializableException
 
 import akka.annotation.InternalApi
 import akka.cluster.InternalClusterAction._
@@ -31,21 +30,21 @@ import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
 private[akka] object ClusterMessageSerializer {
   // FIXME use short manifests when we can break wire compatibility
   // needs to be full class names for backwards compatibility
-  val JoinManifest = classOf[InternalClusterAction.Join].getName
-  val WelcomeManifest = classOf[InternalClusterAction.Welcome].getName
-  val LeaveManifest = classOf[ClusterUserAction.Leave].getName
-  val DownManifest = classOf[ClusterUserAction.Down].getName
+  val JoinManifest = "akka.cluster.InternalClusterAction$Join"
+  val WelcomeManifest = "akka.cluster.InternalClusterAction$Welcome"
+  val LeaveManifest = "akka.cluster.ClusterUserAction$Leave"
+  val DownManifest = "akka.cluster.ClusterUserAction$Down"
   // #24622 wire compatibility
   val InitJoinManifest = "akka.cluster.InternalClusterAction$InitJoin$" // use this to be able to roll up from 2.5.9
-  val InitJoinManifest2 = classOf[InternalClusterAction.InitJoin].getName // but also accept this from 2.5.10
-  val InitJoinAckManifest = classOf[InternalClusterAction.InitJoinAck].getName
-  val InitJoinNackManifest = classOf[InternalClusterAction.InitJoinNack].getName
-  val HeartBeatManifest = classOf[ClusterHeartbeatSender.Heartbeat].getName
-  val HeartBeatRspManifest = classOf[ClusterHeartbeatSender.HeartbeatRsp].getName
-  val ExitingConfirmedManifest = classOf[ExitingConfirmed].getName
-  val GossipStatusManifest = classOf[GossipStatus].getName
-  val GossipEnvelopeManifest = classOf[GossipEnvelope].getName
-  val ClusterRouterPoolManifest = classOf[ClusterRouterPool].getName
+  val InitJoinManifest2 = "akka.cluster.InternalClusterAction$InitJoin" // but also accept this from 2.5.10
+  val InitJoinAckManifest = "akka.cluster.InternalClusterAction$InitJoinAck"
+  val InitJoinNackManifest = "akka.cluster.InternalClusterAction$InitJoinNack"
+  val HeartBeatManifest = "akka.cluster.ClusterHeartbeatSender$Heartbeat"
+  val HeartBeatRspManifest = "akka.cluster.ClusterHeartbeatSender$HeartbeatRsp"
+  val ExitingConfirmedManifest = "akka.cluster.InternalClusterAction$ExitingConfirmed"
+  val GossipStatusManifest = "akka.cluster.GossipStatus"
+  val GossipEnvelopeManifest = "akka.cluster.GossipEnvelope"
+  val ClusterRouterPoolManifest = "akka.cluster.routing.ClusterRouterPool"
 
   private final val BufferSize = 1024 * 4
 }
@@ -99,7 +98,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
     case HeartBeatManifest         ⇒ deserializeHeartBeat(bytes)
     case HeartBeatRspManifest      ⇒ deserializeHeartBeatRsp(bytes)
-    case GossipStatusManifest      ⇒ desrializeGossipStatus(bytes)
+    case GossipStatusManifest      ⇒ deserializeGossipStatus(bytes)
     case GossipEnvelopeManifest    ⇒ deserializeGossipEnvelope(bytes)
     case InitJoinManifest          ⇒ deserializeInitJoin(bytes)
     case InitJoinManifest2         ⇒ deserializeInitJoin(bytes)
@@ -263,15 +262,15 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
       val configCheck =
         if (i.hasConfigCheck) {
           i.getConfigCheck.getType match {
-            case cm.ConfigCheck.Type.CompatibleConfig ⇒ CompatibleConfig(ConfigFactory.parseString(i.getConfigCheck.getClusterConfig))
+            case cm.ConfigCheck.Type.CompatibleConfig   ⇒ CompatibleConfig(ConfigFactory.parseString(i.getConfigCheck.getClusterConfig))
             case cm.ConfigCheck.Type.IncompatibleConfig ⇒ IncompatibleConfig
-            case cm.ConfigCheck.Type.UncheckedConfig ⇒ UncheckedConfig
+            case cm.ConfigCheck.Type.UncheckedConfig    ⇒ UncheckedConfig
           }
         } else UncheckedConfig
 
       InternalClusterAction.InitJoinAck(addressFromProto(i.getAddress), configCheck)
     } catch {
-      case ex: akka.protobuf.InvalidProtocolBufferException =>
+      case ex: akka.protobuf.InvalidProtocolBufferException ⇒
         // nodes previous to 2.5.9 sends just an address
         InternalClusterAction.InitJoinAck(addressFromBinary(bytes), UncheckedConfig)
     }
@@ -442,7 +441,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
   private def deserializeGossipEnvelope(bytes: Array[Byte]): GossipEnvelope =
     gossipEnvelopeFromProto(cm.GossipEnvelope.parseFrom(bytes))
 
-  private def desrializeGossipStatus(bytes: Array[Byte]): GossipStatus =
+  private def deserializeGossipStatus(bytes: Array[Byte]): GossipStatus =
     gossipStatusFromProto(cm.GossipStatus.parseFrom(bytes))
 
   private def gossipFromProto(gossip: cm.Gossip): Gossip = {
