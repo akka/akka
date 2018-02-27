@@ -30,18 +30,18 @@ import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
 private[akka] object ClusterMessageSerializer {
   // FIXME use short manifests when we can break wire compatibility
   // needs to be full class names for backwards compatibility
-  val JoinManifest = "akka.cluster.InternalClusterAction$Join"
-  val WelcomeManifest = "akka.cluster.InternalClusterAction$Welcome"
-  val LeaveManifest = "akka.cluster.ClusterUserAction$Leave"
-  val DownManifest = "akka.cluster.ClusterUserAction$Down"
+  val JoinManifest = s"akka.cluster.InternalClusterAction$$Join"
+  val WelcomeManifest = s"akka.cluster.InternalClusterAction$$Welcome"
+  val LeaveManifest = s"akka.cluster.ClusterUserAction$$Leave"
+  val DownManifest = s"akka.cluster.ClusterUserAction$$Down"
   // #24622 wire compatibility
-  val InitJoinManifest = "akka.cluster.InternalClusterAction$InitJoin$" // use this to be able to roll up from 2.5.9
-  val InitJoinManifest2 = "akka.cluster.InternalClusterAction$InitJoin" // but also accept this from 2.5.10
-  val InitJoinAckManifest = "akka.cluster.InternalClusterAction$InitJoinAck"
-  val InitJoinNackManifest = "akka.cluster.InternalClusterAction$InitJoinNack"
-  val HeartBeatManifest = "akka.cluster.ClusterHeartbeatSender$Heartbeat"
-  val HeartBeatRspManifest = "akka.cluster.ClusterHeartbeatSender$HeartbeatRsp"
-  val ExitingConfirmedManifest = "akka.cluster.InternalClusterAction$ExitingConfirmed"
+  // we need to use this object name rather than classname to be able to join a 2.5.9 cluster during rolling upgrades
+  val InitJoinManifest = s"akka.cluster.InternalClusterAction$$InitJoin$$"
+  val InitJoinAckManifest = s"akka.cluster.InternalClusterAction$$InitJoinAck"
+  val InitJoinNackManifest = s"akka.cluster.InternalClusterAction$$InitJoinNack"
+  val HeartBeatManifest = s"akka.cluster.ClusterHeartbeatSender$$Heartbeat"
+  val HeartBeatRspManifest = s"akka.cluster.ClusterHeartbeatSender$$HeartbeatRsp"
+  val ExitingConfirmedManifest = s"akka.cluster.InternalClusterAction$$ExitingConfirmed"
   val GossipStatusManifest = "akka.cluster.GossipStatus"
   val GossipEnvelopeManifest = "akka.cluster.GossipEnvelope"
   val ClusterRouterPoolManifest = "akka.cluster.routing.ClusterRouterPool"
@@ -101,7 +101,6 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
     case GossipStatusManifest      ⇒ deserializeGossipStatus(bytes)
     case GossipEnvelopeManifest    ⇒ deserializeGossipEnvelope(bytes)
     case InitJoinManifest          ⇒ deserializeInitJoin(bytes)
-    case InitJoinManifest2         ⇒ deserializeInitJoin(bytes)
     case InitJoinAckManifest       ⇒ deserializeInitJoinAck(bytes)
     case InitJoinNackManifest      ⇒ deserializeInitJoinNack(bytes)
     case JoinManifest              ⇒ deserializeJoin(bytes)

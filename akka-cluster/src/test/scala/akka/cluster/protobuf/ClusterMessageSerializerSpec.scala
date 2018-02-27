@@ -19,8 +19,9 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
   val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
 
   def roundtrip[T <: AnyRef](obj: T): T = {
+    val manifest = serializer.manifest(obj)
     val blob = serializer.toBinary(obj)
-    serializer.fromBinary(blob, obj.getClass).asInstanceOf[T]
+    serializer.fromBinary(blob, manifest).asInstanceOf[T]
   }
 
   def checkSerialization(obj: AnyRef): Unit = {
@@ -88,13 +89,10 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
       val oldClassName = "akka.cluster.InternalClusterAction$InitJoin$"
       serializer.manifest(InternalClusterAction.InitJoin(ConfigFactory.empty())) should ===(oldClassName)
 
-      // and we should accept the same manifest
+      // in 2.5.9 and earlier, it was an object and serialized to empty byte array
+      // and we should accept that
       val deserialized = serializer.fromBinary(Array.emptyByteArray, oldClassName)
       deserialized shouldBe an[InternalClusterAction.InitJoin]
-
-      // also, for good measure the 2.5.10+ class name
-      val deserialized2 = serializer.fromBinary(Array.emptyByteArray, classOf[InternalClusterAction.InitJoin].getName)
-      deserialized2 shouldBe an[InternalClusterAction.InitJoin]
     }
 
     "be compatible with wire format of version 2.5.9 (using serialized address for InitJoinAck)" in {
