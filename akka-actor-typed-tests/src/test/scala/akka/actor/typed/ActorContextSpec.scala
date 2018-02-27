@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com/>
  */
+
 package akka.actor.typed
 
 import akka.actor.typed.scaladsl.Behaviors._
@@ -177,101 +178,6 @@ object ActorContextSpec {
       case (ctx, signal)                   ⇒ monitor ! GotSignal(signal); Behaviors.same
     }
 
-  def oldSubject(monitor: ActorRef[Monitor], ignorePostStop: Boolean): Behavior[Command] = {
-    Behaviors.immutable[Command] {
-      case (ctx, message) ⇒ message match {
-        case ReceiveTimeout ⇒
-          monitor ! GotReceiveTimeout
-          Behaviors.same
-        case Ping(replyTo) ⇒
-          replyTo ! Pong1
-          Behaviors.same
-        case Miss(replyTo) ⇒
-          replyTo ! Missed
-          Behaviors.unhandled
-        case Renew(replyTo) ⇒
-          replyTo ! Renewed
-          subject(monitor, ignorePostStop)
-        case Throw(ex) ⇒
-          throw ex
-        case MkChild(name, mon, replyTo) ⇒
-          val child = name match {
-            case None    ⇒ ctx.spawnAnonymous(Behaviors.supervise(subject(mon, ignorePostStop)).onFailure[Throwable](SupervisorStrategy.restart))
-            case Some(n) ⇒ ctx.spawn(Behaviors.supervise(subject(mon, ignorePostStop)).onFailure[Throwable](SupervisorStrategy.restart), n)
-          }
-          replyTo ! Created(child)
-          Behaviors.same
-        case SetTimeout(d, replyTo) ⇒
-          d match {
-            case f: FiniteDuration ⇒ ctx.setReceiveTimeout(f, ReceiveTimeout)
-            case _                 ⇒ ctx.cancelReceiveTimeout()
-          }
-          replyTo ! TimeoutSet
-          Behaviors.same
-        case Schedule(delay, target, msg, replyTo) ⇒
-          replyTo ! Scheduled
-          ctx.schedule(delay, target, msg)
-          Behaviors.same
-        case Stop ⇒
-          Behaviors.stopped
-        case Kill(ref, replyTo) ⇒
-          try {
-            ctx.stop(ref)
-            replyTo ! Killed
-          } catch {
-            case ex: IllegalArgumentException ⇒ replyTo ! NotKilled
-          }
-          Behaviors.same
-        case Watch(ref, replyTo) ⇒
-          ctx.watch(ref)
-          replyTo ! Watched
-          Behaviors.same
-        case Unwatch(ref, replyTo) ⇒
-          ctx.unwatch(ref)
-          replyTo ! Unwatched
-          Behaviors.same
-        case GetInfo(replyTo) ⇒
-          replyTo ! Info(ctx.self, ctx.system)
-          Behaviors.same
-        case GetChild(name, replyTo) ⇒
-          replyTo ! Child(ctx.child(name))
-          Behaviors.same
-        case GetChildren(replyTo) ⇒
-          replyTo ! Children(ctx.children.toSet)
-          Behaviors.same
-        case BecomeInert(replyTo) ⇒
-          replyTo ! BecameInert
-          Behaviors.immutable[Command] {
-            case (_, Ping(r)) ⇒
-              r ! Pong2
-              Behaviors.same
-            case (_, Throw(ex)) ⇒
-              throw ex
-            case _ ⇒ Behaviors.same
-          }
-        case BecomeCareless(replyTo) ⇒
-          replyTo ! BecameCareless
-          Behaviors.immutable[Command] {
-            case _ ⇒ Behaviors.unhandled
-          } onSignal {
-            case (_, PostStop) if ignorePostStop ⇒ Behaviors.same // ignore PostStop here
-            case (_, Terminated(_))              ⇒ Behaviors.unhandled
-            case (_, sig) ⇒
-              monitor ! GotSignal(sig)
-              Behaviors.same
-          }
-        case GetAdapter(replyTo, name) ⇒
-          replyTo ! Adapter(ctx.spawnMessageAdapter(identity, name))
-          Behaviors.same
-      }
-    } onSignal {
-      case (_, PostStop) if ignorePostStop ⇒ Behaviors.same // ignore PostStop here
-      case (_, signal) ⇒
-        monitor ! GotSignal(signal)
-        Behaviors.same
-    }
-  }
-
   sealed abstract class Start
   case object Start extends Start
 
@@ -421,8 +327,8 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
 
   private def mySuite: String = suite + "Adapted"
 
-  def setup(name: String, wrapper: Option[Behavior[Command] ⇒ Behavior[Command]] = None, ignorePostStop: Boolean = true)(
-    proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[Status] =
+  def setup(name: String, wrapper: Option[Behavior[Command] ⇒ Behavior[Command]] = None, ignorePostStop: Boolean = true)
+           (proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[Status] =
     runTest(s"$mySuite-$name")(StepWise[Event] { (ctx, startWith) ⇒
       val b = behavior(ctx, ignorePostStop)
       val props = wrapper.map(_(b)).getOrElse(b)
@@ -453,7 +359,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
       if (!inert) s
       else
         s.keep {
-          case (subj, child) ⇒
+          case (_, child) ⇒
             child ! BecomeInert(self)
         }.expectMessageKeep(expectTimeout) { (msg, _) ⇒
           msg should ===(BecameInert)
