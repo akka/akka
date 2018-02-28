@@ -58,7 +58,7 @@ Specifically these are:
 
  * @scaladoc[PredefinedToEntityMarshallers](akka.http.scaladsl.marshalling.PredefinedToEntityMarshallers)
     * `Array[Byte]`
-    * @unidoc[ByteString]
+    * @unidoc[akka.util.ByteString]
     * `Array[Char]`
     * `String`
     * `akka.http.scaladsl.model.FormData`
@@ -90,7 +90,7 @@ Specifically these are:
 
  * Predefined @unidoc[RequestEntity] marshallers:
     * `byte[]`
-    * @unidoc[ByteString]
+    * @unidoc[akka.util.ByteString]
     * `char[]`
     * `String`
     * @unidoc[FormData]

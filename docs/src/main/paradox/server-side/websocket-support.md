@@ -15,7 +15,7 @@ In the data model the two kinds of messages, binary and text messages, are repre
 @unidoc[BinaryMessage] and @unidoc[TextMessage] deriving from a common superclass @unidoc[Message].
 @scala[The subclasses @unidoc[BinaryMessage] and @unidoc[TextMessage] contain methods to access the data.]
 @java[The superclass @unidoc[Message] contains `isText` and `isBinary` methods to distinguish a message and `asBinaryMessage` and `asTextMessage` methods to cast a message.]
-Take the API of @unidoc[TextMessage] as an example (@unidoc[BinaryMessage] is very similar with `String` replaced by @unidoc[ByteString]):
+Take the API of @unidoc[TextMessage] as an example (@unidoc[BinaryMessage] is very similar with `String` replaced by @unidoc[akka.util.ByteString]):
 
 Scala
 :  @@snip [Message.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/scaladsl/model/ws/Message.scala) { #message-model }
@@ -30,7 +30,7 @@ single application-level data units like "one event" or "one chat message".
 
 Many messages are small enough to be sent or received in one go. As an opportunity for optimization, the model provides
 the notion of a "strict" message to represent cases where a whole message was received in one go.
-@scala[Strict messages are represented with the `Strict` subclass for each kind of message which contains data as a strict, i.e. non-streamed, @unidoc[ByteString] or `String`.]
+@scala[Strict messages are represented with the `Strict` subclass for each kind of message which contains data as a strict, i.e. non-streamed, @unidoc[akka.util.ByteString] or `String`.]
 @java[If `TextMessage.isStrict` returns true, the complete data is already available and can be accessed with `TextMessage.getStrictText` (analogously for @unidoc[BinaryMessage]).]
 
 When receiving data from the network connection the WebSocket implementation tries to create a strict message whenever
