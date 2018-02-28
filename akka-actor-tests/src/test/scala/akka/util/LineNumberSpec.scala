@@ -4,7 +4,7 @@
 package akka.util
 
 import akka.testkit.AkkaSpec
-import LineNumbers._
+import akka.util.LineNumbers._
 
 import scala.util.Properties
 
@@ -18,20 +18,14 @@ class LineNumberSpec extends AkkaSpec {
       import LineNumberSpecCodeForScala._
 
       "work for small functions" in {
-        val result = LineNumbers(oneline)
-
-        if (isScala212)
-          // because how scala 2.12 does the same as Java Lambdas
-          result should ===(NoSourceInfo)
-        else
-          result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 12, 12))
+        LineNumbers(oneline) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 12, 12))
       }
 
       "work for larger functions" in {
         val result = LineNumbers(twoline)
         if (isScala212)
           // because how scala 2.12 does the same as Java Lambdas
-          result should ===(NoSourceInfo)
+          result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 14, 14))
         else
           result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 14, 16))
       }
@@ -41,7 +35,12 @@ class LineNumberSpec extends AkkaSpec {
       }
 
       "work for `def`" in {
-        LineNumbers(method("foo")) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 24, 26))
+        val result = LineNumbers(method("foo"))
+        if (isScala212)
+          // because how scala 2.12 does the same as Java Lambdas
+          result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 25, 26))
+        else
+          result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 24, 26))
       }
 
     }
