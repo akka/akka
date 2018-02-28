@@ -739,12 +739,6 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
 
 import akka.actor.typed.ActorContextSpec._
 
-class NormalActorContextSpec extends ActorContextSpec {
-  override def suite = "normal"
-  override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
-    subject(ctx.self, ignorePostStop)
-}
-
 class WidenedActorContextSpec extends ActorContextSpec {
 
   import Behaviors._
