@@ -39,7 +39,7 @@ Specifically these are:
  * @scala[@scaladoc[PredefinedFromEntityUnmarshallers](akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers)]
    @java[@unidoc[Unmarshaller]]
     * @scala[`Array[Byte]`]@java[`byte[]`]
-    * @unidoc[ByteString]
+    * @unidoc[akka.util.ByteString]
     * @scala[`Array[Char]`]@java[`char[]`]
     * `String`
     * @scala[`akka.http.scaladsl.model.FormData`]@java[`akka.http.javadsl.model.FormData`]

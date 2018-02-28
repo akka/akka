@@ -35,29 +35,46 @@ object ParadoxSupport {
             new SignatureDirective(context.location.tree.label, context.properties, msg ⇒ log.warn(msg))
         },
         { context: Writer.Context ⇒ {
-            val scaladocDirective = directives.map(_.apply(context)).collectFirst { case x: ScaladocDirective => x }.get
-            val javadocDirective = directives.map(_.apply(context)).collectFirst { case x: JavadocDirective => x }.get
-            new UnidocDirective(scaladocDirective, javadocDirective, allClasses)
+            new UnidocDirective(allClasses)
           }
         },
       )}
     }.value
   )
 
-  class UnidocDirective(scaladocDirective: ScaladocDirective, javadocDirective: JavadocDirective, allClasses: IndexedSeq[String]) extends InlineDirective("unidoc") {
+  class UnidocDirective(allClasses: IndexedSeq[String]) extends InlineDirective("unidoc") {
     def render(node: DirectiveNode, visitor: Visitor, printer: Printer): Unit = {
-      def syntheticNode(group: String, label: String, c: String): DirectiveNode = {
-        val syntheticSource = new DirectiveNode.Source.Direct(c)
-        val attributes = new org.pegdown.ast.DirectiveAttributes.AttributeMap()
-        new DirectiveNode(DirectiveNode.Format.Inline, group, null, null, attributes, null,
-          new DirectiveNode(DirectiveNode.Format.Inline, group + "doc", label, syntheticSource, node.attributes, c,
-            new TextNode(label)
-          ))
+      if (node.label.split('[')(0).contains('.')) {
+        val fqcn = node.label
+        if (allClasses.contains(fqcn)) {
+          val label = fqcn.split('.').last
+          syntheticNode("java", javaLabel(label), fqcn, node).accept(visitor)
+          syntheticNode("scala", label, fqcn, node).accept(visitor)
+        } else {
+          throw new java.lang.IllegalStateException(s"fqcn not found: $fqcn")
+        }
       }
+      else {
+        renderByClassName(node.label, node, visitor, printer)
+      }
+    }
 
+    def javaLabel(label: String): String =
+      label.replaceAll("\\[", "&lt;").replaceAll("\\]", "&gt;").replace('_', '?')
+
+    def syntheticNode(group: String, label: String, fqcn: String, node: DirectiveNode): DirectiveNode = {
+      val syntheticSource = new DirectiveNode.Source.Direct(fqcn)
+      val attributes = new org.pegdown.ast.DirectiveAttributes.AttributeMap()
+      new DirectiveNode(DirectiveNode.Format.Inline, group, null, null, attributes, null,
+        new DirectiveNode(DirectiveNode.Format.Inline, group + "doc", label, syntheticSource, node.attributes, fqcn,
+          new TextNode(label)
+        ))
+    }
+
+    def renderByClassName(label: String, node: DirectiveNode, visitor: Visitor, printer: Printer): Unit = {
       val label = node.label.replaceAll("\\\\_", "_")
       val labelWithoutGenericParameters = label.split("\\[")(0)
-      val labelWithJavaGenerics = label.replaceAll("\\[", "&lt;").replaceAll("\\]", "&gt;").replace('_', '?')
+      val labelWithJavaGenerics = javaLabel(label)
       val matches = allClasses.filter(_.endsWith('.' + labelWithoutGenericParameters))
       matches.size match {
         case 0 =>
@@ -65,14 +82,14 @@ object ParadoxSupport {
         case 1 if matches(0).contains("adsl") =>
           throw new java.lang.IllegalStateException(s"Match for $label only found in one language: ${matches(0)}")
         case 1 =>
-          syntheticNode("scala", label, matches(0)).accept(visitor)
-          syntheticNode("java", labelWithJavaGenerics, matches(0)).accept(visitor)
+          syntheticNode("scala", label, matches(0), node).accept(visitor)
+          syntheticNode("java", labelWithJavaGenerics, matches(0), node).accept(visitor)
         case 2 if matches.forall(_.contains("adsl")) =>
           matches.foreach(m => {
             if (!m.contains("javadsl"))
-              syntheticNode("scala", label, m).accept(visitor)
+              syntheticNode("scala", label, m, node).accept(visitor)
             if (!m.contains("scaladsl"))
-              syntheticNode("java", labelWithJavaGenerics, m).accept(visitor)
+              syntheticNode("java", labelWithJavaGenerics, m, node).accept(visitor)
           })
         case 2 =>
           throw new java.lang.IllegalStateException(s"2 matches found for $label, but not javadsl/scaladsl: ${matches.mkString(", ")}")

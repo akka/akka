@@ -116,7 +116,7 @@ Java
 
 The testkit supports a fluent DSL to write compact assertions on the response by chaining assertions
 using "dot-syntax". To simplify working with streamed responses the entity of the response is first "strictified", i.e.
-entity data is collected into a single @unidoc[ByteString] and provided the entity is supplied as an `HttpEntityStrict`. This
+entity data is collected into a single @unidoc[akka.util.ByteString] and provided the entity is supplied as an `HttpEntityStrict`. This
 allows to write several assertions against the same entity data which wouldn't (necessarily) be possible for the
 streamed version.
 

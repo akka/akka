@@ -21,7 +21,7 @@ to provide or consume entity data.
 
 In spray, you could configure spray-can to send out `HttpRequestPart` and `HttpResponsePart` messages to receive a request
 or a response in a streaming fashion. The default case was for spray to collect the full entity in memory and send it out
-as a @unidoc[ByteString] as part of the request or response entity object.
+as a @unidoc[akka.util.ByteString] as part of the request or response entity object.
 
 In Akka HTTP, handling streaming data is mandatory. When you receive a @unidoc[HttpRequest] on the server-side or an @unidoc[HttpResponse],
 in the default case it will contain a streamed entity as the `entity` field *which you are required to consume*.
