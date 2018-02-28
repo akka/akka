@@ -33,7 +33,7 @@ sbt
 :   @@@vars
     ```
     "com.typesafe.akka" %% "akka-http"   % "$project.version$" $crossString$
-    "com.typesafe.akka" %% "akka-stream" % "$akka25.version$" // or whatever the latest version is
+    "com.typesafe.akka" %% "akka-stream" % "$akka.version$" // or whatever the latest version is
     ```
     @@@
 
@@ -41,7 +41,7 @@ Gradle
 :   @@@vars
     ```
     compile group: 'com.typesafe.akka', name: 'akka-http_$scala.binary_version$',   version: '$project.version$'
-    compile group: 'com.typesafe.akka', name: 'akka-stream_$scala.binary_version$', version: '$akka25.version$'
+    compile group: 'com.typesafe.akka', name: 'akka-stream_$scala.binary_version$', version: '$akka.version$'
     ```
     @@@
 
@@ -56,7 +56,7 @@ Maven
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-stream_$scala.binary_version$</artifactId>
-      <version>$akka25.version$</version> <!-- Or whatever the latest version is -->
+      <version>$akka.version$</version> <!-- Or whatever the latest version is -->
     </dependency>
     ```
     @@@

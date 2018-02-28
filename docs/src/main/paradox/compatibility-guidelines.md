@@ -29,7 +29,7 @@ a manual dependency to `akka-stream`.
 sbt
 :   @@@vars
     ```
-    val akkaVersion = "$akka25.version$"
+    val akkaVersion = "$akka.version$"
     val akkaHttpVersion = "$project.version$"
     libraryDependencies += "com.typesafe.akka" %% "akka-http"   % akkaHttpVersion
     libraryDependencies += "com.typesafe.akka" %% "akka-actor"  % akkaVersion
@@ -44,11 +44,11 @@ Gradle
 :   @@@vars
     ```
     compile group: 'com.typesafe.akka', name: 'akka-http_$scala.binary_version$',   version: '$project.version$'
-    compile group: 'com.typesafe.akka', name: 'akka-actor_$scala.binary_version$',  version: '$akka25.version$'
-    compile group: 'com.typesafe.akka', name: 'akka-stream_$scala.binary_version$', version: '$akka25.version$'
+    compile group: 'com.typesafe.akka', name: 'akka-actor_$scala.binary_version$',  version: '$akka.version$'
+    compile group: 'com.typesafe.akka', name: 'akka-stream_$scala.binary_version$', version: '$akka.version$'
     // If testkit used, explicitly declare dependency on akka-streams-testkit in same version as akka-actor
     testCompile group: 'com.typesafe.akka', name: 'akka-http-testkit_$scala.binary_version$',   version: '$project.version$'
-    testCompile group: 'com.typesafe.akka', name: 'akka-stream-testkit_$scala.binary_version$', version: '$akka25.version$'
+    testCompile group: 'com.typesafe.akka', name: 'akka-stream-testkit_$scala.binary_version$', version: '$akka.version$'
     ```
     @@@
     
@@ -58,13 +58,13 @@ Maven
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-actor_$scala.binary_version$</artifactId>
-      <version>$akka25.version$</version>
+      <version>$akka.version$</version>
     </dependency>
     <!-- Explicitly depend on akka-streams in same version as akka-actor-->
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-stream_$scala.binary_version$</artifactId>
-      <version>$akka25.version$</version>
+      <version>$akka.version$</version>
     </dependency>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
@@ -81,7 +81,7 @@ Maven
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-stream-testkit_$scala.binary_version$</artifactId>
-      <version>$akka25.version$</version>
+      <version>$akka.version$</version>
       <scope>test</scope>
     </dependency>
     ```
