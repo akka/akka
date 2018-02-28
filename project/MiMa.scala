@@ -10,7 +10,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestMinorOf25 = 9
+  private val latestMinorOf25 = 10
   private val latestMinorOf24 = 20
 
   override def requires = MimaPlugin
