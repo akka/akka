@@ -1,5 +1,7 @@
 package akka.persistence.typed.internal
 
+import akka.actor.typed
+import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.internal.TimerSchedulerImpl
 import akka.actor.typed.scaladsl.ActorContext
@@ -26,30 +28,7 @@ private[persistence] class PersistentBehaviorImpl[Command, Event, State] private
   snapshotPluginId:  String,
   snapshotWhen:      (State, Event, Long) ⇒ Boolean,
   recovery:          Recovery
-) extends DeferredBehavior[Command](ctx ⇒
-  TimerSchedulerImpl.wrapWithTimers[Command] { timers ⇒
-    val callbacks = EventsourcedCallbacks[Command, Event, State](
-      initialState,
-      commandHandler,
-      eventHandler,
-      snapshotWhen,
-      recoveryCompleted,
-      tagger
-    )
-    val pluginIds = EventsourcedPluginIds(
-      journalPluginId,
-      snapshotPluginId
-    )
-    new EventsourcedRequestingRecoveryPermit(
-      persistenceId,
-      ctx.asInstanceOf[ActorContext[Any]], // sorry
-      timers.asInstanceOf[TimerScheduler[Any]], // sorry
-      recovery,
-      callbacks,
-      pluginIds
-    ).narrow[Command]
-
-  }(ctx)) with PersistentBehavior[Command, Event, State] {
+) extends PersistentBehavior[Command, Event, State] {
 
   def this(
     persistenceId:  String,
@@ -68,6 +47,33 @@ private[persistence] class PersistentBehaviorImpl[Command, Event, State] private
       snapshotWhen = ConstantFun.scalaAnyThreeToFalse,
       recovery = Recovery()
     )
+  }
+
+  override def apply(ctx: typed.ActorContext[Command]): Behavior[Command] = {
+    DeferredBehavior[Command](ctx ⇒
+      TimerSchedulerImpl.wrapWithTimers[Command] { timers ⇒
+        val callbacks = EventsourcedCallbacks[Command, Event, State](
+          initialState,
+          commandHandler,
+          eventHandler,
+          snapshotWhen,
+          recoveryCompleted,
+          tagger
+        )
+        val pluginIds = EventsourcedPluginIds(
+          journalPluginId,
+          snapshotPluginId
+        )
+        new EventsourcedRequestingRecoveryPermit(
+          persistenceId,
+          ctx.asInstanceOf[ActorContext[Any]], // sorry
+          timers.asInstanceOf[TimerScheduler[Any]], // sorry
+          recovery,
+          callbacks,
+          pluginIds
+        ).narrow[Command]
+
+      }(ctx))
   }
 
   /**
