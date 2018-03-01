@@ -100,6 +100,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     val untypedSystem = ctx.system.toUntyped
 
     val settings = ClusterReceptionistSettings(ctx.system)
+    ctx.log.debug("Cluster receptionist starting up, write-consistency: [{}]", settings.writeConsistency)
 
     val replicator = DistributedData(untypedSystem).replicator
     implicit val cluster = Cluster(untypedSystem)
