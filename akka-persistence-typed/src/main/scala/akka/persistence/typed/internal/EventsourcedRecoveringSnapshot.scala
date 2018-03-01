@@ -80,7 +80,7 @@ final class EventsourcedRecoveringSnapshot[Command, Event, State](
 
   def onCommand(cmd: Command): Behavior[Any] = {
     // during recovery, stash all incoming commands
-    stash(cmd)
+    stash(context, cmd)
     Behavior.same
   }
 
@@ -124,7 +124,7 @@ final class EventsourcedRecoveringSnapshot[Command, Event, State](
         onRecoveryFailure(cause, event = None)
 
       case other ⇒
-        stash(other)
+        stash(context, other)
         same
     }
   } catch {
