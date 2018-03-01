@@ -5,8 +5,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util
 
-import akka.actor.{ActorSystem, ExtendedActorSystem}
-import akka.serialization.{SerializationExtension, Serializer, SerializerWithStringManifest}
+import akka.actor.{ ActorSystem, ExtendedActorSystem }
+import akka.serialization.{ SerializationExtension, Serializer, SerializerWithStringManifest }
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -110,10 +110,9 @@ final class SerializerTestKit(settings: SerializerTestKitSettings, explicitSeria
     }
   }
 
-
   def deserializeOldVersions[T](manifest: String, variationId: String)(implicit classTag: ClassTag[T]): immutable.Seq[T] = {
     val serializer = explicitSerializer.collect {
-      case str: SerializerWithStringManifest => str
+      case str: SerializerWithStringManifest ⇒ str
     } getOrElse (throw new IllegalStateException("Only supported when run with an explicit serializer of type SerializerWithStringManifest"))
     val versionsDirectory = versionsDirectoryFor(serializer, manifest, variationId)
     // serialized before, verify that all those can still be deserialized
@@ -125,8 +124,8 @@ final class SerializerTestKit(settings: SerializerTestKitSettings, explicitSeria
       // check that it can be deserialized
       // this will throw if not
       serializer.fromBinary(oldBytes, manifest) match {
-        case t: T => t
-        case other => throw new AssertionError(s"Expected deserialized values to be of type [${classTag.runtimeClass}] " +
+        case t: T ⇒ t
+        case other ⇒ throw new AssertionError(s"Expected deserialized values to be of type [${classTag.runtimeClass}] " +
           s"but [${file.getFileName}] was deserialized to [${other.getClass}]")
       }
     }
@@ -137,7 +136,6 @@ final class SerializerTestKit(settings: SerializerTestKitSettings, explicitSeria
       .resolve(serializerToUse.identifier.toString)
       .resolve(manifest)
       .resolve(variationId)
-
 
   }
 }
