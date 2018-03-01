@@ -21,7 +21,6 @@ private[akka] trait EventsourcedStashManagement {
   protected def log: LoggingAdapter
 
   protected def extension: Persistence
-  protected def context: ActorContext[Any]
 
   protected val internalStash: StashBuffer[Any]
 
@@ -43,7 +42,7 @@ private[akka] trait EventsourcedStashManagement {
         other // the other strategies are supported
     }
 
-  protected def stash(msg: Any): Unit = {
+  protected def stash(ctx: ActorContext[Any], msg: Any): Unit = {
     if (logLevel != OffLevel) log.log(logLevel, "Stashing message: {}", msg)
 
     try internalStash.stash(msg) catch {
@@ -51,7 +50,7 @@ private[akka] trait EventsourcedStashManagement {
         internalStashOverflowStrategy match {
           case DiscardToDeadLetterStrategy ⇒
             val snd: a.ActorRef = a.ActorRef.noSender // FIXME can we improve it somehow?
-            context.system.deadLetters.tell(DeadLetter(msg, snd, context.self.toUntyped))
+            ctx.system.deadLetters.tell(DeadLetter(msg, snd, ctx.self.toUntyped))
 
           case ReplyToStrategy(response) ⇒
             throw new RuntimeException("ReplyToStrategy does not make sense at all in Akka Typed, since there is no sender()!")
@@ -65,7 +64,7 @@ private[akka] trait EventsourcedStashManagement {
   protected def tryUnstash(ctx: ActorContext[Any], behavior: Behavior[Any]): Behavior[Any] = {
     if (internalStash.nonEmpty) {
       log.debug("Unstashing message: {}", internalStash.head.getClass)
-      internalStash.unstash(context, behavior, 1, ConstantFun.scalaIdentityFunction)
+      internalStash.unstash(ctx, behavior, 1, ConstantFun.scalaIdentityFunction)
     } else behavior
   }
 

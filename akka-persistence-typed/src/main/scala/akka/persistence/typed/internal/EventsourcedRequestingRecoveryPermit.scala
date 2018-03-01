@@ -80,7 +80,7 @@ private[akka] final class EventsourcedRequestingRecoveryPermit[Command, Event, S
         becomeRecovering()
 
       case other ⇒
-        stash(other)
+        stash(context, other)
         Behaviors.same
     }
   }
