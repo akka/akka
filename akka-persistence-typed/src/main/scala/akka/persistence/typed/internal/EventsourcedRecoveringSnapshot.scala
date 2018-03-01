@@ -30,19 +30,16 @@ import scala.util.{ Failure, Success, Try }
  */
 @InternalApi
 final class EventsourcedRecoveringSnapshot[Command, Event, State](
-  val persistenceId:          String,
+  val setup:                  EventsourcedSetup[Command, Event, State],
   override val context:       ActorContext[Any],
   override val timers:        TimerScheduler[Any],
   override val internalStash: StashBuffer[Any],
 
-  val recovery:       Recovery,
-  val writerIdentity: WriterIdentity,
-
-  val callbacks: EventsourcedCallbacks[Command, Event, State],
-  val pluginIds: EventsourcedPluginIds
+  val writerIdentity: WriterIdentity
 ) extends MutableBehavior[Any]
   with EventsourcedBehavior[Command, Event, State]
   with EventsourcedStashManagement {
+  import setup._
 
   import Behaviors.same
   import EventsourcedBehavior._
@@ -139,18 +136,15 @@ final class EventsourcedRecoveringSnapshot[Command, Event, State](
     val rec = recovery.copy(toSequenceNr = toSnr, fromSnapshot = SnapshotSelectionCriteria.None) // TODO introduce new types
 
     new EventsourcedRecoveringEvents[Command, Event, State](
-      persistenceId,
+      setup.copy(recovery = rec),
       context,
       timers,
       internalStash,
 
-      rec,
       lastSequenceNr,
       writerIdentity,
 
-      state,
-      callbacks,
-      pluginIds
+      state
     )
   }
 

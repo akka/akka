@@ -30,23 +30,19 @@ import scala.util.control.NonFatal
  */
 @InternalApi
 private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
-  val persistenceId:          String,
+  val setup:                  EventsourcedSetup[Command, Event, State],
   override val context:       ActorContext[Any],
   override val timers:        TimerScheduler[Any],
   override val internalStash: StashBuffer[Any],
 
-  val recovery:           Recovery,
   private var sequenceNr: Long,
   val writerIdentity:     WriterIdentity,
 
-  private var state: State,
-
-  val callbacks: EventsourcedCallbacks[Command, Event, State],
-  val pluginIds: EventsourcedPluginIds
+  private var state: State
 ) extends MutableBehavior[Any]
   with EventsourcedBehavior[Command, Event, State]
   with EventsourcedStashManagement {
-
+  import setup._
   import Behaviors.same
   import EventsourcedBehavior._
   import akka.actor.typed.scaladsl.adapter._
@@ -151,10 +147,10 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
   protected def onRecoveryCompleted(state: State): Behavior[Any] = {
     try {
       returnRecoveryPermit("recovery completed successfully")
-      callbacks.recoveryCompleted(commandContext, state)
+      recoveryCompleted(commandContext, state)
 
       val running = new EventsourcedRunning[Command, Event, State](
-        persistenceId,
+        setup,
         context,
         timers,
         internalStash,
@@ -162,10 +158,7 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
         sequenceNr,
         writerIdentity,
 
-        state,
-
-        callbacks,
-        pluginIds
+        state
       )
 
       tryUnstash(context, running)
