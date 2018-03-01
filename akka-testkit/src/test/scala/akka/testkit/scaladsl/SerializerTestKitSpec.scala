@@ -102,10 +102,32 @@ class SerializerTestKitSpec extends TestKit(ActorSystem("SerializerTestKitSpec")
       testKit.verify(ActuallySerialized("version1"), "variation1")
       Files.list(path.resolve("666").resolve("AS").resolve("variation1")).iterator().asScala.size should ===(1)
 
+      Thread.sleep(1) // we use timestamp for naming, so make sure we get two files
       // we fake that the representation changed by sending in the same variation with a different object
       testKit.verify(ActuallySerialized("version2"), "variation1")
       Files.list(path.resolve("666").resolve("AS").resolve("variation1")).iterator().asScala.size should ===(2)
 
+    }
+
+    "allow for manual verification of old serialized objects" in {
+      val path = fs.getPath("/old-serialized")
+      Files.createDirectories(path)
+      val testKit = SerializerTestKit(
+        SerializerTestKitSettings(
+          checkBackwardBinaryCompatibility = true,
+          backwardBinaryCompatibilityRootDir = path
+        ),
+        eas ⇒ new FaultySerializer(eas)
+      )
+
+      testKit.verify(ActuallySerialized("version1"), "variation1")
+      Thread.sleep(1) // we use timestamp for naming, so make sure we get two files
+      // we fake that the representation changed by sending in the same variation with a different object
+      testKit.verify(ActuallySerialized("version2"), "variation1")
+
+      val oldVersions = testKit.deserializeOldVersions[ActuallySerialized]("AS", "variation1")
+      oldVersions should have size (2)
+      oldVersions.map(_._1.text).toSet should ===(Set("version1", "version2"))
     }
 
   }

@@ -110,7 +110,15 @@ final class SerializerTestKit(settings: SerializerTestKitSettings, explicitSeria
     }
   }
 
-  def deserializeOldVersions[T](manifest: String, variationId: String)(implicit classTag: ClassTag[T]): immutable.Seq[T] = {
+  /**
+   *
+   * @param manifest
+   * @param variationId
+   * @param classTag
+   * @tparam T
+   * @return
+   */
+  def deserializeOldVersions[T](manifest: String, variationId: String)(implicit classTag: ClassTag[T]): immutable.Seq[(T, String)] = {
     val serializer = explicitSerializer.collect {
       case str: SerializerWithStringManifest ⇒ str
     } getOrElse (throw new IllegalStateException("Only supported when run with an explicit serializer of type SerializerWithStringManifest"))
@@ -124,7 +132,7 @@ final class SerializerTestKit(settings: SerializerTestKitSettings, explicitSeria
       // check that it can be deserialized
       // this will throw if not
       serializer.fromBinary(oldBytes, manifest) match {
-        case t: T ⇒ t
+        case t: T ⇒ (t, file.getFileName.toString)
         case other ⇒ throw new AssertionError(s"Expected deserialized values to be of type [${classTag.runtimeClass}] " +
           s"but [${file.getFileName}] was deserialized to [${other.getClass}]")
       }
