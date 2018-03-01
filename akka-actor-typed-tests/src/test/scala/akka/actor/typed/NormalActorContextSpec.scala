@@ -46,8 +46,6 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
   case object InertEvent extends Event
 
-  case class Watch(ref: ActorRef[Command]) extends Command
-
   case class TerminatedRef[T](ref: ActorRef[T]) extends Event
 
   "An ActorContext" must {
@@ -141,13 +139,11 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
           val childRef = ctx.spawnAnonymous(
             Behaviors.supervise(child).onFailure(SupervisorStrategy.restart)
           )
+          ctx.watch(childRef)
           probe.ref ! ChildMade(childRef)
           Behavior.same
         case (ctx, StopRef(ref)) ⇒
           ctx.stop(ref)
-          Behavior.same
-        case (ctx, Watch(ref))   ⇒
-          ctx.watch(ref)
           Behavior.same
       } onSignal {
         case (_, Terminated(ref)) ⇒
@@ -166,7 +162,9 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       childRef ! Inert
       probe.expectMessage(InertEvent)
 
-      parentRef ! Watch(childRef)
+      childRef ! Ping
+      probe.expectMessage(Pong)
+
       parentRef ! StopRef(childRef)
       probe.expectMessage(TerminatedRef(childRef))
     }
