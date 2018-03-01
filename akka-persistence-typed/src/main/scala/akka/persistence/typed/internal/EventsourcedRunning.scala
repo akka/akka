@@ -115,7 +115,7 @@ class EventsourcedRunning[Command, Event, State](
     def name = "PersistingEvents"
 
     final override def onCommand(c: Command): Behavior[Any] = {
-      stash(c)
+      stash(context, c)
       same
     }
 
