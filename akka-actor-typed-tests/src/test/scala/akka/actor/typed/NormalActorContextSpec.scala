@@ -205,35 +205,24 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       probe.expectMessage(Pong)
     }
 
-    //    "reset behavior upon Restart" in {
-    //      sync(setup("ctx05", Some(Behaviors.supervise(_).onFailure(SupervisorStrategy.restart))) { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        val ex = new Exception("KABOOM05")
-    //        startWith
-    //          .stimulate(_ ! BecomeInert(self), _ ⇒ BecameInert)
-    //          .stimulate(_ ! Ping(self), _ ⇒ Pong2) { subj ⇒
-    //            muteExpectedException[Exception]("KABOOM05")
-    //            subj ! Throw(ex)
-    //            subj
-    //          }
-    //          .stimulate(_ ! Ping(self), _ ⇒ Pong1)
-    //      })
-    //    }
-    //
-    //    "not reset behavior upon Resume" in {
-    //      sync(setup(
-    //        "ctx06",
-    //        Some(b ⇒ Behaviors.supervise(b).onFailure(SupervisorStrategy.resume))) { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        val ex = new Exception("KABOOM06")
-    //        startWith
-    //          .stimulate(_ ! BecomeInert(self), _ ⇒ BecameInert)
-    //          .stimulate(_ ! Ping(self), _ ⇒ Pong2).keep { subj ⇒
-    //          muteExpectedException[Exception]("KABOOM06", occurrences = 1)
-    //          subj ! Throw(ex)
-    //        }.stimulate(_ ! Ping(self), _ ⇒ Pong2)
-    //      })
-    //    }
+    "reset behavior upon resume" in {
+      val probe = TestProbe[Event]()
+      val internal: Behavior[Command] = Behaviors.immutablePartial {
+        case (_, Ping) ⇒
+          probe.ref ! Pong
+          Behavior.same
+        case (_, Fail) ⇒
+          throw new RuntimeException("Boom")
+      }
+      val behavior = Behaviors.supervise(internal).onFailure(SupervisorStrategy.resume)
+      val actor = spawn(behavior)
+      actor ! Ping
+      probe.expectMessage(Pong)
+      actor ! Fail
+      actor ! Ping
+      probe.expectMessage(Pong)
+    }
+
     //
     //    "stop upon Stop" in {
     //      sync(setup("ctx07", ignorePostStop = false) { (ctx, startWith) ⇒
