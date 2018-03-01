@@ -85,7 +85,7 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
 
   def onCommand(cmd: Command): Behavior[Any] = {
     // during recovery, stash all incoming commands
-    stash(cmd)
+    stash(context, cmd)
     same
   }
 
@@ -111,7 +111,7 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
         onRecoveryFailure(cause, event = None)
 
       case other ⇒
-        stash(other)
+        stash(context, other)
         Behaviors.same
     }
   } catch {

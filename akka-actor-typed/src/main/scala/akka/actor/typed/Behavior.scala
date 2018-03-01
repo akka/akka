@@ -179,18 +179,17 @@ object Behavior {
    * Not placed in internal.BehaviorImpl because Behavior is sealed.
    */
   @InternalApi
-  @DoNotInherit
-  private[akka] class DeferredBehavior[T](val factory: SAC[T] ⇒ Behavior[T]) extends Behavior[T] {
-
-    /** start the deferred behavior */
-    @throws(classOf[Exception])
-    def apply(ctx: ActorContext[T]): Behavior[T] = factory(ctx.asScala)
-
-    override def toString: String = s"Deferred(${LineNumbers(factory)})"
+  private[akka] abstract class DeferredBehavior[T] extends Behavior[T] {
+    def apply(ctx: ActorContext[T]): Behavior[T]
   }
-  object DeferredBehavior {
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] object DeferredBehavior {
     def apply[T](factory: SAC[T] ⇒ Behavior[T]) =
-      new DeferredBehavior[T](factory)
+      new DeferredBehavior[T] {
+        def apply(ctx: ActorContext[T]): Behavior[T] = factory(ctx.asScala)
+        override def toString: String = s"Deferred(${LineNumbers(factory)})"
+      }
   }
 
   /**
