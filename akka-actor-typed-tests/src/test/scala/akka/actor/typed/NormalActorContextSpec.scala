@@ -68,13 +68,10 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       }
 
       val actor = spawn(behavior)
-
       actor ! Ping
       probe.expectMessage(Pong)
-
       actor ! Miss
       probe.expectMessage(Missed)
-
       actor ! Ping
       probe.expectMessage(Pong)
     }
@@ -93,7 +90,6 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
       val behavior = Behaviors.supervise(internal).onFailure(SupervisorStrategy.restart)
       val actor = spawn(behavior)
-
       actor ! Fail
       probe.expectMessage(GotSignal(PreRestart))
     }
@@ -118,7 +114,7 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
     "restart and stop a child actor" in {
       val probe = TestProbe[Event]()
 
-      def child: Behavior[Command] = Behaviors.immutablePartial[Command] {
+      val child: Behavior[Command] = Behaviors.immutablePartial[Command] {
         case (_, Fail)  ⇒ throw new RuntimeException("Boom")
         case (_, Inert) ⇒
           probe.ref ! InertEvent
@@ -152,39 +148,45 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       }
 
       val parentRef = spawn(parent)
-
       parentRef ! MakeChild
       val childRef = probe.expectMessageType[ChildMade].ref
-
       childRef ! Fail
       probe.expectMessage(GotChildSignal(PreRestart))
-
       childRef ! Inert
       probe.expectMessage(InertEvent)
-
       childRef ! Ping
       probe.expectMessage(Pong)
-
       parentRef ! StopRef(childRef)
       probe.expectMessage(TerminatedRef(childRef))
     }
 
+    "stop a child actor" in {
+      val probe = TestProbe[Event]()
 
-    //    "stop a child actor" in {
-    //      sync(setup("ctx04") { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        startWith.mkChild(Some("A"), ctx.spawnMessageAdapter(ChildEvent), self, inert = true) {
-    //          case (subj, child) ⇒
-    //            subj ! Kill(child, self)
-    //            child
-    //        }.expectMessageKeep(expectTimeout) { (msg, child) ⇒
-    //          msg should ===(Killed)
-    //          ctx.watch(child)
-    //        }.expectTermination(expectTimeout) { (t, child) ⇒
-    //          t.ref should ===(child)
-    //        }
-    //      })
-    //    }
+      val child: Behavior[Command] = Behaviors.empty[Command]
+      val parent: Behavior[Command] = Behaviors.immutablePartial[Command] {
+        case (ctx, MakeChild)    ⇒
+          val childRef = ctx.spawnAnonymous(
+            Behaviors.supervise(child).onFailure(SupervisorStrategy.restart)
+          )
+          ctx.watch(childRef)
+          probe.ref ! ChildMade(childRef)
+          Behaviors.same
+        case (ctx, StopRef(ref)) ⇒
+          ctx.stop(ref)
+          Behaviors.same
+      } onSignal {
+        case (_, Terminated(ref)) ⇒
+          probe.ref ! TerminatedRef[Command](ref.upcast[Command])
+          Behavior.stopped
+      }
+      val parentRef = spawn(parent)
+      parentRef ! MakeChild
+      val childRef = probe.expectMessageType[ChildMade].ref
+      parentRef ! StopRef(childRef)
+      probe.expectMessage(TerminatedRef(childRef))
+    }
+
     //
     //    "reset behavior upon Restart" in {
     //      sync(setup("ctx05", Some(Behaviors.supervise(_).onFailure(SupervisorStrategy.restart))) { (ctx, startWith) ⇒
