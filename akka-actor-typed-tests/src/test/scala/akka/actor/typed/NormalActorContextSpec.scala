@@ -1,6 +1,6 @@
 /**
   * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com/>
- */
+  */
 
 package akka.actor.typed
 
@@ -16,7 +16,7 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
   sealed trait Event
 
-  final case class Ping(replyTo: ActorRef[Pong.type]) extends Command
+  final case object Ping extends Command
 
   object Pong extends Event
 
@@ -24,24 +24,44 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
   case object Renewed extends Event
 
-  final case class Miss(replyTo: ActorRef[Missed.type]) extends Command
+  final case object Miss extends Command
 
   case object Missed extends Event
 
+  case object Fail extends Command
+
   case object Stop extends Command
 
+  case class StopRef[T](ref: ActorRef[T]) extends Command
+
   case class GotSignal(signal: Signal) extends Event
+
+  case class GotChildSignal(signal: Signal) extends Event
+
+  case object MakeChild extends Command
+
+  case class ChildMade(ref: ActorRef[Command]) extends Event
+
+  case object Inert extends Command
+
+  case object InertEvent extends Event
+
+  case class Watch(ref: ActorRef[Command]) extends Command
+
+  case class TerminatedRef[T](ref: ActorRef[T]) extends Event
 
   "An ActorContext" must {
 
     "converge in cyclic behavior" in {
+      val probe = TestProbe[Event]()
+
       lazy val behavior: Behavior[Command] = Behaviors.immutable[Command] { (_, message) ⇒
         message match {
-          case Ping(ref)  ⇒
-            ref ! Pong
+          case Ping       ⇒
+            probe.ref ! Pong
             Behaviors.same
-          case Miss(ref)  ⇒
-            ref ! Missed
+          case Miss       ⇒
+            probe.ref ! Missed
             Behaviors.unhandled
           case Renew(ref) ⇒
             ref ! Renewed
@@ -49,43 +69,41 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
         }
       }
 
-      val probe = TestProbe[Event]()
       val actor = spawn(behavior)
 
-      actor ! Ping(probe.ref.narrow[Pong.type])
-      probe.expectMessage[Pong.type](Pong)
+      actor ! Ping
+      probe.expectMessage(Pong)
 
-      actor ! Miss(probe.ref.narrow[Missed.type])
-      probe.expectMessage[Missed.type](Missed)
+      actor ! Miss
+      probe.expectMessage(Missed)
 
-      actor ! Ping(probe.ref.narrow[Pong.type])
-      probe.expectMessage[Pong.type](Pong)
+      actor ! Ping
+      probe.expectMessage(Pong)
     }
 
-    // TODO: this is custom, no idea what to do
-    //    "correctly wire the lifecycle hooks" in {
-    //      sync(setup("ctx01", Some(b ⇒ Behaviors.supervise(b).onFailure[Throwable](SupervisorStrategy.restart)), ignorePostStop = false) { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        val ex = new Exception("KABOOM1")
-    //        startWith { subj ⇒
-    //          val log = muteExpectedException[Exception]("KABOOM1", occurrences = 1)
-    //          subj ! Throw(ex)
-    //          (subj, log)
-    //        }.expectMessage(expectTimeout) {
-    //          case (msg, (subj, log)) ⇒
-    //            msg should ===(GotSignal(PreRestart))
-    //            log.assertDone(expectTimeout)
-    //            ctx.stop(subj)
-    //        }.expectMessage(expectTimeout) { (msg, _) ⇒
-    //          msg should ===(GotSignal(PostStop))
-    //        }
-    //      })
-    //    }
+    "correctly wire the lifecycle hook" in {
+      val probe = TestProbe[Event]()
+
+      val internal = Behaviors.immutablePartial[Command] {
+        case (_, Fail) ⇒
+          throw new RuntimeException("Boom")
+      } onSignal {
+        case (_, signal) ⇒
+          probe.ref ! GotSignal(signal)
+          Behaviors.same
+      }
+
+      val behavior = Behaviors.supervise(internal).onFailure(SupervisorStrategy.restart)
+      val actor = spawn(behavior)
+
+      actor ! Fail
+      probe.expectMessage(GotSignal(PreRestart))
+    }
 
     "signal post stop after voluntary termination" in {
       val probe = TestProbe[Event]()
 
-      lazy val behavior: Behavior[Command] =
+      val behavior: Behavior[Command] =
         Behaviors.immutablePartial[Command] {
           case (_, Stop) ⇒ Behaviors.stopped
         } onSignal {
@@ -99,38 +117,61 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       probe.expectMessage(GotSignal(PostStop))
     }
 
-    //    "restart and stop a child actor" in {
-    //      sync(setup("ctx03") { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        val ex = new Exception("KABOOM2")
-    //        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self) {
-    //          case (subj, child) ⇒
-    //            val log = muteExpectedException[Exception]("KABOOM2", occurrences = 1)
-    //            child ! Throw(ex)
-    //            (subj, child, log)
-    //        }.expectMessage(expectTimeout) {
-    //          case (msg, (subj, child, log)) ⇒
-    //            msg should ===(ChildEvent(GotSignal(PreRestart)))
-    //            log.assertDone(expectTimeout)
-    //            child ! BecomeInert(self) // necessary to avoid PostStop/Terminated interference
-    //            (subj, child)
-    //        }.expectMessageKeep(expectTimeout) {
-    //          case (msg, (subj, child)) ⇒
-    //            msg should ===(BecameInert)
-    //            stop(subj)
-    //            ctx.watch(child)
-    //            ctx.watch(subj)
-    //        }.expectTermination(expectTimeout) {
-    //          case (t, (subj, child)) ⇒
-    //            if (t.ref === child) subj
-    //            else if (t.ref === subj) child
-    //            else fail(s"expected termination of either $subj or $child but got $t")
-    //        }.expectTermination(expectTimeout) { (t, subj) ⇒
-    //          t.ref should ===(subj)
-    //        }
-    //      })
-    //    }
-    //
+    "restart and stop a child actor" in {
+      val probe = TestProbe[Event]()
+
+      def child: Behavior[Command] = Behaviors.immutablePartial[Command] {
+        case (_, Fail)  ⇒ throw new RuntimeException("Boom")
+        case (_, Inert) ⇒
+          probe.ref ! InertEvent
+          Behaviors.immutablePartial[Command] {
+            case (_, Ping) ⇒
+              probe.ref ! Pong
+              Behaviors.same
+            case _         ⇒ Behaviors.unhandled
+          }
+      } onSignal {
+        case (_, signal) ⇒
+          probe.ref ! GotChildSignal(signal)
+          Behavior.stopped
+      }
+
+      val parent: Behavior[Command] = Behaviors.immutablePartial[Command] {
+        case (ctx, MakeChild)    ⇒
+          val childRef = ctx.spawnAnonymous(
+            Behaviors.supervise(child).onFailure(SupervisorStrategy.restart)
+          )
+          probe.ref ! ChildMade(childRef)
+          Behavior.same
+        case (ctx, StopRef(ref)) ⇒
+          ctx.stop(ref)
+          Behavior.same
+        case (ctx, Watch(ref))   ⇒
+          ctx.watch(ref)
+          Behavior.same
+      } onSignal {
+        case (_, Terminated(ref)) ⇒
+          probe.ref ! TerminatedRef[Command](ref.upcast[Command])
+          Behavior.stopped
+      }
+
+      val parentRef = spawn(parent)
+
+      parentRef ! MakeChild
+      val childRef = probe.expectMessageType[ChildMade].ref
+
+      childRef ! Fail
+      probe.expectMessage(GotChildSignal(PreRestart))
+
+      childRef ! Inert
+      probe.expectMessage(InertEvent)
+
+      parentRef ! Watch(childRef)
+      parentRef ! StopRef(childRef)
+      probe.expectMessage(TerminatedRef(childRef))
+    }
+
+
     //    "stop a child actor" in {
     //      sync(setup("ctx04") { (ctx, startWith) ⇒
     //        val self = ctx.self

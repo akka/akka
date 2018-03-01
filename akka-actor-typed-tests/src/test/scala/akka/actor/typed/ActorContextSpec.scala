@@ -399,7 +399,6 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
 
     "correctly wire the lifecycle hooks" in {
       sync(setup("ctx01", Some(b ⇒ Behaviors.supervise(b).onFailure[Throwable](SupervisorStrategy.restart)), ignorePostStop = false) { (ctx, startWith) ⇒
-        val self = ctx.self
         val ex = new Exception("KABOOM1")
         startWith { subj ⇒
           val log = muteExpectedException[Exception]("KABOOM1", occurrences = 1)
