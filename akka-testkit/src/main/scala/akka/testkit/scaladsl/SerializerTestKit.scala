@@ -5,19 +5,25 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util
 
-import akka.actor.{ ActorSystem, ExtendedActorSystem }
-import akka.serialization.{ SerializationExtension, Serializer, SerializerWithStringManifest }
+import akka.actor.{ActorSystem, ExtendedActorSystem}
+import akka.serialization.{SerializationExtension, Serializer, SerializerWithStringManifest}
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable
+import scala.reflect.ClassTag
 
 case class SerializerTestKitSettings(
   failOnNonStringManifestSerializer:  Boolean = true,
   checkBackwardBinaryCompatibility:   Boolean = false,
-  backwardBinaryCompatibilityRootDir: Path    = Paths.get("src/test/serializer-testkit-data")
+  backwardBinaryCompatibilityRootDir: Path    = Paths.get("src/test/serializer-testkit")
 )
 
 /**
- * A
+ * A testkit to help verify serialization and serialization compatibility over time.
+ *
+ * For the wire compatibility part, set `settings.checkBackwardBinaryCompatibility` to `true` and make sure to
+ * include the generated files in your VCS so that earlier versions of the serialized data is available for
+ * verification and incompatibilities can be detected. By default the data is expected to live in `src/test/serializer-testkit`
  */
 object SerializerTestKit {
   def apply()(implicit system: ActorSystem) = new SerializerTestKit(SerializerTestKitSettings(), None)
@@ -66,10 +72,7 @@ final class SerializerTestKit(settings: SerializerTestKitSettings, explicitSeria
   }
 
   def verifyBinaryCompatibility(serializerToUse: SerializerWithStringManifest, manifest: String, variationId: String, currentBytes: Array[Byte]): Unit = {
-    val versionsDirectory = settings.backwardBinaryCompatibilityRootDir
-      .resolve(serializerToUse.identifier.toString)
-      .resolve(manifest)
-      .resolve(variationId)
+    val versionsDirectory = versionsDirectoryFor(serializerToUse, manifest, variationId)
 
     def writeNewSerializedForm(bytes: Array[Byte]) = {
       val filename = DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now()).replace(':', '_')
@@ -107,4 +110,34 @@ final class SerializerTestKit(settings: SerializerTestKitSettings, explicitSeria
     }
   }
 
+
+  def deserializeOldVersions[T](manifest: String, variationId: String)(implicit classTag: ClassTag[T]): immutable.Seq[T] = {
+    val serializer = explicitSerializer.collect {
+      case str: SerializerWithStringManifest => str
+    } getOrElse (throw new IllegalStateException("Only supported when run with an explicit serializer of type SerializerWithStringManifest"))
+    val versionsDirectory = versionsDirectoryFor(serializer, manifest, variationId)
+    // serialized before, verify that all those can still be deserialized
+    for {
+      file ← Files.list(versionsDirectory).iterator().asScala.toIndexedSeq
+    } yield {
+      val oldBytes = Files.readAllBytes(file)
+
+      // check that it can be deserialized
+      // this will throw if not
+      serializer.fromBinary(oldBytes, manifest) match {
+        case t: T => t
+        case other => throw new AssertionError(s"Expected deserialized values to be of type [${classTag.runtimeClass}] " +
+          s"but [${file.getFileName}] was deserialized to [${other.getClass}]")
+      }
+    }
+  }
+
+  private def versionsDirectoryFor(serializerToUse: SerializerWithStringManifest, manifest: String, variationId: String) = {
+    settings.backwardBinaryCompatibilityRootDir
+      .resolve(serializerToUse.identifier.toString)
+      .resolve(manifest)
+      .resolve(variationId)
+
+
+  }
 }

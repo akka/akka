@@ -393,7 +393,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     pattern:     String = null,
     occurrences: Int    = Int.MaxValue)(implicit system: ActorSystem[GuardianCommand]): EventFilter = {
     val filter = EventFilter(message, source, start, pattern, occurrences)
-    import scaladsl.adapter._
+    import akka.actor.typed.scaladsl.adapter._
     system.toUntyped.eventStream.publish(Mute(filter))
     filter
   }
