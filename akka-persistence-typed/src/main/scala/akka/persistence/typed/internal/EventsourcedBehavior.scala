@@ -72,18 +72,17 @@ private[akka] trait EventsourcedBehavior[Command, Event, State] {
   // used for signaling intent in type signatures
   type SeqNr = Long
 
-  def persistenceId: String
+  def persistenceId: String = setup.persistenceId
 
-  protected def callbacks: EventsourcedCallbacks[Command, Event, State]
-  protected def initialState: State = callbacks.initialState
-  protected def commandHandler: PersistentBehaviors.CommandHandler[Command, Event, State] = callbacks.commandHandler
-  protected def eventHandler: (State, Event) ⇒ State = callbacks.eventHandler
-  protected def snapshotWhen: (State, Event, SeqNr) ⇒ Boolean = callbacks.snapshotWhen
-  protected def tagger: Event ⇒ Set[String] = callbacks.tagger
+  protected def setup: EventsourcedSetup[Command, Event, State]
+  protected def initialState: State = setup.initialState
+  protected def commandHandler: PersistentBehaviors.CommandHandler[Command, Event, State] = setup.commandHandler
+  protected def eventHandler: (State, Event) ⇒ State = setup.eventHandler
+  protected def snapshotWhen: (State, Event, SeqNr) ⇒ Boolean = setup.snapshotWhen
+  protected def tagger: Event ⇒ Set[String] = setup.tagger
 
-  protected def pluginIds: EventsourcedPluginIds
-  protected final def journalPluginId: String = pluginIds.journalPluginId
-  protected final def snapshotPluginId: String = pluginIds.snapshotPluginId
+  protected final def journalPluginId: String = setup.journalPluginId
+  protected final def snapshotPluginId: String = setup.snapshotPluginId
 
   // ------ common -------
 

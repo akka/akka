@@ -21,17 +21,14 @@ import akka.persistence.typed.internal.EventsourcedBehavior.WriterIdentity
  */
 @InternalApi
 private[akka] final class EventsourcedRequestingRecoveryPermit[Command, Event, State](
-  val persistenceId:    String,
+  val setup:            EventsourcedSetup[Command, Event, State],
   override val context: ActorContext[Any],
-  override val timers:  TimerScheduler[Any],
+  override val timers:  TimerScheduler[Any]
 
-  val recovery: Recovery,
-
-  val callbacks: EventsourcedCallbacks[Command, Event, State],
-  val pluginIds: EventsourcedPluginIds
 ) extends MutableBehavior[Any]
   with EventsourcedBehavior[Command, Event, State]
   with EventsourcedStashManagement {
+  import setup._
 
   import akka.actor.typed.scaladsl.adapter._
 
@@ -58,16 +55,12 @@ private[akka] final class EventsourcedRequestingRecoveryPermit[Command, Event, S
     log.debug(s"Initializing snapshot recovery: {}", recovery)
 
     new EventsourcedRecoveringSnapshot(
-      persistenceId,
+      setup,
       context,
       timers,
       internalStash,
 
-      recovery,
-      writerIdentity,
-
-      callbacks,
-      pluginIds
+      writerIdentity
     )
   }
 

@@ -36,7 +36,7 @@ import scala.collection.immutable
  */
 @InternalApi
 class EventsourcedRunning[Command, Event, State](
-  val persistenceId:          String,
+  val setup:                  EventsourcedSetup[Command, Event, State],
   override val context:       ActorContext[Any],
   override val timers:        TimerScheduler[Any],
   override val internalStash: StashBuffer[Any],
@@ -44,13 +44,11 @@ class EventsourcedRunning[Command, Event, State](
   private var sequenceNr: Long,
   val writerIdentity:     WriterIdentity,
 
-  private var state: State,
-
-  val callbacks: EventsourcedCallbacks[Command, Event, State],
-  val pluginIds: EventsourcedPluginIds
+  private var state: State
 ) extends MutableBehavior[Any]
   with EventsourcedBehavior[Command, Event, State]
   with EventsourcedStashManagement { same ⇒
+  import setup._
 
   import EventsourcedBehavior._
   import akka.actor.typed.scaladsl.adapter._
