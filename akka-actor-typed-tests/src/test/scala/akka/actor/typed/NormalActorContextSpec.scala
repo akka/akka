@@ -187,7 +187,24 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       probe.expectMessage(TerminatedRef(childRef))
     }
 
-    //
+    "reset behavior upon restart" in {
+      val probe = TestProbe[Event]()
+      val internal: Behavior[Command] = Behaviors.immutablePartial {
+        case (_, Ping) ⇒
+          probe.ref ! Pong
+          Behavior.same
+        case (_, Fail) ⇒
+          throw new RuntimeException("Boom")
+      }
+      val behavior = Behaviors.supervise(internal).onFailure(SupervisorStrategy.restart)
+      val actor = spawn(behavior)
+      actor ! Ping
+      probe.expectMessage(Pong)
+      actor ! Fail
+      actor ! Ping
+      probe.expectMessage(Pong)
+    }
+
     //    "reset behavior upon Restart" in {
     //      sync(setup("ctx05", Some(Behaviors.supervise(_).onFailure(SupervisorStrategy.restart))) { (ctx, startWith) ⇒
     //        val self = ctx.self
