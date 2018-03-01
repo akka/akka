@@ -24,7 +24,7 @@ object PersistentBehaviors {
     initialState:   State,
     commandHandler: (ActorContext[Command], State, Command) ⇒ Effect[Event, State],
     eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
-    new PersistentBehaviorImpl(
+    new EventsourcedSetup(
       persistenceId = persistenceId,
       initialState = initialState,
       commandHandler = commandHandler,
