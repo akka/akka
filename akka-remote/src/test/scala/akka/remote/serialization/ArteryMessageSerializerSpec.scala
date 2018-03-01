@@ -5,6 +5,7 @@
 package akka.remote.serialization
 
 import java.io.NotSerializableException
+import java.nio.file.Paths
 
 import akka.actor._
 import akka.remote.{ RemoteWatcher, UniqueAddress }
@@ -12,13 +13,22 @@ import akka.remote.artery.OutboundHandshake.{ HandshakeReq, HandshakeRsp }
 import akka.remote.artery.compress.CompressionProtocol.{ ActorRefCompressionAdvertisement, ActorRefCompressionAdvertisementAck, ClassManifestCompressionAdvertisement, ClassManifestCompressionAdvertisementAck }
 import akka.remote.artery.compress.CompressionTable
 import akka.remote.artery.{ ActorSystemTerminating, ActorSystemTerminatingAck, Quarantined, SystemMessageDelivery }
-import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
+import akka.testkit.scaladsl.{ SerializerTestKit, SerializerTestKitSettings }
 
 class ArteryMessageSerializerSpec extends AkkaSpec {
+
+  val testKit = SerializerTestKit(
+    SerializerTestKitSettings(
+      checkBackwardBinaryCompatibility = true,
+      backwardBinaryCompatibilityRootDir = Paths.get("akka-remote/src/test/serializater-testkit")
+    ),
+    system ⇒ new ArteryMessageSerializer(system))
+
   "ArteryMessageSerializer" must {
-    val actorA = system.actorOf(Props.empty)
-    val actorB = system.actorOf(Props.empty)
+    val address = Address("akka", "system", "127.0.0.1", 2551)
+    val actorA = SerializerTestKit.stableDummyActorRef(RootActorPath(address) / "user" / "actorA")
+    val actorB = SerializerTestKit.stableDummyActorRef(RootActorPath(address) / "user" / "actorB")
 
     Seq(
       "Quarantined" → Quarantined(uniqueAddress(), uniqueAddress()),
@@ -37,13 +47,8 @@ class ArteryMessageSerializerSpec extends AkkaSpec {
       "RemoteWatcher.ArteryHeartbeatRsp" → RemoteWatcher.ArteryHeartbeatRsp(Long.MaxValue)
     ).foreach {
         case (scenario, item) ⇒
-          s"resolve serializer for $scenario" in {
-            val serializer = SerializationExtension(system)
-            serializer.serializerFor(item.getClass).getClass should ===(classOf[ArteryMessageSerializer])
-          }
-
-          s"serialize and de-serialize $scenario" in {
-            verifySerialization(item)
+          s"work for $scenario" in {
+            testKit.verify(item, scenario)
           }
       }
 
@@ -61,11 +66,6 @@ class ArteryMessageSerializerSpec extends AkkaSpec {
         val serializer = new ArteryMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
         serializer.fromBinary(Array.empty[Byte], "INVALID")
       }
-    }
-
-    def verifySerialization(msg: AnyRef): Unit = {
-      val serializer = new ArteryMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
-      serializer.fromBinary(serializer.toBinary(msg), serializer.manifest(msg)) should ===(msg)
     }
 
     def uniqueAddress(): UniqueAddress =
