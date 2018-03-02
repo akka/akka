@@ -423,19 +423,18 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       probe.expectMessage(GotSignal(PostStop))
     }
 
-    //
-    //    "return the right context info" in {
-    //      sync(setup("ctx20") { (ctx, startWith) ⇒
-    //        startWith.keep(_ ! GetInfo(ctx.self))
-    //          .expectMessage(expectTimeout) {
-    //            case (msg: Info, subj) ⇒
-    //              msg.self should ===(subj)
-    //              msg.system should ===(system)
-    //            case (other, _) ⇒
-    //              fail(s"$other was not an Info(...)")
-    //          }
-    //      })
-    //    }
+    "return the right context info" in {
+      type Info = (ActorSystem[Nothing], ActorRef[String])
+      val probe = TestProbe[Info]
+      val actor: ActorRef[String] = spawn(Behaviors.immutablePartial[String] {
+        case (ctx, "info") ⇒
+          probe.ref ! (ctx.system → ctx.self)
+          Behaviors.same
+      })
+      actor ! "info"
+      probe.expectMessage((system, actor))
+    }
+
     //
     //    "return right info about children" in {
     //      sync(setup("ctx21") { (ctx, startWith) ⇒
