@@ -8,20 +8,14 @@ import java.nio.ByteBuffer
 import java.util.Random
 import java.util.concurrent.TimeUnit
 
-import akka.dispatch.forkjoin.ThreadLocalRandom
 import akka.io.DirectByteBufferPool
-import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 class DirectByteBufferPoolBenchmark {
-  import DirectByteBufferPoolBenchmark._
 
   private val MAX_LIVE_BUFFERS = 8192
 

@@ -3,7 +3,6 @@
  */
 package akka.util
 
-import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
 import akka.util.ByteString.{ ByteString1C, ByteStrings }
