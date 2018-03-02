@@ -481,8 +481,6 @@ class MutableScalaBehaviorSpec extends Messages with Become with Stoppable {
 
 class WidenedScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reuse with Siphon {
 
-  import SBehaviors.BehaviorDecorators
-
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Command]("widenedListener")
     super.behavior(monitor)._1.widen[Command] { case c ⇒ inbox.ref ! c; c } → inbox
