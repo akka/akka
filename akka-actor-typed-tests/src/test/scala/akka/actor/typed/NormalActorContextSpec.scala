@@ -381,31 +381,48 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       probe.expectMessage(GotSignal(Terminated(childRef)(null)))
     }
 
-    //
-    //    "terminate upon not handling Terminated" in {
-    //      sync(setup("ctx13", ignorePostStop = false) { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self).keep {
-    //          case (subj, child) ⇒
-    //            muteExpectedException[DeathPactException]()
-    //            subj ! Watch(child, self)
-    //        }.expectMessageKeep(expectTimeout) {
-    //          case (msg, (subj, child)) ⇒
-    //            msg should ===(Watched)
-    //            subj ! BecomeCareless(self)
-    //        }.expectMessageKeep(expectTimeout) {
-    //          case (msg, (subj, child)) ⇒
-    //            msg should ===(BecameCareless)
-    //            child ! Stop
-    //        }.expectMessage(expectTimeout) {
-    //          case (msg, (subj, child)) ⇒
-    //            msg should ===(ChildEvent(GotSignal(PostStop)))
-    //        }.expectMessage(expectTimeout) {
-    //          case (msg, _) ⇒
-    //            msg should ===(GotSignal(PostStop))
-    //        }
-    //      })
-    //    }
+    "terminate upon not handling Terminated" in {
+      val probe = TestProbe[Event]()
+      val child: Behavior[Command] = Behaviors.immutablePartial[Command] {
+        case (_, Stop) ⇒
+          Behaviors.stopped
+      } onSignal {
+        case (_, signal) ⇒
+          probe.ref ! GotChildSignal(signal)
+          Behavior.same
+      }
+      val actor: ActorRef[Command] = spawn(
+        Behaviors.immutablePartial[Command] {
+          case (ctx, MakeChild) ⇒
+            val childRef = ctx.spawn(child, "A")
+            ctx.watch(childRef)
+            probe.ref ! ChildMade(childRef)
+            Behaviors.same
+          case (_, Inert)       ⇒
+            probe.ref ! InertEvent
+            Behaviors.immutable[Command] {
+              case (_, _) ⇒ Behaviors.unhandled
+            } onSignal {
+              case (_, Terminated(_)) ⇒ Behaviors.unhandled
+              case (_, signal)        ⇒
+                probe.ref ! GotSignal(signal)
+                Behaviors.same
+            }
+        } onSignal {
+          case (_, signal) ⇒
+            probe.ref ! GotSignal(signal)
+            Behaviors.same
+        }
+      )
+      actor ! MakeChild
+      val childRef = probe.expectMessageType[ChildMade].ref
+      actor ! Inert
+      probe.expectMessage(InertEvent)
+      childRef ! Stop
+      probe.expectMessage(GotChildSignal(PostStop))
+      probe.expectMessage(GotSignal(PostStop))
+    }
+
     //
     //    "return the right context info" in {
     //      sync(setup("ctx20") { (ctx, startWith) ⇒
