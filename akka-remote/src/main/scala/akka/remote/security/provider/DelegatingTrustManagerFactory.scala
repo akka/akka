@@ -1,9 +1,15 @@
 package akka.remote.security.provider
 
 import java.security._
-import java.util.Collections.{ emptyList, emptyMap }
-import javax.net.ssl.{ ManagerFactoryParameters, TrustManager, TrustManagerFactory, TrustManagerFactorySpi }
+import java.util.Collections.{emptyList, emptyMap}
 
+import akka.annotation.InternalApi
+import javax.net.ssl.{ManagerFactoryParameters, TrustManager, TrustManagerFactory, TrustManagerFactorySpi}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] class DelegatingTrustManagerFactory extends TrustManagerFactorySpi {
   private var delegate: Option[TrustManagerFactory] = None
   private val parameterName = classOf[DelegatingTrustManagerFactoryParameters].getCanonicalName
@@ -25,8 +31,16 @@ private[akka] class DelegatingTrustManagerFactory extends TrustManagerFactorySpi
   }
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] case class DelegatingTrustManagerFactoryParameters(delegate: TrustManagerFactory) extends ManagerFactoryParameters
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] object DelegatingTrustManagerFactoryProvider
   extends Provider("DelegatingTrustManagerFactoryProvider", 1.0d, "Delegating TrustManagerFactory") { outer ⇒
   AccessController.doPrivileged(new PrivilegedAction[Unit] {

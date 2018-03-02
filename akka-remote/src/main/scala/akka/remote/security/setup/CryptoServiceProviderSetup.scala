@@ -1,15 +1,20 @@
 package akka.remote.security.setup
 
 import java.lang.reflect.Modifier
-import java.security.{ AccessController, PrivilegedAction, Provider }
-import java.util.Collections.{ emptyList, emptyMap }
-import javax.net.ssl._
+import java.security.{AccessController, PrivilegedAction, Provider}
+import java.util.Collections.{emptyList, emptyMap}
 
+import javax.net.ssl._
 import akka.actor.setup.Setup
+import akka.annotation.InternalApi
 import akka.remote.security.provider._
 
 import scala.reflect.ClassTag
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[setup] object Validate {
   def apply[T](tag: ClassTag[T]): Unit = {
     val clazz = tag.runtimeClass

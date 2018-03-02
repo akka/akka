@@ -1,9 +1,15 @@
 package akka.remote.security.provider
 
 import java.security._
-import java.util.Collections.{ emptyList, emptyMap }
-import javax.net.ssl.{ KeyManager, KeyManagerFactory, KeyManagerFactorySpi, ManagerFactoryParameters }
+import java.util.Collections.{emptyList, emptyMap}
 
+import akka.annotation.InternalApi
+import javax.net.ssl.{KeyManager, KeyManagerFactory, KeyManagerFactorySpi, ManagerFactoryParameters}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] class DelegatingKeyManagerFactory extends KeyManagerFactorySpi {
   private var delegate: Option[KeyManagerFactory] = None
   private val parameterName = classOf[DelegatingKeyManagerFactoryParameters].getCanonicalName
@@ -25,10 +31,18 @@ private[akka] class DelegatingKeyManagerFactory extends KeyManagerFactorySpi {
   }
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] case class DelegatingKeyManagerFactoryParameters(delegate: KeyManagerFactory) extends ManagerFactoryParameters
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] object DelegatingKeyManagerFactoryProvider
-  extends Provider("DelegatingKeyManagerFactoryProvider", 1.0d, "Delegating TrustManagerFactory") { outer ⇒
+  extends Provider("DelegatingKeyManagerFactoryProvider", 1.0d, "Delegating KeyManagerFactory") { outer ⇒
   AccessController.doPrivileged(new PrivilegedAction[Unit] {
     override def run(): Unit = {
       putService(new Provider.Service(
