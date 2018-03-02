@@ -1,0 +1,3 @@
+# result type changed from Duration to FiniteDuration
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.util.JavaDurationConverters#JavaDurationOps.asScala")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.util.JavaDurationConverters#JavaDurationOps.asScala$extension")
