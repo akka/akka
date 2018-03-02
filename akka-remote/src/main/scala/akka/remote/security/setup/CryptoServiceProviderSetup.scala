@@ -1,8 +1,8 @@
 package akka.remote.security.setup
 
 import java.lang.reflect.Modifier
-import java.security.{AccessController, PrivilegedAction, Provider}
-import java.util.Collections.{emptyList, emptyMap}
+import java.security.{ AccessController, PrivilegedAction, Provider }
+import java.util.Collections.{ emptyList, emptyMap }
 
 import javax.net.ssl._
 import akka.actor.setup.Setup

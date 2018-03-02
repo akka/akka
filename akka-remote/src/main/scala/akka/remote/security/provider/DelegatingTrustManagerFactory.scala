@@ -1,10 +1,10 @@
 package akka.remote.security.provider
 
 import java.security._
-import java.util.Collections.{emptyList, emptyMap}
+import java.util.Collections.{ emptyList, emptyMap }
 
 import akka.annotation.InternalApi
-import javax.net.ssl.{ManagerFactoryParameters, TrustManager, TrustManagerFactory, TrustManagerFactorySpi}
+import javax.net.ssl.{ ManagerFactoryParameters, TrustManager, TrustManagerFactory, TrustManagerFactorySpi }
 
 /**
  * INTERNAL API
