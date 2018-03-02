@@ -7,6 +7,7 @@ import java.util
 import java.util.Optional
 
 import akka.util.{ ConstantFun, Timeout }
+import akka.util.JavaDurationConverters._
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
@@ -208,6 +209,12 @@ object Source {
    */
   def tick[O](initialDelay: FiniteDuration, interval: FiniteDuration, tick: O): javadsl.Source[O, Cancellable] =
     new Source(scaladsl.Source.tick(initialDelay, interval, tick))
+
+  /**
+   * Same as [[tick]], but accepts Java [[java.time.Duration]] instead of Scala ones.
+   */
+  def tick[O](initialDelay: java.time.Duration, interval: java.time.Duration, tick: O): javadsl.Source[O, Cancellable] =
+    Source.tick(initialDelay.asScala, interval.asScala, tick)
 
   /**
    * Create a `Source` with one element.
