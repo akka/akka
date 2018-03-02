@@ -4,6 +4,7 @@
 
 package akka.actor.typed
 
+import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
@@ -554,15 +555,12 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
     //      })
     //    }
     //
-    //    "not allow null messages" in {
-    //      sync(setup("ctx42") { (ctx, startWith) ⇒
-    //        startWith.keep { subj ⇒
-    //          intercept[InvalidMessageException] {
-    //            subj ! null
-    //          }
-    //        }
-    //      })
-    //    }
+    "not allow null messages" in {
+      val actor = spawn(Behaviors.empty[Null])
+      intercept[InvalidMessageException] {
+        actor ! null
+      }
+    }
     //
     //    "not have problems stopping already stopped child" in {
     //      sync(setup("ctx45", ignorePostStop = false) { (ctx, startWith) ⇒
