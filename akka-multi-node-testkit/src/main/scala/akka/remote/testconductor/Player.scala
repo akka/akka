@@ -72,8 +72,6 @@ trait Player { this: TestConductorExt ⇒
    * set in [[akka.remote.testconductor.Conductor]]`.startController()`.
    */
   def startClient(name: RoleName, controllerAddr: InetSocketAddress): Future[Done] = {
-    import ClientFSM._
-    import akka.actor.FSM._
     import Settings.BarrierTimeout
 
     if (_client ne null) throw new IllegalStateException("TestConductorClient already started")
