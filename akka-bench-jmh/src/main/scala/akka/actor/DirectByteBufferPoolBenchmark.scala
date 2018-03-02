@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit
 import akka.io.DirectByteBufferPool
 import org.openjdk.jmh.annotations._
 
-
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
