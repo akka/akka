@@ -258,20 +258,27 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       probe.expectMessage(GotSignal(Terminated(actorToWatch)(null)))
     }
 
-    //    "not stop non-child actor" in {
-    //      sync(setup("ctx08") { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        startWith.mkChild(Some("A"), ctx.spawnMessageAdapter(ChildEvent), self) {
-    //          case (subj, child) ⇒
-    //            val other = ctx.spawn(behavior(ctx, ignorePostStop = true), "A")
-    //            subj ! Kill(other, ctx.self)
-    //            child
-    //        }.expectMessageKeep(expectTimeout) { (msg, _) ⇒
-    //          msg should ===(NotKilled)
-    //        }.stimulate(_ ! Ping(self), _ ⇒ Pong1)
-    //      })
-    //    }
-    //
+    "not stop non-child actor" in {
+      val probe = TestProbe[Event]()
+      val victim = spawn(Behaviors.empty[Command])
+      val actor: ActorRef[Command] = spawn(Behaviors.immutablePartial[Command] {
+        case (_, Ping) ⇒
+          probe.ref ! Pong
+          Behaviors.same
+        case (ctx, StopRef(ref)) ⇒
+          assertThrows[IllegalArgumentException] {
+            ctx.stop(ref)
+            probe.ref ! Pong
+          }
+          probe.ref ! Missed
+          Behaviors.same
+      })
+      actor ! Ping
+      probe.expectMessage(Pong)
+      actor ! StopRef(victim)
+      probe.expectMessage(Missed)
+    }
+
     //    "watch a child actor before its termination" in {
     //      sync(setup("ctx10") { (ctx, startWith) ⇒
     //        val self = ctx.self
