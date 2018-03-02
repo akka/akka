@@ -6,7 +6,6 @@ package akka.pattern.extended
 import akka.actor._
 import akka.testkit.AkkaSpec
 import akka.util.Timeout
-import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration._
 
 object ExplicitAskSpec {

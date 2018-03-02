@@ -18,7 +18,7 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, Future }
 import scala.language.postfixOps
 
 object TypedActorSpec {

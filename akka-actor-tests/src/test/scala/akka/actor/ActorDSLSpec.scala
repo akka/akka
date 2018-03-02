@@ -16,7 +16,6 @@ import akka.testkit.TimingTest
 
 class ActorDSLDummy {
   //#import
-  import akka.actor.ActorDSL._
   import akka.actor.ActorSystem
 
   implicit val system = ActorSystem("demo")
