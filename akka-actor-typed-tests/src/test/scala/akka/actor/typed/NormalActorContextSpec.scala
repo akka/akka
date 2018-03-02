@@ -426,7 +426,7 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
     "return the right context info" in {
       type Info = (ActorSystem[Nothing], ActorRef[String])
       val probe = TestProbe[Info]
-      val actor: ActorRef[String] = spawn(Behaviors.immutablePartial[String] {
+      val actor = spawn(Behaviors.immutablePartial[String] {
         case (ctx, "info") ⇒
           probe.ref ! (ctx.system → ctx.self)
           Behaviors.same
@@ -435,17 +435,31 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       probe.expectMessage((system, actor))
     }
 
-    //
-    //    "return right info about children" in {
-    //      sync(setup("ctx21") { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        startWith
-    //          .mkChild(Some("B"), ctx.spawnMessageAdapter(ChildEvent), self)
-    //          .stimulate(_._1 ! GetChild("A", self), _ ⇒ Child(None))
-    //          .stimulate(_._1 ! GetChild("B", self), x ⇒ Child(Some(x._2)))
-    //          .stimulate(_._1 ! GetChildren(self), x ⇒ Children(Set(x._2)))
-    //      })
-    //    }
+    "return right info about children" in {
+      type Children = Seq[ActorRef[Nothing]]
+      val probe = TestProbe[Children]()
+      val actor = spawn(Behaviors.immutablePartial[String] {
+        case (ctx, "B")   ⇒
+          ctx.spawn(Behaviors.empty, "B")
+          probe.ref ! ctx.child("B").toSeq
+          Behaviors.same
+        case (ctx, "all") ⇒
+          probe.ref ! ctx.children.toSeq
+          Behaviors.same
+        case (ctx, name)  ⇒
+          probe.ref ! ctx.child(name).toSeq
+          Behaviors.same
+      })
+      actor ! "B"
+      val children = probe.expectMessageType[Children]
+      actor ! "A"
+      probe.expectMessage(Seq.empty)
+      actor ! "all"
+      probe.expectMessage(children)
+      children.size shouldBe 1
+      children.head.path.name shouldBe "B"
+    }
+
     //
     //    "set small receive timeout" in {
     //      sync(setup("ctx30") { (ctx, startWith) ⇒
