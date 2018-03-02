@@ -23,7 +23,7 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
   object Pong extends Event
 
-  case class Renew(replyTo: ActorRef[Renewed.type]) extends Command
+  case class Renew(replyTo    : ActorRef[Renewed.type]) extends Command
 
   case object Renewed extends Event
 
@@ -59,7 +59,7 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
   case object ReceiveTimeout extends Command
 
-  case class SetTimeout(duration: FiniteDuration) extends Command
+  case class SetTimeout(duration      : FiniteDuration) extends Command
 
   case object GotReceiveTimeout extends Event
 
@@ -543,25 +543,27 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
     //        }
     //      })
     //    }
-    //
-    //    "create a named adapter" in {
-    //      sync(setup("ctx41") { (ctx, startWith) ⇒
-    //        startWith.keep { subj ⇒
-    //          subj ! GetAdapter(ctx.self, "named")
-    //        }.expectMessage(expectTimeout) { (msg, subj) ⇒
-    //          val Adapter(adapter) = msg
-    //          adapter.path.name should include("named")
-    //        }
-    //      })
-    //    }
-    //
+
+    "create a named adapter" in {
+      val probe = TestProbe[ActorRef[String]]()
+      val actor = spawn(Behaviors.immutablePartial[String] {
+        case (ctx, name) ⇒
+          probe.ref ! ctx.spawnMessageAdapter(identity, name)
+          Behaviors.same
+      })
+      val adapterName = "hello"
+      actor ! adapterName
+      val adapter = probe.expectMessageType[ActorRef[String]]
+      adapter.path.name should include(adapterName)
+    }
+
     "not allow null messages" in {
       val actor = spawn(Behaviors.empty[Null])
       intercept[InvalidMessageException] {
         actor ! null
       }
     }
-    //
+
     //    "not have problems stopping already stopped child" in {
     //      sync(setup("ctx45", ignorePostStop = false) { (ctx, startWith) ⇒
     //        val self = ctx.self
