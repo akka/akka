@@ -2,7 +2,6 @@ package akka.testkit.typed.scaladsl
 
 //#manual-scheduling-simple
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.WordSpecLike
 
 import scala.concurrent.duration._
 

@@ -4,7 +4,6 @@
 package akka.testkit.typed.scaladsl
 
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
 import scala.concurrent.duration._
 

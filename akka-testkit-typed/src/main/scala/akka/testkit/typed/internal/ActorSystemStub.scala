@@ -9,7 +9,7 @@ import akka.actor.typed.internal.ActorRefImpl
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Dispatchers, Extension, ExtensionId, Logger, Props, Settings, Terminated }
 import akka.annotation.InternalApi
 import akka.util.Timeout
-import akka.{ actor ⇒ a, event ⇒ e }
+import akka.{ actor ⇒ a }
 import com.typesafe.config.ConfigFactory
 
 import scala.compat.java8.FutureConverters
