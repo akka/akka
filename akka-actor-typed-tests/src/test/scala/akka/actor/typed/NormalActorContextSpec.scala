@@ -143,7 +143,7 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
           Behavior.same
       } onSignal {
         case (_, Terminated(ref)) ⇒
-          probe.ref ! TerminatedRef[Command](ref.upcast[Command])
+          probe.ref ! TerminatedRef(ref.upcast[Command])
           Behavior.stopped
       }
 
@@ -177,7 +177,7 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
           Behaviors.same
       } onSignal {
         case (_, Terminated(ref)) ⇒
-          probe.ref ! TerminatedRef[Command](ref.upcast[Command])
+          probe.ref ! TerminatedRef(ref.upcast[Command])
           Behavior.stopped
       }
       val parentRef = spawn(parent)
@@ -223,22 +223,41 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       probe.expectMessage(Pong)
     }
 
-    //
-    //    "stop upon Stop" in {
-    //      sync(setup("ctx07", ignorePostStop = false) { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        val ex = new Exception("KABOOM07")
-    //        startWith
-    //          .stimulate(_ ! Ping(self), _ ⇒ Pong1).keep { subj ⇒
-    //          muteExpectedException[Exception]("KABOOM07", occurrences = 1)
-    //          subj ! Throw(ex)
-    //          ctx.watch(subj)
-    //        }.expectMulti(expectTimeout, 2) { (msgs, subj) ⇒
-    //          msgs.toSet should ===(Set(Left(Terminated(subj)(null)), Right(GotSignal(PostStop))))
-    //        }
-    //      })
-    //    }
-    //
+    "stop upon stop" in {
+      val probe = TestProbe[Event]()
+      val behavior: Behavior[Command] = Behaviors.immutablePartial[Command] {
+        case (_, Ping) ⇒
+          probe.ref ! Pong
+          Behaviors.same
+        case (_, Fail) ⇒
+          throw new RuntimeException("boom")
+      } onSignal {
+        case (_, PostStop) ⇒
+          probe.ref ! GotSignal(PostStop)
+          Behavior.same
+      }
+      val actorToWatch = spawn(behavior)
+      val watcher: ActorRef[Command] = spawn(
+        Behaviors.immutablePartial[Any] {
+          case (ctx, Ping) ⇒
+            ctx.watch(actorToWatch)
+            probe.ref ! Pong
+            Behavior.same
+        } onSignal {
+          case (_, signal) ⇒
+            probe.ref ! GotSignal(signal)
+            Behavior.same
+        }
+      )
+      actorToWatch ! Ping
+      probe.expectMessage(Pong)
+      watcher ! Ping
+      probe.expectMessage(Pong)
+      actorToWatch ! Fail
+      probe.expectMessage(GotSignal(PostStop))
+      probe.expectMessage(GotSignal(Terminated(actorToWatch)(null)))
+    }
+
     //    "not stop non-child actor" in {
     //      sync(setup("ctx08") { (ctx, startWith) ⇒
     //        val self = ctx.self
