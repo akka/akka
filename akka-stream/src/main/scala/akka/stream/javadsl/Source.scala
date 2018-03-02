@@ -12,20 +12,17 @@ import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
-import akka.stream.impl.{ LinearTraversalBuilder, SourceQueueAdapter, StreamLayout }
+import akka.stream.impl.{ LinearTraversalBuilder, SourceQueueAdapter }
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.collection.immutable.Range.Inclusive
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.OptionConverters._
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
-
-import akka.annotation.InternalApi
 
 import scala.compat.java8.FutureConverters._
 import scala.reflect.ClassTag

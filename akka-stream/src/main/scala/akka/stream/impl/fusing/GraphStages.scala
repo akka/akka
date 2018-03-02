@@ -19,10 +19,9 @@ import akka.stream.stage._
 import akka.stream.{ Shape, _ }
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.util.{ Failure, Success, Try }
+import scala.util.Try
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API

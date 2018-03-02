@@ -16,8 +16,6 @@ import akka.japi.Util
 import java.util.Comparator
 import java.util.concurrent.CompletionStage
 
-import akka.stream.impl.fusing.MapError
-
 import scala.compat.java8.FutureConverters._
 import scala.reflect.ClassTag
 

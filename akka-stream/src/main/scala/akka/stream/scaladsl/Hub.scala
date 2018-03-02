@@ -7,7 +7,7 @@ import java.util
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 
 import akka.NotUsed
-import akka.dispatch.{ AbstractNodeQueue, ExecutionContexts }
+import akka.dispatch.AbstractNodeQueue
 import akka.stream._
 import akka.stream.stage._
 import scala.annotation.tailrec

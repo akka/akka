@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
 import akka.annotation.{ ApiMayChange, InternalApi }
-import akka.dispatch.ExecutionContexts
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
 import akka.stream.actor.ActorSubscriberMessage

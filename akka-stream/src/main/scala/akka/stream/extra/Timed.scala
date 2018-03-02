@@ -11,7 +11,6 @@ import akka.stream.scaladsl.{ Flow, Source }
 import akka.stream.stage._
 
 import scala.concurrent.duration._
-import scala.language.existentials
 
 /**
  * Provides operations needed to implement the `timed` DSL

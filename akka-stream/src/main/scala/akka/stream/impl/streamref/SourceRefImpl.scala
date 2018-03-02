@@ -15,7 +15,6 @@ import akka.stream.stage._
 import akka.util.{ OptionVal, PrettyDuration }
 
 import scala.concurrent.{ Future, Promise }
-import scala.language.implicitConversions
 
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi

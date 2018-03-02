@@ -3,10 +3,9 @@
  */
 package akka.stream.impl.streamref
 
-import scala.language.implicitConversions
 import akka.Done
 import akka.NotUsed
-import akka.actor.{ ActorRef, ActorSystem, Terminated }
+import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream._

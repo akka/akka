@@ -7,7 +7,6 @@ import java.util.concurrent.CompletionStage
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.OverflowStrategies._
 import akka.stream._
 import akka.stream.stage._

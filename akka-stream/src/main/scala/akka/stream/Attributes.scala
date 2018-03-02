@@ -11,7 +11,6 @@ import scala.annotation.tailrec
 import scala.reflect.{ ClassTag, classTag }
 import akka.japi.function
 import java.net.URLEncoder
-import java.util.concurrent.TimeUnit
 
 import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder

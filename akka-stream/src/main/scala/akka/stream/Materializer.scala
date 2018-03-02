@@ -5,8 +5,6 @@ package akka.stream
 
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
-import akka.stream.ActorAttributes.Dispatcher
-import akka.stream.Attributes.InputBuffer
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration

@@ -15,12 +15,10 @@ import akka.stream.stage._
 import akka.stream.scaladsl._
 import akka.stream.actor.ActorSubscriberMessage
 
-import scala.collection.{ immutable, mutable }
+import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.annotation.tailrec
-import akka.stream.impl.PublisherSource
-import akka.stream.impl.CancellingSubscriber
 import akka.stream.impl.{ Buffer ⇒ BufferImpl }
 
 import scala.collection.JavaConverters._

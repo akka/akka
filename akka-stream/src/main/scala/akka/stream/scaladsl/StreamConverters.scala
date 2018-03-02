@@ -5,7 +5,6 @@ package akka.stream.scaladsl
 
 import java.io.{ OutputStream, InputStream }
 import java.util.Spliterators
-import java.util.concurrent.atomic.AtomicReference
 import java.util.stream.{ Collector, StreamSupport }
 
 import akka.stream.{ Attributes, SinkShape, IOResult }

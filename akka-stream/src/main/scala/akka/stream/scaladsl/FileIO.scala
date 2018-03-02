@@ -4,12 +4,12 @@
 package akka.stream.scaladsl
 
 import java.io.File
-import java.nio.file.{ OpenOption, Path, StandardOpenOption }
+import java.nio.file.{ OpenOption, Path }
 import java.nio.file.StandardOpenOption._
 
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io._
-import akka.stream.{ ActorAttributes, IOResult }
+import akka.stream.IOResult
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -20,7 +20,6 @@ import scala.concurrent.Future
 object FileIO {
 
   import Sink.{ shape ⇒ sinkShape }
-  import Source.{ shape ⇒ sourceShape }
 
   /**
    * Creates a Source from a files contents.
