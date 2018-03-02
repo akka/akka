@@ -6,10 +6,13 @@ import java.time.format.DateTimeFormatter
 import java.util
 
 import akka.actor.dungeon.ChildrenContainer
-import akka.actor.{ ActorPath, ActorRef, ActorRefProvider, ActorRefScope, ActorRefWithCell, ActorSystem, ActorSystemImpl, Cell, ChildStats, ExtendedActorSystem, InternalActorRef, Props }
+import akka.actor.{ ActorPath, ActorPathExtractor, ActorRef, ActorRefProvider, ActorRefScope, ActorRefWithCell, ActorSystem, ActorSystemImpl, Address, Cell, ChildStats, Deployer, DynamicAccess, ExtendedActorSystem, InternalActorRef, LocalActorRefProvider, Props, RootActorPath }
+import akka.annotation.InternalApi
 import akka.dispatch.Envelope
 import akka.dispatch.sysmsg.SystemMessage
+import akka.event.EventStream
 import akka.serialization.{ SerializationExtension, Serializer, SerializerWithStringManifest }
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -46,6 +49,43 @@ object SerializerTestKit {
   def apply(settings: SerializerTestKitSettings, serializer: ExtendedActorSystem ⇒ Serializer)(implicit system: ActorSystem) =
     new SerializerTestKit(settings, Some(serializer(system.asInstanceOf[ExtendedActorSystem])))
 
+  private val dummySystemAddress = Address("akka", "system", "127.0.0.1", 2551)
+
+  def systemConfig: Config = ConfigFactory.parseString(
+    """
+      akka.actor.provider = "akka.testkit.scaladsl.SerializerTestKit$StableDummyActorRefProvider"
+    """)
+
+  //FIXME: does it need to be remote actorref provider??
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  final class StableDummyActorRefProvider(
+    _systemName:   String,
+    settings:      ActorSystem.Settings,
+    eventStream:   EventStream,
+    dynamicAccess: DynamicAccess
+  ) extends LocalActorRefProvider(_systemName, settings, eventStream, dynamicAccess) {
+
+    private var system: ActorSystem = _
+    override private[akka] def init(_system: ActorSystemImpl): Unit = {
+      system = _system
+      super.init(_system)
+    }
+
+    override def resolveActorRef(path: String): ActorRef = {
+      // FIXME pick up address from system
+      val ActorPathExtractor(address, elems) = path
+      val actorPath = elems.foldLeft((RootActorPath(address)): ActorPath)((p, part) ⇒ p / part)
+      stableDummyActorRef(actorPath)(system)
+    }
+  }
+  private def actorPathOf(path: String): ActorPath = {
+    val pathParts = path.split('/')
+    pathParts.foldLeft(RootActorPath(dummySystemAddress): ActorPath)((path, part) ⇒ path / part)
+  }
+
   // minimal dummy implementation allowing for serialization like the actorref was realy but nothing else
   private final case class StableDummyActorRef(override val path: ActorPath)(implicit _system: ActorSystem) extends ActorRefWithCell with ActorRefScope {
     def system: ActorSystem = _system
@@ -70,6 +110,7 @@ object SerializerTestKit {
       def self: ActorRef = ???
       def childrenRefs: ChildrenContainer = ???
     }
+    def isLocal: Boolean = false
     def children: immutable.Iterable[ActorRef] = ???
     def getSingleChild(name: String): InternalActorRef = ???
     def start(): Unit = ???
@@ -77,17 +118,32 @@ object SerializerTestKit {
     def restart(cause: Throwable): Unit = ???
     def resume(causedByFailure: Throwable): Unit = ???
     def stop(): Unit = ???
-    def sendSystemMessage(message: SystemMessage): Unit = ???
+    def sendSystemMessage(message: SystemMessage): Unit = ()
     def provider: ActorRefProvider = ???
     def getParent: InternalActorRef = ???
     def getChild(name: Iterator[String]): InternalActorRef = ???
     private[akka] def isTerminated = ???
-    def isLocal: Boolean = ???
     def !(message: Any)(implicit sender: ActorRef): Unit = ???
 
   }
 
-  def stableDummyActorRef(path: ActorPath)(implicit system: ActorSystem): ActorRef = new StableDummyActorRef(path)
+  /**
+   * If objects to serialize contain `ActorRef`s and you want to verify serialization over time you need to use this factory
+   * to create the actor ref and make sure that the system is created with the [[systemConfig]]
+   * as config to enable a special resolution of `ActorRef`s
+   */
+  def stableDummyActorRef(path: String)(implicit system: ActorSystem): ActorRef = {
+    stableDummyActorRef(actorPathOf(path))
+  }
+
+  private def stableDummyActorRef(path: ActorPath)(implicit system: ActorSystem): ActorRef = {
+    assert(
+      system.asInstanceOf[ExtendedActorSystem].provider.isInstanceOf[StableDummyActorRefProvider],
+      "To use [stableDummyActorRef] you must create the system using the [SerializerTestKit#serializerTestKitConfig]"
+    )
+
+    new StableDummyActorRef(path)
+  }
 
 }
 

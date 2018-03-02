@@ -16,7 +16,7 @@ import akka.remote.artery.{ ActorSystemTerminating, ActorSystemTerminatingAck, Q
 import akka.testkit.AkkaSpec
 import akka.testkit.scaladsl.{ SerializerTestKit, SerializerTestKitSettings }
 
-class ArteryMessageSerializerSpec extends AkkaSpec {
+class ArteryMessageSerializerSpec extends AkkaSpec(SerializerTestKit.systemConfig) {
 
   val testKit = SerializerTestKit(
     SerializerTestKitSettings(
@@ -27,8 +27,8 @@ class ArteryMessageSerializerSpec extends AkkaSpec {
 
   "ArteryMessageSerializer" must {
     val address = Address("akka", "system", "127.0.0.1", 2551)
-    val actorA = SerializerTestKit.stableDummyActorRef(RootActorPath(address) / "user" / "actorA")
-    val actorB = SerializerTestKit.stableDummyActorRef(RootActorPath(address) / "user" / "actorB")
+    val actorA = SerializerTestKit.stableDummyActorRef("/user/actorA")
+    val actorB = SerializerTestKit.stableDummyActorRef("/user/actorB")
 
     Seq(
       "Quarantined" → Quarantined(uniqueAddress(), uniqueAddress()),
