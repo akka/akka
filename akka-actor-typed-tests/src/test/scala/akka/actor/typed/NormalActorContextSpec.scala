@@ -48,6 +48,8 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
   case class TerminatedRef[T](ref: ActorRef[T]) extends Event
 
+  case class Watch(ref: ActorRef[Command]) extends Command
+
   "An ActorContext" must {
 
     "converge in cyclic behavior" in {
@@ -289,7 +291,7 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       }
       val actor: ActorRef[Command] = spawn(
         Behaviors.immutablePartial[Command] {
-          case (_, Ping) ⇒
+          case (_, Ping)        ⇒
             probe.ref ! Pong
             Behaviors.same
           case (ctx, MakeChild) ⇒
@@ -308,24 +310,40 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       childRef ! Stop
       probe.expectMessage(GotSignal(Terminated(childRef)(null)))
     }
-    //
-    //    "watch a child actor after its termination" in {
-    //      sync(setup("ctx11") { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self).keep {
-    //          case (subj, child) ⇒
-    //            ctx.watch(child)
-    //            child ! Stop
-    //        }.expectTermination(expectTimeout) {
-    //          case (t, (subj, child)) ⇒
-    //            t should ===(Terminated(child)(null))
-    //            subj ! Watch(child, blackhole)
-    //            child
-    //        }.expectMessage(expectTimeout) { (msg, child) ⇒
-    //          msg should ===(GotSignal(Terminated(child)(null)))
-    //        }
-    //      })
-    //    }
+
+    "watch a child actor after its termination" in {
+      val probe = TestProbe[Event]()
+      val child: Behavior[Command] = Behaviors.immutablePartial {
+        case (_, Stop) ⇒
+          Behaviors.stopped
+      }
+      val actor: ActorRef[Command] = spawn(
+        Behaviors.immutablePartial[Command] {
+          case (_, Ping)         ⇒
+            probe.ref ! Pong
+            Behaviors.same
+          case (ctx, MakeChild)  ⇒
+            val childRef = ctx.spawn(child, "A")
+            probe.ref ! ChildMade(childRef)
+            Behaviors.same
+          case (ctx, Watch(ref)) ⇒
+            ctx.watch(ref)
+            Behaviors.same
+        } onSignal {
+          case (_, signal) ⇒
+            probe.ref ! GotSignal(signal)
+            Behaviors.same
+        }
+      )
+      actor ! MakeChild
+      val childRef = probe.expectMessageType[ChildMade].ref
+      actor ! Watch(childRef)
+      childRef ! Stop
+      probe.expectMessage(GotSignal(Terminated(childRef)(null)))
+      actor ! Watch(childRef)
+      probe.expectMessage(GotSignal(Terminated(childRef)(null)))
+    }
+
     //
     //    "unwatch a child actor before its termination" in {
     //      sync(setup("ctx12") { (ctx, startWith) ⇒
