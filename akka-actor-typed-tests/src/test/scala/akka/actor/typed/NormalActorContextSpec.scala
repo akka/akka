@@ -510,15 +510,18 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       actor ! Ping
       probe.expectMessage(Pong)
     }
-    //
-    //    "schedule a message" in {
-    //      sync(setup("ctx32") { (ctx, startWith) ⇒
-    //        startWith(_ ! Schedule(1.nano, ctx.self, Pong2, ctx.self))
-    //          .expectMultipleMessages(expectTimeout, 2) { (msgs, _) ⇒
-    //            msgs should ===(Scheduled :: Pong2 :: Nil)
-    //          }
-    //      })
-    //    }
+
+    "schedule a message" in {
+      val probe = TestProbe[Event]()
+      val actor = spawn(Behaviors.immutablePartial[Command] {
+        case (ctx, Ping) ⇒
+          ctx.schedule(1.nano, probe.ref, Pong)
+          Behaviors.same
+      })
+      actor ! Ping
+      probe.expectMessage(Pong)
+    }
+
     //
     //    "create a working adapter" in {
     //      sync(setup("ctx40", ignorePostStop = false) { (ctx, startWith) ⇒
