@@ -18,15 +18,15 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
   sealed trait Event
 
-  final case object Ping extends Command
+  case object Ping extends Command
 
   object Pong extends Event
 
-  final case class Renew(replyTo: ActorRef[Renewed.type]) extends Command
+  case class Renew(replyTo: ActorRef[Renewed.type]) extends Command
 
   case object Renewed extends Event
 
-  final case object Miss extends Command
+  case object Miss extends Command
 
   case object Missed extends Event
 
@@ -485,17 +485,31 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       probe.expectMessage(TimeoutSet)
       probe.expectMessage(GotReceiveTimeout)
     }
-    //
-    //    "set large receive timeout" in {
-    //      sync(setup("ctx31") { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        startWith
-    //          .stimulate(_ ! SetTimeout(1.minute, self), _ ⇒ TimeoutSet)
-    //          .stimulate(_ ⇒ ctx.schedule(1.second, self, Pong2), _ ⇒ Pong2)
-    //          .stimulate(_ ! Ping(self), _ ⇒ Pong1)
-    //
-    //      })
-    //    }
+
+    "set large receive timeout" in {
+      val probe = TestProbe[Event]()
+      val actor = spawn(Behaviors.immutablePartial[Command] {
+        case (ctx, Inert)                ⇒
+          ctx.schedule(1.second, probe.ref, InertEvent)
+          Behaviors.same
+        case (_, Ping)                   ⇒
+          probe.ref ! Pong
+          Behaviors.same
+        case (_, ReceiveTimeout)         ⇒
+          probe.ref ! GotReceiveTimeout
+          Behaviors.same
+        case (ctx, SetTimeout(duration)) ⇒
+          ctx.setReceiveTimeout(duration, ReceiveTimeout)
+          probe.ref ! TimeoutSet
+          Behaviors.same
+      })
+      actor ! SetTimeout(1.minute)
+      probe.expectMessage(TimeoutSet)
+      actor ! Inert
+      probe.expectMessage(InertEvent)
+      actor ! Ping
+      probe.expectMessage(Pong)
+    }
     //
     //    "schedule a message" in {
     //      sync(setup("ctx32") { (ctx, startWith) ⇒
