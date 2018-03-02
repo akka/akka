@@ -8,6 +8,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 
+import scala.concurrent.duration._
+
 class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   implicit private val testSettings: TestKitSettings = TestKitSettings(system)
@@ -51,6 +53,14 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
   case class Watch(ref: ActorRef[Command]) extends Command
 
   case class UnWatch(ref: ActorRef[Command]) extends Command
+
+  case object TimeoutSet extends Event
+
+  case object ReceiveTimeout extends Command
+
+  case class SetTimeout(duration: FiniteDuration) extends Command
+
+  case object GotReceiveTimeout extends Event
 
   "An ActorContext" must {
 
@@ -460,17 +470,21 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       children.head.path.name shouldBe "B"
     }
 
-    //
-    //    "set small receive timeout" in {
-    //      sync(setup("ctx30") { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        startWith
-    //          .stimulate(_ ! SetTimeout(1.nano, self), _ ⇒ TimeoutSet)
-    //          .expectMessage(expectTimeout) { (msg, _) ⇒
-    //            msg should ===(GotReceiveTimeout)
-    //          }
-    //      })
-    //    }
+    "set small receive timeout" in {
+      val probe = TestProbe[Event]()
+      val actor = spawn(Behaviors.immutablePartial[Command] {
+        case (_, ReceiveTimeout)         ⇒
+          probe.ref ! GotReceiveTimeout
+          Behaviors.same
+        case (ctx, SetTimeout(duration)) ⇒
+          ctx.setReceiveTimeout(duration, ReceiveTimeout)
+          probe.ref ! TimeoutSet
+          Behaviors.same
+      })
+      actor ! SetTimeout(1.nano)
+      probe.expectMessage(TimeoutSet)
+      probe.expectMessage(GotReceiveTimeout)
+    }
     //
     //    "set large receive timeout" in {
     //      sync(setup("ctx31") { (ctx, startWith) ⇒
