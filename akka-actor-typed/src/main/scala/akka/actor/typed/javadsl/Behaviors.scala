@@ -320,7 +320,7 @@ object Behaviors {
   /**
    * Provide a MDC ("Mapped Diagnostic Context") for logging from the actor.
    *
-   * @param mdcForMessage Is invoked before each message to setup MDC which is then attachd to each logging statement
+   * @param mdcForMessage Is invoked before each message to setup MDC which is then attached to each logging statement
    *                      done for that message through the [[ActorContext.getLog]]. After the message has been processed
    *                      the MDC is cleared.
    * @param behavior The behavior that this should be applied to.

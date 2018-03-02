@@ -444,12 +444,13 @@ object Logging {
   final val DebugLevel = LogLevel(4)
 
   /**
-   * Internal Akka use only
+   * INTERNAL API
    *
    * Don't include the OffLevel in the AllLogLevels since we should never subscribe
    * to some kind of OffEvent.
    */
-  private final val OffLevel = LogLevel(Int.MinValue)
+  @InternalApi
+  private[akka] final val OffLevel = LogLevel(Int.MinValue)
 
   /**
    * Returns the LogLevel associated with the given string,

@@ -4,12 +4,14 @@
 package akka.actor.typed
 
 import akka.actor.InvalidMessageException
+import akka.actor.typed.internal.BehaviorImpl
 
 import scala.annotation.tailrec
-import akka.util.LineNumbers
+import akka.util.{ ConstantFun, LineNumbers, OptionVal }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
-import akka.util.OptionVal
+
+import scala.reflect.ClassTag
 
 /**
  * The behavior of an actor defines how it reacts to the messages that it
@@ -33,7 +35,7 @@ import akka.util.OptionVal
  */
 @InternalApi
 @DoNotInherit
-sealed abstract class Behavior[T] {
+sealed abstract class Behavior[T] { behavior ⇒
   /**
    * Narrow the type of this Behavior, which is always a safe operation. This
    * method is necessary to implement the contravariant nature of Behavior
@@ -84,6 +86,26 @@ abstract class ExtensibleBehavior[T] extends Behavior[T] {
 }
 
 object Behavior {
+
+  final implicit class BehaviorDecorators[T](val behavior: Behavior[T]) extends AnyVal {
+    /**
+     * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
+     * PartialFunction decides which message to pull in (those that it is defined
+     * at) and may transform the incoming message to place them into the wrapped
+     * Behavior’s type hierarchy. Signals are not transformed.
+     *
+     * Example:
+     * {{{
+     * immutable[String] { (ctx, msg) => println(msg); same }.widen[Number] {
+     *   case b: BigDecimal => s"BigDecimal(&dollar;b)"
+     *   case i: BigInteger => s"BigInteger(&dollar;i)"
+     *   // drop all other kinds of Number
+     * }
+     * }}}
+     */
+    def widen[U](matcher: PartialFunction[U, T]): Behavior[U] =
+      BehaviorImpl.widened(behavior, matcher)
+  }
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -175,7 +197,7 @@ object Behavior {
   }
 
   /**
-   * INTERNAL API.
+   * INTERNAL API
    * Not placed in internal.BehaviorImpl because Behavior is sealed.
    */
   @InternalApi
@@ -185,7 +207,7 @@ object Behavior {
   /** INTERNAL API */
   @InternalApi
   private[akka] object DeferredBehavior {
-    def apply[T](factory: SAC[T] ⇒ Behavior[T]) =
+    def apply[T](factory: SAC[T] ⇒ Behavior[T]): Behavior[T] =
       new DeferredBehavior[T] {
         def apply(ctx: ActorContext[T]): Behavior[T] = factory(ctx.asScala)
         override def toString: String = s"Deferred(${LineNumbers(factory)})"
@@ -193,14 +215,14 @@ object Behavior {
   }
 
   /**
-   * INTERNAL API.
+   * INTERNAL API
    */
   private[akka] object SameBehavior extends Behavior[Nothing] {
     override def toString = "Same"
   }
 
   /**
-   * INTERNAL API.
+   * INTERNAL API
    */
   private[akka] object StoppedBehavior extends StoppedBehavior[Nothing](OptionVal.None)
 
