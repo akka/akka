@@ -23,7 +23,7 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
   object Pong extends Event
 
-  case class Renew(replyTo    : ActorRef[Renewed.type]) extends Command
+  case class Renew(replyTo: ActorRef[Renewed.type]) extends Command
 
   case object Renewed extends Event
 
@@ -49,8 +49,6 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
   case object InertEvent extends Event
 
-  case class TerminatedRef[T](ref: ActorRef[T]) extends Event
-
   case class Watch(ref: ActorRef[Command]) extends Command
 
   case class UnWatch(ref: ActorRef[Command]) extends Command
@@ -59,7 +57,7 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
   case object ReceiveTimeout extends Command
 
-  case class SetTimeout(duration      : FiniteDuration) extends Command
+  case class SetTimeout(duration: FiniteDuration) extends Command
 
   case object GotReceiveTimeout extends Event
 
@@ -157,8 +155,8 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
           ctx.stop(ref)
           Behavior.same
       } onSignal {
-        case (_, Terminated(ref)) ⇒
-          probe.ref ! TerminatedRef(ref.upcast[Command])
+        case (_, signal) ⇒
+          probe.ref ! GotSignal(signal)
           Behavior.stopped
       }
 
@@ -172,7 +170,7 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       childRef ! Ping
       probe.expectMessage(Pong)
       parentRef ! StopRef(childRef)
-      probe.expectMessage(TerminatedRef(childRef))
+      probe.expectMessage(GotSignal(Terminated(childRef)(null)))
     }
 
     "stop a child actor" in {
@@ -191,15 +189,15 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
           ctx.stop(ref)
           Behaviors.same
       } onSignal {
-        case (_, Terminated(ref)) ⇒
-          probe.ref ! TerminatedRef(ref.upcast[Command])
+        case (_, signal) ⇒
+          probe.ref ! GotSignal(signal)
           Behavior.stopped
       }
       val parentRef = spawn(parent)
       parentRef ! MakeChild
       val childRef = probe.expectMessageType[ChildMade].ref
       parentRef ! StopRef(childRef)
-      probe.expectMessage(TerminatedRef(childRef))
+      probe.expectMessage(GotSignal(Terminated(childRef)(null)))
     }
 
     "reset behavior upon restart" in {
@@ -523,27 +521,6 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       probe.expectMessage(Pong)
     }
 
-    //
-    //    "create a working adapter" in {
-    //      sync(setup("ctx40", ignorePostStop = false) { (ctx, startWith) ⇒
-    //        startWith.keep { subj ⇒
-    //          subj ! GetAdapter(ctx.self)
-    //        }.expectMessage(expectTimeout) { (msg, subj) ⇒
-    //          val Adapter(adapter) = msg
-    //          ctx.watch(adapter)
-    //          adapter ! Ping(ctx.self)
-    //          (subj, adapter)
-    //        }.expectMessage(expectTimeout) {
-    //          case (msg, (subj, adapter)) ⇒
-    //            msg should ===(Pong1)
-    //            ctx.stop(subj)
-    //            adapter
-    //        }.expectMulti(expectTimeout, 2) { (msgs, adapter) ⇒
-    //          msgs.toSet should ===(Set(Left(Terminated(adapter)(null)), Right(GotSignal(PostStop))))
-    //        }
-    //      })
-    //    }
-
     "create a named adapter" in {
       val probe = TestProbe[ActorRef[String]]()
       val actor = spawn(Behaviors.immutablePartial[String] {
@@ -564,30 +541,27 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       }
     }
 
-    //    "not have problems stopping already stopped child" in {
-    //      sync(setup("ctx45", ignorePostStop = false) { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        startWith.mkChild(Some("A"), ctx.spawnMessageAdapter(ChildEvent), self, inert = true) {
-    //          case (subj, child) ⇒
-    //            subj ! Kill(child, self)
-    //            (subj, child)
-    //        }.expectMessageKeep(expectTimeout) {
-    //          case (msg, (subj, child)) ⇒
-    //            msg should ===(Killed)
-    //            (subj, ctx.watch(child))
-    //        }.expectTermination(expectTimeout) {
-    //          case (t, (subj, child)) ⇒
-    //            t.ref should ===(child)
-    //            subj ! Kill(child, self)
-    //            child
-    //        }.expectMessage(expectTimeout) {
-    //          case (msg, _) ⇒
-    //            msg should ===(Killed)
-    //        }
-    //      })
-    //    }
-    //
-    //  }
+    "not have problems stopping already stopped child" in {
+      val probe = TestProbe[Event]()
+      val actor = spawn(
+        Behaviors.immutablePartial[Command] {
+          case (ctx, StopRef(ref)) ⇒
+            ctx.stop(ref)
+            probe.ref ! Pong
+            Behaviors.same
+          case (ctx, MakeChild)    ⇒
+            val child = ctx.spawnAnonymous(Behaviors.empty[Command])
+            probe.ref ! ChildMade(child)
+            Behaviors.same
+        }
+      )
+      actor ! MakeChild
+      val child = probe.expectMessageType[ChildMade].ref
+      actor ! StopRef(child)
+      probe.expectMessage(Pong)
+      actor ! StopRef(child)
+      probe.expectMessage(Pong)
+    }
   }
 }
 
