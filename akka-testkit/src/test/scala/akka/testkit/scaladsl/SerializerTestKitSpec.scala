@@ -79,6 +79,7 @@ class SerializerTestKitSpec extends TestKit(ActorSystem("SerializerTestKitSpec")
       val testKit = SerializerTestKit(
         SerializerTestKitSettings(
           checkBackwardBinaryCompatibility = true,
+          verifyLookedUpSerializer = false,
           backwardBinaryCompatibilityRootDir = path
         ),
         eas ⇒ new FaultySerializer(eas)
@@ -94,6 +95,7 @@ class SerializerTestKitSpec extends TestKit(ActorSystem("SerializerTestKitSpec")
       val testKit = SerializerTestKit(
         SerializerTestKitSettings(
           checkBackwardBinaryCompatibility = true,
+          verifyLookedUpSerializer = false,
           backwardBinaryCompatibilityRootDir = path
         ),
         eas ⇒ new FaultySerializer(eas)
@@ -115,6 +117,7 @@ class SerializerTestKitSpec extends TestKit(ActorSystem("SerializerTestKitSpec")
       val testKit = SerializerTestKit(
         SerializerTestKitSettings(
           checkBackwardBinaryCompatibility = true,
+          verifyLookedUpSerializer = false,
           backwardBinaryCompatibilityRootDir = path
         ),
         eas ⇒ new FaultySerializer(eas)
@@ -128,6 +131,20 @@ class SerializerTestKitSpec extends TestKit(ActorSystem("SerializerTestKitSpec")
       val oldVersions = testKit.deserializeOldVersions[ActuallySerialized]("AS", "variation1")
       oldVersions should have size (2)
       oldVersions.map(_._1.text).toSet should ===(Set("version1", "version2"))
+    }
+
+    "fail if passed in serializer is not the one the system returns" in {
+      val testKit = SerializerTestKit(
+        SerializerTestKitSettings(
+          checkBackwardBinaryCompatibility = false,
+          verifyLookedUpSerializer = true
+        ),
+        eas ⇒ new FaultySerializer(eas)
+      )
+
+      intercept[AssertionError] {
+        testKit.verify(ActuallySerialized("version1"), "variation1")
+      }
     }
 
   }
