@@ -50,6 +50,8 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
   case class Watch(ref: ActorRef[Command]) extends Command
 
+  case class UnWatch(ref: ActorRef[Command]) extends Command
+
   "An ActorContext" must {
 
     "converge in cyclic behavior" in {
@@ -291,9 +293,6 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       }
       val actor: ActorRef[Command] = spawn(
         Behaviors.immutablePartial[Command] {
-          case (_, Ping)        ⇒
-            probe.ref ! Pong
-            Behaviors.same
           case (ctx, MakeChild) ⇒
             val childRef = ctx.spawn(child, "A")
             ctx.watch(childRef)
@@ -319,15 +318,13 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       }
       val actor: ActorRef[Command] = spawn(
         Behaviors.immutablePartial[Command] {
-          case (_, Ping)         ⇒
-            probe.ref ! Pong
-            Behaviors.same
           case (ctx, MakeChild)  ⇒
             val childRef = ctx.spawn(child, "A")
             probe.ref ! ChildMade(childRef)
             Behaviors.same
           case (ctx, Watch(ref)) ⇒
             ctx.watch(ref)
+            probe.ref ! Pong
             Behaviors.same
         } onSignal {
           case (_, signal) ⇒
@@ -338,34 +335,52 @@ class NormalActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       actor ! MakeChild
       val childRef = probe.expectMessageType[ChildMade].ref
       actor ! Watch(childRef)
+      probe.expectMessage(Pong)
       childRef ! Stop
       probe.expectMessage(GotSignal(Terminated(childRef)(null)))
       actor ! Watch(childRef)
+      probe.expectMessage(Pong)
       probe.expectMessage(GotSignal(Terminated(childRef)(null)))
     }
 
-    //
-    //    "unwatch a child actor before its termination" in {
-    //      sync(setup("ctx12") { (ctx, startWith) ⇒
-    //        val self = ctx.self
-    //        startWith.mkChild(None, ctx.spawnMessageAdapter(ChildEvent), self).keep {
-    //          case (subj, child) ⇒
-    //            subj ! Watch(child, self)
-    //        }.expectMessageKeep(expectTimeout) {
-    //          case (msg, (subj, child)) ⇒
-    //            msg should ===(Watched)
-    //            subj ! Unwatch(child, self)
-    //        }.expectMessage(expectTimeout) {
-    //          case (msg, (subj, child)) ⇒
-    //            msg should ===(Unwatched)
-    //            ctx.watch(child)
-    //            child ! Stop
-    //            child
-    //        }.expectTermination(expectTimeout) { (t, child) ⇒
-    //          t should ===(Terminated(child)(null))
-    //        }
-    //      })
-    //    }
+    "unwatch a child actor before its termination" in {
+      val probe = TestProbe[Event]()
+      val child: Behavior[Command] = Behaviors.immutablePartial {
+        case (_, Stop) ⇒
+          Behaviors.stopped
+      }
+      val actor: ActorRef[Command] = spawn(
+        Behaviors.immutablePartial[Command] {
+          case (ctx, MakeChild)    ⇒
+            val childRef = ctx.spawn(child, "A")
+            probe.ref ! ChildMade(childRef)
+            Behaviors.same
+          case (ctx, Watch(ref))   ⇒
+            ctx.watch(ref)
+            probe.ref ! Pong
+            Behaviors.same
+          case (ctx, UnWatch(ref)) ⇒
+            ctx.unwatch(ref)
+            probe.ref ! Pong
+            Behaviors.same
+        } onSignal {
+          case (_, signal) ⇒
+            probe.ref ! GotSignal(signal)
+            Behaviors.same
+        }
+      )
+      actor ! MakeChild
+      val childRef = probe.expectMessageType[ChildMade].ref
+      actor ! Watch(childRef)
+      probe.expectMessage(Pong)
+      actor ! UnWatch(childRef)
+      probe.expectMessage(Pong)
+      actor ! Watch(childRef)
+      probe.expectMessage(Pong)
+      childRef ! Stop
+      probe.expectMessage(GotSignal(Terminated(childRef)(null)))
+    }
+
     //
     //    "terminate upon not handling Terminated" in {
     //      sync(setup("ctx13", ignorePostStop = false) { (ctx, startWith) ⇒
