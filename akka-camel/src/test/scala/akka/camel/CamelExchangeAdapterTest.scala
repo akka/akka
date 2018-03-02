@@ -10,7 +10,6 @@ import org.apache.camel.impl.DefaultExchange
 import org.apache.camel.{ Exchange, ExchangePattern }
 import org.scalatest.FunSuite
 
-
 class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem {
 
   test("mustSetInMessageFromRequestMessage") {
