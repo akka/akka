@@ -4,7 +4,6 @@
 package akka.actor.typed
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.Behaviors.BehaviorDecorators
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl._
 
