@@ -33,10 +33,4 @@ public abstract class RecipeTest extends AbstractJavaTest {
       return msg != null ? msg.hashCode() : 0;
     }
   }
-
-  final class Trigger {
-  }
-
-  final class Job {
-  }
 }
