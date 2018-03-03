@@ -1,17 +1,9 @@
 package akka.cluster.sharding
 
-import akka.cluster.sharding.ShardRegion.EntityId
 import akka.testkit.AkkaSpec
-
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
-import akka.testkit.TimingTest
-
-import scala.concurrent.duration.Duration.DurationIsOrdered
 
 class ConstantRateEntityRecoveryStrategySpec extends AkkaSpec {
 
-  import system.dispatcher
   /*
   val strategy = EntityRecoveryStrategy.constantStrategy(system, 1.second, 2)
   "ConstantRateEntityRecoveryStrategy" must {

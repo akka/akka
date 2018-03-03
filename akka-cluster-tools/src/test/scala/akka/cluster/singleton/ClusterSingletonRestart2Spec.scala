@@ -12,7 +12,6 @@ import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.UniqueAddress
-import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory

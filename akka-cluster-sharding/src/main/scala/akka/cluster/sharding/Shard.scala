@@ -22,7 +22,6 @@ import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.ORSetKey
 import akka.cluster.ddata.Replicator._
 import akka.actor.Stash
-import akka.cluster.ddata.DistributedData
 import akka.persistence.PersistentActor
 import akka.persistence.SnapshotOffer
 import akka.persistence.SaveSnapshotSuccess
@@ -369,7 +368,6 @@ private[akka] class RememberEntityStarter(
   requestor: ActorRef) extends Actor with ActorLogging {
 
   import context.dispatcher
-  import scala.concurrent.duration._
   import RememberEntityStarter.Tick
 
   var waitingForAck = ids
@@ -486,7 +484,6 @@ private[akka] class PersistentShard(
   typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage)
   with RememberingShard with PersistentActor with ActorLogging {
 
-  import ShardRegion.{ EntityId, Msg }
   import Shard._
   import settings.tuningParameters._
 
@@ -582,7 +579,7 @@ private[akka] class DDataShard(
   typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage)
   with RememberingShard with Stash with ActorLogging {
 
-  import ShardRegion.{ EntityId, Msg }
+  import ShardRegion.EntityId
   import Shard._
   import settings.tuningParameters._
 

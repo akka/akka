@@ -1,8 +1,5 @@
 package akka.cluster.sharding
 
-import scala.concurrent.duration._
-import scala.language.postfixOps
-
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.testkit.AkkaSpec
 

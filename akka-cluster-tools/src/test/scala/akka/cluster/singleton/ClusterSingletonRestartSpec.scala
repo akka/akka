@@ -8,7 +8,6 @@ import akka.actor.ActorSystem
 import akka.actor.PoisonPill
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
-import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
