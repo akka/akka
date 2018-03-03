@@ -12,53 +12,56 @@ import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 
 import scala.concurrent.duration._
 
-sealed trait Command
+trait ActorSpecMessages {
 
-sealed trait Event
+  sealed trait Command
 
-case object Ping extends Command
+  sealed trait Event
 
-object Pong extends Event
+  case object Ping extends Command
 
-case class Renew(replyTo: ActorRef[Renewed.type]) extends Command
+  object Pong extends Event
 
-case object Renewed extends Event
+  case class Renew(replyTo: ActorRef[Renewed.type]) extends Command
 
-case object Miss extends Command
+  case object Renewed extends Event
 
-case object Missed extends Event
+  case object Miss extends Command
 
-case object Fail extends Command
+  case object Missed extends Event
 
-case object Stop extends Command
+  case object Fail extends Command
 
-case class StopRef[T](ref: ActorRef[T]) extends Command
+  case object Stop extends Command
 
-case class GotSignal(signal: Signal) extends Event
+  case class StopRef[T](ref: ActorRef[T]) extends Command
 
-case class GotChildSignal(signal: Signal) extends Event
+  case class GotSignal(signal: Signal) extends Event
 
-case object MakeChild extends Command
+  case class GotChildSignal(signal: Signal) extends Event
 
-case class ChildMade(ref: ActorRef[Command]) extends Event
+  case object MakeChild extends Command
 
-case object Inert extends Command
+  case class ChildMade(ref: ActorRef[Command]) extends Event
 
-case object InertEvent extends Event
+  case object Inert extends Command
 
-case class Watch(ref: ActorRef[Command]) extends Command
+  case object InertEvent extends Event
 
-case class UnWatch(ref: ActorRef[Command]) extends Command
+  case class Watch(ref: ActorRef[Command]) extends Command
 
-case object TimeoutSet extends Event
+  case class UnWatch(ref: ActorRef[Command]) extends Command
 
-case object ReceiveTimeout extends Command
+  case object TimeoutSet extends Event
 
-case class SetTimeout(duration: FiniteDuration) extends Command
+  case object ReceiveTimeout extends Command
 
-case object GotReceiveTimeout extends Event
+  case class SetTimeout(duration: FiniteDuration) extends Command
 
-abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+  case object GotReceiveTimeout extends Event
+}
+
+abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with ActorSpecMessages {
 
   def decoration[T]: Behavior[T] ⇒ Behavior[T]
 
