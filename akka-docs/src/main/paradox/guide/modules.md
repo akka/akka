@@ -130,7 +130,7 @@ Persistence tackles the following challenges:
 * How to restore the state of an entity/actor when system restarts or crashes.
 * How to implement a [CQRS system](https://msdn.microsoft.com/en-us/library/jj591573.aspx).
 * How to ensure reliable delivery of messages in face of network errors and system crashes.
-* How to introspect domain events that have lead an entity to its current state.
+* How to introspect domain events that have led an entity to its current state.
 * How to leverage [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) in your application to support long-running processes while the project continues to evolve.
 
 ### Distributed Data
