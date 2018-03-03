@@ -5,7 +5,6 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-import scala.util.{ Failure, Success, Try }
 
 import akka.AkkaException
 import akka.dispatch.{ Envelope, Mailbox }

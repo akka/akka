@@ -5,7 +5,6 @@ package akka.actor
 
 import scala.concurrent.duration.FiniteDuration
 import akka.annotation.DoNotInherit
-import akka.dispatch.Envelope
 import akka.util.OptionVal
 
 /**

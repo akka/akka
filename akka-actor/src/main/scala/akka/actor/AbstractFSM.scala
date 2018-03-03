@@ -4,8 +4,6 @@
 
 package akka.actor
 
-import akka.annotation.ApiMayChange
-
 import scala.concurrent.duration.FiniteDuration
 
 /**
