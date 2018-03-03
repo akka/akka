@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 class RecipeManualTrigger extends RecipeSpec {
 
   "Recipe for triggering a stream manually" must {
+    type Trigger = Unit
 
     "work" in {
 
@@ -31,17 +32,17 @@ class RecipeManualTrigger extends RecipeSpec {
       graph.run()
 
       sub.expectSubscription().request(1000)
-      sub.expectNoMsg(100.millis)
+      sub.expectNoMessage(100.millis)
 
       pub.sendNext(())
       sub.expectNext("1")
-      sub.expectNoMsg(100.millis)
+      sub.expectNoMessage(100.millis)
 
       pub.sendNext(())
       pub.sendNext(())
       sub.expectNext("2")
       sub.expectNext("3")
-      sub.expectNoMsg(100.millis)
+      sub.expectNoMessage(100.millis)
 
       pub.sendNext(())
       sub.expectNext("4")
@@ -71,17 +72,17 @@ class RecipeManualTrigger extends RecipeSpec {
       graph.run()
 
       sub.expectSubscription().request(1000)
-      sub.expectNoMsg(100.millis)
+      sub.expectNoMessage(100.millis)
 
       pub.sendNext(())
       sub.expectNext("1")
-      sub.expectNoMsg(100.millis)
+      sub.expectNoMessage(100.millis)
 
       pub.sendNext(())
       pub.sendNext(())
       sub.expectNext("2")
       sub.expectNext("3")
-      sub.expectNoMsg(100.millis)
+      sub.expectNoMessage(100.millis)
 
       pub.sendNext(())
       sub.expectNext("4")

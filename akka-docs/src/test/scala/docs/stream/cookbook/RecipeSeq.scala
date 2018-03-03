@@ -5,8 +5,6 @@ package docs.stream.cookbook
 
 import akka.stream.scaladsl._
 import scala.concurrent.Future
-import org.scalatest.concurrent.ScalaFutures
-import scala.concurrent.duration._
 
 class RecipeSeq extends RecipeSpec {
 
