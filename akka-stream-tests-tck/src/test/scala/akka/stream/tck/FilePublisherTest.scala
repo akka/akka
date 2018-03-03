@@ -7,7 +7,6 @@ import java.nio.file.Files
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.stream.scaladsl.{ Sink, FileIO }
-import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.{ EventFilter, TestEvent }
 import akka.util.ByteString
