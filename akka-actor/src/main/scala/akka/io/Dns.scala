@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.io
 
 import java.net.{ Inet4Address, Inet6Address, InetAddress, UnknownHostException }
