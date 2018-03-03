@@ -3,6 +3,7 @@
    contributed by Julien Gaugaz
    inspired by the version contributed by Yura Taras and modified by Isaac Gouy
 */
+
 package akka.actor
 
 object Chameneos {

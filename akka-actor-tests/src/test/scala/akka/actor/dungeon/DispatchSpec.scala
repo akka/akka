@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.dungeon
 
 import java.io.NotSerializableException
