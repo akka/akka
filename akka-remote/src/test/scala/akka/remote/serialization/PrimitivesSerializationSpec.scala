@@ -5,7 +5,6 @@ package akka.remote.serialization
 
 import java.nio.ByteBuffer
 
-import akka.actor.{ ActorIdentity, ExtendedActorSystem, Identify }
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
@@ -13,7 +12,6 @@ import com.typesafe.config.ConfigFactory
 
 import scala.util.Random
 import java.nio.ByteOrder
-import akka.serialization.Serialization
 import akka.serialization.ByteBufferSerializer
 import akka.serialization.Serializer
 

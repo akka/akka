@@ -6,14 +6,10 @@ package akka.remote.artery.compress
 
 import com.typesafe.config.ConfigFactory
 import akka.actor._
-import akka.pattern.ask
 import akka.remote.artery.compress.CompressionProtocol.Events
 import akka.testkit._
-import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
@@ -46,7 +42,6 @@ object CompressionIntegrationSpec {
 
 class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrationSpec.commonConfig)
   with ImplicitSender {
-  import CompressionIntegrationSpec._
 
   val systemB = newRemoteSystem(name = Some("systemB"))
   val messagesToExchange = 10

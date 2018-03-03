@@ -4,9 +4,8 @@
 package akka.remote.artery.compress
 
 import java.util.Objects
-import java.util.concurrent.atomic.AtomicReference
 
-import scala.annotation.{ switch, tailrec }
+import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
 /**

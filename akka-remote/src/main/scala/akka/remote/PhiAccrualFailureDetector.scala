@@ -4,7 +4,6 @@
 package akka.remote
 
 import akka.event.Logging.Warning
-import akka.event.jul.Logger
 import akka.remote.FailureDetector.Clock
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec

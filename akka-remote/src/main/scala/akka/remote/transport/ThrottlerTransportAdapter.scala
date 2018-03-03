@@ -24,7 +24,6 @@ import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
 import akka.dispatch.sysmsg.{ Unwatch, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.event.LoggingAdapter
 import akka.remote.RARP
 
 class ThrottlerProvider extends TransportAdapterProvider {

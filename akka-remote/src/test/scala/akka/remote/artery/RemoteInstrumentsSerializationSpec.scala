@@ -6,7 +6,7 @@ package akka.remote.artery
 import akka.actor.{ ActorRef, ActorSystem, ExtendedActorSystem, InternalActorRef }
 import akka.event._
 import akka.testkit.TestEvent.Mute
-import akka.testkit.{ AkkaSpec, EventFilter, TestEvent, TestProbe }
+import akka.testkit.{ AkkaSpec, EventFilter, TestProbe }
 import akka.util.OptionVal
 import java.nio.{ ByteBuffer, CharBuffer }
 import java.nio.charset.Charset

@@ -3,7 +3,6 @@
  */
 package akka.remote
 
-import akka.ConfigurationException
 import akka.actor._
 import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }

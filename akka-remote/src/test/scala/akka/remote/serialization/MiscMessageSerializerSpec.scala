@@ -5,7 +5,7 @@
 package akka.remote.serialization
 
 import akka.actor._
-import akka.remote.{ RemoteScope, RemoteWatcher, UniqueAddress }
+import akka.remote.{ RemoteScope, RemoteWatcher }
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
@@ -16,7 +16,6 @@ import java.util.Optional
 import java.io.NotSerializableException
 
 import akka.Done
-import akka.remote.ArteryControlFormats.UniqueAddress
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing._
 
