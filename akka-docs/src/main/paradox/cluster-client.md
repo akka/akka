@@ -30,7 +30,7 @@ You can send messages via the @unidoc[ClusterClient] to any actor in the cluster
 in the @unidoc[DistributedPubSubMediator] used by the @unidoc[akka.cluster.client.ClusterReceptionist].
 The @unidoc[ClusterClientReceptionist] provides methods for registration of actors that
 should be reachable from the client. Messages are wrapped in `ClusterClient.Send`,
-@scala[@scaladoc[`ClusterClient.SendToAll`](akka.cluster.client.ClusterClient$)]@java[`ClusterClient.SendToAll`] or @scala[@scaladoc[`ClusterClient.Publish`](akka.cluster.client.ClusterClient$)]@java[`ClusterClient.Publish`].
+@scala[@scaladoc[`ClusterClient.SendToAll`](akka.cluster.client.ClusterClient$)]@java[@javadoc[`ClusterClient.SendToAll`](akka.cluster.client.ClusterClient)] or @scala[@scaladoc[`ClusterClient.Publish`](akka.cluster.client.ClusterClient$)]@java[@javadoc[`ClusterClient.Publish`](akka.cluster.client.ClusterClient)].
 
 Both the @unidoc[ClusterClient] and the @unidoc[ClusterClientReceptionist] emit events that can be subscribed to.
 The @unidoc[ClusterClient] sends out notifications in relation to having received a list of contact points
