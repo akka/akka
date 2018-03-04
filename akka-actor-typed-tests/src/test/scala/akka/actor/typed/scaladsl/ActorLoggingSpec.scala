@@ -48,13 +48,16 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
     "pass markers to the log" in {
       EventFilter.custom({
         case event: LogEventWithMarker if event.marker == marker ⇒ true
-      }, occurrences = 5).intercept(
+      }, occurrences = 9).intercept(
         spawn(Behaviors.setup[Any] { ctx ⇒
           ctx.log.debug(marker, "whatever")
           ctx.log.info(marker, "whatever")
           ctx.log.warning(marker, "whatever")
           ctx.log.error(marker, "whatever")
           ctx.log.error(marker, cause, "whatever")
+          Logging.AllLogLevels.foreach(level ⇒ {
+            ctx.log.log(level, marker, "whatever")
+          })
           Behaviors.stopped
         })
       )
