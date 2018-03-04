@@ -78,7 +78,7 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
 
       EventFilter.custom({
         case _ ⇒ true // any is fine, we're just after the right count of statements reaching the listener
-      }, occurrences = 96).intercept {
+      }, occurrences = 120).intercept {
         spawn(Behaviors.setup[String] { ctx ⇒
           ctx.log.debug("message")
           ctx.log.debug("{}", "arg1")
@@ -165,6 +165,13 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
             ctx.log.log(level, "{} {} {}", "arg1", "arg2", "arg3")
             ctx.log.log(level, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
             ctx.log.log(level, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+
+            ctx.log.log(level, marker, "message")
+            ctx.log.log(level, marker, "{}", "arg1")
+            ctx.log.log(level, marker, "{} {}", "arg1", "arg2")
+            ctx.log.log(level, marker, "{} {} {}", "arg1", "arg2", "arg3")
+            ctx.log.log(level, marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+            ctx.log.log(level, marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
           })
 
           Behaviors.stopped
