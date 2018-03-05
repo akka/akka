@@ -82,6 +82,7 @@ object Dependencies {
       val commonsIo = "commons-io" % "commons-io" % "2.5" % "test" // ApacheV2
       val commonsCodec = "commons-codec" % "commons-codec" % "1.10" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
+      val junitInterface = "com.novocode" % "junit-interface" % "0.11" % "test" // BSD 2-clause
       val logback = "ch.qos.logback" % "logback-classic" % "1.2.3" % "test" // EPL 1.0 / LGPL 2.1
       val mockito = "org.mockito" % "mockito-core" % "2.7.16" % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
@@ -155,6 +156,8 @@ object Dependencies {
   val agent = l ++= Seq(scalaStm.value, Test.scalatest.value, Test.junit)
 
   val persistence = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Test.scalatest.value, Test.junit, Test.commonsIo, Test.commonsCodec, Test.scalaXml)
+
+  val persistenceTyped = l ++= Seq(Test.junitInterface)
 
   val persistenceQuery = l ++= Seq(Test.scalatest.value, Test.junit, Test.commonsIo)
 
