@@ -5,7 +5,7 @@
 package akka.remote.serialization
 
 import akka.actor._
-import akka.remote.{ RemoteScope, RemoteWatcher, UniqueAddress }
+import akka.remote.{ RemoteScope, RemoteWatcher }
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
@@ -15,8 +15,7 @@ import scala.concurrent.duration._
 import java.util.Optional
 import java.io.NotSerializableException
 
-import akka.Done
-import akka.remote.ArteryControlFormats.UniqueAddress
+import akka.{ Done, NotUsed }
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing._
 
@@ -88,6 +87,7 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "RemoteWatcher.Heartbeat" → RemoteWatcher.Heartbeat,
       "RemoteWatcher.HertbeatRsp" → RemoteWatcher.HeartbeatRsp(65537),
       "Done" → Done,
+      "NotUsed" → NotUsed,
       "Address" → Address("akka", "system", "host", 1337),
       "UniqueAddress" → akka.remote.UniqueAddress(Address("akka", "system", "host", 1337), 82751),
       "LocalScope" → LocalScope,

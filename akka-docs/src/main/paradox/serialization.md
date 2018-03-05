@@ -55,6 +55,7 @@ You can enable them one by one adding by adding their bindings to the misc seria
 ```
 akka.actor.serialization-bindings {
     "akka.Done"                 = akka-misc
+    "akka.NotUsed"              = akka-misc
     "akka.actor.Address"        = akka-misc
     "akka.remote.UniqueAddress" = akka-misc
 }
