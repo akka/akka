@@ -12,9 +12,11 @@ The basic unit of data exchange in the WebSocket protocol is a message. A messag
 i.e. a sequence of octets or a text message, i.e. a sequence of Unicode code points.
 
 In the data model the two kinds of messages, binary and text messages, are represented by the two classes
-@unidoc[BinaryMessage] and @unidoc[TextMessage] deriving from a common superclass @unidoc[Message].
+@unidoc[BinaryMessage] and @unidoc[TextMessage] deriving from a common superclass
+@scala[@scaladoc[Message](akka.http.scaladsl.model.ws.Message)]@java[@javadoc[Message](akka.http.javadsl.model.ws.Message)].
 @scala[The subclasses @unidoc[BinaryMessage] and @unidoc[TextMessage] contain methods to access the data.]
-@java[The superclass @unidoc[Message] contains `isText` and `isBinary` methods to distinguish a message and `asBinaryMessage` and `asTextMessage` methods to cast a message.]
+@java[The superclass @javadoc[Message](akka.http.javadsl.model.ws.Message)]
+contains `isText` and `isBinary` methods to distinguish a message and `asBinaryMessage` and `asTextMessage` methods to cast a message.]
 Take the API of @unidoc[TextMessage] as an example (@unidoc[BinaryMessage] is very similar with `String` replaced by @unidoc[akka.util.ByteString]):
 
 Scala

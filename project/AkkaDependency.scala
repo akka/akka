@@ -14,7 +14,7 @@ object AkkaDependency {
   // else if akka version is "default", then the hard coded default will be used (jenkins doesn't allow empty values for config axis)
   // else if akka.version is anything else, then the given version will be used
 
-  val defaultAkkaVersion = "2.5.9"
+  val defaultAkkaVersion = "2.5.11"
   val akkaVersion = {
     val res = System.getProperty("akka.build.version", defaultAkkaVersion)
     if (res == "default") defaultAkkaVersion

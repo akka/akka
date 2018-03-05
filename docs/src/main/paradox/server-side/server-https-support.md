@@ -116,7 +116,7 @@ Java
 ## Mutual authentication
 
 To require clients to authenticate themselves when connecting, pass in @scala[`Some(TLSClientAuth.Need)`]@java[`Optional.of(TLSClientAuth.need)`] as the `clientAuth` parameter of the
-@scala[@scaladoc[@unidoc[HttpsConnectionContext]](akka.http.scaladsl.HttpsConnectionContext)]@java[@javadoc[@unidoc[HttpsConnectionContext]](akka.http.javadsl.HttpsConnectionContext)]
+@unidoc[HttpsConnectionContext]
 and make sure the truststore is populated accordingly. For further (custom) certificate checks you can use the
 @scala[@scaladoc[`Tls-Session-Info`](akka.http.scaladsl.model.headers.Tls$minusSession$minusInfo)]@java[@javadoc[`TlsSessionInfo`](akka.http.javadsl.model.headers.TlsSessionInfo)] synthetic header.
 
