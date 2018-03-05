@@ -1,0 +1,3 @@
+# Internal API changes
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.util.JavaDurationConverters#JavaDurationOps.asScala")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.util.JavaDurationConverters#JavaDurationOps.asScala$extension")
