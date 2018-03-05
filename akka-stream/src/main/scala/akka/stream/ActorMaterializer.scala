@@ -261,7 +261,7 @@ object ActorMaterializerSettings {
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
       outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, 1000, IOSettings(tcpWriteBufferSize = 16 * 1024),
       StreamRefSettings(config.getConfig("akka.stream.materializer.stream-ref")),
-      config.getString("akka.stream.materializer.blocking-io-dispatcher")
+      config.getString(ActorAttributes.IODispatcher.dispatcher)
     )
   }
 
@@ -313,7 +313,7 @@ object ActorMaterializerSettings {
       initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
       outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, 1000, IOSettings(tcpWriteBufferSize = 16 * 1024),
       StreamRefSettings(config.getConfig("akka.stream.materializer.stream-ref")),
-      config.getString("akka.stream.materializer.blocking-io-dispatcher"))
+      config.getString(ActorAttributes.IODispatcher.dispatcher))
   }
 
   /**
@@ -383,7 +383,7 @@ final class ActorMaterializerSettings @InternalApi private (
     this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
       outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit, ioSettings,
       StreamRefSettings(ConfigFactory.defaultReference().getConfig("akka.stream.materializer.stream-ref")),
-      ConfigFactory.defaultReference().getString("akka.stream.materializer.blocking-io-dispatcher")
+      ConfigFactory.defaultReference().getString(ActorAttributes.IODispatcher.dispatcher)
     )
 
   // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
@@ -404,7 +404,7 @@ final class ActorMaterializerSettings @InternalApi private (
     this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
       outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, syncProcessingLimit,
       IOSettings(tcpWriteBufferSize = 16 * 1024), StreamRefSettings(ConfigFactory.defaultReference().getConfig("akka.stream.materializer.stream-ref")),
-      ConfigFactory.defaultReference().getString("akka.stream.materializer.blocking-io-dispatcher")
+      ConfigFactory.defaultReference().getString(ActorAttributes.IODispatcher.dispatcher)
     )
 
   // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
@@ -424,7 +424,7 @@ final class ActorMaterializerSettings @InternalApi private (
     this(initialInputBufferSize, maxInputBufferSize, dispatcher, supervisionDecider, subscriptionTimeoutSettings, debugLogging,
       outputBurstLimit, fuzzingMode, autoFusing, maxFixedBufferSize, 1000, IOSettings(tcpWriteBufferSize = 16 * 1024),
       StreamRefSettings(ConfigFactory.defaultReference().getConfig("akka.stream.materializer.stream-ref")),
-      ConfigFactory.defaultReference().getString("akka.stream.materializer.blocking-io-dispatcher")
+      ConfigFactory.defaultReference().getString(ActorAttributes.IODispatcher.dispatcher)
     )
 
   private def copy(
