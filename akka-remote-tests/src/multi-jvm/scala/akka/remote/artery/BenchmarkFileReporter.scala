@@ -41,7 +41,7 @@ object BenchmarkFileReporter {
         Try("git describe".!!.trim).getOrElse("[unknown]")
       }
       val testResultFile: File = {
-        val timestamp = formatter.format(LocalDateTime.ofInstant(Instant.now(), ZoneId.systemDefault()));
+        val timestamp = formatter.format(LocalDateTime.ofInstant(Instant.now(), ZoneId.systemDefault()))
         val fileName = s"$timestamp-Artery-$testName-$gitCommit-results.txt"
         new File(targetDirectory, fileName)
       }

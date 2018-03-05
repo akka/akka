@@ -1,8 +1,8 @@
-package akka;
+package akka
 
 import akka.actor._
 import org.scalatest.Matchers
-import org.scalatest.WordSpec;
+import org.scalatest.WordSpec
 
 /**
  * A spec that verified that the AkkaException has at least a single argument constructor of type String.

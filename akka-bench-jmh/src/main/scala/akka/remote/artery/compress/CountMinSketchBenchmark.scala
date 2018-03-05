@@ -40,7 +40,7 @@ class CountMinSketchBenchmark {
   @Benchmark
   @OperationsPerInvocation(8192)
   def updateRandomNumbers(blackhole: Blackhole): Unit = {
-    var i: Int = 0;
+    var i: Int = 0
     while (i < 8192) {
       blackhole.consume(countMinSketch.addObjectAndEstimateCount(preallocateIds(i), preallocateValues(i)))
       i += 1
