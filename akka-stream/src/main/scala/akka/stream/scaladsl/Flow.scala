@@ -21,6 +21,7 @@ import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.DoNotInherit
+import akka.stream.impl.Timers.KeepAliveFromBuffer
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -1982,6 +1983,30 @@ trait FlowOps[+Out, +Mat] {
    */
   def keepAlive[U >: Out](maxIdle: FiniteDuration, injectedElem: () ⇒ U): Repr[U] =
     via(new Timers.IdleInject[Out, U](maxIdle, injectedElem))
+
+  /**
+   * Sends elements from buffer if upstream does not emit for a configured amount of time. In other words, this
+   * stage attempts to maintains a base rate of emitted elements towards the downstream using elements from upstream.
+   *
+   * If upstream emits new elements until the accumulated elements in the buffer exceed the specified minimum size
+   * used as the keep alive elements, then the base rate is no longer maintained until we reach another period without
+   * elements form upstream.
+   *
+   * The keep alive period is the size times the interval.
+   *
+   * '''Emits when''' upstream emits an element or if the upstream was idle for the configured period
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @see [[keepAlive]]
+   * @see [[expand]]
+   */
+  def keepAliveFromBuffer[U >: Out](size: Int, interval: FiniteDuration, extrapolate: U ⇒ List[U]): Repr[U] =
+    via(KeepAliveFromBuffer[U](size, interval, extrapolate))
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate

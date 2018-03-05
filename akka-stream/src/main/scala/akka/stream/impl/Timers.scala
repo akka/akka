@@ -11,6 +11,7 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
@@ -267,6 +268,58 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
     override def toString = "IdleTimer"
 
+  }
+
+  final case class KeepAliveFromBuffer[T](size: Int, interval: FiniteDuration, extrapolate: T ⇒ Seq[T])
+    extends GraphStage[FlowShape[T, T]] {
+
+    require(size > 0, "The buffer size must be greater than 0.")
+
+    val in = Inlet[T]("KeepAliveFromBuffer.in")
+    val out = Outlet[T]("KeepAliveFromBuffer.out")
+
+    override val shape = FlowShape(in, out)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+
+        private val buffer = new java.util.ArrayDeque[T](size)
+
+        override def preStart(): Unit = {
+          schedulePeriodically(None, interval)
+          pull(in)
+        }
+
+        override def onPush(): Unit = {
+          val elem = grab(in)
+          if (buffer.size() < size) buffer.addAll(extrapolate(elem).asJava)
+          else buffer.addLast(elem)
+
+          if (isAvailable(out)) push(out, buffer.removeFirst())
+          else pull(in)
+        }
+
+        override def onPull(): Unit = {
+          if (isClosed(in)) {
+            if (buffer.isEmpty) completeStage()
+            else push(out, buffer.removeFirst())
+          } else if (buffer.size() > size) {
+            push(out, buffer.removeFirst())
+          } else if (!hasBeenPulled(in)) {
+            pull(in)
+          }
+        }
+
+        override def onTimer(timerKey: Any) = {
+          if (!buffer.isEmpty) push(out, buffer.removeFirst())
+        }
+
+        override def onUpstreamFinish(): Unit = {
+          if (buffer.isEmpty) completeStage()
+        }
+
+        setHandlers(in, out, this)
+      }
   }
 
   case object GraphStageLogicTimer
