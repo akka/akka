@@ -2,9 +2,8 @@ package docs.stream.cookbook
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 
-import akka.stream.scaladsl.{ Keep, Sink, Source }
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ Graph, SourceShape }
 import akka.testkit.TimingTest
 import akka.{ Done, NotUsed }
 

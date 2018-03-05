@@ -3,7 +3,6 @@ package docs.stream.cookbook
 import akka.NotUsed
 import akka.stream.FlowShape
 import akka.stream.scaladsl._
-import akka.testkit.TestProbe
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
