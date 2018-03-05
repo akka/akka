@@ -71,3 +71,6 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.model.Mu
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage.getHeaders")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.getHeaders")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.headers")
+
+# HttpExt constructor should only be called from Http extension
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.HttpExt.this")

@@ -9,6 +9,7 @@ import java.util.concurrent.CompletionStage
 import javax.net.ssl._
 
 import akka.actor._
+import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.{ Logging, LoggingAdapter }
@@ -41,7 +42,13 @@ import scala.util.control.NonFatal
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
-class HttpExt(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension
+/**
+ * Akka extension for HTTP which serves as the main entry point into akka-http.
+ *
+ * Use as `Http().bindAndHandle` etc. with an implicit [[ActorSystem]] in scope.
+ */
+@DoNotInherit
+class HttpExt private[http] (private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
 
   akka.http.Version.check(system.settings.config)
@@ -315,7 +322,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   // ** CLIENT ** //
 
-  private[this] val poolMasterActorRef = system.actorOf(PoolMasterActor.props, "pool-master")
+  private[this] val poolMasterActorRef = system.systemActorOf(PoolMasterActor.props, "pool-master")
   private[this] val systemMaterializer = ActorMaterializer()
 
   /**

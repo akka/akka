@@ -177,6 +177,7 @@ lazy val httpTests = project("akka-http-tests")
   .settings(headerSettings(MultiJvm))
   .settings(additionalTasks in ValidatePR += headerCheck in MultiJvm)
   .addAkkaModuleDependency("akka-stream", "provided")
+  .addAkkaModuleDependency("akka-actor-typed", "provided")
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
