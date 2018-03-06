@@ -13,7 +13,6 @@ import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.actor.typed.{ ActorRef, ActorRefResolver, Props, TypedAkkaSpecWithShutdown }
 import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -62,6 +61,9 @@ object ClusterSingletonApiSpec {
   }
 
   class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
+    // Reproducer of issue #24620, by eagerly creating the ActorRefResolver in serializer
+    val actorRefResolver = ActorRefResolver(system.toTyped)
+
     def identifier: Int = 47
     def manifest(o: AnyRef): String = o match {
       case _: Ping ⇒ "a"
@@ -70,13 +72,13 @@ object ClusterSingletonApiSpec {
     }
 
     def toBinary(o: AnyRef): Array[Byte] = o match {
-      case p: Ping ⇒ ActorRefResolver(system.toTyped).toSerializationFormat(p.respondTo).getBytes(StandardCharsets.UTF_8)
+      case p: Ping ⇒ actorRefResolver.toSerializationFormat(p.respondTo).getBytes(StandardCharsets.UTF_8)
       case Pong    ⇒ Array.emptyByteArray
       case Perish  ⇒ Array.emptyByteArray
     }
 
     def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-      case "a" ⇒ Ping(ActorRefResolver(system.toTyped).resolveActorRef(new String(bytes, StandardCharsets.UTF_8)))
+      case "a" ⇒ Ping(actorRefResolver.resolveActorRef(new String(bytes, StandardCharsets.UTF_8)))
       case "b" ⇒ Pong
       case "c" ⇒ Perish
     }
