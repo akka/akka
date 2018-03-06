@@ -35,7 +35,7 @@ class PingPongActorSystemActivator extends ActorSystemActivator {
  */
 class RuntimeNameActorSystemActivator extends ActorSystemActivator {
 
-  def configure(context: BundleContext, system: ActorSystem) = registerService(context, system);
+  def configure(context: BundleContext, system: ActorSystem) = registerService(context, system)
 
   override def getActorSystemName(context: BundleContext) =
     TestActivators.ACTOR_SYSTEM_NAME_PATTERN.format(context.getBundle.getBundleId)

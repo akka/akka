@@ -188,7 +188,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
   }
 
   override def atStartup() = {
-    muteSystem(system);
+    muteSystem(system)
     remoteSystem.eventStream.publish(TestEvent.Mute(
       EventFilter[EndpointException](),
       EventFilter.error(start = "AssociationError"),

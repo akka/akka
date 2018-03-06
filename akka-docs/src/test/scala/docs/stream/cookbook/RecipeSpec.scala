@@ -11,7 +11,5 @@ trait RecipeSpec extends AkkaSpec {
 
   implicit val m = ActorMaterializer()
   type Message = String
-  type Trigger = Unit
-  type Job = String
 
 }

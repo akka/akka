@@ -7,7 +7,6 @@ package docs.stream.cookbook
 import akka.NotUsed
 import akka.stream.scaladsl.{ Sink, Source }
 
-import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
