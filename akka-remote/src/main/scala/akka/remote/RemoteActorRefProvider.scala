@@ -10,11 +10,9 @@ import akka.dispatch.sysmsg._
 import akka.event.{ EventStream, Logging, LoggingAdapter }
 import akka.event.Logging.Error
 import akka.pattern.pipe
-
 import scala.util.control.NonFatal
 
 import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
-
 import scala.util.control.Exception.Catcher
 import scala.concurrent.Future
 
@@ -25,6 +23,7 @@ import akka.remote.artery.ArteryTransport
 import akka.remote.artery.aeron.ArteryAeronUdpTransport
 import akka.remote.artery.ArterySettings
 import akka.remote.artery.ArterySettings.AeronUpd
+import akka.remote.artery.HybridTransport
 import akka.util.OptionVal
 import akka.remote.artery.OutboundEnvelope
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
@@ -196,6 +195,16 @@ private[akka] class RemoteActorRefProvider(
       remoteSettings.configureDispatcher(Props(classOf[RemotingTerminator], local.systemGuardian)),
       "remoting-terminator")
 
+    val transp =
+      if (remoteSettings.Artery.Enabled && remoteSettings.Artery.RollingMode != ArterySettings.RollingUpgradeDisabled)
+        new HybridTransport(system, this)
+      else if (remoteSettings.Artery.Enabled) remoteSettings.Artery.Transport match {
+        case ArterySettings.AeronUpd ⇒ new ArteryAeronUdpTransport(system, this)
+        case ArterySettings.Tcp      ⇒ new ArteryTcpTransport(system, this, tlsEnabled = false)
+        case ArterySettings.TlsTcp   ⇒ new ArteryTcpTransport(system, this, tlsEnabled = true)
+      }
+      else new Remoting(system, this)
+
     val internals = Internals(
       remoteDaemon = {
         val d = new RemoteSystemDaemon(
@@ -208,13 +217,7 @@ private[akka] class RemoteActorRefProvider(
         local.registerExtraNames(Map(("remote", d)))
         d
       },
-      transport =
-        if (remoteSettings.Artery.Enabled) remoteSettings.Artery.Transport match {
-          case ArterySettings.AeronUpd ⇒ new ArteryAeronUdpTransport(system, this)
-          case ArterySettings.Tcp      ⇒ new ArteryTcpTransport(system, this, tlsEnabled = false)
-          case ArterySettings.TlsTcp   ⇒ new ArteryTcpTransport(system, this, tlsEnabled = true)
-        }
-        else new Remoting(system, this))
+      transport = transp)
 
     _internals = internals
     remotingTerminator ! internals

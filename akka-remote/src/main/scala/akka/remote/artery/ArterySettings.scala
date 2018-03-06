@@ -81,6 +81,14 @@ private[akka] final class ArterySettings private (config: Config) {
       s""""${AeronUpd.configName}", "${Tcp.configName}", or "${TlsTcp.configName}"""")
   }
 
+  val RollingMode: RollingUpgradeMode = toRootLowerCase(getString("hybrid-transport-rolling-upgrade-mode")) match {
+    case ""                   ⇒ RollingUpgradeDisabled
+    case "off"                ⇒ RollingUpgradeDisabled
+    case "classic-as-default" ⇒ RollingUpgradeClassicAsDefault
+    case "artery-as-default"  ⇒ RollingUpgradeArteryAsDefault
+    case other                ⇒ throw new IllegalArgumentException(s"Unknown hybrid-transport-rolling-upgrade-mode [$other]")
+  }
+
   /**
    * Used version of the header format for outbound messages.
    * To support rolling upgrades this may be a lower version than `ArteryTransport.HighestVersion`,
@@ -240,4 +248,9 @@ private[akka] object ArterySettings {
     override val configName: String = "tls-tcp"
     override def toString: String = configName
   }
+
+  sealed trait RollingUpgradeMode
+  case object RollingUpgradeDisabled extends RollingUpgradeMode
+  case object RollingUpgradeClassicAsDefault extends RollingUpgradeMode
+  case object RollingUpgradeArteryAsDefault extends RollingUpgradeMode
 }

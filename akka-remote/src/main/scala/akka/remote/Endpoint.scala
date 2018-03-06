@@ -892,9 +892,14 @@ private[remote] class EndpointWriter(
     Some(newReader)
   }
 
+  lazy val transportInformation: Serialization.Information = {
+    val address = extendedSystem.provider.getDefaultAddress
+    Serialization.Information(address, extendedSystem)
+  }
+
   private def serializeMessage(msg: Any): SerializedMessage = handle match {
     case Some(h) ⇒
-      Serialization.currentTransportInformation.withValue(Serialization.Information(h.localAddress, extendedSystem)) {
+      Serialization.currentTransportInformation.withValue(transportInformation) {
         (MessageSerializer.serialize(extendedSystem, msg.asInstanceOf[AnyRef]))
       }
     case None ⇒

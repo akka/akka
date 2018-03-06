@@ -16,13 +16,15 @@ import akka.pattern.ask
 import akka.remote.QuarantinedEvent
 import akka.util.Timeout
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
 import language.existentials
+
+import akka.remote.RemoteActorRefProvider
+import akka.remote.artery.ArterySettings
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -296,6 +298,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   import cluster.{ selfAddress, selfRoles, scheduler, failureDetector, crossDcFailureDetector }
   import cluster.settings._
   import cluster.InfoLogger._
+
+  private def arteryHybridEnabled = {
+    val arterySettings = context.system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].remoteSettings.Artery
+    arterySettings.Enabled && arterySettings.RollingMode != ArterySettings.RollingUpgradeDisabled
+  }
 
   val selfDc = cluster.selfDataCenter
 
@@ -585,7 +592,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    * which will reply with a `Welcome` message.
    */
   def join(address: Address): Unit = {
-    if (address.protocol != selfAddress.protocol)
+    if (!arteryHybridEnabled && address.protocol != selfAddress.protocol)
       log.warning(
         "Trying to join member with wrong protocol, but was ignored, expected [{}] but was [{}]",
         selfAddress.protocol, address.protocol)
@@ -630,7 +637,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    */
   def joining(joiningNode: UniqueAddress, roles: Set[String]): Unit = {
     val selfStatus = latestGossip.member(selfUniqueAddress).status
-    if (joiningNode.address.protocol != selfAddress.protocol)
+    if (!arteryHybridEnabled && joiningNode.address.protocol != selfAddress.protocol)
       log.warning(
         "Member with wrong protocol tried to join, but was ignored, expected [{}] but was [{}]",
         selfAddress.protocol, joiningNode.address.protocol)

@@ -5,8 +5,11 @@ package akka.actor
 import java.net.URI
 import java.net.URISyntaxException
 import java.net.MalformedURLException
+
 import scala.annotation.tailrec
 import scala.collection.immutable
+
+import akka.util.HashCode
 
 /**
  * The address specifies the physical location under which an Actor can be
@@ -41,7 +44,20 @@ final case class Address private (protocol: String, system: String, host: Option
   def hasGlobalScope: Boolean = host.isDefined
 
   // store hashCode
-  @transient override lazy val hashCode: Int = scala.util.hashing.MurmurHash3.productHash(this)
+  // exclude protocol part for rolling upgrade between classic and Artery remoting
+  @transient override lazy val hashCode: Int = {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, system)
+    result = HashCode.hash(result, host)
+    result = HashCode.hash(result, port)
+    result
+  }
+
+  // exclude protocol part for rolling upgrade between classic and Artery remoting
+  override def equals(obj: Any): Boolean = obj match {
+    case other: Address ⇒ system == other.system && host == other.host && port == other.port
+    case _              ⇒ false
+  }
 
   /**
    * Returns the canonical String representation of this Address formatted as:
@@ -64,6 +80,7 @@ final case class Address private (protocol: String, system: String, host: Option
    * `system@host:port`
    */
   def hostPort: String = toString.substring(protocol.length + 3)
+
 }
 
 object Address {
@@ -82,7 +99,6 @@ object Address {
    */
   implicit val addressOrdering: Ordering[Address] = Ordering.fromLessThan[Address] { (a, b) ⇒
     if (a eq b) false
-    else if (a.protocol != b.protocol) a.system.compareTo(b.protocol) < 0
     else if (a.system != b.system) a.system.compareTo(b.system) < 0
     else if (a.host != b.host) a.host.getOrElse("").compareTo(b.host.getOrElse("")) < 0
     else if (a.port != b.port) a.port.getOrElse(0) < b.port.getOrElse(0)

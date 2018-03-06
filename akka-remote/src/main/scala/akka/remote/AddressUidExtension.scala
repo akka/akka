@@ -4,11 +4,13 @@
 package akka.remote
 
 import java.util.concurrent.ThreadLocalRandom
+
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
+import akka.remote.artery.ArterySettings
 
 /**
  * Extension that holds a uid that is assigned as a random `Long` or `Int` depending
@@ -31,9 +33,12 @@ class AddressUidExtension(val system: ExtendedActorSystem) extends Extension {
 
   private def arteryEnabled = system.provider.asInstanceOf[RemoteActorRefProvider].remoteSettings.Artery.Enabled
 
+  private def arteryHybridEnabled = arteryEnabled &&
+    system.provider.asInstanceOf[RemoteActorRefProvider].remoteSettings.Artery.RollingMode != ArterySettings.RollingUpgradeDisabled
+
   val longAddressUid: Long = {
     val tlr = ThreadLocalRandom.current
-    if (arteryEnabled) tlr.nextLong()
+    if (arteryEnabled && !arteryHybridEnabled) tlr.nextLong()
     // with the old remoting we need to make toInt.toLong return the same number
     // to keep wire compatibility
     else tlr.nextInt().toLong
@@ -41,7 +46,7 @@ class AddressUidExtension(val system: ExtendedActorSystem) extends Extension {
 
   // private because GenJavaDoc fails on deprecated annotated lazy val
   private lazy val _addressUid: Int = {
-    if (arteryEnabled) {
+    if (arteryEnabled && !arteryHybridEnabled) {
       throw new IllegalStateException("Int UID must never be used with Artery")
     } else longAddressUid.toInt
   }
