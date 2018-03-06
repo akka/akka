@@ -621,7 +621,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
   /** Transport that uses actual top-level Http APIs to establish a plaintext HTTP connection */
   case object AkkaHttpEngineTCP extends TopLevelApiClientServerImplementation {
     protected override def bindServerSource = Http().bind("localhost", 0)
-    protected def clientConnectionFlow(connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+    protected def clientConnectionFlow(serverBinding: ServerBinding, connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnectionUsingTransport(host = "localhost", port = serverBinding.localAddress.getPort, connectionContext = ConnectionContext.noEncryption(), transport = new KillSwitchedClientTransport(connectionKillSwitch))
   }
 
@@ -632,33 +632,32 @@ class HostConnectionPoolSpec extends AkkaSpec(
    */
   case object AkkaHttpEngineTLS extends TopLevelApiClientServerImplementation {
     protected override def bindServerSource = Http().bind("akka.example.org", 0, connectionContext = ExampleHttpContexts.exampleServerContext)
-    protected def clientConnectionFlow(connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
+    protected def clientConnectionFlow(serverBinding: ServerBinding, connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
       Http().outgoingConnectionUsingTransport(host = "akka.example.org", port = serverBinding.localAddress.getPort, connectionContext = ExampleHttpContexts.exampleClientContext, transport = new KillSwitchedClientTransport(connectionKillSwitch))
   }
   abstract class TopLevelApiClientServerImplementation extends ClientServerImplementation {
     def failsHandlerInputWhenHandlerOutputFails: Boolean = false
 
     protected def bindServerSource: Source[Http.IncomingConnection, Future[ServerBinding]]
-    protected def clientConnectionFlow(connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]
+    protected def clientConnectionFlow(serverBinding: ServerBinding, connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]
 
-    val connectionProbe = TestProbe()
+    override def get(connectionKillSwitch: SharedKillSwitch): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Future[Http.OutgoingConnection]] = {
+      val connectionProbe = TestProbe()
+      system.log.debug("Binding server for test ...")
+      val serverBinding: ServerBinding =
+        bindServerSource
+          .to(Sink.foreach { serverConnection ⇒
+            connectionProbe.ref ! serverConnection
+          })
+          .run().awaitResult(3.seconds)
+      system.log.debug(s"Server bound to [${serverBinding.localAddress}]")
 
-    system.log.debug("Binding server for test ...")
-    val serverBinding: ServerBinding =
-      bindServerSource
-        .to(Sink.foreach { serverConnection ⇒
-          connectionProbe.ref ! serverConnection
-        })
-        .run().awaitResult(3.seconds)
-    system.log.debug(s"Server bound to [${serverBinding.localAddress}]")
-
-    override def get(connectionKillSwitch: SharedKillSwitch): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Future[Http.OutgoingConnection]] =
       // needs to be an involved two step process:
       //   1. setup client flow and proxies on the server side to be able to return that flow immediately
       //   2. when client connection was established, grab server connection as well and attach to proxies
       //      (cannot be implemented with just mapMaterializedValue because there's no transposing constructor for BidiFlow)
       BidiFlow.fromGraph(
-        GraphDSL.create(Sink.asPublisher[HttpResponse](fanout = false), Source.asSubscriber[HttpRequest], clientConnectionFlow(connectionKillSwitch))((_, _, _)) { implicit builder ⇒ (resIn, reqOut, client) ⇒
+        GraphDSL.create(Sink.asPublisher[HttpResponse](fanout = false), Source.asSubscriber[HttpRequest], clientConnectionFlow(serverBinding, connectionKillSwitch))((_, _, _)) { implicit builder ⇒ (resIn, reqOut, client) ⇒
           import GraphDSL.Implicits._
 
           builder.materializedValue ~> Sink.foreach[(Publisher[HttpResponse], Subscriber[HttpRequest], Future[Http.OutgoingConnection])] {
@@ -674,6 +673,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
           BidiShape(resIn.in, client.out, client.in, reqOut.out)
         }
       ).mapMaterializedValue(_._3)
+    }
   }
 
   /** Generates a new unique outgoingConnection */
