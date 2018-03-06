@@ -36,14 +36,16 @@ import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.Eventually.eventually
 
-class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
+class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with WithLogCapturing {
   val testConf: Config = ConfigFactory.parseString("""
-    akka.loggers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = WARNING
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
     akka.stdout-loglevel = ERROR
     windows-connection-abort-workaround-enabled = auto
-    akka.log-dead-letters = OFF
-    akka.http.server.request-timeout = infinite""")
+    akka.http.server.request-timeout = infinite
+    akka.http.server.log-unencrypted-network-bytes = 200
+    akka.http.client.log-unencrypted-network-bytes = 200
+                                                   """)
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
