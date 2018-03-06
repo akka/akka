@@ -15,13 +15,16 @@ import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
 import scala.collection.immutable
 
 @InternalApi
-private[akka] trait EventsourcedJournalInteractions {
+private[akka] trait EventsourcedJournalInteractions[C, E, S] {
   import akka.actor.typed.scaladsl.adapter._
+
+  def setup: EventsourcedSetup[C, E, S]
+
+  private def context = setup.context
 
   // ---------- journal interactions ---------
 
-  protected def returnRecoveryPermitOnlyOnFailure[C, E, S](setup: EventsourcedSetup[C, E, S], cause: Throwable): Unit = {
-    import setup.context
+  protected def returnRecoveryPermitOnlyOnFailure(cause: Throwable): Unit = {
     setup.log.debug("Returning recovery permit, on failure because: " + cause.getMessage)
     // IMPORTANT to use selfUntyped, and not an adapter, since recovery permitter watches/unwatches those refs (and adapters are new refs)
     val permitter = setup.persistence.recoveryPermitter
@@ -29,8 +32,7 @@ private[akka] trait EventsourcedJournalInteractions {
   }
 
   type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
-  protected def internalPersist[C, E, S](
-    setup:       EventsourcedSetup[C, E, S],
+  protected def internalPersist(
     state:       EventsourcedRunning.EventsourcedState[S],
     event:       EventOrTagged,
     sideEffects: immutable.Seq[ChainableEffect[_, S]])(handler: Any ⇒ Unit): Behavior[InternalProtocol] = {
@@ -54,8 +56,7 @@ private[akka] trait EventsourcedJournalInteractions {
     EventsourcedRunning.PersistingEvents[C, E, S](setup, state, pendingInvocations, sideEffects)
   }
 
-  protected def internalPersistAll[C, E, S](
-    setup:       EventsourcedSetup[C, E, S],
+  protected def internalPersistAll(
     events:      immutable.Seq[EventOrTagged],
     state:       EventsourcedRunning.EventsourcedState[S],
     sideEffects: immutable.Seq[ChainableEffect[_, S]])(handler: Any ⇒ Unit): Behavior[InternalProtocol] = {
@@ -83,7 +84,7 @@ private[akka] trait EventsourcedJournalInteractions {
     } else Behaviors.same
   }
 
-  protected def replayEvents[C, E, S](setup: EventsourcedSetup[C, E, S], fromSeqNr: Long, toSeqNr: Long): Unit = {
+  protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     setup.log.debug("Replaying messages: from: {}, to: {}", fromSeqNr, toSeqNr)
     // reply is sent to `selfUntypedAdapted`, it is important to target that one
     setup.journal ! ReplayMessages(fromSeqNr, toSeqNr, setup.recovery.replayMax, setup.persistenceId, setup.selfUntypedAdapted)
@@ -101,11 +102,11 @@ private[akka] trait EventsourcedJournalInteractions {
    * Instructs the snapshot store to load the specified snapshot and send it via an [[SnapshotOffer]]
    * to the running [[PersistentActor]].
    */
-  protected def loadSnapshot[Command](setup: EventsourcedSetup[Command, _, _], criteria: SnapshotSelectionCriteria, toSequenceNr: Long): Unit = {
+  protected def loadSnapshot(criteria: SnapshotSelectionCriteria, toSequenceNr: Long): Unit = {
     setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId, criteria, toSequenceNr), setup.selfUntypedAdapted)
   }
 
-  protected def internalSaveSnapshot[S](setup: EventsourcedSetup[_, _, S], state: EventsourcedRunning.EventsourcedState[S]): Unit = {
+  protected def internalSaveSnapshot(state: EventsourcedRunning.EventsourcedState[S]): Unit = {
     setup.snapshotStore.tell(SnapshotProtocol.SaveSnapshot(SnapshotMetadata(setup.persistenceId, state.seqNr), state.state), setup.selfUntypedAdapted)
   }
 

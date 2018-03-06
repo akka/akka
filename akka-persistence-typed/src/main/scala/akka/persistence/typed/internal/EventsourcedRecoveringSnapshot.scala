@@ -30,22 +30,32 @@ import scala.util.{ Failure, Success, Try }
  * recovery of events continues in [[EventsourcedRecoveringEvents]].
  */
 @InternalApi
-object EventsourcedRecoveringSnapshot extends EventsourcedJournalInteractions with EventsourcedStashManagement {
+private[akka] object EventsourcedRecoveringSnapshot {
 
-  def apply[Command, Event, State](setup: EventsourcedSetup[Command, Event, State]): Behavior[InternalProtocol] = {
-    startRecoveryTimer(setup)
+  def apply[C, E, S](setup: EventsourcedSetup[C, E, S]): Behavior[InternalProtocol] =
+    new EventsourcedRecoveringSnapshot(setup).createBehavior()
 
-    withMdc(setup) {
+}
+
+@InternalApi
+private[akka] class EventsourcedRecoveringSnapshot[C, E, S](
+  override val setup: EventsourcedSetup[C, E, S])
+  extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
+
+  def createBehavior(): Behavior[InternalProtocol] = {
+    startRecoveryTimer()
+
+    withMdc {
       Behaviors.immutable {
-        case (_, SnapshotterResponse(r))        ⇒ onSnapshotterResponse(setup, r)
-        case (_, JournalResponse(r))            ⇒ onJournalResponse(setup, r)
-        case (_, RecoveryTickEvent(snapshot))   ⇒ onRecoveryTick(setup, snapshot)
-        case (_, cmd: IncomingCommand[Command]) ⇒ onCommand(setup, cmd)
+        case (_, SnapshotterResponse(r))      ⇒ onSnapshotterResponse(r)
+        case (_, JournalResponse(r))          ⇒ onJournalResponse(r)
+        case (_, RecoveryTickEvent(snapshot)) ⇒ onRecoveryTick(snapshot)
+        case (_, cmd: IncomingCommand[C])     ⇒ onCommand(cmd)
       }
     }
   }
 
-  def withMdc[C, E, S](setup: EventsourcedSetup[C, E, S])(b: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+  def withMdc(b: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
     val mdc = Map(
       "persistenceId" → setup.persistenceId,
       "phase" → "recover-snap"
@@ -61,7 +71,7 @@ object EventsourcedRecoveringSnapshot extends EventsourcedJournalInteractions wi
    * @param cause failure cause.
    * @param event the event that was processed in `receiveRecover`, if the exception was thrown there
    */
-  private def onRecoveryFailure[C, E, S](setup: EventsourcedSetup[C, E, S], cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
+  private def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
     cancelRecoveryTimer(setup.timers)
 
     val lastSequenceNr = 0 // FIXME not needed since snapshot == 0
@@ -78,44 +88,44 @@ object EventsourcedRecoveringSnapshot extends EventsourcedJournalInteractions wi
     }
   }
 
-  private def onRecoveryTick[Command, Event, State](setup: EventsourcedSetup[Command, Event, State], snapshot: Boolean): Behavior[InternalProtocol] =
+  private def onRecoveryTick(snapshot: Boolean): Behavior[InternalProtocol] =
     if (snapshot) {
       // we know we're in snapshotting mode; snapshot recovery timeout arrived
       val ex = new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within ${setup.settings.recoveryEventTimeout}")
-      onRecoveryFailure(setup, ex, event = None)
+      onRecoveryFailure(ex, event = None)
     } else same // ignore, since we received the snapshot already
 
   // protect against snapshot stalling forever because of journal overloaded and such
   private val RecoveryTickTimerKey = "recovery-tick"
 
-  private def startRecoveryTimer(setup: EventsourcedSetup[_, _, _]): Unit = {
+  private def startRecoveryTimer(): Unit = {
     setup.timers.startPeriodicTimer(RecoveryTickTimerKey, RecoveryTickEvent(snapshot = false), setup.settings.recoveryEventTimeout)
   }
 
   private def cancelRecoveryTimer(timers: TimerScheduler[_]): Unit = timers.cancel(RecoveryTickTimerKey)
 
-  def onCommand[C, E, S](setup: EventsourcedSetup[C, E, S], cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
+  def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
     setup.internalStash.stash(cmd) // TODO move stash out as it's mutable
     Behavior.same
   }
 
-  def onJournalResponse[Command](setup: EventsourcedSetup[_, _, _], response: JournalProtocol.Response): Behavior[InternalProtocol] = try {
+  def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = try {
     throw new Exception("Should not talk to journal yet! But got: " + response)
   } catch {
     case NonFatal(cause) ⇒
-      returnRecoveryPermitOnlyOnFailure(setup, cause)
+      returnRecoveryPermitOnlyOnFailure(cause)
       throw cause
   }
 
-  def onSnapshotterResponse[Command, Event, State](setup: EventsourcedSetup[Command, Event, State], response: SnapshotProtocol.Response): Behavior[InternalProtocol] = try {
+  def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = try {
     response match {
       case LoadSnapshotResult(sso, toSnr) ⇒
-        var state: State = setup.initialState
+        var state: S = setup.initialState
         val re: Try[Long] = Try {
           sso match {
             case Some(SelectedSnapshot(metadata, snapshot)) ⇒
-              state = snapshot.asInstanceOf[State]
+              state = snapshot.asInstanceOf[S]
               metadata.sequenceNr
 
             case None ⇒
@@ -125,34 +135,34 @@ object EventsourcedRecoveringSnapshot extends EventsourcedJournalInteractions wi
 
         re match {
           case Success(seqNr) ⇒
-            replayMessages(setup, state, seqNr, toSnr)
+            replayMessages(state, seqNr, toSnr)
 
           case Failure(cause) ⇒
             // FIXME better exception type
             val ex = new RuntimeException(s"Failed to recover state for [${setup.persistenceId}] from snapshot offer.", cause)
-            onRecoveryFailure(setup, ex, event = None) // FIXME the failure logs has bad messages... FIXME
+            onRecoveryFailure(ex, event = None) // FIXME the failure logs has bad messages... FIXME
         }
 
       case LoadSnapshotFailed(cause) ⇒
         cancelRecoveryTimer(setup.timers)
 
-        onRecoveryFailure(setup, cause, event = None)
+        onRecoveryFailure(cause, event = None)
 
       case _ ⇒
         Behaviors.unhandled
     }
   } catch {
     case NonFatal(cause) ⇒
-      returnRecoveryPermitOnlyOnFailure(setup, cause)
+      returnRecoveryPermitOnlyOnFailure(cause)
       throw cause
   }
 
-  private def replayMessages[Command, Event, State](setup: EventsourcedSetup[Command, Event, State], state: State, lastSequenceNr: Long, toSnr: Long): Behavior[InternalProtocol] = {
+  private def replayMessages(state: S, lastSequenceNr: Long, toSnr: Long): Behavior[InternalProtocol] = {
     cancelRecoveryTimer(setup.timers)
 
     val rec = setup.recovery.copy(toSequenceNr = toSnr, fromSnapshot = SnapshotSelectionCriteria.None) // TODO introduce new types
 
-    EventsourcedRecoveringEvents[Command, Event, State](
+    EventsourcedRecoveringEvents[C, E, S](
       setup.copy(recovery = rec),
       // setup.internalStash, // TODO move it out of setup
       EventsourcedRecoveringEvents.RecoveringState(lastSequenceNr, state)
