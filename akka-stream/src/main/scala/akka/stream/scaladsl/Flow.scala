@@ -21,7 +21,7 @@ import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.DoNotInherit
-import akka.stream.impl.Timers.KeepAliveFromBuffer
+import akka.stream.impl.Timers.KeepAliveConcat
 
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
@@ -1992,7 +1992,7 @@ trait FlowOps[+Out, +Mat] {
    * used as the keep alive elements, then the base rate is no longer maintained until we reach another period without
    * elements form upstream.
    *
-   * The keep alive period is the size times the interval.
+   * The keep alive period is the keep alive failover size times the interval.
    *
    * '''Emits when''' upstream emits an element or if the upstream was idle for the configured period
    *
@@ -2005,8 +2005,8 @@ trait FlowOps[+Out, +Mat] {
    * @see [[keepAlive]]
    * @see [[expand]]
    */
-  def keepAliveFromBuffer[U >: Out](size: Int, interval: FiniteDuration, extrapolate: U ⇒ List[U]): Repr[U] =
-    via(KeepAliveFromBuffer[U](size, interval, extrapolate))
+  def keepAliveConcat[U >: Out](keepAliveFailoverSize: Int, interval: FiniteDuration, extrapolate: U ⇒ Seq[U]): Repr[U] =
+    via(KeepAliveConcat[U](keepAliveFailoverSize, interval, extrapolate))
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate

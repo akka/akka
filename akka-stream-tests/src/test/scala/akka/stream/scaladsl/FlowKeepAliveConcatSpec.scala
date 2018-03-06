@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
 package akka.stream.scaladsl
 
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
@@ -5,7 +8,7 @@ import akka.stream.testkit.{ StreamSpec, TestSubscriber, TestPublisher, Utils }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class FlowKeepAliveFromBufferSpec extends StreamSpec {
+class FlowKeepAliveConcatSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
@@ -15,12 +18,12 @@ class FlowKeepAliveFromBufferSpec extends StreamSpec {
   val sampleSource = Source((1 to 10).grouped(3).toVector)
   val expand = (lst: IndexedSeq[Int]) ⇒ lst.toList.map(Vector(_))
 
-  "keepAliveFromBuffer" must {
+  "keepAliveConcat" must {
 
     "not emit additional elements if upstream is fast enough" in Utils.assertAllStagesStopped {
       Await.result(
         sampleSource
-          .keepAliveFromBuffer(5, 1.second, expand)
+          .keepAliveConcat(5, 1.second, expand)
           .grouped(1000)
           .runWith(Sink.head),
         3.seconds
@@ -33,7 +36,7 @@ class FlowKeepAliveFromBufferSpec extends StreamSpec {
 
       Await.result(
         sourceWithIdleGap
-          .keepAliveFromBuffer(5, 0.6.seconds, expand)
+          .keepAliveConcat(5, 0.6.seconds, expand)
           .grouped(1000)
           .runWith(Sink.head),
         3.seconds
@@ -44,7 +47,7 @@ class FlowKeepAliveFromBufferSpec extends StreamSpec {
       val upstream = TestPublisher.probe[Vector[Int]]()
       val downstream = TestSubscriber.probe[Vector[Int]]()
 
-      Source.fromPublisher(upstream).keepAliveFromBuffer(2, 1.second, expand).runWith(Sink.fromSubscriber(downstream))
+      Source.fromPublisher(upstream).keepAliveConcat(2, 1.second, expand).runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(1)
 
@@ -60,7 +63,7 @@ class FlowKeepAliveFromBufferSpec extends StreamSpec {
       val downstream = TestSubscriber.probe[IndexedSeq[Int]]()
 
       (sampleSource ++ Source.fromPublisher(upstream))
-        .keepAliveFromBuffer(2, 1.second, expand)
+        .keepAliveConcat(2, 1.second, expand)
         .runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(10)
@@ -80,7 +83,7 @@ class FlowKeepAliveFromBufferSpec extends StreamSpec {
       val downstream = TestSubscriber.probe[IndexedSeq[Int]]()
 
       (sampleSource ++ Source.fromPublisher(upstream))
-        .keepAliveFromBuffer(2, 1.second, expand)
+        .keepAliveConcat(2, 1.second, expand)
         .runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(10)

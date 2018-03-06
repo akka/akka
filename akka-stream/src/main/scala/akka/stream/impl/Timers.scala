@@ -270,20 +270,20 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
   }
 
-  final case class KeepAliveFromBuffer[T](size: Int, interval: FiniteDuration, extrapolate: T ⇒ Seq[T])
+  final case class KeepAliveConcat[T](keepAliveFailoverSize: Int, interval: FiniteDuration, extrapolate: T ⇒ Seq[T])
     extends GraphStage[FlowShape[T, T]] {
 
-    require(size > 0, "The buffer size must be greater than 0.")
+    require(keepAliveFailoverSize > 0, "The buffer keep alive failover size must be greater than 0.")
 
-    val in = Inlet[T]("KeepAliveFromBuffer.in")
-    val out = Outlet[T]("KeepAliveFromBuffer.out")
+    val in = Inlet[T]("KeepAliveConcat.in")
+    val out = Outlet[T]("KeepAliveConcat.out")
 
     override val shape = FlowShape(in, out)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
-        private val buffer = new java.util.ArrayDeque[T](size)
+        private val buffer = new java.util.ArrayDeque[T](keepAliveFailoverSize)
 
         override def preStart(): Unit = {
           schedulePeriodically(None, interval)
@@ -292,10 +292,10 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
         override def onPush(): Unit = {
           val elem = grab(in)
-          if (buffer.size() < size) buffer.addAll(extrapolate(elem).asJava)
+          if (buffer.size() < keepAliveFailoverSize) buffer.addAll(extrapolate(elem).asJava)
           else buffer.addLast(elem)
 
-          if (isAvailable(out)) push(out, buffer.removeFirst())
+          if (isAvailable(out) && !buffer.isEmpty) push(out, buffer.removeFirst())
           else pull(in)
         }
 
@@ -303,7 +303,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
           if (isClosed(in)) {
             if (buffer.isEmpty) completeStage()
             else push(out, buffer.removeFirst())
-          } else if (buffer.size() > size) {
+          } else if (buffer.size() > keepAliveFailoverSize) {
             push(out, buffer.removeFirst())
           } else if (!hasBeenPulled(in)) {
             pull(in)
@@ -311,7 +311,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
         }
 
         override def onTimer(timerKey: Any) = {
-          if (!buffer.isEmpty) push(out, buffer.removeFirst())
+          if (isAvailable(out) && !buffer.isEmpty) push(out, buffer.removeFirst())
         }
 
         override def onUpstreamFinish(): Unit = {
