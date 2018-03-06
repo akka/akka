@@ -177,4 +177,29 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         assert (StatusCodes.ENHANCE_YOUR_CALM.equals(statusCode));
         //#withRequestTimeoutResponse
     }
+
+    @Test
+    public void extractRequestTimeout(){
+        //#extractRequestTimeout
+        Duration timeout1 = Duration.create(500, TimeUnit.MILLISECONDS);
+        Duration timeout2 = Duration.create(1000, TimeUnit.MILLISECONDS);
+        Route route =
+          path("timeout", () ->
+            withRequestTimeout(timeout1, () ->
+              extractRequestTimeout( t1 ->
+                withRequestTimeout(timeout2, () ->
+                  extractRequestTimeout( t2 -> {
+                    if (t1 == timeout1 && t2 == timeout2)
+                      return complete(StatusCodes.OK);
+                    else
+                      return complete(StatusCodes.INTERNAL_SERVER_ERROR);
+                  })
+                )
+              )
+            )
+          );
+        //#extractRequestTimeout
+        StatusCode statusCode = runRoute(system, materializer, route, "timeout").get().status();
+        assert (StatusCodes.OK.equals(statusCode));
+    }
 }

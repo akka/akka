@@ -6,8 +6,7 @@ package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.`Timeout-Access`
-import akka.http.scaladsl.server.{ Directive, Directive0 }
-
+import akka.http.scaladsl.server.{ Directive, Directive0, Directive1 }
 import scala.concurrent.duration.Duration
 
 /**
@@ -15,6 +14,23 @@ import scala.concurrent.duration.Duration
  * @groupprio timeout 160
  */
 trait TimeoutDirectives {
+
+  /**
+   * Return the currently set request timeout.
+   *
+   * Note that this may be changed in inner directives.
+   *
+   * @group timeout
+   */
+  def extractRequestTimeout: Directive1[Duration] = Directive { inner ⇒ ctx ⇒
+    val timeout = ctx.request.header[`Timeout-Access`] match {
+      case Some(t) ⇒ t.timeoutAccess.getTimeout
+      case _ ⇒
+        ctx.log.warning("extractRequestTimeout was used in route however no request-timeout is set!")
+        Duration.Inf
+    }
+    inner(Tuple1(timeout))(ctx)
+  }
 
   /**
    * @group timeout

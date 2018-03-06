@@ -20,3 +20,6 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.coding.N
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.Encoder.encode")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.Decoder.decode")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.coding.Decoder.decode")
+
+# Additions to @DoNotInherit directives trait
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.TimeoutDirectives.extractRequestTimeout")
