@@ -135,7 +135,7 @@ public class MarshallerTest extends JUnitRouteTest {
           path("nummer", () ->
             parameter(StringUnmarshallers.INTEGER, "n", nummerHandler)
           )
-        ).seal(system(), materializer()) // needed to get the content negotiation, maybe
+        ).seal() // needed to get the content negotiation, maybe
       );
 
     route.run(HttpRequest.GET("/nummer?n=1"))

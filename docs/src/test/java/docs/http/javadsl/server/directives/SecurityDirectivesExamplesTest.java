@@ -40,7 +40,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
       authenticateBasic("secure site", myUserPassAuthenticator, userName ->
         complete("The user is '" + userName + "'")
       )
-    ).seal(system(), materializer());
+    ).seal();
 
     // tests:
     testRoute(route).run(HttpRequest.GET("/secured"))
@@ -86,7 +86,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
       authenticateBasicPF("secure site", myUserPassAuthenticator, userName ->
         complete("The user is '" + userName + "'")
       )
-    ).seal(system(), materializer());
+    ).seal();
 
     // tests:
     testRoute(route).run(HttpRequest.GET("/secured"))
@@ -142,7 +142,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
     final Route route = path("secured", () ->
       authenticateBasicPFAsync("secure site", myUserPassAuthenticator, user ->
         complete("The user is '" + user.getId() + "'"))
-    ).seal(system(), materializer());
+    ).seal();
 
     // tests:
     testRoute(route).run(HttpRequest.GET("/secured"))
@@ -179,7 +179,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
       authenticateBasicAsync("secure site", myUserPassAuthenticator, userName ->
         complete("The user is '" + userName + "'")
       )
-    ).seal(system(), materializer());
+    ).seal();
 
     // tests:
     testRoute(route).run(HttpRequest.GET("/secured"))
@@ -222,7 +222,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
       authenticateOrRejectWithChallenge(myUserPassAuthenticator, userName ->
         complete("Authenticated!")
       )
-    ).seal(system(), materializer());
+    ).seal();
 
     // tests:
     testRoute(route).run(HttpRequest.GET("/secured"))
@@ -272,7 +272,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
           complete("'" + user.getName() +"' visited Peter's lair")
         )
       )
-    ).seal(system(), materializer());
+    ).seal();
 
     // tests:
     final HttpCredentials johnsCred =
@@ -326,7 +326,7 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
           complete("'" + user.getName() +"' visited Peter's lair")
         )
       )
-    ).seal(system(), materializer());
+    ).seal();
 
     // tests:
     final HttpCredentials johnsCred =

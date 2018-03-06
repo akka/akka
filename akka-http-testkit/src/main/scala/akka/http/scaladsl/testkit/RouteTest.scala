@@ -146,7 +146,6 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
                                  executionContext: ExecutionContext,
                                  materializer:     Materializer,
                                  routingLog:       RoutingLog,
-                                 rejectionHandler: RejectionHandler = RejectionHandler.default,
                                  exceptionHandler: ExceptionHandler = null) =
       new TildeArrow[RequestContext, Future[RouteResult]] {
         type Out = RouteTestResult

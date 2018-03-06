@@ -36,7 +36,7 @@ public class RouteSealExample extends AllDirectives {
       () -> pathSingleSlash( () ->
         complete("Captain on the bridge!")
       )
-    ).seal(system, materializer);
+    ).seal();
 
     Route route = respondWithHeader(
       RawHeader.create("special-header", "you always have this even in 404"),

@@ -91,9 +91,6 @@ class Http2ServerDemux(http2Settings: Http2ServerSettings) extends GraphStage[Bi
         multiplexer.pushControlFrame(SettingsFrame(Nil)) // server side connection preface
       }
 
-      // we should not handle streams later than the GOAWAY told us about with lastStreamId
-      private var closedAfter: Option[Int] = None
-
       /**
        * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
        * @see http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
@@ -106,7 +103,6 @@ class Http2ServerDemux(http2Settings: Http2ServerSettings) extends GraphStage[Bi
       def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
         // http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
         val last = lastStreamId
-        closedAfter = Some(last)
         val frame = GoAwayFrame(last, errorCode, ByteString(debug))
         multiplexer.pushControlFrame(frame)
         // FIXME: handle the connection closing according to the specification
@@ -190,11 +186,6 @@ class Http2ServerDemux(http2Settings: Http2ServerSettings) extends GraphStage[Bi
       //        with the other side.
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
       def dispatchSubstream(sub: Http2SubStream): Unit = bufferedSubStreamOutput.push(sub)
-
-      def failSubstream(streamId: Int, errorCode: ErrorCode, description: String): Unit = {
-        log.debug(s"Substream $streamId failed with $errorCode: $description")
-        multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
-      }
 
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {

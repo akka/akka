@@ -26,8 +26,8 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
     scalaFlow(system, materializer).asJava
 
   private def scalaFlow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] = {
-    implicit val s = system
-    implicit val m = materializer
+    implicit val s: ActorSystem = system
+    implicit val m: Materializer = materializer
     Flow[HttpRequest].map(_.asScala).via(delegate).map(_.asJava)
   }
 
@@ -38,16 +38,23 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
     }
 
   override def seal(system: ActorSystem, materializer: Materializer): Route = {
-    implicit val s = system
-    implicit val m = materializer
+    seal()
+  }
 
-    RouteAdapter(scaladsl.server.Route.seal(delegate))
+  override def seal(): Route = {
+    // TODO: scaladsl.server.Route.seal shouldn't require an implicit RoutingSettings when it can retrieve it itself. See https://github.com/akka/akka-http/issues/1898
+    RouteAdapter {
+      akka.http.scaladsl.server.directives.BasicDirectives.extractSettings { implicit settings ⇒
+        scaladsl.server.Route.seal(delegate)
+      }
+    }
   }
 
   override def seal(routingSettings: RoutingSettings, parserSettings: ParserSettings, rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler, system: ActorSystem, materializer: Materializer): Route = {
-    implicit val s = system
-    implicit val m = materializer
+    seal(routingSettings, parserSettings, rejectionHandler, exceptionHandler)
+  }
 
+  override def seal(routingSettings: RoutingSettings, parserSettings: ParserSettings, rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler): Route = {
     RouteAdapter(scaladsl.server.Route.seal(delegate)(
       routingSettings.asScala,
       parserSettings.asScala,

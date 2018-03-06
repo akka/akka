@@ -42,7 +42,7 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
     runRoute(route, request, defaultHostInfo)
 
   def runRoute(route: Route, request: HttpRequest, defaultHostInfo: DefaultHostInfo): TestRouteResult =
-    runScalaRoute(route.seal(system, materializer).delegate, request, defaultHostInfo)
+    runScalaRoute(route.seal().delegate, request, defaultHostInfo)
 
   def runRouteUnSealed(route: Route, request: HttpRequest): TestRouteResult =
     runRouteUnSealed(route, request, defaultHostInfo)

@@ -235,7 +235,7 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
       case path ⇒ checkIsSafeDescendant(basePath, path, log)
     }
 
-  private def safeJoinPaths(base: String, path: Uri.Path, log: LoggingAdapter, separator: Char = File.separatorChar): String = {
+  private def safeJoinPaths(base: String, path: Uri.Path, log: LoggingAdapter, separator: Char): String = {
     import java.lang.StringBuilder
     @tailrec def rec(p: Uri.Path, result: StringBuilder = new StringBuilder(base)): String =
       p match {

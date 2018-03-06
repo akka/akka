@@ -41,7 +41,7 @@ private final class LineParser(maxLineSize: Int) extends GraphStage[FlowShape[By
         def parseLines(
           bs:            ByteString,
           from:          Int            = 0,
-          at:            Int            = 0,
+          at:            Int,
           parsedLines:   Vector[String] = Vector.empty,
           lastCharWasCr: Boolean        = false): (ByteString, Vector[String], Boolean) =
           if (at >= bs.length)

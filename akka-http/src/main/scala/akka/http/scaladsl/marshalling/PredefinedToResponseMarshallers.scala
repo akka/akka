@@ -169,7 +169,7 @@ object PredefinedToResponseMarshallers extends PredefinedToResponseMarshallers {
     HttpResponse(status = statusCode, headers = headers, entity = entity)
   }
 
-  private def statusCodeAndEntityResponse(statusCode: StatusCode, headers: immutable.Seq[HttpHeader] = Nil, entity: ResponseEntity = HttpEntity.Empty): HttpResponse = {
+  private def statusCodeAndEntityResponse(statusCode: StatusCode, headers: immutable.Seq[HttpHeader], entity: ResponseEntity): HttpResponse = {
     if (statusCode.allowsEntity) HttpResponse(statusCode, headers, entity)
     else HttpResponse(statusCode, headers, HttpEntity.Empty)
   }

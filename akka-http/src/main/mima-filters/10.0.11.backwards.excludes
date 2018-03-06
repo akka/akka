@@ -23,3 +23,6 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.coding.D
 
 # Additions to @DoNotInherit directives trait
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.TimeoutDirectives.extractRequestTimeout")
+
+# Adding new overloads with less parameters
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.server.Route.seal")

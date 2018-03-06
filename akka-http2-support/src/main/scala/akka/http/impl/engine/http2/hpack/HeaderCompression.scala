@@ -26,7 +26,7 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
   val shape = FlowShape(eventsIn, eventsOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) with StageLogging {
-    var currentMaxFrameSize = Http2Protocol.InitialMaxFrameSize
+    val currentMaxFrameSize = Http2Protocol.InitialMaxFrameSize
 
     val encoder = new com.twitter.hpack.Encoder(Http2Protocol.InitialMaxHeaderTableSize)
     val os = new ByteArrayOutputStream()

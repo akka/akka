@@ -118,8 +118,6 @@ private[http2] object PriorityTree {
     // lens-like "mutators"
     private def updateNodes(updater: TreeMap[Int, PriorityInfo] ⇒ TreeMap[Int, PriorityInfo]): PriorityTreeImpl =
       create(updater(nodes))
-    private def updateAll(updaters: (TreeMap[Int, PriorityInfo] ⇒ TreeMap[Int, PriorityInfo])*): PriorityTreeImpl =
-      updateNodes(nodes ⇒ updaters.foldLeft(nodes)((updater, state) ⇒ state(updater)))
 
     private def updateNode(streamId: Int)(updater: PriorityInfo ⇒ PriorityInfo): PriorityTreeImpl =
       updateNodes { nodes ⇒

@@ -6,7 +6,7 @@ package akka.http.scaladsl.server
 package directives
 
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import akka.http.scaladsl.common._
 import akka.http.impl.util._
@@ -110,7 +110,7 @@ object ParameterDirectives extends ParameterDirectives {
     type FSOU[T] = Unmarshaller[Option[String], T]
 
     private def extractParameter[A, B](f: A ⇒ Directive1[B]): ParamDefAux[A, Directive1[B]] = paramDef(f)
-    private def handleParamResult[T](paramName: String, result: Future[T])(implicit ec: ExecutionContext): Directive1[T] =
+    private def handleParamResult[T](paramName: String, result: Future[T]): Directive1[T] =
       onComplete(result).flatMap {
         case Success(x)                               ⇒ provide(x)
         case Failure(Unmarshaller.NoContentException) ⇒ reject(MissingQueryParamRejection(paramName))

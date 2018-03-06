@@ -18,10 +18,10 @@ trait MarshallingTestUtils {
   def marshal[T: ToEntityMarshaller](value: T)(implicit ec: ExecutionContext, mat: Materializer): HttpEntity.Strict =
     Await.result(Marshal(value).to[HttpEntity].flatMap(_.toStrict(1.second)), 2.second)
 
-  def marshalToResponseForRequestAccepting[T: ToResponseMarshaller](value: T, mediaRanges: MediaRange*)(implicit ec: ExecutionContext, mat: Materializer): HttpResponse =
+  def marshalToResponseForRequestAccepting[T: ToResponseMarshaller](value: T, mediaRanges: MediaRange*)(implicit ec: ExecutionContext): HttpResponse =
     marshalToResponse(value, HttpRequest(headers = Accept(mediaRanges: _*) :: Nil))
 
-  def marshalToResponse[T: ToResponseMarshaller](value: T, request: HttpRequest = HttpRequest())(implicit ec: ExecutionContext, mat: Materializer): HttpResponse =
+  def marshalToResponse[T: ToResponseMarshaller](value: T, request: HttpRequest = HttpRequest())(implicit ec: ExecutionContext): HttpResponse =
     Await.result(Marshal(value).toResponseFor(request), 1.second)
 
   def unmarshalValue[T: FromEntityUnmarshaller](entity: HttpEntity)(implicit ec: ExecutionContext, mat: Materializer): T =
