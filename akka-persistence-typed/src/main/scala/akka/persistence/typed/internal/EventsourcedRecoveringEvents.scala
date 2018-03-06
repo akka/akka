@@ -22,7 +22,7 @@ import scala.util.control.NonFatal
  *
  */
 @InternalApi
-private[persistence] object EventsourcedRecoveringEvents extends EventsourcedJournalInteractions with EventsourcedStashManagement {
+private[persistence] object EventsourcedRecoveringEvents {
 
   @InternalApi
   private[persistence] final case class RecoveringState[State](
@@ -31,32 +31,44 @@ private[persistence] object EventsourcedRecoveringEvents extends EventsourcedJou
     eventSeenInInterval: Boolean = false
   )
 
-  def apply[Command, Event, State](
-    setup: EventsourcedSetup[Command, Event, State],
-    state: RecoveringState[State]
+  def apply[C, E, S](
+    setup: EventsourcedSetup[C, E, S],
+    state: RecoveringState[S]
   ): Behavior[InternalProtocol] =
+    new EventsourcedRecoveringEvents(setup).createBehavior(state)
+
+}
+
+@InternalApi
+private[persistence] class EventsourcedRecoveringEvents[C, E, S](
+  override val setup: EventsourcedSetup[C, E, S])
+  extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
+  import EventsourcedRecoveringEvents.RecoveringState
+
+  def createBehavior(state: RecoveringState[S]): Behavior[InternalProtocol] = {
     Behaviors.setup { _ ⇒
       startRecoveryTimer(setup.timers, setup.settings.recoveryEventTimeout)
 
-      replayEvents(setup, state.seqNr + 1L, setup.recovery.toSequenceNr)
+      replayEvents(state.seqNr + 1L, setup.recovery.toSequenceNr)
 
-      withMdc(setup) {
-        stay(setup, state)
+      withMdc {
+        stay(state)
       }
     }
 
-  private def stay[Command, Event, State](
-    setup: EventsourcedSetup[Command, Event, State],
-    state: RecoveringState[State]
+  }
+
+  private def stay(
+    state: RecoveringState[S]
   ): Behavior[InternalProtocol] =
     Behaviors.immutable {
-      case (_, JournalResponse(r))       ⇒ onJournalResponse(setup, state, r)
-      case (_, SnapshotterResponse(r))   ⇒ onSnapshotterResponse(setup, r)
-      case (_, RecoveryTickEvent(snap))  ⇒ onRecoveryTick(setup, state, snap)
-      case (_, cmd @ IncomingCommand(_)) ⇒ onCommand(setup, cmd)
+      case (_, JournalResponse(r))       ⇒ onJournalResponse(state, r)
+      case (_, SnapshotterResponse(r))   ⇒ onSnapshotterResponse(r)
+      case (_, RecoveryTickEvent(snap))  ⇒ onRecoveryTick(state, snap)
+      case (_, cmd @ IncomingCommand(_)) ⇒ onCommand(cmd)
     }
 
-  private def withMdc[C, E, S](setup: EventsourcedSetup[C, E, S])(wrapped: Behavior[InternalProtocol]) = {
+  private def withMdc(wrapped: Behavior[InternalProtocol]) = {
     val mdc = Map(
       "persistenceId" → setup.persistenceId,
       "phase" → "recover-evnts"
@@ -65,9 +77,8 @@ private[persistence] object EventsourcedRecoveringEvents extends EventsourcedJou
     Behaviors.withMdc((_: Any) ⇒ mdc, wrapped)
   }
 
-  private def onJournalResponse[Command, Event, State](
-    setup:    EventsourcedSetup[Command, Event, State],
-    state:    RecoveringState[State],
+  private def onJournalResponse(
+    state:    RecoveringState[S],
     response: JournalProtocol.Response): Behavior[InternalProtocol] = {
     import setup.context.log
     try {
@@ -78,20 +89,20 @@ private[persistence] object EventsourcedRecoveringEvents extends EventsourcedJou
 
           val newState = state.copy(
             seqNr = repr.sequenceNr,
-            state = setup.eventHandler(state.state, repr.payload.asInstanceOf[Event])
+            state = setup.eventHandler(state.state, repr.payload.asInstanceOf[E])
           )
 
-          stay(setup, newState)
+          stay(newState)
 
         case RecoverySuccess(highestSeqNr) ⇒
           log.debug("Recovery successful, recovered until sequenceNr: {}", highestSeqNr)
           cancelRecoveryTimer(setup.timers)
 
-          try onRecoveryCompleted(setup, state)
-          catch { case NonFatal(ex) ⇒ onRecoveryFailure(setup, ex, highestSeqNr, Some(state)) }
+          try onRecoveryCompleted(state)
+          catch { case NonFatal(ex) ⇒ onRecoveryFailure(ex, highestSeqNr, Some(state)) }
 
         case ReplayMessagesFailure(cause) ⇒
-          onRecoveryFailure(setup, cause, state.seqNr, None)
+          onRecoveryFailure(cause, state.seqNr, None)
 
         case other ⇒
           //          stash(setup, setup.internalStash, other)
@@ -101,13 +112,13 @@ private[persistence] object EventsourcedRecoveringEvents extends EventsourcedJou
     } catch {
       case NonFatal(cause) ⇒
         cancelRecoveryTimer(setup.timers)
-        onRecoveryFailure(setup, cause, state.seqNr, None)
+        onRecoveryFailure(cause, state.seqNr, None)
     }
   }
 
-  private def onCommand[Command, Event, State](setup: EventsourcedSetup[Command, Event, State], cmd: InternalProtocol): Behavior[InternalProtocol] = {
+  private def onCommand(cmd: InternalProtocol): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
-    stash(setup, setup.internalStash, cmd)
+    stash(cmd)
     Behaviors.same
   }
 
@@ -120,21 +131,21 @@ private[persistence] object EventsourcedRecoveringEvents extends EventsourcedJou
   //  [error] Error occurred in an application involving default arguments.
   //  [error]         stay(setup, state.copy(eventSeenInInterval = false))
   //  [error]              ^
-  protected def onRecoveryTick[Command, Event, State](setup: EventsourcedSetup[Command, Event, State], state: RecoveringState[State], snapshot: Boolean): Behavior[InternalProtocol] =
+  protected def onRecoveryTick(state: RecoveringState[S], snapshot: Boolean): Behavior[InternalProtocol] =
     if (!snapshot) {
       if (state.eventSeenInInterval) {
-        stay(setup, state.copy(eventSeenInInterval = false))
+        stay(state.copy(eventSeenInInterval = false))
       } else {
         cancelRecoveryTimer(setup.timers)
         val msg = s"Recovery timed out, didn't get event within ${setup.settings.recoveryEventTimeout}, highest sequence number seen ${state.seqNr}"
-        onRecoveryFailure(setup, new RecoveryTimedOut(msg), state.seqNr, None) // TODO allow users to hook into this?
+        onRecoveryFailure(new RecoveryTimedOut(msg), state.seqNr, None) // TODO allow users to hook into this?
       }
     } else {
       // snapshot timeout, but we're already in the events recovery phase
       Behavior.unhandled
     }
 
-  def onSnapshotterResponse[C, E, S](setup: EventsourcedSetup[C, E, S], response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
+  def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
     setup.log.warning("Unexpected [{}] from SnapshotStore, already in recovering events state.", Logging.simpleName(response))
     Behaviors.unhandled // ignore the response
   }
@@ -147,7 +158,7 @@ private[persistence] object EventsourcedRecoveringEvents extends EventsourcedJou
    * @param cause failure cause.
    * @param event the event that was processed in `receiveRecover`, if the exception was thrown there
    */
-  protected def onRecoveryFailure[C, E, S](setup: EventsourcedSetup[C, E, S], cause: Throwable, sequenceNr: Long, event: Option[Any]): Behavior[InternalProtocol] = {
+  protected def onRecoveryFailure(cause: Throwable, sequenceNr: Long, event: Option[Any]): Behavior[InternalProtocol] = {
     returnRecoveryPermit(setup, "on recovery failure: " + cause.getMessage)
     cancelRecoveryTimer(setup.timers)
 
@@ -162,7 +173,7 @@ private[persistence] object EventsourcedRecoveringEvents extends EventsourcedJou
     }
   }
 
-  protected def onRecoveryCompleted[C, E, S](setup: EventsourcedSetup[C, E, S], state: RecoveringState[S]): Behavior[InternalProtocol] = try {
+  protected def onRecoveryCompleted(state: RecoveringState[S]): Behavior[InternalProtocol] = try {
     returnRecoveryPermit(setup, "recovery completed successfully")
     setup.recoveryCompleted(setup.commandContext, state.state)
 
@@ -171,7 +182,7 @@ private[persistence] object EventsourcedRecoveringEvents extends EventsourcedJou
       EventsourcedRunning.EventsourcedState[S](state.seqNr, state.state)
     )
 
-    tryUnstash(setup, setup.internalStash, running)
+    tryUnstash(running)
   } finally {
     cancelRecoveryTimer(setup.timers)
   }

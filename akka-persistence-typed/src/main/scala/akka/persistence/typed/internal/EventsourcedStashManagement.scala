@@ -12,18 +12,23 @@ import akka.{ actor ⇒ a }
 
 /** INTERNAL API: Stash management for persistent behaviors */
 @InternalApi
-private[akka] trait EventsourcedStashManagement {
+private[akka] trait EventsourcedStashManagement[C, E, S] {
   import akka.actor.typed.scaladsl.adapter._
 
-  protected def stash(setup: EventsourcedSetup[_, _, _], stash: StashBuffer[InternalProtocol], msg: InternalProtocol): Unit = {
-    import setup.context
+  def setup: EventsourcedSetup[C, E, S]
+
+  private def context = setup.context
+
+  private def stashBuffer: StashBuffer[InternalProtocol] = setup.internalStash
+
+  protected def stash(msg: InternalProtocol): Unit = {
 
     val logLevel = setup.settings.stashingLogLevel
     if (logLevel != Logging.OffLevel) context.log.debug("Stashing message: {}", msg) // FIXME can be log(logLevel once missing method added
 
     val internalStashOverflowStrategy: StashOverflowStrategy = setup.persistence.defaultInternalStashOverflowStrategy
 
-    try stash.stash(msg) catch {
+    try stashBuffer.stash(msg) catch {
       case e: StashOverflowException ⇒
         internalStashOverflowStrategy match {
           case DiscardToDeadLetterStrategy ⇒
@@ -40,14 +45,12 @@ private[akka] trait EventsourcedStashManagement {
   }
 
   // FIXME, yet we need to also stash not-commands, due to journal responses ...
-  protected def tryUnstash[C, E, S](
-    setup:         EventsourcedSetup[C, E, S],
-    internalStash: StashBuffer[InternalProtocol], // TODO since may want to not have it inside setup
-    behavior:      Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
-    if (internalStash.nonEmpty) {
-      setup.log.debug("Unstashing message: {}", internalStash.head.getClass)
+  protected def tryUnstash(
+    behavior: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+    if (stashBuffer.nonEmpty) {
+      setup.log.debug("Unstashing message: {}", stashBuffer.head.getClass)
 
-      internalStash.asInstanceOf[StashBuffer[InternalProtocol]].unstash(setup.context, behavior.asInstanceOf[Behavior[InternalProtocol]], 1, ConstantFun.scalaIdentityFunction)
+      stashBuffer.unstash(setup.context, behavior.asInstanceOf[Behavior[InternalProtocol]], 1, ConstantFun.scalaIdentityFunction)
     } else behavior
   }
 
