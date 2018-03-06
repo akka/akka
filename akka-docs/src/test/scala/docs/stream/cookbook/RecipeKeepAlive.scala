@@ -5,7 +5,6 @@
 package docs.stream.cookbook
 
 import akka.NotUsed
-import akka.stream.ClosedShape
 import akka.stream.scaladsl._
 import akka.util.ByteString
 

@@ -802,7 +802,7 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @return the builder with the case statement added
    */
   final def matchEvent[ET](eventType: Class[ET], predicate: TypedPredicate2[ET, D], apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D, E] =
-    new FSMStateFunctionBuilder[S, D, E]().event(eventType, predicate, apply);
+    new FSMStateFunctionBuilder[S, D, E]().event(eventType, predicate, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -814,7 +814,7 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @return the builder with the case statement added
    */
   final def matchEvent[ET](eventType: Class[ET], apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D, E] =
-    new FSMStateFunctionBuilder[S, D, E]().event(eventType, apply);
+    new FSMStateFunctionBuilder[S, D, E]().event(eventType, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -826,7 +826,7 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @return the builder with the case statement added
    */
   final def matchEvent(predicate: TypedPredicate2[AnyRef, D], apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D, E] =
-    new FSMStateFunctionBuilder[S, D, E]().event(predicate, apply);
+    new FSMStateFunctionBuilder[S, D, E]().event(predicate, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -840,7 +840,7 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @return the builder with the case statement added
    */
   final def matchEvent[DT <: D](eventMatches: JList[AnyRef], dataType: Class[DT], apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D, E] =
-    new FSMStateFunctionBuilder[S, D, E]().event(eventMatches, dataType, apply);
+    new FSMStateFunctionBuilder[S, D, E]().event(eventMatches, dataType, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -853,7 +853,7 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @return the builder with the case statement added
    */
   final def matchEvent(eventMatches: JList[AnyRef], apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D, E] =
-    new FSMStateFunctionBuilder[S, D, E]().event(eventMatches, apply);
+    new FSMStateFunctionBuilder[S, D, E]().event(eventMatches, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -866,7 +866,7 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @return the builder with the case statement added
    */
   final def matchEventEquals[Ev, DT <: D](event: Ev, dataType: Class[DT], apply: Apply2[Ev, DT, State]): FSMStateFunctionBuilder[S, D, E] =
-    new FSMStateFunctionBuilder[S, D, E]().eventEquals(event, dataType, apply);
+    new FSMStateFunctionBuilder[S, D, E]().eventEquals(event, dataType, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -878,7 +878,7 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * @return the builder with the case statement added
    */
   final def matchEventEquals[Ev](event: Ev, apply: Apply2[Ev, D, State]): FSMStateFunctionBuilder[S, D, E] =
-    new FSMStateFunctionBuilder[S, D, E]().eventEquals(event, apply);
+    new FSMStateFunctionBuilder[S, D, E]().eventEquals(event, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
