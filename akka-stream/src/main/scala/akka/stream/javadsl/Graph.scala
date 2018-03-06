@@ -267,28 +267,27 @@ object Partition {
  */
 object Balance {
   /**
-   * Create a new `Balance` stage with the specified input type.
-   *
-   * @param outputCount number of output ports
-   * @param waitForAllDownstreams if `true` it will not start emitting
-   *   elements to downstream outputs until all of them have requested at least one element
-   * @param eagerCancel if true, balance cancels upstream if any of its downstreams cancel
-   */
-  def create[T](outputCount: Int, waitForAllDownstreams: Boolean, eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
-    scaladsl.Balance(outputCount, waitForAllDownstreams, eagerCancel)
-
-  /**
-   * Create a new `Balance` stage with the specified input type.
+   * Create a new `Balance` stage with the specified input type, `eagerCancel` is `false`.
    *
    * @param outputCount number of output ports
    * @param waitForAllDownstreams if `true` it will not start emitting
    *   elements to downstream outputs until all of them have requested at least one element
    */
   def create[T](outputCount: Int, waitForAllDownstreams: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
-    create(outputCount, waitForAllDownstreams, eagerCancel = false)
+    scaladsl.Balance(outputCount, waitForAllDownstreams)
 
   /**
    * Create a new `Balance` stage with the specified input type.
+   *
+   * @param outputCount number of output ports
+   * @param waitForAllDownstreams if `true` it will not start emitting elements to downstream outputs until all of them have requested at least one element
+   * @param eagerCancel if true, balance cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
+   */
+  def create[T](outputCount: Int, waitForAllDownstreams: Boolean, eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+    new scaladsl.Balance(outputCount, waitForAllDownstreams, eagerCancel)
+
+  /**
+   * Create a new `Balance` stage with the specified input type, both `waitForAllDownstreams` and `eagerCancel` are `false`.
    *
    * @param outputCount number of output ports
    */
@@ -296,19 +295,34 @@ object Balance {
     create(outputCount, waitForAllDownstreams = false)
 
   /**
-   * Create a new `Balance` stage with the specified input type.
+   * Create a new `Balance` stage with the specified input type, both `waitForAllDownstreams` and `eagerCancel` are `false`.
+   *
+   * @param clazz a type hint for this method
+   * @param outputCount number of output ports
    */
   def create[T](clazz: Class[T], outputCount: Int): Graph[UniformFanOutShape[T, T], NotUsed] =
     create(outputCount)
 
   /**
-   * Create a new `Balance` stage with the specified input type.
+   * Create a new `Balance` stage with the specified input type, `eagerCancel` is `false`.
    *
-   * @param waitForAllDownstreams if `true` it will not start emitting
-   *   elements to downstream outputs until all of them have requested at least one element
+   * @param clazz a type hint for this method
+   * @param outputCount number of output ports
+   * @param waitForAllDownstreams if `true` it will not start emitting elements to downstream outputs until all of them have requested at least one element
    */
   def create[T](clazz: Class[T], outputCount: Int, waitForAllDownstreams: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
     create(outputCount, waitForAllDownstreams)
+
+  /**
+   * Create a new `Balance` stage with the specified input type.
+   *
+   * @param clazz a type hint for this method
+   * @param outputCount number of output ports
+   * @param waitForAllDownstreams if `true` it will not start emitting elements to downstream outputs until all of them have requested at least one element
+   * @param eagerCancel if true, balance cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
+   */
+  def create[T](clazz: Class[T], outputCount: Int, waitForAllDownstreams: Boolean, eagerCancel: Boolean): Graph[UniformFanOutShape[T, T], NotUsed] =
+    new scaladsl.Balance(outputCount, waitForAllDownstreams, eagerCancel)
 }
 
 /**
