@@ -8,7 +8,7 @@ import akka.stream.Attributes.none
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 
-import akka.actor.ActorSystem;
+import akka.actor.ActorSystem
 
 /**
  * Factory methods for test sources.
