@@ -373,7 +373,7 @@ object ActorAttributes {
      * is not easily accessible, instead the name is taken from `settings.blockingIoDispatcher`
      */
     @InternalApi
-    def resolve(attributes: Attributes, settings: ActorMaterializerSettings): String =
+    private[akka] def resolve(attributes: Attributes, settings: ActorMaterializerSettings): String =
       attributes.mandatoryAttribute[Dispatcher] match {
         case IODispatcher           ⇒ settings.blockingIoDispatcher
         case Dispatcher(dispatcher) ⇒ dispatcher
@@ -384,7 +384,7 @@ object ActorAttributes {
      * Resolves the dispatcher name with a fallback to the default blocking IO dispatcher.
      */
     @InternalApi
-    def resolve(context: MaterializationContext): String =
+    private[akka] def resolve(context: MaterializationContext): String =
       resolve(context.effectiveAttributes, ActorMaterializerHelper.downcast(context.materializer).settings)
   }
 
