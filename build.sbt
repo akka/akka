@@ -217,6 +217,7 @@ lazy val httpCaching = project("akka-http-caching")
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(Dependencies.httpCaching)
   .dependsOn(http, httpCore, httpTestkit % "test")
+  .enablePlugins(BootstrapGenjavadoc)
 
 def project(name: String) =
   Project(id = name, base = file(name))
