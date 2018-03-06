@@ -22,26 +22,35 @@ import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, 
  *
  */
 @InternalApi
-private[akka] object EventsourcedRequestingRecoveryPermit extends EventsourcedStashManagement {
-  import akka.actor.typed.scaladsl.adapter._
+private[akka] object EventsourcedRequestingRecoveryPermit {
 
-  def apply[Command, Event, State](setup: EventsourcedSetup[Command, Event, State]): Behavior[InternalProtocol] = {
+  def apply[C, E, S](setup: EventsourcedSetup[C, E, S]): Behavior[InternalProtocol] =
+    new EventsourcedRequestingRecoveryPermit(setup).createBehavior()
+
+}
+
+@InternalApi
+private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](
+  override val setup: EventsourcedSetup[C, E, S])
+  extends EventsourcedStashManagement[C, E, S] {
+
+  def createBehavior(): Behavior[InternalProtocol] = {
     // request a permit, as only once we obtain one we can start recovering
-    requestRecoveryPermit(setup.context, setup.persistence)
+    requestRecoveryPermit()
 
-    withMdc(setup) {
+    withMdc {
       Behaviors.immutable[InternalProtocol] {
         case (_, InternalProtocol.RecoveryPermitGranted) ⇒ // FIXME types
-          becomeRecovering(setup)
+          becomeRecovering()
 
         case (_, other) ⇒
-          stash(setup, setup.internalStash, other)
+          stash(other)
           Behaviors.same
       }
     }
   }
 
-  private def withMdc[C, E, S](setup: EventsourcedSetup[C, E, S])(wrapped: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+  private def withMdc(wrapped: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
     val mdc = Map(
       "persistenceId" → setup.persistenceId,
       "phase" → "awaiting-permit"
@@ -50,7 +59,7 @@ private[akka] object EventsourcedRequestingRecoveryPermit extends EventsourcedSt
     Behaviors.withMdc(_ ⇒ mdc, wrapped)
   }
 
-  private def becomeRecovering[Command, Event, State](setup: EventsourcedSetup[Command, Event, State]): Behavior[InternalProtocol] = {
+  private def becomeRecovering(): Behavior[InternalProtocol] = {
     setup.log.debug(s"Initializing snapshot recovery: {}", setup.recovery)
 
     EventsourcedRecoveringSnapshot(setup)
@@ -58,10 +67,11 @@ private[akka] object EventsourcedRequestingRecoveryPermit extends EventsourcedSt
 
   // ---------- journal interactions ---------
 
-  private def requestRecoveryPermit[Command](context: ActorContext[Command], persistence: Persistence): Unit = {
+  private def requestRecoveryPermit(): Unit = {
+    import akka.actor.typed.scaladsl.adapter._
     // IMPORTANT to use selfUntyped, and not an adapter, since recovery permitter watches/unwatches those refs (and adapters are new refs)
-    val selfUntyped = context.self.toUntyped
-    persistence.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, selfUntyped)
+    val selfUntyped = setup.context.self.toUntyped
+    setup.persistence.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, selfUntyped)
   }
 
 }
