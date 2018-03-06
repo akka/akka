@@ -746,7 +746,7 @@ abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D
    * called, not only the first one matching.</b>
    */
   final def onTransition(transitionHandler: UnitApply2[S, S]): Unit =
-    onTransition(transitionHandler)
+    super.onTransition(transitionHandler(_: S, _: S))
 
   /**
    * Set handler which is called upon reception of unhandled messages. Calling
