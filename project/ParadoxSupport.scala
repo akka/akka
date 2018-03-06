@@ -8,7 +8,6 @@ import java.io.{File, FileNotFoundException}
 
 import sbt._
 import Keys._
-import com.lightbend.paradox._
 import com.lightbend.paradox.markdown._
 import com.lightbend.paradox.sbt.ParadoxPlugin.autoImport._
 import org.pegdown.Printer
@@ -16,9 +15,7 @@ import org.pegdown.ast.{DirectiveNode, HtmlBlockNode, TextNode, VerbatimNode, Vi
 
 import scala.collection.JavaConverters._
 import scala.io.{Codec, Source}
-
 import _root_.io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
-import _root_.io.github.lukehutch.fastclasspathscanner.scanner.ScanResult
 
 
 object ParadoxSupport {
@@ -26,7 +23,7 @@ object ParadoxSupport {
     paradoxDirectives ++= Def.taskDyn {
       val log = streams.value.log
       val classpath = (fullClasspath in Compile).value.files.map(_.toURI.toURL).toArray
-      val classloader = new java.net.URLClassLoader(classpath, this.getClass().getClassLoader())
+      val classloader = new java.net.URLClassLoader(classpath, this.getClass.getClassLoader)
       lazy val scanner = new FastClasspathScanner("akka").addClassLoader(classloader).scan()
       val allClasses = scanner.getNamesOfAllClasses.asScala.toVector
       val directives = paradoxDirectives.value
@@ -49,7 +46,7 @@ object ParadoxSupport {
         if (allClasses.contains(fqcn)) {
           val label = fqcn.split('.').last
           syntheticNode("java", javaLabel(label), fqcn, node).accept(visitor)
-          syntheticNode("scala", label, fqcn, node).accept(visitor)
+          syntheticNode("scala", scalaLabel(label), fqcn, node).accept(visitor)
         } else {
           throw new java.lang.IllegalStateException(s"fqcn not found: $fqcn")
         }
@@ -59,8 +56,18 @@ object ParadoxSupport {
       }
     }
 
+    private def baseClassName(label: String) = {
+      val labelWithoutGenerics = label.split("\\[")(0)
+      if (labelWithoutGenerics.endsWith("$")) labelWithoutGenerics.init
+      else labelWithoutGenerics
+    }
+
+    def scalaLabel(label: String): String =
+      if (label.endsWith("$")) label.init
+      else label
+
     def javaLabel(label: String): String =
-      label.replaceAll("\\[", "&lt;").replaceAll("\\]", "&gt;").replace('_', '?')
+      scalaLabel(label).replaceAll("\\[", "&lt;").replaceAll("\\]", "&gt;").replace('_', '?')
 
     def syntheticNode(group: String, label: String, fqcn: String, node: DirectiveNode): DirectiveNode = {
       val syntheticSource = new DirectiveNode.Source.Direct(fqcn)
@@ -72,29 +79,30 @@ object ParadoxSupport {
     }
 
     def renderByClassName(label: String, node: DirectiveNode, visitor: Visitor, printer: Printer): Unit = {
-      val label = node.label.replaceAll("\\\\_", "_")
-      val labelWithoutGenericParameters = label.split("\\[")(0)
-      val labelWithJavaGenerics = javaLabel(label)
-      val matches = allClasses.filter(_.endsWith('.' + labelWithoutGenericParameters))
+      val query = node.label.replaceAll("\\\\_", "_")
+      val className = baseClassName(query)
+      val classSuffix = if (query.endsWith("$")) "$" else ""
+
+      val matches = allClasses.filter(_.endsWith('.' + className))
       matches.size match {
         case 0 =>
-          throw new java.lang.IllegalStateException(s"No matches found for $label")
+          throw new java.lang.IllegalStateException(s"No matches found for $query")
         case 1 if matches(0).contains("adsl") =>
-          throw new java.lang.IllegalStateException(s"Match for $label only found in one language: ${matches(0)}")
+          throw new java.lang.IllegalStateException(s"Match for $query only found in one language: ${matches(0)}")
         case 1 =>
-          syntheticNode("scala", label, matches(0), node).accept(visitor)
-          syntheticNode("java", labelWithJavaGenerics, matches(0), node).accept(visitor)
+          syntheticNode("scala", scalaLabel(query), matches(0) + classSuffix, node).accept(visitor)
+          syntheticNode("java", javaLabel(query), matches(0) + classSuffix, node).accept(visitor)
         case 2 if matches.forall(_.contains("adsl")) =>
           matches.foreach(m => {
             if (!m.contains("javadsl"))
-              syntheticNode("scala", label, m, node).accept(visitor)
+              syntheticNode("scala", scalaLabel(query), m + classSuffix, node).accept(visitor)
             if (!m.contains("scaladsl"))
-              syntheticNode("java", labelWithJavaGenerics, m, node).accept(visitor)
+              syntheticNode("java", javaLabel(query), m + classSuffix, node).accept(visitor)
           })
         case 2 =>
-          throw new java.lang.IllegalStateException(s"2 matches found for $label, but not javadsl/scaladsl: ${matches.mkString(", ")}")
+          throw new java.lang.IllegalStateException(s"2 matches found for $query, but not javadsl/scaladsl: ${matches.mkString(", ")}")
         case n =>
-          throw new java.lang.IllegalStateException(s"$n matches found for $label, but not javadsl/scaladsl: ${matches.mkString(", ")}")
+          throw new java.lang.IllegalStateException(s"$n matches found for $query, but not javadsl/scaladsl: ${matches.mkString(", ")}")
       }
     }
   }

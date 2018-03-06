@@ -39,9 +39,8 @@ cache which all later requests then "hook into". As soon as the first request
 completes all other ones complete as well. This minimizes processing time and
 server load for all requests.
 
-All Akka HTTP cache implementations adheres to the @java[@javadoc[@unidoc[Cache]
-interface](akka.http.caching.javadsl.Cache)]@scala[@scaladoc[@unidoc[Cache]
-class](akka.http.caching.scaladsl.Cache)], which allows you to interact with the
+All Akka HTTP cache implementations adheres to the @unidoc[Cache]
+@java[interface]@scala[class], which allows you to interact with the
 cache.
 
 Along with the cache API, the routing DSL provides several @ref:[caching
@@ -73,9 +72,8 @@ for longer than expected.
 For simple cases, configure the capacity and expiration settings in your
 `application.conf` file via the settings under `akka.http.caching` and use
 @java[`LfuCache.create()`]@scala[`LfuCache.apply()`] to create the cache.
-For more advanced usage you can create an
-@java[@javadoc[@unidoc[LfuCache]](akka.http.caching.LfuCache)]@scala[@scaladoc[@unidoc[LfuCache]](akka.http.caching.LfuCache)]
-with settings specialized for your use case:
+For more advanced usage you can create an @unidoc[LfuCache$] with settings
+specialized for your use case:
 
 Java
 :  @@snip [CachingDirectivesExamplesTest.java]($root$/src/test/java/docs/http/javadsl/server/directives/CachingDirectivesExamplesTest.java) { #create-cache-imports #create-cache }
