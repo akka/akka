@@ -147,7 +147,12 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
 
         EventsourcedRequestingRecoveryPermit(setup)
       }
-    }.widen[Command] { case c ⇒ InternalProtocol.IncomingCommand(c) } // TODO this is nice, same way applicable to mutable style
+    }.widen[Any] {
+      case res: JournalProtocol.Response           ⇒ InternalProtocol.JournalResponse(res)
+      case RecoveryPermitter.RecoveryPermitGranted ⇒ InternalProtocol.RecoveryPermitGranted
+      case res: SnapshotProtocol.Response          ⇒ InternalProtocol.SnapshotterResponse(res)
+      case cmd: Command @unchecked                 ⇒ InternalProtocol.IncomingCommand(cmd)
+    }.narrow[Command]
   }
 
   /**

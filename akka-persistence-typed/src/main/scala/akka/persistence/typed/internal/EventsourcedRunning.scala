@@ -38,9 +38,8 @@ import scala.collection.immutable
 @InternalApi private[akka] object EventsourcedRunning {
 
   final case class EventsourcedState[State](
-    seqNr:              Long,
-    state:              State,
-    pendingInvocations: immutable.Seq[PendingHandlerInvocation] = Nil
+    seqNr: Long,
+    state: State
   ) {
 
     def nextSequenceNr(): EventsourcedState[State] =
@@ -48,16 +47,6 @@ import scala.collection.immutable
 
     def updateLastSequenceNr(persistent: PersistentRepr): EventsourcedState[State] =
       if (persistent.sequenceNr > seqNr) copy(seqNr = persistent.sequenceNr) else this
-
-    def popApplyPendingInvocation(repr: PersistentRepr): EventsourcedState[State] = {
-      val (headSeq, remainingInvocations) = pendingInvocations.splitAt(1)
-      headSeq.head.handler(repr.payload)
-
-      copy(
-        pendingInvocations = remainingInvocations,
-        seqNr = repr.sequenceNr
-      )
-    }
 
     def applyEvent[C, E](setup: EventsourcedSetup[C, E, State], event: E): EventsourcedState[State] = {
       val updated = setup.eventHandler(state, event)
@@ -76,6 +65,99 @@ import scala.collection.immutable
   import EventsourcedRunning.EventsourcedState
 
   def handlingCommands(state: EventsourcedState[S]): Behavior[InternalProtocol] = {
+
+    def onCommand(state: EventsourcedState[S], cmd: C): Behavior[InternalProtocol] = {
+      val effect = setup.commandHandler(setup.commandContext, state.state, cmd)
+      applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
+    }
+
+    @tailrec def applyEffects(
+      msg:         Any,
+      state:       EventsourcedState[S],
+      effect:      EffectImpl[E, S],
+      sideEffects: immutable.Seq[ChainableEffect[_, S]] = Nil
+    ): Behavior[InternalProtocol] = {
+      import setup.log
+
+      if (log.isDebugEnabled)
+        log.debug(s"Handled command [{}], resulting effect: [{}], side effects: [{}]", msg.getClass.getName, effect, sideEffects.size)
+
+      effect match {
+        case CompositeEffect(eff, currentSideEffects) ⇒
+          // unwrap and accumulate effects
+          applyEffects(msg, state, eff, currentSideEffects ++ sideEffects)
+
+        case Persist(event) ⇒
+          // apply the event before persist so that validation exception is handled before persisting
+          // the invalid event, in case such validation is implemented in the event handler.
+          // also, ensure that there is an event handler for each single event
+          val newState = state.applyEvent(setup, event)
+          val eventToPersist = tagEvent(event)
+
+          val newState2 = internalPersist(newState, eventToPersist)
+
+          val handler: Any ⇒ Unit = { _ ⇒
+            if (setup.snapshotWhen(newState2.state, event, newState2.seqNr))
+              internalSaveSnapshot(newState2)
+          }
+          val pendingInvocations = StashingHandlerInvocation(event, handler) :: Nil
+
+          persistingEvents(newState2, pendingInvocations, sideEffects)
+
+        case PersistAll(events) ⇒
+          if (events.nonEmpty) {
+            // apply the event before persist so that validation exception is handled before persisting
+            // the invalid event, in case such validation is implemented in the event handler.
+            // also, ensure that there is an event handler for each single event
+            var count = events.size
+            var seqNr = state.seqNr
+            val (newState, shouldSnapshotAfterPersist) = events.foldLeft((state, false)) {
+              case ((currentState, snapshot), event) ⇒
+                seqNr += 1
+                val shouldSnapshot = snapshot || setup.snapshotWhen(currentState.state, event, seqNr)
+                (currentState.applyEvent(setup, event), shouldSnapshot)
+            }
+
+            val eventsToPersist = events.map(tagEvent)
+
+            val newState2 = internalPersistAll(eventsToPersist, newState)
+
+            val handler: Any ⇒ Unit = { _ ⇒
+              count -= 1
+              if (count == 0) {
+                if (shouldSnapshotAfterPersist)
+                  internalSaveSnapshot(newState2)
+              }
+            }
+
+            val pendingInvocations = events.map { event ⇒
+              StashingHandlerInvocation(event, handler)
+            }
+
+            persistingEvents(newState2, pendingInvocations, sideEffects)
+
+          } else {
+            // run side-effects even when no events are emitted
+            tryUnstash(applySideEffects(sideEffects, state))
+          }
+
+        case _: PersistNothing.type @unchecked ⇒
+          tryUnstash(applySideEffects(sideEffects, state))
+
+        case _: Unhandled.type @unchecked ⇒
+          applySideEffects(sideEffects, state)
+          Behavior.unhandled
+
+        case c: ChainableEffect[_, S] ⇒
+          applySideEffect(c, state)
+      }
+    }
+
+    def tagEvent(event: E): Any = {
+      val tags = setup.tagger(event)
+      if (tags.isEmpty) event else Tagged(event, tags)
+    }
+
     withMdc("run-cmnds") {
       Behaviors.immutable[EventsourcedBehavior.InternalProtocol] {
         case (_, SnapshotterResponse(r))           ⇒ Behaviors.unhandled
@@ -83,7 +165,121 @@ import scala.collection.immutable
         case (_, IncomingCommand(c: C @unchecked)) ⇒ onCommand(state, c)
       }
     }
+
   }
+
+  // ===============================================
+
+  def persistingEvents(
+    state:              EventsourcedState[S],
+    pendingInvocations: immutable.Seq[PendingHandlerInvocation],
+    sideEffects:        immutable.Seq[ChainableEffect[_, S]]
+  ): Behavior[InternalProtocol] = {
+    withMdc("run-persist-evnts") {
+      Behaviors.mutable[EventsourcedBehavior.InternalProtocol](_ ⇒ new PersistingEvents(state, pendingInvocations, sideEffects))
+    }
+  }
+
+  class PersistingEvents(
+    var state:              EventsourcedState[S],
+    var pendingInvocations: immutable.Seq[PendingHandlerInvocation],
+    var sideEffects:        immutable.Seq[ChainableEffect[_, S]])
+    extends MutableBehavior[EventsourcedBehavior.InternalProtocol] {
+
+    override def onMessage(msg: EventsourcedBehavior.InternalProtocol): Behavior[EventsourcedBehavior.InternalProtocol] = {
+      msg match {
+        case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r)
+        case JournalResponse(r)                ⇒ onJournalResponse(r)
+        case in: IncomingCommand[C @unchecked] ⇒ onCommand(in)
+      }
+    }
+
+    def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
+      stash(cmd)
+      this
+    }
+
+    final def onJournalResponse(
+      response: Response): Behavior[InternalProtocol] = {
+      setup.log.debug("Received Journal response: {}", response)
+      response match {
+        case WriteMessageSuccess(p, id) ⇒
+          // instanceId mismatch can happen for persistAsync and defer in case of actor restart
+          // while message is in flight, in that case we ignore the call to the handler
+          if (id == setup.writerIdentity.instanceId) {
+            state = state.updateLastSequenceNr(p)
+            // FIXME is the order of pendingInvocations not reversed?
+            pendingInvocations.head.handler(p.payload)
+            pendingInvocations = pendingInvocations.tail
+
+            // only once all things are applied we can revert back
+            if (pendingInvocations.nonEmpty) this
+            else tryUnstash(applySideEffects(sideEffects, state))
+          } else this
+
+        case WriteMessageRejected(p, cause, id) ⇒
+          // instanceId mismatch can happen for persistAsync and defer in case of actor restart
+          // while message is in flight, in that case the handler has already been discarded
+          if (id == setup.writerIdentity.instanceId) {
+            state = state.updateLastSequenceNr(p)
+            onPersistRejected(cause, p.payload, p.sequenceNr) // does not stop (by design)
+            tryUnstash(applySideEffects(sideEffects, state))
+          } else this
+
+        case WriteMessageFailure(p, cause, id) ⇒
+          // instanceId mismatch can happen for persistAsync and defer in case of actor restart
+          // while message is in flight, in that case the handler has already been discarded
+          if (id == setup.writerIdentity.instanceId) {
+            // onWriteMessageComplete() -> tryBecomeHandlingCommands
+            onPersistFailureThenStop(cause, p.payload, p.sequenceNr)
+          } else this
+
+        case WriteMessagesSuccessful ⇒
+          // ignore
+          this
+
+        case WriteMessagesFailed(_) ⇒
+          // ignore
+          this // it will be stopped by the first WriteMessageFailure message; not applying side effects
+
+        case _: LoopMessageSuccess ⇒
+          // ignore, should never happen as there is no persistAsync in typed
+          Behaviors.unhandled
+      }
+    }
+
+    //    private def onWriteMessageComplete(): Unit =
+    //      tryBecomeHandlingCommands()
+
+    private def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
+      setup.log.error(
+        cause,
+        "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
+        event.getClass.getName, seqNr, setup.persistenceId, cause.getMessage)
+    }
+
+    private def onPersistFailureThenStop(cause: Throwable, event: Any, seqNr: Long): Behavior[InternalProtocol] = {
+      setup.log.error(cause, "Failed to persist event type [{}] with sequence number [{}] for persistenceId [{}].",
+        event.getClass.getName, seqNr, setup.persistenceId)
+
+      // FIXME see #24479 for reconsidering the stopping behaviour
+      Behaviors.stopped
+    }
+
+    private def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
+      response match {
+        case SaveSnapshotSuccess(meta) ⇒
+          setup.context.log.debug("Save snapshot successful: " + meta)
+          this
+        case SaveSnapshotFailure(meta, ex) ⇒
+          setup.context.log.error(ex, "Save snapshot failed! " + meta)
+          this // FIXME https://github.com/akka/akka/issues/24637 should we provide callback for this? to allow Stop
+      }
+    }
+
+  }
+
+  // --------------------------
 
   private def withMdc(phase: String)(wrapped: Behavior[InternalProtocol]) = {
     val mdc = Map(
@@ -94,218 +290,8 @@ import scala.collection.immutable
     Behaviors.withMdc((_: Any) ⇒ mdc, wrapped)
   }
 
-  private def onCommand(state: EventsourcedState[S], cmd: C): Behavior[InternalProtocol] = {
-    val effect = setup.commandHandler(setup.commandContext, state.state, cmd)
-    applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
-  }
-
-  @tailrec private def applyEffects(
-    msg:         Any,
-    state:       EventsourcedState[S],
-    effect:      EffectImpl[E, S],
-    sideEffects: immutable.Seq[ChainableEffect[_, S]] = Nil
-  ): Behavior[InternalProtocol] = {
-    import setup.log
-
-    if (log.isDebugEnabled)
-      log.debug(s"Handled command [{}], resulting effect: [{}], side effects: [{}]", msg.getClass.getName, effect, sideEffects.size)
-
-    effect match {
-      case CompositeEffect(eff, currentSideEffects) ⇒
-        // unwrap and accumulate effects
-        applyEffects(msg, state, eff, currentSideEffects ++ sideEffects)
-
-      case Persist(event) ⇒
-        // apply the event before persist so that validation exception is handled before persisting
-        // the invalid event, in case such validation is implemented in the event handler.
-        // also, ensure that there is an event handler for each single event
-        val newState = state.applyEvent(setup, event)
-        val eventToPersist = tagEvent(event)
-
-        val newState2 = internalPersist(newState, eventToPersist)
-
-        val handler: Any ⇒ Unit = { x ⇒ // TODO is x the new state?
-          if (setup.snapshotWhen(newState2.state, event, newState2.seqNr))
-            internalSaveSnapshot(state)
-        }
-        val pendingInvocations = StashingHandlerInvocation(event, handler) :: Nil
-
-        // FIXME applySideEffects is missing
-
-        persistingEvents(newState2, pendingInvocations, sideEffects)
-
-      case PersistAll(events) ⇒
-        if (events.nonEmpty) {
-          // apply the event before persist so that validation exception is handled before persisting
-          // the invalid event, in case such validation is implemented in the event handler.
-          // also, ensure that there is an event handler for each single event
-          var count = events.size
-          // var seqNr = state.seqNr
-          val (newState, shouldSnapshotAfterPersist) =
-            events.foldLeft((state, false)) {
-              case ((currentState, snapshot), event) ⇒
-                val value = currentState
-                  .nextSequenceNr() // FIXME seqNr is also incremented in internalPersistAll
-                  .applyEvent(setup, event)
-
-                val shouldSnapshot = snapshot || setup.snapshotWhen(value.state, event, value.seqNr)
-                (value, shouldSnapshot)
-            }
-
-          val eventsToPersist = events.map(tagEvent)
-
-          val newState2 = internalPersistAll(eventsToPersist, newState)
-
-          val handler: Any ⇒ Unit = { _ ⇒
-            count -= 1
-            if (count == 0) {
-              //                // FIXME the result of applying side effects is ignored
-              //                val b = applySideEffects(sideEffects, newState)
-              if (shouldSnapshotAfterPersist)
-                internalSaveSnapshot(newState)
-            }
-          }
-
-          val pendingInvocations = events map { event ⇒
-            StashingHandlerInvocation(event, handler)
-          }
-
-          persistingEvents(newState2, pendingInvocations, sideEffects)
-
-        } else {
-          // run side-effects even when no events are emitted
-          tryUnstash(applySideEffects(sideEffects, state))
-        }
-
-      case _: PersistNothing.type @unchecked ⇒
-        tryUnstash(applySideEffects(sideEffects, state))
-
-      case _: Unhandled.type @unchecked ⇒
-        applySideEffects(sideEffects, state)
-        Behavior.unhandled
-
-      case c: ChainableEffect[_, S] ⇒
-        applySideEffect(c, state)
-    }
-  }
-
-  private def tagEvent(event: E): Any = {
-    val tags = setup.tagger(event)
-    if (tags.isEmpty) event else Tagged(event, tags)
-  }
-
-  // ===============================================
-
-  def persistingEvents(
-    state:              EventsourcedState[S],
-    pendingInvocations: immutable.Seq[PendingHandlerInvocation],
-    sideEffects:        immutable.Seq[ChainableEffect[_, S]]
-  ): Behavior[InternalProtocol] = {
-    withMdc {
-      Behaviors.immutable[EventsourcedBehavior.InternalProtocol] {
-        case (_, SnapshotterResponse(r))            ⇒ onSnapshotterResponse(r)
-        case (_, JournalResponse(r))                ⇒ onJournalResponse(state, pendingInvocations, sideEffects, r)
-        case (_, in: IncomingCommand[C @unchecked]) ⇒ onCommand(state, in)
-      }
-    }
-  }
-
-  private def withMdc(wrapped: Behavior[InternalProtocol]) = {
-    val mdc = Map(
-      "persistenceId" → setup.persistenceId,
-      "phase" → "run-persist-evnts"
-    )
-
-    Behaviors.withMdc((_: Any) ⇒ mdc, wrapped)
-  }
-
-  def onCommand(state: EventsourcedRunning.EventsourcedState[S], cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
-    stash(cmd)
-    Behaviors.same
-  }
-
-  final def onJournalResponse(
-    state:              EventsourcedState[S],
-    pendingInvocations: immutable.Seq[PendingHandlerInvocation],
-    sideEffects:        immutable.Seq[ChainableEffect[_, S]],
-    response:           Response): Behavior[InternalProtocol] = {
-    setup.log.debug("Received Journal response: {}", response)
-    response match {
-      case WriteMessageSuccess(p, id) ⇒
-        // instanceId mismatch can happen for persistAsync and defer in case of actor restart
-        // while message is in flight, in that case we ignore the call to the handler
-        if (id == setup.writerIdentity.instanceId) {
-          val newState = state.popApplyPendingInvocation(p)
-
-          // only once all things are applied we can revert back
-          if (newState.pendingInvocations.nonEmpty) Behaviors.same
-          else tryUnstash(applySideEffects(sideEffects, newState))
-        } else Behaviors.same
-
-      case WriteMessageRejected(p, cause, id) ⇒
-        // instanceId mismatch can happen for persistAsync and defer in case of actor restart
-        // while message is in flight, in that case the handler has already been discarded
-        if (id == setup.writerIdentity.instanceId) {
-          val newState = state.updateLastSequenceNr(p)
-          onPersistRejected(cause, p.payload, p.sequenceNr) // does not stop (by design)
-          tryUnstash(applySideEffects(sideEffects, newState))
-        } else Behaviors.same
-
-      case WriteMessageFailure(p, cause, id) ⇒
-        // instanceId mismatch can happen for persistAsync and defer in case of actor restart
-        // while message is in flight, in that case the handler has already been discarded
-        if (id == setup.writerIdentity.instanceId) {
-          // onWriteMessageComplete() -> tryBecomeHandlingCommands
-          onPersistFailureThenStop(cause, p.payload, p.sequenceNr)
-        } else Behaviors.same
-
-      case WriteMessagesSuccessful ⇒
-        // ignore
-        Behaviors.same
-
-      case WriteMessagesFailed(_) ⇒
-        // ignore
-        Behaviors.same // it will be stopped by the first WriteMessageFailure message; not applying side effects
-
-      case _: LoopMessageSuccess ⇒
-        // ignore, should never happen as there is no persistAsync in typed
-        Behaviors.same
-    }
-  }
-
-  //    private def onWriteMessageComplete(): Unit =
-  //      tryBecomeHandlingCommands()
-
-  private def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
-    setup.log.error(
-      cause,
-      "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
-      event.getClass.getName, seqNr, setup.persistenceId, cause.getMessage)
-  }
-
-  private def onPersistFailureThenStop(cause: Throwable, event: Any, seqNr: Long): Behavior[InternalProtocol] = {
-    setup.log.error(cause, "Failed to persist event type [{}] with sequence number [{}] for persistenceId [{}].",
-      event.getClass.getName, seqNr, setup.persistenceId)
-
-    // FIXME see #24479 for reconsidering the stopping behaviour
-    Behaviors.stopped
-  }
-
-  private def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
-    response match {
-      case SaveSnapshotSuccess(meta) ⇒
-        setup.context.log.debug("Save snapshot successful: " + meta)
-        Behaviors.same
-      case SaveSnapshotFailure(meta, ex) ⇒
-        setup.context.log.error(ex, "Save snapshot failed! " + meta)
-        Behaviors.same // FIXME https://github.com/akka/akka/issues/24637 should we provide callback for this? to allow Stop
-    }
-  }
-
-  // --------------------------
-
   def applySideEffects(effects: immutable.Seq[ChainableEffect[_, S]], state: EventsourcedState[S]): Behavior[InternalProtocol] = {
-    var res: Behavior[InternalProtocol] = Behaviors.same
+    var res: Behavior[InternalProtocol] = handlingCommands(state)
     val it = effects.iterator
 
     // if at least one effect results in a `stop`, we need to stop
