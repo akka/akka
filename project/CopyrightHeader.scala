@@ -4,15 +4,16 @@
 
 package akka
 
+import akka.ValidatePullRequest.{ValidatePR, additionalTasks}
+import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
+import de.heikoseeberger.sbtheader.{CommentCreator, HeaderPlugin}
+import sbt.Keys._
 import sbt._
-import Keys._
-import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport.HeaderPattern.commentBetween
-import de.heikoseeberger.sbtheader.{CommentBlockCreator, CommentCreator, CommentStyle, HeaderPlugin}
 
 trait CopyrightHeader extends AutoPlugin {
-  import HeaderPlugin.autoImport._
 
   override def requires = HeaderPlugin
+
   override def trigger = allRequirements
 
   override def projectSettings = Def.settings(
@@ -21,36 +22,47 @@ trait CopyrightHeader extends AutoPlugin {
         Seq(
           headerLicense := Some(HeaderLicense.Custom(headerFor(CurrentYear))),
           headerMappings := headerMappings.value ++ Map(
-            HeaderFileType.scala       -> lightbendCommentStyle,
-            HeaderFileType.java        -> lightbendCommentStyle,
-            HeaderFileType("template") -> lightbendCommentStyle
-          ),
-          compile := compile.dependsOn(HeaderPlugin.autoImport.headerCreate).value
+            HeaderFileType.scala -> cStyleComment,
+            HeaderFileType.java -> cStyleComment,
+            HeaderFileType("template") -> cStyleComment
+          )
         )
       )
+    },
+    additional
+  )
+
+  def additional = Def.settings(
+    (compile in Compile) := {
+      (headerCreate in Compile).value
+      (compile in Compile).value
+    },
+    (compile in Test) := {
+      (headerCreate in Test).value
+      (compile in Test).value
     }
   )
 
   val CurrentYear = java.time.Year.now.getValue.toString
   val CopyrightPattern = "Copyright \\([Cc]\\) (\\d{4}(-\\d{4})?) (Lightbend|Typesafe) Inc. <.*>".r
-  val CopyrightHeaderPattern = s"(?s).*${CopyrightPattern}.*\n*".r
+  val CopyrightHeaderPattern = s"(?s).*${CopyrightPattern}.*".r
 
   def headerFor(year: String): String =
     s"Copyright (C) $year Lightbend Inc. <https://www.lightbend.com>"
 
-  val lightbendCommentCreator = new CommentCreator() {
+  val cStyleComment = HeaderCommentStyle.cStyleBlockComment.copy(commentCreator = new CommentCreator() {
 
     import HeaderCommentStyle.cStyleBlockComment.commentCreator
 
     def updateLightbendHeader(header: String): String = header match {
-      case CopyrightHeaderPattern(years, null, _) =>
+      case CopyrightHeaderPattern(years, null, _)     =>
         if (years != CurrentYear)
           CopyrightPattern.replaceFirstIn(header, headerFor(years + "-" + CurrentYear))
         else
           CopyrightPattern.replaceFirstIn(header, headerFor(years))
       case CopyrightHeaderPattern(years, endYears, _) =>
         CopyrightPattern.replaceFirstIn(header, headerFor(years.replace(endYears, "-" + CurrentYear)))
-      case _ =>
+      case _                                          =>
         header
     }
 
@@ -60,21 +72,15 @@ trait CopyrightHeader extends AutoPlugin {
         .getOrElse(commentCreator(text, existingText))
         .trim
     }
-  }
-
-  val lightbendCommentStyle = CommentStyle.cStyleBlockComment
-    .copy(commentCreator = lightbendCommentCreator)
+  })
 }
 
-object CopyrightHeaderWithPr extends AutoPlugin with CopyrightHeader {
+object CopyrightHeader extends CopyrightHeader
 
-  import HeaderPlugin.autoImport._
+object CopyrightHeaderInPr extends CopyrightHeader {
 
-  import ValidatePullRequest.{ additionalTasks, ValidatePR }
-
-  override def projectSettings = super.projectSettings ++ Def.settings(
-    additionalTasks in ValidatePR += headerCheck in Compile,
-    additionalTasks in ValidatePR += headerCheck in Test
-  )
+  override val additional = Def.settings(
+      additionalTasks in ValidatePR += headerCheck in Compile,
+      additionalTasks in ValidatePR += headerCheck in Test
+    )
 }
-object CopyrightHeader extends AutoPlugin with CopyrightHeader
