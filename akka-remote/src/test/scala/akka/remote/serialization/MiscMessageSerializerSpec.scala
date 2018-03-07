@@ -15,7 +15,6 @@ import scala.concurrent.duration._
 import java.util.Optional
 import java.io.NotSerializableException
 
-
 import akka.{ Done, NotUsed }
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing._
