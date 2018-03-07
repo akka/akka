@@ -596,13 +596,9 @@ class FlowGroupBySpec extends StreamSpec {
       val threeProcessed = TestLatch()
       val queue = Source.queue[Elem](3, OverflowStrategy.backpressure)
         .groupBy(2, _.substream)
-        .to(
-          Flow[Elem]
-            .buffer(2, OverflowStrategy.backpressure)
-            .map { _.f() }
-            .to(Sink.ignore)
-            .async
-        )
+        .buffer(2, OverflowStrategy.backpressure)
+        .map { _.f() }.async
+        .to(Sink.ignore)
         .run()
 
       List(
