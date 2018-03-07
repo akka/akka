@@ -177,7 +177,7 @@ private[persistence] class EventsourcedRecoveringEvents[C, E, S](
     returnRecoveryPermit(setup, "recovery completed successfully")
     setup.recoveryCompleted(setup.commandContext, state.state)
 
-    val running = EventsourcedRunning.HandlingCommands[C, E, S](
+    val running = EventsourcedRunning[C, E, S](
       setup,
       EventsourcedRunning.EventsourcedState[S](state.seqNr, state.state)
     )
