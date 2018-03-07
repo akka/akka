@@ -42,6 +42,7 @@ private[akka] object EventsourcedBehavior {
   }
 
   object PhaseName {
+    // format: OFF
     val AwaitPermit     = "await-permit"
     val RecoverSnapshot = "recover-snap"
     val RecoverEvents   = "recover-evts"
@@ -49,6 +50,7 @@ private[akka] object EventsourcedBehavior {
     val Running         = "running     "
     val HandleCmnds     = "handle-cmnds"
     val PersistEvts     = "persist-evts"
+    // format: ON
   }
 
   def withMDC(persistenceId: String, phase: String)(b: Behavior[EventsourcedProtocol]) = {
