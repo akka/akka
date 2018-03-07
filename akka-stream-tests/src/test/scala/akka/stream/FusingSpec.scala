@@ -4,6 +4,8 @@
 
 package akka.stream
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.stream.scaladsl._
 import akka.stream.testkit.StreamSpec
 import akka.stream.impl.fusing.GraphInterpreter
@@ -95,6 +97,7 @@ class FusingSpec extends StreamSpec {
         val bus = GraphInterpreter.currentInterpreter.log.asInstanceOf[BusLogging]
         bus.logSource
       }
+
       val flow = Flow[Int].map(x ⇒ { testActor ! ref; x })
       Source(0 to 9)
         .map(x ⇒ { testActor ! ref; x })

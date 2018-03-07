@@ -33,6 +33,7 @@ import akka.util.OptionVal
 @InternalApi private[akka] object PhasedFusingActorMaterializer {
 
   val Debug = false
+  val DebugSpawnIsland = false
 
   val DefaultPhase: Phase[Any] = new Phase[Any] {
     override def apply(settings: ActorMaterializerSettings, effectiveAttributes: Attributes,
@@ -743,7 +744,11 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
           case OptionVal.Some(n) ⇒ n
           case OptionVal.None    ⇒ islandName
         }
-        materializer.actorOf(props, actorName)
+
+        val ref = materializer.actorOf(props, actorName)
+        if (PhasedFusingActorMaterializer.DebugSpawnIsland) {
+          println(s"Spawned actor [$ref] with shell: $shell")
+        }
     }
   }
 
