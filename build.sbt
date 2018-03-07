@@ -181,6 +181,10 @@ lazy val distributedData = akkaModule("akka-distributed-data")
   .settings(AutomaticModuleName.settings("akka.cluster.ddata"))
   .settings(OSGi.distributedData)
   .settings(Protobuf.settings)
+  .settings {
+    // https://github.com/akka/akka/issues/24675
+    Test / compile / sources := Seq()
+  }
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 
