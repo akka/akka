@@ -5,6 +5,7 @@
 package docs.http.scaladsl
 
 import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
@@ -353,7 +354,9 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
     val httpsProxyTransport = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved(proxyHost, proxyPort))
 
-    val settings = ConnectionPoolSettings(system).withTransport(httpsProxyTransport)
+    val settings = ConnectionPoolSettings(system)
+      .withConnectionSettings(ClientConnectionSettings(system)
+        .withTransport(httpsProxyTransport))
     Http().singleRequest(HttpRequest(uri = "https://google.com"), settings = settings)
     //#https-proxy-example-single-request
   }
@@ -379,7 +382,9 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
     val httpsProxyTransport = ClientTransport.httpsProxy(proxyAddress, auth)
 
-    val settings = ConnectionPoolSettings(system).withTransport(httpsProxyTransport)
+    val settings = ConnectionPoolSettings(system)
+      .withConnectionSettings(ClientConnectionSettings(system)
+        .withTransport(httpsProxyTransport))
     Http().singleRequest(HttpRequest(uri = "http://akka.io"), settings = settings)
     //#auth-https-proxy-example-single-request
   }

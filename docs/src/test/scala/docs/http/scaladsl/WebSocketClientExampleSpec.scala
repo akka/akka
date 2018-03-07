@@ -245,4 +245,69 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
     //#WebSocket-client-flow
   }
 
+  "https-proxy-singleWebSocket-request-example" in compileOnlySpec {
+    //#https-proxy-singleWebSocket-request-example
+    import java.net.InetSocketAddress
+
+    import akka.actor.ActorSystem
+    import akka.NotUsed
+    import akka.stream.ActorMaterializer
+    import akka.http.scaladsl.{ ClientTransport, Http }
+    import akka.http.scaladsl.settings.ClientConnectionSettings
+    import akka.http.scaladsl.model.ws._
+    import akka.stream.scaladsl._
+
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+
+    val flow: Flow[Message, Message, NotUsed] =
+      Flow.fromSinkAndSource(
+        Sink.foreach(println),
+        Source.single(TextMessage("hello world!")))
+
+    val proxyHost = "localhost"
+    val proxyPort = 8888
+
+    val httpsProxyTransport = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved(proxyHost, proxyPort))
+
+    val settings = ClientConnectionSettings(system).withTransport(httpsProxyTransport)
+    Http().singleWebSocketRequest(WebSocketRequest(uri = "wss://example.com:8080/some/path"), clientFlow = flow, settings = settings)
+    //#https-proxy-singleWebSocket-request-example
+  }
+
+  "https-proxy-singleWebSocket-request-example with auth" in compileOnlySpec {
+    import java.net.InetSocketAddress
+
+    import akka.actor.ActorSystem
+    import akka.NotUsed
+    import akka.stream.ActorMaterializer
+    import akka.http.scaladsl.{ ClientTransport, Http }
+    import akka.http.scaladsl.settings.ClientConnectionSettings
+    import akka.http.scaladsl.model.ws._
+    import akka.stream.scaladsl._
+
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+
+    val flow: Flow[Message, Message, NotUsed] =
+      Flow.fromSinkAndSource(
+        Sink.foreach(println),
+        Source.single(TextMessage("hello world!")))
+
+    val proxyHost = "localhost"
+    val proxyPort = 8888
+
+    //#auth-https-proxy-singleWebSocket-request-example
+    import akka.http.scaladsl.model.headers
+
+    val proxyAddress = InetSocketAddress.createUnresolved(proxyHost, proxyPort)
+    val auth = headers.BasicHttpCredentials("proxy-user", "secret-proxy-pass-dont-tell-anyone")
+
+    val httpsProxyTransport = ClientTransport.httpsProxy(proxyAddress, auth)
+
+    val settings = ClientConnectionSettings(system).withTransport(httpsProxyTransport)
+    Http().singleWebSocketRequest(WebSocketRequest(uri = "wss://example.com:8080/some/path"), clientFlow = flow, settings = settings)
+    //#auth-https-proxy-singleWebSocket-request-example
+  }
+
 }

@@ -336,7 +336,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                          localAddress: Option[InetSocketAddress] = None,
                          settings:     ClientConnectionSettings  = ClientConnectionSettings(system),
                          log:          LoggingAdapter            = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, settings.withLocalAddressOverride(localAddress), ConnectionContext.noEncryption(), ClientTransport.TCP, log)
+    _outgoingConnection(host, port, settings.withLocalAddressOverride(localAddress), ConnectionContext.noEncryption(), log)
 
   /**
    * Same as [[#outgoingConnection]] but for encrypted (HTTPS) connections.
@@ -352,7 +352,24 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                               localAddress:      Option[InetSocketAddress] = None,
                               settings:          ClientConnectionSettings  = ClientConnectionSettings(system),
                               log:               LoggingAdapter            = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, settings.withLocalAddressOverride(localAddress), connectionContext, ClientTransport.TCP, log)
+    _outgoingConnection(host, port, settings.withLocalAddressOverride(localAddress), connectionContext, log)
+
+  /**
+   * Similar to `outgoingConnection` but allows to specify a user-defined context to run the connection on.
+   *
+   * Depending on the kind of `ConnectionContext` the implementation will add TLS between the given transport and the HTTP
+   * implementation
+   *
+   * To configure additional settings for requests made using this method,
+   * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
+   */
+  def outgoingConnectionUsingContext(
+    host:              String,
+    port:              Int,
+    connectionContext: ConnectionContext,
+    settings:          ClientConnectionSettings = ClientConnectionSettings(system),
+    log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
+    _outgoingConnection(host, port, settings, connectionContext, log)
 
   /**
    * Similar to `outgoingConnection` but allows to specify a user-defined transport layer to run the connection on.
@@ -363,34 +380,33 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * To configure additional settings for requests made using this method,
    * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
    */
-  def outgoingConnectionUsingTransport(
+  @deprecated("Deprecated in favor of method outgoingConnectionUsingContext (transport retrieved from ClientConnectionSettings)", "10.1.0")
+  private[http] def outgoingConnectionUsingTransport( // kept as private[http] for binary compatibility
     host:              String,
     port:              Int,
     transport:         ClientTransport,
     connectionContext: ConnectionContext,
     settings:          ClientConnectionSettings = ClientConnectionSettings(system),
     log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, settings, connectionContext, transport, log)
+    _outgoingConnection(host, port, settings.withTransport(transport), connectionContext, log)
 
   private def _outgoingConnection(
     host:              String,
     port:              Int,
     settings:          ClientConnectionSettings,
     connectionContext: ConnectionContext,
-    transport:         ClientTransport,
     log:               LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
     val hostHeader = if (port == connectionContext.defaultPort) Host(host) else Host(host, port)
     val layer = clientLayer(hostHeader, settings, log)
-    layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, transport, log))(Keep.right)
+    layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, log))(Keep.right)
   }
 
   private def _outgoingTlsConnectionLayer(host: String, port: Int,
                                           settings: ClientConnectionSettings, connectionContext: ConnectionContext,
-                                          transport: ClientTransport,
-                                          log:       LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
+                                          log: LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
     val tlsStage = sslTlsStage(connectionContext, Client, Some(host → port))
 
-    tlsStage.joinMat(transport.connectTo(host, port, settings))(Keep.right)
+    tlsStage.joinMat(settings.transport.connectTo(host, port, settings))(Keep.right)
   }
 
   type ClientLayer = Http.ClientLayer
@@ -682,7 +698,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     val port = uri.effectivePort
 
     webSocketClientLayer(request, settings, log)
-      .joinMat(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, ClientTransport.TCP, log))(Keep.left)
+      .joinMat(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, log))(Keep.left)
   }
 
   /**

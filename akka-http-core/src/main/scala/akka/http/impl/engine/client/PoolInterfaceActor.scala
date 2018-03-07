@@ -98,7 +98,7 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
     import setup.{ connectionContext, settings }
 
     val connectionFlow =
-      Http().outgoingConnectionUsingTransport(host, port, settings.transport, connectionContext, settings.connectionSettings, setup.log)
+      Http().outgoingConnectionUsingContext(host, port, connectionContext, settings.connectionSettings, setup.log)
 
     val poolFlow =
       settings.poolImplementation match {

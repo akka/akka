@@ -75,7 +75,14 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.H
 # HttpExt constructor should only be called from Http extension
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.HttpExt.this")
 
+# ClientConnectionSettings, marked as @DoNotInherit, allows new methods
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.transport")
+
+# ConnectionPoolSettings, marked as @DoNotInherit, allows new methods
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.withUpdatedConnectionSettings")
+
 # Method additions to @DoNotInherit class
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.TimeoutAccess.getTimeout")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.TimeoutAccess.timeout")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.TimeoutAccess.getTimeout")
+

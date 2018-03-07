@@ -21,23 +21,10 @@ transport layer itself.
 
 ## Configuring Client Transports
 
-A @unidoc[ClientTransport] is configured slightly differently for the various layers of the HTTP client.
-Right now, configuration is only possible with code (and not through config files). There's currently no
-predefined way that would allow you to select different transports per target host (but you can easily define any kind
-of strategy by implementing @unidoc[ClientTransport] yourself).
-
-### Connection Pool Usage
-
-The @unidoc[ConnectionPoolSettings] class allows setting a custom transport for any of the pool methods. Use
-`ConnectionPoolSettings.withTransport` to configure a transport and pass those settings to one of the
-pool methods like
-@scala[`Http().singleRequest`, `Http().superPool`, or `Http().cachedHostConnectionPool`]
-@java[`Http.get(...).singleRequest`, `Http.get(...).superPool`, or `Http.get(...).cachedHostConnectionPool`].
-
-### Single Connection Usage
-
-You can configure a custom transport for a single HTTP connection by passing it to the `Http().outgoingConnectionUsingTransport`
-method.
+A @unidoc[ClientTransport] can be configured in the @unidoc[ClientConnectionSettings]. Right now, this is not possible
+through config files but only by code. First, use `ClientConnectionSettings.withTransport` to configure a transport,
+then use `ConnectionPoolSettings.withConnectionSettings`. @unidoc[ClientConnectionSettings] can be passed to all
+client-side entry points in @unidoc[Http].
 
 ## Predefined Transports
 
@@ -60,7 +47,7 @@ Instantiate the HTTP(S) proxy transport using `ClientTransport.httpsProxy(proxyA
 ### Use HTTP(S) proxy with @scala[`Http().singleRequest`]@java[`Http.get(...).singleRequest`]
 
 To make use of an HTTP proxy when using the `singleRequest` API you simply need to configure the proxy and pass
-the apropriate settings object when calling the single request method.
+the appropriate settings object when calling the single request method.
 
 Scala
 :  @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #https-proxy-example-single-request }
@@ -79,6 +66,28 @@ Scala
 
 Java
 :  @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #auth-https-proxy-example-single-request }
+
+### Use HTTP(S) proxy with @scala[Http().singleWebSocketRequest]@java[Http.get(...).singleWebSocketRequest]
+
+Making use of an HTTP proxy when using the `singleWebSocketRequest` is done like using `singleRequest`, except you set `ClientConnectionSettings`
+instead of `ConnectionPoolSettings`:
+
+Scala
+:  @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #https-proxy-singleWebSocket-request-example }
+
+Java
+:  @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #https-proxy-singleWebSocket-request-example }
+
+### Use HTTP(S) proxy that requires authentication for Web Sockets
+
+Here is an example for Web Socket:
+
+Scala
+:  @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #auth-https-proxy-singleWebSocket-request-example }
+
+Java
+:  @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #auth-https-proxy-singleWebSocket-request-example }
+
 
 ## Implementing Custom Transports
 

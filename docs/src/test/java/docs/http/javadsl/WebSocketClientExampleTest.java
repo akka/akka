@@ -7,13 +7,16 @@ package docs.http.javadsl;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.http.javadsl.ClientTransport;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.Authorization;
+import akka.http.javadsl.model.headers.HttpCredentials;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
 import akka.http.javadsl.model.ws.WebSocketRequest;
 import akka.http.javadsl.model.ws.WebSocketUpgradeResponse;
+import akka.http.javadsl.settings.ClientConnectionSettings;
 import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
@@ -22,6 +25,7 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -237,6 +241,68 @@ public class WebSocketClientExampleTest {
     //#WebSocket-client-flow
   }
 
+  // compile only test
+  public void testSingleWebSocketRequestWithHttpsProxyExample() {
+    //#https-proxy-singleWebSocket-request-example
+
+    final ActorSystem system = ActorSystem.create();
+    final Materializer materializer = ActorMaterializer.create(system);
+
+    final Flow<Message, Message, NotUsed> flow =
+      Flow.fromSinkAndSource(
+        Sink.foreach(System.out::println),
+        Source.single(TextMessage.create("hello world")));
+
+    ClientTransport proxy = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved("192.168.2.5", 8080));
+    ClientConnectionSettings clientSettingsWithHttpsProxy = ClientConnectionSettings.create(system)
+      .withTransport(proxy);
+
+    Http.get(system)
+      .singleWebSocketRequest(
+        WebSocketRequest.create("wss://example.com:8080/some/path"),
+        flow,
+        Http.get(system).defaultClientHttpsContext(),
+        null,
+        clientSettingsWithHttpsProxy, // <- pass in the custom settings here
+        system.log(),
+        materializer);
+
+    //#https-proxy-singleWebSocket-request-example
+  }
+
+  // compile only test
+  public void testSingleWebSocketRequestWithHttpsProxyExampleWithAuth() {
+
+    final ActorSystem system = ActorSystem.create();
+    final Materializer materializer = ActorMaterializer.create(system);
+
+    final Flow<Message, Message, NotUsed> flow =
+      Flow.fromSinkAndSource(
+        Sink.foreach(System.out::println),
+        Source.single(TextMessage.create("hello world")));
+
+    //#auth-https-proxy-singleWebSocket-request-example
+    InetSocketAddress proxyAddress =
+      InetSocketAddress.createUnresolved("192.168.2.5", 8080);
+    HttpCredentials credentials =
+      HttpCredentials.createBasicHttpCredentials("proxy-user", "secret-proxy-pass-dont-tell-anyone");
+
+    ClientTransport proxy = ClientTransport.httpsProxy(proxyAddress, credentials); // include credentials
+    ClientConnectionSettings clientSettingsWithHttpsProxy = ClientConnectionSettings.create(system)
+      .withTransport(proxy);
+
+    Http.get(system)
+      .singleWebSocketRequest(
+        WebSocketRequest.create("wss://example.com:8080/some/path"),
+        flow,
+        Http.get(system).defaultClientHttpsContext(),
+        null,
+        clientSettingsWithHttpsProxy, // <- pass in the custom settings here
+        system.log(),
+        materializer);
+
+    //#auth-https-proxy-singleWebSocket-request-example
+}
 
 
   }

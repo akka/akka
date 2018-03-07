@@ -10,6 +10,7 @@ import java.util.Random
 import akka.annotation.InternalApi
 import akka.http.impl.engine.ws.Randoms
 import akka.http.impl.util._
+import akka.http.scaladsl.ClientTransport
 import akka.http.scaladsl.model.headers.`User-Agent`
 import akka.http.scaladsl.settings.ClientConnectionSettings.LogUnencryptedNetworkBytes
 import akka.http.scaladsl.settings.ParserSettings
@@ -30,7 +31,8 @@ private[akka] final case class ClientConnectionSettingsImpl(
   websocketRandomFactory:     () ⇒ Random,
   socketOptions:              immutable.Seq[SocketOption],
   parserSettings:             ParserSettings,
-  localAddress:               Option[InetSocketAddress])
+  localAddress:               Option[InetSocketAddress],
+  transport:                  ClientTransport)
   extends akka.http.scaladsl.settings.ClientConnectionSettings {
 
   require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")
@@ -51,6 +53,7 @@ object ClientConnectionSettingsImpl extends SettingsCompanion[ClientConnectionSe
       websocketRandomFactory = Randoms.SecureRandomInstances, // can currently only be overridden from code
       socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
       parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
-      localAddress = None)
+      localAddress = None,
+      transport = ClientTransport.TCP)
   }
 }

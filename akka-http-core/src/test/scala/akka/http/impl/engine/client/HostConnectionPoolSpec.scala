@@ -340,11 +340,11 @@ class HostConnectionPoolSpec extends AkkaSpec(
       "dispatch multiple failures on different slots when request entity fails" in new SetupWithServerProbes(_.withMaxConnections(3)) {
         val req1 = pushChunkedRequest(numRetries = 0)
         val conn1 = expectNextConnection()
-        val req1Bytes = conn1.expectChunkedRequestBytesAsProbe()
+        conn1.expectChunkedRequestBytesAsProbe()
 
         val req2 = pushChunkedRequest(numRetries = 0)
         val conn2 = expectNextConnection()
-        val req2Bytes = conn2.expectChunkedRequestBytesAsProbe()
+        conn2.expectChunkedRequestBytesAsProbe()
 
         req1.sendError(new RuntimeException("First request stumbled and fell"))
         conn1.failConnection(new RuntimeException("First connection crash-landed on mars"))

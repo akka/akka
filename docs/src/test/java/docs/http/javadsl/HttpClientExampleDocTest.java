@@ -12,6 +12,7 @@ import akka.util.ByteString;
 import scala.concurrent.ExecutionContextExecutor;
 import akka.stream.javadsl.*;
 import akka.http.javadsl.ClientTransport;
+import akka.http.javadsl.settings.ClientConnectionSettings;
 import akka.http.javadsl.settings.ConnectionPoolSettings;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.OutgoingConnection;
@@ -212,7 +213,8 @@ public class HttpClientExampleDocTest {
     final ActorSystem system = ActorSystem.create();
 
     ClientTransport proxy = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved("192.168.2.5", 8080));
-    ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system).withTransport(proxy);
+    ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system)
+        .withConnectionSettings(ClientConnectionSettings.create(system).withTransport(proxy));
 
     final CompletionStage<HttpResponse> responseFuture =
         Http.get(system)
@@ -238,7 +240,8 @@ public class HttpClientExampleDocTest {
       HttpCredentials.createBasicHttpCredentials("proxy-user", "secret-proxy-pass-dont-tell-anyone");
 
     ClientTransport proxy = ClientTransport.httpsProxy(proxyAddress, credentials); // include credentials
-    ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system).withTransport(proxy);
+    ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system)
+        .withConnectionSettings(ClientConnectionSettings.create(system).withTransport(proxy));
 
     final CompletionStage<HttpResponse> responseFuture =
         Http.get(system)

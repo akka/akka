@@ -41,7 +41,8 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def responseEntitySubscriptionTimeout: Duration
 
   /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
-  def transport: ClientTransport
+  @deprecated("Deprecated in favor of connectionSettings.transport", "10.1.0")
+  def transport: ClientTransport = connectionSettings.transport
 
   // ---
 
@@ -61,7 +62,15 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
 
   @ApiMayChange
   override def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(responseEntitySubscriptionTimeout = newValue)
-  def withTransport(newTransport: ClientTransport): ConnectionPoolSettings = self.copy(transport = newTransport)
+
+  /**
+   * Since 10.1.0, the transport is configured in [[ClientConnectionSettings]]. This method is a shortcut for
+   * `withUpdatedConnectionSettings(_.withTransport(newTransport))`.
+   */
+  def withTransport(newTransport: ClientTransport): ConnectionPoolSettings =
+    withUpdatedConnectionSettings(_.withTransport(newTransport))
+
+  def withUpdatedConnectionSettings(f: ClientConnectionSettings ⇒ ClientConnectionSettings): ConnectionPoolSettings
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {
