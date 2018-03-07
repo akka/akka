@@ -24,12 +24,6 @@ object WatchSpec {
       case (_, Stop) ⇒ Behaviors.stopped
     }
 
-  val mutableTerminatorBehavior = new MutableBehavior[Stop.type] {
-    override def onMessage(msg: Stop.type) = msg match {
-      case Stop ⇒ Behaviors.stopped
-    }
-  }
-
   sealed trait Message
   sealed trait CustomTerminationMessage extends Message
   case object CustomTerminationMessage extends CustomTerminationMessage
