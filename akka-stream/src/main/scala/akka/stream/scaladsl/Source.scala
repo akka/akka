@@ -631,7 +631,7 @@ object Source {
    * `Restart` supervision strategy will close and create blocking IO again. Default strategy is `Stop` which means
    * that stream will be terminated on error in `read` function by default.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
@@ -654,7 +654,7 @@ object Source {
    * `Restart` supervision strategy will close and create resource. Default strategy is `Stop` which means
    * that stream will be terminated on error in `read` function (or future) by default.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.

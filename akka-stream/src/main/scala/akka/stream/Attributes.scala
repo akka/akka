@@ -11,7 +11,6 @@ import scala.annotation.tailrec
 import scala.reflect.{ ClassTag, classTag }
 import akka.japi.function
 import java.net.URLEncoder
-import java.util.concurrent.TimeUnit
 
 import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
@@ -71,7 +70,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * This is the expected way for stages to access attributes.
    */
   def getAttribute[T <: Attribute](c: Class[T]): Optional[T] =
-    (attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }).asJava
+    attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }.asJava
 
   /**
    * Scala API: Get the most specific attribute value for a given Attribute type or subclass thereof or
@@ -129,7 +128,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 
     find(attributeList) match {
       case OptionVal.Some(t) ⇒ t.asInstanceOf[T]
-      case OptionVal.None    ⇒ throw new IllegalStateException(s"Mandatory attribute ${c} not found")
+      case OptionVal.None    ⇒ throw new IllegalStateException(s"Mandatory attribute [$c] not found")
     }
   }
 
@@ -334,7 +333,7 @@ object Attributes {
    * Passing in null as any of the arguments sets the level to its default value, which is:
    * `Debug` for `onElement` and `onFinish`, and `Error` for `onFailure`.
    */
-  def createLogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) =
+  def createLogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel): Attributes =
     logLevels(
       onElement = Option(onElement).getOrElse(Logging.DebugLevel),
       onFinish = Option(onFinish).getOrElse(Logging.DebugLevel),
@@ -365,10 +364,34 @@ object Attributes {
 object ActorAttributes {
   import Attributes._
   final case class Dispatcher(dispatcher: String) extends MandatoryAttribute
+
+  object Dispatcher {
+    /**
+     * INTERNAL API
+     * Resolves the dispatcher's name with a fallback to the default blocking IO dispatcher.
+     * Note that `IODispatcher.dispatcher` is not used here as the config used to create [[ActorMaterializerSettings]]
+     * is not easily accessible, instead the name is taken from `settings.blockingIoDispatcher`
+     */
+    @InternalApi
+    private[akka] def resolve(attributes: Attributes, settings: ActorMaterializerSettings): String =
+      attributes.mandatoryAttribute[Dispatcher] match {
+        case IODispatcher           ⇒ settings.blockingIoDispatcher
+        case Dispatcher(dispatcher) ⇒ dispatcher
+      }
+
+    /**
+     * INTERNAL API
+     * Resolves the dispatcher name with a fallback to the default blocking IO dispatcher.
+     */
+    @InternalApi
+    private[akka] def resolve(context: MaterializationContext): String =
+      resolve(context.effectiveAttributes, ActorMaterializerHelper.downcast(context.materializer).settings)
+  }
+
   final case class SupervisionStrategy(decider: Supervision.Decider) extends MandatoryAttribute
 
   // this is actually a config key that needs reading and itself will contain the actual dispatcher name
-  val IODispatcher: Dispatcher = ActorAttributes.Dispatcher("akka.stream.blocking-io-dispatcher")
+  val IODispatcher: Dispatcher = ActorAttributes.Dispatcher("akka.stream.materializer.blocking-io-dispatcher")
 
   /**
    * Specifies the name of the dispatcher. This also adds an async boundary.
@@ -402,7 +425,7 @@ object ActorAttributes {
    * Passing in null as any of the arguments sets the level to its default value, which is:
    * `Debug` for `onElement` and `onFinish`, and `Error` for `onFailure`.
    */
-  def createLogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel) =
+  def createLogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel): Attributes =
     logLevels(
       onElement = Option(onElement).getOrElse(Logging.DebugLevel),
       onFinish = Option(onFinish).getOrElse(Logging.DebugLevel),
