@@ -33,11 +33,8 @@ private[akka] trait EventsourcedJournalInteractions[C, E, S] {
 
   type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
   protected def internalPersist(
-    state:       EventsourcedRunning.EventsourcedState[S],
-    event:       EventOrTagged,
-    sideEffects: immutable.Seq[ChainableEffect[_, S]])(handler: Any ⇒ Unit): Behavior[InternalProtocol] = {
-    // pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
-    val pendingInvocations = StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit]) :: Nil
+    state: EventsourcedRunning.EventsourcedState[S],
+    event: EventOrTagged): EventsourcedRunning.EventsourcedState[S] = {
 
     val newState = state.nextSequenceNr()
 
@@ -53,35 +50,28 @@ private[akka] trait EventsourcedJournalInteractions[C, E, S] {
     val eventBatch = AtomicWrite(repr) :: Nil // batching not used, since no persistAsync
     setup.journal.tell(JournalProtocol.WriteMessages(eventBatch, setup.selfUntypedAdapted, setup.writerIdentity.instanceId), setup.selfUntypedAdapted)
 
-    EventsourcedRunning.PersistingEvents[C, E, S](setup, state, pendingInvocations, sideEffects)
+    newState
   }
 
   protected def internalPersistAll(
-    events:      immutable.Seq[EventOrTagged],
-    state:       EventsourcedRunning.EventsourcedState[S],
-    sideEffects: immutable.Seq[ChainableEffect[_, S]])(handler: Any ⇒ Unit): Behavior[InternalProtocol] = {
+    events: immutable.Seq[EventOrTagged],
+    state:  EventsourcedRunning.EventsourcedState[S]): EventsourcedRunning.EventsourcedState[S] = {
     if (events.nonEmpty) {
-
-      val pendingInvocations = events map { event ⇒
-        // pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
-        StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
-      }
-
       val newState = state.nextSequenceNr()
 
       val senderNotKnownBecauseAkkaTyped = null
       val write = AtomicWrite(events.map(event ⇒ PersistentRepr(
         event,
         persistenceId = setup.persistenceId,
-        sequenceNr = newState.seqNr,
+        sequenceNr = newState.seqNr, // FIXME increment for each event
         writerUuid = setup.writerIdentity.writerUuid,
         sender = senderNotKnownBecauseAkkaTyped)
       ))
 
       setup.journal.tell(JournalProtocol.WriteMessages(write :: Nil, setup.selfUntypedAdapted, setup.writerIdentity.instanceId), setup.selfUntypedAdapted)
 
-      EventsourcedRunning.PersistingEvents(setup, state, pendingInvocations, sideEffects)
-    } else Behaviors.same
+      newState
+    } else state
   }
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
