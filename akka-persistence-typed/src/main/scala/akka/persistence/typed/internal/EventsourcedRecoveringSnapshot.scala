@@ -7,10 +7,9 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors.MutableBehavior
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, StashBuffer, TimerScheduler }
 import akka.annotation.InternalApi
-import akka.event.Logging
 import akka.persistence.SnapshotProtocol.{ LoadSnapshot, LoadSnapshotFailed, LoadSnapshotResult }
 import akka.persistence._
-import akka.persistence.typed.internal.EventsourcedBehavior.{ EventsourcedProtocol, WriterIdentity }
+import akka.persistence.typed.internal.EventsourcedBehavior.EventsourcedProtocol
 import akka.util.Helpers._
 
 import scala.util.control.NonFatal
@@ -37,18 +36,15 @@ final class EventsourcedRecoveringSnapshot[C, E, S](
 ) extends MutableBehavior[EventsourcedProtocol]
   with EventsourcedBehavior[C, E, S]
   with EventsourcedStashManagement {
-  import setup._
-
   import Behaviors.same
   import EventsourcedBehavior._
-  import akka.actor.typed.scaladsl.adapter._
 
-  protected val log = Logging(context.system.toUntyped, this)
+  override protected def log = context.log
 
   // -------- initialize --------
   startRecoveryTimer()
 
-  loadSnapshot(persistenceId, recovery.fromSnapshot, recovery.toSequenceNr)
+  loadSnapshot(persistenceId, setup.recovery.fromSnapshot, setup.recovery.toSequenceNr)
   // ---- end of initialize ----
 
   val commandContext: ActorContext[C] = context.asInstanceOf[ActorContext[C]]
@@ -132,18 +128,20 @@ final class EventsourcedRecoveringSnapshot[C, E, S](
   private def replayMessages(state: S, toSnr: Long): Behavior[EventsourcedProtocol] = {
     cancelRecoveryTimer()
 
-    val rec = recovery.copy(toSequenceNr = toSnr, fromSnapshot = SnapshotSelectionCriteria.None) // TODO introduce new types
+    val rec = setup.recovery.copy(toSequenceNr = toSnr, fromSnapshot = SnapshotSelectionCriteria.None) // TODO introduce new types
 
-    new EventsourcedRecoveringEvents[C, E, S](
-      setup.copy(recovery = rec),
-      context,
-      timers,
-      internalStash,
+    EventsourcedBehavior.withMDC(persistenceId, EventsourcedBehavior.PhaseName.RecoverEvents) {
+      new EventsourcedRecoveringEvents[C, E, S](
+        setup.copy(recovery = rec),
+        context,
+        timers,
+        internalStash,
 
-      lastSequenceNr,
+        lastSequenceNr,
 
-      state
-    )
+        state
+      )
+    }
   }
 
   /**
@@ -158,13 +156,11 @@ final class EventsourcedRecoveringSnapshot[C, E, S](
     cancelRecoveryTimer()
     event match {
       case Some(evt) ⇒
-        log.error(cause, "Exception in receiveRecover when replaying event type [{}] with sequence number [{}] for " +
-          "persistenceId [{}].", evt.getClass.getName, lastSequenceNr, persistenceId)
+        log.error(cause, "Exception in receiveRecover when replaying event type [{}] with sequence number [{}]", evt.getClass.getName, lastSequenceNr)
         Behaviors.stopped
 
       case None ⇒
-        log.error(cause, "Persistence failure when replaying events for persistenceId [{}]. " +
-          "Last known sequence number [{}]", persistenceId, lastSequenceNr)
+        log.error(cause, "Persistence failure when replaying events; Last known sequence number [{}]", lastSequenceNr)
         Behaviors.stopped
     }
   }
@@ -176,15 +172,13 @@ final class EventsourcedRecoveringSnapshot[C, E, S](
 
   // ----------
 
-  override def onMessage(msg: EventsourcedProtocol): Behavior[EventsourcedProtocol] = {
+  override def onMessage(msg: EventsourcedProtocol): Behavior[EventsourcedProtocol] =
     msg match {
-      // TODO explore crazy hashcode hack to make this match quicker...?
       case EventsourcedProtocol.SnapshotterResponse(r)      ⇒ onSnapshotterResponse(r)
       case EventsourcedProtocol.JournalResponse(r)          ⇒ onJournalResponse(r)
       case EventsourcedProtocol.RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot = snapshot)
       case in: EventsourcedProtocol.IncomingCommand[C]      ⇒ onCommand(in) // explicit cast to fail eagerly
     }
-  }
 
   // ----------
 

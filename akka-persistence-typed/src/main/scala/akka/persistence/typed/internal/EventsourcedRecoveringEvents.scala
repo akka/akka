@@ -46,7 +46,7 @@ private[akka] class EventsourcedRecoveringEvents[C, E, S](
   import EventsourcedBehavior._
   import akka.actor.typed.scaladsl.adapter._
 
-  protected val log = Logging(context.system.toUntyped, this)
+  override protected def log = context.log
 
   // -------- initialize --------
   startRecoveryTimer()
@@ -151,18 +151,20 @@ private[akka] class EventsourcedRecoveringEvents[C, E, S](
       returnRecoveryPermit("recovery completed successfully")
       recoveryCompleted(commandContext, state)
 
-      val running = new EventsourcedRunning[C, E, S](
-        setup,
-        context,
-        timers,
-        internalStash,
+      EventsourcedBehavior.withMDC(persistenceId, EventsourcedBehavior.PhaseName.HandleCmnds) {
+        val running = new EventsourcedRunning[C, E, S](
+          setup,
+          context,
+          timers,
+          internalStash,
 
-        sequenceNr,
+          sequenceNr,
 
-        state
-      )
+          state
+        )
 
-      tryUnstash(context, running)
+        tryUnstash(context, running)
+      }
     } finally {
       cancelRecoveryTimer()
     }

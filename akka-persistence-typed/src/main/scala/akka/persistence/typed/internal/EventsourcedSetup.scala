@@ -32,13 +32,15 @@ private[persistence] case class EventsourcedSetup[Command, Event, State](
 ) extends PersistentBehavior[Command, Event, State] {
 
   override def apply(ctx: typed.ActorContext[Command]): Behavior[Command] =
-    DeferredBehavior[EventsourcedProtocol] { ctx ⇒
-      Behaviors.withTimers[EventsourcedProtocol] { timers ⇒
-        new EventsourcedRequestingRecoveryPermit(
-          this,
-          ctx,
-          timers
-        )
+    Behaviors.setup[EventsourcedProtocol] { ctx ⇒
+      EventsourcedBehavior.withMDC(persistenceId, EventsourcedBehavior.PhaseName.AwaitPermit) {
+        Behaviors.withTimers[EventsourcedProtocol] { timers ⇒
+          new EventsourcedRequestingRecoveryPermit(
+            this,
+            ctx,
+            timers
+          )
+        }
       }
     }.widen[Any] {
       case res: JournalProtocol.Response           ⇒ EventsourcedProtocol.JournalResponse(res)

@@ -3,11 +3,11 @@
  */
 package akka.persistence.typed.internal
 
-import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer }
+import akka.actor.typed.{ Behavior, Logger }
 import akka.actor.{ DeadLetter, StashOverflowException }
 import akka.annotation.InternalApi
-import akka.event.{ Logging, LoggingAdapter }
+import akka.event.Logging
 import akka.persistence._
 import akka.persistence.typed.internal.EventsourcedBehavior.EventsourcedProtocol
 import akka.util.ConstantFun
@@ -18,7 +18,7 @@ import akka.{ actor ⇒ a }
 private[akka] trait EventsourcedStashManagement {
   import akka.actor.typed.scaladsl.adapter._
 
-  protected def log: LoggingAdapter
+  protected def log: Logger
 
   protected def extension: Persistence
 

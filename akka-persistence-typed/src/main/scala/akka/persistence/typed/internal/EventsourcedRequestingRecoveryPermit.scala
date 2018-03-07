@@ -30,10 +30,7 @@ private[akka] final class EventsourcedRequestingRecoveryPermit[C, E, S](
   with EventsourcedStashManagement {
   import setup._
 
-  import akka.actor.typed.scaladsl.adapter._
-
-  // has to be lazy, since we want to obtain the persistenceId
-  protected lazy val log = Logging(context.system.toUntyped, this)
+  override def log = context.log
 
   log.info("created EventsourcedRequestingRecoveryPermit" + this)
 
@@ -56,12 +53,14 @@ private[akka] final class EventsourcedRequestingRecoveryPermit[C, E, S](
   def becomeRecovering(): Behavior[EventsourcedProtocol] = {
     log.debug(s"Initializing snapshot recovery: {}", recovery)
 
-    new EventsourcedRecoveringSnapshot(
-      setup,
-      context,
-      timers,
-      internalStash
-    )
+    EventsourcedBehavior.withMDC(setup.persistenceId, EventsourcedBehavior.PhaseName.RecoverSnapshot) {
+      new EventsourcedRecoveringSnapshot(
+        setup,
+        context,
+        timers,
+        internalStash
+      )
+    }
   }
 
   // ----------

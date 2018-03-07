@@ -52,7 +52,7 @@ class EventsourcedRunning[C, E, S](
   import EventsourcedBehavior._
   import akka.actor.typed.scaladsl.adapter._
 
-  protected val log = Logging(context.system.toUntyped, this)
+  override protected def log = context.log
 
   private def commandContext: ActorContext[C] = context.asInstanceOf[ActorContext[C]]
 

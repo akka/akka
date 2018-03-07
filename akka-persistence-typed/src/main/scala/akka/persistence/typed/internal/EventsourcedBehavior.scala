@@ -7,15 +7,11 @@ package akka.persistence.typed.internal
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.typed.Behavior
-import akka.actor.typed.Behavior.StoppedBehavior
-import akka.actor.typed.scaladsl.{ ActorContext, TimerScheduler }
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, TimerScheduler }
 import akka.annotation.InternalApi
-import akka.event.{ LogSource, Logging }
-import akka.persistence.typed.internal.EventsourcedBehavior.EventsourcedProtocol.JournalResponse
+import akka.persistence.Persistence
 import akka.persistence.typed.scaladsl.PersistentBehaviors
-import akka.persistence.{ JournalProtocol, Persistence, RecoveryPermitter, SnapshotProtocol }
 import akka.{ actor ⇒ a }
 
 /** INTERNAL API */
@@ -45,16 +41,19 @@ private[akka] object EventsourcedBehavior {
     private[akka] final case class IncomingCommand[C](command: C) extends EventsourcedProtocol
   }
 
-  implicit object PersistentBehaviorLogSource extends LogSource[EventsourcedBehavior[_, _, _]] {
-    override def genString(b: EventsourcedBehavior[_, _, _]): String = {
-      val behaviorShortName = b match {
-        case _: EventsourcedRunning[_, _, _]                  ⇒ "running"
-        case _: EventsourcedRecoveringEvents[_, _, _]         ⇒ "recover-events"
-        case _: EventsourcedRecoveringSnapshot[_, _, _]       ⇒ "recover-snap"
-        case _: EventsourcedRequestingRecoveryPermit[_, _, _] ⇒ "awaiting-permit"
-      }
-      s"PersistentBehavior[id:${b.persistenceId}][${b.context.self.path}][$behaviorShortName]"
-    }
+  object PhaseName {
+    val AwaitPermit     = "await-permit"
+    val RecoverSnapshot = "recover-snap"
+    val RecoverEvents   = "recover-evts"
+    @Deprecated // FIXME handling commands / events has to be behaviors, otherwise hard to influence mdc
+    val Running         = "running     "
+    val HandleCmnds     = "handle-cmnds"
+    val PersistEvts     = "persist-evts"
+  }
+
+  def withMDC(persistenceId: String, phase: String)(b: Behavior[EventsourcedProtocol]) = {
+    val mdc = Map("id" → persistenceId, "phase" → phase)
+    Behaviors.withMdc((_: EventsourcedProtocol) ⇒ mdc, b)
   }
 
 }
@@ -87,11 +86,4 @@ private[akka] trait EventsourcedBehavior[C, E, S] {
   protected lazy val snapshotStore: a.ActorRef = extension.snapshotStoreFor(snapshotPluginId)
 
   protected lazy val selfUntyped: a.ActorRef = context.self.toUntyped
-  //  protected lazy val selfUntypedAdapted: a.ActorRef = context.messageAdapter[Any] {
-  //    case res: JournalProtocol.Response           ⇒ EventsourcedProtocol.JournalResponse(res)
-  //    case RecoveryPermitter.RecoveryPermitGranted ⇒ EventsourcedProtocol.RecoveryPermitGranted
-  //    case res: SnapshotProtocol.Response          ⇒ EventsourcedProtocol.SnapshotterResponse(res)
-  //    case cmd: C @unchecked                       ⇒ EventsourcedProtocol.IncomingCommand(cmd)
-  //  }.toUntyped
-
 }
