@@ -45,6 +45,8 @@ private[akka] class EventsourcedRecoveringSnapshot[C, E, S](
   def createBehavior(): Behavior[InternalProtocol] = {
     startRecoveryTimer()
 
+    loadSnapshot(setup.recovery.fromSnapshot, setup.recovery.toSequenceNr)
+
     withMdc {
       Behaviors.immutable {
         case (_, SnapshotterResponse(r))      ⇒ onSnapshotterResponse(r)

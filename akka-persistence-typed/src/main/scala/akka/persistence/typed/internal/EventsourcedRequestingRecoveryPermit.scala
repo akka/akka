@@ -40,7 +40,7 @@ private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](
 
     withMdc {
       Behaviors.immutable[InternalProtocol] {
-        case (_, InternalProtocol.RecoveryPermitGranted) ⇒ // FIXME types
+        case (_, InternalProtocol.RecoveryPermitGranted) ⇒
           becomeRecovering()
 
         case (_, other) ⇒
@@ -70,8 +70,7 @@ private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](
   private def requestRecoveryPermit(): Unit = {
     import akka.actor.typed.scaladsl.adapter._
     // IMPORTANT to use selfUntyped, and not an adapter, since recovery permitter watches/unwatches those refs (and adapters are new refs)
-    val selfUntyped = setup.context.self.toUntyped
-    setup.persistence.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, selfUntyped)
+    setup.persistence.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, setup.selfUntyped)
   }
 
 }
