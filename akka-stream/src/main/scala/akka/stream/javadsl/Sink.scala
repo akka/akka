@@ -328,9 +328,9 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
    *
    * Useful for when you need a materialized value of a Sink when handing it out to someone to materialize it for you.
    */
-  def preMaterialize(materializer: Materializer): japi.Pair[Mat @uncheckedVariance, scaladsl.Sink[In @uncheckedVariance, NotUsed]] = {
+  def preMaterialize(materializer: Materializer): japi.Pair[Mat @uncheckedVariance, Sink[In @uncheckedVariance, NotUsed]] = {
     val (mat, sink) = delegate.preMaterialize()(materializer)
-    akka.japi.Pair(mat, sink)
+    akka.japi.Pair(mat, sink.asJava)
   }
 
   /**
