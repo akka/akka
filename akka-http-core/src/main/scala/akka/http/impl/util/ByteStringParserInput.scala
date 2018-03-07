@@ -6,6 +6,7 @@ package akka.http.impl.util
 
 import java.nio.charset.StandardCharsets
 
+import akka.annotation.InternalApi
 import akka.parboiled2.ParserInput.DefaultParserInput
 import akka.util.ByteString
 
@@ -21,7 +22,8 @@ import akka.util.ByteString
  * 7-bit ASCII characters (0x00-0x7F) then UTF-8 is fine, since the first 127 UTF-8 characters are
  * encoded with only one byte that is identical to 7-bit ASCII and ISO-8859-1.
  */
-final class ByteStringParserInput(bytes: ByteString) extends DefaultParserInput {
+@InternalApi
+final private[http] class ByteStringParserInput(bytes: ByteString) extends DefaultParserInput {
   override def charAt(ix: Int): Char = (bytes(ix) & 0xFF).toChar
   override def length: Int = bytes.size
   override def sliceString(start: Int, end: Int): String = bytes.slice(start, end).decodeString(StandardCharsets.ISO_8859_1)

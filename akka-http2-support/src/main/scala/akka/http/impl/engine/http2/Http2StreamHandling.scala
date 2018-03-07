@@ -15,6 +15,8 @@ import akka.util.ByteString
 
 import scala.collection.immutable
 
+import FrameEvent._
+
 /** INTERNAL API */
 @InternalApi
 private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLogging ⇒

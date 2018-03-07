@@ -14,6 +14,8 @@ import akka.annotation.InternalApi
 
 import scala.annotation.tailrec
 
+import FrameEvent._
+
 /** INTERNAL API */
 @InternalApi
 private[http2] object FrameRenderer {

@@ -17,6 +17,8 @@ import com.twitter.hpack.HeaderListener
 
 import scala.collection.immutable.VectorBuilder
 
+import FrameEvent._
+
 /**
  * INTERNAL API
  *

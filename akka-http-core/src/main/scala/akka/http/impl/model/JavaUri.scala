@@ -16,7 +16,7 @@ import akka.http.impl.util.JavaMapping.Implicits._
 
 /** INTERNAL API */
 @InternalApi
-case class JavaUri(uri: sm.Uri) extends jm.Uri {
+private[http] case class JavaUri(uri: sm.Uri) extends jm.Uri {
   def isRelative: Boolean = uri.isRelative
   def isAbsolute: Boolean = uri.isAbsolute
   def isEmpty: Boolean = uri.isEmpty

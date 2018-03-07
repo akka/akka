@@ -5,6 +5,7 @@
 package akka.http.impl.engine.ws
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model.ws._
 
 import scala.concurrent.{ Future, Promise }
@@ -26,7 +27,9 @@ import akka.http.impl.engine.ws.Handshake.Client.NegotiatedWebSocketSettings
 import akka.http.impl.util.StreamUtils
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 
-object WebSocketClientBlueprint {
+/** INTERNAL API */
+@InternalApi
+private[http] object WebSocketClientBlueprint {
   /**
    * Returns a WebSocketClientLayer that can be materialized once.
    */

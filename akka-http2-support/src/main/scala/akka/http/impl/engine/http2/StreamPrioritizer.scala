@@ -4,9 +4,18 @@
 
 package akka.http.impl.engine.http2
 
+import akka.annotation.InternalApi
+
 import scala.collection.immutable
 
-/** The interface for pluggable stream prioritizers */
+import FrameEvent.PriorityFrame
+
+/**
+ * INTERNAL API
+ *
+ * The interface for pluggable stream prioritizers
+ */
+@InternalApi
 private[http2] trait StreamPrioritizer {
   /** Update priority information for a substream */
   def updatePriority(priorityFrame: PriorityFrame): Unit
@@ -15,6 +24,8 @@ private[http2] trait StreamPrioritizer {
   def chooseSubstream(streams: immutable.Set[Int]): Int
 }
 
+/** INTERNAL API */
+@InternalApi
 private[http2] object StreamPrioritizer {
   /** A prioritizer that ignores priority information and just sends to the first stream */
   def first(): StreamPrioritizer =

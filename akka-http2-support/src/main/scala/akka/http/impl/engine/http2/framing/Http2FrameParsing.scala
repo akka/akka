@@ -13,6 +13,8 @@ import Http2Protocol.FrameType._
 import Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.annotation.InternalApi
 
+import FrameEvent._
+
 /** INTERNAL API */
 @InternalApi
 private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteStringParser[FrameEvent] {

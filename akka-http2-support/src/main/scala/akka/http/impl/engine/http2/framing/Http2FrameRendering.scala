@@ -14,6 +14,8 @@ import akka.util.ByteString
 
 import scala.collection.immutable
 
+import FrameEvent._
+
 /** INTERNAL API */
 @InternalApi
 private[http] class Http2FrameRendering extends GraphStage[FlowShape[FrameEvent, ByteString]] {

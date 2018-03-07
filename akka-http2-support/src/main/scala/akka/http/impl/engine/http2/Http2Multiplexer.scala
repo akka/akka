@@ -13,6 +13,8 @@ import scala.collection.immutable
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler, StageLogging }
 import akka.util.ByteString
 
+import FrameEvent._
+
 /**
  * INTERNAL API
  *

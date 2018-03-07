@@ -15,6 +15,8 @@ import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import org.scalatest.{ Inside, Inspectors }
 
+import FrameEvent._
+
 class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
 
   "RequestParsing" should {

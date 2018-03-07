@@ -5,6 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
@@ -17,6 +18,8 @@ import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
 
 import scala.concurrent.{ ExecutionContext, Future }
+
+import FrameEvent._
 
 /**
  * Represents one direction of an Http2 substream.
@@ -37,7 +40,9 @@ private[http2] final case class ChunkedHttp2SubStream(
   data:           Source[HttpEntity.ChunkStreamPart, Any]
 ) extends Http2SubStream
 
-object Http2Blueprint {
+/** INTERNAL API */
+@InternalApi
+private[http] object Http2Blueprint {
   
   // format: OFF
   def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =

@@ -16,12 +16,16 @@
 
 package akka.http.impl.model.parser
 
+import akka.annotation.InternalApi
 import akka.parboiled2.util.Base64
 import akka.parboiled2._
 
 /**
+ * INTERNAL API
+ *
  * Rules for parsing Base-64 encoded strings.
  */
+@InternalApi
 private[parser] trait Base64Parsing { this: Parser ⇒
   import Base64Parsing._
 
@@ -63,7 +67,9 @@ private[parser] trait Base64Parsing { this: Parser ⇒
   }
 }
 
-object Base64Parsing {
+/** INTERNAL API */
+@InternalApi
+private[http] object Base64Parsing {
   type Decoder = Array[Char] ⇒ Array[Byte]
 
   val rfc2045Alphabet = CharPredicate(Base64.rfc2045().getAlphabet).asMaskBased

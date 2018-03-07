@@ -11,6 +11,8 @@ import akka.util.ByteString
 
 import scala.collection.immutable.Seq
 
+import FrameEvent._
+
 /**
  * INTERNAL API
  */

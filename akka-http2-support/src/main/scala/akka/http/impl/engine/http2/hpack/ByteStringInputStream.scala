@@ -6,10 +6,13 @@ package akka.http.impl.engine.http2.hpack
 
 import java.io.{ ByteArrayInputStream, InputStream }
 
+import akka.annotation.InternalApi
 import akka.util.ByteString
 import akka.util.ByteString.ByteString1C
 
-object ByteStringInputStream {
+/** INTERNAL API */
+@InternalApi
+private[http2] object ByteStringInputStream {
 
   def apply(bs: ByteString): InputStream =
     bs match {

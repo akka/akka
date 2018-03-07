@@ -18,7 +18,7 @@ import akka.http.scaladsl.model
  *  Accessors for constructors with default arguments to be used from the Java implementation
  */
 @InternalApi
-object JavaAccessors {
+private[http] object JavaAccessors {
   /** INTERNAL API */
   def HttpRequest(): HttpRequest = model.HttpRequest()
 

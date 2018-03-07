@@ -17,6 +17,8 @@ import org.scalatest.{ FreeSpec, Matchers }
 import scala.collection.immutable
 import scala.concurrent.duration._
 
+import FrameEvent._
+
 class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   import BitBuilder._
   import akka.http.impl.engine.http2._

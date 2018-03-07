@@ -47,10 +47,13 @@ private[akka] trait StageLoggingWithOverride { self: GraphStageLogic ⇒
 }
 
 /**
+ * INTERNAL API
+ *
  * A copy of NoLogging that can be used as a place-holder for "logging not explicitly specified".
  * It can be matched on to be overridden with default behavior.
  */
-object DefaultNoLogging extends LoggingAdapter {
+@InternalApi
+private[akka] object DefaultNoLogging extends LoggingAdapter {
   /**
    * Java API to return the reference to NoLogging
    * @return The NoLogging instance

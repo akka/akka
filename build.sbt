@@ -56,7 +56,7 @@ lazy val root = Project(
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     // Unidoc doesn't like macros
-    unidocProjectExcludes := Seq(parsing),
+    unidocProjectExcludes := Seq(parsing, httpJmhBench),
     unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get,
     deployRsyncArtifact := {
       val unidocArtifacts = (unidoc in Compile).value

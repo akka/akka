@@ -37,6 +37,8 @@ import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
+import FrameEvent._
+
 class Http2ServerSpec extends AkkaSpec("""
     akka.loglevel = debug
     akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]

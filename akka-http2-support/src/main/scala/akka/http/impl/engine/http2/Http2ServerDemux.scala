@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.http2
 
+import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
 import akka.http.scaladsl.settings.Http2ServerSettings
@@ -17,7 +18,11 @@ import akka.util.ByteString
 
 import scala.util.control.NonFatal
 
+import FrameEvent._
+
 /**
+ * INTERNAL API
+ *
  * This stage contains all control logic for handling frames and (de)muxing data to/from substreams.
  *
  * (This is not a final documentation, more like a brain-dump of how it could work.)
@@ -64,7 +69,8 @@ import scala.util.control.NonFatal
  * not work because the sending decision relies on dynamic window size and settings information that will be
  * only available in this stage.
  */
-class Http2ServerDemux(http2Settings: Http2ServerSettings) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
+@InternalApi
+private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 

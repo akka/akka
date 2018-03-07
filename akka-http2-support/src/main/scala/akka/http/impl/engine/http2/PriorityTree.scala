@@ -4,12 +4,14 @@
 
 package akka.http.impl.engine.http2
 
+import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.util.AsciiTreeLayout
 
 import scala.collection.immutable
 import scala.collection.immutable.{ TreeMap, TreeSet }
 
 /** INTERNAL API */
+@InternalApi
 private[http2] trait PriorityNode {
   def streamId: Int
   def weight: Int
@@ -18,6 +20,7 @@ private[http2] trait PriorityNode {
 }
 
 /** INTERNAL API */
+@InternalApi
 private[http2] trait PriorityTree {
   /**
    * Returns a new priority tree containing the new or existing and updated stream.
@@ -36,6 +39,7 @@ private[http2] trait PriorityTree {
 }
 
 /** INTERNAL API */
+@InternalApi
 private[http2] object PriorityTree {
   def apply(): PriorityTree = create(TreeMap(0 → RootNode))
 

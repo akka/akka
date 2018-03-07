@@ -9,7 +9,7 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 
 /** INTERNAL API */
 @InternalApi
-private[akka] object Http2Compliance {
+private[http2] object Http2Compliance {
 
   final class IllegalHttp2StreamIdException(id: Int, expected: String)
     extends IllegalArgumentException(s"Illegal HTTP/2 stream id: [$id]. $expected!")
