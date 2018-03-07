@@ -78,3 +78,4 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.HttpExt.
 # Method additions to @DoNotInherit class
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.TimeoutAccess.getTimeout")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.TimeoutAccess.timeout")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.TimeoutAccess.getTimeout")
