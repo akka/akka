@@ -9,7 +9,6 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
-import scala.concurrent.Lock
 import scala.util.Success
 import akka.stream.impl.fusing.GraphStages
 import org.reactivestreams._
