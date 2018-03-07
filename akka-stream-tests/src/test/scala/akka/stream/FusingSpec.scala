@@ -70,6 +70,26 @@ class FusingSpec extends StreamSpec {
       }
     }
 
+    "use one actor per grouped substream when there is an async boundary around it" in {
+      def ref = {
+        val bus = GraphInterpreter.currentInterpreter.log.asInstanceOf[BusLogging]
+        bus.logSource
+      }
+      val async = Flow[Int].map(x ⇒ { testActor ! ref; x }).async
+      Source(0 to 9)
+        .map(x ⇒ { testActor ! ref; x })
+        .groupBy(10, identity)
+        .via(async)
+        .mergeSubstreams
+        .runWith(Sink.seq)
+        .futureValue
+        .sorted should ===(0 to 9)
+      val refs = receiveN(10)
+      withClue(s"refs=\n${refs.mkString("\n")}") {
+        refs.toSet should have size (11) // main flow + 10 subflows
+      }
+    }
+
   }
 
 }

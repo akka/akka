@@ -26,6 +26,8 @@ import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.TestSink
 import java.util.concurrent.ThreadLocalRandom
 
+import akka.testkit.TestLatch
+
 object FlowGroupBySpec {
 
   implicit class Lift[M](val f: SubFlow[Int, M, Source[Int, M]#Repr, RunnableGraph[M]]) extends AnyVal {
@@ -587,6 +589,31 @@ class FlowGroupBySpec extends StreamSpec {
         }
       }
       upstreamSubscription.sendComplete()
+    }
+
+    "not block all substreams when one is blocked but has a buffer in front" in assertAllStagesStopped {
+      case class Elem(id: Int, substream: Int, f: () ⇒ Any)
+      val threeProcessed = TestLatch()
+      val queue = Source.queue[Elem](3, OverflowStrategy.backpressure)
+        .groupBy(2, _.substream)
+        .to(
+          Flow[Elem]
+            .buffer(2, OverflowStrategy.backpressure)
+            .map { _.f() }
+            .to(Sink.ignore)
+            .async
+        )
+        .run()
+
+      List(
+        Elem(1, 1, () ⇒ { Thread.sleep(1.seconds.toMillis); 1 }),
+        Elem(2, 1, () ⇒ 2),
+        Elem(3, 2, () ⇒ {
+          threeProcessed.open()
+          3
+        })).foreach(queue.offer)
+      Await.result(threeProcessed, 500.millis)
+      queue.complete()
     }
 
   }
