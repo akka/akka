@@ -193,7 +193,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @return the builder with the case statement added
    */
   final def matchEvent[ET](eventType: Class[ET], predicate: TypedPredicate2[ET, D], apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D] =
-    new FSMStateFunctionBuilder[S, D]().event(eventType, predicate, apply);
+    new FSMStateFunctionBuilder[S, D]().event(eventType, predicate, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -205,7 +205,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @return the builder with the case statement added
    */
   final def matchEvent[ET](eventType: Class[ET], apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D] =
-    new FSMStateFunctionBuilder[S, D]().event(eventType, apply);
+    new FSMStateFunctionBuilder[S, D]().event(eventType, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -217,7 +217,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @return the builder with the case statement added
    */
   final def matchEvent(predicate: TypedPredicate2[AnyRef, D], apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D] =
-    new FSMStateFunctionBuilder[S, D]().event(predicate, apply);
+    new FSMStateFunctionBuilder[S, D]().event(predicate, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -231,7 +231,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @return the builder with the case statement added
    */
   final def matchEvent[DT <: D](eventMatches: JList[AnyRef], dataType: Class[DT], apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D] =
-    new FSMStateFunctionBuilder[S, D]().event(eventMatches, dataType, apply);
+    new FSMStateFunctionBuilder[S, D]().event(eventMatches, dataType, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -244,7 +244,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @return the builder with the case statement added
    */
   final def matchEvent(eventMatches: JList[AnyRef], apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D] =
-    new FSMStateFunctionBuilder[S, D]().event(eventMatches, apply);
+    new FSMStateFunctionBuilder[S, D]().event(eventMatches, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -257,7 +257,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @return the builder with the case statement added
    */
   final def matchEventEquals[E, DT <: D](event: E, dataType: Class[DT], apply: Apply2[E, DT, State]): FSMStateFunctionBuilder[S, D] =
-    new FSMStateFunctionBuilder[S, D]().eventEquals(event, dataType, apply);
+    new FSMStateFunctionBuilder[S, D]().eventEquals(event, dataType, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -269,7 +269,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @return the builder with the case statement added
    */
   final def matchEventEquals[E](event: E, apply: Apply2[E, D, State]): FSMStateFunctionBuilder[S, D] =
-    new FSMStateFunctionBuilder[S, D]().eventEquals(event, apply);
+    new FSMStateFunctionBuilder[S, D]().eventEquals(event, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.

@@ -251,7 +251,7 @@ class PersistentActorSpec extends ActorTestKit with Eventually with TypedAkkaSpe
     "work when wrapped in other behavior" in {
       // FIXME This is a major problem with current implementation. Since the
       // behavior is running as an untyped PersistentActor it's not possible to
-      // wrap it in Actor.deferred or Actor.supervise
+      // wrap it in Actor.setup or Actor.supervise
       pending
       val probe = TestProbe[State]
       val behavior = Behaviors.supervise[Command](counter("c13"))

@@ -3,16 +3,10 @@
  */
 package docs.stream.cookbook
 
-import java.io.ByteArrayOutputStream
-import java.nio.charset.StandardCharsets
-import java.util.zip.GZIPOutputStream
-
-import akka.stream.impl.io.compression.GzipCompressor
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
-import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

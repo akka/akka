@@ -48,13 +48,16 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
     "pass markers to the log" in {
       EventFilter.custom({
         case event: LogEventWithMarker if event.marker == marker ⇒ true
-      }, occurrences = 5).intercept(
+      }, occurrences = 9).intercept(
         spawn(Behaviors.setup[Any] { ctx ⇒
           ctx.log.debug(marker, "whatever")
           ctx.log.info(marker, "whatever")
           ctx.log.warning(marker, "whatever")
           ctx.log.error(marker, "whatever")
           ctx.log.error(marker, cause, "whatever")
+          Logging.AllLogLevels.foreach(level ⇒ {
+            ctx.log.log(level, marker, "whatever")
+          })
           Behaviors.stopped
         })
       )
@@ -78,7 +81,7 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
 
       EventFilter.custom({
         case _ ⇒ true // any is fine, we're just after the right count of statements reaching the listener
-      }, occurrences = 72).intercept {
+      }, occurrences = 120).intercept {
         spawn(Behaviors.setup[String] { ctx ⇒
           ctx.log.debug("message")
           ctx.log.debug("{}", "arg1")
@@ -157,6 +160,22 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
           ctx.log.error(marker, cause, "{} {} {}", "arg1", "arg2", "arg3")
           ctx.log.error(marker, cause, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
           ctx.log.error(marker, cause, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+
+          Logging.AllLogLevels.foreach(level ⇒ {
+            ctx.log.log(level, "message")
+            ctx.log.log(level, "{}", "arg1")
+            ctx.log.log(level, "{} {}", "arg1", "arg2")
+            ctx.log.log(level, "{} {} {}", "arg1", "arg2", "arg3")
+            ctx.log.log(level, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+            ctx.log.log(level, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+
+            ctx.log.log(level, marker, "message")
+            ctx.log.log(level, marker, "{}", "arg1")
+            ctx.log.log(level, marker, "{} {}", "arg1", "arg2")
+            ctx.log.log(level, marker, "{} {} {}", "arg1", "arg2", "arg3")
+            ctx.log.log(level, marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+            ctx.log.log(level, marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+          })
 
           Behaviors.stopped
         })
