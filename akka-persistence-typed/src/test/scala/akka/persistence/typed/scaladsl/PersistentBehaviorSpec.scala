@@ -38,7 +38,7 @@ object PersistentBehaviorSpec {
 
   val config = ConfigFactory.parseString(
     s"""
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
     # akka.persistence.typed.log-stashing = INFO
 
     akka.persistence.snapshot-store.inmem.class = "akka.persistence.typed.scaladsl.PersistentBehaviorSpec$$InMemorySnapshotStore"

@@ -48,7 +48,7 @@ private[akka] trait EventsourcedJournalInteractions[C, E, S] {
     )
 
     val eventBatch = AtomicWrite(repr) :: Nil // batching not used, since no persistAsync
-    setup.journal.tell(JournalProtocol.WriteMessages(eventBatch, setup.selfUntypedAdapted, setup.writerIdentity.instanceId), setup.selfUntypedAdapted)
+    setup.journal.tell(JournalProtocol.WriteMessages(eventBatch, setup.selfUntyped, setup.writerIdentity.instanceId), setup.selfUntyped)
 
     newState
   }
@@ -68,7 +68,7 @@ private[akka] trait EventsourcedJournalInteractions[C, E, S] {
         sender = senderNotKnownBecauseAkkaTyped)
       ))
 
-      setup.journal.tell(JournalProtocol.WriteMessages(write :: Nil, setup.selfUntypedAdapted, setup.writerIdentity.instanceId), setup.selfUntypedAdapted)
+      setup.journal.tell(JournalProtocol.WriteMessages(write :: Nil, setup.selfUntyped, setup.writerIdentity.instanceId), setup.selfUntyped)
 
       newState
     } else state
@@ -77,7 +77,7 @@ private[akka] trait EventsourcedJournalInteractions[C, E, S] {
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     setup.log.debug("Replaying messages: from: {}, to: {}", fromSeqNr, toSeqNr)
     // reply is sent to `selfUntypedAdapted`, it is important to target that one
-    setup.journal ! ReplayMessages(fromSeqNr, toSeqNr, setup.recovery.replayMax, setup.persistenceId, setup.selfUntypedAdapted)
+    setup.journal ! ReplayMessages(fromSeqNr, toSeqNr, setup.recovery.replayMax, setup.persistenceId, setup.selfUntyped)
   }
 
   protected def returnRecoveryPermit(setup: EventsourcedSetup[_, _, _], reason: String): Unit = {
@@ -93,11 +93,11 @@ private[akka] trait EventsourcedJournalInteractions[C, E, S] {
    * to the running [[PersistentActor]].
    */
   protected def loadSnapshot(criteria: SnapshotSelectionCriteria, toSequenceNr: Long): Unit = {
-    setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId, criteria, toSequenceNr), setup.selfUntypedAdapted)
+    setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId, criteria, toSequenceNr), setup.selfUntyped)
   }
 
   protected def internalSaveSnapshot(state: EventsourcedRunning.EventsourcedState[S]): Unit = {
-    setup.snapshotStore.tell(SnapshotProtocol.SaveSnapshot(SnapshotMetadata(setup.persistenceId, state.seqNr), state.state), setup.selfUntypedAdapted)
+    setup.snapshotStore.tell(SnapshotProtocol.SaveSnapshot(SnapshotMetadata(setup.persistenceId, state.seqNr), state.state), setup.selfUntyped)
   }
 
 }
