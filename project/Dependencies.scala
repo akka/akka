@@ -28,7 +28,12 @@ object Dependencies {
         case Some((2, n)) if n >= 12 ⇒ "1.13.5" // does not work for 2.11
         case _                       ⇒ "1.13.2"
       }),
-    scalaTestVersion := "3.0.4",
+    scalaTestVersion := {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n > 12 => "3.0.5-M1"
+        case _ => "3.0.4",
+      }
+    },
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 12 ⇒ "0.8.0"
