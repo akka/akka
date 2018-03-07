@@ -9,7 +9,8 @@ import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, StashBuffer, TimerSc
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence._
-import akka.persistence.typed.internal.EventsourcedBehavior.WriterIdentity
+import akka.persistence.typed.internal.EventsourcedBehavior.EventsourcedProtocol.IncomingCommand
+import akka.persistence.typed.internal.EventsourcedBehavior.{ EventsourcedProtocol, WriterIdentity }
 
 /**
  * INTERNAL API
@@ -20,13 +21,12 @@ import akka.persistence.typed.internal.EventsourcedBehavior.WriterIdentity
  * hammering the journal with too many concurrently recovering actors.
  */
 @InternalApi
-private[akka] final class EventsourcedRequestingRecoveryPermit[Command, Event, State](
-  val setup:            EventsourcedSetup[Command, Event, State],
-  override val context: ActorContext[Any],
-  override val timers:  TimerScheduler[Any]
-
-) extends MutableBehavior[Any]
-  with EventsourcedBehavior[Command, Event, State]
+private[akka] final class EventsourcedRequestingRecoveryPermit[C, E, S](
+  val setup:            EventsourcedSetup[C, E, S],
+  override val context: ActorContext[EventsourcedProtocol],
+  override val timers:  TimerScheduler[EventsourcedProtocol]
+) extends MutableBehavior[EventsourcedProtocol]
+  with EventsourcedBehavior[C, E, S]
   with EventsourcedStashManagement {
   import setup._
 
@@ -35,10 +35,12 @@ private[akka] final class EventsourcedRequestingRecoveryPermit[Command, Event, S
   // has to be lazy, since we want to obtain the persistenceId
   protected lazy val log = Logging(context.system.toUntyped, this)
 
-  override protected val internalStash: StashBuffer[Any] = {
+  log.info("created EventsourcedRequestingRecoveryPermit" + this)
+
+  override protected val internalStash: StashBuffer[EventsourcedProtocol] = {
     val stashSize = context.system.settings.config
       .getInt("akka.persistence.typed.stash-buffer-size")
-    StashBuffer[Any](stashSize)
+    StashBuffer[EventsourcedProtocol](stashSize)
   }
 
   // --- initialization ---
@@ -51,30 +53,31 @@ private[akka] final class EventsourcedRequestingRecoveryPermit[Command, Event, S
 
   // ----------
 
-  def becomeRecovering(): Behavior[Any] = {
+  def becomeRecovering(): Behavior[EventsourcedProtocol] = {
     log.debug(s"Initializing snapshot recovery: {}", recovery)
 
     new EventsourcedRecoveringSnapshot(
       setup,
       context,
       timers,
-      internalStash,
-
-      writerIdentity
+      internalStash
     )
   }
 
   // ----------
 
-  override def onMessage(msg: Any): Behavior[Any] = {
+  override def onMessage(msg: EventsourcedProtocol): Behavior[EventsourcedProtocol] = {
     msg match {
-      case RecoveryPermitter.RecoveryPermitGranted ⇒
-        log.debug("Awaiting permit, received: RecoveryPermitGranted")
+      case EventsourcedProtocol.RecoveryPermitGranted ⇒
+        log.debug("Received recovery permit, initializing recovery")
         becomeRecovering()
 
-      case other ⇒
-        stash(context, other)
+      case in: EventsourcedProtocol.IncomingCommand[C] ⇒
+        stash(context, in)
         Behaviors.same
+
+      case _ ⇒
+        Behaviors.unhandled
     }
   }
 
@@ -82,6 +85,7 @@ private[akka] final class EventsourcedRequestingRecoveryPermit[Command, Event, S
 
   private def requestRecoveryPermit(): Unit = {
     // IMPORTANT to use selfUntyped, and not an adapter, since recovery permitter watches/unwatches those refs (and adapters are new refs)
+    log.info("extension.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, selfUntyped)")
     extension.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, selfUntyped)
   }
 

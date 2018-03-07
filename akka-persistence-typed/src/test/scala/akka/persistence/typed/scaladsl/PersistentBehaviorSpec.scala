@@ -38,8 +38,8 @@ object PersistentBehaviorSpec {
 
   val config = ConfigFactory.parseString(
     s"""
-    akka.loglevel = INFO
-    # akka.persistence.typed.log-stashing = INFO
+    akka.loglevel = DEBUG
+    akka.persistence.typed.log-stashing = INFO
 
     akka.persistence.snapshot-store.inmem.class = "akka.persistence.typed.scaladsl.PersistentBehaviorSpec$$InMemorySnapshotStore"
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
@@ -184,7 +184,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
   "A typed persistent actor" must {
 
-    "persist an event" in {
+    "xoxo persist an event" in {
       val c = spawn(counter("c1"))
 
       val probe = TestProbe[State]

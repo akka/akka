@@ -10,7 +10,7 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
 import akka.persistence._
-import akka.persistence.typed.internal.EventsourcedBehavior.WriterIdentity
+import akka.persistence.typed.internal.EventsourcedBehavior.EventsourcedProtocol
 import akka.persistence.typed.scaladsl.PersistentBehaviors._
 import akka.util.Helpers._
 
@@ -29,18 +29,17 @@ import scala.util.control.NonFatal
  *
  */
 @InternalApi
-private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
-  val setup:                  EventsourcedSetup[Command, Event, State],
-  override val context:       ActorContext[Any],
-  override val timers:        TimerScheduler[Any],
-  override val internalStash: StashBuffer[Any],
+private[akka] class EventsourcedRecoveringEvents[C, E, S](
+  val setup:                  EventsourcedSetup[C, E, S],
+  override val context:       ActorContext[EventsourcedProtocol],
+  override val timers:        TimerScheduler[EventsourcedProtocol],
+  override val internalStash: StashBuffer[EventsourcedProtocol],
 
   private var sequenceNr: Long,
-  val writerIdentity:     WriterIdentity,
 
-  private var state: State
-) extends MutableBehavior[Any]
-  with EventsourcedBehavior[Command, Event, State]
+  private var state: S
+) extends MutableBehavior[EventsourcedProtocol]
+  with EventsourcedBehavior[C, E, S]
   with EventsourcedStashManagement {
   import setup._
   import Behaviors.same
@@ -55,7 +54,7 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
   replayEvents(sequenceNr + 1L, recovery.toSequenceNr)
   // ---- end of initialize ----
 
-  private def commandContext: ActorContext[Command] = context.asInstanceOf[ActorContext[Command]]
+  private def commandContext: ActorContext[C] = context.asInstanceOf[ActorContext[C]]
 
   // ----------
 
@@ -74,24 +73,26 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
 
   // protect against snapshot stalling forever because of journal overloaded and such
   private val RecoveryTickTimerKey = "recovery-tick"
-  private def startRecoveryTimer(): Unit = timers.startPeriodicTimer(RecoveryTickTimerKey, RecoveryTickEvent(snapshot = false), timeout)
-  private def cancelRecoveryTimer(): Unit = timers.cancel(RecoveryTickTimerKey)
+  private def startRecoveryTimer(): Unit =
+    timers.startPeriodicTimer(RecoveryTickTimerKey, EventsourcedProtocol.RecoveryTickEvent(snapshot = false), timeout)
+  private def cancelRecoveryTimer(): Unit =
+    timers.cancel(RecoveryTickTimerKey)
 
   private var eventSeenInInterval = false
 
-  def onCommand(cmd: Command): Behavior[Any] = {
+  def onCommand(cmd: EventsourcedProtocol.IncomingCommand[C]): Behavior[EventsourcedProtocol] = {
     // during recovery, stash all incoming commands
     stash(context, cmd)
     same
   }
 
-  def onJournalResponse(response: JournalProtocol.Response): Behavior[Any] = try {
+  def onJournalResponse(response: JournalProtocol.Response): Behavior[EventsourcedProtocol] = try {
     response match {
       case ReplayedMessage(repr) ⇒
         eventSeenInInterval = true
         updateLastSequenceNr(repr)
         // TODO we need some state adapters here?
-        val newState = eventHandler(state, repr.payload.asInstanceOf[Event])
+        val newState = eventHandler(state, repr.payload.asInstanceOf[E])
         state = newState
         same
 
@@ -107,8 +108,9 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
         onRecoveryFailure(cause, event = None)
 
       case other ⇒
-        stash(context, other)
-        Behaviors.same
+        //        stash(context, other)
+        //        Behaviors.same
+        Behaviors.unhandled
     }
   } catch {
     case NonFatal(e) ⇒
@@ -116,7 +118,7 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
       onRecoveryFailure(e, None)
   }
 
-  def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[Any] = {
+  def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[EventsourcedProtocol] = {
     log.warning("Unexpected [{}] from SnapshotStore, already in recovering events state.", Logging.simpleName(response))
     Behaviors.same // ignore the response
   }
@@ -129,7 +131,7 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
    * @param cause failure cause.
    * @param event the event that was processed in `receiveRecover`, if the exception was thrown there
    */
-  protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[Any] = {
+  protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[EventsourcedProtocol] = {
     returnRecoveryPermit("on recovery failure: " + cause.getMessage)
     cancelRecoveryTimer()
 
@@ -144,19 +146,18 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
     }
   }
 
-  protected def onRecoveryCompleted(state: State): Behavior[Any] = {
+  protected def onRecoveryCompleted(state: S): Behavior[EventsourcedProtocol] = {
     try {
       returnRecoveryPermit("recovery completed successfully")
       recoveryCompleted(commandContext, state)
 
-      val running = new EventsourcedRunning[Command, Event, State](
+      val running = new EventsourcedRunning[C, E, S](
         setup,
         context,
         timers,
         internalStash,
 
         sequenceNr,
-        writerIdentity,
 
         state
       )
@@ -167,7 +168,7 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
     }
   }
 
-  protected def onRecoveryTick(snapshot: Boolean): Behavior[Any] =
+  protected def onRecoveryTick(snapshot: Boolean): Behavior[EventsourcedProtocol] =
     if (!snapshot) {
       if (!eventSeenInInterval) {
         cancelRecoveryTimer()
@@ -184,13 +185,12 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
 
   // ----------
 
-  override def onMessage(msg: Any): Behavior[Any] = {
+  override def onMessage(msg: EventsourcedProtocol): Behavior[EventsourcedProtocol] = {
     msg match {
-      // TODO explore crazy hashcode hack to make this match quicker...?
-      case JournalResponse(r)          ⇒ onJournalResponse(r)
-      case RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot = snapshot)
-      case SnapshotterResponse(r)      ⇒ onSnapshotterResponse(r)
-      case c: Command @unchecked       ⇒ onCommand(c.asInstanceOf[Command]) // explicit cast to fail eagerly
+      case EventsourcedProtocol.JournalResponse(r)                ⇒ onJournalResponse(r)
+      case EventsourcedProtocol.RecoveryTickEvent(snapshot)       ⇒ onRecoveryTick(snapshot = snapshot)
+      case EventsourcedProtocol.SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r)
+      case in: EventsourcedProtocol.IncomingCommand[C @unchecked] ⇒ onCommand(in)
     }
   }
 
@@ -198,10 +198,10 @@ private[akka] class EventsourcedRecoveringEvents[Command, Event, State](
 
   // ---------- journal interactions ---------
 
-  private def replayEvents(fromSeqNr: SeqNr, toSeqNr: SeqNr): Unit = {
+  private def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     log.debug("Replaying messages: from: {}, to: {}", fromSeqNr, toSeqNr)
     // reply is sent to `selfUntypedAdapted`, it is important to target that one
-    journal ! ReplayMessages(fromSeqNr, toSeqNr, recovery.replayMax, persistenceId, selfUntypedAdapted)
+    journal ! ReplayMessages(fromSeqNr, toSeqNr, recovery.replayMax, persistenceId, selfUntyped /*Adapted*/ )
   }
 
   private def returnRecoveryPermit(reason: String): Unit = {

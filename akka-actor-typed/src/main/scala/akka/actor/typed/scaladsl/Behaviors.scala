@@ -19,26 +19,6 @@ object Behaviors {
   private val _unitFunction = (_: ActorContext[Any], _: Any) ⇒ ()
   private def unitFunction[T] = _unitFunction.asInstanceOf[((ActorContext[T], Signal) ⇒ Unit)]
 
-  final implicit class BehaviorDecorators[T](val behavior: Behavior[T]) extends AnyVal {
-    /**
-     * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
-     * PartialFunction decides which message to pull in (those that it is defined
-     * at) and may transform the incoming message to place them into the wrapped
-     * Behavior’s type hierarchy. Signals are not transformed.
-     *
-     * Example:
-     * {{{
-     * immutable[String] { (ctx, msg) => println(msg); same }.widen[Number] {
-     *   case b: BigDecimal => s"BigDecimal(&dollar;b)"
-     *   case i: BigInteger => s"BigInteger(&dollar;i)"
-     *   // drop all other kinds of Number
-     * }
-     * }}}
-     */
-    def widen[U](matcher: PartialFunction[U, T]): Behavior[U] =
-      BehaviorImpl.widened(behavior, matcher)
-  }
-
   /**
    * `setup` is a factory for a behavior. Creation of the behavior instance is deferred until
    * the actor is started, as opposed to [[Behaviors.immutable]] that creates the behavior instance

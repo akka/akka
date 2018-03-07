@@ -4,11 +4,11 @@ import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.internal.TimerSchedulerImpl
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.TimerScheduler
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, TimerScheduler }
 import akka.annotation.InternalApi
-import akka.persistence.Recovery
-import akka.persistence.SnapshotSelectionCriteria
+import akka.persistence._
+import akka.persistence.typed.internal.EventsourcedBehavior.{ EventsourcedProtocol, WriterIdentity }
+import akka.persistence.typed.internal.EventsourcedBehavior.EventsourcedProtocol
 import akka.persistence.typed.scaladsl.PersistentBehavior
 import akka.persistence.typed.scaladsl.PersistentBehaviors
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
@@ -22,6 +22,7 @@ private[persistence] case class EventsourcedSetup[Command, Event, State](
   commandHandler: PersistentBehaviors.CommandHandler[Command, Event, State],
   eventHandler:   (State, Event) ⇒ State,
 
+  writerIdentity:    WriterIdentity                        = WriterIdentity.newIdentity(),
   recoveryCompleted: (ActorContext[Command], State) ⇒ Unit = ConstantFun.scalaAnyTwoToUnit,
   tagger:            Event ⇒ Set[String]                   = (_: Event) ⇒ Set.empty[String],
   journalPluginId:   String                                = "",
@@ -30,17 +31,21 @@ private[persistence] case class EventsourcedSetup[Command, Event, State](
   recovery:          Recovery                              = Recovery()
 ) extends PersistentBehavior[Command, Event, State] {
 
-  override def apply(ctx: typed.ActorContext[Command]): Behavior[Command] = {
-    DeferredBehavior[Command](ctx ⇒
-      TimerSchedulerImpl.wrapWithTimers[Command] { timers ⇒
+  override def apply(ctx: typed.ActorContext[Command]): Behavior[Command] =
+    DeferredBehavior[EventsourcedProtocol] { ctx ⇒
+      Behaviors.withTimers[EventsourcedProtocol] { timers ⇒
         new EventsourcedRequestingRecoveryPermit(
           this,
-          ctx.asInstanceOf[ActorContext[Any]], // sorry
-          timers.asInstanceOf[TimerScheduler[Any]] // sorry
-        ).narrow[Command]
-
-      }(ctx))
-  }
+          ctx,
+          timers
+        )
+      }
+    }.widen[Any] {
+      case res: JournalProtocol.Response           ⇒ EventsourcedProtocol.JournalResponse(res)
+      case RecoveryPermitter.RecoveryPermitGranted ⇒ EventsourcedProtocol.RecoveryPermitGranted
+      case res: SnapshotProtocol.Response          ⇒ EventsourcedProtocol.SnapshotterResponse(res)
+      case cmd: Command @unchecked                 ⇒ EventsourcedProtocol.IncomingCommand(cmd)
+    }.narrow[Command]
 
   /**
    * The `callback` function is called to notify the actor that the recovery process

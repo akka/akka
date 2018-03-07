@@ -13,7 +13,7 @@ import akka.persistence.Eventsourced.{ PendingHandlerInvocation, StashingHandler
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
-import akka.persistence.typed.internal.EventsourcedBehavior.WriterIdentity
+import akka.persistence.typed.internal.EventsourcedBehavior.{ EventsourcedProtocol, WriterIdentity }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -35,18 +35,17 @@ import scala.collection.immutable
  *
  */
 @InternalApi
-class EventsourcedRunning[Command, Event, State](
-  val setup:                  EventsourcedSetup[Command, Event, State],
-  override val context:       ActorContext[Any],
-  override val timers:        TimerScheduler[Any],
-  override val internalStash: StashBuffer[Any],
+class EventsourcedRunning[C, E, S](
+  val setup:                  EventsourcedSetup[C, E, S],
+  override val context:       ActorContext[EventsourcedProtocol],
+  override val timers:        TimerScheduler[EventsourcedProtocol],
+  override val internalStash: StashBuffer[EventsourcedProtocol],
 
   private var sequenceNr: Long,
-  val writerIdentity:     WriterIdentity,
 
-  private var state: State
-) extends MutableBehavior[Any]
-  with EventsourcedBehavior[Command, Event, State]
+  private var state: S
+) extends MutableBehavior[EventsourcedProtocol]
+  with EventsourcedBehavior[C, E, S]
   with EventsourcedStashManagement { same ⇒
   import setup._
 
@@ -55,7 +54,7 @@ class EventsourcedRunning[Command, Event, State](
 
   protected val log = Logging(context.system.toUntyped, this)
 
-  private def commandContext: ActorContext[Command] = context.asInstanceOf[ActorContext[Command]]
+  private def commandContext: ActorContext[C] = context.asInstanceOf[ActorContext[C]]
 
   // ----------
 
@@ -75,7 +74,7 @@ class EventsourcedRunning[Command, Event, State](
   }
   // ----------
 
-  private def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[Any] = {
+  private def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[EventsourcedProtocol] = {
     response match {
       case SaveSnapshotSuccess(meta) ⇒
         log.debug("Save snapshot successful: " + meta)
@@ -90,18 +89,19 @@ class EventsourcedRunning[Command, Event, State](
 
   trait EventsourcedRunningPhase {
     def name: String
-    def onCommand(c: Command): Behavior[Any]
-    def onJournalResponse(response: JournalProtocol.Response): Behavior[Any]
+    def onCommand(c: EventsourcedProtocol.IncomingCommand[C]): Behavior[EventsourcedProtocol]
+    def onJournalResponse(response: JournalProtocol.Response): Behavior[EventsourcedProtocol]
   }
 
   object HandlingCommands extends EventsourcedRunningPhase {
     def name = "HandlingCommands"
 
-    final override def onCommand(command: Command): Behavior[Any] = {
+    final override def onCommand(in: EventsourcedProtocol.IncomingCommand[C]): Behavior[EventsourcedProtocol] = {
+      val command = in.command
       val effect = commandHandler(commandContext, state, command)
       applyEffects(command, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
     }
-    final override def onJournalResponse(response: Response): Behavior[Any] = {
+    final override def onJournalResponse(response: Response): Behavior[EventsourcedProtocol] = {
       // should not happen, what would it reply?
       throw new RuntimeException("Received message which should not happen in Running state!")
     }
@@ -112,12 +112,12 @@ class EventsourcedRunning[Command, Event, State](
   sealed class PersistingEvents(sideEffects: immutable.Seq[ChainableEffect[_, S]]) extends EventsourcedRunningPhase {
     def name = "PersistingEvents"
 
-    final override def onCommand(c: Command): Behavior[Any] = {
+    final override def onCommand(c: EventsourcedProtocol.IncomingCommand[C]): Behavior[EventsourcedProtocol] = {
       stash(context, c)
       same
     }
 
-    final override def onJournalResponse(response: Response): Behavior[Any] = {
+    final override def onJournalResponse(response: Response): Behavior[EventsourcedProtocol] = {
       log.debug("Received Journal response: {}", response)
       response match {
         case WriteMessageSuccess(p, id) ⇒
@@ -171,7 +171,7 @@ class EventsourcedRunning[Command, Event, State](
         event.getClass.getName, seqNr, persistenceId, cause.getMessage)
     }
 
-    private def onPersistFailureThenStop(cause: Throwable, event: Any, seqNr: Long): Behavior[Any] = {
+    private def onPersistFailureThenStop(cause: Throwable, event: Any, seqNr: Long): Behavior[EventsourcedProtocol] = {
       log.error(cause, "Failed to persist event type [{}] with sequence number [{}] for persistenceId [{}].",
         event.getClass.getName, seqNr, persistenceId)
 
@@ -185,23 +185,18 @@ class EventsourcedRunning[Command, Event, State](
   // we do this via a var instead of behaviours to keep allocations down as this will be flip/flaping on every Persist effect
   private[this] var phase: EventsourcedRunningPhase = HandlingCommands
 
-  override def onMessage(msg: Any): Behavior[Any] = {
+  override def onMessage(msg: EventsourcedProtocol): Behavior[EventsourcedProtocol] = {
     msg match {
-      // TODO explore crazy hashcode hack to make this match quicker...?
-      case SnapshotterResponse(r) ⇒ onSnapshotterResponse(r)
-      case JournalResponse(r)     ⇒ phase.onJournalResponse(r)
-      case command: Command @unchecked ⇒
-        // the above type-check does nothing, since Command is tun
-        // we cast explicitly to fail early in case of type mismatch
-        val c = command.asInstanceOf[Command]
-        phase.onCommand(c)
+      case EventsourcedProtocol.SnapshotterResponse(r) ⇒ onSnapshotterResponse(r)
+      case EventsourcedProtocol.JournalResponse(r)     ⇒ phase.onJournalResponse(r)
+      case in: EventsourcedProtocol.IncomingCommand[C] ⇒ phase.onCommand(in)
     }
   }
 
   // ----------
 
-  def applySideEffects(effects: immutable.Seq[ChainableEffect[_, S]]): Behavior[Any] = {
-    var res: Behavior[Any] = same
+  def applySideEffects(effects: immutable.Seq[ChainableEffect[_, S]]): Behavior[EventsourcedProtocol] = {
+    var res: Behavior[EventsourcedProtocol] = same
     val it = effects.iterator
 
     // if at least one effect results in a `stop`, we need to stop
@@ -217,7 +212,7 @@ class EventsourcedRunning[Command, Event, State](
     res
   }
 
-  def applySideEffect(effect: ChainableEffect[_, S]): Behavior[Any] = effect match {
+  def applySideEffect(effect: ChainableEffect[_, S]): Behavior[EventsourcedProtocol] = effect match {
     case _: Stop.type @unchecked ⇒
       Behaviors.stopped
 
@@ -232,7 +227,7 @@ class EventsourcedRunning[Command, Event, State](
   def applyEvent(s: S, event: E): S =
     eventHandler(s, event)
 
-  @tailrec private def applyEffects(msg: Any, effect: EffectImpl[E, S], sideEffects: immutable.Seq[ChainableEffect[_, S]] = Nil): Behavior[Any] = {
+  @tailrec private def applyEffects(msg: Any, effect: EffectImpl[E, S], sideEffects: immutable.Seq[ChainableEffect[_, S]] = Nil): Behavior[EventsourcedProtocol] = {
     if (log.isDebugEnabled)
       log.debug(s"Handled command [{}], resulting effect: [{}], side effects: [{}]", msg.getClass.getName, effect, sideEffects.size)
 
@@ -301,7 +296,7 @@ class EventsourcedRunning[Command, Event, State](
   private def popApplyHandler(payload: Any): Unit =
     pendingInvocations.pop().handler(payload)
 
-  private def becomePersistingEvents(sideEffects: immutable.Seq[ChainableEffect[_, S]]): Behavior[Any] = {
+  private def becomePersistingEvents(sideEffects: immutable.Seq[ChainableEffect[_, S]]): Behavior[EventsourcedProtocol] = {
     if (phase.isInstanceOf[PersistingEvents]) throw new IllegalArgumentException(
       "Attempted to become PersistingEvents while already in this phase! Logic error?")
 
@@ -312,7 +307,7 @@ class EventsourcedRunning[Command, Event, State](
     same
   }
 
-  private def tryBecomeHandlingCommands(): Behavior[Any] = {
+  private def tryBecomeHandlingCommands(): Behavior[EventsourcedProtocol] = {
     if (phase == HandlingCommands) throw new IllegalArgumentException(
       "Attempted to become HandlingCommands while already in this phase! Logic error?")
 
@@ -326,19 +321,19 @@ class EventsourcedRunning[Command, Event, State](
   // ---------- journal interactions ---------
 
   // Any since can be `E` or `Tagged`
-  private def internalPersist(event: Any, sideEffects: immutable.Seq[ChainableEffect[_, S]])(handler: Any ⇒ Unit): Behavior[Any] = {
+  private def internalPersist(event: Any, sideEffects: immutable.Seq[ChainableEffect[_, S]])(handler: Any ⇒ Unit): Behavior[EventsourcedProtocol] = {
     pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
 
     val senderNotKnownBecauseAkkaTyped = null
     val repr = PersistentRepr(event, persistenceId = persistenceId, sequenceNr = nextSequenceNr(), writerUuid = writerIdentity.writerUuid, sender = senderNotKnownBecauseAkkaTyped)
 
     val eventBatch = AtomicWrite(repr) :: Nil // batching not used, since no persistAsync
-    journal.tell(JournalProtocol.WriteMessages(eventBatch, selfUntypedAdapted, writerIdentity.instanceId), selfUntypedAdapted)
+    journal.tell(JournalProtocol.WriteMessages(eventBatch, selfUntyped /*Adapted*/ , writerIdentity.instanceId), selfUntyped /*Adapted*/ )
 
     becomePersistingEvents(sideEffects)
   }
 
-  private def internalPersistAll(events: immutable.Seq[Any], sideEffects: immutable.Seq[ChainableEffect[_, S]])(handler: Any ⇒ Unit): Behavior[Any] = {
+  private def internalPersistAll(events: immutable.Seq[Any], sideEffects: immutable.Seq[ChainableEffect[_, S]])(handler: Any ⇒ Unit): Behavior[EventsourcedProtocol] = {
     if (events.nonEmpty) {
       val senderNotKnownBecauseAkkaTyped = null
 
@@ -349,14 +344,14 @@ class EventsourcedRunning[Command, Event, State](
       val write = AtomicWrite(events.map(PersistentRepr.apply(_, persistenceId = persistenceId,
         sequenceNr = nextSequenceNr(), writerUuid = writerIdentity.writerUuid, sender = senderNotKnownBecauseAkkaTyped)))
 
-      journal.tell(JournalProtocol.WriteMessages(write :: Nil, selfUntypedAdapted, writerIdentity.instanceId), selfUntypedAdapted)
+      journal.tell(JournalProtocol.WriteMessages(write :: Nil, selfUntyped /*Adapted*/ , writerIdentity.instanceId), selfUntyped /*Adapted*/ )
 
       becomePersistingEvents(sideEffects)
     } else same
   }
 
-  private def internalSaveSnapshot(snapshot: State): Unit = {
-    snapshotStore.tell(SnapshotProtocol.SaveSnapshot(SnapshotMetadata(persistenceId, snapshotSequenceNr), snapshot), selfUntypedAdapted)
+  private def internalSaveSnapshot(snapshot: S): Unit = {
+    snapshotStore.tell(SnapshotProtocol.SaveSnapshot(SnapshotMetadata(persistenceId, snapshotSequenceNr), snapshot), selfUntyped /*Adapted*/ )
   }
 
   override def toString = s"EventsourcedRunning($persistenceId,${phase.name})"
