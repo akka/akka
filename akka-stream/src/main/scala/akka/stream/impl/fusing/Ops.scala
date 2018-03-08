@@ -1981,7 +1981,7 @@ private[stream] object Collect {
     val stageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
 
       var switching = false
-      
+
       //
       // implementation of handler methods in initial state
       //
