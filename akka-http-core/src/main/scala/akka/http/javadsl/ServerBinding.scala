@@ -6,6 +6,9 @@ package akka.http.javadsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.CompletionStage
+
+import akka.Done
+
 import scala.compat.java8.FutureConverters._
 
 /**
@@ -23,5 +26,5 @@ class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBindi
    *
    * The produced [[java.util.concurrent.CompletionStage]] is fulfilled when the unbinding has been completed.
    */
-  def unbind(): CompletionStage[Unit] = delegate.unbind().toJava
+  def unbind(): CompletionStage[Done] = delegate.unbind().toJava
 }

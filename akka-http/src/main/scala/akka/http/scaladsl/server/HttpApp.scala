@@ -111,7 +111,7 @@ abstract class HttpApp extends Directives {
     bindingFuture
       .flatMap(_.unbind())
       .onComplete(attempt ⇒ {
-        postServerShutdown(attempt.map(_ ⇒ Done), theSystem)
+        postServerShutdown(attempt, theSystem)
         // we created the system. we should cleanup!
         if (system.isEmpty) theSystem.terminate()
       })

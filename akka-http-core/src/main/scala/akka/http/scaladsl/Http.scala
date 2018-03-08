@@ -888,7 +888,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      *
      * The produced [[scala.concurrent.Future]] is fulfilled when the unbinding has been completed.
      */
-    def unbind(): Future[Unit] = unbindAction()
+    def unbind(): Future[Done] = unbindAction().map(_ ⇒ Done)(ExecutionContexts.sameThreadExecutionContext)
   }
 
   /**

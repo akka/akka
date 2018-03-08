@@ -154,7 +154,7 @@ public class JavaTestServer extends AllDirectives { // or import static Directiv
     return binding.thenAccept(b -> {
       System.out.println(String.format("Unbinding from %s", b.localAddress()));
 
-      final CompletionStage<BoxedUnit> unbound = b.unbind();
+      final CompletionStage<?> unbound = b.unbind();
       try {
         unbound.toCompletableFuture().get(3, TimeUnit.SECONDS); // block...
       } catch (TimeoutException | InterruptedException | ExecutionException e) {
