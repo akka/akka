@@ -33,16 +33,18 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def idleTimeout: Duration
   def connectionSettings: ClientConnectionSettings
 
+  /**
+   * The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used.
+   */
+  @deprecated("Deprecated in favor of connectionSettings.transport", "10.1.0")
+  def transport: ClientTransport = connectionSettings.transport
+
   @ApiMayChange
   def poolImplementation: PoolImplementation
 
   /** The time after which the pool will drop an entity automatically if it wasn't read or discarded */
   @ApiMayChange
   def responseEntitySubscriptionTimeout: Duration
-
-  /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
-  @deprecated("Deprecated in favor of connectionSettings.transport", "10.1.0")
-  def transport: ClientTransport = connectionSettings.transport
 
   // ---
 
