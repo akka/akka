@@ -520,6 +520,14 @@ Integration with Reactive Streams, wraps a `org.reactivestreams.Subscriber` as a
 
 ---------------------------------------------------------------
 
+### preMaterialize
+
+Materializes this Sink, immediately returning (1) its materialized value, and (2) a new Sink that can be consume elements 'into' the pre-materialized one.
+
+Useful for when you need a materialized value of a Sink when handing it out to someone to materialize it for you.
+
+---------------------------------------------------------------
+
 <br/>
 
 ## Additional Sink and Source converters
