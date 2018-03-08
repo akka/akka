@@ -455,7 +455,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
       type Children = Seq[ActorRef[Nothing]]
       val probe = TestProbe[Children]()
       val actor = spawn(Behaviors.immutablePartial[String] {
-        case (ctx, "B") ⇒
+        case (ctx, "create") ⇒
           ctx.spawn(Behaviors.empty, "B")
           probe.ref ! ctx.child("B").toSeq
           Behaviors.same
@@ -466,7 +466,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
           probe.ref ! ctx.child(get).toSeq
           Behaviors.same
       }.decorate)
-      actor ! "B"
+      actor ! "create"
       val children = probe.expectMessageType[Children]
       actor ! "A"
       probe.expectMessage(Seq.empty)
