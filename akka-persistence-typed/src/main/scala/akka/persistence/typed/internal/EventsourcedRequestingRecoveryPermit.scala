@@ -3,23 +3,21 @@
  */
 package akka.persistence.typed.internal
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors.MutableBehavior
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, StashBuffer, TimerScheduler }
+import akka.actor.typed.{ Behavior, PostStop, PreRestart }
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.event.Logging
 import akka.persistence._
-import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
+import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
 
 /**
  * INTERNAL API
  *
  * First (of four) behaviour of an PersistentBehaviour.
- * See next behavior [[EventsourcedRecoveringSnapshot]].
  *
  * Requests a permit to start recovering this actor; this is tone to avoid
  * hammering the journal with too many concurrently recovering actors.
  *
+ * See next behavior [[EventsourcedRecoveringSnapshot]].
  */
 @InternalApi
 private[akka] object EventsourcedRequestingRecoveryPermit {
@@ -30,9 +28,8 @@ private[akka] object EventsourcedRequestingRecoveryPermit {
 }
 
 @InternalApi
-private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](
-  override val setup: EventsourcedSetup[C, E, S])
-  extends EventsourcedStashManagement[C, E, S] {
+private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](override val setup: EventsourcedSetup[C, E, S])
+  extends EventsourcedStashManagement[C, E, S] with EventsourcedJournalInteractions[C, E, S] {
 
   def createBehavior(): Behavior[InternalProtocol] = {
     // request a permit, as only once we obtain one we can start recovering
@@ -62,15 +59,8 @@ private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](
   private def becomeRecovering(): Behavior[InternalProtocol] = {
     setup.log.debug(s"Initializing snapshot recovery: {}", setup.recovery)
 
+    setup.holdingRecoveryPermit = true
     EventsourcedRecoveringSnapshot(setup)
-  }
-
-  // ---------- journal interactions ---------
-
-  private def requestRecoveryPermit(): Unit = {
-    import akka.actor.typed.scaladsl.adapter._
-    // IMPORTANT to use selfUntyped, and not an adapter, since recovery permitter watches/unwatches those refs (and adapters are new refs)
-    setup.persistence.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, setup.selfUntyped)
   }
 
 }
