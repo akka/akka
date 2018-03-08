@@ -7,7 +7,7 @@
 1. Create a news item on https://github.com/akka/akka.github.com, using the milestones and `scripts/authors.scala previousVersion thisVersion`
 1. Once the release notes have been merged, create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description linking to announcement, release notes and milestone.
 1. Travis CI will start a [CI build](https://travis-ci.org/akka/akka-http/builds) for the new tag and publish artifacts to Bintray.
-1. Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true "++2.12.2 deployRsync akkarepo@gustav.akka.io"` to deploy API and reference documentation.
+1. Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true "++2.12.4 deployRsync akkarepo@gustav.akka.io"` to deploy API and reference documentation.
 1. Go to https://bintray.com/akka/maven/com.typesafe.akka:akka-http_2.11 and select the just released version
 1. Go to the Maven Central tab and sync with Sonatype
    - (Optional, should happen automatically if selected in Bintray) Log in to Sonatype to Close the staging repository
