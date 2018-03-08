@@ -19,10 +19,11 @@ import akka.actor.Terminated
     Props(new RecoveryPermitter(maxPermits))
 
   sealed trait Protocol
+  sealed trait Request extends Protocol
   sealed trait Reply extends Protocol
-  case object RequestRecoveryPermit extends Protocol
+  case object RequestRecoveryPermit extends Request
   case object RecoveryPermitGranted extends Reply
-  case object ReturnRecoveryPermit extends Protocol
+  case object ReturnRecoveryPermit extends Request
 
 }
 

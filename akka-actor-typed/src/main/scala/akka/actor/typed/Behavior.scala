@@ -105,6 +105,7 @@ object Behavior {
      */
     def widen[U](matcher: PartialFunction[U, T]): Behavior[U] =
       BehaviorImpl.widened(behavior, matcher)
+
   }
 
   /**

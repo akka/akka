@@ -52,6 +52,12 @@ case object PreRestart extends PreRestart {
  * registered watchers after this signal has been processed.
  */
 sealed abstract class PostStop extends Signal
+// comment copied onto object for better hints in IDEs
+/**
+ * Lifecycle signal that is fired after this actor and all its child actors
+ * (transitively) have terminated. The [[Terminated]] signal is only sent to
+ * registered watchers after this signal has been processed.
+ */
 case object PostStop extends PostStop {
   def instance: PostStop = this
 }
