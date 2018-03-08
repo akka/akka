@@ -26,11 +26,13 @@ import scala.reflect.ClassTag
   final case class TimerMsg(key: Any, generation: Int, owner: AnyRef)
 
   def withTimers[T](factory: TimerSchedulerImpl[T] ⇒ Behavior[T]): Behavior[T] = {
-    scaladsl.Behaviors.setup[T] { ctx ⇒
-      val timerScheduler = new TimerSchedulerImpl[T](ctx)
-      val behavior = factory(timerScheduler)
-      timerScheduler.intercept(behavior)
-    }
+    scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
+  }
+
+  private def wrapWithTimers[T](factory: TimerSchedulerImpl[T] ⇒ Behavior[T])(ctx: ActorContext[T]): Behavior[T] = {
+    val timerScheduler = new TimerSchedulerImpl[T](ctx)
+    val behavior = factory(timerScheduler)
+    timerScheduler.intercept(behavior)
   }
 }
 

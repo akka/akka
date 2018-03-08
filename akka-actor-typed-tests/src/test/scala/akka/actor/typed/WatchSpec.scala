@@ -5,6 +5,7 @@ package akka.actor.typed
 
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.Behaviors.MutableBehavior
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
 import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
