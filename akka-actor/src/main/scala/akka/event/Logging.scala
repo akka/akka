@@ -444,7 +444,7 @@ object Logging {
   final val DebugLevel = LogLevel(4)
 
   /**
-   * INTERNAL API
+   * INTERNAL API: Internal Akka use only
    *
    * Don't include the OffLevel in the AllLogLevels since we should never subscribe
    * to some kind of OffEvent.
@@ -903,6 +903,7 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message,
           stackTraceFor(event.cause)))
       case _ ⇒
@@ -911,6 +912,7 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message,
           stackTraceFor(event.cause)))
     }
@@ -922,12 +924,14 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message))
       case _ ⇒
         println(WarningFormat.format(
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message))
     }
 
@@ -938,12 +942,14 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message))
       case _ ⇒
         println(InfoFormat.format(
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message))
     }
 
@@ -954,31 +960,40 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message))
       case _ ⇒
         println(DebugFormat.format(
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message))
+    }
+
+    private def formatMDC(mdc: Map[String, Any]): String = {
+      val size = mdc.size
+      if (size == 0) ""
+      else if (size == 1) s"[${mdc.head._1}:${mdc.head._2}]"
+      else mdc.map({ case (k, v) ⇒ s"$k:$v" }).mkString("[", "][", "]")
     }
   }
   object StdOutLogger {
     // format: OFF
-    private final  val ErrorFormat          = "[ERROR] [%s] [%s] [%s] %s%s"
-    private final val ErrorFormatWithMarker = "[ERROR] [%s][%s] [%s] [%s] %s%s"
+    private final  val ErrorFormat          = "[ERROR] [%s] [%s] [%s]%s %s%s"
+    private final val ErrorFormatWithMarker = "[ERROR] [%s][%s] [%s] [%s]%s %s%s"
 
-    private final val ErrorFormatWithoutCause           = "[ERROR] [%s] [%s] [%s] %s"
-    private final val ErrorWithoutCauseWithMarkerFormat = "[ERROR] [%s][%s] [%s] [%s] %s"
+    private final val ErrorFormatWithoutCause           = "[ERROR] [%s] [%s] [%s]%s %s"
+    private final val ErrorWithoutCauseWithMarkerFormat = "[ERROR] [%s][%s] [%s] [%s]%s %s"
 
-    private final val WarningFormat           = "[WARN] [%s] [%s] [%s] %s"
-    private final val WarningWithMarkerFormat = "[WARN] [%s][%s] [%s] [%s] %s"
+    private final val WarningFormat           = "[WARN] [%s] [%s] [%s]%s %s"
+    private final val WarningWithMarkerFormat = "[WARN] [%s][%s] [%s] [%s]%s %s"
 
-    private final val InfoFormat           = "[INFO] [%s] [%s] [%s] %s"
-    private final val InfoWithMarkerFormat = "[INFO] [%s][%s] [%s] [%s] %s"
+    private final val InfoFormat           = "[INFO] [%s] [%s] [%s]%s %s"
+    private final val InfoWithMarkerFormat = "[INFO] [%s][%s] [%s] [%s]%s %s"
 
-    private final val DebugFormat           = "[DEBUG] [%s] [%s] [%s] %s"
-    private final val DebugWithMarkerFormat = "[DEBUG] [%s][%s] [%s] [%s] %s"
+    private final val DebugFormat           = "[DEBUG] [%s] [%s] [%s]%s %s"
+    private final val DebugWithMarkerFormat = "[DEBUG] [%s][%s] [%s] [%s]%s %s"
 
     // format: ON
   }
