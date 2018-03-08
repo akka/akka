@@ -152,7 +152,7 @@ object BootstrapGenjavadoc extends AutoPlugin {
       javacOptions in test += "-Xdoclint:none",
       javacOptions in doc += "-Xdoclint:none",
       scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
-      unidocGenjavadocVersion in Global := "0.10"
+      unidocGenjavadocVersion in Global := "0.11"
     )
   ).getOrElse(Seq.empty)
 }
