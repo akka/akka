@@ -3,11 +3,9 @@
  */
 package akka.persistence.typed.scaladsl
 
-import akka.actor.ActorSystemImpl
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
 import akka.persistence.snapshot.SnapshotStore
-import akka.persistence.typed.scaladsl.PersistentBehaviors._
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl._
@@ -38,7 +36,7 @@ object PersistentBehaviorSpec {
 
   val config = ConfigFactory.parseString(
     s"""
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
     # akka.persistence.typed.log-stashing = INFO
 
     akka.persistence.snapshot-store.inmem.class = "akka.persistence.typed.scaladsl.PersistentBehaviorSpec$$InMemorySnapshotStore"
@@ -319,7 +317,11 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
     }
 
     "snapshot via predicate" in {
-      val alwaysSnapshot = counter("c9").snapshotWhen { (_, _, _) ⇒ true }
+      val alwaysSnapshot: Behavior[Command] =
+        Behaviors.setup { context ⇒
+          counter("c9").snapshotWhen { (_, _, _) ⇒ true }
+        }
+
       val c = spawn(alwaysSnapshot)
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()
