@@ -13,7 +13,7 @@ import org.reactivestreams.Processor
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util
-import java.util.Comparator
+import java.util.{ Comparator, Optional }
 import java.util.concurrent.CompletionStage
 
 import akka.actor.ActorRef
@@ -216,10 +216,6 @@ object Flow {
    * the result of the `fallback`. For all other supervision options it will
    * try to create flow with the next element.
    *
-   * `fallback` will be executed when there was no elements and completed is received from upstream
-   * or when there was an exception either thrown by the `flowFactory` or during the internal flow
-   * materialization process.
-   *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
    * '''Emits when''' the internal flow is successfully created and it emits
@@ -230,10 +226,13 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
-  def lazyInit[I, O, M](flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]], fallback: function.Creator[M]): Flow[I, O, M] =
-    Flow.fromGraph(new LazyFlow[I, O, M](
-      t ⇒ flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
-      () ⇒ fallback.create()))
+  def lazyInit[I, O, M](flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]]): Flow[I, O, CompletionStage[Optional[M]]] = {
+    import scala.compat.java8.FutureConverters._
+    val sflow = scaladsl.Flow
+      .fromGraph(new LazyFlow[I, O, M](t ⇒ flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)))
+      .mapMaterializedValue(fut ⇒ fut.map(_.fold[Optional[M]](Optional.empty())(m ⇒ Optional.of(m)))(ExecutionContexts.sameThreadExecutionContext).toJava)
+    new Flow(sflow)
+  }
 }
 
 /** Create a `Flow` which can process elements of type `T`. */

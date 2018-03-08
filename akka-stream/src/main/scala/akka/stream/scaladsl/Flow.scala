@@ -500,20 +500,9 @@ object Flow {
 
   /**
    * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
-   * if there are no elements, because of completion or error.
-   * The materialized value of the `Flow` will be the materialized
-   * value of the created internal flow.
-   *
-   * If `flowFactory` throws an exception and the supervision decision is
-   * [[akka.stream.Supervision.Stop]] the materialized value of the flow will be completed with
-   * the result of the `fallback`. For all other supervision options it will
-   * try to create flow with the next element.
-   *
-   * `fallback` will be executed when there was no elements and completed is received from upstream
-   * or when there was an exception either thrown by the `flowFactory` or during the internal flow
-   * materialization process.
-   *
-   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   * if there are no elements, because of completion, cancellation, or error.
+   * The materialized value of the `Flow` is a `Future` of the materialized
+   * value of the created internal flow that is fulfilled when the internal flow gets materialized.
    *
    * '''Emits when''' the internal flow is successfully created and it emits
    *
@@ -523,8 +512,8 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
-  def lazyInit[I, O, M](flowFactory: I ⇒ Future[Flow[I, O, M]], fallback: () ⇒ M): Flow[I, O, M] =
-    Flow.fromGraph(new LazyFlow[I, O, M](flowFactory, fallback))
+  def lazyInit[I, O, M](flowFactory: I ⇒ Future[Flow[I, O, M]]): Flow[I, O, Future[Option[M]]] =
+    Flow.fromGraph(new LazyFlow[I, O, M](flowFactory))
 }
 
 object RunnableGraph {

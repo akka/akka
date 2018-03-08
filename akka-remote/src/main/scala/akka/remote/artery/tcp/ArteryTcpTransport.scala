@@ -136,7 +136,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
                 Flow[ByteString]
                   .prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId)))
                   .via(connectionFlow))
-            }, () ⇒ NotUsed))
+            }))
             .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal ⇒ Source.empty })
             .log(name = s"outbound connection to [${outboundContext.remoteAddress}], ${streamName(streamId)} stream")
             .addAttributes(Attributes.logLevels(onElement = LogLevels.Off, onFailure = Logging.WarningLevel))

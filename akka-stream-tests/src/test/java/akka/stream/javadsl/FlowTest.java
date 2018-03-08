@@ -966,16 +966,9 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseLazyInit() throws Exception {
     final CompletionStage<Flow<Integer, Integer, NotUsed>> future = new CompletableFuture<Flow<Integer, Integer, NotUsed>>();
     future.toCompletableFuture().complete(Flow.fromFunction((id) -> id));
-    Creator<NotUsed> ignoreFunction = new Creator<NotUsed>() {
-      @Override
-      public NotUsed create() throws Exception {
-        return NotUsed.getInstance();
-      }
-    };
-
     Integer result =
             Source.range(1, 10)
-                    .via(Flow.lazyInit((i) -> future, ignoreFunction))
+                    .via(Flow.lazyInit((i) -> future))
                     .runWith(Sink.<Integer>head(), materializer)
                     .toCompletableFuture().get(3, TimeUnit.SECONDS);
 
