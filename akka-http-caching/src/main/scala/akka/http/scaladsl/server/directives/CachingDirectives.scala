@@ -55,7 +55,6 @@ trait CachingDirectives {
   /**
    * Creates an [[LfuCache]] with default settings obtained from the system's configuration.
    */
-  @ApiMayChange // since perhaps we indeed have to hardcode the defaults in code rather than reference.conf?
   def routeCache[K](implicit s: ActorSystem): Cache[K, RouteResult] =
     LfuCache[K, RouteResult](s)
 

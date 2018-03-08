@@ -11,6 +11,95 @@ or other specifically documented special-cases.
 For more information and a detailed discussion of these rules and guarantees please refer to
 @extref:[The @DoNotInherit and @ApiMayChange markers](akka-docs:common/binary-compatibility-rules.html#The_@DoNotInherit_and_@ApiMayChange_markers).
 
+### Components with no Binary Compatibility Guarantee
+
+The following components and modules don't have the previously mentioned binary compatibility guaranteed within minor or
+patch versions. However, binary compatibility will attempted to be kept as much as possible.
+
+#### akka-http
+
+Scala
+:   ```scala
+    akka.http.scaladsl.server.directives.FileUploadDirectives#storeUploadedFile
+    akka.http.scaladsl.server.directives.FileUploadDirectives#storeUploadedFiles
+    akka.http.scaladsl.server.directives.FileUploadDirectives#fileUploadAll
+    akka.http.scaladsl.marshalling.sse.EventStreamMarshalling
+    akka.http.scaladsl.server.HttpApp
+    akka.http.scaladsl.unmarshalling.sse.EventStreamParser
+    akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling
+    ```
+
+Java
+:   ```java
+    akka.http.javadsl.common.PartialApplication#bindParameter
+    akka.http.javadsl.server.Directives#anyOf (all overloads)
+    akka.http.javadsl.server.Directives#allOf (all overloads)
+    akka.http.javadsl.server.directives.FileUploadDirectives#storeUploadedFile
+    akka.http.javadsl.server.directives.FileUploadDirectives#storeUploadedFiles
+    akka.http.javadsl.server.directives.FileUploadDirectives#fileUploadAll
+    akka.http.javadsl.server.HttpApp
+    ```    
+
+#### akka-http-caching
+
+Scala
+:   ```scala
+    akka.http.caching.LfuCache
+    akka.http.caching.scaladsl.Cache
+    akka.http.scaladsl.server.directives.CachingDirectives
+    ```
+
+Java
+:   ```java
+    akka.http.caching.LfuCache
+    akka.http.caching.javadsl.Cache
+    akka.http.javadsl.server.directives.CachingDirectives
+    ```    
+
+#### akka-http-core
+
+Scala
+:   ```scala
+    akka.http.scaladsl.ClientTransport
+    akka.http.scaladsl.settings.PoolImplementation
+    akka.http.scaladsl.settings.ClientConnectionSettings#transport
+    akka.http.scaladsl.settings.ClientConnectionSettings#withTransport
+    akka.http.scaladsl.settings.ConnectionPoolSettings#poolImplementation
+    akka.http.scaladsl.settings.ConnectionPoolSettings#responseEntitySubscriptionTimeout
+    akka.http.scaladsl.settings.ConnectionPoolSettings#withPoolImplementation
+    akka.http.scaladsl.settings.ConnectionPoolSettings#withResponseEntitySubscriptionTimeout
+    akka.http.scaladsl.settings.Http2ServerSettings
+    akka.http.scaladsl.settings.PreviewServerSettings
+    akka.http.scaladsl.model.headers.CacheDirectives.immutableDirective
+    akka.http.scaladsl.model.headers.X-Forwarded-Host
+    akka.http.scaladsl.model.headers.X-Forwarded-Proto
+    ```
+
+Java
+:   ```java
+    akka.http.javadsl.ClientTransport
+    akka.http.javadsl.settings.ClientConnectionSettings#getTransport
+    akka.http.javadsl.settings.ClientConnectionSettings#withTransport
+    akka.http.javadsl.settings.ConnectionPoolSettings#getPoolImplementation
+    akka.http.javadsl.settings.ConnectionPoolSettings#getResponseEntitySubscriptionTimeout
+    akka.http.javadsl.settings.ConnectionPoolSettings#withPoolImplementation
+    akka.http.javadsl.settings.ConnectionPoolSettings#withResponseEntitySubscriptionTimeout
+    akka.http.javadsl.settings.PoolImplementation
+    akka.http.javadsl.settings.PreviewServerSettings
+    ```
+  
+## Versioning and Compatibility
+
+Starting from version 10.1.0, there will be two active release branches:
+- The "current" release line (in master), where we will basically continue to evolve Akka HTTP in the same way as currently. New features will introduced here incrementally.
+- The "previous" release line (in a release-10.x branch), where the focus is on stability. We will continue to maintain the previous release by fixing serious bugs but it will not see new features. Previous releases will see less frequent releases over time.
+
+It is planned to rotate versions in an annual fashion. Meaning a new minor version will be created every year.
+Whenever a new minor version is created, it will move the at that point current minor version release series over into maintenance mode, making it the "previous".
+The former "previous" release has reached its end of life at this point. This way every release line is supported for two years.
+
+The Akka HTTP Team currently does not intend to break binary compatibility, i.e. no binary incompatible 11.x.y release is currently planned.
+    
 ## Specific versions inter-op discussion
 
 In this section we discuss some of the specific cases of compatibility between versions of Akka HTTP and Akka itself.

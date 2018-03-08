@@ -58,6 +58,7 @@ object Dependencies {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
       val gson        = "com.google.code.gson"             % "gson"                    % "2.8.2"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonVersion      % "test" // ApacheV2
+      val reflections = "org.reflections"                  % "reflections"             % "0.9.11"            % "test" // WTFPL
     }
 
     object Test {
@@ -114,7 +115,7 @@ object Dependencies {
 
   lazy val httpJackson = l ++= Seq(jackson)
 
-  lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson, Docs.jacksonXml)
+  lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson, Docs.jacksonXml, Docs.reflections)
 }
 
 
