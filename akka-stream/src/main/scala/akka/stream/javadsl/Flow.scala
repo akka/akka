@@ -207,16 +207,11 @@ object Flow {
 
   /**
    * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
-   * if there are no elements, because of completion or error.
-   * The materialized value of the `Flow` will be the materialized
-   * value of the created internal flow.
+   * if there are no elements, because of completion, cancellation, or error.
    *
-   * If `flowFactory` throws an exception and the supervision decision is
-   * [[akka.stream.Supervision.Stop]] the materialized value of the flow will be completed with
-   * the result of the `fallback`. For all other supervision options it will
-   * try to create flow with the next element.
-   *
-   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   * The materialized value of the `Flow` is a `Future[Option[M]]` that is completed with `Some(mat)` when the internal
+   * flow gets materialized or with `None` when there where no elements. If the flow materialization (including
+   * the call of the `flowFactory`) fails then the future is completed with a failure.
    *
    * '''Emits when''' the internal flow is successfully created and it emits
    *

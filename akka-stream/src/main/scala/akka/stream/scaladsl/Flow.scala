@@ -501,8 +501,10 @@ object Flow {
   /**
    * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
    * if there are no elements, because of completion, cancellation, or error.
-   * The materialized value of the `Flow` is a `Future` of the materialized
-   * value of the created internal flow that is fulfilled when the internal flow gets materialized.
+   *
+   * The materialized value of the `Flow` is a `Future[Option[M]]` that is completed with `Some(mat)` when the internal
+   * flow gets materialized or with `None` when there where no elements. If the flow materialization (including
+   * the call of the `flowFactory`) fails then the future is completed with a failure.
    *
    * '''Emits when''' the internal flow is successfully created and it emits
    *
