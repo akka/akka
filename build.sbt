@@ -87,7 +87,8 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
     Seq(
       actor,
       stream, streamTests,
-      persistence, distributedData,
+      persistence, persistenceTyped,
+      distributedData,
       testkit
     ).map(_ % "compile->compile;compile->test;provided->provided"): _*
   )
