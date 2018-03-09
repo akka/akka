@@ -1,6 +1,5 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- * Copyright (c) 2018      Gael Breard, Orange: issue #24321 add a method for transport information in public API
  */
 
 package akka.serialization
