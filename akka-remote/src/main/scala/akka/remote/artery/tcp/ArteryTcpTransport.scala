@@ -126,7 +126,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
         val flow =
           Flow[ByteString]
-            .via(Flow.lazyInit(_ ⇒ {
+            .via(Flow.lazyInitAsync(() ⇒ {
               // only open the actual connection if any new messages are sent
               afr.loFreq(
                 TcpOutbound_Connected,

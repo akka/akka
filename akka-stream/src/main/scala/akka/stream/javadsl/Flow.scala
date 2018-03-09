@@ -209,6 +209,29 @@ object Flow {
    * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
    * if there are no elements, because of completion, cancellation, or error.
    *
+   * The materialized value of the `Flow` is the value that is created by the `fallback` function.
+   *
+   * '''Emits when''' the internal flow is successfully created and it emits
+   *
+   * '''Backpressures when''' the internal flow is successfully created and it backpressures
+   *
+   * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  @deprecated("Use lazyInit without fallback parameter instead.", "2.5.12")
+  def lazyInit[I, O, M](flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]], fallback: function.Creator[M]): Flow[I, O, M] = {
+    import scala.compat.java8.FutureConverters._
+    val sflow = scaladsl.Flow
+      .fromGraph(new LazyFlow[I, O, M](t ⇒ flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)))
+      .mapMaterializedValue(_ ⇒ fallback.create())
+    new Flow(sflow)
+  }
+
+  /**
+   * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
+   * if there are no elements, because of completion, cancellation, or error.
+   *
    * The materialized value of the `Flow` is a `Future[Option[M]]` that is completed with `Some(mat)` when the internal
    * flow gets materialized or with `None` when there where no elements. If the flow materialization (including
    * the call of the `flowFactory`) fails then the future is completed with a failure.
@@ -221,10 +244,10 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
-  def lazyInit[I, O, M](flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]]): Flow[I, O, CompletionStage[Optional[M]]] = {
+  def lazyInitAsync[I, O, M](flowFactory: function.Creator[CompletionStage[Flow[I, O, M]]]): Flow[I, O, CompletionStage[Optional[M]]] = {
     import scala.compat.java8.FutureConverters._
-    val sflow = scaladsl.Flow
-      .fromGraph(new LazyFlow[I, O, M](t ⇒ flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)))
+
+    val sflow = scaladsl.Flow.lazyInitAsync(() ⇒ flowFactory.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
       .mapMaterializedValue(fut ⇒ fut.map(_.fold[Optional[M]](Optional.empty())(m ⇒ Optional.of(m)))(ExecutionContexts.sameThreadExecutionContext).toJava)
     new Flow(sflow)
   }

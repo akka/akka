@@ -24,12 +24,12 @@ class LazyFlowSpec extends StreamSpec {
   val ex = TE("")
 
   "A LazyFlow" must {
-    def mapF(e: Int): Future[Flow[Int, String, NotUsed]] =
+    def mapF(e: Int): () ⇒ Future[Flow[Int, String, NotUsed]] = () ⇒
       Future.successful(Flow.fromFunction[Int, String](i ⇒ (i * e).toString))
     val flowF = Future.successful(Flow[Int])
     "work in happy case" in assertAllStagesStopped {
       val probe = Source(2 to 10)
-        .via(Flow.lazyInit[Int, String, NotUsed](mapF))
+        .via(Flow.lazyInitAsync[Int, String, NotUsed](mapF(2)))
         .runWith(TestSink.probe[String])
       probe.request(100)
       (2 to 10).map(i ⇒ (i * 2).toString).foreach(probe.expectNext)
@@ -39,7 +39,7 @@ class LazyFlowSpec extends StreamSpec {
       val p = Promise[Flow[Int, Int, NotUsed]]()
       val sourceProbe = TestPublisher.manualProbe[Int]()
       val flowProbe = Source.fromPublisher(sourceProbe)
-        .via(Flow.lazyInit[Int, Int, NotUsed](_ ⇒ p.future))
+        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() ⇒ p.future))
         .runWith(TestSink.probe[Int])
 
       val sourceSub = sourceProbe.expectSubscription()
@@ -60,16 +60,16 @@ class LazyFlowSpec extends StreamSpec {
     }
 
     "complete when there was no elements in the stream" in assertAllStagesStopped {
-      def flowMaker(i: Int) = flowF
+      def flowMaker() = flowF
       val probe = Source.empty
-        .via(Flow.lazyInit(flowMaker))
+        .via(Flow.lazyInitAsync(flowMaker))
         .runWith(TestSink.probe[Int])
       probe.request(1).expectComplete()
     }
 
     "complete normally when upstream is completed" in assertAllStagesStopped {
       val probe = Source.single(1)
-        .via(Flow.lazyInit[Int, Int, NotUsed](_ ⇒ flowF))
+        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() ⇒ flowF))
         .runWith(TestSink.probe[Int])
       probe.request(1)
         .expectNext(1)
@@ -79,7 +79,7 @@ class LazyFlowSpec extends StreamSpec {
     "fail gracefully when flow factory method failed" in assertAllStagesStopped {
       val sourceProbe = TestPublisher.manualProbe[Int]()
       val probe = Source.fromPublisher(sourceProbe)
-        .via(Flow.lazyInit[Int, Int, NotUsed](_ ⇒ throw ex))
+        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() ⇒ throw ex))
         .runWith(TestSink.probe[Int])
 
       val sourceSub = sourceProbe.expectSubscription()
@@ -93,7 +93,7 @@ class LazyFlowSpec extends StreamSpec {
     "fail gracefully when upstream failed" in assertAllStagesStopped {
       val sourceProbe = TestPublisher.manualProbe[Int]()
       val probe = Source.fromPublisher(sourceProbe)
-        .via(Flow.lazyInit[Int, Int, NotUsed](_ ⇒ flowF))
+        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() ⇒ flowF))
         .runWith(TestSink.probe[Int])
 
       val sourceSub = sourceProbe.expectSubscription()
@@ -108,7 +108,7 @@ class LazyFlowSpec extends StreamSpec {
     "fail gracefully when factory future failed" in assertAllStagesStopped {
       val sourceProbe = TestPublisher.manualProbe[Int]()
       val flowProbe = Source.fromPublisher(sourceProbe)
-        .via(Flow.lazyInit[Int, Int, NotUsed](_ ⇒ Future.failed(ex)))
+        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() ⇒ Future.failed(ex)))
         .withAttributes(supervisionStrategy(stoppingDecider))
         .runWith(TestSink.probe[Int])
 
@@ -121,7 +121,7 @@ class LazyFlowSpec extends StreamSpec {
     "cancel upstream when the downstream is cancelled" in assertAllStagesStopped {
       val sourceProbe = TestPublisher.manualProbe[Int]()
       val probe = Source.fromPublisher(sourceProbe)
-        .via(Flow.lazyInit[Int, Int, NotUsed](_ ⇒ flowF))
+        .via(Flow.lazyInitAsync[Int, Int, NotUsed](() ⇒ flowF))
         .withAttributes(supervisionStrategy(stoppingDecider))
         .runWith(TestSink.probe[Int])
 
@@ -157,7 +157,7 @@ class LazyFlowSpec extends StreamSpec {
       val msg = "fail!"
       val matFail = TE(msg)
       val result = Source.single("whatever")
-        .viaMat(Flow.lazyInit(_ ⇒ throw matFail))(Keep.right)
+        .viaMat(Flow.lazyInitAsync(() ⇒ throw matFail))(Keep.right)
         .toMat(Sink.ignore)(Keep.left)
         .run()
 

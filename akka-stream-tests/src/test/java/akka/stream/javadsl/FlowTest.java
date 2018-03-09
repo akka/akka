@@ -968,7 +968,7 @@ public class FlowTest extends StreamTest {
     future.toCompletableFuture().complete(Flow.fromFunction((id) -> id));
     Integer result =
             Source.range(1, 10)
-                    .via(Flow.lazyInit((i) -> future))
+                    .via(Flow.lazyInitAsync(() -> future))
                     .runWith(Sink.<Integer>head(), materializer)
                     .toCompletableFuture().get(3, TimeUnit.SECONDS);
 
