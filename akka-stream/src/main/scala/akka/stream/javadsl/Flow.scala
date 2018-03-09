@@ -219,7 +219,7 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
-  @deprecated("Use lazyInit without fallback parameter instead.", "2.5.12")
+  @deprecated("Use lazyInitAsync instead.", "2.5.12")
   def lazyInit[I, O, M](flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]], fallback: function.Creator[M]): Flow[I, O, M] = {
     import scala.compat.java8.FutureConverters._
     val sflow = scaladsl.Flow
