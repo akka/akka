@@ -4,22 +4,17 @@
 
 package akka.stream
 
-import java.util.concurrent.atomic.AtomicInteger
-
+import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.scaladsl._
 import akka.stream.testkit.StreamSpec
-import akka.stream.impl.fusing.GraphInterpreter
-import akka.event.BusLogging
 
 class FusingSpec extends StreamSpec {
 
-  final val Debug = false
   implicit val materializer = ActorMaterializer()
 
-  def graph(async: Boolean) =
-    Source.unfold(1)(x ⇒ Some(x → x)).filter(_ % 2 == 1)
-      .alsoTo(Flow[Int].fold(0)(_ + _).to(Sink.head.named("otherSink")).addAttributes(if (async) Attributes.asyncBoundary else Attributes.none))
-      .via(Flow[Int].fold(1)(_ + _).named("mainSink"))
+  def actorRunningStage = {
+    GraphInterpreter.currentInterpreter.context
+  }
 
   "SubFusingActorMaterializer" must {
 
@@ -35,85 +30,61 @@ class FusingSpec extends StreamSpec {
     }
 
     "use multiple actors when there are asynchronous boundaries in the subflows (manual)" in {
-      def ref = {
-        val bus = GraphInterpreter.currentInterpreter.log.asInstanceOf[BusLogging]
-        bus.logSource
-      }
-      val async = Flow[Int].map(x ⇒ { testActor ! ref; x }).async
+      val async = Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x }).async
       Source(0 to 9)
-        .map(x ⇒ { testActor ! ref; x })
+        .map(x ⇒ { testActor ! actorRunningStage; x })
         .flatMapMerge(5, i ⇒ Source.single(i).via(async))
         .grouped(1000)
         .runWith(Sink.head)
         .futureValue
         .sorted should ===(0 to 9)
       val refs = receiveN(20)
-      withClue(s"refs=\n${refs.mkString("\n")}") {
-        refs.toSet.size should ===(11) // main flow + 10 subflows
-      }
+      refs.toSet should have size (11) // main flow + 10 subflows
     }
 
     "use multiple actors when there are asynchronous boundaries in the subflows (combinator)" in {
-      def ref = {
-        val bus = GraphInterpreter.currentInterpreter.log.asInstanceOf[BusLogging]
-        bus.logSource
-      }
-      val flow = Flow[Int].map(x ⇒ { testActor ! ref; x })
+      val flow = Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x })
       Source(0 to 9)
-        .map(x ⇒ { testActor ! ref; x })
+        .map(x ⇒ { testActor ! actorRunningStage; x })
         .flatMapMerge(5, i ⇒ Source.single(i).via(flow.async))
         .grouped(1000)
         .runWith(Sink.head)
         .futureValue
         .sorted should ===(0 to 9)
       val refs = receiveN(20)
-      withClue(s"refs=\n${refs.mkString("\n")}") {
-        refs.toSet.size should ===(11) // main flow + 10 subflows
-      }
+      refs.toSet should have size (11) // main flow + 10 subflows
     }
 
     "use one actor per grouped substream when there is an async boundary around the flow (manual)" in {
-      def ref = {
-        val bus = GraphInterpreter.currentInterpreter.log.asInstanceOf[BusLogging]
-        bus.logSource
-      }
-      val async = Flow[Int].map(x ⇒ { testActor ! ref; x }).async
-      Source(0 to 9)
-        .map(x ⇒ { testActor ! ref; x })
-        .groupBy(10, identity)
-        .via(async)
+      val flow = Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x }).async
+      val in = 0 to 9
+      Source(in)
+        .via(Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x }))
+        .groupBy(in.size, identity)
+        .via(flow)
         .mergeSubstreams
         .runWith(Sink.seq)
-        .futureValue
-        .sorted should ===(0 to 9)
-      val refs = receiveN(10)
-      withClue(s"refs=\n${refs.mkString("\n")}") {
-        refs.toSet should have size (11) // main flow + 10 subflows
-      }
+        .futureValue.sorted should ===(in)
+      val refs = receiveN(in.size + in.size) // each element through the first map, then the second map
+
+      refs.toSet should have size (in.size + 1) // outer/main actor + 1 actor per subflow
     }
 
     "use one actor per grouped substream when there is an async boundary around the flow (combinator)" in {
-      def ref = {
-        val bus = GraphInterpreter.currentInterpreter.log.asInstanceOf[BusLogging]
-        bus.logSource
-      }
-
-      val flow = Flow[Int].map(x ⇒ { testActor ! ref; x })
-      Source(0 to 9)
-        .map(x ⇒ { testActor ! ref; x })
-        .groupBy(10, identity)
+      val flow = Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x })
+      val in = 0 to 9
+      Source(in)
+        .via(Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x }))
+        .groupBy(in.size, identity)
         .via(flow)
         .async
         .mergeSubstreams
         .runWith(Sink.seq)
-        .futureValue
-        .sorted should ===(0 to 9)
-      val refs = receiveN(10)
-
-      refs.toSet should have size (11) // outer/main flow + 10 subflows
-
+        .futureValue.sorted should ===(in)
+      val refs = receiveN(in.size + in.size) // each element through the first map, then the second map
+      refs.toSet should have size (in.size + 1) // outer/main actor + 1 actor per subflow
     }
-
+    
   }
 
 }
