@@ -88,6 +88,12 @@ The source code of this sample can be found in the
 
 ## Joining to Seed Nodes
 
+@@@ note
+  When starting clusters on cloud systems such as Kubernetes, AWS, Mesos or others which maintain DNS or other ways of 
+  discovering nodes, you may want to use the automatic joining process implemented by the open source
+  [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module.
+@@@
+
 You may decide if joining to the cluster should be done manually or automatically
 to configured initial contact points, so-called seed nodes. After the joining process
 the seed nodes are not special and they participate in the cluster in exactly the same
@@ -115,10 +121,10 @@ This can also be defined as Java system properties when starting the JVM using t
 Such configuration is typically created dynamically by external tools, see for example:
 
 * [Deploying clustered Akka applications on Kubernetes](http://developer.lightbend.com/guides/k8-akka-cluster/)
-* [ConstructR](https://github.com/hseeberger/constructr)
+* [Akka Management's Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html)
 
 The seed nodes can be started in any order and it is not necessary to have all
-seed nodes running, but the node configured as the first element in the `seed-nodes`
+seed nodes running, but the node configured as the **first element** in the `seed-nodes`
 configuration list must be started when initially starting a cluster, otherwise the
 other seed-nodes will not become initialized and no other node can join the cluster.
 The reason for the special first seed node is to avoid forming separated islands when
@@ -176,8 +182,7 @@ be allowed to join.
 
 @@@ note
 
-The name of the `ActorSystem` must be the same for all members of a cluster. The name is given
-when you start the `ActorSystem`.
+The name of the `ActorSystem` must be the same for all members of a cluster. The name is given when you start the `ActorSystem`.
 
 @@@
 
