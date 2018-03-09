@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 
 import java.util
 
-import akka.NotUsed
+import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.stream.Attributes._
 import akka.stream.impl.SinkModule
@@ -593,7 +593,6 @@ class FlowGroupBySpec extends StreamSpec {
 
     "not block all substreams when one is blocked but has a buffer in front" in assertAllStagesStopped {
       case class Elem(id: Int, substream: Int, f: () ⇒ Any)
-      val threeProcessed = TestLatch()
       val queue = Source.queue[Elem](3, OverflowStrategy.backpressure)
         .groupBy(2, _.substream)
         .buffer(2, OverflowStrategy.backpressure)
@@ -601,14 +600,17 @@ class FlowGroupBySpec extends StreamSpec {
         .to(Sink.ignore)
         .run()
 
+      val threeProcessed = Promise[Done]()
+      val blockSubStream1 = TestLatch()
       List(
-        Elem(1, 1, () ⇒ { Thread.sleep(1.seconds.toMillis); 1 }),
+        Elem(1, 1, () ⇒ { Await.result(blockSubStream1, remainingOrDefault); 1 }),
         Elem(2, 1, () ⇒ 2),
         Elem(3, 2, () ⇒ {
-          threeProcessed.open()
+          threeProcessed.success(Done)
           3
         })).foreach(queue.offer)
-      Await.result(threeProcessed, 500.millis)
+      threeProcessed.future.futureValue should ===(Done)
+      blockSubStream1.open()
       queue.complete()
     }
 
