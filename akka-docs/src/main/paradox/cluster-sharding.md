@@ -16,7 +16,7 @@ In this context sharding means that actors with an identifier, so called entitie
 can be automatically distributed across multiple nodes in the cluster. Each entity
 actor runs only at one place, and messages can be sent to the entity without requiring
 the sender to know the location of the destination actor. This is achieved by sending
-the messages via a `ShardRegion` actor provided by this extension, which knows how
+the messages via a @unidoc[ShardRegion](ShardRegion$) actor provided by this extension, which knows how
 to route the message with the entity id to the final destination.
 
 Cluster sharding will not be active on members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up)
@@ -51,7 +51,7 @@ Scala
 Java
 :  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-actor }
 
-The above actor uses event sourcing and the support provided in @scala[`PersistentActor`] @java[`AbstractPersistentActor`] to store its state.
+The above actor uses event sourcing and the support provided in @scala[@unidoc[PersistentActor]] @java[@unidoc[AbstractPersistentActor]] to store its state.
 It does not have to be a persistent actor, but in case of failure or migration of entities between nodes it must be able to recover
 its state if it is valuable.
 
@@ -106,9 +106,9 @@ A simple sharding algorithm that works fine in most cases is to take the absolut
 the entity identifier modulo number of shards. As a convenience this is provided by the
 `ShardRegion.HashCodeMessageExtractor`.
 
-Messages to the entities are always sent via the local `ShardRegion`. The `ShardRegion` actor reference for a
+Messages to the entities are always sent via the local @unidoc[ShardRegion](ShardRegion$) The @unidoc[ShardRegion](ShardRegion$) actor reference for a
 named entity type is returned by `ClusterSharding.start` and it can also be retrieved with `ClusterSharding.shardRegion`.
-The `ShardRegion` will lookup the location of the shard for the entity if it does not already know its location. It will
+The @unidoc[ShardRegion](ShardRegion$) will lookup the location of the shard for the entity if it does not already know its location. It will
 delegate the message to the right node and it will create the entity actor on demand, i.e. when the
 first message for a specific entity is delivered.
 
@@ -127,28 +127,28 @@ tutorial named [Akka Cluster Sharding with Scala!](https://github.com/typesafehu
 
 ## How it works
 
-The `ShardRegion` actor is started on each node in the cluster, or group of nodes
-tagged with a specific role. The `ShardRegion` is created with two application specific
+The @unidoc[ShardRegion](ShardRegion$) actor is started on each node in the cluster, or group of nodes
+tagged with a specific role. The @unidoc[ShardRegion](ShardRegion$) is created with two application specific
 functions to extract the entity identifier and the shard identifier from incoming messages.
 A shard is a group of entities that will be managed together. For the first message in a
-specific shard the `ShardRegion` requests the location of the shard from a central coordinator,
+specific shard the @unidoc[ShardRegion](ShardRegion$) requests the location of the shard from a central coordinator,
 the `ShardCoordinator`.
 
-The `ShardCoordinator` decides which `ShardRegion` shall own the `Shard` and informs
-that `ShardRegion`. The region will confirm this request and create the `Shard` supervisor
+The `ShardCoordinator` decides which @unidoc[ShardRegion](ShardRegion$) shall own the `Shard` and informs
+that @unidoc[ShardRegion](ShardRegion$). The region will confirm this request and create the `Shard` supervisor
 as a child actor. The individual `Entities` will then be created when needed by the `Shard`
-actor. Incoming messages thus travel via the `ShardRegion` and the `Shard` to the target
+actor. Incoming messages thus travel via the @unidoc[ShardRegion](ShardRegion$) and the `Shard` to the target
 `Entity`.
 
-If the shard home is another `ShardRegion` instance messages will be forwarded
-to that `ShardRegion` instance instead. While resolving the location of a
+If the shard home is another @unidoc[ShardRegion](ShardRegion$) instance messages will be forwarded
+to that @unidoc[ShardRegion](ShardRegion$) instance instead. While resolving the location of a
 shard incoming messages for that shard are buffered and later delivered when the
 shard home is known. Subsequent messages to the resolved shard can be delivered
 to the target destination immediately without involving the `ShardCoordinator`.
 
 Scenario 1:
 
- 1. Incoming message M1 to `ShardRegion` instance R1.
+ 1. Incoming message M1 to @unidoc[ShardRegion](ShardRegion$) instance R1.
  2. M1 is mapped to shard S1. R1 doesn't know about S1, so it asks the coordinator C for the location of S1.
  3. C answers that the home of S1 is R1.
  4. R1 creates child actor for the entity E1 and sends buffered messages for S1 to E1 child
@@ -172,30 +172,30 @@ role.
 
 The logic that decides where a shard is to be located is defined in a pluggable shard
 allocation strategy. The default implementation `ShardCoordinator.LeastShardAllocationStrategy`
-allocates new shards to the `ShardRegion` with least number of previously allocated shards.
+allocates new shards to the @unidoc[ShardRegion](ShardRegion$) with least number of previously allocated shards.
 This strategy can be replaced by an application specific implementation.
 
 To be able to use newly added members in the cluster the coordinator facilitates rebalancing
 of shards, i.e. migrate entities from one node to another. In the rebalance process the
-coordinator first notifies all `ShardRegion` actors that a handoff for a shard has started.
+coordinator first notifies all @unidoc[ShardRegion](ShardRegion$) actors that a handoff for a shard has started.
 That means they will start buffering incoming messages for that shard, in the same way as if the
 shard location is unknown. During the rebalance process the coordinator will not answer any
 requests for the location of shards that are being rebalanced, i.e. local buffering will
-continue until the handoff is completed. The `ShardRegion` responsible for the rebalanced shard
+continue until the handoff is completed. The @unidoc[ShardRegion](ShardRegion$) responsible for the rebalanced shard
 will stop all entities in that shard by sending the specified `handOffStopMessage`
-(default `PoisonPill`) to them. When all entities have been terminated the `ShardRegion`
+(default `PoisonPill`) to them. When all entities have been terminated the @unidoc[ShardRegion](ShardRegion$)
 owning the entities will acknowledge the handoff as completed to the coordinator.
 Thereafter the coordinator will reply to requests for the location of
 the shard and thereby allocate a new home for the shard and then buffered messages in the
-`ShardRegion` actors are delivered to the new location. This means that the state of the entities
+@unidoc[ShardRegion](ShardRegion$) actors are delivered to the new location. This means that the state of the entities
 are not transferred or migrated. If the state of the entities are of importance it should be
 persistent (durable), e.g. with @ref:[Persistence](persistence.md), so that it can be recovered at the new
 location.
 
 The logic that decides which shards to rebalance is defined in a pluggable shard
 allocation strategy. The default implementation `ShardCoordinator.LeastShardAllocationStrategy`
-picks shards for handoff from the `ShardRegion` with most number of previously allocated shards.
-They will then be allocated to the `ShardRegion` with least number of previously allocated shards,
+picks shards for handoff from the @unidoc[ShardRegion](ShardRegion$) with most number of previously allocated shards.
+They will then be allocated to the @unidoc[ShardRegion](ShardRegion$) with least number of previously allocated shards,
 i.e. new members in the cluster. There is a configurable threshold of how large the difference
 must be to begin the rebalancing. This strategy can be replaced by an application specific
 implementation.
@@ -207,7 +207,7 @@ actor will take over and the state is recovered. During such a failure period sh
 with known location are still available, while messages for new (unknown) shards
 are buffered until the new `ShardCoordinator` becomes available.
 
-As long as a sender uses the same `ShardRegion` actor to deliver messages to an entity
+As long as a sender uses the same @unidoc[ShardRegion](ShardRegion$) actor to deliver messages to an entity
 actor the order of the messages is preserved. As long as the buffer limit is not reached
 messages are delivered on a best effort basis, with at-most once delivery semantics,
 in the same way as ordinary message sending. Reliable end-to-end messaging, with
@@ -280,9 +280,9 @@ See @ref:[How To Startup when Cluster Size Reached](cluster-usage.md#min-members
 
 ## Proxy Only Mode
 
-The `ShardRegion` actor can also be started in proxy only mode, i.e. it will not
+The @unidoc[ShardRegion](ShardRegion$) actor can also be started in proxy only mode, i.e. it will not
 host any entities itself, but knows how to delegate messages to the right location.
-A `ShardRegion` is started in proxy only mode with the `ClusterSharding.startProxy` method.
+A @unidoc[ShardRegion](ShardRegion$) is started in proxy only mode with the method `ClusterSharding.startProxy`
 Also a `ShardRegion` is started in proxy only mode in case if there is no match between the
 roles of the current cluster node and the role specified in `ClusterShardingSettings` 
 passed to the `ClusterSharding.start` method.
@@ -365,8 +365,8 @@ Note that stopped entities will be started again when a new message is targeted 
 ## Graceful Shutdown
 
 You can send the @scala[`ShardRegion.GracefulShutdown`] @java[`ShardRegion.gracefulShutdownInstance`] message
-to the `ShardRegion` actor to hand off all shards that are hosted by that `ShardRegion` and then the
-`ShardRegion` actor will be stopped. You can `watch` the `ShardRegion` actor to know when it is completed.
+to the @unidoc[ShardRegion](ShardRegion$) actor to hand off all shards that are hosted by that @unidoc[ShardRegion](ShardRegion$) and then the
+@unidoc[ShardRegion](ShardRegion$) actor will be stopped. You can `watch` the @unidoc[ShardRegion](ShardRegion$) actor to know when it is completed.
 During this period other regions will buffer messages for those shards in the same way as when a rebalance is
 triggered by the coordinator. When the shards have been stopped the coordinator will allocate these shards elsewhere.
 
