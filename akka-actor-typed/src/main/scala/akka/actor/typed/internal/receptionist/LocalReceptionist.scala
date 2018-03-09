@@ -14,14 +14,14 @@ import akka.util.TypedMultiMap
 /**
  * Marker interface to use with dynamic access
  *
- * Internal API
+ * INTERNAL API
  */
 @InternalApi
 private[akka] trait ReceptionistBehaviorProvider {
   def behavior: Behavior[Command]
 }
 
-/** Internal API */
+/** INTERNAL API */
 @InternalApi
 private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 

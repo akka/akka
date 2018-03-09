@@ -17,8 +17,9 @@ import akka.cluster.{ Cluster, ClusterEvent }
 import akka.util.TypedMultiMap
 
 import scala.language.{ existentials, higherKinds }
+import akka.actor.typed.scaladsl.adapter._
 
-/** Internal API */
+/** INTERNAL API */
 @InternalApi
 private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
@@ -75,36 +76,58 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   final case class ChangeFromReplicator(value: ORMultiMap[ServiceKey[_], ActorRef[_]]) extends InternalCommand
   case object RemoveTick extends InternalCommand
 
-  override def behavior: Behavior[Command] = behavior(
-    ServiceRegistry.empty,
-    TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV]
-  ).narrow[Command]
+  // captures setup/dependencies so we can avoid doing it over and over again
+  private class Setup(ctx: ActorContext[Any]) {
+    val untypedSystem = ctx.system.toUntyped
+    val settings = ClusterReceptionistSettings(ctx.system)
+    val replicator = DistributedData(untypedSystem).replicator
+    implicit val cluster = Cluster(untypedSystem)
+  }
 
+  override def behavior: Behavior[Command] = Behaviors.setup[Any] { ctx ⇒
+
+    val setup = new Setup(ctx)
+
+    // subscribe to changes from other nodes
+    val replicatorMessageAdapter: ActorRef[Replicator.ReplicatorMessage] =
+      ctx.messageAdapter[Replicator.ReplicatorMessage] {
+        case changed @ Replicator.Changed(ReceptionistKey) ⇒ ChangeFromReplicator(changed.get(ReceptionistKey))
+      }
+    setup.replicator ! Replicator.Subscribe(ReceptionistKey, replicatorMessageAdapter.toUntyped)
+
+    // remove entries when members are removed
+    val clusterEventMessageAdapter: ActorRef[MemberRemoved] =
+      ctx.messageAdapter[MemberRemoved] { case MemberRemoved(member, _) ⇒ NodeRemoved(member.address) }
+    setup.cluster.subscribe(clusterEventMessageAdapter.toUntyped, ClusterEvent.InitialStateAsEvents, classOf[MemberRemoved])
+
+    // also periodic cleanup in case removal from ORMultiMap is skipped due to concurrent update,
+    // which is possible for OR CRDTs - done with an adapter to leverage the existing NodesRemoved message
+    ctx.system.scheduler.schedule(setup.settings.pruningInterval, setup.settings.pruningInterval,
+      ctx.self.toUntyped, RemoveTick)(ctx.system.executionContext)
+
+    behavior(
+      setup,
+      ServiceRegistry.empty,
+      TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV]
+    )
+  }.narrow[Command]
 
   /**
    * @param state The last seen state from the replicator - only updated when we get an update from th replicator
    * @param subscriptions Locally subscriptions, not replicated
    */
   def behavior(
+    setup:         Setup,
     state:         ServiceRegistry,
     subscriptions: SubscriptionRegistry): Behavior[Any] =
     Behaviors.setup[Any] { ctx ⇒
-
-      // FIXME a bit messy that we do "all" this setup on every state transition
-      import akka.actor.typed.scaladsl.adapter._
-      val untypedSystem = ctx.system.toUntyped
-
-      val settings = ClusterReceptionistSettings(ctx.system)
-      val replicator = DistributedData(untypedSystem).replicator
-      implicit val cluster = Cluster(untypedSystem)
-
-
+      import setup._
 
       // Helper to create new behavior
       def next(
         newState:         ServiceRegistry      = state,
         newSubscriptions: SubscriptionRegistry = subscriptions) =
-        behavior(newState, newSubscriptions)
+        behavior(setup, newState, newSubscriptions)
 
       /*
        * Hack to allow multiple termination notifications per target
@@ -125,23 +148,6 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         val msg = ReceptionistMessages.Listing(key.asServiceKey, state.getOrEmpty(key))
         subscriptions.get(key).foreach(_ ! msg)
       }
-
-      // subscribe to changes from other nodes
-      val replicatorMessageAdapter: ActorRef[Replicator.ReplicatorMessage] =
-        ctx.messageAdapter[Replicator.ReplicatorMessage] {
-          case changed @ Replicator.Changed(ReceptionistKey) ⇒ ChangeFromReplicator(changed.get(ReceptionistKey))
-        }
-      replicator ! Replicator.Subscribe(ReceptionistKey, replicatorMessageAdapter.toUntyped)
-
-      // remove entries when members are removed
-      val clusterEventMessageAdapter: ActorRef[MemberRemoved] =
-        ctx.messageAdapter[MemberRemoved] { case MemberRemoved(member, _) ⇒ NodeRemoved(member.address) }
-      cluster.subscribe(clusterEventMessageAdapter.toUntyped, ClusterEvent.InitialStateAsEvents, classOf[MemberRemoved])
-
-      // also periodic cleanup in case removal from ORMultiMap is skipped due to concurrent update,
-      // which is possible for OR CRDTs - done with an adapter to leverage the existing NodesRemoved message
-      ctx.system.scheduler.schedule(settings.pruningInterval, settings.pruningInterval,
-        ctx.self.toUntyped, RemoveTick)(ctx.system.executionContext)
 
       def nodesRemoved(addresses: Set[Address]): Behavior[Any] = {
         // ok to update from several nodes but more efficient to try to do it from one node
@@ -259,7 +265,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
       Behaviors.immutable[Any] { (ctx, msg) ⇒
         msg match {
-          // FIXME add union types to Scala
+          // support two heterogenous types of messages without union types
           case cmd: Command         ⇒ onCommand(ctx, cmd)
           case cmd: InternalCommand ⇒ onInternalCommand(ctx, cmd)
           case _                    ⇒ Behaviors.unhandled

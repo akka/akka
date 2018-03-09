@@ -27,7 +27,7 @@ class Receptionist(system: ActorSystem[_]) extends Extension {
           .createInstanceFor[ReceptionistBehaviorProvider]("akka.cluster.typed.internal.receptionist.ClusterReceptionist$", Nil)
           .recover {
             case ex ⇒
-              throw new RuntimeException("ClusterReceptionist could not be loaded dynamically. Make sure you have all required binaries on the classpath.")
+              throw new RuntimeException("ClusterReceptionist could not be loaded dynamically. Make sure you have 'akka-cluster-typed' in the classpath.")
           }.get
       } else LocalReceptionist
 
