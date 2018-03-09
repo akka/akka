@@ -62,12 +62,16 @@ import akka.util.OptionVal
   }
 
   override def send(message: Any, senderOption: OptionVal[ActorRef], recipient: RemoteActorRef): Unit = {
-    if (isArteryProtocol(recipient.path.address)) arteryTransport.send(message, senderOption, recipient)
-    else classicTransport.send(message, senderOption, recipient)
+    if (isArteryProtocol(recipient.path.address))
+      arteryTransport.send(message, senderOption, recipient)
+    else
+      classicTransport.send(message, senderOption, recipient)
   }
 
   override def quarantine(address: Address, uid: Option[Long], reason: String): Unit = {
-    classicTransport.quarantine(address.copy(protocol = classicTransport.defaultAddress.protocol), uid, reason)
-    arteryTransport.quarantine(address.copy(protocol = ArteryTransport.ProtocolName), uid, reason)
+    if (isArteryProtocol(address))
+      arteryTransport.quarantine(address.copy(protocol = ArteryTransport.ProtocolName), uid, reason)
+    else
+      classicTransport.quarantine(address.copy(protocol = classicTransport.defaultAddress.protocol), uid, reason)
   }
 }
