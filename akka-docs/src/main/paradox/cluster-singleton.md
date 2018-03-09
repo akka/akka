@@ -16,12 +16,12 @@ such as single-point of bottleneck. Single-point of failure is also a relevant c
 but for some cases this feature takes care of that by making sure that another singleton
 instance will eventually be started.
 
-The cluster singleton pattern is implemented by @unidoc[akka.cluster.singleton.ClusterSingletonManager].
+The cluster singleton pattern is implemented by `akka.cluster.singleton.ClusterSingletonManager`.
 It manages one singleton actor instance among all cluster nodes or a group of nodes tagged with
-a specific role. @unidoc[ClusterSingletonManager] is an actor that is supposed to be started on
+a specific role. `ClusterSingletonManager` is an actor that is supposed to be started on
 all nodes, or all nodes with specified role, in the cluster. The actual singleton actor is
-started by the @unidoc[ClusterSingletonManager] on the oldest node by creating a child actor from
-supplied @unidoc[akka.actor.Props]. @unidoc[ClusterSingletonManager] makes sure that at most one singleton instance
+started by the `ClusterSingletonManager` on the oldest node by creating a child actor from
+supplied `Props`. `ClusterSingletonManager` makes sure that at most one singleton instance
 is running at any point in time.
 
 The singleton actor is always running on the oldest member with specified role.
@@ -35,15 +35,15 @@ take over and a new singleton actor is created. For these failure scenarios ther
 not be a graceful hand-over, but more than one active singletons is prevented by all
 reasonable means. Some corner cases are eventually resolved by configurable timeouts.
 
-You can access the singleton actor by using the provided @unidoc[akka.cluster.singleton.ClusterSingletonProxy],
+You can access the singleton actor by using the provided `akka.cluster.singleton.ClusterSingletonProxy`,
 which will route all messages to the current instance of the singleton. The proxy will keep track of
-the oldest node in the cluster and resolve the singleton's @unidoc[akka.actor.ActorRef] by explicitly sending the
-singleton's `actorSelection` the @unidoc[akka.actor.Identify] message and waiting for it to reply.
+the oldest node in the cluster and resolve the singleton's `ActorRef` by explicitly sending the
+singleton's `actorSelection` the `akka.actor.Identify` message and waiting for it to reply.
 This is performed periodically if the singleton doesn't reply within a certain (configurable) time.
-Given the implementation, there might be periods of time during which the @unidoc[akka.actor.ActorRef] is unavailable,
+Given the implementation, there might be periods of time during which the `ActorRef` is unavailable,
 e.g., when a node leaves the cluster. In these cases, the proxy will buffer the messages sent to the
 singleton and then deliver them when the singleton is finally available. If the buffer is full
-the @unidoc[ClusterSingletonProxy] will drop old messages when new messages are sent via the proxy.
+the `ClusterSingletonProxy` will drop old messages when new messages are sent via the proxy.
 The size of the buffer is configurable and it can be disabled by using a buffer size of 0.
 
 It's worth noting that messages can always be lost because of the distributed nature of these actors.
@@ -92,8 +92,8 @@ Scala
 Java
 :  @@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/TestSingletonMessages.java) { #singleton-message-classes }
 
-On each node in the cluster you need to start the @unidoc[ClusterSingletonManager] and
-supply the @unidoc[akka.actor.Props] of the singleton actor, in this case the JMS queue consumer.
+On each node in the cluster you need to start the `ClusterSingletonManager` and
+supply the `Props` of the singleton actor, in this case the JMS queue consumer.
 
 Scala
 :  @@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-manager }
@@ -152,17 +152,17 @@ Maven
 
 ## Configuration
 
-The following configuration properties are read by the @unidoc[akka.cluster.singleton.ClusterSingletonManagerSettings]
-when created with a @unidoc[akka.actor.ActorSystem] parameter. It is also possible to amend the @unidoc[akka.cluster.singleton.ClusterSingletonManagerSettings]
-or create it from another config section with the same layout as below. @unidoc[akka.cluster.singleton.ClusterSingletonManagerSettings] is
+The following configuration properties are read by the `ClusterSingletonManagerSettings`
+when created with a `ActorSystem` parameter. It is also possible to amend the `ClusterSingletonManagerSettings`
+or create it from another config section with the same layout as below. `ClusterSingletonManagerSettings` is
 a parameter to the `ClusterSingletonManager.props` factory method, i.e. each singleton can be configured
 with different settings if needed.
 
 @@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #singleton-config }
 
-The following configuration properties are read by the @unidoc[ClusterSingletonProxySettings]
-when created with a @unidoc[akka.actor.ActorSystem] parameter. It is also possible to amend the @unidoc[ClusterSingletonProxySettings]
-or create it from another config section with the same layout as below. @unidoc[ClusterSingletonProxySettings] is
+The following configuration properties are read by the `ClusterSingletonProxySettings`
+when created with a `ActorSystem` parameter. It is also possible to amend the `ClusterSingletonProxySettings`
+or create it from another config section with the same layout as below. `ClusterSingletonProxySettings` is
 a parameter to the `ClusterSingletonProxy.props` factory method, i.e. each singleton proxy can be configured
 with different settings if needed.
 

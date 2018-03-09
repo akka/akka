@@ -51,8 +51,8 @@ Certain message routing and let-it-crash functions may not work when Sigar is no
 
 Cluster metrics extension comes with two built-in collector implementations:
 
- 1. @unidoc[akka.cluster.metrics.SigarMetricsCollector] which requires Sigar provisioning, and is more rich/precise
- 2. @unidoc[akka.cluster.metrics.JmxMetricsCollector], which is used as fall back, and is less rich/precise
+ 1. `akka.cluster.metrics.SigarMetricsCollector`, which requires Sigar provisioning, and is more rich/precise
+ 2. `akka.cluster.metrics.JmxMetricsCollector`, which is used as fall back, and is less rich/precise
 
 You can also plug-in your own metrics collector implementation.
 
