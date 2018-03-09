@@ -112,11 +112,11 @@ Two different failure detectors can be configured for these two purposes:
 * `akka.cluster.failure-detector` for failure detection within own data center
 * `akka.cluster.multi-data-center.failure-detector` for failure detection across different data centers
 
-When @ref[subscribing to cluster events](cluster-usage.md#cluster-subscriber) the @scala[@scaladoc[UnreachableMember](akka.cluster.ClusterEvent$)]@java[@javadoc[UnreachableMember](akka.cluster.ClusterEvent)] and
-@scala[@scaladoc[ReachableMember](akka.cluster.ClusterEvent$)]@java[@javadoc[ReachableMember](akka.cluster.ClusterEvent)] events are for observations within the own data center. The same data center as where the
+When @ref[subscribing to cluster events](cluster-usage.md#cluster-subscriber) the `UnreachableMember` and
+`ReachableMember` events are for observations within the own data center. The same data center as where the
 subscription was registered.
 
-For cross data center unreachability notifications you can subscribe to @scala[@scaladoc[ReachableDataCenter](akka.cluster.ClusterEvent$)]@java[@javadoc[ReachableDataCenter](akka.cluster.ClusterEvent)] and @scala[@scaladoc[ReachableDataCenter](akka.cluster.ClusterEvent$)]@java[@javadoc[ReachableDataCenter](akka.cluster.ClusterEvent)]
+For cross data center unreachability notifications you can subscribe to `UnreachableDataCenter` and `ReachableDataCenter`
 events.
 
 Heartbeat messages for failure detection across data centers are only performed between a number of the
@@ -132,7 +132,7 @@ It's best to leave the oldest nodes until last.
 ## Cluster Singleton
 
 The @ref[Cluster Singleton](cluster-singleton.md) is a singleton per data center. If you start the 
-@unidoc[ClusterSingletonManager] on all nodes and you have defined 3 different data centers there will be
+`ClusterSingletonManager` on all nodes and you have defined 3 different data centers there will be
 3 active singleton instances in the cluster, one in each data center. This is taken care of automatically,
 but is important to be aware of. Designing the system for one singleton per data center makes it possible
 for the system to be available also during network partitions between data centers.
@@ -142,11 +142,11 @@ guaranteed to be consistent across data centers when using one leader per data c
 difficult to select a single global singleton. 
 
 If you need a global singleton you have to pick one data center to host that singleton and only start the
-@unidoc[ClusterSingletonManager] on nodes of that data center. If the data center is unreachable from another data center the
+`ClusterSingletonManager` on nodes of that data center. If the data center is unreachable from another data center the
 singleton is inaccessible, which is a reasonable trade-off when selecting consistency over availability.
 
-The @unidoc[ClusterSingletonProxy] is by default routing messages to the singleton in the own data center, but
-it can be started with a `data-center` parameter in the @unidoc[ClusterSingletonProxySettings] to define that
+The `ClusterSingletonProxy` is by default routing messages to the singleton in the own data center, but
+it can be started with a `data-center` parameter in the `ClusterSingletonProxySettings` to define that 
 it should route messages to a singleton located in another data center. That is useful for example when
 having a global singleton in one data center and accessing it from other data centers.
 
@@ -180,7 +180,7 @@ is working on a solution that will support multiple active entities that will wo
 with Cluster Sharding across multiple data centers.
 
 If you need global entities you have to pick one data center to host that entity type and only start
-@unidoc[akka.cluster.sharding.ClusterSharding] on nodes of that data center. If the data center is unreachable from another data center the
+`ClusterSharding` on nodes of that data center. If the data center is unreachable from another data center the
 entities are inaccessible, which is a reasonable trade-off when selecting consistency over availability.
 
 The Cluster Sharding proxy is by default routing messages to the shard regions in their own data center, but
