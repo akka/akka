@@ -84,7 +84,7 @@ class FusingSpec extends StreamSpec {
       val refs = receiveN(in.size + in.size) // each element through the first map, then the second map
       refs.toSet should have size (in.size + 1) // outer/main actor + 1 actor per subflow
     }
-    
+
   }
 
 }
