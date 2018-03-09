@@ -5,7 +5,6 @@
 package akka.stream.impl
 
 import java.util
-import java.util.ArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.NotUsed
@@ -13,10 +12,8 @@ import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, Cancel
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
-import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.fusing.ActorGraphInterpreter.{ ActorOutputBoundary, BatchingActorInputBoundary }
 import akka.stream.impl.fusing.GraphInterpreter.Connection
@@ -151,12 +148,12 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   private var currentIslandGlobalOffset = 0
   // The number of slots that belong to segments of other islands encountered so far, from the
   // beginning of the island
-  private var currentIslandSkippetSlots = 0
+  private var currentIslandSkippedSlots = 0
 
-  private var segments: java.util.ArrayList[SegmentInfo] = null
-  private var activePhases: java.util.ArrayList[PhaseIsland[Any]] = null
-  private var forwardWires: java.util.ArrayList[ForwardWire] = null
-  private var islandStateStack: java.util.ArrayList[SavedIslandData] = null
+  private var segments: java.util.ArrayList[SegmentInfo] = _
+  private var activePhases: java.util.ArrayList[PhaseIsland[Any]] = _
+  private var forwardWires: java.util.ArrayList[ForwardWire] = _
+  private var islandStateStack: java.util.ArrayList[SavedIslandData] = _
 
   private var currentPhase: PhaseIsland[Any] = defaultPhase.apply(settings, attributes, materializer, nextIslandName())
 
@@ -177,7 +174,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
         globalislandOffset = currentIslandGlobalOffset,
         length = currentGlobalOffset - currentSegmentGlobalOffset,
         globalBaseOffset = currentSegmentGlobalOffset,
-        relativeBaseOffset = currentSegmentGlobalOffset - currentIslandGlobalOffset - currentIslandSkippetSlots,
+        relativeBaseOffset = currentSegmentGlobalOffset - currentIslandGlobalOffset - currentIslandSkippedSlots,
         currentPhase)
 
       // Segment tracking is by demand, we only allocate this list if it is used.
@@ -194,7 +191,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     completeSegment()
     val previousPhase = currentPhase
     val previousIslandOffset = currentIslandGlobalOffset
-    islandStateStack.add(SavedIslandData(previousIslandOffset, currentGlobalOffset, currentIslandSkippetSlots, previousPhase))
+    islandStateStack.add(SavedIslandData(previousIslandOffset, currentGlobalOffset, currentIslandSkippedSlots, previousPhase))
 
     currentPhase = phases(tag)(settings, attributes, materializer, nextIslandName())
     activePhases.add(currentPhase)
@@ -204,7 +201,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
     // The base offset of this segment is the current global offset
     currentSegmentGlobalOffset = currentGlobalOffset
-    currentIslandSkippetSlots = 0
+    currentIslandSkippedSlots = 0
     if (Debug) println(s"Entering island starting at offset = $currentIslandGlobalOffset phase = $currentPhase")
   }
 
@@ -218,7 +215,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     // We restore data for the island
     currentIslandGlobalOffset = parentIsland.islandGlobalOffset
     currentPhase = parentIsland.phase
-    currentIslandSkippetSlots = parentIsland.skippedSlots + (currentGlobalOffset - parentIsland.lastVisitedOffset)
+    currentIslandSkippedSlots = parentIsland.skippedSlots + (currentGlobalOffset - parentIsland.lastVisitedOffset)
 
     if (Debug) println(s"Exited to island starting at offset = $currentIslandGlobalOffset phase = $currentPhase")
   }
@@ -226,7 +223,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   @InternalApi private[akka] def wireIn(in: InPort, logic: Any): Unit = {
     // The slot for this InPort always belong to the current segment, so resolving its local
     // offset/slot is simple
-    val localInSlot = currentGlobalOffset - currentIslandGlobalOffset - currentIslandSkippetSlots
+    val localInSlot = currentGlobalOffset - currentIslandGlobalOffset - currentIslandSkippedSlots
     if (Debug) println(s"  wiring port $in inOffs absolute = $currentGlobalOffset local = $localInSlot")
 
     // Assign the logic belonging to the current port to its calculated local slot in the island
@@ -279,8 +276,8 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
 
       if (absoluteOffset >= currentSegmentGlobalOffset) {
         // Wiring is in the same segment, no complex lookup needed
-        val localInSlot = absoluteOffset - currentIslandGlobalOffset - currentIslandSkippetSlots
-        if (Debug) println(s"    in-segment wiring to local ($absoluteOffset - $currentIslandGlobalOffset - $currentIslandSkippetSlots) = $localInSlot")
+        val localInSlot = absoluteOffset - currentIslandGlobalOffset - currentIslandSkippedSlots
+        if (Debug) println(s"    in-segment wiring to local ($absoluteOffset - $currentIslandGlobalOffset - $currentIslandSkippedSlots) = $localInSlot")
         currentPhase.assignPort(out, localInSlot, logic)
       } else {
         // Wiring is cross-segment, but we don't know if it is cross-island or not yet
@@ -384,7 +381,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
    * When these attributes are needed later in the materialization process it is important that the
    * they are gotten through the attributes and not through the [[ActorMaterializerSettings]]
    */
-  val defaultAttributes = {
+  val defaultAttributes: Attributes = {
     Attributes(
       Attributes.InputBuffer(settings.initialInputBufferSize, settings.maxInputBufferSize) ::
         ActorAttributes.SupervisionStrategy(settings.supervisionDecider) ::
@@ -610,7 +607,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   subflowFuser:        OptionVal[GraphInterpreterShell ⇒ ActorRef]) extends PhaseIsland[GraphStageLogic] {
   // TODO: remove these
   private val logicArrayType = Array.empty[GraphStageLogic]
-  private[this] val logics = new ArrayList[GraphStageLogic](16)
+  private[this] val logics = new util.ArrayList[GraphStageLogic](16)
 
   private var connections = new Array[Connection](16)
   private var maxConnections = 0
@@ -735,18 +732,13 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
     shell.logics = logics.toArray(logicArrayType)
 
     subflowFuser match {
-      case OptionVal.Some(fuseIntoExistingInterperter) ⇒
-        fuseIntoExistingInterperter(shell)
+      case OptionVal.Some(fuseIntoExistingInterpreter) ⇒
+        fuseIntoExistingInterpreter(shell)
 
       case _ ⇒
 
-        val dispatcher =
-          effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher] match {
-            case ActorAttributes.IODispatcher           ⇒ settings.blockingIoDispatcher
-            case ActorAttributes.Dispatcher(dispatcher) ⇒ dispatcher
-          }
-        val props = ActorGraphInterpreter.props(shell)
-          .withDispatcher(dispatcher)
+        val props = ActorGraphInterpreter.props(shell).withDispatcher(ActorAttributes.Dispatcher.resolve(effectiveAttributes, settings))
+
         val actorName = fullIslandName match {
           case OptionVal.Some(n) ⇒ n
           case OptionVal.None    ⇒ islandName
@@ -888,10 +880,7 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
   def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (NotUsed, Any) = {
     val tls = mod.asInstanceOf[TlsModule]
 
-    val dispatcher = attributes.mandatoryAttribute[Dispatcher] match {
-      case IODispatcher     ⇒ materializer.settings.blockingIoDispatcher
-      case Dispatcher(name) ⇒ name
-    }
+    val dispatcher = ActorAttributes.Dispatcher.resolve(attributes, materializer.settings)
     val maxInputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer].max
 
     val props =

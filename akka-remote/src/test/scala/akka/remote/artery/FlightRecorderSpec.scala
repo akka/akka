@@ -19,9 +19,13 @@ class FlightRecorderSpec extends AkkaSpec {
 
   "Flight Recorder" must {
 
-    "properly initialize AFR file when created" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly initialize AFR file when created" in withFlightRecorder { (_, reader, channel) ⇒
       channel.force(false)
+
+      // otherwise isAfter assertion below can randomly fail
+      Thread.sleep(1)
       val currentTime = Instant.now()
+
       reader.rereadStructure()
 
       currentTime.isAfter(reader.structure.startTime) should be(true)

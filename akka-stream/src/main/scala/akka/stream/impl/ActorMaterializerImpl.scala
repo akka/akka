@@ -44,13 +44,15 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
    * INTERNAL API
    */
   @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
-    val effectiveProps =
-      if (props.dispatcher == Dispatchers.DefaultDispatcherId)
+    val effectiveProps = props.dispatcher match {
+      case Dispatchers.DefaultDispatcherId ⇒
         props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
-      else if (props.dispatcher == ActorAttributes.IODispatcher.dispatcher)
+      case ActorAttributes.IODispatcher.dispatcher ⇒
         // this one is actually not a dispatcher but a relative config key pointing containing the actual dispatcher name
         props.withDispatcher(settings.blockingIoDispatcher)
-      else props
+      case _ ⇒ props
+    }
+
     actorOf(effectiveProps, context.islandName)
   }
 
@@ -175,7 +177,7 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
 @InternalApi private[akka] class StreamSupervisor(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean) extends Actor {
   import akka.stream.impl.StreamSupervisor._
 
-  override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
+  override def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   def receive = {
     case Materialize(props, name) ⇒
