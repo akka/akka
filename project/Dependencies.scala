@@ -18,6 +18,7 @@ object Dependencies {
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
   val aeronVersion = "1.7.0"
+  val jacksonVersion = "2.9.4"
 
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.12", "2.12.4"),
@@ -72,6 +73,19 @@ object Dependencies {
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
+
+    // FIXME licence
+    val jacksonCore =           "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion // ApacheV2
+    val jacksonAnnotations =    "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion // ApacheV2
+    val jacksonDatabind =       "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion // ApacheV2
+    val jacksonJdk8 =           "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonVersion // ApacheV2
+    val jacksonJsr310 =         "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion // ApacheV2
+    val jacksonScala =          "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion // ApacheV2
+    val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
+    val jacksonAfterburner =    "com.fasterxml.jackson.module" % "jackson-module-afterburner" % jacksonVersion // ApacheV2
+    val jacksonCbor =           "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
+    val jacksonSmile =          "com.fasterxml.jackson.dataformat" % "jackson-dataformat-smile" % jacksonVersion % "optional;provided" // ApacheV2
+
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.3" % "test"
       val gson = "com.google.code.gson" % "gson" % "2.8.2" % "test"
@@ -139,6 +153,9 @@ object Dependencies {
   val remote = l ++= Seq(netty, aeronDriver, aeronClient, Test.junit, Test.scalatest.value, Test.jimfs)
 
   val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml)
+
+  val jackson = l ++= Seq(jacksonCore, jacksonAnnotations, jacksonDatabind, jacksonScala, jacksonJdk8, jacksonJsr310,
+    jacksonParameterNames, jacksonAfterburner, jacksonSmile, jacksonCbor, Test.junit, Test.scalatest.value)
 
   val cluster = l ++= Seq(Test.junit, Test.scalatest.value)
 

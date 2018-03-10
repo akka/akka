@@ -54,6 +54,8 @@ object OSGi {
 
   val protobuf = exports(Seq("akka.protobuf.*"))
 
+  val jackson = exports(Seq("akka.jackson.*"))
+
   val remote = exports(Seq("akka.remote.*"))
 
   val parsing = exports(

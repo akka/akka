@@ -33,6 +33,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   osgi,
   persistence, persistenceQuery, persistenceShared, persistenceTck,
   protobuf,
+  jackson,
   remote, remoteTests,
   slf4j,
   stream, streamTestkit, streamTests, streamTestsTck,
@@ -88,6 +89,7 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
       actor,
       stream, streamTests,
       persistence, distributedData,
+      jackson,
       testkit
     ).map(_ % "compile->compile;compile->test;provided->provided"): _*
   )
@@ -298,6 +300,14 @@ lazy val protobuf = akkaModule("akka-protobuf")
   .settings(AutomaticModuleName.settings("akka.protobuf"))
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
+
+lazy val jackson = akkaModule("akka-jackson")
+  .dependsOn(actor, actorTests % "test->test", testkit % "test->test")
+  .settings(Dependencies.jackson)
+  .settings(AutomaticModuleName.settings("akka.jackson"))
+  .settings(OSGi.jackson)
+  .settings(javacOptions += "-parameters")
+  .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val remote = akkaModule("akka-remote")
   .dependsOn(actor, stream, actorTests % "test->test", testkit % "test->test", streamTestkit % "test", protobuf)
