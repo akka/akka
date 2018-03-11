@@ -26,7 +26,7 @@ object FileIO {
    * Emitted elements are `chunkSize` sized [[akka.util.ByteString]] elements,
    * except the final element, which will be up to `chunkSize` in size.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
@@ -44,7 +44,7 @@ object FileIO {
    * Emitted elements are `chunkSize` sized [[akka.util.ByteString]] elements,
    * except the final element, which will be up to `chunkSize` in size.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
@@ -61,7 +61,7 @@ object FileIO {
    * Emitted elements are `chunkSize` sized [[akka.util.ByteString]] elements,
    * except the final element, which will be up to `chunkSize` in size.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,

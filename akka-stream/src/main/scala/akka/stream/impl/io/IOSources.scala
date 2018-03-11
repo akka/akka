@@ -12,7 +12,6 @@ import akka.Done
 import akka.annotation.InternalApi
 import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.Attributes.InputBuffer
-import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
 import akka.stream.impl.{ ErrorPublisher, SourceModule }
 import akka.stream.stage._
 import akka.stream.{ IOResult, _ }
@@ -155,12 +154,9 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
     val pub = try {
       val is = createInputStream() // can throw, i.e. FileNotFound
 
-      val dispatcher = context.effectiveAttributes.mandatoryAttribute[Dispatcher] match {
-        case IODispatcher     ⇒ ActorMaterializerHelper.downcast(context.materializer).settings.blockingIoDispatcher
-        case Dispatcher(name) ⇒ name
-      }
-
-      val props = InputStreamPublisher.props(is, ioResultPromise, chunkSize).withDispatcher(dispatcher)
+      val props = InputStreamPublisher
+        .props(is, ioResultPromise, chunkSize)
+        .withDispatcher(Dispatcher.resolve(context))
 
       val ref = materializer.actorOf(context, props)
       akka.stream.actor.ActorPublisher[ByteString](ref)
