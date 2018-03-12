@@ -192,7 +192,7 @@ class FlowDelaySpec extends StreamSpec {
 
     "not drop messages on overflow when EmitEarly" in {
       val probe = Source(1 to 2)
-        .delay(200.millis, EmitEarly).withAttributes(Attributes.inputBuffer(1, 1))
+        .delay(1.second, EmitEarly).withAttributes(Attributes.inputBuffer(1, 1))
         .runWith(TestSink.probe)
 
       probe.request(10)
