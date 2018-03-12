@@ -98,9 +98,11 @@ import scala.util.control.NonFatal
   import VirtualProcessor._
 
   override def toString: String = s"VirtualProcessor(${this.hashCode()})"
+  println(s"created: $this")
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = {
-    @tailrec def rec(sub: Subscriber[Any]): Unit =
+    @tailrec def rec(sub: Subscriber[Any]): Unit = {
+      println(s"$this.subscribe.rec($s)")
       get() match {
         case null ⇒ if (!compareAndSet(null, s)) rec(sub)
         case subscription: Subscription ⇒
@@ -112,6 +114,7 @@ import scala.util.control.NonFatal
         case _ ⇒
           rejectAdditionalSubscriber(sub, "VirtualProcessor")
       }
+    }
 
     if (s == null) {
       val ex = subscriberMustNotBeNullException
@@ -121,8 +124,8 @@ import scala.util.control.NonFatal
   }
 
   override final def onSubscribe(s: Subscription): Unit = {
-
-    @tailrec def rec(obj: AnyRef): Unit =
+    @tailrec def rec(obj: AnyRef): Unit = {
+      println(s"$this.onSubscribe.rec($s)")
       get() match {
         case null ⇒ if (!compareAndSet(null, obj)) rec(obj)
         case subscriber: Subscriber[_] ⇒
@@ -140,6 +143,7 @@ import scala.util.control.NonFatal
           // spec violation
           tryCancel(s)
       }
+    }
 
     if (s == null) {
       val ex = subscriptionMustNotBeNullException
@@ -193,18 +197,25 @@ import scala.util.control.NonFatal
     rec(ex)
   }
 
-  @tailrec override final def onComplete(): Unit =
+  @tailrec override final def onComplete(): Unit = {
     get() match {
-      case null            ⇒ if (!compareAndSet(null, EmptyPublisher)) onComplete()
-      case s: Subscription ⇒ if (!compareAndSet(s, EmptyPublisher)) onComplete()
+      case null ⇒
+        println(s"$this(null).onComplete")
+        if (!compareAndSet(null, EmptyPublisher)) onComplete()
+      case s: Subscription ⇒
+        println(s"$this($s).onComplete")
+        if (!compareAndSet(s, EmptyPublisher)) onComplete()
       case Both(s) ⇒
+        println(s"$this($s).onComplete")
         set(Inert)
         tryOnComplete(s)
       case s: Subscriber[_] ⇒ // spec violation
+        println(s"$this($s).onComplete")
         set(Inert)
         EmptyPublisher.subscribe(s)
       case _ ⇒ // spec violation or cancellation race, but nothing we can do
     }
+  }
 
   override def onNext(t: T): Unit =
     if (t == null) {
@@ -219,11 +230,13 @@ import scala.util.control.NonFatal
       rec()
       throw ex // must throw NPE, rule 2:13
     } else {
-      @tailrec def rec(): Unit =
+      @tailrec def rec(): Unit = {
+        println(s"$this.onNext.rec($t)")
         get() match {
           case Both(s) ⇒
-            try s.onNext(t)
-            catch {
+            try {
+              s.onNext(t)
+            } catch {
               case NonFatal(e) ⇒
                 set(Inert)
                 throw new IllegalStateException("Subscriber threw exception, this is in violation of rule 2:13", e)
@@ -241,6 +254,7 @@ import scala.util.control.NonFatal
             if (!compareAndSet(other, pub)) rec()
             else throw pub.t
         }
+      }
       rec()
     }
 
@@ -317,9 +331,10 @@ import scala.util.control.NonFatal
 @InternalApi private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Publisher[T] {
   import ReactiveStreamsCompliance._
   import VirtualProcessor.Inert
-
+  println(s"virtual publisher: $this")
   override def subscribe(subscriber: Subscriber[_ >: T]): Unit = {
     requireNonNullSubscriber(subscriber)
+    println(s"$this.subscribe: $subscriber")
     @tailrec def rec(): Unit = {
       get() match {
         case null ⇒
@@ -337,7 +352,8 @@ import scala.util.control.NonFatal
     rec() // return value is boolean only to make the expressions above compile
   }
 
-  @tailrec final def registerPublisher(pub: Publisher[_]): Unit =
+  @tailrec final def registerPublisher(pub: Publisher[_]): Unit = {
+    println(s"$this.registerPublisher: $pub")
     get() match {
       case null ⇒
         if (!compareAndSet(null, pub)) registerPublisher(pub) // retry
@@ -352,6 +368,7 @@ import scala.util.control.NonFatal
       case unexpected ⇒
         throw new IllegalStateException(s"internal error, unexpected state: $unexpected")
     }
+  }
 
   override def toString: String = s"VirtualPublisher(state = ${get()})"
 }
