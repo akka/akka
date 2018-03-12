@@ -47,7 +47,7 @@ final class Flow[-In, +Out, +Mat](
       // optimization by returning flow if possible since we know Mat2 == Mat3 from flow
       if (combine == Keep.right) Flow.fromGraph(flow).asInstanceOf[Flow[In, T, Mat3]]
       else {
-        // Keep.none is somewhat optimized and we know left means Mat3 == NotUsed
+        // Keep.none is optimized and we know left means Mat3 == NotUsed
         val useCombine =
           if (combine == Keep.left) Keep.none
           else combine
