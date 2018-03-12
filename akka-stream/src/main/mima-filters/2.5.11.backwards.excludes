@@ -1,0 +1,2 @@
+# #24670 materialized value of Flow.lazyInit must be a future
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.LazyFlow.this")
