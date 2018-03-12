@@ -658,13 +658,18 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       val recipientAddress = recipientRef.path.address
 
       def createAndRegisterWritingEndpoint(): ActorRef = {
+
+        val localAddressToUse =
+          if (transportMapping.contains(recipientRef.localAddressToUse)) recipientRef.localAddressToUse
+          else transportMapping.head._1
+
         endpoints.registerWritableEndpoint(
           recipientAddress,
           uid = None,
           createEndpoint(
             recipientAddress,
-            recipientRef.localAddressToUse,
-            transportMapping(recipientRef.localAddressToUse),
+            localAddressToUse,
+            transportMapping(localAddressToUse),
             settings,
             handleOption = None,
             writing = true))
