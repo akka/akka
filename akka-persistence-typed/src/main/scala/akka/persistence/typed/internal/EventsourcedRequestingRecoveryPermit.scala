@@ -14,10 +14,10 @@ import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
  *
  * First (of four) behaviour of an PersistentBehaviour.
  *
- * Requests a permit to start recovering this actor; this is tone to avoid
- * hammering the journal with too many concurrently recovering actors.
+ * Requests a permit to start replaying this actor; this is tone to avoid
+ * hammering the journal with too many concurrently replaying actors.
  *
- * See next behavior [[EventsourcedRecoveringSnapshot]].
+ * See next behavior [[EventsourcedReplayingSnapshot]].
  */
 @InternalApi
 private[akka] object EventsourcedRequestingRecoveryPermit {
@@ -32,13 +32,13 @@ private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](override val s
   extends EventsourcedStashManagement[C, E, S] with EventsourcedJournalInteractions[C, E, S] {
 
   def createBehavior(): Behavior[InternalProtocol] = {
-    // request a permit, as only once we obtain one we can start recovering
+    // request a permit, as only once we obtain one we can start replaying
     requestRecoveryPermit()
 
     withMdc {
       Behaviors.immutable[InternalProtocol] {
         case (_, InternalProtocol.RecoveryPermitGranted) ⇒
-          becomeRecovering()
+          becomeReplaying()
 
         case (_, other) ⇒
           stash(other)
@@ -56,11 +56,11 @@ private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](override val s
     Behaviors.withMdc(_ ⇒ mdc, wrapped)
   }
 
-  private def becomeRecovering(): Behavior[InternalProtocol] = {
+  private def becomeReplaying(): Behavior[InternalProtocol] = {
     setup.log.debug(s"Initializing snapshot recovery: {}", setup.recovery)
 
     setup.holdingRecoveryPermit = true
-    EventsourcedRecoveringSnapshot(setup)
+    EventsourcedReplayingSnapshot(setup)
   }
 
 }

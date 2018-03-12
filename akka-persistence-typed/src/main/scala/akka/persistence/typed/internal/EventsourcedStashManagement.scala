@@ -27,15 +27,9 @@ private[akka] trait EventsourcedStashManagement[C, E, S] {
   protected def stash(msg: InternalProtocol): Unit = {
     if (setup.settings.logOnStashing) setup.log.debug("Stashing message: [{}]", msg)
 
-    val internalStashOverflowStrategy: StashOverflowStrategy = {
-      val system = context.system.toUntyped.asInstanceOf[ExtendedActorSystem]
-      system.dynamicAccess.createInstanceFor[StashOverflowStrategyConfigurator](setup.settings.stashOverflowStrategyConfigurator, EmptyImmutableSeq)
-        .map(_.create(system.settings.config)).get
-    }
-
     try stashBuffer.stash(msg) catch {
       case e: StashOverflowException ⇒
-        internalStashOverflowStrategy match {
+        setup.internalStashOverflowStrategy match {
           case DiscardToDeadLetterStrategy ⇒
             val noSenderBecauseAkkaTyped: a.ActorRef = a.ActorRef.noSender
             context.system.deadLetters.tell(DeadLetter(msg, noSenderBecauseAkkaTyped, context.self.toUntyped))

@@ -29,9 +29,9 @@ private[akka] object EventsourcedBehavior {
 
   object MDC {
     // format: OFF
-    val AwaitingPermit        = "await-permit"
-    val RecoveringSnapshot    = "recover-snap"
-    val RecoveringEvents      = "recover-evts"
+    val AwaitingPermit        = "get-permit"
+    val ReplayingSnapshot    = "replay-snap"
+    val ReplayingEvents      = "replay-evts"
     val RunningCmds           = "running-cmnds"
     val PersistingEvents      = "persist-evts"
     // format: ON

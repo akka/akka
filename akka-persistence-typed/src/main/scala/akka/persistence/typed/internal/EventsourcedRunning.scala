@@ -12,7 +12,7 @@ import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, MDC }
-import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol.{ IncomingCommand, JournalResponse, SnapshotterResponse }
+import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -32,7 +32,7 @@ import scala.collection.immutable
  * This is implemented as such to avoid creating many EventsourcedRunning instances,
  * which perform the Persistence extension lookup on creation and similar things (config lookup)
  *
- * See previous [[EventsourcedRecoveringEvents]].
+ * See previous [[EventsourcedReplayingEvents]].
  */
 @InternalApi
 private[akka] object EventsourcedRunning {
@@ -149,9 +149,8 @@ private[akka] object EventsourcedRunning {
     withMdc(setup, MDC.RunningCmds) {
       Behaviors.immutable[EventsourcedBehavior.InternalProtocol] {
         case (_, IncomingCommand(c: C @unchecked)) ⇒ onCommand(state, c)
-        case (_, SnapshotterResponse(_))           ⇒ Behaviors.unhandled
-        case (_, JournalResponse(_))               ⇒ Behaviors.unhandled
-      }.onSignal(returnPermitOnStop)
+        case _                                     ⇒ Behaviors.unhandled
+      }
     }
 
   }
@@ -183,11 +182,10 @@ private[akka] object EventsourcedRunning {
         case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r)
         case JournalResponse(r)                ⇒ onJournalResponse(r)
         case in: IncomingCommand[C @unchecked] ⇒ onCommand(in)
+        case RecoveryTickEvent(_)              ⇒ Behaviors.unhandled
+        case RecoveryPermitGranted             ⇒ Behaviors.unhandled
       }
     }
-
-    override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] =
-      { case signal ⇒ returnPermitOnStop((setup.context, signal)) }
 
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
       stash(cmd)
@@ -237,8 +235,8 @@ private[akka] object EventsourcedRunning {
           // ignore
           this // it will be stopped by the first WriteMessageFailure message; not applying side effects
 
-        case _: LoopMessageSuccess ⇒
-          // ignore, should never happen as there is no persistAsync in typed
+        case _ ⇒
+          // ignore all other messages, since they relate to recovery handling which we're not dealing with in Running phase
           Behaviors.unhandled
       }
     }
@@ -266,6 +264,16 @@ private[akka] object EventsourcedRunning {
         case SaveSnapshotFailure(meta, ex) ⇒
           setup.context.log.error(ex, "Save snapshot failed, snapshot metadata: [{}]", meta)
           this // FIXME https://github.com/akka/akka/issues/24637 should we provide callback for this? to allow Stop
+
+        // FIXME not implemented
+        case DeleteSnapshotFailure(_, _)  ⇒ ???
+        case DeleteSnapshotSuccess(_)     ⇒ ???
+        case DeleteSnapshotsFailure(_, _) ⇒ ???
+        case DeleteSnapshotsSuccess(_)    ⇒ ???
+
+        // ignore LoadSnapshot messages
+        case _ ⇒
+          Behaviors.unhandled
       }
     }
 
