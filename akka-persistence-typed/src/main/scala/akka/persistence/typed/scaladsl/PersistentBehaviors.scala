@@ -98,7 +98,7 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * By default the most recent snapshot is used, and the remaining state updates are recovered by replaying events
    * from the sequence number up until which the snapshot reached.
    *
-   * You may configure the behavior to skip recovering snapshots completely, in which case the recovery will be
+   * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
    * performed by replaying all events -- which may take a long time.
    */
   def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): PersistentBehavior[Command, Event, State]

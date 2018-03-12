@@ -27,13 +27,13 @@ import scala.util.control.NonFatal
  * and control is given to the user's handlers to drive the actors behavior from there.
  *
  * See next behavior [[EventsourcedRunning]].
- * See previous behavior [[EventsourcedRecoveringSnapshot]].
+ * See previous behavior [[EventsourcedReplayingSnapshot]].
  */
 @InternalApi
-private[persistence] object EventsourcedRecoveringEvents {
+private[persistence] object EventsourcedReplayingEvents {
 
   @InternalApi
-  private[persistence] final case class RecoveringState[State](
+  private[persistence] final case class ReplayingState[State](
     seqNr:               Long,
     state:               State,
     eventSeenInInterval: Boolean = false
@@ -41,42 +41,43 @@ private[persistence] object EventsourcedRecoveringEvents {
 
   def apply[C, E, S](
     setup: EventsourcedSetup[C, E, S],
-    state: RecoveringState[S]
+    state: ReplayingState[S]
   ): Behavior[InternalProtocol] =
-    new EventsourcedRecoveringEvents(setup).createBehavior(state)
+    new EventsourcedReplayingEvents(setup).createBehavior(state)
 
 }
 
 @InternalApi
-private[persistence] class EventsourcedRecoveringEvents[C, E, S](override val setup: EventsourcedSetup[C, E, S])
+private[persistence] class EventsourcedReplayingEvents[C, E, S](override val setup: EventsourcedSetup[C, E, S])
   extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
   import setup.context.log
-  import EventsourcedRecoveringEvents.RecoveringState
+  import EventsourcedReplayingEvents.ReplayingState
 
-  def createBehavior(state: RecoveringState[S]): Behavior[InternalProtocol] = {
+  def createBehavior(state: ReplayingState[S]): Behavior[InternalProtocol] = {
     Behaviors.setup { _ ⇒
       startRecoveryTimer(setup.timers, setup.settings.recoveryEventTimeout)
 
       replayEvents(state.seqNr + 1L, setup.recovery.toSequenceNr)
 
-      withMdc(setup, MDC.RecoveringEvents) {
+      withMdc(setup, MDC.ReplayingEvents) {
         stay(state)
       }
     }
   }
 
-  private def stay(state: RecoveringState[S]): Behavior[InternalProtocol] =
-    withMdc(setup, MDC.RecoveringEvents) {
+  private def stay(state: ReplayingState[S]): Behavior[InternalProtocol] =
+    withMdc(setup, MDC.ReplayingEvents) {
       Behaviors.immutable[InternalProtocol] {
         case (_, JournalResponse(r))      ⇒ onJournalResponse(state, r)
         case (_, SnapshotterResponse(r))  ⇒ onSnapshotterResponse(r)
         case (_, RecoveryTickEvent(snap)) ⇒ onRecoveryTick(state, snap)
         case (_, cmd: IncomingCommand[C]) ⇒ onCommand(cmd)
+        case (_, RecoveryPermitGranted)   ⇒ Behaviors.unhandled // should not happen, we already have the permit
       }.onSignal(returnPermitOnStop)
     }
 
   private def onJournalResponse(
-    state:    RecoveringState[S],
+    state:    ReplayingState[S],
     response: JournalProtocol.Response): Behavior[InternalProtocol] = {
     try {
       response match {
@@ -116,7 +117,7 @@ private[persistence] class EventsourcedRecoveringEvents[C, E, S](override val se
     Behaviors.same
   }
 
-  protected def onRecoveryTick(state: RecoveringState[S], snapshot: Boolean): Behavior[InternalProtocol] =
+  protected def onRecoveryTick(state: ReplayingState[S], snapshot: Boolean): Behavior[InternalProtocol] =
     if (!snapshot) {
       if (state.eventSeenInInterval) {
         stay(state.copy(eventSeenInInterval = false))
@@ -157,7 +158,7 @@ private[persistence] class EventsourcedRecoveringEvents[C, E, S](override val se
     Behaviors.stopped
   }
 
-  protected def onRecoveryCompleted(state: RecoveringState[S]): Behavior[InternalProtocol] = try {
+  protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] = try {
     tryReturnRecoveryPermit("replay completed successfully")
     setup.recoveryCompleted(setup.commandContext, state.state)
 
@@ -172,10 +173,10 @@ private[persistence] class EventsourcedRecoveringEvents[C, E, S](override val se
   }
 
   // protect against event recovery stalling forever because of journal overloaded and such
-  private val RecoveryTickTimerKey = "event-recovery-tick"
+  private val EventRecoveryTickTimerKey = "event-recovery-tick"
   private def startRecoveryTimer(timers: TimerScheduler[InternalProtocol], timeout: FiniteDuration): Unit =
-    timers.startPeriodicTimer(RecoveryTickTimerKey, RecoveryTickEvent(snapshot = false), timeout)
-  private def cancelRecoveryTimer(timers: TimerScheduler[InternalProtocol]): Unit = timers.cancel(RecoveryTickTimerKey)
+    timers.startPeriodicTimer(EventRecoveryTickTimerKey, RecoveryTickEvent(snapshot = false), timeout)
+  private def cancelRecoveryTimer(timers: TimerScheduler[InternalProtocol]): Unit = timers.cancel(EventRecoveryTickTimerKey)
 
 }
 
