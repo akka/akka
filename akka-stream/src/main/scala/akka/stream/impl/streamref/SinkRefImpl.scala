@@ -175,6 +175,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
       def observeAndValidateSender(partner: ActorRef, failureMsg: String): Unit = {
         if (partnerRef.isEmpty) {
           partnerRef = OptionVal(partner)
+          cancelTimer(SubscriptionTimeoutTimerKey)
           self.watch(partner)
 
           completedBeforeRemoteConnected match {
