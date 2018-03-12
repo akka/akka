@@ -6,20 +6,23 @@ package akka.stream.javadsl
 
 import java.util
 import java.util.Optional
+import java.util.concurrent.{ CompletableFuture, CompletionStage }
 
-import akka.util.{ ConstantFun, Timeout }
-import akka.util.JavaDurationConverters._
-import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
 import akka.stream.impl.{ LinearTraversalBuilder, SourceQueueAdapter }
+import akka.util.JavaDurationConverters._
+import akka.util.{ ConstantFun, Timeout }
+import akka.{ Done, NotUsed }
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.OptionConverters._
@@ -209,7 +212,11 @@ object Source {
     new Source(scaladsl.Source.tick(initialDelay, interval, tick))
 
   /**
-   * Same as [[tick]], but accepts Java [[java.time.Duration]] instead of Scala ones.
+   * Elements are emitted periodically with the specified interval.
+   * The tick element will be delivered to downstream consumers that has requested any elements.
+   * If a consumer has not requested any elements at the point in time when the tick
+   * element is produced it will not receive that tick element later. It will
+   * receive new tick elements as soon as it has requested more elements.
    */
   def tick[O](initialDelay: java.time.Duration, interval: java.time.Duration, tick: O): javadsl.Source[O, Cancellable] =
     Source.tick(initialDelay.asScala, interval.asScala, tick)
@@ -1705,6 +1712,29 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
+   * or limited by the given number of elements, whatever happens first.
+   * Empty groups will not be emitted if no elements are received from upstream.
+   * The last group before end-of-stream will contain the buffered elements
+   * since the previously emitted group.
+   *
+   * '''Emits when''' the configured time elapses since the last group has been emitted or `n` elements is buffered
+   *
+   * '''Backpressures when''' downstream backpressures, and there are `n+1` buffered elements
+   *
+   * '''Completes when''' upstream completes (emits last group)
+   *
+   * '''Cancels when''' downstream completes
+   *
+   * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * IllegalArgumentException is thrown.
+   */
+  def groupedWithin(n: Int, d: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] = {
+    import akka.util.JavaDurationConverters._
+    groupedWithin(n, d.asScala)
+  }
+
+  /**
+   * Chunk up this stream into groups of elements received within a time window,
    * or limited by the weight of the elements, whatever happens first.
    * Empty groups will not be emitted if no elements are received from upstream.
    * The last group before end-of-stream will contain the buffered elements
@@ -1723,6 +1753,29 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, java.lang.Long], d: FiniteDuration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
     new Source(delegate.groupedWeightedWithin(maxWeight, d)(costFn.apply).map(_.asJava))
+
+  /**
+   * Chunk up this stream into groups of elements received within a time window,
+   * or limited by the weight of the elements, whatever happens first.
+   * Empty groups will not be emitted if no elements are received from upstream.
+   * The last group before end-of-stream will contain the buffered elements
+   * since the previously emitted group.
+   *
+   * '''Emits when''' the configured time elapses since the last group has been emitted or weight limit reached
+   *
+   * '''Backpressures when''' downstream backpressures, and buffered group (+ pending element) weighs more than `maxWeight`
+   *
+   * '''Completes when''' upstream completes (emits last group)
+   *
+   * '''Cancels when''' downstream completes
+   *
+   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * IllegalArgumentException is thrown.
+   */
+  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, java.lang.Long], d: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] = {
+    import akka.util.JavaDurationConverters._
+    groupedWeightedWithin(maxWeight, costFn, d.asScala)
+  }
 
   /**
    * Shifts elements emission in time by a specified amount. It allows to store elements
@@ -1753,6 +1806,36 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.delay(of, strategy))
 
   /**
+   * Shifts elements emission in time by a specified amount. It allows to store elements
+   * in internal buffer while waiting for next element to be emitted. Depending on the defined
+   * [[akka.stream.DelayOverflowStrategy]] it might drop elements or backpressure the upstream if
+   * there is no space available in the buffer.
+   *
+   * Delay precision is 10ms to avoid unnecessary timer scheduling cycles
+   *
+   * Internal buffer has default capacity 16. You can set buffer size by calling `withAttributes(inputBuffer)`
+   *
+   * '''Emits when''' there is a pending element in the buffer and configured time for this element elapsed
+   *  * EmitEarly - strategy do not wait to emit element if buffer is full
+   *
+   * '''Backpressures when''' depending on OverflowStrategy
+   *  * Backpressure - backpressures when buffer is full
+   *  * DropHead, DropTail, DropBuffer - never backpressures
+   *  * Fail - fails the stream if buffer gets full
+   *
+   * '''Completes when''' upstream completes and buffered elements has been drained
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param of time to shift all messages
+   * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
+   */
+  def delay(of: java.time.Duration, strategy: DelayOverflowStrategy): Source[Out, Mat] = {
+    import akka.util.JavaDurationConverters._
+    delay(of.asScala, strategy)
+  }
+
+  /**
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
    *
@@ -1780,6 +1863,22 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def dropWithin(d: FiniteDuration): javadsl.Source[Out, Mat] =
     new Source(delegate.dropWithin(d))
+
+  /**
+   * Discard the elements received within the given duration at beginning of the stream.
+   *
+   * '''Emits when''' the specified time elapsed and a new upstream element arrives
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def dropWithin(d: java.time.Duration): javadsl.Source[Out, Mat] = {
+    import akka.util.JavaDurationConverters._
+    dropWithin(d.asScala)
+  }
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
@@ -1857,6 +1956,28 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def takeWithin(d: FiniteDuration): javadsl.Source[Out, Mat] =
     new Source(delegate.takeWithin(d))
+
+  /**
+   * Terminate processing (and cancel the upstream publisher) after the given
+   * duration. Due to input buffering some elements may have been
+   * requested from upstream publishers that will then not be processed downstream
+   * of this step.
+   *
+   * Note that this can be combined with [[#take]] to limit the number of elements
+   * within the duration.
+   *
+   * '''Emits when''' an upstream element arrives
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or timer fires
+   *
+   * '''Cancels when''' downstream cancels or timer fires
+   */
+  def takeWithin(d: java.time.Duration): javadsl.Source[Out, Mat] = {
+    import akka.util.JavaDurationConverters._
+    takeWithin(d.asScala)
+  }
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
@@ -2239,6 +2360,23 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.initialTimeout(timeout))
 
   /**
+   * If the first element has not passed through this stage before the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]].
+   *
+   * '''Emits when''' upstream emits an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or fails if timeout elapses before first element arrives
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def initialTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] = {
+    import akka.util.JavaDurationConverters._
+    initialTimeout(timeout.asScala)
+  }
+
+  /**
    * If the completion of the stream does not happen until the provided timeout, the stream is failed
    * with a [[java.util.concurrent.TimeoutException]].
    *
@@ -2252,6 +2390,23 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def completionTimeout(timeout: FiniteDuration): javadsl.Source[Out, Mat] =
     new Source(delegate.completionTimeout(timeout))
+
+  /**
+   * If the completion of the stream does not happen until the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]].
+   *
+   * '''Emits when''' upstream emits an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or fails if timeout elapses before upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def completionTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] = {
+    import akka.util.JavaDurationConverters._
+    completionTimeout(timeout.asScala)
+  }
 
   /**
    * If the time between two processed elements exceeds the provided timeout, the stream is failed
@@ -2270,6 +2425,24 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.idleTimeout(timeout))
 
   /**
+   * If the time between two processed elements exceeds the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * so the resolution of the check is one period (equals to timeout value).
+   *
+   * '''Emits when''' upstream emits an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or fails if timeout elapses between two emitted elements
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def idleTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] = {
+    import akka.util.JavaDurationConverters._
+    idleTimeout(timeout.asScala)
+  }
+
+  /**
    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
    * the stream is failed with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
    * so the resolution of the check is one period (equals to timeout value).
@@ -2284,6 +2457,24 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def backpressureTimeout(timeout: FiniteDuration): javadsl.Source[Out, Mat] =
     new Source(delegate.backpressureTimeout(timeout))
+
+  /**
+   * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
+   * the stream is failed with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
+   * so the resolution of the check is one period (equals to timeout value).
+   *
+   * '''Emits when''' upstream emits an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or fails if timeout elapses between element emission and downstream demand.
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def backpressureTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] = {
+    import akka.util.JavaDurationConverters._
+    backpressureTimeout(timeout.asScala)
+  }
 
   /**
    * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
@@ -2304,6 +2495,28 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def keepAlive(maxIdle: FiniteDuration, injectedElem: function.Creator[Out]): javadsl.Source[Out, Mat] =
     new Source(delegate.keepAlive(maxIdle, () ⇒ injectedElem.create()))
+
+  /**
+   * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
+   * stage attempts to maintains a base rate of emitted elements towards the downstream.
+   *
+   * If the downstream backpressures then no element is injected until downstream demand arrives. Injected elements
+   * do not accumulate during this period.
+   *
+   * Upstream elements are always preferred over injected elements.
+   *
+   * '''Emits when''' upstream emits an element or if the upstream was idle for the configured period
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def keepAlive[U >: Out](maxIdle: java.time.Duration, injectedElem: function.Creator[U]): javadsl.Source[U, Mat] = {
+    import akka.util.JavaDurationConverters._
+    keepAlive(maxIdle.asScala, injectedElem)
+  }
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
@@ -2344,6 +2557,48 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int,
                mode: ThrottleMode): javadsl.Source[Out, Mat] =
     new Source(delegate.throttle(elements, per, maximumBurst, mode))
+
+  /**
+   * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
+   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   *
+   * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
+   * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
+   * to allow some burstiness. Whenever stream wants to send an element, it takes as many
+   * tokens from the bucket as element costs. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
+   *
+   * Parameter `mode` manages behavior when upstream is faster than throttle rate:
+   *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
+   *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate
+   *
+   * It is recommended to use non-zero burst sizes as they improve both performance and throttling precision by allowing
+   * the implementation to avoid using the scheduler when input rates fall below the enforced limit and to reduce
+   * most of the inaccuracy caused by the scheduler resolution (which is in the range of milliseconds).
+   *
+   *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
+   *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
+   *  case burst is 0 and speed is higher than 30 events per second. You need to consider another solution in case you are expecting
+   *  events being evenly spread with some small interval (30 milliseconds or less).
+   *  In other words the throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
+   *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
+   *
+   * '''Emits when''' upstream emits an element and configured time per each element elapsed
+   *
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @see [[#throttleEven]]
+   */
+  def throttle(elements: Int, per: java.time.Duration, maximumBurst: Int,
+               mode: ThrottleMode): javadsl.Source[Out, Mat] = {
+    import akka.util.JavaDurationConverters._
+    throttle(elements, per.asScala, maximumBurst, mode)
+  }
 
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
@@ -2389,6 +2644,51 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.throttle(cost, per, maximumBurst, costCalculation.apply _, mode))
 
   /**
+   * Sends elements downstream with speed limited to `cost/per`. Cost is
+   * calculating for each element individually by calling `calculateCost` function.
+   * This combinator works for streams when elements have different cost(length).
+   * Streams of `ByteString` for example.
+   *
+   * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
+   * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
+   * to allow some burstiness. Whenever stream wants to send an element, it takes as many
+   * tokens from the bucket as element costs. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and started.
+   *
+   * Parameter `mode` manages behavior when upstream is faster than throttle rate:
+   *  - [[akka.stream.ThrottleMode.Shaping]] makes pauses before emitting messages to meet throttle rate
+   *  - [[akka.stream.ThrottleMode.Enforcing]] fails with exception when upstream is faster than throttle rate. Enforcing
+   *  cannot emit elements that cost more than the maximumBurst
+   *
+   * It is recommended to use non-zero burst sizes as they improve both performance and throttling precision by allowing
+   * the implementation to avoid using the scheduler when input rates fall below the enforced limit and to reduce
+   * most of the inaccuracy caused by the scheduler resolution (which is in the range of milliseconds).
+   *
+   *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
+   *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
+   *  case burst is 0 and speed is higher than 30 events per second. You need to consider another solution in case you are expecting
+   *  events being evenly spread with some small interval (30 milliseconds or less).
+   *  In other words the throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
+   *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
+   *
+   * '''Emits when''' upstream emits an element and configured time per each element elapsed
+   *
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @see [[#throttleEven]]
+   */
+  def throttle(cost: Int, per: java.time.Duration, maximumBurst: Int,
+               costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Source[Out, Mat] = {
+    import akka.util.JavaDurationConverters._
+    throttle(cost, per.asScala, maximumBurst, costCalculation, mode)
+  }
+
+  /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
    * Use this combinator when you need just slow down a stream without worrying about exact amount
@@ -2411,9 +2711,40 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * [[throttle()]] with maximumBurst attribute.
    * @see [[#throttle]]
    */
+  def throttleEven(elements: Int, per: java.time.Duration, mode: ThrottleMode): javadsl.Source[Out, Mat] = {
+    import akka.util.JavaDurationConverters._
+    throttleEven(elements, per.asScala, mode)
+  }
+
+  /**
+   * This is a simplified version of throttle that spreads events evenly across the given time interval.
+   *
+   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * of time between events.
+   *
+   * If you want to be sure that no time interval has no more than specified number of events you need to use
+   * [[throttle()]] with maximumBurst attribute.
+   * @see [[#throttle]]
+   */
   def throttleEven(cost: Int, per: FiniteDuration,
                    costCalculation: (Out) ⇒ Int, mode: ThrottleMode): javadsl.Source[Out, Mat] =
     new Source(delegate.throttle(cost, per, Int.MaxValue, costCalculation.apply _, mode))
+
+  /**
+   * This is a simplified version of throttle that spreads events evenly across the given time interval.
+   *
+   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * of time between events.
+   *
+   * If you want to be sure that no time interval has no more than specified number of events you need to use
+   * [[throttle()]] with maximumBurst attribute.
+   * @see [[#throttle]]
+   */
+  def throttleEven(cost: Int, per: java.time.Duration,
+                   costCalculation: (Out) ⇒ Int, mode: ThrottleMode): javadsl.Source[Out, Mat] = {
+    import akka.util.JavaDurationConverters._
+    throttleEven(cost, per.asScala, costCalculation, mode)
+  }
 
   /**
    * Detaches upstream demand from downstream demand without detaching the
@@ -2460,6 +2791,22 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def initialDelay(delay: FiniteDuration): javadsl.Source[Out, Mat] =
     new Source(delegate.initialDelay(delay))
+
+  /**
+   * Delays the initial element by the specified duration.
+   *
+   * '''Emits when''' upstream emits an element if the initial delay is already elapsed
+   *
+   * '''Backpressures when''' downstream backpressures or initial delay is not yet elapsed
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def initialDelay(delay: java.time.Duration): javadsl.Source[Out, Mat] = {
+    import akka.util.JavaDurationConverters._
+    initialDelay(delay.asScala)
+  }
 
   /**
    * Replace the attributes of this [[Source]] with the given ones. If this Source is a composite
