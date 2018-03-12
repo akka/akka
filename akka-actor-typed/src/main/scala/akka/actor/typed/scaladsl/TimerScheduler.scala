@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.scaladsl
 
 import scala.concurrent.duration.FiniteDuration

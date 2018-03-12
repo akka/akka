@@ -1,4 +1,8 @@
-package akka
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package akka;
 
 import akka.actor._
 import org.scalatest.Matchers
