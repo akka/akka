@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import akka.util.JavaDurationConverters
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -29,10 +30,11 @@ object AbstractFSM {
  *
  */
 abstract class AbstractFSM[S, D] extends FSM[S, D] {
-  import akka.japi.pf._
-  import akka.japi.pf.FI._
   import java.util.{ List ⇒ JList }
+
   import FSM._
+  import akka.japi.pf.FI._
+  import akka.japi.pf._
 
   /**
    * Returns this AbstractActor's ActorContext
@@ -78,7 +80,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param stateFunctionBuilder partial function builder describing response to input
    */
   final def when(stateName: S, stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
-    when(stateName, null, stateFunctionBuilder)
+    when(stateName, null.asInstanceOf[FiniteDuration], stateFunctionBuilder)
 
   /**
    * Insert a new StateFunction at the end of the processing chain for the
@@ -95,6 +97,24 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
     stateTimeout:         FiniteDuration,
     stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
     super.when(stateName, stateTimeout)(stateFunctionBuilder.build())
+
+  /**
+   * Insert a new StateFunction at the end of the processing chain for the
+   * given state. If the stateTimeout parameter is set, entering this state
+   * without a differing explicit timeout setting will trigger a StateTimeout
+   * event; the same is true when using #stay.
+   *
+   * @param stateName designator for the state
+   * @param stateTimeout default state timeout for this state
+   * @param stateFunctionBuilder partial function builder describing response to input
+   */
+  final def when(
+    stateName:            S,
+    stateTimeout:         java.time.Duration,
+    stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit = {
+    import JavaDurationConverters._
+    when(stateName, stateTimeout.asScala, stateFunctionBuilder)
+  }
 
   /**
    * Set initial state. Call this method from the constructor before the [[#initialize]] method.
@@ -118,6 +138,20 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    */
   final def startWith(stateName: S, stateData: D, timeout: FiniteDuration): Unit =
     super.startWith(stateName, stateData, Option(timeout))
+
+  /**
+   * Set initial state. Call this method from the constructor before the [[#initialize]] method.
+   * If different state is needed after a restart this method, followed by [[#initialize]], can
+   * be used in the actor life cycle hooks [[akka.actor.Actor#preStart]] and [[akka.actor.Actor#postRestart]].
+   *
+   * @param stateName initial state designator
+   * @param stateData initial state data
+   * @param timeout state timeout for the initial state, overriding the default timeout for that state
+   */
+  final def startWith(stateName: S, stateData: D, timeout: java.time.Duration): Unit = {
+    import JavaDurationConverters._
+    startWith(stateName, stateData, timeout.asScala)
+  }
 
   /**
    * Add a handler which is called upon each state transition, i.e. not when
@@ -384,7 +418,34 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param timeout delay of first message delivery and between subsequent messages
    */
   final def setTimer(name: String, msg: Any, timeout: FiniteDuration): Unit =
-    setTimer(name, msg, timeout, false)
+    setTimer(name, msg, timeout, repeat = false)
+
+  /**
+   * Schedule named timer to deliver message after given delay, possibly repeating.
+   * Any existing timer with the same name will automatically be canceled before
+   * adding the new timer.
+   * @param name identifier to be used with cancelTimer()
+   * @param msg message to be delivered
+   * @param timeout delay of first message delivery and between subsequent messages
+   */
+  final def setTimer(name: String, msg: Any, timeout: java.time.Duration): Unit = {
+    import JavaDurationConverters._
+    setTimer(name, msg, timeout.asScala)
+  }
+
+  /**
+   * Schedule named timer to deliver message after given delay, possibly repeating.
+   * Any existing timer with the same name will automatically be canceled before
+   * adding the new timer.
+   * @param name identifier to be used with cancelTimer()
+   * @param msg message to be delivered
+   * @param timeout delay of first message delivery and between subsequent messages
+   * @param repeat send once if false, scheduleAtFixedRate if true
+   */
+  final def setTimer(name: String, msg: Any, timeout: java.time.Duration, repeat: Boolean): Unit = {
+    import JavaDurationConverters._
+    setTimer(name, msg, timeout.asScala, repeat)
+  }
 
   /**
    * Default reason if calling `stop()`.

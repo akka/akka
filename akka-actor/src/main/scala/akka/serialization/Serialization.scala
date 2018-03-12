@@ -99,6 +99,25 @@ object Serialization {
         }
     }
   }
+
+  /**
+   * Use the specified @param system to determine transport information that will be used when serializing actorRefs
+   * in @param f code: if there is no external address available for the requested address then the systems default
+   * address will be used.
+   *
+   * @return value returned by @param f
+   */
+  def withTransportInformation[T](system: ExtendedActorSystem)(f: () ⇒ T): T = {
+    val address = system.provider.getDefaultAddress
+    if (address.hasLocalScope) {
+      f()
+    } else {
+      Serialization.currentTransportInformation.withValue(Serialization.Information(address, system)) {
+        f()
+      }
+    }
+  }
+
 }
 
 /**

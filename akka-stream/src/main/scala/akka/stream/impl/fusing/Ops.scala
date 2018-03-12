@@ -1640,6 +1640,7 @@ private[stream] object Collect {
             cancelTimer(timerName)
             onTimer(timerName)
           }
+          grabAndPull()
         }
       case DropHead ⇒
         () ⇒ {
