@@ -2287,6 +2287,31 @@ final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Grap
     new Source(delegate.keepAlive(maxIdle, () ⇒ injectedElem.create()))
 
   /**
+   * Sends elements from buffer if upstream does not emit for a configured amount of time. In other words, this
+   * stage attempts to maintains a base rate of emitted elements towards the downstream using elements from upstream.
+   *
+   * If upstream emits new elements until the accumulated elements in the buffer exceed the specified minimum size
+   * used as the keep alive elements, then the base rate is no longer maintained until we reach another period without
+   * elements form upstream.
+   *
+   * The keep alive period is the keep alive failover size times the interval.
+   *
+   * '''Emits when''' upstream emits an element or if the upstream was idle for the configured period
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @see [[keepAlive]]
+   * @see [[expand]]
+   */
+  def keepAliveConcat[U >: Out](keepAliveFailoverSize: Int, interval: FiniteDuration,
+                                extrapolate: function.Function[U, java.util.List[U]]): javadsl.Source[U, Mat] =
+    new Source(delegate.keepAliveConcat(keepAliveFailoverSize, interval, (in: U) ⇒ extrapolate.apply(in).asScala))
+
+  /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
    * for emitting messages. This combinator works for streams where all elements have the same cost or length.
    *
