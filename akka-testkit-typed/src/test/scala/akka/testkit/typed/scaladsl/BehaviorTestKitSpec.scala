@@ -4,12 +4,13 @@
 
 package akka.testkit.typed.scaladsl
 
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.Behaviors.MutableBehavior
 import akka.actor.typed.{ Behavior, Props }
 import akka.testkit.typed.scaladsl.Effects.{ Spawned, SpawnedAdapter, SpawnedAnonymous }
-import akka.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Father }
-import akka.testkit.typed.scaladsl.BehaviorTestKitSpec.Father._
 import org.scalatest.{ Matchers, WordSpec }
+
+import scala.concurrent.Future
 
 object BehaviorTestKitSpec {
   object Father {
@@ -61,6 +62,7 @@ object BehaviorTestKitSpec {
           Behaviors.same
       }
     }
+
   }
 
   object Child {
@@ -76,11 +78,35 @@ object BehaviorTestKitSpec {
 
   }
 
+  object Mutable {
+    class MyMutableBehavior(ctx: ActorContext[String]) extends MutableBehavior[String] {
+      implicit val ec = ctx.system.executionContext
+
+      Future {
+        println("Hoi")
+      }
+
+      override def onMessage(msg: String): Behavior[String] = this
+    }
+
+    def mutable(): Behavior[String] =
+      Behaviors.mutable[String](ctx ⇒ new MyMutableBehavior(ctx))
+  }
 }
 
 class BehaviorTestKitSpec extends WordSpec with Matchers {
+  import BehaviorTestKitSpec._
+  import BehaviorTestKitSpec.Father._
 
   private val props = Props.empty
+
+  "BehaviorTestkit initialization" must {
+    "trigger futures" in {
+      val testkit = BehaviorTestKit[String](Mutable.mutable())
+      //      testkit.run("x")
+      Thread.sleep(1000)
+    }
+  }
 
   "BehaviorTestkit's spawn" must {
     "create children when no props specified" in {

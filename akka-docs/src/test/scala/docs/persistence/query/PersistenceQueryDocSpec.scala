@@ -165,7 +165,7 @@ object PersistenceQueryDocSpec {
 
     // Using an example (Reactive Streams) Database driver
     readJournal
-      .eventsByPersistenceId("user-1337")
+      .eventsByPersistenceId("user-1337", fromSequenceNr = 0L, toSequenceNr = Long.MaxValue)
       .map(envelope ⇒ envelope.event)
       .map(convertToReadSideTypes) // convert to datatype
       .grouped(20) // batch inserts into groups of 20
@@ -252,7 +252,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     //#events-by-tag
 
     //#events-by-persistent-id
-    readJournal.eventsByPersistenceId("user-us-1337")
+    readJournal.eventsByPersistenceId("user-us-1337", fromSequenceNr = 0L, toSequenceNr = Long.MaxValue)
 
     //#events-by-persistent-id
 
@@ -318,7 +318,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     val store: ExampleStore = ???
 
     readJournal
-      .eventsByTag("bid")
+      .eventsByTag("bid", NoOffset)
       .mapAsync(1) { e ⇒ store.save(e) }
       .runWith(Sink.ignore)
     //#projection-into-different-store-simple
