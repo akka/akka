@@ -1039,7 +1039,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  def groupedWithin(n: Int, d: java.time.Duration): javadsl.Flow[In, java.util.List[Out @uncheckedVariance], Mat] = {
+  def groupedWithin(n: Int, d: java.time.Duration): javadsl.Flow[In, java.util.List[Out], Mat] = {
     import akka.util.JavaDurationConverters._
     groupedWithin(n, d.asScala)
   }
@@ -1083,7 +1083,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, java.lang.Long], d: java.time.Duration): javadsl.Flow[In, java.util.List[Out @uncheckedVariance], Mat] = {
+  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, java.lang.Long], d: java.time.Duration): javadsl.Flow[In, java.util.List[Out], Mat] = {
     import akka.util.JavaDurationConverters._
     groupedWeightedWithin(maxWeight, costFn, d.asScala)
   }
@@ -2444,7 +2444,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def keepAlive[U >: Out](maxIdle: java.time.Duration, injectedElem: function.Creator[U]): javadsl.Flow[In, U, Mat] = {
+  def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): javadsl.Flow[In, Out, Mat] = {
     import akka.util.JavaDurationConverters._
     keepAlive(maxIdle.asScala, injectedElem)
   }

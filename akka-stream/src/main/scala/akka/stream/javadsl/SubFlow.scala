@@ -1603,7 +1603,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *
    * '''Cancels when''' downstream cancels
    */
-  def keepAlive[U >: Out](maxIdle: java.time.Duration, injectedElem: function.Creator[U]): SubFlow[In, U, Mat] = {
+  def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): SubFlow[In, Out, Mat] = {
     import akka.util.JavaDurationConverters._
     keepAlive(maxIdle.asScala, injectedElem)
   }

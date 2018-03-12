@@ -6,14 +6,12 @@ package akka.stream.javadsl
 
 import java.util
 import java.util.Optional
-import java.util.concurrent.{ CompletableFuture, CompletionStage }
 
 import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
 import akka.stream.impl.{ LinearTraversalBuilder, SourceQueueAdapter }
-import akka.util.JavaDurationConverters._
 import akka.util.{ ConstantFun, Timeout }
 import akka.{ Done, NotUsed }
 import org.reactivestreams.{ Publisher, Subscriber }
@@ -21,8 +19,6 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.compat.java8.OptionConverters._
@@ -218,8 +214,10 @@ object Source {
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
-  def tick[O](initialDelay: java.time.Duration, interval: java.time.Duration, tick: O): javadsl.Source[O, Cancellable] =
+  def tick[O](initialDelay: java.time.Duration, interval: java.time.Duration, tick: O): javadsl.Source[O, Cancellable] = {
+    import akka.util.JavaDurationConverters._
     Source.tick(initialDelay.asScala, interval.asScala, tick)
+  }
 
   /**
    * Create a `Source` with one element.
@@ -2513,7 +2511,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def keepAlive[U >: Out](maxIdle: java.time.Duration, injectedElem: function.Creator[U]): javadsl.Source[U, Mat] = {
+  def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): javadsl.Source[Out, Mat] = {
     import akka.util.JavaDurationConverters._
     keepAlive(maxIdle.asScala, injectedElem)
   }
