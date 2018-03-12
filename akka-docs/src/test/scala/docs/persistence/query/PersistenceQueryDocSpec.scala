@@ -66,7 +66,7 @@ object PersistenceQueryDocSpec {
      * as the `offset` parameter in a subsequent query.
      */
     override def eventsByTag(
-      tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] = offset match {
+      tag: String, offset: Offset): Source[EventEnvelope, NotUsed] = offset match {
       case Sequence(offsetValue) ⇒
         val props = MyEventsByTagPublisher.props(tag, offsetValue, refreshInterval)
         Source.actorPublisher[EventEnvelope](props)
@@ -77,8 +77,8 @@ object PersistenceQueryDocSpec {
     }
 
     override def eventsByPersistenceId(
-      persistenceId: String, fromSequenceNr: Long = 0L,
-      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
+      persistenceId: String, fromSequenceNr: Long,
+      toSequenceNr: Long): Source[EventEnvelope, NotUsed] = {
       // implement in a similar way as eventsByTag
       ???
     }
