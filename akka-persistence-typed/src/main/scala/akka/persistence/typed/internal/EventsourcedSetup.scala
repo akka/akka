@@ -3,13 +3,13 @@
  */
 package akka.persistence.typed.internal
 
-import akka.actor.ActorRef
+import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer, TimerScheduler }
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl.PersistentBehaviors
-import akka.{ actor ⇒ a }
+import akka.util.Collections.EmptyImmutableSeq
 
 /**
  * INTERNAL API: Carry state for the Persistent behavior implementation behaviors
@@ -29,7 +29,7 @@ private[persistence] final case class EventsourcedSetup[C, E, S](
   recovery:                  Recovery,
   var holdingRecoveryPermit: Boolean,
   settings:                  EventsourcedSettings,
-  internalStash:             StashBuffer[InternalProtocol] // FIXME would be nice here... but stash is mutable :\\\\\\\
+  internalStash:             StashBuffer[InternalProtocol]
 ) {
   import akka.actor.typed.scaladsl.adapter._
 
@@ -51,6 +51,12 @@ private[persistence] final case class EventsourcedSetup[C, E, S](
 
   val journal: ActorRef = persistence.journalFor(settings.journalPluginId)
   val snapshotStore: ActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
+
+  val internalStashOverflowStrategy: StashOverflowStrategy = {
+    val system = context.system.toUntyped.asInstanceOf[ExtendedActorSystem]
+    system.dynamicAccess.createInstanceFor[StashOverflowStrategyConfigurator](settings.stashOverflowStrategyConfigurator, EmptyImmutableSeq)
+      .map(_.create(system.settings.config)).get
+  }
 
   def selfUntyped = context.self.toUntyped
 

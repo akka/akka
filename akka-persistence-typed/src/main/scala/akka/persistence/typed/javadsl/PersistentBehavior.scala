@@ -35,7 +35,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
    * Implement by handling incoming commands and return an `Effect()` to persist or signal other effects
    * of the command handling such as stopping the behavior or others.
    *
-   * This method is only invoked when the actor is running (i.e. not recovering).
+   * This method is only invoked when the actor is running (i.e. not replaying).
    * While the actor is persisting events, the incoming messages are stashed and only
    * delivered to the handler once persisting them has completed.
    */
