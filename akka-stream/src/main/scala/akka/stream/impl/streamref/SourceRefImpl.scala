@@ -139,7 +139,7 @@ private[stream] final class SourceRefStageImpl[Out](
 
       lazy val initialReceive: ((ActorRef, Any)) ⇒ Unit = {
         case (sender, msg @ StreamRefsProtocol.OnSubscribeHandshake(remoteRef)) ⇒
-          cancelTimer("SubscriptionTimeoutTimerKey")
+          cancelTimer(SubscriptionTimeoutTimerKey)
           observeAndValidateSender(remoteRef, "Illegal sender in SequencedOnNext")
           log.debug("[{}] Received handshake {} from {}", stageActorName, msg, sender)
 
