@@ -33,10 +33,21 @@ import akka.util.OptionVal
     case ArterySettings.TlsTcp   ⇒ new ArteryTcpTransport(system, provider, tlsEnabled = true)
   }
 
-  private def isArteryProtocol(address: Address): Boolean =
+  override val log: LoggingAdapter = Logging(system, getClass.getName)
+
+  def isArteryProtocol(address: Address): Boolean =
     address.protocol == ArteryTransport.ProtocolName
 
-  override val log: LoggingAdapter = Logging(system, getClass.getName)
+  private val arteryPortOffset = system.settings.config.getInt("akka.remote.artery.hybrid-port-offset")
+
+  private def correspondingOtherAddress(address: Address): Address = {
+    if (arteryPortOffset == 0)
+      address
+    else if (isArteryProtocol(address))
+      address.copy(protocol = classicTransport.defaultAddress.protocol, port = Some(address.port.get - arteryPortOffset))
+    else
+      address.copy(protocol = ArteryTransport.ProtocolName, port = Some(address.port.get + arteryPortOffset))
+  }
 
   override def addresses: Set[Address] = classicTransport.addresses.union(arteryTransport.addresses)
 
@@ -69,9 +80,14 @@ import akka.util.OptionVal
   }
 
   override def quarantine(address: Address, uid: Option[Long], reason: String): Unit = {
-    if (isArteryProtocol(address))
-      arteryTransport.quarantine(address.copy(protocol = ArteryTransport.ProtocolName), uid, reason)
-    else
-      classicTransport.quarantine(address.copy(protocol = classicTransport.defaultAddress.protocol), uid, reason)
+    if (isArteryProtocol(address)) {
+      arteryTransport.quarantine(address, uid, reason)
+      if (arteryPortOffset != 0)
+        classicTransport.quarantine(correspondingOtherAddress(address), uid, reason)
+    } else {
+      classicTransport.quarantine(address, uid, reason)
+      if (arteryPortOffset != 0)
+        arteryTransport.quarantine(correspondingOtherAddress(address), uid, reason)
+    }
   }
 }
