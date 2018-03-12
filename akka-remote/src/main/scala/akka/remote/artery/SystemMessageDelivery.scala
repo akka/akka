@@ -5,11 +5,13 @@ package akka.remote.artery
 
 import akka.util.PrettyDuration.PrettyPrintableDuration
 import java.util.ArrayDeque
+
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+
 import akka.Done
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
@@ -26,6 +28,8 @@ import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.actor.ActorRef
 import akka.dispatch.sysmsg.SystemMessage
 import scala.util.control.NoStackTrace
+
+import akka.stream.stage.StageLogging
 
 /**
  * INTERNAL API
@@ -64,7 +68,7 @@ private[remote] class SystemMessageDelivery(
   override val shape: FlowShape[OutboundEnvelope, OutboundEnvelope] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with InHandler with OutHandler with ControlMessageObserver {
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler with ControlMessageObserver with StageLogging {
 
       private var replyObserverAttached = false
       private var seqNo = 0L // sequence number for the first message will be 1
@@ -136,6 +140,7 @@ private[remote] class SystemMessageDelivery(
       }
 
       private val ackCallback = getAsyncCallback[Ack] { reply ⇒
+        log.debug("# sysmsg ack [{}] from [{}]", reply.seqNo, outboundContext.remoteAddress)
         ack(reply.seqNo)
       }
 
@@ -144,7 +149,9 @@ private[remote] class SystemMessageDelivery(
           ack(reply.seqNo)
           if (reply.seqNo > resendingFromSeqNo)
             resending = unacknowledged.clone()
-          tryResend()
+          log.debug("# sysmsg nack [{}] from [{}]", reply.seqNo, outboundContext.remoteAddress)
+          if (reply.seqNo != 0)
+            tryResend()
         }
       }
 
@@ -185,6 +192,7 @@ private[remote] class SystemMessageDelivery(
           case msg @ (_: SystemMessage | _: AckedDeliveryMessage) ⇒
             if (unacknowledged.size < maxBufferSize) {
               seqNo += 1
+              log.debug("# new sysmsg [{}] to [{}]: {}", seqNo, outboundContext.remoteAddress, outboundEnvelope.message)
               if (unacknowledged.isEmpty)
                 ackTimestamp = System.nanoTime()
               else
@@ -270,7 +278,7 @@ private[remote] class SystemMessageAcker(inboundContext: InboundContext) extends
   override val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with InHandler with OutHandler {
+    new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
       // TODO we might need have to prune old unused entries
       var sequenceNumbers = Map.empty[UniqueAddress, Long]
@@ -295,6 +303,7 @@ private[remote] class SystemMessageAcker(inboundContext: InboundContext) extends
               inboundContext.sendControl(ackReplyTo.address, Ack(expectedSeqNo - 1, localAddress))
               pull(in)
             } else {
+              log.debug("# sysmsg acker got [{}] expected [{}] from [{}]: {}", n, expectedSeqNo, ackReplyTo, sysEnv.message)
               inboundContext.sendControl(ackReplyTo.address, Nack(expectedSeqNo - 1, localAddress))
               pull(in)
             }
