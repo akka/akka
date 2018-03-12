@@ -89,8 +89,8 @@ The source code of this sample can be found in the
 ## Joining to Seed Nodes
 
 @@@ note
-  When starting clusters on cloud systems such as Kubernetes, AWS, Mesos or others which maintain DNS or other ways of 
-  discovering nodes, you may want to use the automatic joining process implemented by the open source
+  When starting clusters on cloud systems such as Kubernetes, AWS, Google Cloud, Azure, Mesos or others which maintain 
+  DNS or other ways of discovering nodes, you may want to use the automatic joining process implemented by the open source
   [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module.
 @@@
 
@@ -118,10 +118,11 @@ This can also be defined as Java system properties when starting the JVM using t
 -Dakka.cluster.seed-nodes.1=akka.tcp://ClusterSystem@host2:2552
 ```
 
-Such configuration is typically created dynamically by external tools, see for example:
-
-* [Deploying clustered Akka applications on Kubernetes](http://developer.lightbend.com/guides/k8-akka-cluster/)
-* [Akka Management's Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html)
+Instead of manually configuring seed nodes, which is useful in development or statically assigned node IPs, you may want 
+to automate the discovery of seed nodes using your cloud providers or cluster orchestrator, or some other form of service 
+discovery (such as managed DNS). The open source Akka Management library includes the 
+[Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module which handles 
+just that. Please refer to its documentation for more details. 
 
 The seed nodes can be started in any order and it is not necessary to have all
 seed nodes running, but the node configured as the **first element** in the `seed-nodes`
