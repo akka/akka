@@ -48,9 +48,29 @@ final class Flow[-In, +Out, +Mat](
 
   override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] = {
     if (this.isIdentity) {
-      new Flow(
-        LinearTraversalBuilder.fromBuilder(flow.traversalBuilder, flow.shape, combine),
-        flow.shape).asInstanceOf[Flow[In, T, Mat3]]
+      // optimization by returning flow if possible since we know Mat2 == Mat3 from flow
+      if (combine == Keep.right) Flow.fromGraph(flow).asInstanceOf[Flow[In, T, Mat3]]
+      else {
+        // Keep.none is optimized and we know left means Mat3 == NotUsed
+        val useCombine =
+          if (combine == Keep.left) Keep.none
+          else combine
+        new Flow(
+          LinearTraversalBuilder.empty().append(flow.traversalBuilder, flow.shape, useCombine),
+          flow.shape).asInstanceOf[Flow[In, T, Mat3]]
+      }
+    } else if (flow.traversalBuilder eq Flow.identityTraversalBuilder) {
+      // optimization by returning this if possible since we know Mat2 == Mat from this
+      if (combine == Keep.left) this.asInstanceOf[Flow[In, T, Mat3]]
+      else {
+        // Keep.none is somewhat optimized and we know Mat == NotUsed
+        val useCombine =
+          if (combine == Keep.right) Keep.none
+          else combine
+        new Flow(
+          traversalBuilder.append(LinearTraversalBuilder.empty(), shape, useCombine),
+          FlowShape[In, T](shape.in, flow.shape.out))
+      }
     } else {
       new Flow(
         traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
