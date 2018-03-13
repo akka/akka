@@ -17,12 +17,10 @@ import scala.concurrent.{ ExecutionContext, Promise }
   override def subscribe(subscriber: Subscriber[_ >: Nothing]): Unit =
     try {
       requireNonNullSubscriber(subscriber)
-      println("EmptyPublisher.subscribe")
       tryOnSubscribe(subscriber, CancelledSubscription)
       tryOnComplete(subscriber)
     } catch {
       case _: SpecViolation ⇒ // nothing we can do
-        println("EmptyPublisher: spec violation")
     }
   def apply[T]: Publisher[T] = this.asInstanceOf[Publisher[T]]
   override def toString: String = "already-completed-publisher"
