@@ -212,8 +212,7 @@ This means that the cluster leader member will change the `unreachable` node
 status to `down` automatically after the configured time of unreachability.
 
 This is a naïve approach to remove unreachable nodes from the cluster membership.
-It can be useful during development but in a production environment it causes
-a breakdown of the cluster. When a network partition occurs, both sides of the
+It can be useful during development but in a production environment it will eventually breakdown the cluster. When a network partition occurs, both sides of the
 partition will see the other side as unreachable and remove it from the cluster.
 This results in the formation of two separate, disconnected, clusters 
 (known as *Split Brain*).
