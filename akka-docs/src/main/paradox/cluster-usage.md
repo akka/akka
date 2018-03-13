@@ -217,20 +217,40 @@ akka.cluster.auto-down-unreachable-after = 120s
 This means that the cluster leader member will change the `unreachable` node
 status to `down` automatically after the configured time of unreachability.
 
-This is a naïve approach to remove unreachable nodes from the cluster membership. It
-works great for crashes and short transient network partitions, but not for long network
-partitions. Both sides of the network partition will see the other side as unreachable
-and after a while remove it from its cluster membership. Since this happens on both
-sides the result is that two separate disconnected clusters have been created. This
-can also happen because of long GC pauses or system overload.
+This is a naïve approach to remove unreachable nodes from the cluster membership.
+It can be useful during development but in a production environment it will eventually breakdown the cluster. When a network partition occurs, both sides of the
+partition will see the other side as unreachable and remove it from the cluster.
+This results in the formation of two separate, disconnected, clusters 
+(known as *Split Brain*).
+
+This behaviour is not limited to network partitions. It can also occur if a node
+in the cluster is overloaded, or experiences a long GC pause.
 
 @@@ warning
 
-We recommend against using the auto-down feature of Akka Cluster in production.
-This is crucial for correct behavior if you use @ref:[Cluster Singleton](cluster-singleton.md) or
-@ref:[Cluster Sharding](cluster-sharding.md), especially together with Akka @ref:[Persistence](persistence.md).
-For Akka Persistence with Cluster Sharding it can result in corrupt data in case
-of network partitions.
+We recommend against using the auto-down feature of Akka Cluster in production. It
+has multiple undesirable consequences for production systems.
+
+If you are using @ref:[Cluster Singleton](cluster-singleton.md) or
+@ref:[Cluster Sharding](cluster-sharding.md) it can break the contract provided by 
+those features. Both provide a guarantee that an actor will be unique in a cluster.
+With the auto-down feature enabled, it is possible for multiple independent clusters
+to form (*Split Brain*). When this happens the guaranteed uniqueness will no
+longer be true resulting in undesirable behaviour in the system.
+
+This is even more severe when @ref:[Akka Persistence](persistence.md) is used in
+conjunction with Cluster Sharding. In this case, the lack of unique actors can 
+cause multiple actors to write to the same journal. Akka Persistence operates on a
+single writer principle. Having multiple writers will corrupt the journal
+and make it unusable.
+
+Finally, even if you don't use features such as Persistence, Sharding, or Singletons, 
+auto-downing can lead the system to form multiple small clusters. These small
+clusters will be independent from each other. They will be unable to communicate
+and as a result you may experience performance degredation. Once this condition
+occurs, it will require manual intervention in order to reform the cluster.
+
+Because of these issues, auto-downing should **never** be used in a production environment.
 
 @@@
 
