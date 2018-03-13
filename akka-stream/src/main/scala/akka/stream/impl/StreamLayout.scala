@@ -227,6 +227,7 @@ import scala.util.control.NonFatal
         case Establishing(s) ⇒
           // keep trying until subscription established and can complete it
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onError(${t.getMessage}), loop")
+          rec(ex)
 
         case other ⇒
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($other).onError(${t.getMessage}). spec violation or cancellation race")
@@ -403,10 +404,8 @@ import scala.util.control.NonFatal
 @InternalApi private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Publisher[T] {
   import ReactiveStreamsCompliance._
   import VirtualProcessor.Inert
-  if (VirtualProcessor.Debug) println(s"virtual publisher: $this")
   override def subscribe(subscriber: Subscriber[_ >: T]): Unit = {
     requireNonNullSubscriber(subscriber)
-    if (VirtualProcessor.Debug) println(s"$this.subscribe: $subscriber")
     @tailrec def rec(): Unit = {
       get() match {
         case null ⇒

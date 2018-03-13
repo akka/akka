@@ -347,7 +347,7 @@ lazy val streamTestkit = akkaModule("akka-stream-testkit")
 
 lazy val streamTests = akkaModule("akka-stream-tests")
   .dependsOn(streamTestkit % "test->test", remote % "test->test", stream)
-  .settings(Dependencies.streamTests ++ Dependencies.streamTestsTck)
+  .settings(Dependencies.streamTests)
   .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
