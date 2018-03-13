@@ -41,6 +41,11 @@ import scala.util.control.NonFatal
   object Both {
     def create(s: Subscriber[_]) = Both(s.asInstanceOf[Subscriber[Any]])
   }
+
+  case class Establishing(sub: Subscriber[Any])
+  object Establishing {
+    def create(s: Subscriber[_]) = Establishing(s.asInstanceOf[Subscriber[Any]])
+  }
 }
 
 /**
@@ -102,16 +107,21 @@ import scala.util.control.NonFatal
 
   override def subscribe(s: Subscriber[_ >: T]): Unit = {
     @tailrec def rec(sub: Subscriber[Any]): Unit = {
-      println(s"$this.subscribe.rec($s)")
       get() match {
-        case null ⇒ if (!compareAndSet(null, s)) rec(sub)
+        case null ⇒
+          println(s"$this(null).subscribe.rec($s) moving to sub")
+          if (!compareAndSet(null, s)) rec(sub)
         case subscription: Subscription ⇒
-          if (compareAndSet(subscription, Both(sub))) establishSubscription(sub, subscription)
+          println(s"$this($subscription).subscribe.rec($s) moving to both")
+          val establishing = Establishing(sub)
+          if (compareAndSet(subscription, establishing)) establishSubscription(establishing, subscription)
           else rec(sub)
         case pub: Publisher[_] ⇒
+          println(s"$this($pub).subscribe.rec($s) moving go inert")
           if (compareAndSet(pub, Inert)) pub.subscribe(sub)
           else rec(sub)
         case _ ⇒
+          println(s"$this(_).subscribe.rec($s)")
           rejectAdditionalSubscriber(sub, "VirtualProcessor")
       }
     }
@@ -125,13 +135,16 @@ import scala.util.control.NonFatal
 
   override final def onSubscribe(s: Subscription): Unit = {
     @tailrec def rec(obj: AnyRef): Unit = {
-      println(s"$this.onSubscribe.rec($s)")
       get() match {
-        case null ⇒ if (!compareAndSet(null, obj)) rec(obj)
+        case null ⇒
+          println(s"$this(null).onSubscribe.rec($s) moving to ${obj.getClass}")
+          if (!compareAndSet(null, obj)) rec(obj)
         case subscriber: Subscriber[_] ⇒
+          println(s"$this($subscriber).onSubscribe.rec($s) moving to both")
           obj match {
             case subscription: Subscription ⇒
-              if (compareAndSet(subscriber, Both.create(subscriber))) establishSubscription(subscriber, subscription)
+              val establishing = Establishing.create(subscriber)
+              if (compareAndSet(subscriber, Both.create(subscriber))) establishSubscription(establishing, subscription)
               else rec(obj)
             case pub: Publisher[_] ⇒
               getAndSet(Inert) match {
@@ -140,6 +153,7 @@ import scala.util.control.NonFatal
               }
           }
         case _ ⇒
+          println(s"$this(_).onSubscribe.rec($s) spec violation")
           // spec violation
           tryCancel(s)
       }
@@ -152,18 +166,20 @@ import scala.util.control.NonFatal
     } else rec(s)
   }
 
-  private def establishSubscription(subscriber: Subscriber[_], subscription: Subscription): Unit = {
+  private def establishSubscription(establishing: Establishing, subscription: Subscription): Unit = {
     val wrapped = new WrappedSubscription(subscription)
     try {
-      subscriber.onSubscribe(wrapped)
+      println("establishSubscription(wrapped)")
+      establishing.sub.onSubscribe(wrapped)
       // Requests will be only allowed once onSubscribe has returned to avoid reentering on an onNext before
       // onSubscribe completed
       wrapped.ungateDemandAndRequestBuffered()
+      set(Both(establishing.sub))
     } catch {
       case NonFatal(ex) ⇒
         set(Inert)
         tryCancel(subscription)
-        tryOnError(subscriber, ex)
+        tryOnError(establishing.sub, ex)
     }
   }
 
@@ -176,16 +192,20 @@ import scala.util.control.NonFatal
     @tailrec def rec(ex: Throwable): Unit =
       get() match {
         case null ⇒
+          println(s"$this(null).onError(${t.getMessage})")
           if (!compareAndSet(null, ErrorPublisher(ex, "failed-VirtualProcessor"))) rec(ex)
           else if (t == null) throw ex
         case s: Subscription ⇒
+          println(s"$this($s).onError(${t.getMessage})")
           if (!compareAndSet(s, ErrorPublisher(ex, "failed-VirtualProcessor"))) rec(ex)
           else if (t == null) throw ex
         case Both(s) ⇒
+          println(s"$this(Both($s)).onError(${t.getMessage})")
           set(Inert)
           try tryOnError(s, ex)
           finally if (t == null) throw ex // must throw NPE, rule 2:13
         case s: Subscriber[_] ⇒ // spec violation
+          println(s"$this($s).onError(${t.getMessage})")
           getAndSet(Inert) match {
             case Inert ⇒ // nothing to be done
             case _     ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
@@ -200,20 +220,25 @@ import scala.util.control.NonFatal
   @tailrec override final def onComplete(): Unit = {
     get() match {
       case null ⇒
-        println(s"$this(null).onComplete")
+        println(s"$this(null).onComplete moving to EmptyPublisher")
         if (!compareAndSet(null, EmptyPublisher)) onComplete()
       case s: Subscription ⇒
-        println(s"$this($s).onComplete")
+        println(s"$this($s).onComplete moving to EmptyPublisher")
         if (!compareAndSet(s, EmptyPublisher)) onComplete()
-      case Both(s) ⇒
-        println(s"$this($s).onComplete")
+      case b @ Both(s) ⇒
+        println(s"$this($s).onComplete moving to Inert")
         set(Inert)
         tryOnComplete(s)
       case s: Subscriber[_] ⇒ // spec violation
-        println(s"$this($s).onComplete")
+        println(s"$this($s).onComplete moving to Inert")
         set(Inert)
         EmptyPublisher.subscribe(s)
-      case _ ⇒ // spec violation or cancellation race, but nothing we can do
+      case _: Establishing ⇒
+        // keep trying until subscription established and can complete it
+        onComplete()
+      case _ ⇒
+        println(s"$this(_).onComplete spec violation")
+      // spec violation or cancellation race, but nothing we can do
     }
   }
 
@@ -275,6 +300,7 @@ import scala.util.control.NonFatal
 
     // Release
     def ungateDemandAndRequestBuffered(): Unit = {
+      println("ungateDemandAndRequestBuffered")
       // Ungate demand
       val requests = getAndSet(PassThrough).demand
       // And request buffered demand
@@ -282,6 +308,7 @@ import scala.util.control.NonFatal
     }
 
     override def request(n: Long): Unit = {
+      println(s"WrappedSubscription.request($n)")
       if (n < 1) {
         tryCancel(real)
         VirtualProcessor.this.getAndSet(Inert) match {
@@ -297,13 +324,19 @@ import scala.util.control.NonFatal
         // The only invariant we need to keep is to never emit more requests than the downstream emitted so far.
         @tailrec def bufferDemand(n: Long): Unit = {
           val current = get()
-          if (current eq PassThrough) real.request(n)
-          else if (!compareAndSet(current, Buffering(current.demand + n))) bufferDemand(n)
+          if (current eq PassThrough) {
+            println(s"WrappedSubscription.bufferDemand($n) passthrough")
+            real.request(n)
+          } else if (!compareAndSet(current, Buffering(current.demand + n))) {
+            println(s"WrappedSubscription.bufferDemand($n) buffering")
+            bufferDemand(n)
+          }
         }
         bufferDemand(n)
       }
     }
     override def cancel(): Unit = {
+      println(s"WrappedSubscription.cancel() moving to Inert")
       VirtualProcessor.this.set(Inert)
       real.cancel()
     }
