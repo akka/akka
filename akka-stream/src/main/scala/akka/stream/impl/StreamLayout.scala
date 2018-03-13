@@ -36,7 +36,7 @@ import scala.util.control.NonFatal
 @InternalApi private[stream] object VirtualProcessor {
 
   // intentional syntax to make compile time constant
-  final val Debug = false
+  final val Debug = true
 
   case object Inert {
     val subscriber = new CancellingSubscriber[Any]
