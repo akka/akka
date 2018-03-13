@@ -92,7 +92,7 @@ object AkkaBuild {
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
       // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
-      javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-release", "8", "-Xlint:unchecked", "-XDignore.symbol.file"),
+      javacOptions in compile ++= Seq("-encoding", "UTF-8", "--release", "8", "-Xlint:unchecked", "-XDignore.symbol.file"),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
 
