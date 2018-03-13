@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.ddata.protobuf
 
 import scala.concurrent.duration._
