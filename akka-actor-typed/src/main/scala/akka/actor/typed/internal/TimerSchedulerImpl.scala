@@ -33,7 +33,7 @@ import scala.reflect.ClassTag
         val timerScheduler = ctxImpl.timer
         val behavior = factory(timerScheduler)
         timerScheduler.intercept(behavior)
-      case _ => throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
+      case _ ⇒ throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
     }
 
 }
