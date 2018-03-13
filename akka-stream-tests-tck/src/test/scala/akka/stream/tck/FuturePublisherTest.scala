@@ -10,7 +10,6 @@ import org.reactivestreams._
 
 import scala.concurrent.Promise
 
-/*
 class FuturePublisherTest extends AkkaPublisherVerification[Int] {
 
   def createPublisher(elements: Long): Publisher[Int] = {
@@ -22,4 +21,3 @@ class FuturePublisherTest extends AkkaPublisherVerification[Int] {
 
   override def maxElementsFromPublisher(): Long = 1
 }
-*/

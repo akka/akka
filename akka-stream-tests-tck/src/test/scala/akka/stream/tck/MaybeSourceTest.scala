@@ -7,7 +7,6 @@ package akka.stream.tck
 import org.reactivestreams.Publisher
 import akka.stream.scaladsl.{ Keep, Source, Sink }
 
-/*
 class MaybeSourceTest extends AkkaPublisherVerification[Int] {
 
   def createPublisher(elements: Long): Publisher[Int] = {
@@ -18,5 +17,4 @@ class MaybeSourceTest extends AkkaPublisherVerification[Int] {
 
   override def maxElementsFromPublisher(): Long = 1
 }
-*/
 

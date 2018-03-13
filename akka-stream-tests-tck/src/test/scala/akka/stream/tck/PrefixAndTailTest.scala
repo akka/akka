@@ -10,7 +10,6 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import org.reactivestreams.Publisher
 
-/*
 class PrefixAndTailTest extends AkkaPublisherVerification[Int] {
 
   def createPublisher(elements: Long): Publisher[Int] = {
@@ -20,4 +19,3 @@ class PrefixAndTailTest extends AkkaPublisherVerification[Int] {
   }
 
 }
-*/

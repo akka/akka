@@ -13,7 +13,7 @@ import java.lang.{ Integer ⇒ JInt }
 import scala.concurrent.Promise
 import org.reactivestreams.{ Subscription, Subscriber }
 
-/*class SinkholeSubscriberTest extends SubscriberWhiteboxVerification[JInt](new TestEnvironment()) with TestNGSuiteLike {
+class SinkholeSubscriberTest extends SubscriberWhiteboxVerification[JInt](new TestEnvironment()) with TestNGSuiteLike {
   override def createSubscriber(probe: WhiteboxSubscriberProbe[JInt]): Subscriber[JInt] = {
     new Subscriber[JInt] {
       val hole = new SinkholeSubscriber[JInt](Promise[Done]())
@@ -44,5 +44,5 @@ import org.reactivestreams.{ Subscription, Subscriber }
   }
 
   override def createElement(element: Int): JInt = element
-}*/
+}
 

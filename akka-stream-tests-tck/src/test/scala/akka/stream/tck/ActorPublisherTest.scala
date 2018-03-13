@@ -9,6 +9,7 @@ import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.Request
 import akka.stream.tck.ActorPublisherTest.TestPublisher
 import org.reactivestreams.Publisher
+
 object ActorPublisherTest {
 
   case object Produce
@@ -37,7 +38,6 @@ object ActorPublisherTest {
   }
 
 }
-/*
 
 class ActorPublisherTest extends AkkaPublisherVerification[Int] {
 
@@ -47,4 +47,3 @@ class ActorPublisherTest extends AkkaPublisherVerification[Int] {
     ActorPublisher(ref)
   }
 }
-*/

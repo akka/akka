@@ -8,7 +8,6 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import org.reactivestreams.Processor
 
-/*
 class MapTest extends AkkaIdentityProcessorVerification[Int] {
 
   override def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
@@ -20,4 +19,3 @@ class MapTest extends AkkaIdentityProcessorVerification[Int] {
   override def createElement(element: Int): Int = element
 
 }
-*/
