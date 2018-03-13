@@ -35,20 +35,6 @@ object Behaviors {
     Behavior.DeferredBehavior(factory)
 
   /**
-   * Factory for creating a [[MutableBehavior]] that typically holds mutable state as
-   * instance variables in the concrete [[MutableBehavior]] implementation class.
-   *
-   * Creation of the behavior instance is deferred, i.e. it is created via the `factory`
-   * function. The reason for the deferred creation is to avoid sharing the same instance in
-   * multiple actors, and to create a new instance when the actor is restarted.
-   *
-   * @param factory behavior factory that takes the child actor’s context as argument
-   * @return the deferred behavior
-   */
-  def mutable[T](factory: ActorContext[T] ⇒ MutableBehavior[T]): Behavior[T] =
-    setup(factory)
-
-  /**
    * Mutable behavior can be implemented by extending this class and implement the
    * abstract method [[MutableBehavior#onMessage]] and optionally override
    * [[MutableBehavior#onSignal]].

@@ -44,21 +44,6 @@ object Behaviors {
     Behavior.DeferredBehavior(ctx ⇒ factory.apply(ctx.asJava))
 
   /**
-   * Factory for creating a [[MutableBehavior]] that typically holds mutable state as
-   * instance variables in the concrete [[MutableBehavior]] implementation class.
-   *
-   * Creation of the behavior instance is deferred, i.e. it is created via the `factory`
-   * function. The reason for the deferred creation is to avoid sharing the same instance in
-   * multiple actors, and to create a new instance when the actor is restarted.
-   *
-   * @param factory
-   *          behavior factory that takes the child actor’s context as argument
-   * @return the deferred behavior
-   */
-  def mutable[T](factory: akka.japi.function.Function[ActorContext[T], MutableBehavior[T]]): Behavior[T] =
-    setup(factory)
-
-  /**
    * Mutable behavior can be implemented by extending this class and implement the
    * abstract method [[MutableBehavior#onMessage]] and optionally override
    * [[MutableBehavior#onSignal]].
@@ -153,8 +138,28 @@ object Behaviors {
    * State is updated by returning a new behavior that holds the new immutable
    * state.
    */
-  def immutable[T](onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]]): Behavior[T] =
+  def receive[T](onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]]): Behavior[T] =
     new BehaviorImpl.ImmutableBehavior((ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg))
+
+  /**
+   * Simplified version of [[receive]] with only a single argument - the messsage
+   * to be handled. Useful for when the context is already accessible by other means,
+   * like being wrapped in an [[setup]] or similar.
+   *
+   * Construct an actor behavior that can react to incoming messages but not to
+   * lifecycle signals. After spawning this actor from another actor (or as the
+   * guardian of an [[akka.actor.typed.ActorSystem]]) it will be executed within an
+   * [[ActorContext]] that allows access to the system, spawning and watching
+   * other actors, etc.
+   *
+   * This constructor is called immutable because the behavior instance doesn't
+   * have or close over any mutable state. Processing the next message
+   * results in a new behavior that can potentially be different from this one.
+   * State is updated by returning a new behavior that holds the new immutable
+   * state.
+   */
+  def receiveMessage[T](onMessage: akka.japi.Function[T, Behavior[T]]): Behavior[T] =
+    new BehaviorImpl.ImmutableBehavior((_, msg) ⇒ onMessage.apply(msg))
 
   /**
    * Construct an actor behavior that can react to both incoming messages and
@@ -169,7 +174,7 @@ object Behaviors {
    * State is updated by returning a new behavior that holds the new immutable
    * state.
    */
-  def immutable[T](
+  def receive[T](
     onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]],
     onSignal:  JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
     new BehaviorImpl.ImmutableBehavior(
@@ -198,7 +203,7 @@ object Behaviors {
     val jSame = new JapiFunction2[ActorContext[T], T, Behavior[T]] {
       override def apply(ctx: ActorContext[T], msg: T) = same
     }
-    immutable(jSame, handler)
+    receive(jSame, handler)
   }
 
   /**
