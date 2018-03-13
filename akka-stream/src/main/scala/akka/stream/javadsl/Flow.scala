@@ -2031,7 +2031,7 @@ final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends
     that:          Graph[SourceShape[T], M],
     matF:          function.Function2[Mat, M, M2],
     eagerComplete: Boolean): javadsl.Flow[In, T, M2] =
-    new Flow(delegate.mergeMat(that)(combinerToScala(matF)))
+    new Flow(delegate.mergeMat(that, eagerComplete)(combinerToScala(matF)))
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,
