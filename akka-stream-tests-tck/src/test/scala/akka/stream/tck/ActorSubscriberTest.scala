@@ -10,6 +10,7 @@ import akka.stream.actor.OneByOneRequestStrategy
 import akka.stream.actor.RequestStrategy
 import org.reactivestreams.Subscriber
 
+/*
 object ActorSubscriberOneByOneRequestTest {
   class StrategySubscriber(val requestStrategy: RequestStrategy) extends ActorSubscriber {
 
@@ -27,3 +28,4 @@ class ActorSubscriberOneByOneRequestTest extends AkkaSubscriberBlackboxVerificat
 
   override def createElement(element: Int): Int = element
 }
+*/

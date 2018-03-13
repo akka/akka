@@ -12,7 +12,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import org.reactivestreams.Publisher
 
-class GroupByTest extends AkkaPublisherVerification[Int] {
+/*class GroupByTest extends AkkaPublisherVerification[Int] {
 
   def createPublisher(elements: Long): Publisher[Int] =
     if (elements == 0) EmptyPublisher[Int]
@@ -29,4 +29,4 @@ class GroupByTest extends AkkaPublisherVerification[Int] {
 
     }
 
-}
+}*/

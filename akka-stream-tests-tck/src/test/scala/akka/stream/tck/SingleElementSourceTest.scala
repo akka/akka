@@ -8,6 +8,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 
 import org.reactivestreams.Publisher
+/*
 
 class SingleElementSourceTest extends AkkaPublisherVerification[Int] {
 
@@ -16,4 +17,5 @@ class SingleElementSourceTest extends AkkaPublisherVerification[Int] {
 
   override def maxElementsFromPublisher(): Long = 1
 }
+*/
 

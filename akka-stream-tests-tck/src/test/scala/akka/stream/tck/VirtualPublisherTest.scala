@@ -9,6 +9,7 @@ import akka.stream.scaladsl.Flow
 import org.reactivestreams.Processor
 import akka.stream.impl.VirtualProcessor
 
+/*
 class VirtualProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
   override def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
@@ -33,3 +34,4 @@ class VirtualProcessorSingleTest extends AkkaIdentityProcessorVerification[Int] 
   override def createElement(element: Int): Int = element
 
 }
+*/

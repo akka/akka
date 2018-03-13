@@ -11,7 +11,7 @@ import akka.stream.scaladsl.{ Sink, StreamConverters }
 import akka.util.ByteString
 import org.reactivestreams.Publisher
 
-class InputStreamSourceTest extends AkkaPublisherVerification[ByteString] {
+/*class InputStreamSourceTest extends AkkaPublisherVerification[ByteString] {
 
   def createPublisher(elements: Long): Publisher[ByteString] = {
     StreamConverters.fromInputStream(() ⇒ new InputStream {
@@ -24,5 +24,5 @@ class InputStreamSourceTest extends AkkaPublisherVerification[ByteString] {
       .take(elements)
       .runWith(Sink.asPublisher(false))
   }
-}
+}*/
 

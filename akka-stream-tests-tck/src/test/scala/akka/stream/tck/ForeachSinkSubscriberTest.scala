@@ -7,6 +7,7 @@ package akka.stream.tck
 import akka.stream.scaladsl._
 import org.reactivestreams.Subscriber
 
+/*
 class ForeachSinkSubscriberTest extends AkkaSubscriberBlackboxVerification[Int] {
 
   override def createSubscriber(): Subscriber[Int] =
@@ -14,3 +15,4 @@ class ForeachSinkSubscriberTest extends AkkaSubscriberBlackboxVerification[Int] 
 
   override def createElement(element: Int): Int = element
 }
+*/

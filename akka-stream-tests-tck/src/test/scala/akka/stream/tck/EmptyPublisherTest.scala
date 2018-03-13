@@ -6,6 +6,7 @@ package akka.stream.tck
 
 import org.reactivestreams.Publisher
 import akka.stream.impl.EmptyPublisher
+/*
 
 class EmptyPublisherTest extends AkkaPublisherVerification[Int] {
 
@@ -13,4 +14,5 @@ class EmptyPublisherTest extends AkkaPublisherVerification[Int] {
 
   override def maxElementsFromPublisher(): Long = 0
 }
+*/
 

@@ -10,7 +10,7 @@ import akka.stream.scaladsl.Flow
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import org.reactivestreams.Processor
 
-class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
+/*class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
   override def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
     val settings = ActorMaterializerSettings(system)
@@ -32,4 +32,4 @@ class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
   override def createElement(element: Int): Int = element
 
-}
+}*/

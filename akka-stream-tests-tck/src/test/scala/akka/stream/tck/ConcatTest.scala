@@ -7,6 +7,7 @@ package akka.stream.tck
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import org.reactivestreams.Publisher
+/*
 
 class ConcatTest extends AkkaPublisherVerification[Int] {
 
@@ -15,3 +16,4 @@ class ConcatTest extends AkkaPublisherVerification[Int] {
   }
 
 }
+*/

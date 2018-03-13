@@ -9,7 +9,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import org.reactivestreams.Publisher
 
-class FanoutPublisherTest extends AkkaPublisherVerification[Int] {
+/*class FanoutPublisherTest extends AkkaPublisherVerification[Int] {
 
   def createPublisher(elements: Long): Publisher[Int] = {
     val iterable: immutable.Iterable[Int] =
@@ -19,4 +19,4 @@ class FanoutPublisherTest extends AkkaPublisherVerification[Int] {
     Source(iterable).runWith(Sink.asPublisher(true))
   }
 
-}
+}*/

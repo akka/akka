@@ -16,7 +16,7 @@ import org.reactivestreams.Publisher
 import org.testng.annotations.{ AfterClass, BeforeClass }
 import akka.testkit.AkkaSpec
 
-class FilePublisherTest extends AkkaPublisherVerification[ByteString] {
+/*class FilePublisherTest extends AkkaPublisherVerification[ByteString] {
 
   val ChunkSize = 256
   val Elements = 1000
@@ -46,4 +46,4 @@ class FilePublisherTest extends AkkaPublisherVerification[ByteString] {
   def after() = Files.delete(file)
 
   override def maxElementsFromPublisher(): Long = Elements
-}
+}*/

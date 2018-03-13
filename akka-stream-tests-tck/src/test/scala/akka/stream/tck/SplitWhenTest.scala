@@ -12,6 +12,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import org.reactivestreams.Publisher
 
+/*
 class SplitWhenTest extends AkkaPublisherVerification[Int] {
 
   def createPublisher(elements: Long): Publisher[Int] =
@@ -29,3 +30,4 @@ class SplitWhenTest extends AkkaPublisherVerification[Int] {
     }
 
 }
+*/

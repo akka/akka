@@ -8,6 +8,7 @@ import akka.stream._
 import akka.stream.scaladsl.Flow
 import org.reactivestreams.Processor
 
+/*
 class FusableProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
   override def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
@@ -22,3 +23,4 @@ class FusableProcessorTest extends AkkaIdentityProcessorVerification[Int] {
   override def createElement(element: Int): Int = element
 
 }
+*/
