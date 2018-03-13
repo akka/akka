@@ -9,9 +9,10 @@ import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.AddressTerminatedTopic
 import akka.remote.artery.ArteryMessage
-
 import scala.collection.mutable
 import scala.concurrent.duration._
+
+import akka.remote.artery.HybridTransport
 
 /**
  * INTERNAL API
@@ -169,8 +170,17 @@ private[akka] class RemoteWatcher(
       }
     }
 
-  def publishAddressTerminated(address: Address): Unit =
+  def publishAddressTerminated(address: Address): Unit = {
     AddressTerminatedTopic(context.system).publish(AddressTerminated(address))
+
+    RARP(context.system).provider.transport match {
+      case h: HybridTransport ⇒
+        val otherAddress = h.correspondingOtherAddress(address)
+        if (otherAddress != address)
+          AddressTerminatedTopic(context.system).publish(AddressTerminated(otherAddress))
+      case _ ⇒ // ok
+    }
+  }
 
   def quarantine(address: Address, uid: Option[Long], reason: String): Unit =
     remoteProvider.quarantine(address, uid, reason)

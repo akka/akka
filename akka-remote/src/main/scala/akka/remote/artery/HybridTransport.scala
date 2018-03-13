@@ -40,7 +40,7 @@ import akka.util.OptionVal
 
   private val arteryPortOffset = system.settings.config.getInt("akka.remote.artery.hybrid-port-offset")
 
-  private def correspondingOtherAddress(address: Address): Address = {
+  def correspondingOtherAddress(address: Address): Address = {
     if (arteryPortOffset == 0)
       address
     else if (isArteryProtocol(address))
@@ -80,14 +80,19 @@ import akka.util.OptionVal
   }
 
   override def quarantine(address: Address, uid: Option[Long], reason: String): Unit = {
+    val otherAddress = correspondingOtherAddress(address)
     if (isArteryProtocol(address)) {
       arteryTransport.quarantine(address, uid, reason)
-      if (arteryPortOffset != 0)
-        classicTransport.quarantine(correspondingOtherAddress(address), uid, reason)
+      if (otherAddress != address) {
+        log.debug(s"quarantine other [{}]", otherAddress)
+        classicTransport.quarantine(otherAddress, uid, reason)
+      }
     } else {
       classicTransport.quarantine(address, uid, reason)
-      if (arteryPortOffset != 0)
-        arteryTransport.quarantine(correspondingOtherAddress(address), uid, reason)
+      if (otherAddress != address && arteryTransport.remoteAddresses(otherAddress)) {
+        log.debug(s"quarantine other [{}]", otherAddress)
+        arteryTransport.quarantine(otherAddress, uid, reason)
+      }
     }
   }
 }

@@ -4,6 +4,7 @@
 package akka.cluster
 
 import scala.concurrent.duration.FiniteDuration
+
 import akka.actor._
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
@@ -13,6 +14,7 @@ import akka.cluster.ClusterEvent.MemberWeaklyUp
 import akka.remote.FailureDetectorRegistry
 import akka.remote.RemoteWatcher
 import akka.remote.RARP
+import akka.remote.artery.HybridTransport
 
 /**
  * INTERNAL API
@@ -110,8 +112,16 @@ private[cluster] class ClusterRemoteWatcher(
   def delayedQuarantine(m: Member, previousStatus: MemberStatus): Unit =
     quarantine(m.address, Some(m.uniqueAddress.longUid), s"Cluster member removed, previous status [$previousStatus]")
 
-  override def watchNode(watchee: InternalActorRef) =
-    if (!clusterNodes(watchee.path.address)) super.watchNode(watchee)
+  override def watchNode(watchee: InternalActorRef) = {
+    RARP(context.system).provider.transport match {
+      case h: HybridTransport ⇒
+        val address = watchee.path.address
+        val otherAddress = h.correspondingOtherAddress(address)
+        if (!clusterNodes(address) && !clusterNodes(otherAddress)) super.watchNode(watchee)
+      case _ ⇒
+        if (!clusterNodes(watchee.path.address)) super.watchNode(watchee)
+    }
+  }
 
   /**
    * When a cluster node is added this class takes over the
