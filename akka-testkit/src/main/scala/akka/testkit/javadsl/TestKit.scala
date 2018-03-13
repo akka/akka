@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.javadsl
 
 import java.util.function.{ Function ⇒ JFunction, Supplier }

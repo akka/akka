@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.typed.scaladsl
 
 import akka.actor.typed.{ ActorRef, ActorSystem }

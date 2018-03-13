@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding.protobuf
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
