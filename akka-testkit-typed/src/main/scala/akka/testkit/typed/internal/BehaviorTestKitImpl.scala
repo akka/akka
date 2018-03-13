@@ -31,6 +31,9 @@ private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior
   private var currentUncanonical = _initialBehavior
   private var current = Behavior.validateAsInitial(Behavior.start(_initialBehavior, ctx))
 
+  // execute any future tasks scheduled in Actor's constructor
+  runAllTasks()
+
   override def retrieveEffect(): Effect = ctx.effectQueue.poll() match {
     case null ⇒ NoEffects
     case x    ⇒ x
@@ -77,14 +80,18 @@ private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior
       throw e
   }
 
+  private def runAllTasks(): Unit = {
+    ctx.executionContext match {
+      case controlled: ControlledExecutor ⇒ controlled.runAll()
+      case _                              ⇒
+    }
+  }
+
   override def run(msg: T): Unit = {
     try {
       currentUncanonical = Behavior.interpretMessage(current, ctx, msg)
       current = Behavior.canonicalize(currentUncanonical, current, ctx)
-      ctx.executionContext match {
-        case controlled: ControlledExecutor ⇒ controlled.runAll()
-        case _                              ⇒
-      }
+      runAllTasks()
     } catch handleException
   }
 
