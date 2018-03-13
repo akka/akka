@@ -6,6 +6,7 @@ package akka.actor.typed
 
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.actor.typed.scaladsl.{ AskPattern, Behaviors }
+import akka.actor.typed.scaladsl.{ ActorContext ⇒ SActorContext }
 import akka.actor.{ ActorInitializationException, DeadLetterSuppression, InvalidMessageException }
 import akka.testkit.AkkaSpec
 import akka.testkit.TestEvent.Mute
@@ -394,7 +395,7 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
     pattern:     String = null,
     occurrences: Int    = Int.MaxValue)(implicit system: ActorSystem[GuardianCommand]): EventFilter = {
     val filter = EventFilter(message, source, start, pattern, occurrences)
-    import scaladsl.adapter._
+    import akka.actor.typed.scaladsl.adapter._
     system.toUntyped.eventStream.publish(Mute(filter))
     filter
   }
@@ -418,12 +419,12 @@ abstract class ActorContextSpec extends TypedAkkaSpec {
   /**
    * The behavior against which to run all the tests.
    */
-  def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command]
+  def behavior(ctx: SActorContext[Event], ignorePostStop: Boolean): Behavior[Command]
 
   private def mySuite: String = suite + "Adapted"
 
   def setup(name: String, wrapper: Option[Behavior[Command] ⇒ Behavior[Command]] = None, ignorePostStop: Boolean = true)(
-    proc: (scaladsl.ActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[Status] =
+    proc: (SActorContext[Event], StepWise.Steps[Event, ActorRef[Command]]) ⇒ StepWise.Steps[Event, _]): Future[Status] =
     runTest(s"$mySuite-$name")(StepWise[Event] { (ctx, startWith) ⇒
       val b = behavior(ctx, ignorePostStop)
       val props = wrapper.map(_(b)).getOrElse(b)
@@ -836,7 +837,7 @@ import akka.actor.typed.ActorContextSpec._
 
 class NormalActorContextSpec extends ActorContextSpec {
   override def suite = "normal"
-  override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+  override def behavior(ctx: SActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
     subject(ctx.self, ignorePostStop)
 }
 
@@ -845,24 +846,24 @@ class WidenedActorContextSpec extends ActorContextSpec {
   import Behaviors._
 
   override def suite = "widened"
-  override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+  override def behavior(ctx: SActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
     subject(ctx.self, ignorePostStop).widen { case x ⇒ x }
 }
 
 class DeferredActorContextSpec extends ActorContextSpec {
   override def suite = "deferred"
-  override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+  override def behavior(ctx: SActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
     Behaviors.setup(_ ⇒ subject(ctx.self, ignorePostStop))
 }
 
 class NestedDeferredActorContextSpec extends ActorContextSpec {
   override def suite = "nexted-deferred"
-  override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+  override def behavior(ctx: SActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
     Behaviors.setup(_ ⇒ Behaviors.setup(_ ⇒ subject(ctx.self, ignorePostStop)))
 }
 
 class TapActorContextSpec extends ActorContextSpec {
   override def suite = "tap"
-  override def behavior(ctx: scaladsl.ActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
+  override def behavior(ctx: SActorContext[Event], ignorePostStop: Boolean): Behavior[Command] =
     Behaviors.tap((_, _) ⇒ (), (_, _) ⇒ (), subject(ctx.self, ignorePostStop))
 }
