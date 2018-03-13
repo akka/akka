@@ -36,17 +36,17 @@ import scala.util.control.NonFatal
 @InternalApi private[stream] object VirtualProcessor {
 
   // intentional syntax to make compile time constant
-  final val Debug = true
+  final val Debug = false
 
   case object Inert {
     val subscriber = new CancellingSubscriber[Any]
   }
-  case class Both(subscriber: Subscriber[Any])
+  final case class Both(subscriber: Subscriber[Any])
   object Both {
     def create(s: Subscriber[_]) = Both(s.asInstanceOf[Subscriber[Any]])
   }
 
-  case class Establishing(sub: Subscriber[Any])
+  final case class Establishing(sub: Subscriber[Any])
   object Establishing {
     def create(s: Subscriber[_]) = Establishing(s.asInstanceOf[Subscriber[Any]])
   }
@@ -188,7 +188,7 @@ import scala.util.control.NonFatal
       // onSubscribe completed
       wrapped.ungateDemandAndRequestBuffered()
       if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode.establishSubscription(wrapped) -> Both")
-      set(Both(establishing.sub))
+      set(Both(establishing.sub)) // only place we transition from establishing
     } catch {
       case NonFatal(ex) ⇒
         set(Inert)
@@ -224,6 +224,10 @@ import scala.util.control.NonFatal
             case Inert ⇒ // nothing to be done
             case _     ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
           }
+        case Establishing(s) ⇒
+          // keep trying until subscription established and can complete it
+          if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onError(${t.getMessage}), loop")
+
         case other ⇒
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($other).onError(${t.getMessage}). spec violation or cancellation race")
         // spec violation or cancellation race, but nothing we can do
@@ -249,8 +253,9 @@ import scala.util.control.NonFatal
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onComplete -> Inert")
         set(Inert)
         EmptyPublisher.subscribe(s)
-      case _: Establishing ⇒
+      case Establishing(s) ⇒
         // keep trying until subscription established and can complete it
+        if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onComplete, loop")
         onComplete()
       case other ⇒
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($other).onComplete spec violation")
@@ -284,6 +289,17 @@ import scala.util.control.NonFatal
                 set(Inert)
                 throw new IllegalStateException("Subscriber threw exception, this is in violation of rule 2:13", e)
             }
+          case Establishing(s) ⇒
+            try {
+              if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(Establishing($s)).onNext($t).rec()")
+              s.onNext(t)
+            } catch {
+              case NonFatal(e) ⇒
+                if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(Establishing($s)).onNext($t) threw, spec violation -> Inert")
+                set(Inert)
+                throw new IllegalStateException("Subscriber threw exception, this is in violation of rule 2:13", e)
+            }
+
           case s: Subscriber[_] ⇒ // spec violation
             if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onNext($t).rec(): spec violation -> Inert")
             val ex = new IllegalStateException(noDemand)
@@ -334,9 +350,10 @@ import scala.util.control.NonFatal
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#${VirtualProcessor.this.hashCode}.WrappedSubscription($real).request($n)")
         tryCancel(real)
         VirtualProcessor.this.getAndSet(Inert) match {
-          case Both(s) ⇒ rejectDueToNonPositiveDemand(s)
-          case Inert   ⇒ // another failure has won the race
-          case _       ⇒ // this cannot possibly happen, but signaling errors is impossible at this point
+          case Both(s)         ⇒ rejectDueToNonPositiveDemand(s)
+          case Establishing(s) ⇒ rejectDueToNonPositiveDemand(s)
+          case Inert           ⇒ // another failure has won the race
+          case _               ⇒ // this cannot possibly happen, but signaling errors is impossible at this point
         }
       } else {
         // NOTE: At this point, batched requests might not have been dispatched, i.e. this can reorder requests.
