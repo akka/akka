@@ -40,7 +40,7 @@ object SupervisionSpec {
   class Exc3(msg: String = "exc-3") extends RuntimeException(msg) with NoStackTrace
 
   def targetBehavior(monitor: ActorRef[Event], state: State = State(0, Map.empty)): Behavior[Command] =
-    immutable[Command] { (ctx, cmd) ⇒
+    receive[Command] { (ctx, cmd) ⇒
       cmd match {
         case Ping ⇒
           monitor ! Pong
@@ -623,7 +623,7 @@ class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
     "fail when exception from MutableBehavior constructor" in new FailingConstructorTestSetup(failCount = 1) {
       val probe = TestProbe[Event]("evt")
-      val behv = supervise(mutable[Command](_ ⇒ new FailingConstructor(probe.ref)))
+      val behv = supervise(setup[Command](_ ⇒ new FailingConstructor(probe.ref)))
         .onFailure[Exception](SupervisorStrategy.restart)
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {

@@ -48,7 +48,7 @@ class ActorSourceSinkSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
     "obey protocol" in {
       val p = TestProbe[AckProto]()
 
-      val autoPilot = Behaviors.immutable[AckProto] {
+      val autoPilot = Behaviors.receive[AckProto] {
         (ctx, msg) ⇒
           msg match {
             case m @ Init(sender) ⇒

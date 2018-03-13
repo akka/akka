@@ -82,7 +82,7 @@ public class MutableIntroTest {
     //#chatroom-behavior
 
     public static Behavior<RoomCommand> behavior() {
-      return Behaviors.mutable(ChatRoomBehavior::new);
+      return Behaviors.setup(ChatRoomBehavior::new);
     }
 
     public static class ChatRoomBehavior extends Behaviors.MutableBehavior<RoomCommand> {
@@ -120,7 +120,7 @@ public class MutableIntroTest {
         ActorRef<RoomCommand> room,
         String screenName,
         ActorRef<SessionEvent> client) {
-      return Behaviors.immutable(ChatRoom.SessionCommand.class)
+      return Behaviors.receive(ChatRoom.SessionCommand.class)
           .onMessage(PostMessage.class, (ctx, post) -> {
             // from client, publish to others via the room
             room.tell(new PublishSessionMessage(screenName, post.message));

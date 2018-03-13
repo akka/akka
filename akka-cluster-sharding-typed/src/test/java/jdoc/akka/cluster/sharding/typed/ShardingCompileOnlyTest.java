@@ -36,7 +36,7 @@ public class ShardingCompileOnlyTest {
   }
 
   public static Behavior<CounterCommand> counter(String entityId, Integer value) {
-    return Behaviors.immutable(CounterCommand.class)
+    return Behaviors.receive(CounterCommand.class)
       .onMessage(Increment.class, (ctx, msg) -> {
         return counter(entityId,value + 1);
       })

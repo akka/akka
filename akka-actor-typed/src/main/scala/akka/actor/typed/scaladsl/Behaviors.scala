@@ -22,7 +22,7 @@ object Behaviors {
 
   /**
    * `setup` is a factory for a behavior. Creation of the behavior instance is deferred until
-   * the actor is started, as opposed to [[Behaviors.immutable]] that creates the behavior instance
+   * the actor is started, as opposed to [[Behaviors.receive]] that creates the behavior instance
    * immediately before the actor is running. The `factory` function pass the `ActorContext`
    * as parameter and that can for example be used for spawning child actors.
    *
@@ -39,11 +39,11 @@ object Behaviors {
    * abstract method [[MutableBehavior#onMessage]] and optionally override
    * [[MutableBehavior#onSignal]].
    *
-   * Instances of this behavior should be created via [[Behaviors#Mutable]] and if
+   * Instances of this behavior should be created via [[Behaviors#setup]] and if
    * the [[ActorContext]] is needed it can be passed as a constructor parameter
    * from the factory function.
    *
-   * @see [[Behaviors#Mutable]]
+   * @see [[Behaviors#setup]]
    */
   abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
     @throws(classOf[Exception])
@@ -66,7 +66,7 @@ object Behaviors {
 
     @throws(classOf[Exception])
     override final def receiveSignal(ctx: akka.actor.typed.ActorContext[T], msg: Signal): Behavior[T] =
-      onSignal.applyOrElse(msg, { case msg ⇒ Behavior.unhandled }: PartialFunction[Signal, Behavior[T]])
+      onSignal.applyOrElse(msg, { case _ ⇒ Behavior.unhandled }: PartialFunction[Signal, Behavior[T]])
 
     /**
      * Override this method to process an incoming [[akka.actor.typed.Signal]] and return the next behavior.
@@ -144,8 +144,26 @@ object Behaviors {
    * need and in fact should not use (close over) mutable variables, but instead
    * return a potentially different behavior encapsulating any state changes.
    */
-  def immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Immutable[T] =
+  def receive[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Immutable[T] =
     new Immutable(onMessage)
+
+  /**
+   * Simplified version of [[receive]] with only a single argument - the message
+   * to be handled. Useful for when the context is already accessible by other means,
+   * like being wrapped in an [[setup]] or similar.
+   *
+   * Construct an actor behavior that can react to both incoming messages and
+   * lifecycle signals. After spawning this actor from another actor (or as the
+   * guardian of an [[akka.actor.typed.ActorSystem]]) it will be executed within an
+   * [[ActorContext]] that allows access to the system, spawning and watching
+   * other actors, etc.
+   *
+   * This constructor is called immutable because the behavior instance does not
+   * need and in fact should not use (close over) mutable variables, but instead
+   * return a potentially different behavior encapsulating any state changes.
+   */
+  def receiveMessage[T](onMessage: T ⇒ Behavior[T]): Immutable[T] =
+    new Immutable({ (_, m) ⇒ onMessage(m) })
 
   final class Immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T])
     extends BehaviorImpl.ImmutableBehavior[T](onMessage) {
@@ -157,14 +175,24 @@ object Behaviors {
   /**
    * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
    */
-  def immutablePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Immutable[T] =
-    Behaviors.immutable[T] { (ctx, t) ⇒ onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) ⇒ Behaviors.unhandled[T]) }
+  def receivePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Immutable[T] =
+    Behaviors.receive[T] { (ctx, t) ⇒
+      onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) ⇒ Behaviors.unhandled[T])
+    }
+
+  /**
+   * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
+   */
+  def receiveMessagePartial[T](onMessage: PartialFunction[T, Behavior[T]]): Immutable[T] =
+    Behaviors.receive[T] { (_, t) ⇒
+      onMessage.applyOrElse(t, (_: T) ⇒ Behaviors.unhandled[T])
+    }
 
   /**
    * Construct an actor behavior that can react to lifecycle signals only.
    */
   def onSignal[T](handler: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
-    immutable[T]((_, _) ⇒ same).onSignal(handler)
+    receive[T]((_, _) ⇒ same).onSignal(handler)
 
   /**
    * This type of Behavior wraps another Behavior while allowing you to perform

@@ -148,9 +148,9 @@ private[akka] object EventsourcedRunning {
     }
 
     withMdc(setup, MDC.RunningCmds) {
-      Behaviors.immutable[EventsourcedBehavior.InternalProtocol] {
-        case (_, IncomingCommand(c: C @unchecked)) ⇒ onCommand(state, c)
-        case _                                     ⇒ Behaviors.unhandled
+      Behaviors.receiveMessage[EventsourcedBehavior.InternalProtocol] {
+        case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
+        case _                                ⇒ Behaviors.unhandled
       }
     }
 

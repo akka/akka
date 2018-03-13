@@ -44,7 +44,7 @@ object MutableIntroSpec {
     //#chatroom-behavior
 
     def behavior(): Behavior[RoomCommand] =
-      Behaviors.mutable[RoomCommand](ctx ⇒ new ChatRoomBehavior(ctx))
+      Behaviors.setup[RoomCommand](ctx ⇒ new ChatRoomBehavior(ctx))
 
     class ChatRoomBehavior(ctx: ActorContext[RoomCommand]) extends Behaviors.MutableBehavior[RoomCommand] {
       private var sessions: List[ActorRef[SessionCommand]] = List.empty
@@ -71,17 +71,15 @@ object MutableIntroSpec {
       room:       ActorRef[PublishSessionMessage],
       screenName: String,
       client:     ActorRef[SessionEvent]): Behavior[SessionCommand] =
-      Behaviors.immutable { (ctx, msg) ⇒
-        msg match {
-          case PostMessage(message) ⇒
-            // from client, publish to others via the room
-            room ! PublishSessionMessage(screenName, message)
-            Behaviors.same
-          case NotifyClient(message) ⇒
-            // published from the room
-            client ! message
-            Behaviors.same
-        }
+      Behaviors.receiveMessage {
+        case PostMessage(message) ⇒
+          // from client, publish to others via the room
+          room ! PublishSessionMessage(screenName, message)
+          Behaviors.same
+        case NotifyClient(message) ⇒
+          // published from the room
+          client ! message
+          Behaviors.same
       }
     //#chatroom-behavior
   }
@@ -99,7 +97,7 @@ class MutableIntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       import ChatRoom._
 
       val gabbler =
-        Behaviors.immutable[SessionEvent] { (_, msg) ⇒
+        Behaviors.receive[SessionEvent] { (_, msg) ⇒
           msg match {
             case SessionDenied(reason) ⇒
               println(s"cannot start chat room session: $reason")
@@ -121,8 +119,8 @@ class MutableIntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           val gabblerRef = ctx.spawn(gabbler, "gabbler")
           ctx.watch(gabblerRef)
 
-          Behaviors.immutablePartial[String] {
-            case (_, "go") ⇒
+          Behaviors.receiveMessagePartial[String] {
+            case "go" ⇒
               chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
               Behaviors.same
           } onSignal {

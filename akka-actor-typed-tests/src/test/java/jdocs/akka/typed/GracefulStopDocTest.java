@@ -42,7 +42,7 @@ public class GracefulStopDocTest {
       }
     }
 
-    public static final Behavior<JobControlLanguage> mcpa = Behaviors.immutable(JobControlLanguage.class)
+    public static final Behavior<JobControlLanguage> mcpa = Behaviors.receive(JobControlLanguage.class)
         .onMessage(SpawnJob.class, (ctx, msg) -> {
           ctx.getSystem().log().info("Spawning job {}!", msg.name);
           ctx.spawn(Job.job(msg.name), msg.name);

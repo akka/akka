@@ -116,7 +116,7 @@ object PersistentBehaviorSpec {
           // purpose is to test signals
           val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type] { timers ⇒
             timers.startSingleTimer(Tick, Tick, 10.millis)
-            Behaviors.immutable((_, msg) ⇒ msg match {
+            Behaviors.receive((_, msg) ⇒ msg match {
               case Tick ⇒ Behaviors.stopped
             })
           })
@@ -412,7 +412,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val probe = TestProbe[String]()
       val w = Behaviors.setup[Any] { (ctx) ⇒
         ctx.watch(toWatch)
-        Behaviors.immutable[Any] { (_, _) ⇒ Behaviors.same }
+        Behaviors.receive[Any] { (_, _) ⇒ Behaviors.same }
           .onSignal {
             case (_, s: Terminated) ⇒
               probe.ref ! "Terminated"

@@ -27,7 +27,7 @@ object GracefulStopDocSpec {
     // Predefined cleanup operation
     def cleanup(log: Logger): Unit = log.info("Cleaning up!")
 
-    val mcpa = Behaviors.immutable[JobControlLanguage] { (ctx, msg) ⇒
+    val mcpa = Behaviors.receive[JobControlLanguage] { (ctx, msg) ⇒
       msg match {
         case SpawnJob(jobName) ⇒
           ctx.log.info("Spawning job {}!", jobName)

@@ -58,7 +58,7 @@ class RemoteDeployNotAllowedSpec extends ActorTestKit with TypedAkkaSpecWithShut
       case class SpawnChild(name: String) extends GuardianProtocol
       case object SpawnAnonymous extends GuardianProtocol
 
-      val guardianBehavior = Behaviors.immutable[GuardianProtocol] { (ctx, msg) ⇒
+      val guardianBehavior = Behaviors.receive[GuardianProtocol] { (ctx, msg) ⇒
 
         msg match {
           case SpawnChild(name) ⇒

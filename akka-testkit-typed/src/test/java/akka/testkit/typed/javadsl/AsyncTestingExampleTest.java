@@ -35,7 +35,7 @@ public class AsyncTestingExampleTest {
     }
   }
 
-  Behavior<Ping> echoActor = Behaviors.immutable((ctx, ping) -> {
+  Behavior<Ping> echoActor = Behaviors.receive((ctx, ping) -> {
     ping.replyTo.tell(new Pong(ping.msg));
     return Behaviors.same();
   });

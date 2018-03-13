@@ -27,7 +27,7 @@ private[akka] object TestProbeImpl {
   private val testActorId = new AtomicInteger(0)
 
   private case class WatchActor[U](actor: ActorRef[U])
-  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] = Behaviors.immutable[M] { (ctx, msg) ⇒
+  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] = Behaviors.receive[M] { (ctx, msg) ⇒
     msg match {
       case WatchActor(ref) ⇒ ctx.watch(ref)
       case other           ⇒ queue.offerLast(other)

@@ -8,11 +8,8 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.Pair;
 import akka.japi.function.Function3;
-import akka.persistence.typed.scaladsl.PersistentBehaviorSpec;
 import akka.persistence.typed.scaladsl.PersistentBehaviorSpec$;
-import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.typed.javadsl.TestKitJunitResource;
-import akka.testkit.typed.scaladsl.ActorTestKit;
 import akka.testkit.typed.javadsl.TestProbe;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -204,7 +201,7 @@ public class PersistentActorTest {
           .matchCommand(IncrementLater.class, (ctx, state, command) -> {
             ActorRef<Object> delay = ctx.spawnAnonymous(Behaviors.withTimers(timers -> {
               timers.startSingleTimer(Tick.instance, Tick.instance, FiniteDuration.create(10, TimeUnit.MILLISECONDS));
-              return Behaviors.immutable((context, o) -> Behaviors.stopped());
+              return Behaviors.receive((context, o) -> Behaviors.stopped());
             }));
             ctx.watchWith(delay, new DelayFinished());
             return Effect().none();

@@ -58,7 +58,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
     }
 
     public static <T> Behavior<T> router(ServiceKey<T> serviceKey, Class<T> messageClass) {
-      return Behaviors.mutable(ctx -> new RouterBehavior<T>(ctx, messageClass, serviceKey)).narrow();
+      return Behaviors.setup(ctx -> new RouterBehavior<T>(ctx, messageClass, serviceKey)).narrow();
     }
   }
 
@@ -133,7 +133,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
     }
 
     public static <T> Behavior<T> clusterRouter(ServiceKey<T> serviceKey, Class<T> messageClass) {
-      return Behaviors.mutable((ctx) -> new ClusterRouterBehavior<T>(ctx, messageClass, serviceKey)).narrow();
+      return Behaviors.setup((ctx) -> new ClusterRouterBehavior<T>(ctx, messageClass, serviceKey)).narrow();
     }
   }
 
@@ -155,7 +155,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
       return Behaviors.setup((ctx) -> {
         ctx.getSystem().receptionist()
           .tell(Receptionist.register(PingServiceKey, ctx.getSelf()));
-        return Behaviors.immutable(Ping.class)
+        return Behaviors.receive(Ping.class)
           .onMessage(Ping.class, (c, msg) -> {
             msg.replyTo.tell(new Pong());
             return Behaviors.same();
@@ -168,7 +168,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
     static Behavior<Pong> pinger(ActorRef<Ping> pingService) {
       return Behaviors.setup((ctx) -> {
         pingService.tell(new Ping(ctx.getSelf()));
-        return Behaviors.immutable(Pong.class)
+        return Behaviors.receive(Pong.class)
           .onMessage(Pong.class, (c, msg) -> {
             System.out.println("I was ponged! " + msg);
             return Behaviors.same();
@@ -184,7 +184,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
           .tell(Receptionist.subscribe(PingServiceKey, ctx.getSelf().narrow()));
         ActorRef<Ping> ps = ctx.spawnAnonymous(pingService());
         ctx.watch(ps);
-        return Behaviors.immutable(Object.class)
+        return Behaviors.receive(Object.class)
           .onMessage(Receptionist.Listing.class, listing -> listing.isForKey(PingServiceKey), (c, msg) -> {
           msg.getServiceInstances(PingServiceKey).forEach(ar -> ctx.spawnAnonymous(pinger(ar)));
           return Behaviors.same();

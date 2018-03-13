@@ -31,7 +31,7 @@ object Behaviors {
 
   /**
    * `setup` is a factory for a behavior. Creation of the behavior instance is deferred until
-   * the actor is started, as opposed to [[Behaviors#immutable]] that creates the behavior instance
+   * the actor is started, as opposed to [[Behaviors#receive]] that creates the behavior instance
    * immediately before the actor is running. The `factory` function pass the `ActorContext`
    * as parameter and that can for example be used for spawning child actors.
    *
@@ -48,11 +48,11 @@ object Behaviors {
    * abstract method [[MutableBehavior#onMessage]] and optionally override
    * [[MutableBehavior#onSignal]].
    *
-   * Instances of this behavior should be created via [[Behaviors#mutable]] and if
+   * Instances of this behavior should be created via [[Behaviors#setup]] and if
    * the [[ActorContext]] is needed it can be passed as a constructor parameter
    * from the factory function.
    *
-   * @see [[Behaviors#mutable]]
+   * @see [[Behaviors#setup]]
    */
   abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
     private var _receive: OptionVal[Receive[T]] = OptionVal.None
@@ -142,7 +142,7 @@ object Behaviors {
     new BehaviorImpl.ImmutableBehavior((ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg))
 
   /**
-   * Simplified version of [[receive]] with only a single argument - the messsage
+   * Simplified version of [[receive]] with only a single argument - the message
    * to be handled. Useful for when the context is already accessible by other means,
    * like being wrapped in an [[setup]] or similar.
    *
@@ -194,7 +194,7 @@ object Behaviors {
    * @param type the supertype of all messages accepted by this behavior
    * @return the behavior builder
    */
-  def immutable[T](`type`: Class[T]): BehaviorBuilder[T] = BehaviorBuilder.create[T]
+  def receive[T](`type`: Class[T]): BehaviorBuilder[T] = BehaviorBuilder.create[T]
 
   /**
    * Construct an actor behavior that can react to lifecycle signals only.

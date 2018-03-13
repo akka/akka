@@ -50,12 +50,11 @@ supplies so that the `HelloWorld` Actor can send back the confirmation
 message.
 
 The behavior of the Actor is defined as the `greeter` value with the help
-of the `immutable` behavior constructor. This constructor is called
-immutable because the behavior instance doesn't have or close over any mutable
-state. Processing the next message may result in a new behavior that can
-potentially be different from this one. State is updated by returning a new
-behavior that holds the new immutable state. In this case we don't need to
-update any state, so we return `Same`.
+of the `receive` behavior factory. Processing the next message then results
+in a new behavior that can potentially be different from this one. State is 
+updated by returning a new behavior that holds the new immutable state. In this 
+case we don't need to update any state, so we return `Same`, which means 
+the next behavior is "the same as the current one".
 
 The type of the messages handled by this behavior is declared to be of class
 `Greet`, meaning that `msg` argument is
@@ -248,14 +247,14 @@ Actor will perform its job on its own accord, we do not need to send messages
 from the outside, so we declare it to be of type @scala[`NotUsed`]@java[`Void`]. Actors receive not
 only external messages, they also are notified of certain system events,
 so-called Signals. In order to get access to those we choose to implement this
-particular one using the `immutable` behavior decorator. The
+particular one using the `receive` behavior decorator. The
 provided `onSignal` function will be invoked for signals (subclasses of `Signal`)
 or the `onMessage` function for user messages.
 
-This particular `main` Actor is created using `Behaviors.onStart`, which is like a factory for a behavior.
-Creation of the behavior instance is deferred until the actor is started, as opposed to `Behaviors.immutable`
+This particular `main` Actor is created using `Behaviors.setup`, which is like a factory for a behavior.
+Creation of the behavior instance is deferred until the actor is started, as opposed to `Behaviors.receive`
 that creates the behavior instance immediately before the actor is running. The factory function in
-`onStart` is passed the `ActorContext` as parameter and that can for example be used for spawning child actors.
+`setup` is passed the `ActorContext` as parameter and that can for example be used for spawning child actors.
 This `main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
 gabbler is finished we will receive the `Terminated` event due to having
 called `ctx.watch` for it. This allows us to shut down the Actor system: when

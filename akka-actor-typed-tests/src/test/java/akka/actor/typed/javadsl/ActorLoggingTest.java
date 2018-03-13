@@ -51,7 +51,7 @@ public class ActorLoggingTest extends JUnitSuite {
         mdc.put("txId", msg.getTransactionId());
         return mdc;
       },
-      Behaviors.immutable(Protocol.class)
+      Behaviors.receive(Protocol.class)
         .onMessage(Message.class, (ctx, msg) -> {
           ctx.getLog().info(msg.toString());
           return Behaviors.same();

@@ -37,7 +37,7 @@ object TypedWatchingUntypedSpec {
         // illustrating how to pass sender, toUntyped is an implicit extension method
         untyped.tell(Typed.Ping(context.self), context.self.toUntyped)
 
-        Behaviors.immutablePartial[Command] {
+        Behaviors.receivePartial[Command] {
           case (ctx, Pong) ⇒
             // it's not possible to get the sender, that must be sent in message
             // context.stop is an implicit extension method

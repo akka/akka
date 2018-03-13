@@ -111,7 +111,7 @@ public class ReplicatorTest extends JUnitSuite {
     }
 
     public static Behavior<ClientCommand> create(ActorRef<Command> replicator, Cluster node) {
-      return Behaviors.mutable(ctx -> new Client(replicator, node, ctx));
+      return Behaviors.setup(ctx -> new Client(replicator, node, ctx));
     }
 
     @Override

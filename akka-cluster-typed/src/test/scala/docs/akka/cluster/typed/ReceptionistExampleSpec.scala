@@ -27,7 +27,7 @@ object RandomRouter {
       ctx.system.receptionist ! Receptionist.Subscribe(serviceKey, ctx.self)
 
       def routingBehavior(routees: Vector[ActorRef[T]]): Behavior[Any] =
-        Behaviors.immutable { (_, msg) ⇒
+        Behaviors.receive { (_, msg) ⇒
           msg match {
             case serviceKey.Listing(services) ⇒
               routingBehavior(services.toVector)
@@ -60,7 +60,7 @@ object RandomRouter {
       cluster.subscriptions ! Subscribe(reachabilityAdapter, classOf[ReachabilityEvent])
 
       def routingBehavior(routees: Vector[ActorRef[T]], unreachable: Set[Address]): Behavior[Any] =
-        Behaviors.immutable { (_, msg) ⇒
+        Behaviors.receive { (_, msg) ⇒
           msg match {
             case serviceKey.Listing(services: Set[ActorRef[T]]) ⇒
               routingBehavior(services.toVector, unreachable)
@@ -100,7 +100,7 @@ object PingPongExample {
   val pingService: Behavior[Ping] =
     Behaviors.setup { ctx ⇒
       ctx.system.receptionist ! Receptionist.Register(PingServiceKey, ctx.self)
-      Behaviors.immutable[Ping] { (_, msg) ⇒
+      Behaviors.receive[Ping] { (_, msg) ⇒
         msg match {
           case Ping(replyTo) ⇒
             replyTo ! Pong
@@ -113,7 +113,7 @@ object PingPongExample {
   //#pinger
   def pinger(pingService: ActorRef[Ping]) = Behaviors.setup[Pong.type] { ctx ⇒
     pingService ! Ping(ctx.self)
-    Behaviors.immutable { (_, msg) ⇒
+    Behaviors.receive { (_, msg) ⇒
       println("I was ponged!!" + msg)
       Behaviors.same
     }
@@ -125,8 +125,8 @@ object PingPongExample {
     ctx.system.receptionist ! Receptionist.Subscribe(PingServiceKey, ctx.self)
     val ps = ctx.spawnAnonymous(pingService)
     ctx.watch(ps)
-    Behaviors.immutablePartial[Listing] {
-      case (_, PingServiceKey.Listing(listings)) if listings.nonEmpty ⇒
+    Behaviors.receiveMessagePartial[Listing] {
+      case PingServiceKey.Listing(listings) if listings.nonEmpty ⇒
         listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
         Behaviors.same
     } onSignal {
@@ -141,8 +141,8 @@ object PingPongExample {
   val guardianJustPingService: Behavior[Nothing] = Behaviors.setup[Listing] { ctx ⇒
     val ps = ctx.spawnAnonymous(pingService)
     ctx.watch(ps)
-    Behaviors.immutablePartial[Listing] {
-      case (c, PingServiceKey.Listing(listings)) if listings.nonEmpty ⇒
+    Behaviors.receiveMessagePartial[Listing] {
+      case PingServiceKey.Listing(listings) if listings.nonEmpty ⇒
         listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
         Behaviors.same
     } onSignal {
@@ -156,8 +156,8 @@ object PingPongExample {
   //#pinger-guardian-just-pinger
   val guardianJustPinger: Behavior[Nothing] = Behaviors.setup[Listing] { ctx ⇒
     ctx.system.receptionist ! Receptionist.Subscribe(PingServiceKey, ctx.self)
-    Behaviors.immutablePartial[Listing] {
-      case (c, PingServiceKey.Listing(listings)) if listings.nonEmpty ⇒
+    Behaviors.receiveMessagePartial[Listing] {
+      case PingServiceKey.Listing(listings) if listings.nonEmpty ⇒
         listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
         Behaviors.same
     }

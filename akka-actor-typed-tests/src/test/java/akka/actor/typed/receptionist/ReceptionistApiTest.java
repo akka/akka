@@ -84,7 +84,7 @@ public class ReceptionistApiTest {
       // to cover as much of the API as possible
       ctx.getSystem().receptionist().tell(Receptionist.register(key, ctx.getSelf().narrow(), ctx.getSelf().narrow()));
 
-      return Behaviors.immutable(Object.class)
+      return Behaviors.receive(Object.class)
         // matching is done best using the predicate version
         .onMessage(Receptionist.Listing.class, listing -> listing.isForKey(key), (msgCtx, listing) -> {
           Set<ActorRef<String>> services = listing.getServiceInstances(key);
