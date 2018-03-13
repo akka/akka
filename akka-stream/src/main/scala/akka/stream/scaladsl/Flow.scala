@@ -532,7 +532,7 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
-  @deprecated("Use lazyInitAsync instead.", "2.5.12")
+  @deprecated("Use lazyInitAsync instead. (lazyInitAsync returns a flow with a more useful materialized value.)", "2.5.12")
   def lazyInit[I, O, M](flowFactory: I ⇒ Future[Flow[I, O, M]], fallback: () ⇒ M): Flow[I, O, M] =
     Flow.fromGraph(new LazyFlow[I, O, M](flowFactory)).mapMaterializedValue(_ ⇒ fallback())
 
