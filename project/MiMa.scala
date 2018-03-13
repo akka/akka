@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka
 
 import sbt._
@@ -10,7 +11,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestMinorOf25 = 9
+  private val latestMinorOf25 = 11
   private val latestMinorOf24 = 20
 
   override def requires = MimaPlugin

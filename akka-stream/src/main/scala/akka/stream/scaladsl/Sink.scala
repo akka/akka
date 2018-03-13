@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.{ Done, NotUsed }
@@ -57,6 +58,17 @@ final class Sink[-In, +Mat](
     new Sink(
       traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]),
       shape)
+
+  /**
+   * Materializes this Sink, immediately returning (1) its materialized value, and (2) a new Sink
+   * that can be consume elements 'into' the pre-materialized one.
+   *
+   * Useful for when you need a materialized value of a Sink when handing it out to someone to materialize it for you.
+   */
+  def preMaterialize()(implicit materializer: Materializer): (Mat, Sink[In, NotUsed]) = {
+    val (sub, mat) = Source.asSubscriber.toMat(this)(Keep.both).run()
+    (mat, Sink.fromSubscriber(sub))
+  }
 
   /**
    * Replace the attributes of this [[Sink]] with the given ones. If this Sink is a composite

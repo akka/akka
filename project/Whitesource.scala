@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 import sbt._
 import sbt.Keys._
 import sbtwhitesource.WhiteSourcePlugin.autoImport._

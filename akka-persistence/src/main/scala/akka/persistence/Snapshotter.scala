@@ -29,7 +29,7 @@ trait Snapshotter extends Actor {
    * Instructs the snapshot store to load the specified snapshot and send it via an [[SnapshotOffer]]
    * to the running [[PersistentActor]].
    */
-  def loadSnapshot(persistenceId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long) =
+  def loadSnapshot(persistenceId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long): Unit =
     snapshotStore ! LoadSnapshot(persistenceId, criteria, toSequenceNr)
 
   /**

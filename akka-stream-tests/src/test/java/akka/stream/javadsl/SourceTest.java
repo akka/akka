@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl;
 
 import akka.Done;
@@ -430,7 +431,13 @@ public class SourceTest extends StreamTest {
     probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
     probe.expectMsgEquals("tick");
     probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
+  }
 
+  @Test
+  @SuppressWarnings("unused")
+  public void mustCompileMethodsWithJavaDuration() {
+    Source<NotUsed, Cancellable> tickSource = Source.tick(java.time.Duration.ofSeconds(1),
+            java.time.Duration.ofMillis(500), NotUsed.getInstance());
   }
 
   @Test

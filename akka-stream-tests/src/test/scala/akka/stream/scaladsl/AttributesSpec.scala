@@ -1,10 +1,10 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
-import java.util.Optional
-import java.util.concurrent.{ CompletableFuture, CompletionStage, TimeUnit }
+import java.util.concurrent.{ CompletionStage, TimeUnit }
 
 import akka.actor.ActorSystem
 import akka.{ Done, NotUsed }
@@ -535,16 +535,17 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
     }
 
     "use the default-io-dispatcher by default" in {
+      import ActorAttributes._
 
       val threadName =
         Source.fromGraph(new ThreadNameSnitchingStage(None)
-          // FIXME surprising that we don't have something shorter than this
-          .addAttributes(Attributes.none and ActorAttributes.IODispatcher)).runWith(Sink.head)
+          .addAttributes(Attributes(IODispatcher))).runWith(Sink.head)
 
       threadName.futureValue should startWith("AttributesSpec-akka.stream.default-blocking-io-dispatcher")
     }
 
     "allow for specifying a custom default io-dispatcher" in {
+      import ActorAttributes._
 
       val system = ActorSystem("AttributesSpec-io-dispatcher-override", config)
       try {
@@ -552,14 +553,25 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
         val mat = ActorMaterializer()(system)
         val threadName =
           Source.fromGraph(new ThreadNameSnitchingStage(None)
-            // FIXME surprising that we don't have something shorter than this
-            .addAttributes(Attributes.none and ActorAttributes.IODispatcher)).runWith(Sink.head)(mat)
+            .addAttributes(Attributes(IODispatcher))).runWith(Sink.head)(mat)
 
         threadName.futureValue should startWith("AttributesSpec-io-dispatcher-override-my-io-dispatcher-")
 
       } finally {
         TestKit.shutdownActorSystem(system)
       }
+    }
+
+    "resolve the dispatcher attribute" in {
+      import ActorAttributes._
+
+      Dispatcher.resolve(dispatcher("my-dispatcher"), materializer.settings) should be("my-dispatcher")
+    }
+
+    "resolve the blocking io dispatcher attribute" in {
+      import ActorAttributes._
+
+      Dispatcher.resolve(Attributes(IODispatcher), materializer.settings) should be("akka.stream.default-blocking-io-dispatcher")
     }
   }
 

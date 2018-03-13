@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.persistence
 
 import java.util.LinkedList
@@ -18,9 +19,12 @@ import akka.actor.Terminated
   def props(maxPermits: Int): Props =
     Props(new RecoveryPermitter(maxPermits))
 
-  case object RequestRecoveryPermit
-  case object RecoveryPermitGranted
-  case object ReturnRecoveryPermit
+  sealed trait Protocol
+  sealed trait Request extends Protocol
+  sealed trait Reply extends Protocol
+  case object RequestRecoveryPermit extends Request
+  case object RecoveryPermitGranted extends Reply
+  case object ReturnRecoveryPermit extends Request
 
 }
 
@@ -49,18 +53,18 @@ import akka.actor.Terminated
       }
 
     case ReturnRecoveryPermit ⇒
-      returnRecoveryPermit(sender())
+      onReturnRecoveryPermit(sender())
 
     case Terminated(ref) ⇒
       // pre-mature termination should be rare
       if (!pending.remove(ref))
-        returnRecoveryPermit(ref)
+        onReturnRecoveryPermit(ref)
   }
 
-  private def returnRecoveryPermit(ref: ActorRef): Unit = {
+  private def onReturnRecoveryPermit(ref: ActorRef): Unit = {
     usedPermits -= 1
     context.unwatch(ref)
-    if (usedPermits < 0) throw new IllegalStateException("permits must not be negative")
+    if (usedPermits < 0) throw new IllegalStateException(s"permits must not be negative (returned by: ${ref})")
     if (!pending.isEmpty) {
       val ref = pending.poll()
       recoveryPermitGranted(ref)

@@ -1,11 +1,13 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.stream.cookbook
 
 import akka.NotUsed
-import akka.stream.{ Graph, FlowShape, Inlet, Outlet, Attributes, OverflowStrategy }
 import akka.stream.scaladsl._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.stream.stage.{ GraphStage, GraphStageLogic }
 
 class RecipeReduceByKey extends RecipeSpec {
 

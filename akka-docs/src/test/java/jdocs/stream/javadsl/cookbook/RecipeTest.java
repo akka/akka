@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package jdocs.stream.javadsl.cookbook;
 
 import jdocs.AbstractJavaTest;
@@ -32,11 +36,5 @@ public abstract class RecipeTest extends AbstractJavaTest {
     public int hashCode() {
       return msg != null ? msg.hashCode() : 0;
     }
-  }
-
-  final class Trigger {
-  }
-
-  final class Job {
   }
 }

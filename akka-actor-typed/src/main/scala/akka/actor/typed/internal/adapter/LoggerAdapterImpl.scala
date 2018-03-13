@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.internal.adapter
 
 import akka.actor.typed.{ LogMarker, Logger }
 import akka.annotation.InternalApi
-import akka.event.Logging.{ Debug, Error, Info, Warning }
+import akka.event.Logging.{ Debug, DebugLevel, Error, ErrorLevel, Info, InfoLevel, LogLevel, Warning, WarningLevel }
 import akka.event.{ LoggingBus, LoggingFilter, LogMarker ⇒ UntypedLM }
 import akka.util.OptionVal
 
@@ -262,6 +263,46 @@ private[akka] class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_], logSo
     if (isDebugEnabled) notifyDebug(format(template, arg1, arg2, arg3, arg4), OptionVal.Some(marker))
   }
 
+  override def log(level: LogLevel, message: String): Unit = {
+    if (isLevelEnabled(level)) notify(level, message, OptionVal.None)
+  }
+
+  override def log(level: LogLevel, template: String, arg1: Any): Unit = {
+    if (isLevelEnabled(level)) notify(level, format(template, arg1), OptionVal.None)
+  }
+
+  override def log(level: LogLevel, template: String, arg1: Any, arg2: Any): Unit = {
+    if (isLevelEnabled(level)) notify(level, format(template, arg1, arg2), OptionVal.None)
+  }
+
+  override def log(level: LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isLevelEnabled(level)) notify(level, format(template, arg1, arg2, arg3), OptionVal.None)
+  }
+
+  override def log(level: LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isLevelEnabled(level)) notify(level, format(template, arg1, arg2, arg3, arg4), OptionVal.None)
+  }
+
+  override def log(level: LogLevel, marker: LogMarker, message: String): Unit = {
+    if (isLevelEnabled(level)) notify(level, message, OptionVal.Some(marker))
+  }
+
+  override def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any): Unit = {
+    if (isLevelEnabled(level)) notify(level, format(template, arg1), OptionVal.Some(marker))
+  }
+
+  override def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit = {
+    if (isLevelEnabled(level)) notify(level, format(template, arg1, arg2), OptionVal.Some(marker))
+  }
+
+  override def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isLevelEnabled(level)) notify(level, format(template, arg1, arg2, arg3), OptionVal.Some(marker))
+  }
+
+  override def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isLevelEnabled(level)) notify(level, format(template, arg1, arg2, arg3, arg4), OptionVal.Some(marker))
+  }
+
   protected def notifyError(message: String, cause: OptionVal[Throwable], marker: OptionVal[LogMarker]): Unit = {
     val error = cause match {
       case OptionVal.Some(cause) ⇒
@@ -307,6 +348,14 @@ private[akka] class LoggerAdapterImpl(bus: LoggingBus, logClass: Class[_], logSo
       case OptionVal.None    ⇒ Debug(logSource, logClass, message, mdc)
     }
     bus.publish(debug)
+  }
+
+  protected def notify(level: LogLevel, message: String, marker: OptionVal[LogMarker]): Unit = level match {
+    case ErrorLevel   ⇒ notifyDebug(message, marker)
+    case WarningLevel ⇒ notifyWarning(message, marker, OptionVal.None)
+    case InfoLevel    ⇒ notifyInfo(message, marker)
+    case DebugLevel   ⇒ notifyDebug(message, marker)
+    case _            ⇒ ()
   }
 
   /**

@@ -1,9 +1,11 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.event.Logging.{ ErrorLevel, WarningLevel, InfoLevel, DebugLevel, LogLevel }
 
 /**
  * A log marker is an additional metadata tag supported by some logging backends to identify "special" log events.
@@ -93,6 +95,19 @@ abstract class Logger private[akka] () {
    * will not actually end up in any logger output.
    */
   def isDebugEnabled: Boolean
+
+  /**
+   * Whether a log level is enabled on the actor system level, may not represent the setting all the way to the
+   * logger implementation, but when it does it allows avoiding unnecessary resource usage for log entries that
+   * will not actually end up in any logger output.
+   */
+  def isLevelEnabled(logLevel: LogLevel): Boolean = logLevel match {
+    case ErrorLevel   ⇒ isErrorEnabled
+    case WarningLevel ⇒ isWarningEnabled
+    case InfoLevel    ⇒ isInfoEnabled
+    case DebugLevel   ⇒ isDebugEnabled
+    case _            ⇒ false
+  }
 
   // message only error logging
 
@@ -556,4 +571,85 @@ abstract class Logger private[akka] () {
    */
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 
+  // message any level logging
+
+  /**
+   * Log message at the specified level.
+   *
+   * @see [[Logger]]
+   */
+  def log(level: LogLevel, message: String): Unit
+  /**
+   * Message template with 1 replacement argument.
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
+   *
+   * @see [[Logger]]
+   */
+  def log(level: LogLevel, template: String, arg1: Any): Unit
+  /**
+   * Message template with 2 replacement arguments.
+   *
+   * @see [[Logger]]
+   */
+  def log(level: LogLevel, template: String, arg1: Any, arg2: Any): Unit
+  /**
+   * Message template with 3 replacement arguments.
+   *
+   * @see [[Logger]]
+   */
+  def log(level: LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+  /**
+   * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
+   *
+   * @see [[Logger]]
+   */
+  def log(level: LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
+
+  // marker logging at any level
+
+  /**
+   * Log message at the specified level.
+   *
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * @see [[Logger]]
+   */
+  def log(level: LogLevel, marker: LogMarker, message: String): Unit
+  /**
+   * Message template with 1 replacement argument.
+   *
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
+   *
+   * @see [[Logger]]
+   */
+  def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any): Unit
+  /**
+   * Message template with 2 replacement arguments.
+   *
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * @see [[Logger]]
+   */
+  def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit
+  /**
+   * Message template with 3 replacement arguments.
+   *
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * @see [[Logger]]
+   */
+  def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit
+  /**
+   * Message template with 4 replacement arguments. For more parameters see the single replacement version of this method.
+   *
+   * The marker argument can be picked up by various logging frameworks such as slf4j to mark this log statement as "special".
+   *
+   * @see [[Logger]]
+   */
+  def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
 }

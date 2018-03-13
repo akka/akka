@@ -51,7 +51,7 @@ message InitJoin {
  */
 message InitJoinAck {
   required Address address = 1;
-  optional ConfigCheck configCheck = 2;
+  required ConfigCheck configCheck = 2;
 }
 
 message ConfigCheck {

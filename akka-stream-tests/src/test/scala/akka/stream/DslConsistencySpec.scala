@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream
 
 import java.lang.reflect.Method
@@ -40,6 +41,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
       Set("asScala", "asJava", "deprecatedAndThen", "deprecatedAndThenMat")
 
   val graphHelpers = Set("zipGraph", "zipWithGraph", "mergeGraph", "mergeSortedGraph", "interleaveGraph", "concatGraph", "prependGraph", "alsoToGraph", "wireTapGraph", "orElseGraph", "divertToGraph")
+
   val allowMissing: Map[Class[_], Set[String]] = Map(
     jFlowClass → graphHelpers,
     jSourceClass → (graphHelpers ++ Set("watch", "ask")),

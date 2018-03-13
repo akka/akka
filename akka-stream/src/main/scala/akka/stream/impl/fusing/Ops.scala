@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.fusing
 
 import java.util.concurrent.TimeUnit.NANOSECONDS
@@ -1643,6 +1644,7 @@ private[stream] object Collect {
             cancelTimer(timerName)
             onTimer(timerName)
           }
+          grabAndPull()
         }
       case DropHead ⇒
         () ⇒ {

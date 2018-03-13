@@ -1,15 +1,18 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 
 import akka.actor.InvalidMessageException
+import akka.actor.typed.internal.BehaviorImpl
 
 import scala.annotation.tailrec
-import akka.util.LineNumbers
+import akka.util.{ ConstantFun, LineNumbers, OptionVal }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
-import akka.util.OptionVal
+
+import scala.reflect.ClassTag
 
 /**
  * The behavior of an actor defines how it reacts to the messages that it
@@ -33,7 +36,7 @@ import akka.util.OptionVal
  */
 @InternalApi
 @DoNotInherit
-sealed abstract class Behavior[T] {
+sealed abstract class Behavior[T] { behavior ⇒
   /**
    * Narrow the type of this Behavior, which is always a safe operation. This
    * method is necessary to implement the contravariant nature of Behavior
@@ -84,6 +87,27 @@ abstract class ExtensibleBehavior[T] extends Behavior[T] {
 }
 
 object Behavior {
+
+  final implicit class BehaviorDecorators[T](val behavior: Behavior[T]) extends AnyVal {
+    /**
+     * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
+     * PartialFunction decides which message to pull in (those that it is defined
+     * at) and may transform the incoming message to place them into the wrapped
+     * Behavior’s type hierarchy. Signals are not transformed.
+     *
+     * Example:
+     * {{{
+     * immutable[String] { (ctx, msg) => println(msg); same }.widen[Number] {
+     *   case b: BigDecimal => s"BigDecimal(&dollar;b)"
+     *   case i: BigInteger => s"BigInteger(&dollar;i)"
+     *   // drop all other kinds of Number
+     * }
+     * }}}
+     */
+    def widen[U](matcher: PartialFunction[U, T]): Behavior[U] =
+      BehaviorImpl.widened(behavior, matcher)
+
+  }
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -150,7 +174,7 @@ object Behavior {
   }
 
   /**
-   * INTERNAL API.
+   * INTERNAL API
    */
   @InternalApi
   private[akka] object UnhandledBehavior extends Behavior[Nothing] {
@@ -158,14 +182,13 @@ object Behavior {
   }
 
   /**
-   * INTERNAL API.
+   * INTERNAL API
+   * Used to create untyped props from behaviours, or directly returning an untyped props that implements this behavior.
    */
   @InternalApi
-  private[akka] abstract class UntypedBehavior[T] extends Behavior[T] {
-    /**
-     * INTERNAL API
-     */
-    @InternalApi private[akka] def untypedProps: akka.actor.Props
+  private[akka] abstract class UntypedPropsBehavior[T] extends Behavior[T] {
+    /** INTERNAL API */
+    @InternalApi private[akka] def untypedProps(props: Props): akka.actor.Props
   }
 
   /**
@@ -176,28 +199,32 @@ object Behavior {
   }
 
   /**
-   * INTERNAL API.
+   * INTERNAL API
    * Not placed in internal.BehaviorImpl because Behavior is sealed.
    */
   @InternalApi
-  private[akka] final case class DeferredBehavior[T](factory: SAC[T] ⇒ Behavior[T]) extends Behavior[T] {
-
-    /** start the deferred behavior */
-    @throws(classOf[Exception])
-    def apply(ctx: ActorContext[T]): Behavior[T] = factory(ctx.asScala)
-
-    override def toString: String = s"Deferred(${LineNumbers(factory)})"
+  private[akka] abstract class DeferredBehavior[T] extends Behavior[T] {
+    def apply(ctx: ActorContext[T]): Behavior[T]
+  }
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] object DeferredBehavior {
+    def apply[T](factory: SAC[T] ⇒ Behavior[T]): Behavior[T] =
+      new DeferredBehavior[T] {
+        def apply(ctx: ActorContext[T]): Behavior[T] = factory(ctx.asScala)
+        override def toString: String = s"Deferred(${LineNumbers(factory)})"
+      }
   }
 
   /**
-   * INTERNAL API.
+   * INTERNAL API
    */
   private[akka] object SameBehavior extends Behavior[Nothing] {
     override def toString = "Same"
   }
 
   /**
-   * INTERNAL API.
+   * INTERNAL API
    */
   private[akka] object StoppedBehavior extends StoppedBehavior[Nothing](OptionVal.None)
 
@@ -299,12 +326,12 @@ object Behavior {
   def interpretSignal[T](behavior: Behavior[T], ctx: ActorContext[T], signal: Signal): Behavior[T] =
     interpret(behavior, ctx, signal)
 
-  private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] =
+  private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] = {
     behavior match {
       case null ⇒ throw new InvalidMessageException("[null] is not an allowed message")
       case SameBehavior | UnhandledBehavior ⇒
         throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
-      case _: UntypedBehavior[_] ⇒
+      case _: UntypedPropsBehavior[_] ⇒
         throw new IllegalArgumentException(s"cannot wrap behavior [$behavior] in " +
           "Behaviors.setup, Behaviors.supervise or similar")
       case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
@@ -318,6 +345,7 @@ object Behavior {
         }
         start(possiblyDeferredResult, ctx)
     }
+  }
 
   /**
    * INTERNAL API
@@ -331,10 +359,8 @@ object Behavior {
       if (!Behavior.isAlive(b2) || !messages.hasNext) b2
       else {
         val nextB = messages.next() match {
-          case sig: Signal ⇒
-            Behavior.interpretSignal(b2, ctx, sig)
-          case msg ⇒
-            Behavior.interpretMessage(b2, ctx, msg)
+          case sig: Signal ⇒ Behavior.interpretSignal(b2, ctx, sig)
+          case msg         ⇒ Behavior.interpretMessage(b2, ctx, msg)
         }
         interpretOne(Behavior.canonicalize(nextB, b, ctx)) // recursive
       }

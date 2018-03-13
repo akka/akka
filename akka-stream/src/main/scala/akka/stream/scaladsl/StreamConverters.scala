@@ -1,11 +1,11 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import java.io.{ OutputStream, InputStream }
 import java.util.Spliterators
-import java.util.concurrent.atomic.AtomicReference
 import java.util.stream.{ Collector, StreamSupport }
 
 import akka.stream.{ Attributes, SinkShape, IOResult }
@@ -34,7 +34,7 @@ object StreamConverters {
    * [[java.io.InputStream]] returns on each read invocation. Such chunks will
    * never be larger than chunkSize though.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
@@ -54,7 +54,7 @@ object StreamConverters {
    *
    * This Source is intended for inter-operation with legacy APIs since it is inherently blocking.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * The created [[OutputStream]] will be closed when the [[Source]] is cancelled, and closing the [[OutputStream]]
@@ -71,7 +71,7 @@ object StreamConverters {
    * Materializes a [[Future]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[akka.stream.ActorAttributes]].
    * If `autoFlush` is true the OutputStream will be flushed whenever a byte array is written, defaults to false.
    *
@@ -87,7 +87,7 @@ object StreamConverters {
    *
    * This Sink is intended for inter-operation with legacy APIs since it is inherently blocking.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * The [[InputStream]] will be closed when the stream flowing into this [[Sink]] completes, and
@@ -169,7 +169,7 @@ object StreamConverters {
       .mapMaterializedValue(queue ⇒ StreamSupport.stream(
         Spliterators.spliteratorUnknownSize(new java.util.Iterator[T] {
           var nextElementFuture: Future[Option[T]] = queue.pull()
-          var nextElement: Option[T] = null
+          var nextElement: Option[T] = _
 
           override def hasNext: Boolean = {
             nextElement = Await.result(nextElementFuture, Inf)

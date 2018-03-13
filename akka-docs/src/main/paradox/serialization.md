@@ -55,6 +55,7 @@ You can enable them one by one adding by adding their bindings to the misc seria
 ```
 akka.actor.serialization-bindings {
     "akka.Done"                 = akka-misc
+    "akka.NotUsed"              = akka-misc
     "akka.actor.Address"        = akka-misc
     "akka.remote.UniqueAddress" = akka-misc
 }
@@ -233,6 +234,10 @@ Scala
 
 Java
 :  @@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #external-address-default }
+
+Another solution is to encapsulate your serialization code in `Serialization.withTransportInformation`. 
+It ensures the actorRefs are serialized using systems default address when 
+no other address is available.
 
 ### Deep serialization of Actors
 

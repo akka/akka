@@ -1,7 +1,10 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.stream.cookbook
 
 import akka.NotUsed
-import akka.stream.ClosedShape
 import akka.stream.scaladsl._
 import akka.util.ByteString
 
