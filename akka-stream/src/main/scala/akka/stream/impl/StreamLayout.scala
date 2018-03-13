@@ -60,21 +60,29 @@ import scala.util.control.NonFatal
  * downstream and upstream, this needs an atomic state machine which looks a
  * little like this:
  *
- *            +--------------+      (2)    +------------+
- *            |     null     | ----------> | Subscriber |
- *            +--------------+             +------------+
- *                   |                           |
- *               (1) |                           | (1)
- *                  \|/                         \|/
- *            +--------------+      (2)    +------------+ --\
- *            | Subscription | ----------> |    Both    |    | (4)
- *            +--------------+             +------------+ <-/
- *                   |                           |
- *               (3) |                           | (3)
- *                  \|/                         \|/
- *            +--------------+      (2)    +------------+ --\
- *            |   Publisher  | ----------> |   Inert    |    | (4, *)
- *            +--------------+             +------------+ <-/
+ *
+ *      +--------+     (2)     +---------------+
+ *      |  null  +------------>+   Subscriber  |
+ *      +---+----+             +-----+---------+
+ *          |                        |
+ *       (1)|                        | (1)
+ *          v                        v
+ *      +---+----------+  (2)  +-----+---------+
+ *      | Subscription +------>+  Establishing |
+ *      +---+----------+       +-----+---------+
+ *          |                        |
+ *          |                        |  (4)
+ *          |                        v
+ *          |                  +-----+---------+ ---
+ *          | (3)              |    Both       |    | (5)
+ *          |                  +-----+---------+ <--
+ *          |                        |
+ *          |                        |
+ *          v                        v
+ *      +---+----------+  (2)  +-----+---------+ ---
+ *      |  Publisher   +-----> |    Inert      |    | (5, *)
+ *      +--------------+       +---------------+ <--
+ *
  *
  * The idea is to keep the major state in only one atomic reference. The actions
  * that can happen are:
@@ -82,7 +90,8 @@ import scala.util.control.NonFatal
  *  (1) onSubscribe
  *  (2) subscribe
  *  (3) onError / onComplete
- *  (4) onNext
+ *  (4) establishing subscription completes
+ *  (5) onNext
  *      (*) Inert can be reached also by cancellation after which onNext is still fine
  *          so we just silently ignore possible spec violations here
  *
