@@ -24,10 +24,24 @@ import akka.annotation.InternalApi
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[T] { ctx ⇒
           val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
-          new WithMdcBehavior(staticMdc, mdcForMessage, Behavior.validateAsInitial(Behavior.start(d, c)))
+          val started = Behavior.validateAsInitial(Behavior.start(d, c))
+          chooseOutermostOrWrap(staticMdc, mdcForMessage, started)
         }
       case b ⇒
-        new WithMdcBehavior[T](staticMdc, mdcForMessage, b)
+        chooseOutermostOrWrap(staticMdc, mdcForMessage, b)
+    }
+
+  // when declaring we expect the outermost to win
+  // for example with
+  // val behavior = ...
+  // val withMdc1 = withMdc(Map("first" -> true))
+  // ...
+  // val withMdc2 = withMdc(Map("second" -> true))
+  // we'd expect the second one to be used
+  private def chooseOutermostOrWrap[T](staticMdc: Map[String, Any], mdcForMessage: T ⇒ Map[String, Any], behavior: Behavior[T]) =
+    behavior match {
+      case inner: WithMdcBehavior[T] ⇒ new WithMdcBehavior(staticMdc, mdcForMessage, inner.behavior)
+      case other                     ⇒ new WithMdcBehavior(staticMdc, mdcForMessage, other)
     }
 
 }
@@ -38,12 +52,17 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi private[akka] final class WithMdcBehavior[T] private (
-  staticMdc:     Map[String, Any],
-  mdcForMessage: T ⇒ Map[String, Any],
-  behavior:      Behavior[T]) extends ExtensibleBehavior[T] {
+  staticMdc:            Map[String, Any],
+  mdcForMessage:        T ⇒ Map[String, Any],
+  private val behavior: Behavior[T]) extends ExtensibleBehavior[T] {
 
+  // re-wrap with mdc so that it doesn't get lost if behavior changes,
+  // unless it changes to new MDC, then throw this away and use the new one
   def wrapWithMdc(nextBehavior: Behavior[T], ctx: ActorContext[T]) =
-    Behavior.wrap(behavior, nextBehavior, ctx)(new WithMdcBehavior(staticMdc, mdcForMessage, _))
+    Behavior.wrap(behavior, nextBehavior, ctx) {
+      case inner: WithMdcBehavior[T] ⇒ inner
+      case other                     ⇒ new WithMdcBehavior(staticMdc, mdcForMessage, other)
+    }
 
   override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
     val mdc = staticMdc ++ mdcForMessage(msg)
@@ -62,5 +81,5 @@ import akka.annotation.InternalApi
     wrapWithMdc(next, ctx)
   }
 
-  override def toString: String = s"WithMdc($behavior)"
+  override def toString: String = s"WithMdc(${staticMdc}, $behavior)"
 }

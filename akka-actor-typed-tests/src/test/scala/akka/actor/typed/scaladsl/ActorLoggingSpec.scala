@@ -4,13 +4,15 @@
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.{ LogMarker, TestException, TypedAkkaSpec }
-import akka.testkit.EventFilter
-import com.typesafe.config.ConfigFactory
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.actor.typed.scaladsl.adapter._
+import akka.actor.typed.{ Behavior, LogMarker, TestException, TypedAkkaSpec }
 import akka.event.Logging
 import akka.event.Logging.{ LogEventWithCause, LogEventWithMarker }
+import akka.testkit.EventFilter
 import akka.testkit.typed.scaladsl.ActorTestKit
+import com.typesafe.config.ConfigFactory
 
 class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
 
@@ -245,10 +247,112 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
       }
     }
 
+    "use the outermost initial mdc" in {
+      // when we declare it, we expect the outermost to win
+      val behavior =
+        Behaviors.withMdc[String](Map("outermost" -> true)) {
+          Behaviors.withMdc(Map("innermost" -> true)) {
+            Behaviors.receive { (ctx, msg) ⇒
+              ctx.log.info(msg)
+              Behaviors.same
+            }
+          }
+        }
+
+      println(behavior)
+
+      val ref = spawn(behavior)
+      EventFilter.custom({
+        case logEvent if logEvent.level == Logging.InfoLevel ⇒
+          logEvent.message should ===("message")
+          logEvent.mdc should ===(Map("outermost" -> true))
+          true
+        case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
+      }, occurrences = 1).intercept {
+        ref ! "message"
+      }
+    }
+
+    "keep being applied when behavior changes to other behavior" in {
+      def behavior: Behavior[String] =
+        Behaviors.receive { (ctx, msg) ⇒
+          msg match {
+            case "new-behavior" ⇒
+              behavior
+            case other ⇒
+              ctx.log.info(other)
+              Behaviors.same
+          }
+        }
+
+      val ref = spawn(Behaviors.withMdc(Map("hasMdc" -> true))(behavior))
+      EventFilter.custom({
+        case logEvent if logEvent.level == Logging.InfoLevel ⇒
+          logEvent.message should ===("message")
+          logEvent.mdc should ===(Map("hasMdc" -> true))
+          true
+        case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
+      }, occurrences = 1).intercept {
+        ref ! "message"
+      }
+
+      ref ! "new-behavior"
+
+      EventFilter.custom({
+        case logEvent if logEvent.level == Logging.InfoLevel ⇒
+          logEvent.message should ===("message")
+          logEvent.mdc should ===(Map("hasMdc" -> true)) // original mdc should stay
+          true
+        case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
+      }, occurrences = 1).intercept {
+        ref ! "message"
+      }
+
+    }
+
+    "replace when behavior changes to other behavior wrapped in withMdc" in {
+      // when it changes while running, we expect the latest one to apply
+      val id = new AtomicInteger(0)
+      def behavior: Behavior[String] =
+        Behaviors.withMdc(Map("mdc-version" -> id.incrementAndGet())) {
+          Behaviors.receive { (ctx, msg) ⇒
+            msg match {
+              case "new-mdc" ⇒
+                behavior
+              case other ⇒
+                ctx.log.info(other)
+                Behaviors.same
+            }
+          }
+        }
+
+      val ref = spawn(behavior)
+      EventFilter.custom({
+        case logEvent if logEvent.level == Logging.InfoLevel ⇒
+          logEvent.message should ===("message")
+          logEvent.mdc should ===(Map("mdc-version" -> 1))
+          true
+        case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
+      }, occurrences = 1).intercept {
+        ref ! "message"
+      }
+      ref ! "new-mdc"
+      EventFilter.custom({
+        case logEvent if logEvent.level == Logging.InfoLevel ⇒
+          logEvent.message should ===("message")
+          logEvent.mdc should ===(Map("mdc-version" -> 2)) // mdc should have been replaced
+          true
+        case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
+      }, occurrences = 1).intercept {
+        ref ! "message"
+      }
+
+    }
+
     "provide a withMdc decorator" in {
       val behavior = Behaviors.withMdc[Protocol](Map("mdc" -> "outer"))(
         Behaviors.setup { ctx ⇒
-          Behaviors.immutable { (ctx, msg) ⇒
+          Behaviors.receiveMessage { msg ⇒
             ctx.log.withMdc(Map("mdc" -> "inner")).info("Got message log.withMDC!")
             // after log.withMdc so we know it didn't change the outer mdc
             ctx.log.info("Got message behavior.withMdc!")
