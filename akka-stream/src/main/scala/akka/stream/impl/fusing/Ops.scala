@@ -1993,7 +1993,7 @@ private[stream] object Collect {
         val cb = getAsyncCallback[Try[Flow[I, O, M]]] {
           case Success(flow) ⇒
             // check if the stage is still in need for the lazy flow
-            // (there could have been an onUpstreamFinish, onUpstreamFailure, or onDownstreamFinish in the meantime
+            // (there could have been an onUpstreamFailure or onDownstreamFinish in the meantime that has completed the promise)
             if (!matPromise.isCompleted) {
               try {
                 val mat = switchTo(flow, element)
@@ -2018,8 +2018,10 @@ private[stream] object Collect {
       }
 
       override def onUpstreamFinish(): Unit = {
-        // ignore onUpstreamFinish while the stage is switching
-        if (!switching) {
+        // ignore onUpstreamFinish while the stage is switching but setKeepGoing
+        if (switching) {
+          setKeepGoing(true)
+        } else {
           matPromise.success(None)
           super.onUpstreamFinish()
         }
@@ -2046,6 +2048,12 @@ private[stream] object Collect {
 
         var firstElementPushed = false
 
+        //
+        // ports are wired in the following way:
+        //
+        // in ~> subOutlet ~> lazyFlow ~> subInlet ~> out
+        //
+
         val subInlet = new SubSinkInlet[O]("LazyFlowSubSink")
         val subOutlet = new SubSourceOutlet[I]("LazyFlowSubSource")
 
@@ -2064,10 +2072,13 @@ private[stream] object Collect {
         // However, isClosed(in) and subOutlet.isClosed may be different. This happens if upstream completes before
         // the cached element was pushed.
         def maybeCompleteStage(): Unit = {
-          if (isClosed(in) && subInlet.isClosed && isClosed(out)) {
+          if (isClosed(in) && subOutlet.isClosed && isClosed(out)) {
             completeStage()
           }
         }
+
+        // The stage must not be shut down automatically; it is completed when maybeCompleteStage decides
+        setKeepGoing(true)
 
         setHandler(in, new InHandler {
           override def onPush(): Unit = {
@@ -2134,7 +2145,12 @@ private[stream] object Collect {
           }
         })
 
-        subInlet.pull()
+        if (isClosed(out)) {
+          // downstream may have been canceled while the stage was switching
+          subInlet.cancel()
+        } else {
+          subInlet.pull()
+        }
 
         matVal
       }
