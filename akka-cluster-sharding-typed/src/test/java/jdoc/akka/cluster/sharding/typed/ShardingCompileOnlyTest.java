@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdoc.akka.cluster.sharding.typed;
 
 import akka.actor.typed.ActorRef;

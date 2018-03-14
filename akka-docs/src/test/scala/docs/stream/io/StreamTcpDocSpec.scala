@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.stream.io
 
 import java.util.concurrent.atomic.AtomicReference

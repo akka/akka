@@ -1,0 +1,3 @@
+# #24553 eliminate test stages when not used
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.OutboundTestStage.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.InboundTestStage.this")

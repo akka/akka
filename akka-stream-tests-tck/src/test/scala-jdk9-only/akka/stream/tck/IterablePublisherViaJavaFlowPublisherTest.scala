@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.tck
 
 import java.util.concurrent.{ Flow ⇒ JavaFlow }

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.persistence.typed.scaladsl
 
 import scala.concurrent.ExecutionContext
@@ -199,7 +200,7 @@ object PersistentActorCompileOnlyTest {
       eventHandler = (state, evt) ⇒ evt match {
         case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
         case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
-      }).snapshotOn { (state, e, seqNr) ⇒ state.tasksInFlight.isEmpty }
+      }).snapshotWhen { (state, e, seqNr) ⇒ state.tasksInFlight.isEmpty }
   }
 
   object SpawnChild {

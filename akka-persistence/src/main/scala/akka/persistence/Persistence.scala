@@ -71,7 +71,7 @@ final class PersistenceSettings(config: Config) {
 }
 
 /**
- * Identification of [[PersistentActor]] or [[PersistentView]].
+ * Identification of [[PersistentActor]].
  */
 //#persistence-identity
 trait PersistenceIdentity {
@@ -133,6 +133,12 @@ object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
   /** INTERNAL API. */
   private[persistence] case class PluginHolder(actor: ActorRef, adapters: EventAdapters, config: Config)
     extends Extension
+
+  /** Config path to fall-back to if a setting is not defined in a specific plugin's config section */
+  val JournalFallbackConfigPath = "akka.persistence.journal-plugin-fallback"
+
+  /** Config path to fall-back to if a setting is not defined in a specific snapshot plugin's config section */
+  val SnapshotStoreFallbackConfigPath = "akka.persistence.snapshot-store-plugin-fallback"
 }
 
 /**
@@ -190,9 +196,6 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   /** Discovered persistence journal and snapshot store plugins. */
   private val pluginExtensionId = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
 
-  private val journalFallbackConfigPath = "akka.persistence.journal-plugin-fallback"
-  private val snapshotStoreFallbackConfigPath = "akka.persistence.snapshot-store-plugin-fallback"
-
   config.getStringList("journal.auto-start-journals").forEach(new Consumer[String] {
     override def accept(id: String): Unit = {
       log.info(s"Auto-starting journal plugin `$id`")
@@ -213,7 +216,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    */
   final def adaptersFor(journalPluginId: String): EventAdapters = {
     val configPath = if (isEmpty(journalPluginId)) defaultJournalPluginId else journalPluginId
-    pluginHolderFor(configPath, journalFallbackConfigPath).adapters
+    pluginHolderFor(configPath, JournalFallbackConfigPath).adapters
   }
 
   /**
@@ -237,7 +240,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    */
   private[akka] final def journalConfigFor(journalPluginId: String): Config = {
     val configPath = if (isEmpty(journalPluginId)) defaultJournalPluginId else journalPluginId
-    pluginHolderFor(configPath, journalFallbackConfigPath).config
+    pluginHolderFor(configPath, JournalFallbackConfigPath).config
   }
 
   /**
@@ -261,7 +264,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    */
   private[akka] final def journalFor(journalPluginId: String): ActorRef = {
     val configPath = if (isEmpty(journalPluginId)) defaultJournalPluginId else journalPluginId
-    pluginHolderFor(configPath, journalFallbackConfigPath).actor
+    pluginHolderFor(configPath, JournalFallbackConfigPath).actor
   }
 
   /**
@@ -274,7 +277,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    */
   private[akka] final def snapshotStoreFor(snapshotPluginId: String): ActorRef = {
     val configPath = if (isEmpty(snapshotPluginId)) defaultSnapshotPluginId else snapshotPluginId
-    pluginHolderFor(configPath, snapshotStoreFallbackConfigPath).actor
+    pluginHolderFor(configPath, SnapshotStoreFallbackConfigPath).actor
   }
 
   @tailrec private def pluginHolderFor(configPath: String, fallbackPath: String): PluginHolder = {

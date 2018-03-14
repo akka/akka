@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.streamref
 
 import akka.actor.{ Actor, ActorLogging, ActorPath, ActorRef, ActorRefProvider, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider, MinimalActorRef, Props, RepointableActorRef, Stash }

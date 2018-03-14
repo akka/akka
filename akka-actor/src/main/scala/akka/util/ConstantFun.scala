@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.util
 
 import akka.annotation.InternalApi
@@ -27,6 +28,9 @@ import akka.japi.{ Pair ⇒ JPair }
 
   def scalaAnyToNone[A, B]: A ⇒ Option[B] = none
   def scalaAnyTwoToNone[A, B, C]: (A, B) ⇒ Option[C] = two2none
+  def scalaAnyTwoToUnit[A, B]: (A, B) ⇒ Unit = two2unit
+  def scalaAnyTwoToTrue[A, B]: (A, B) ⇒ Boolean = two2true
+  def scalaAnyThreeToFalse[A, B, C]: (A, B, C) ⇒ Boolean = three2false
   def javaAnyToNone[A, B]: A ⇒ Option[B] = none
   def nullFun[T] = _nullFun.asInstanceOf[Any ⇒ T]
 
@@ -43,5 +47,11 @@ import akka.japi.{ Pair ⇒ JPair }
   private val none = (_: Any) ⇒ None
 
   private val two2none = (_: Any, _: Any) ⇒ None
+
+  private val two2true = (_: Any, _: Any) ⇒ true
+
+  private val two2unit = (_: Any, _: Any) ⇒ ()
+
+  private val three2false = (_: Any, _: Any, _: Any) ⇒ false
 
 }
