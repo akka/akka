@@ -4,22 +4,17 @@
 
 package akka.actor.typed.javadsl
 
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 
-import scala.reflect.ClassTag
-import akka.util.ConstantFun
-import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
-import akka.japi.function.Procedure2
-import akka.japi.pf.PFBuilder
-import akka.actor.typed.Behavior
-import akka.actor.typed.ExtensibleBehavior
-import akka.actor.typed.Signal
-import akka.actor.typed.ActorRef
-import akka.actor.typed.SupervisorStrategy
-import akka.actor.typed.internal.{ BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl }
+import akka.actor.typed.{ ActorRef, Behavior, ExtensibleBehavior, Signal, SupervisorStrategy }
+import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehavior }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.japi.function.{ Procedure2, Function2 => JapiFunction2 }
+import akka.japi.pf.PFBuilder
+import akka.util.ConstantFun
 
 import scala.collection.JavaConverters._
+import scala.reflect.ClassTag
 /**
  * Factories for [[akka.actor.typed.Behavior]].
  */
@@ -288,17 +283,47 @@ object Behaviors {
   trait Receive[T] extends ExtensibleBehavior[T]
 
   /**
-   * Provide a MDC ("Mapped Diagnostic Context") for logging from the actor.
+   * Per message MDC (Mapped Diagnostic Context) logging.
    *
-   * @param mdcForMessage Is invoked before each message to setup MDC which is then attached to each logging statement
-   *                      done for that message through the [[ActorContext.getLog]]. After the message has been processed
-   *                      the MDC is cleared.
-   * @param behavior The behavior that this should be applied to.
+   * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
+   *                 each message processing by the inner behavior is done.
+   * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
+   *                 `ActorContext.log`
    */
   def withMdc[T](
-    `type`:        Class[T],
-    mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Object]],
+    mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]], behavior: Behavior[T]): Behavior[T] =
+    WithMdcBehavior[T](Map.empty, message ⇒ mdcForMessage.apply(message).asScala.toMap, behavior)
+
+  /**
+   * Static MDC (Mapped Diagnostic Context)
+   *
+   * @param staticMdc This MDC is setup in the logging context for every message
+   * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
+   *                 `ActorContext.log`
+   */
+  def withMdc[T](staticMdc: java.util.Map[String, Any], behavior: Behavior[T]): Behavior[T] =
+    WithMdcBehavior[T](staticMdc.asScala.toMap, WithMdcBehavior.noMdcPerMessage, behavior)
+
+  /**
+   * Combination of static and per message MDC (Mapped Diagnostic Context).
+   *
+   * Each message will get the static MDC plus the MDC returned for the message. If the same key
+   * are in both the static and the per message MDC the per message one overwrites the static one
+   * in the resulting log entries.
+   *
+   * @param staticMdc A static MDC applied for each message
+   * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
+   *                 each message processing by the inner behavior is done.
+   * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
+   *                 `ActorContext.log`
+   */
+  def withMdc[T](
+    staticMdc:     java.util.Map[String, Any],
+    mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
     behavior:      Behavior[T]): Behavior[T] =
-    LoggingBehaviorImpl.withMdc[T](message ⇒ mdcForMessage.apply(message).asScala.toMap, behavior)(ClassTag(`type`))
+    WithMdcBehavior[T](
+      staticMdc.asScala.toMap,
+      message ⇒ mdcForMessage.apply(message).asScala.toMap,
+      behavior)
 
 }

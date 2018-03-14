@@ -192,7 +192,9 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
 
     "provide the MDC values in the log" in {
       val behaviors = Behaviors.withMdc[Protocol](
-        { (msg) ⇒
+        Map("static" -> 1),
+        // FIXME why u no infer the type here Scala??
+        { (msg: Protocol) ⇒
           if (msg.transactionId == 1)
             Map(
               "txId" -> msg.transactionId,
@@ -224,7 +226,7 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
       EventFilter.custom({
         case logEvent if logEvent.level == Logging.InfoLevel ⇒
           logEvent.message should ===("Got message!")
-          logEvent.mdc should ===(Map("txId" -> 1L, "first" -> true))
+          logEvent.mdc should ===(Map("static" -> 1, "txId" -> 1L, "first" -> true))
           true
         case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
       }, occurrences = 1).intercept {
@@ -235,7 +237,7 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
       EventFilter.custom({
         case logEvent if logEvent.level == Logging.InfoLevel ⇒
           logEvent.message should ===("Got message!")
-          logEvent.mdc should ===(Map("txId" -> 2L))
+          logEvent.mdc should ===(Map("static" -> 1, "txId" -> 2L))
           true
         case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
       }, occurrences = 1).intercept {

@@ -45,7 +45,6 @@ public class ActorLoggingTest extends JUnitSuite {
   @Test
   public void loggingProvidesMDC() {
     Behavior<Protocol> behavior = Behaviors.withMdc(
-      Protocol.class,
       (msg) -> {
         Map<String, Object> mdc = new HashMap<>();
         mdc.put("txId", msg.getTransactionId());
