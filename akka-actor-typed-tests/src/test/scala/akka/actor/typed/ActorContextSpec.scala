@@ -6,7 +6,6 @@ package akka.actor.typed
 
 import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.Behaviors.BehaviorDecorators
 import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 
 import scala.concurrent.duration._
@@ -71,7 +70,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
   "An ActorContext" must {
 
-    "converge in cyclic behavior" in {
+    "canonicalize behaviors" in {
       val probe = TestProbe[Event]()
 
       lazy val behavior: Behavior[Command] = Behaviors.immutable[Command] { (_, message) ⇒
@@ -181,9 +180,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
       val child: Behavior[Command] = Behaviors.empty[Command].decorate
       val parent: Behavior[Command] = Behaviors.setup[Command](ctx ⇒ {
-        val childRef = ctx.spawnAnonymous(
-          Behaviors.supervise(child).onFailure(SupervisorStrategy.restart)
-        )
+        val childRef = ctx.spawnAnonymous(child)
         ctx.watch(childRef)
         probe.ref ! ChildMade(childRef)
         Behaviors.immutablePartial[Command] {
