@@ -829,7 +829,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   def inboundSink(bufferPool: EnvelopeBufferPool): Sink[InboundEnvelope, Future[Done]] =
     Flow[InboundEnvelope]
       .via(createDeserializer(bufferPool))
-      .via(new InboundTestStage(this, testState, settings.Advanced.TestMode))
+      .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
       .via(terminationHintReplier())
       .via(new InboundHandshake(this, inControlStream = false))
       .via(new InboundQuarantineCheck(this))
@@ -848,7 +848,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   def inboundControlSink: Sink[InboundEnvelope, (ControlMessageSubject, Future[Done])] = {
     Flow[InboundEnvelope]
       .via(createDeserializer(envelopeBufferPool))
-      .via(new InboundTestStage(this, testState, settings.Advanced.TestMode))
+      .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
       .via(terminationHintReplier())
       .via(new InboundHandshake(this, inControlStream = true))
       .via(new InboundQuarantineCheck(this))
@@ -869,7 +869,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   }
 
   def outboundTestFlow(outboundContext: OutboundContext): Flow[OutboundEnvelope, OutboundEnvelope, NotUsed] =
-    Flow.fromGraph(new OutboundTestStage(outboundContext, testState, settings.Advanced.TestMode))
+    if (settings.Advanced.TestMode) Flow.fromGraph(new OutboundTestStage(outboundContext, testState))
+    else Flow[OutboundEnvelope]
 
   /** INTERNAL API: for testing only. */
   private[remote] def triggerCompressionAdvertisements(actorRef: Boolean, manifest: Boolean) = {
