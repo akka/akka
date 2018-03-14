@@ -245,6 +245,39 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
       }
     }
 
+    "provide a withMdc decorator" in {
+      val behavior = Behaviors.withMdc[Protocol](Map("mdc" -> "outer"))(
+        Behaviors.setup { ctx ⇒
+          Behaviors.immutable { (ctx, msg) ⇒
+            ctx.log.withMdc(Map("mdc" -> "inner")).info("Got message log.withMDC!")
+            // after log.withMdc so we know it didn't change the outer mdc
+            ctx.log.info("Got message behavior.withMdc!")
+            Behaviors.same
+          }
+        }
+      )
+
+      // mdc on message
+      val ref = spawn(behavior)
+      EventFilter.custom({
+        case logEvent if logEvent.level == Logging.InfoLevel ⇒
+          logEvent.message should ===("Got message behavior.withMdc!")
+          logEvent.mdc should ===(Map("mdc" -> "outer"))
+          true
+        case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
+      }, occurrences = 1).intercept {
+        EventFilter.custom({
+          case logEvent if logEvent.level == Logging.InfoLevel ⇒
+            logEvent.message should ===("Got message log.withMDC!")
+            logEvent.mdc should ===(Map("mdc" -> "inner"))
+            true
+          case other ⇒ system.log.error(s"Unexpected log event: {}", other); false
+        }, occurrences = 1).intercept {
+          ref ! Message(1, "first")
+        }
+      }
+    }
+
   }
 
 }

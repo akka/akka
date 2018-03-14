@@ -289,6 +289,8 @@ object Behaviors {
    *                 each message processing by the inner behavior is done.
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
+   *
+   * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
     mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]], behavior: Behavior[T]): Behavior[T] =
@@ -300,6 +302,8 @@ object Behaviors {
    * @param staticMdc This MDC is setup in the logging context for every message
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
+   *
+   * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](staticMdc: java.util.Map[String, Any], behavior: Behavior[T]): Behavior[T] =
     WithMdcBehavior[T](staticMdc.asScala.toMap, WithMdcBehavior.noMdcPerMessage, behavior)
@@ -316,6 +320,8 @@ object Behaviors {
    *                 each message processing by the inner behavior is done.
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
+   *
+   * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
     staticMdc:     java.util.Map[String, Any],

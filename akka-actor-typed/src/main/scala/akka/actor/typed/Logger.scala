@@ -5,7 +5,7 @@
 package akka.actor.typed
 
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.event.Logging.{ ErrorLevel, WarningLevel, InfoLevel, DebugLevel, LogLevel }
+import akka.event.Logging._
 
 /**
  * A log marker is an additional metadata tag supported by some logging backends to identify "special" log events.
@@ -652,4 +652,18 @@ abstract class Logger private[akka] () {
    * @see [[Logger]]
    */
   def log(level: LogLevel, marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit
+
+  /**
+   * Scala API: the returned logger will add the given MDC (Mapped Diagnostic Context) to any log entry logged
+   *
+   * See also [[akka.actor.typed.scaladsl.Behaviors.withMdc]]
+   */
+  def withMdc(mdc: Map[String, Any]): Logger
+
+  /**
+   * Java API: the returned logger will add the given MDC (Mapped Diagnostic Context) to any log entry logged
+   *
+   * See also [[akka.actor.typed.javadsl.Behaviors.withMdc]]
+   */
+  def withMdc(mdc: java.util.Map[String, Any]): Logger
 }

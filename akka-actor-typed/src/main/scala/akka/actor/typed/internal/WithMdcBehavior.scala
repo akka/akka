@@ -5,7 +5,7 @@
 package akka.actor.typed.internal
 
 import akka.actor.typed.Behavior.DeferredBehavior
-import akka.actor.typed.internal.adapter.LoggerAdapterImpl
+import akka.actor.typed.internal.adapter.AbstractLogger
 import akka.actor.typed.{ ActorContext, Behavior, ExtensibleBehavior, Signal }
 import akka.annotation.InternalApi
 
@@ -47,12 +47,12 @@ import akka.annotation.InternalApi
 
   override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
     val mdc = staticMdc ++ mdcForMessage(msg)
-    ctx.asScala.log.asInstanceOf[LoggerAdapterImpl].mdc = mdc
+    ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = mdc
     val next =
       try {
         Behavior.interpretMessage(behavior, ctx, msg)
       } finally {
-        ctx.asScala.log.asInstanceOf[LoggerAdapterImpl].mdc = Map.empty
+        ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = Map.empty
       }
     wrapWithMdc(next, ctx)
   }
