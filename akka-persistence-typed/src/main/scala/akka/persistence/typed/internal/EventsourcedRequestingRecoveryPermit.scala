@@ -35,25 +35,19 @@ private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](override val s
     // request a permit, as only once we obtain one we can start replaying
     requestRecoveryPermit()
 
-    withMdc {
-      Behaviors.receive[InternalProtocol] {
-        case (_, InternalProtocol.RecoveryPermitGranted) ⇒
+    Behaviors.withMdc(Map(
+      "persistenceId" → setup.persistenceId,
+      "phase" → "awaiting-permit"
+    )) {
+      Behaviors.receiveMessage[InternalProtocol] {
+        case InternalProtocol.RecoveryPermitGranted ⇒
           becomeReplaying()
 
-        case (_, other) ⇒
+        case other ⇒
           stash(other)
           Behaviors.same
       }
     }
-  }
-
-  private def withMdc(wrapped: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
-    val mdc = Map(
-      "persistenceId" → setup.persistenceId,
-      "phase" → "awaiting-permit"
-    )
-
-    Behaviors.withMdc(_ ⇒ mdc, wrapped)
   }
 
   private def becomeReplaying(): Behavior[InternalProtocol] = {
