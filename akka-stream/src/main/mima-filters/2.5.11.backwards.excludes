@@ -1,2 +1,5 @@
 # #24604 Deduplicate logic for IODispatcher
 ProblemFilters.exclude[MissingTypesProblem]("akka.stream.ActorAttributes$Dispatcher$")
+
+# #24581 RS violation
+ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.VirtualProcessor$Both")
