@@ -2,11 +2,11 @@
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.typed.receptionist
+package akka.actor.typed.internal.receptionist
 
 import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.internal.ActorRefSerializationSpec
-import akka.actor.typed.internal.receptionist.ServiceKeySerializer
+import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
 import akka.testkit.typed.scaladsl.ActorTestKit
