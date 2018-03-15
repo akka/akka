@@ -185,7 +185,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         } else Behaviors.same
       }
 
-      def onCommand(ctx: ActorContext[Any], cmd: Command): Behavior[Any] = cmd match {
+      def onCommand(cmd: Command): Behavior[Any] = cmd match {
         case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) ⇒
           ctx.log.debug("Actor was registered: [{}] [{}]", key, serviceInstance.path)
           watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
@@ -211,7 +211,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           next(newSubscriptions = subscriptions.inserted(key)(subscriber))
       }
 
-      def onInternalCommand(ctx: ActorContext[Any], cmd: InternalCommand): Behavior[Any] = cmd match {
+      def onInternalCommand(cmd: InternalCommand): Behavior[Any] = cmd match {
 
         case SubscriberTerminated(key, subscriber) ⇒
           next(newSubscriptions = subscriptions.removed(key)(subscriber))
@@ -266,8 +266,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       Behaviors.immutable[Any] { (ctx, msg) ⇒
         msg match {
           // support two heterogenous types of messages without union types
-          case cmd: Command         ⇒ onCommand(ctx, cmd)
-          case cmd: InternalCommand ⇒ onInternalCommand(ctx, cmd)
+          case cmd: Command         ⇒ onCommand(cmd)
+          case cmd: InternalCommand ⇒ onInternalCommand(cmd)
           case _                    ⇒ Behaviors.unhandled
         }
       }
