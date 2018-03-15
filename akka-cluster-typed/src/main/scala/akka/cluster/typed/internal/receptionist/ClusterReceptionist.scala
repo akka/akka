@@ -77,7 +77,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   case object RemoveTick extends InternalCommand
 
   // captures setup/dependencies so we can avoid doing it over and over again
-  private class Setup(ctx: ActorContext[Any]) {
+  class Setup(ctx: ActorContext[Any]) {
     val untypedSystem = ctx.system.toUntyped
     val settings = ClusterReceptionistSettings(ctx.system)
     val replicator = DistributedData(untypedSystem).replicator
