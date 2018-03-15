@@ -182,12 +182,6 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
     }
 
     "remove registrations when node dies and a new with same host port rejoins" in {
-      // this can only happen if node leaves and joins again but a subscriber does
-      // not notice this
-      val slowReplication = ConfigFactory.parseString(
-        """
-          akka.cluster.distributed-data.notify-subscribers-interval = 2s
-        """)
       val testKit1 = new ActorTestKit {
         override def name = super.name + "-test-3"
         override def config = ClusterReceptionistSpec.config
@@ -213,7 +207,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         system1.receptionist ! Subscribe(PingKey, regProbe1.ref)
         regProbe1.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
 
-        val service2 = testKit2.spawn(pingPongBehavior, "instance1")
+        val service2 = testKit2.spawn(pingPongBehavior, "instance")
         system2.receptionist ! Register(PingKey, service2, regProbe2.ref)
         regProbe2.expectMessage(Registered(PingKey, service2))
 
@@ -222,10 +216,13 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         theRef ! Ping(regProbe1.ref)
         regProbe1.expectMessage(Pong)
 
-        // abrupt termination
+        // FIXME do we need to blackhole the connection to system2 before terminating
+        // right now it doesn't work anyways though ;D
+
+        // abrupt termination but then a node with the same host:port comes online quickly
+        system1.log.info("Terminating system2, uid: [{}]", clusterNode2.selfMember.uniqueAddress.longUid)
         Await.ready(system2.terminate(), 10.seconds)
 
-        // but then a node with the same host:port comes online quickly
         val testKit3 = new ActorTestKit {
           override protected def name: String = system1.name
           def system1NodeString = {
@@ -240,12 +237,15 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         }
         try {
           val system3 = testKit3.system
+          system1.log.info("Starting system3 at same hostname port as system2, uid: [{}]", Cluster(system3).selfMember.uniqueAddress.longUid)
           val regProbe3 = TestProbe[Any]()(system3)
 
           // and registers the same service key
-          val service3 = testKit3.spawn(pingPongBehavior, "instance2")
+          system3.log.info("Spawning/registering same service/actor path")
+          val service3 = testKit3.spawn(pingPongBehavior, "instance")
           system3.receptionist ! Register(PingKey, service3, regProbe3.ref)
           regProbe3.expectMessage(Registered(PingKey, service3))
+          system3.log.info("Registered actor [{}#{}] for system3", service3.path, service3.path.uid)
 
           // now we should still see an updated listing
           regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) == 2)
@@ -256,8 +256,12 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
           // either empty and then updated, or just updated with the new service directly
           msg match {
-            case `empty`               ⇒ regProbe1.expectMessage(updatedWithService3)
-            case `updatedWithService3` ⇒ // ok!
+            case `empty`               ⇒
+              system3.log.info("Got empty update, waiting for update with new registration")
+              regProbe1.expectMessage(5.seconds, updatedWithService3)
+            case `updatedWithService3` ⇒
+              system3.log.info("Got update with new registration directly")
+              // ok!
             case other                 ⇒ fail(s"Got unexpected message from receptionist: [$other]")
           }
 
