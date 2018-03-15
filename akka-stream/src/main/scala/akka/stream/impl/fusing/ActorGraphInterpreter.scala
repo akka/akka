@@ -205,6 +205,8 @@ import scala.util.control.NonFatal
       } else if (downstreamCanceled) {
         upstreamCompleted = true
         tryCancel(subscription)
+      } else if (upstream != null) { // reactive streams spec 2.5
+        tryCancel(subscription)
       } else {
         upstream = subscription
         // Prefetch
