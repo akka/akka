@@ -18,6 +18,7 @@ import java.util.regex.Pattern
 import akka.pattern.ask
 import akka.routing.MurmurHash
 import akka.util.Helpers
+import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 import akka.dispatch.ExecutionContexts
 
@@ -96,6 +97,15 @@ abstract class ActorSelection extends Serializable {
    */
   def resolveOneCS(timeout: FiniteDuration): CompletionStage[ActorRef] =
     FutureConverters.toJava[ActorRef](resolveOne(timeout))
+
+  /**
+   * Java API for [[#resolveOne]]
+   *
+   * Same as [[resolveOne]] but accepts Java [[java.time.Duration]] instead of Scala ones.
+   *
+   */
+  def resolveOneCS(timeout: java.time.Duration): CompletionStage[ActorRef] =
+    FutureConverters.toJava[ActorRef](resolveOne(timeout.asScala))
 
   override def toString: String = {
     val builder = new java.lang.StringBuilder()

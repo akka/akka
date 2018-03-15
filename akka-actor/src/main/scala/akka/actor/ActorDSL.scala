@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import akka.util.JavaDurationConverters._
 import scala.concurrent.duration._
 import akka.pattern.ask
 import scala.concurrent.Await
@@ -124,6 +125,9 @@ abstract class Inbox {
    */
   @throws(classOf[java.util.concurrent.TimeoutException])
   def receive(max: FiniteDuration): Any
+
+  @throws(classOf[java.util.concurrent.TimeoutException])
+  def receive(max: java.time.Duration): Any = receive(max.asScala)
 
   /**
    * Have the internal actor watch the target actor. When the target actor

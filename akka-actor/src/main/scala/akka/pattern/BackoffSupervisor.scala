@@ -15,6 +15,7 @@ import akka.actor.SupervisorStrategy.Directive
 import akka.actor.SupervisorStrategy.Escalate
 import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy
+import akka.util.JavaDurationConverters._
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.Try
@@ -45,6 +46,20 @@ object BackoffSupervisor {
     maxBackoff:   FiniteDuration,
     randomFactor: Double): Props = {
     propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, SupervisorStrategy.defaultStrategy)
+  }
+
+  /**
+   * Java API
+   *
+   * Same as [[props]], but accepts Java [[java.time.Duration]] instead of Scala ones.
+   */
+  def props(
+    childProps:   Props,
+    childName:    String,
+    minBackoff:   java.time.Duration,
+    maxBackoff:   java.time.Duration,
+    randomFactor: Double): Props = {
+    propsWithSupervisorStrategy(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, SupervisorStrategy.defaultStrategy)
   }
 
   /**
@@ -79,6 +94,21 @@ object BackoffSupervisor {
     require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
     require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
     Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, randomFactor, strategy))
+  }
+
+  /**
+   * Java API
+   *
+   * Same as [[propsWithSupervisorStrategy]], but accepts Java [[java.time.Duration]] instead of Scala ones.
+   */
+  def propsWithSupervisorStrategy(
+    childProps:   Props,
+    childName:    String,
+    minBackoff:   java.time.Duration,
+    maxBackoff:   java.time.Duration,
+    randomFactor: Double,
+    strategy:     SupervisorStrategy): Props = {
+    propsWithSupervisorStrategy(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, strategy)
   }
 
   /**

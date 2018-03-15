@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import akka.util.JavaDurationConverters._
+
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -107,6 +109,18 @@ trait Scheduler {
     runnable:     Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**
+   * Same as [[schedule(scala.concurrent.duration.FiniteDuration, scala.concurrent.duration.FiniteDuration, Runnable)]],
+   * but accepts Java [[java.time.Duration]] instead of Scala ones.
+   *
+   * Java API
+   */
+  def schedule(
+    initialDelay: java.time.Duration,
+    interval:     java.time.Duration,
+    runnable:     Runnable)(implicit executor: ExecutionContext): Cancellable =
+    schedule(initialDelay.asScala, initialDelay.asScala, runnable)
+
+  /**
    * Schedules a message to be sent once with a delay, i.e. a time period that has
    * to pass before the message is sent.
    *
@@ -151,6 +165,20 @@ trait Scheduler {
   def scheduleOnce(
     delay:    FiniteDuration,
     runnable: Runnable)(implicit executor: ExecutionContext): Cancellable
+
+  /**
+   * Schedules a Runnable to be run once with a delay, i.e. a time period that
+   * has to pass before the runnable is executed.
+   *
+   * @throws IllegalArgumentException if the given delays exceed the maximum
+   * reach (calculated as: `delay / tickNanos > Int.MaxValue`).
+   *
+   * Java API
+   */
+  def scheduleOnce(
+    delay:    java.time.Duration,
+    runnable: Runnable)(implicit executor: ExecutionContext): Cancellable =
+    scheduleOnce(delay.asScala, runnable)
 
   /**
    * The maximum supported task frequency of this scheduler, i.e. the inverse

@@ -5,6 +5,7 @@
 package akka.actor
 
 import akka.annotation.ApiMayChange
+import akka.util.JavaDurationConverters._
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -80,7 +81,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param stateFunctionBuilder partial function builder describing response to input
    */
   final def when(stateName: S, stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
-    when(stateName, null, stateFunctionBuilder)
+    when(stateName, null: FiniteDuration, stateFunctionBuilder)
 
   /**
    * Insert a new StateFunction at the end of the processing chain for the
@@ -97,6 +98,17 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
     stateTimeout:         FiniteDuration,
     stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
     super.when(stateName, stateTimeout)(stateFunctionBuilder.build())
+
+  /**
+   * Java API for [[#when]]
+   *
+   * Same as [[when]], but accepts Java [[java.time.Duration]] instead of Scala ones.
+   */
+  final def when(
+    stateName:            S,
+    stateTimeout:         java.time.Duration,
+    stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
+    super.when(stateName, stateTimeout.asScala)(stateFunctionBuilder.build())
 
   /**
    * Set initial state. Call this method from the constructor before the [[#initialize]] method.
@@ -120,6 +132,14 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    */
   final def startWith(stateName: S, stateData: D, timeout: FiniteDuration): Unit =
     super.startWith(stateName, stateData, Option(timeout))
+
+  /**
+   * Java API for [[#startWith]]
+   *
+   * Same as [[when]], but accepts Java [[java.time.Duration]] instead of Scala ones.
+   */
+  final def startWith(stateName: S, stateData: D, timeout: java.time.Duration): Unit =
+    super.startWith(stateName, stateData, Option(timeout.asScala))
 
   /**
    * Add a handler which is called upon each state transition, i.e. not when
@@ -387,6 +407,14 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    */
   final def setTimer(name: String, msg: Any, timeout: FiniteDuration): Unit =
     setTimer(name, msg, timeout, false)
+
+  /**
+   * Java API for [[#setTimer]]
+   *
+   * Same as [[when]], but accepts Java [[java.time.Duration]] instead of Scala ones.
+   */
+  final def setTimer(name: String, msg: Any, timeout: java.time.Duration): Unit =
+    setTimer(name, msg, timeout.asScala, false)
 
   /**
    * Default reason if calling `stop()`.

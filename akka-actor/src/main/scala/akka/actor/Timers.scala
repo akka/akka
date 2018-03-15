@@ -3,6 +3,7 @@
  */
 package akka.actor
 
+import akka.util.JavaDurationConverters._
 import scala.concurrent.duration.FiniteDuration
 import akka.annotation.DoNotInherit
 import akka.dispatch.Envelope
@@ -93,6 +94,15 @@ abstract class AbstractActorWithTimers extends AbstractActor with Timers {
   def startPeriodicTimer(key: Any, msg: Any, interval: FiniteDuration): Unit
 
   /**
+   * Same as [[startPeriodicTimer]],
+   * but accepts Java [[java.time.Duration]] instead of Scala ones.
+   *
+   * Java API
+   */
+  def startPeriodicTimer(key: Any, msg: Any, interval: java.time.Duration): Unit =
+    startPeriodicTimer(key, msg, interval.asScala)
+
+  /**
    * Start a timer that will send `msg` once to the `self` actor after
    * the given `timeout`.
    *
@@ -102,6 +112,15 @@ abstract class AbstractActorWithTimers extends AbstractActor with Timers {
    * in the mailbox when the new timer is started.
    */
   def startSingleTimer(key: Any, msg: Any, timeout: FiniteDuration): Unit
+
+  /**
+   * Same as [[startSingleTimer]],
+   * but accepts Java [[java.time.Duration]] instead of Scala ones.
+   *
+   * Java API
+   */
+  def startSingleTimer(key: Any, msg: Any, timeout: java.time.Duration): Unit =
+    startSingleTimer(key, msg, timeout.asScala)
 
   /**
    * Check if a timer with a given `key` is active.
