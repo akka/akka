@@ -197,7 +197,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         val completion = Source(List(TestByteStrings.head))
           .runWith(Sink.lazyInitAsync(
             () ⇒ Future.successful(FileIO.toPath(f)))
-              // map a Future[Option[Future[IOResult]]] into a Future[Option[IOResult]]
+            // map a Future[Option[Future[IOResult]]] into a Future[Option[IOResult]]
             .mapMaterializedValue(_.flatMap {
               case Some(future) ⇒ future.map(Some(_))(ExecutionContexts.sameThreadExecutionContext)
               case None         ⇒ Future.successful(None)
