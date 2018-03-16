@@ -64,6 +64,12 @@ abstract class BehaviorTestKit[T] {
   def expectEffect(expectedEffect: Effect): Unit
 
   /**
+   * Asserts that the oldest effect is an instance of of class T. Consumes and returns the concrete effect for
+   * further direct assertions.
+   */
+  def expectEffectClass[T <: Effect](effectClass: Class[T]): T
+
+  /**
    * The current behavior, can change any time `run` is called
    */
   def currentBehavior: Behavior[T]

@@ -14,6 +14,7 @@ import akka.testkit.typed.scaladsl.Effects._
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 
@@ -62,10 +63,21 @@ private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior
 
   override def expectEffect(expectedEffect: Effect): Unit = {
     ctx.effectQueue.poll() match {
-      case null   ⇒ assert(assertion = false, s"expected: $expectedEffect but no effects were recorded")
+      case null   ⇒ throw new AssertionError(s"expected: $expectedEffect but no effects were recorded")
       case effect ⇒ assert(expectedEffect == effect, s"expected: $expectedEffect but found $effect")
     }
   }
+
+  def expectEffectClass[E <: Effect](effectClass: Class[E]): E = {
+    ctx.effectQueue.poll() match {
+      case null ⇒ throw new AssertionError(s"expected: effect type ${effectClass.getName} but no effects were recorded")
+      case effect if effectClass.isAssignableFrom(effect.getClass) ⇒ effect.asInstanceOf[E]
+      case other ⇒ throw new AssertionError(s"expected: effect class ${effectClass.getName} but found $other")
+    }
+  }
+
+  def expectEffectType[E <: Effect](implicit classTag: ClassTag[E]): E =
+    expectEffectClass(classTag.runtimeClass.asInstanceOf[Class[E]])
 
   def returnedBehavior: Behavior[T] = currentUncanonical
   def currentBehavior: Behavior[T] = current
