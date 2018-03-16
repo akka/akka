@@ -5,7 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit._
-import akka.stream.{ OverflowStrategy, ActorMaterializer, ActorMaterializerSettings, ClosedShape }
+import akka.stream._
 import akka.stream.testkit.Utils._
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Await
@@ -40,6 +40,28 @@ class GraphPartitionSpec extends StreamSpec {
       s2.futureValue.toSet should ===(Set(1, 2))
       s3.futureValue.toSet should ===(Set(3))
 
+    }
+
+    "partition to three subscribers 2" in assertAllStagesStopped {
+
+      val (s1, s2, s3) = RunnableGraph.fromGraph(GraphDSL.create(Sink.seq[Int], Sink.seq[Int], Sink.seq[Int])(Tuple3.apply) { implicit b ⇒ (sink1, sink2, sink3) ⇒
+        val partition = b.add(Partition[Int](3, {
+          case g if (g > 3)  ⇒ 0
+          case l if (l < 3)  ⇒ 1
+          case e if (e == 3) ⇒ throw new RuntimeException()
+        }))
+        Source(List(1, 2, 3, 4, 5)) ~> partition.in
+        partition.out(0) ~> sink1.in
+        partition.out(1) ~> sink2.in
+        partition.out(2) ~> sink3.in
+        ClosedShape
+      })
+        .withAttributes(ActorAttributes.supervisionStrategy(_ ⇒ Supervision.Resume))
+        .run()
+
+      s1.futureValue.toSet should ===(Set(4, 5))
+      s2.futureValue.toSet should ===(Set(1, 2))
+      s3.futureValue.toSet should ===(Set())
     }
 
     "complete stage after upstream completes" in assertAllStagesStopped {

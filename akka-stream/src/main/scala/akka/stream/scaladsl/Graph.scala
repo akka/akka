@@ -8,6 +8,7 @@ import java.util.SplittableRandom
 
 import akka.NotUsed
 import akka.annotation.InternalApi
+import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl._
@@ -753,27 +754,39 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int, val e
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler {
+    val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
     private var outPendingElem: Any = null
     private var outPendingIdx: Int = _
     private var downstreamRunning = outputPorts
 
     def onPush() = {
       val elem = grab(in)
-      val idx = partitioner(elem)
-      if (idx < 0 || idx >= outputPorts) {
-        failStage(PartitionOutOfBoundsException(s"partitioner must return an index in the range [0,${outputPorts - 1}]. returned: [$idx] for input [${elem.getClass.getName}]."))
-      } else if (!isClosed(out(idx))) {
-        if (isAvailable(out(idx))) {
-          push(out(idx), elem)
-          if (out.exists(isAvailable(_)))
-            pull(in)
-        } else {
-          outPendingElem = elem
-          outPendingIdx = idx
-        }
+      try {
+        val idx = partitioner(elem)
+        if (idx < 0 || idx >= outputPorts) {
+          failStage(PartitionOutOfBoundsException(s"partitioner must return an index in the range [0,${outputPorts - 1}]. returned: [$idx] for input [${elem.getClass.getName}]."))
+        } else if (!isClosed(out(idx))) {
+          if (isAvailable(out(idx))) {
+            push(out(idx), elem)
+            if (out.exists(isAvailable(_)))
+              pull(in)
+          } else {
+            outPendingElem = elem
+            outPendingIdx = idx
+          }
 
-      } else if (out.exists(isAvailable(_)))
-        pull(in)
+        } else if (out.exists(isAvailable(_)))
+          pull(in)
+      } catch {
+        case NonFatal(ex) ⇒ decider(ex) match {
+          case Supervision.Stop ⇒
+            failStage(ex)
+          case Supervision.Restart ⇒
+            pull(in)
+          case Supervision.Resume ⇒
+            pull(in)
+        }
+      }
     }
 
     override def onUpstreamFinish(): Unit = {
