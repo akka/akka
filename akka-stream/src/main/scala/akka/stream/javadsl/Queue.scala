@@ -10,8 +10,6 @@ import java.util.concurrent.CompletionStage
 import akka.Done
 import akka.stream.QueueOfferResult
 
-import scala.concurrent.Future
-
 /**
  * This trait allows to have the queue as a data source for some stream.
  */

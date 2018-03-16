@@ -4,9 +4,8 @@
 
 package akka.actor
 
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.DoNotInherit
 import akka.japi.pf.ReceiveBuilder
-import akka.japi.pf.UnitPFBuilder
 
 import scala.runtime.BoxedUnit
 import java.util.Optional

@@ -4,13 +4,10 @@
 
 package akka.stream.impl.streamref
 
-import akka.actor.{ Actor, ActorLogging, ActorPath, ActorRef, ActorRefProvider, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider, MinimalActorRef, Props, RepointableActorRef, Stash }
+import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.annotation.InternalApi
 import akka.event.Logging
-import akka.stream.SourceRef
 import akka.stream.impl.SeqActorName
-
-import scala.concurrent.Future
 
 /** INTERNAL API */
 @InternalApi

@@ -19,7 +19,6 @@ import akka.actor.ActorRef
 import akka.testkit.TestKitExtension
 import akka.actor.ActorIdentity
 import akka.actor.Identify
-import com.typesafe.config.ConfigValueFactory
 
 object ReliableProxySpec extends MultiNodeConfig {
   val local = role("local")

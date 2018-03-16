@@ -5,7 +5,6 @@
 package akka.actor
 
 import akka.util.JavaDurationConverters
-
 import scala.concurrent.duration.FiniteDuration
 
 /**

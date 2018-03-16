@@ -4,8 +4,6 @@
 
 package akka.testkit.typed.javadsl
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.Scheduler
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.testkit.typed.TestKitSettings

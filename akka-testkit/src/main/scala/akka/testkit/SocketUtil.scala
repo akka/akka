@@ -17,8 +17,6 @@ import java.net.StandardProtocolFamily
  */
 object SocketUtil {
 
-  import scala.language.reflectiveCalls
-
   val RANDOM_LOOPBACK_ADDRESS = "RANDOM_LOOPBACK_ADDRESS"
 
   private val canBindOnAlternativeLoopbackAddresses = {

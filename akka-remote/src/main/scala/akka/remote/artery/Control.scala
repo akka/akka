@@ -168,7 +168,6 @@ private[remote] class OutboundControlJunction(
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
 
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging with OutboundControlIngress {
-      import OutboundControlJunction._
 
       val sendControlMessageCallback = getAsyncCallback[ControlMessage](internalSendControlMessage)
       private val maxControlMessageBufferSize: Int = outboundContext.settings.Advanced.OutboundControlQueueSize

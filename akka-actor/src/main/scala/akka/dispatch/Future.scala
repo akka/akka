@@ -13,7 +13,6 @@ import java.util.concurrent.{ Executor, ExecutorService, Callable }
 import scala.util.{ Try, Success, Failure }
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
-import scala.collection.immutable
 import akka.compat
 
 /**

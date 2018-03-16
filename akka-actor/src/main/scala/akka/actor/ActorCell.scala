@@ -20,8 +20,6 @@ import java.util.concurrent.ThreadLocalRandom
 import scala.util.control.NonFatal
 import akka.dispatch.MessageDispatcher
 import akka.util.Reflect
-import akka.japi.pf.ReceiveBuilder
-import akka.actor.AbstractActor.Receive
 import akka.annotation.InternalApi
 
 /**

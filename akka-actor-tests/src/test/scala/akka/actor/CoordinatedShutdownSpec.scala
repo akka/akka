@@ -164,7 +164,6 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     }
 
     "run from a given phase" in {
-      import system.dispatcher
       val phases = Map(
         "a" → emptyPhase,
         "b" → phase("a"),
@@ -188,7 +187,6 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     }
 
     "only run once" in {
-      import system.dispatcher
       val phases = Map("a" → emptyPhase)
       val co = new CoordinatedShutdown(extSys, phases)
       co.addTask("a", "a1") { () ⇒
@@ -244,7 +242,6 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     }
 
     "abort if recover=off" in {
-      import system.dispatcher
       val phases = Map(
         "a" → emptyPhase,
         "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = true),
@@ -288,7 +285,6 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
     }
 
     "be possible to add tasks in later phase from task in earlier phase" in {
-      import system.dispatcher
       val phases = Map(
         "a" → emptyPhase,
         "b" → phase("a"))

@@ -12,7 +12,6 @@ import java.util.concurrent.ThreadLocalRandom
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.util.OptionVal
 
 import scala.concurrent.Promise
 import scala.util.control.NonFatal

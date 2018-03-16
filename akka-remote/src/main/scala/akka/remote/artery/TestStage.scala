@@ -7,7 +7,6 @@ package akka.remote.artery
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
-import scala.concurrent.duration._
 import akka.actor.Address
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.stream.Attributes

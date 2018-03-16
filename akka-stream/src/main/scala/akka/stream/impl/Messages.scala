@@ -4,7 +4,6 @@
 
 package akka.stream.impl
 
-import language.existentials
 import akka.actor.{ DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.annotation.InternalApi
 

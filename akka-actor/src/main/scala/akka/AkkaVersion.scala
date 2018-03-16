@@ -6,8 +6,6 @@ package akka
 
 import akka.annotation.InternalApi
 
-import scala.annotation.varargs
-
 final class UnsupportedAkkaVersion private[akka] (msg: String) extends RuntimeException(msg)
 
 object AkkaVersion {
