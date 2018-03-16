@@ -84,6 +84,8 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
           case Renew(ref) ⇒
             ref ! Renewed
             behavior
+          case other ⇒
+            throw new RuntimeException(s"Unexpected message: $other")
         }
       }.decorate
 
@@ -531,7 +533,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
       val probe = TestProbe[ActorRef[String]]()
       val actor = spawn(Behaviors.immutablePartial[String] {
         case (ctx, "message") ⇒
-          messages.ref ! (ctx.self, "received message")
+          messages.ref.tell((ctx.self, "received message"))
           Behaviors.same
         case (ctx, name) ⇒
           probe.ref ! ctx.spawnMessageAdapter(identity, name)
