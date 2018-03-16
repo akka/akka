@@ -28,14 +28,13 @@ object RecoveryPermitterSpec {
 
   private def persistentBehavior(name: String,
                                  commandProbe: TestProbe[Command],
-                                 eventProbe: TestProbe[Event]): Behavior[InternalProtocol] =
+                                 eventProbe: TestProbe[Event]): Behavior[Command] =
     PersistentBehaviors.immutable[Command, Event, State](
       persistenceId = name,
       initialState = EmptyState,
       commandHandler = CommandHandler.command { command ⇒ commandProbe.ref ! command; Effect.none },
       eventHandler = { (state, event) ⇒ eventProbe.ref ! event; state }
     ).onRecoveryCompleted { case (_, state) ⇒ eventProbe.ref ! Recovered(state) }
-      .narrow[InternalProtocol]
 }
 
 class RecoveryPermitterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
