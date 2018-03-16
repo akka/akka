@@ -150,7 +150,7 @@ import scala.util.control.NonFatal
     } else rec(s.asInstanceOf[Subscriber[Any]])
   }
 
-  override final def onSubscribe(s: Subscription): Unit = {
+  override def onSubscribe(s: Subscription): Unit = {
     @tailrec def rec(obj: AnyRef): Unit = {
       get() match {
         case null ⇒
@@ -190,20 +190,17 @@ import scala.util.control.NonFatal
       if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode.establishSubscription(wrapped)")
       establishing.subscriber.onSubscribe(wrapped)
 
-      // while we were establishing some stuff could have happened:
-      @tailrec
-      def completeEstablishing(): Unit = {
+      // while we were establishing some stuff could have happened
+      // most likely case, nobody changed it while we where establishing
+      if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode.establishSubscription.rec($establishing) -> Both")
+      if (compareAndSet(establishing, Both(establishing.subscriber))) {
+        // cas won - life is good
+        // Requests will be only allowed once onSubscribe has returned to avoid reentering on an onNext before
+        // onSubscribe completed
+        wrapped.ungateDemandAndRequestBuffered()
+      } else {
+        // changed by someone else
         get() match {
-          case `establishing` ⇒
-            // most likely case, nobody changed it while we where establishing
-            if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode.establishSubscription.rec($establishing) -> Both")
-            if (!compareAndSet(establishing, Both(establishing.subscriber))) completeEstablishing()
-            else {
-              // cas won - life is good
-              // Requests will be only allowed once onSubscribe has returned to avoid reentering on an onNext before
-              // onSubscribe completed
-              wrapped.ungateDemandAndRequestBuffered()
-            }
           case Establishing(sub, _, OptionVal.Some(error)) ⇒
             // there was an onError while establishing
             if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode.establishSubscription.rec(Establishing(buffered-error) -> Inert")
@@ -223,7 +220,6 @@ import scala.util.control.NonFatal
             throw new IllegalStateException(s"Unexpected state while establishing: [$other], if this ever happens it is a bug.")
         }
       }
-      completeEstablishing()
 
     } catch {
       case NonFatal(ex) ⇒
@@ -260,21 +256,20 @@ import scala.util.control.NonFatal
             case Inert ⇒ // nothing to be done
             case _     ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
           }
-        case est: Establishing ⇒
-          // keep trying until subscription established and can complete it
+        case est @ Establishing(_, false, OptionVal.None) ⇒
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($est).onError(${t.getMessage}), loop")
           if (!compareAndSet(est, est.copy(onErrorBuffered = OptionVal.Some(ex)))) rec(ex)
 
         case other ⇒
+          // spec violation or cancellation race, but nothing we can do
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($other).onError(${t.getMessage}). spec violation or cancellation race")
-        // spec violation or cancellation race, but nothing we can do
       }
 
     val ex = if (t == null) exceptionMustNotBeNullException else t
     rec(ex)
   }
 
-  @tailrec override final def onComplete(): Unit = {
+  @tailrec override def onComplete(): Unit = {
     get() match {
       case null ⇒
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(null).onComplete -> EmptyPublisher")
@@ -290,7 +285,7 @@ import scala.util.control.NonFatal
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onComplete -> Inert")
         set(Inert)
         EmptyPublisher.subscribe(s)
-      case est: Establishing ⇒
+      case est @ Establishing(_, false, OptionVal.None) ⇒
         if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($est).onComplete -> Establishing with buffered complete")
         if (!est.onCompleteBuffered && !compareAndSet(est, est.copy(onCompleteBuffered = true))) onComplete()
       case other ⇒
