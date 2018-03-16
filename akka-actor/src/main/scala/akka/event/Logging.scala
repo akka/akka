@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem.Settings
 import akka.actor._
-import akka.annotation.DoNotInherit
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.RequiresMessageQueue
 import akka.event.Logging._
 import akka.util.ReentrantGuard
