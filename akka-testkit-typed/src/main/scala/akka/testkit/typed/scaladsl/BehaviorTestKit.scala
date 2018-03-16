@@ -10,6 +10,7 @@ import akka.testkit.typed.Effect
 import akka.testkit.typed.internal.BehaviorTestKitImpl
 
 import scala.collection.immutable
+import scala.reflect.ClassTag
 
 object BehaviorTestKit {
   def apply[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] =
@@ -62,6 +63,12 @@ trait BehaviorTestKit[T] {
    * further assertions.
    */
   def expectEffect(expectedEffect: Effect): Unit
+
+  /**
+   * Asserts that the oldest effect is of type T. Consumes and returns the concrete effect for
+   * further direct assertions.
+   */
+  def expectEffectType[T <: Effect](implicit classTag: ClassTag[T]): T
 
   /**
    * The current behavior, can change any time `run` is called
