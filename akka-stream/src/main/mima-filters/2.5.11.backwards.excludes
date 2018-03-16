@@ -3,3 +3,4 @@ ProblemFilters.exclude[MissingTypesProblem]("akka.stream.ActorAttributes$Dispatc
 
 # #24581 RS violation
 ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.VirtualProcessor$Both")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.VirtualProcessor#Both.create")
