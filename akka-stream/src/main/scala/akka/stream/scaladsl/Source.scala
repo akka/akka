@@ -840,6 +840,20 @@ object Source {
     Source.fromGraph(new BoundedSourceQueueStage[T](bufferSize))
 
   /**
+   * Combine the elements of multiple pre-sorted streams into a single sorted stream.
+   */
+  def mergeSortedN[T: Ordering](sources: immutable.Seq[Source[T, _]]): Source[T, NotUsed] = {
+    val source = sources match {
+      case immutable.Seq()   => empty[T]
+      case immutable.Seq(s1) => s1.mapMaterializedValue(_ => NotUsed)
+      case s1 +: s2 +: ss    => combine(s1, s2, ss: _*)(new MergeSortedN[T](_))
+    }
+
+    source.addAttributes(DefaultAttributes.mergeSortedN)
+  }
+
+
+  /**
    * Creates a `Source` that is materialized as an [[akka.stream.scaladsl.SourceQueueWithComplete]].
    * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
    * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded

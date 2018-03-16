@@ -715,6 +715,29 @@ object Source {
   def queue[T](bufferSize: Int): Source[T, BoundedSourceQueue[T]] =
     scaladsl.Source.queue(bufferSize).asJava
 
+    /**
+   * Merge the given [[Source]]s, taking elements as they arrive from input streams,
+   * picking always the smallest of the available elements (waiting for one element from all inputs
+   * to be available). This means that possible contiguity of the input streams is not exploited to avoid
+   * waiting for elements, this merge will block when one of the inputs does not have more elements (and
+   * does not complete).
+   *
+   * '''Emits when''' all of the inputs have an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstreams complete
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def mergeSortedN[T](
+      sources: java.util.List[Source[T, _ <: Any]],
+      comp: util.Comparator[T]): javadsl.Source[T, _ <: Any] = {
+    val seq = if (sources != null) Util.immutableSeq(sources).map(_.asScala) else immutable.Seq()
+    new Source(scaladsl.Source.mergeSortedN(seq)(Ordering.comparatorToOrdering(comp)))
+  }
+
+
   /**
    * Creates a `Source` that is materialized as an [[akka.stream.javadsl.SourceQueueWithComplete]].
    * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,

@@ -571,6 +571,103 @@ final class MergeSorted[T: Ordering] extends GraphStage[FanInShape2[T, T, T]] {
   }
 }
 
+/**
+ * Merge multiple pre-sorted streams such that the resulting stream is sorted.
+ *
+ * The stage pulls and buffers one element from each of the given inlets. It does not emit until
+ * all inlets have an available element (or have been closed) at which point it will emit the smallest
+ * element and pull the corresponding inlet.
+ *
+ * '''Emits when''' all inputs have an element available
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
+ */
+object MergeSortedN {
+
+  /**
+   * Create a new `MergeSortedN`.
+   */
+  def apply[A: Ordering](n: Int) = new MergeSortedN[A](n)
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class MergeSortedN[T: Ordering](inputPorts: Int)
+    extends GraphStage[UniformFanInShape[T, T]] {
+  val inlets: immutable.IndexedSeq[Inlet[T]] = Vector.tabulate(inputPorts)(i => Inlet[T]("MergeSortedN.in" + i))
+  val out: Outlet[T] = Outlet[T]("MergeSortedN.out")
+  override val shape: UniformFanInShape[T, T] = UniformFanInShape(out, inlets: _*)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with OutHandler {
+      private val bufferedElements = new mutable.TreeSet[(T, Int)]()
+      private val inletsBeingPulled = new mutable.HashSet[Inlet[T]]
+      private var runningInlets = inputPorts
+      private def canPush = inletsBeingPulled.isEmpty && bufferedElements.nonEmpty && isAvailable(out)
+      private def upstreamsClosed = runningInlets == 0
+
+      override def preStart(): Unit = {
+        for (i <- inlets) {
+          tryPull(i)
+          inletsBeingPulled.add(i)
+        }
+      }
+
+      private def maybeCompleteStage(): Unit = {
+        if (bufferedElements.isEmpty && upstreamsClosed) {
+          completeStage()
+        }
+      }
+
+      private def maybePush(): Unit = {
+        if (canPush) {
+          val next = bufferedElements.firstKey
+          bufferedElements.remove(next)
+          push(out, next._1)
+          val inlet = inlets(next._2)
+          if (!isClosed(inlet)) {
+            pull(inlet)
+            inletsBeingPulled.add(inlet)
+          }
+        }
+
+        maybeCompleteStage()
+      }
+
+      for (i <- inlets.indices) {
+        val inlet = inlets(i)
+        val index = i
+        setHandler(inlet, new InHandler {
+          override def onPush(): Unit = {
+            val element = grab(inlet)
+            bufferedElements.add((element, index))
+            inletsBeingPulled.remove(inlet)
+            maybePush()
+          }
+
+          override def onUpstreamFinish(): Unit = {
+            inletsBeingPulled.remove(inlet)
+            runningInlets -= 1
+            maybePush()
+          }
+        })
+      }
+
+      override def onPull(): Unit = {
+        maybePush()
+      }
+
+      setHandler(out, this)
+    }
+
+  override def toString = s"MergeSortedN($inputPorts)"
+}
+
 object Broadcast {
 
   /**
