@@ -31,7 +31,9 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   private final val EmptyORMultiMap = ORMultiMap.empty[ServiceKey[_], Entry]
 
   case class Entry(ref: ActorRef[_], systemUid: Long) {
-    val uniqueAddress: UniqueAddress = UniqueAddress(ref.path.address, systemUid)
+    def uniqueAddress(selfUniqueAddress: UniqueAddress): UniqueAddress =
+      if (ref.path.address.hasLocalScope) selfUniqueAddress
+      else UniqueAddress(ref.path.address, systemUid)
     override def toString = ref.path.toString + "#" + ref.path.uid
   }
   case class ServiceRegistry(map: ORMultiMap[ServiceKey[_], Entry]) extends AnyVal {
@@ -90,7 +92,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     val replicator = DistributedData(untypedSystem).replicator
     val selfSystemUid = AddressUidExtension(untypedSystem).longAddressUid
     implicit val cluster = Cluster(untypedSystem)
-    def localAddress: UniqueAddress = cluster.selfMember.uniqueAddress
+    def selfUniqueAddress: UniqueAddress = cluster.selfUniqueAddress
   }
 
   override def behavior: Behavior[Command] = Behaviors.setup[Any] { ctx ⇒
@@ -161,7 +163,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       def nodesRemoved(addresses: Set[UniqueAddress]): Behavior[Any] = {
         // ok to update from several nodes but more efficient to try to do it from one node
         if (cluster.state.leader.contains(cluster.selfAddress) && addresses.nonEmpty) {
-          def isOnRemovedNode(entry: Entry): Boolean = addresses(entry.uniqueAddress)
+          def isOnRemovedNode(entry: Entry): Boolean = addresses(entry.uniqueAddress(setup.selfUniqueAddress))
           val removals = {
             state.map.entries.foldLeft(Map.empty[AbstractServiceKey, Set[Entry]]) {
               case (acc, (key, entries)) ⇒
@@ -192,7 +194,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       def onCommand(cmd: Command): Behavior[Any] = cmd match {
         case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) ⇒
           val entry = Entry(serviceInstance, setup.selfSystemUid)
-          ctx.log.debug("Actor was registered: [{}] [{}] [{}]", key, entry)
+          ctx.log.debug("Actor was registered: [{}] [{}]", key, entry)
           watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
           maybeReplyTo match {
             case Some(replyTo) ⇒ replyTo ! ReceptionistMessages.Registered(key, serviceInstance)
@@ -261,7 +263,10 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             val allAddressesInState: Set[UniqueAddress] = state.map.entries.flatMap {
               case (_, entries) ⇒
                 // don't care about local (empty host:port addresses)
-                entries.collect { case entry if entry.ref.path.address.hasGlobalScope ⇒ entry.uniqueAddress }
+                entries.collect {
+                  case entry if entry.ref.path.address.hasGlobalScope ⇒
+                    entry.uniqueAddress(setup.selfUniqueAddress)
+                }
             }(collection.breakOut)
             val clusterAddresses = cluster.state.members.map(_.uniqueAddress)
             val notInCluster = allAddressesInState -- clusterAddresses

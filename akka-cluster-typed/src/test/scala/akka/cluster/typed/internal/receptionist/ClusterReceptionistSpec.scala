@@ -6,7 +6,7 @@ package akka.cluster.typed.internal.receptionist
 
 import java.nio.charset.StandardCharsets
 
-import akka.actor.ExtendedActorSystem
+import akka.actor.{ExtendedActorSystem, RootActorPath}
 import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
@@ -14,6 +14,7 @@ import akka.actor.typed.{ActorRef, ActorRefResolver}
 import akka.cluster.MemberStatus
 import akka.cluster.typed.{Cluster, Join}
 import akka.serialization.SerializerWithStringManifest
+import akka.testkit.typed.FishingOutcome
 import akka.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{Matchers, WordSpec}
@@ -289,10 +290,8 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         try {
           val system3 = testKit3.system
           system1.log.debug("Starting system3 at same hostname port as system2, uid: [{}]", Cluster(system3).selfMember.uniqueAddress.longUid)
+          val clusterNode3 = Cluster(system3)
           val regProbe3 = TestProbe[Any]()(system3)
-
-          // now we should still see an updated listing
-          regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) == 2)
 
           // and registers the same service key
           val service3 = testKit3.spawn(pingPongBehavior, "instance")
@@ -301,20 +300,28 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
           regProbe3.expectMessage(Registered(PingKey, service3))
           system3.log.debug("Registered actor [{}#{}] for system3", service3.path, service3.path.uid)
 
-          val msg = regProbe1.expectMessageType[Any](10.seconds) // without a fix for this situation this never gets a message
-          val empty = Listing(PingKey, Set.empty[ActorRef[PingProtocol]])
-          val updatedWithService3 = Listing(PingKey, Set(service3))
-
-          // either empty and then updated, or just updated with the new service directly
-          msg match {
-            case `empty` ⇒
-              system3.log.debug("Got empty update, waiting for update with new incarnation")
-              regProbe1.expectMessage(5.seconds, updatedWithService3)
-            case `updatedWithService3` ⇒
-              system3.log.debug("Got update with new registration directly")
-            // ok!
-            case other ⇒ fail(s"Got unexpected message from receptionist: [$other]")
+          // make sure it joined fine and node1 has upped it
+          regProbe1.awaitAssert {
+            clusterNode1.state.members.exists(m ⇒
+              m.uniqueAddress == clusterNode3.selfMember.uniqueAddress &&
+                m.status == MemberStatus.Up &&
+                !clusterNode1.state.unreachable(m)
+            )
           }
+
+          // we should get either empty message and then updated with the new incarnation actor
+          // or just updated with the new service directly
+          val msg = regProbe1.fishForMessage(20.seconds) {
+            case PingKey.Listing(entries) if entries.size == 1 ⇒ FishingOutcome.Complete
+            case _: Listing                                    ⇒ FishingOutcome.ContinueAndIgnore
+          }
+          val PingKey.Listing(entries) = msg.last
+          entries should have size 1
+          val ref = entries.head
+          val service3RemotePath = RootActorPath(clusterNode3.selfMember.address) / "user" / "instance"
+          ref.path should ===(service3RemotePath)
+          ref ! Ping(regProbe1.ref)
+          regProbe1.expectMessage(Pong)
 
         } finally {
           testKit3.shutdownTestKit()
