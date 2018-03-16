@@ -23,8 +23,11 @@ trait SourceQueue[T] {
    * - completes with `Dropped` when stream dropped offered element
    * - completes with `QueueClosed` when stream is completed during future is active
    * - completes with `Failure(f)` when failure to enqueue element from upstream
-   * - fails when stream is completed or you cannot call offer in this moment because of implementation rules
-   * (like for backpressure mode and full buffer you need to wait for last offer call Future completion)
+   * - fails when stream is completed
+   *
+   * Additionally when using the backpressure overflowStrategy:
+   * - If the buffer is full the Future won't be completed until there is space in the buffer
+   * - Calling offer before the Future is completed in this case will return a failed Future
    *
    * @param elem element to send to a stream
    */
