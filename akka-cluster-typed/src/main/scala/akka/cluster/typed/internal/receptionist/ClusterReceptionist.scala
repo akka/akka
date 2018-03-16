@@ -68,8 +68,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     def collectChangedKeys(previousState: ServiceRegistry, newState: ServiceRegistry): Set[AbstractServiceKey] = {
       val allKeys = previousState.toORMultiMap.entries.keySet ++ newState.toORMultiMap.entries.keySet
       allKeys.foldLeft(Set.empty[AbstractServiceKey]) { (acc, key) ⇒
-        val oldValues = previousState.getActorRefsFor(key)
-        val newValues = newState.getActorRefsFor(key)
+        val oldValues = previousState.getEntriesFor(key)
+        val newValues = newState.getEntriesFor(key)
         if (oldValues != newValues) acc + key
         else acc
       }
@@ -174,7 +174,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           if (removals.nonEmpty) {
             if (ctx.log.isDebugEnabled)
               ctx.log.debug(
-                "Node(s) [{}] removed, updating registry [{}]",
+                "Node(s) [{}] removed, updating registry removing: [{}]",
                 addresses.mkString(","),
                 removals.map {
                   case (key, entries) ⇒ key.asServiceKey.id -> entries.mkString("[", ", ", "]")
@@ -236,7 +236,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           if (changedKeys.nonEmpty) {
             if (ctx.log.isDebugEnabled) {
               ctx.log.debug(
-                "Registration changed: [{}]",
+                "Change from replicator: [{}], changes: [{}]",
+                newState.map.entries,
                 changedKeys.map(key ⇒
                   key.asServiceKey.id -> newState.getEntriesFor(key).mkString("[", ", ", "]")
                 ).mkString(", "))
@@ -247,11 +248,11 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             Behaviors.same
           }
 
-        case NodeRemoved(address) ⇒
+        case NodeRemoved(uniqueAddress) ⇒
           // ok to update from several nodes but more efficient to try to do it from one node
           if (cluster.state.leader.contains(cluster.selfAddress)) {
-            ctx.log.debug(s"Leader node observed removed address [{}]", address)
-            nodesRemoved(Set(address))
+            ctx.log.debug(s"Leader node observed removed address [{}]", uniqueAddress)
+            nodesRemoved(Set(uniqueAddress))
           } else Behaviors.same
 
         case RemoveTick ⇒

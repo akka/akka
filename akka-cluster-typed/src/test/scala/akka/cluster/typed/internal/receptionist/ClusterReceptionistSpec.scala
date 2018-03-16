@@ -181,7 +181,55 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
       }
     }
 
-    "remove registrations when node dies and a new with same host port rejoins" in {
+    "work with services registered before node joins cluster" in {
+      val testKit1 = new ActorTestKit {
+        override def name = super.name + "-test-2"
+        override def config = ClusterReceptionistSpec.config
+      }
+      val system1 = testKit1.system
+      val testKit2 = new ActorTestKit {
+        override def name = system1.name
+        override def config = testKit1.system.settings.config
+      }
+      val system2 = testKit2.system
+      try {
+
+        val clusterNode1 = Cluster(system1)
+        clusterNode1.manager ! Join(clusterNode1.selfMember.address)
+
+        val regProbe1 = TestProbe[Any]()(system1)
+        val regProbe2 = TestProbe[Any]()(system2)
+
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) == 2)
+
+        system1.receptionist ! Subscribe(PingKey, regProbe1.ref)
+        regProbe1.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+
+        val service2 = testKit2.spawn(pingPongBehavior)
+        system2.receptionist ! Register(PingKey, service2, regProbe2.ref)
+        regProbe2.expectMessage(Registered(PingKey, service2))
+
+        // then we join the cluster
+        val clusterNode2 = Cluster(system2)
+        clusterNode2.manager ! Join(clusterNode1.selfMember.address)
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up))
+
+        // and the subscriber on node1 should see the service
+        val remoteServiceRefs = regProbe1.expectMessageType[Listing].serviceInstances(PingKey)
+        val theRef = remoteServiceRefs.head
+        theRef ! Ping(regProbe1.ref)
+        regProbe1.expectMessage(Pong)
+
+        // abrupt termination
+        system2.terminate()
+        regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+      } finally {
+        testKit1.shutdownTestKit()
+        if (!system1.whenTerminated.isCompleted) testKit2.shutdownTestKit()
+      }
+    }
+
+    "handle a new incarnation of the same node well" in {
       val testKit1 = new ActorTestKit {
         override def name = super.name + "-test-3"
         override def config = ClusterReceptionistSpec.config
@@ -211,6 +259,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         system2.receptionist ! Register(PingKey, service2, regProbe2.ref)
         regProbe2.expectMessage(Registered(PingKey, service2))
 
+        // make sure we saw the first incarnation on node1
         val remoteServiceRefs = regProbe1.expectMessageType[Listing].serviceInstances(PingKey)
         val theRef = remoteServiceRefs.head
         theRef ! Ping(regProbe1.ref)
@@ -220,7 +269,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         // right now it doesn't work anyways though ;D
 
         // abrupt termination but then a node with the same host:port comes online quickly
-        system1.log.info("Terminating system2, uid: [{}]", clusterNode2.selfMember.uniqueAddress.longUid)
+        system1.log.debug("Terminating system2, uid: [{}]", clusterNode2.selfMember.uniqueAddress.longUid)
         Await.ready(system2.terminate(), 10.seconds)
 
         val testKit3 = new ActorTestKit {
@@ -229,6 +278,8 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
             val address = clusterNode1.selfMember.address
             s"akka://${system1.name}@${address.host.get}:${address.port.get}"
           }
+
+          // joining through seed node list
           override def config: Config = ConfigFactory.parseString(
             s"""
                akka.remote.artery.canonical.port = ${clusterNode2.selfMember.address.port.get}
@@ -237,18 +288,18 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         }
         try {
           val system3 = testKit3.system
-          system1.log.info("Starting system3 at same hostname port as system2, uid: [{}]", Cluster(system3).selfMember.uniqueAddress.longUid)
+          system1.log.debug("Starting system3 at same hostname port as system2, uid: [{}]", Cluster(system3).selfMember.uniqueAddress.longUid)
           val regProbe3 = TestProbe[Any]()(system3)
-
-          // and registers the same service key
-          system3.log.info("Spawning/registering same service/actor path")
-          val service3 = testKit3.spawn(pingPongBehavior, "instance")
-          system3.receptionist ! Register(PingKey, service3, regProbe3.ref)
-          regProbe3.expectMessage(Registered(PingKey, service3))
-          system3.log.info("Registered actor [{}#{}] for system3", service3.path, service3.path.uid)
 
           // now we should still see an updated listing
           regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) == 2)
+
+          // and registers the same service key
+          val service3 = testKit3.spawn(pingPongBehavior, "instance")
+          system3.log.debug("Spawning/registering ping service in new incarnation {}#{}", service3.path, service3.path.uid)
+          system3.receptionist ! Register(PingKey, service3, regProbe3.ref)
+          regProbe3.expectMessage(Registered(PingKey, service3))
+          system3.log.debug("Registered actor [{}#{}] for system3", service3.path, service3.path.uid)
 
           val msg = regProbe1.expectMessageType[Any](10.seconds) // without a fix for this situation this never gets a message
           val empty = Listing(PingKey, Set.empty[ActorRef[PingProtocol]])
@@ -256,13 +307,13 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
           // either empty and then updated, or just updated with the new service directly
           msg match {
-            case `empty`               ⇒
-              system3.log.info("Got empty update, waiting for update with new registration")
+            case `empty` ⇒
+              system3.log.debug("Got empty update, waiting for update with new incarnation")
               regProbe1.expectMessage(5.seconds, updatedWithService3)
             case `updatedWithService3` ⇒
-              system3.log.info("Got update with new registration directly")
-              // ok!
-            case other                 ⇒ fail(s"Got unexpected message from receptionist: [$other]")
+              system3.log.debug("Got update with new registration directly")
+            // ok!
+            case other ⇒ fail(s"Got unexpected message from receptionist: [$other]")
           }
 
         } finally {
