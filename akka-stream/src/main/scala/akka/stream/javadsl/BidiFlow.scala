@@ -92,6 +92,8 @@ object BidiFlow {
    * every second in one direction, but no elements are flowing in the other direction. I.e. this stage considers
    * the *joint* frequencies of the elements in both directions.
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def bidirectionalIdleTimeout[I, O](timeout: FiniteDuration): BidiFlow[I, I, O, O, NotUsed] =
     new BidiFlow(scaladsl.BidiFlow.bidirectionalIdleTimeout(timeout))
 

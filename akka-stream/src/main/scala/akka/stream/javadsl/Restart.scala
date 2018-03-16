@@ -38,6 +38,8 @@ object RestartSource {
    *   In order to skip this additional delay pass in `0`.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
     akka.stream.scaladsl.RestartSource.withBackoff(minBackoff, maxBackoff, randomFactor) { () ⇒
@@ -94,6 +96,8 @@ object RestartSource {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                      maxRestarts: Int, sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
     akka.stream.scaladsl.RestartSource.withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () ⇒
@@ -150,6 +154,8 @@ object RestartSource {
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def onFailuresWithBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                                sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
     akka.stream.scaladsl.RestartSource.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor) { () ⇒
@@ -205,6 +211,8 @@ object RestartSource {
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def onFailuresWithBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                                maxRestarts: Int, sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
     akka.stream.scaladsl.RestartSource.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () ⇒
@@ -274,6 +282,8 @@ object RestartSink {
    *   In order to skip this additional delay pass in `0`.
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                      sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
     akka.stream.scaladsl.RestartSink.withBackoff(minBackoff, maxBackoff, randomFactor) { () ⇒
@@ -337,6 +347,8 @@ object RestartSink {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                      maxRestarts: Int, sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
     akka.stream.scaladsl.RestartSink.withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () ⇒
@@ -409,6 +421,8 @@ object RestartFlow {
    *   In order to skip this additional delay pass in `0`.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                            flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
     akka.stream.scaladsl.RestartFlow.withBackoff(minBackoff, maxBackoff, randomFactor) { () ⇒
@@ -470,6 +484,8 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                            maxRestarts: Int, flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
     akka.stream.scaladsl.RestartFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () ⇒
@@ -533,6 +549,8 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def onFailuresWithBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double,
                                      maxRestarts: Int, flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
     akka.stream.scaladsl.RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () ⇒

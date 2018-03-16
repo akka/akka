@@ -606,6 +606,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def groupedWithin(n: Int, d: FiniteDuration): SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
     new SubFlow(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
 
@@ -650,6 +652,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, java.lang.Long], d: FiniteDuration): javadsl.SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
     new SubFlow(delegate.groupedWeightedWithin(maxWeight, d)(costFn.apply).map(_.asJava))
 
@@ -701,6 +705,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * @param of time to shift all messages
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def delay(of: FiniteDuration, strategy: DelayOverflowStrategy): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.delay(of, strategy))
 
@@ -760,6 +766,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *
    * '''Cancels when''' downstream cancels
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def dropWithin(d: FiniteDuration): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.dropWithin(d))
 
@@ -965,6 +973,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *
    * '''Cancels when''' downstream cancels or timer fires
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def takeWithin(d: FiniteDuration): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.takeWithin(d))
 
@@ -1446,6 +1456,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *
    * '''Cancels when''' downstream cancels
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def initialTimeout(timeout: FiniteDuration): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.initialTimeout(timeout))
 
@@ -1478,6 +1490,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *
    * '''Cancels when''' downstream cancels
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def completionTimeout(timeout: FiniteDuration): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.completionTimeout(timeout))
 
@@ -1511,6 +1525,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *
    * '''Cancels when''' downstream cancels
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def idleTimeout(timeout: FiniteDuration): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.idleTimeout(timeout))
 
@@ -1545,6 +1561,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *
    * '''Cancels when''' downstream cancels
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def backpressureTimeout(timeout: FiniteDuration): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.backpressureTimeout(timeout))
 
@@ -1583,6 +1601,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *
    * '''Cancels when''' downstream cancels
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def keepAlive(maxIdle: FiniteDuration, injectedElem: function.Creator[Out]): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.keepAlive(maxIdle, () ⇒ injectedElem.create()))
 
@@ -1644,6 +1664,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *
    * @see [[#throttleEven]]
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int,
                mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(elements, per, maximumBurst, mode))
@@ -1729,6 +1751,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *
    * @see [[#throttleEven]]
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def throttle(cost: Int, per: FiniteDuration, maximumBurst: Int,
                costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(cost, per, maximumBurst, costCalculation.apply, mode))
@@ -1788,6 +1812,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * [[throttle()]] with maximumBurst attribute.
    * @see [[#throttle]]
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def throttleEven(elements: Int, per: FiniteDuration, mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(elements, per, Integer.MAX_VALUE, mode))
 
@@ -1816,6 +1842,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * [[throttle()]] with maximumBurst attribute.
    * @see [[#throttle]]
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def throttleEven(cost: Int, per: FiniteDuration,
                    costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.SubFlow[In, Out, Mat] =
     new SubFlow(delegate.throttle(cost, per, Integer.MAX_VALUE, costCalculation.apply, mode))
@@ -1861,6 +1889,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *
    * '''Cancels when''' downstream cancels
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def initialDelay(delay: FiniteDuration): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.initialDelay(delay))
 

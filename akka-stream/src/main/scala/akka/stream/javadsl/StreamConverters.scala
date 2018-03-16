@@ -85,6 +85,8 @@ object StreamConverters {
    *
    * @param readTimeout the max time the read operation on the materialized InputStream should block
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def asInputStream(readTimeout: FiniteDuration): Sink[ByteString, InputStream] =
     new Sink(scaladsl.StreamConverters.asInputStream(readTimeout))
 
@@ -155,6 +157,8 @@ object StreamConverters {
    *
    * @param writeTimeout the max time the write operation on the materialized OutputStream should block
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def asOutputStream(writeTimeout: FiniteDuration): javadsl.Source[ByteString, OutputStream] =
     new Source(scaladsl.StreamConverters.asOutputStream(writeTimeout))
 
