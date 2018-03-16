@@ -29,7 +29,9 @@ import akka.actor.ActorRef
 import akka.dispatch.sysmsg.SystemMessage
 import scala.util.control.NoStackTrace
 
+import akka.event.Logging
 import akka.stream.stage.StageLogging
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -82,6 +84,8 @@ private[remote] class SystemMessageDelivery(
 
       private def localAddress = outboundContext.localAddress
       private def remoteAddress = outboundContext.remoteAddress
+
+      override protected def logSource: Class[_] = classOf[SystemMessageDelivery]
 
       override def preStart(): Unit = {
         implicit val ec = materializer.executionContext
@@ -140,18 +144,17 @@ private[remote] class SystemMessageDelivery(
       }
 
       private val ackCallback = getAsyncCallback[Ack] { reply ⇒
-        log.debug("# sysmsg ack [{}] from [{}]", reply.seqNo, outboundContext.remoteAddress)
         ack(reply.seqNo)
       }
 
       private val nackCallback = getAsyncCallback[Nack] { reply ⇒
         if (reply.seqNo <= seqNo) {
           ack(reply.seqNo)
-          if (reply.seqNo > resendingFromSeqNo)
-            resending = unacknowledged.clone()
-          log.debug("# sysmsg nack [{}] from [{}]", reply.seqNo, outboundContext.remoteAddress)
-          if (reply.seqNo != 0)
-            tryResend()
+          log.warning(
+            "Received negative acknowledgement of system message from [{}], highest acknowledged [{}]",
+            outboundContext.remoteAddress, reply.seqNo)
+          // Nack should be very rare (connection issue) so no urgency of resending, it will be resent
+          // by the scheduled tick.
         }
       }
 
@@ -176,8 +179,20 @@ private[remote] class SystemMessageDelivery(
       }
 
       private def tryResend(): Unit = {
-        if (isAvailable(out) && !resending.isEmpty)
-          pushCopy(resending.poll())
+        if (isAvailable(out) && !resending.isEmpty) {
+          val env = resending.poll()
+
+          if (log.isDebugEnabled) {
+            env.message match {
+              case SystemMessageEnvelope(msg, n, _) ⇒
+                log.debug("Resending system message [{}] [{}]", Logging.simpleName(msg), n)
+              case _ ⇒
+                log.debug("Resending control message [{}]", Logging.simpleName(env.message))
+            }
+          }
+
+          pushCopy(env)
+        }
       }
 
       // important to not send the buffered instance, since it's mutable
@@ -192,7 +207,6 @@ private[remote] class SystemMessageDelivery(
           case msg @ (_: SystemMessage | _: AckedDeliveryMessage) ⇒
             if (unacknowledged.size < maxBufferSize) {
               seqNo += 1
-              log.debug("# new sysmsg [{}] to [{}]: {}", seqNo, outboundContext.remoteAddress, outboundEnvelope.message)
               if (unacknowledged.isEmpty)
                 ackTimestamp = System.nanoTime()
               else
@@ -285,9 +299,18 @@ private[remote] class SystemMessageAcker(inboundContext: InboundContext) extends
 
       def localAddress = inboundContext.localAddress
 
+      override protected def logSource: Class[_] = classOf[SystemMessageAcker]
+
       // InHandler
       override def onPush(): Unit = {
         val env = grab(in)
+
+        // for logging
+        def fromRemoteAddressStr: String = env.association match {
+          case OptionVal.Some(a) ⇒ a.remoteAddress.toString
+          case OptionVal.None    ⇒ "N/A"
+        }
+
         env.message match {
           case sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo) ⇒
             val expectedSeqNo = sequenceNumbers.get(ackReplyTo) match {
@@ -300,10 +323,16 @@ private[remote] class SystemMessageAcker(inboundContext: InboundContext) extends
               val unwrapped = env.withMessage(sysEnv.message)
               push(out, unwrapped)
             } else if (n < expectedSeqNo) {
+              if (log.isDebugEnabled)
+                log.debug(
+                  "Deduplicate system message [{}] from [{}], expected [{}]",
+                  n, fromRemoteAddressStr, expectedSeqNo)
               inboundContext.sendControl(ackReplyTo.address, Ack(expectedSeqNo - 1, localAddress))
               pull(in)
             } else {
-              log.debug("# sysmsg acker got [{}] expected [{}] from [{}]: {}", n, expectedSeqNo, ackReplyTo, sysEnv.message)
+              log.warning(
+                "Sending negative acknowledgement of system message [{}] from [{}], highest acknowledged [{}]",
+                n, fromRemoteAddressStr, expectedSeqNo - 1)
               inboundContext.sendControl(ackReplyTo.address, Nack(expectedSeqNo - 1, localAddress))
               pull(in)
             }

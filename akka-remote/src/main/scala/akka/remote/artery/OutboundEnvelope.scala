@@ -4,6 +4,7 @@
 package akka.remote.artery
 
 import akka.actor.ActorRef
+import akka.actor.NoSerializationVerificationNeeded
 import akka.remote.RemoteActorRef
 import akka.util.OptionVal
 
@@ -24,7 +25,7 @@ private[remote] object OutboundEnvelope {
 /**
  * INTERNAL API
  */
-private[remote] trait OutboundEnvelope {
+private[remote] trait OutboundEnvelope extends NoSerializationVerificationNeeded {
   def recipient: OptionVal[RemoteActorRef]
   def message: AnyRef
   def sender: OptionVal[ActorRef]
