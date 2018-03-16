@@ -190,7 +190,7 @@ an exception or the `max` duration is used up. If the timeout expires the
 last exception is thrown. @scala[The interval defaults to 100 ms and the maximum defaults
 to the time remaining in the innermost enclosing [within](#testkit-within)
 block. The interval defaults to 100 ms and the maximum defaults to the time
-remaining in the innermost enclosing [within](#testkit-within) block.]
+remaining in the innermost enclosing [within](#testkit-within) block.] Return an arbitrary value that would be returned from awaitAssert if successful, if not interested in such value you can return null.
 
 * @scala[`ignoreMsg(pf: PartialFunction[AnyRef, Boolean])`]@java[`public void ignoreMsg(Function<Object, Boolean> f)`]
 @scala[`ignoreMsg`]@java[`public void ignoreMsg()`]
