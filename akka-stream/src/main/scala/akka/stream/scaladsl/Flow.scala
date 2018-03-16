@@ -309,7 +309,8 @@ final class Flow[-In, +Out, +Mat](
       }
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
-  def asJava: javadsl.Flow[In, Out, Mat] = new javadsl.Flow(this)
+  def asJava[JIn <: In, JOut >: Out, JMat >: Mat]: javadsl.Flow[JIn, JOut, JMat] =
+    new javadsl.Flow(this)
 }
 
 object Flow {

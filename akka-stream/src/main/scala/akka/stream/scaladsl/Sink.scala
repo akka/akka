@@ -119,7 +119,7 @@ final class Sink[-In, +Mat](
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.
    */
-  def asJava: javadsl.Sink[In, Mat] = new javadsl.Sink(this)
+  def asJava[JIn <: In, JMat >: Mat]: javadsl.Sink[JIn, JMat] = new javadsl.Sink(this)
 }
 
 object Sink {
