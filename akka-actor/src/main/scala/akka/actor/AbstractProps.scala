@@ -8,7 +8,6 @@ import java.lang.reflect.{ Modifier, ParameterizedType, TypeVariable }
 import akka.japi.Creator
 import akka.util.Reflect
 import scala.annotation.varargs
-import scala.language.existentials
 import scala.annotation.tailrec
 import java.lang.reflect.Constructor
 

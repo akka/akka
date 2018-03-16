@@ -6,8 +6,7 @@ package akka.remote.serialization
 
 import java.nio.{ BufferOverflowException, ByteBuffer }
 
-import akka.actor.{ ExtendedActorSystem, Kill, PoisonPill }
-import akka.remote.OversizedPayloadException
+import akka.actor.ExtendedActorSystem
 import akka.serialization.{ BaseSerializer, ByteBufferSerializer }
 import akka.util.ByteString
 

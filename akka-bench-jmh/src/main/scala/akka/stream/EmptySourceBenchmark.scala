@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.{ Done, NotUsed }
 import org.openjdk.jmh.annotations._
 
 import scala.concurrent._

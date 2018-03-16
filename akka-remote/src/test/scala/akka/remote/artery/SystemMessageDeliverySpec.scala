@@ -12,7 +12,6 @@ import akka.NotUsed
 import akka.actor.ActorIdentity
 import akka.actor.ActorSystem
 import akka.actor.Identify
-import akka.actor.PoisonPill
 import akka.actor.RootActorPath
 import akka.remote.{ AddressUidExtension, RARP, UniqueAddress }
 import akka.remote.artery.SystemMessageDelivery._
@@ -26,7 +25,6 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
-import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.util.OptionVal
 

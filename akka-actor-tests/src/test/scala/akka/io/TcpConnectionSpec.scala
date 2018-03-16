@@ -4,8 +4,8 @@
 
 package akka.io
 
-import java.io.{ File, IOException }
-import java.net.{ InetSocketAddress, ServerSocket, URLClassLoader }
+import java.io.IOException
+import java.net.{ InetSocketAddress, ServerSocket }
 import java.nio.ByteBuffer
 import java.nio.channels._
 import java.nio.channels.spi.SelectorProvider
