@@ -4,44 +4,31 @@
 
 package akka.stream.impl
 
+import java.util.Optional
+import java.util.concurrent.CompletionStage
+
+import akka.NotUsed
+import akka.actor.{ ActorRef, Props }
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.ExecutionContexts
-import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream.Supervision.{ Stop, stoppingDecider }
-import akka.stream.impl.QueueSink.{ Output, Pull }
-import akka.stream.impl.fusing.GraphInterpreter
-import akka.{ Done, NotUsed, annotation }
-import akka.actor.{ Actor, ActorRef, Props }
+import akka.event.Logging
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
+import akka.stream.impl.QueueSink.{ Output, Pull }
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
-import java.util.concurrent.atomic.AtomicReference
-import java.util.function.BiConsumer
-
-import akka.actor.{ ActorRef, Props }
-import akka.stream.Attributes.InputBuffer
-import akka.stream._
+import akka.stream.scaladsl.{ Sink, SinkQueueWithCancel, Source }
 import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.generic.CanBuildFrom
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future, Promise }
-import scala.language.postfixOps
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
-import akka.stream.scaladsl.{ Keep, Sink, SinkQueue, SinkQueueWithCancel, Source }
-import java.util.concurrent.CompletionStage
-
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
-import java.util.Optional
-
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.event.Logging
-import akka.util.OptionVal
-
-import scala.collection.generic.CanBuildFrom
+import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
+import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API

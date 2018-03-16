@@ -9,7 +9,7 @@ import akka.protobuf.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.{ Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
 import akka.remote.DaemonMsgCreate
-import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData, SerializedMessage }
+import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }
 import akka.routing.{ NoRouter, RouterConfig }
 
 import scala.reflect.ClassTag

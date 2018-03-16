@@ -4,11 +4,10 @@
 
 package akka.remote
 
-import scala.concurrent.duration._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.{ Actor, ActorPath, ActorPathExtractor, ActorRef, ActorSystemImpl, AddressTerminated, Deploy, InternalActorRef, Nobody, Props, VirtualPathContainer }
-import akka.event.{ AddressTerminatedTopic, LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import akka.event.{ AddressTerminatedTopic, LogMarker, MarkerLoggingAdapter }
 import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Watch }
 import akka.actor.ActorRefWithCell
 import akka.actor.ActorRefScope
@@ -24,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.immutable
 import akka.dispatch.sysmsg.Unwatch
-import akka.NotUsed
 
 /**
  * INTERNAL API

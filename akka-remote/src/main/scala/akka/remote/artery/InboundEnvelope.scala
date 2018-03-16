@@ -6,7 +6,6 @@ package akka.remote.artery
 
 import akka.actor.InternalActorRef
 import akka.util.OptionVal
-import akka.actor.Address
 import akka.actor.ActorRef
 
 /**

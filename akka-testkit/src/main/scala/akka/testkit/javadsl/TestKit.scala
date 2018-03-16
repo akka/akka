@@ -200,6 +200,8 @@ class TestKit(system: ActorSystem) {
    *
    * Note that the timeout is scaled using Duration.dilated,
    * which uses the configuration entry "akka.test.timefactor".
+   *
+   * @return an arbitrary value that would be returned from awaitAssert if successful, if not interested in such value you can return null.
    */
   def awaitAssert[A](max: Duration, interval: Duration, a: Supplier[A]): A = tp.awaitAssert(a.get, max, interval)
 

@@ -5,7 +5,7 @@
 package akka.stream
 
 import akka.NotUsed
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.ActorRef
 import akka.stream.scaladsl.{ Sink, Source }
 
 import scala.language.implicitConversions

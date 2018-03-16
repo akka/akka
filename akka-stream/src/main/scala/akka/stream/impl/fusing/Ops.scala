@@ -11,12 +11,11 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
-import akka.pattern.AskSupport
 import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.impl.{ ConstantFun, ReactiveStreamsCompliance, Stages, Buffer ⇒ BufferImpl }
-import akka.stream.scaladsl.{ Flow, Keep, Source, SourceQueue }
+import akka.stream.impl.{ ReactiveStreamsCompliance, Buffer ⇒ BufferImpl }
+import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
 
@@ -30,9 +29,7 @@ import akka.stream.ActorAttributes.SupervisionStrategy
 
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.util.{ OptionVal, Timeout }
-
-import scala.reflect.ClassTag
+import akka.util.OptionVal
 
 /**
  * INTERNAL API

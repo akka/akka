@@ -6,25 +6,18 @@ package akka.remote.artery
 
 import java.util.Queue
 
-import akka.stream.stage.GraphStage
 import akka.stream.stage.OutHandler
 import akka.stream.Attributes
 import akka.stream.Outlet
 import akka.stream.SourceShape
 import akka.stream.stage.GraphStageLogic
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.stream.stage.GraphStageWithMaterializedValue
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueueTail
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicInteger
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.util.Try
 import scala.util.Success
 import scala.util.Failure
-
-import akka.actor.ActorRef
 
 /**
  * INTERNAL API

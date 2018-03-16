@@ -8,7 +8,6 @@ import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.Address
-import akka.cluster.InternalClusterAction
 import akka.cluster.ClusterEvent
 import akka.cluster.Member
 import akka.cluster.Cluster
