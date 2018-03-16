@@ -65,7 +65,7 @@ trait BehaviorTestKit[T] {
   def expectEffect(expectedEffect: Effect): Unit
 
   /**
-   * Asserts that the oldest effect is the of type T. Consumes and returns the concrete effect for
+   * Asserts that the oldest effect is of type T. Consumes and returns the concrete effect for
    * further direct assertions.
    */
   def expectEffectType[T <: Effect](implicit classTag: ClassTag[T]): T
