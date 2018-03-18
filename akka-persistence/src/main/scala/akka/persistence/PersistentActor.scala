@@ -9,7 +9,6 @@ import java.lang.{ Iterable ⇒ JIterable }
 import akka.actor._
 import akka.japi.Procedure
 import akka.japi.Util
-import akka.persistence.Eventsourced.{ AsyncHandlerInvocation, StashingHandlerInvocation }
 import com.typesafe.config.Config
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
