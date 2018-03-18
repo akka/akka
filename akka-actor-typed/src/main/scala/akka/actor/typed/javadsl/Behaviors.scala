@@ -9,7 +9,7 @@ import java.util.function.{ Function ⇒ JFunction }
 import scala.reflect.ClassTag
 import akka.util.OptionVal
 import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
-import akka.japi.function.{ Procedure, Procedure2 }
+import akka.japi.function.Procedure2
 import akka.japi.pf.PFBuilder
 import akka.actor.typed.Behavior
 import akka.actor.typed.ExtensibleBehavior

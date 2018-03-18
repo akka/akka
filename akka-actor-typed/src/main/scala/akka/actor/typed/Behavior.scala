@@ -8,11 +8,9 @@ import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.BehaviorImpl
 
 import scala.annotation.tailrec
-import akka.util.{ ConstantFun, LineNumbers, OptionVal }
+import akka.util.{ LineNumbers, OptionVal }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
-
-import scala.reflect.ClassTag
 
 /**
  * The behavior of an actor defines how it reacts to the messages that it

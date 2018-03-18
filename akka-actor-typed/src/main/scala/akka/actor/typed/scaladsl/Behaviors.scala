@@ -5,11 +5,10 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.ApiMayChange
 import akka.actor.typed.internal.{ BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl }
 
 import scala.reflect.ClassTag
-import scala.util.control.Exception.Catcher
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].

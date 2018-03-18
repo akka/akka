@@ -136,8 +136,6 @@ class ReceiveBuilder[T] private (
 object ReceiveBuilder {
   def create[T]: ReceiveBuilder[T] = new ReceiveBuilder[T](Nil, Nil)
 
-  import scala.language.existentials
-
   /** INTERNAL API */
   @InternalApi
   private[javadsl] final case class Case[BT, MT](`type`: Class[_ <: MT], test: Option[MT ⇒ Boolean], handler: MT ⇒ Behavior[BT])

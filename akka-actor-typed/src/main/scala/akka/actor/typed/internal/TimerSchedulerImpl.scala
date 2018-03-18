@@ -8,11 +8,8 @@ package internal
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.Cancellable
-import akka.annotation.ApiMayChange
-import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorRef.ActorRefOps
 import akka.actor.typed.javadsl
 import akka.actor.typed.scaladsl
