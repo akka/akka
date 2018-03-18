@@ -12,7 +12,6 @@ import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.util.ConstantFun
 
 class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
-  import Supervision.stoppingDecider
 
   /*
    * These tests were written for the previous version of the interpreter, the so called OneBoundedInterpreter.

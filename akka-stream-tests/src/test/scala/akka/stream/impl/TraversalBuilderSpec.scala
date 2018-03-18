@@ -6,7 +6,6 @@ package akka.stream.impl
 
 import akka.NotUsed
 import akka.stream._
-import akka.stream.impl.TraversalBuilder.printTraversal
 import akka.stream.impl.TraversalTestUtils._
 import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }

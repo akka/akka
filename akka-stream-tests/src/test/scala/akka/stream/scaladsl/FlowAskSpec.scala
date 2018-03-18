@@ -4,25 +4,19 @@
 
 package akka.stream.scaladsl
 
-import java.util.concurrent.{ CountDownLatch, LinkedBlockingQueue, ThreadLocalRandom }
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.ThreadLocalRandom
 
 import akka.actor.{ Actor, ActorRef, PoisonPill, Props }
-import akka.stream.ActorAttributes.{ SupervisionStrategy, supervisionStrategy }
+import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.Supervision.resumingDecider
-import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.{ TestActors, TestLatch, TestProbe }
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import akka.testkit.{ TestActors, TestProbe }
 
-import scala.annotation.tailrec
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
-import scala.util.control.NoStackTrace
 
 object FlowAskSpec {
   case class Reply(payload: Int)

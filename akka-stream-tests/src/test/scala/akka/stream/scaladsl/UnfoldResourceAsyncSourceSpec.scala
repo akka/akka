@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
+import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
 import akka.actor.ActorSystem

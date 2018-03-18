@@ -4,20 +4,17 @@
 
 package akka.stream.scaladsl
 
-import java.util.concurrent.TimeoutException
 
 import akka.NotUsed
 import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.Supervision._
 import akka.stream._
-import akka.stream.impl.fusing.LazyFlow
-import akka.stream.stage.{ GraphStage, GraphStageLogic, GraphStageWithMaterializedValue }
+import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
 
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{Future, Promise }
 import scala.concurrent.duration._
 
 class LazyFlowSpec extends StreamSpec {
