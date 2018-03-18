@@ -13,7 +13,6 @@ import akka.{ Done, NotUsed, actor ⇒ untyped }
 import akka.testkit._
 import akka.actor.typed.Behavior.UntypedPropsBehavior
 
-
 object AdapterSpec {
   val untyped1: untyped.Props = untyped.Props(new Untyped1)
 

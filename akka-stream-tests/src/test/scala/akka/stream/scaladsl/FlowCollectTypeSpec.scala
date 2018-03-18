@@ -4,7 +4,6 @@
 
 package akka.stream.scaladsl
 
-
 import akka.stream.testkit.StreamSpec
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 

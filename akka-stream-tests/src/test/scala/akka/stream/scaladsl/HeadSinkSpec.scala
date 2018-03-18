@@ -7,7 +7,7 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import akka.stream.{AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 

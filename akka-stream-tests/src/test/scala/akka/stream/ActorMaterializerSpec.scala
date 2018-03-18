@@ -8,7 +8,7 @@ import akka.Done
 import akka.actor.{ Actor, ActorSystem, PoisonPill, Props }
 import akka.stream.ActorMaterializerSpec.ActorWithMaterializer
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
-import akka.stream.scaladsl.{Sink, Source }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.testkit.{ ImplicitSender, TestActor, TestProbe }
 

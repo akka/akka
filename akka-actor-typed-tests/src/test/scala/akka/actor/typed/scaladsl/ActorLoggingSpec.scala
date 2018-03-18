@@ -12,7 +12,6 @@ import akka.event.Logging
 import akka.event.Logging.{ LogEventWithCause, LogEventWithMarker }
 import akka.testkit.typed.scaladsl.ActorTestKit
 
-
 class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
 
   override def config = ConfigFactory.parseString(
