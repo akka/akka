@@ -5,8 +5,8 @@
 package akka.persistence.typed.internal
 
 import akka.actor.typed.scaladsl.Behaviors.same
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, TimerScheduler }
-import akka.actor.typed.{ Behavior, PostStop, Signal }
+import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
+import akka.actor.typed.Behavior
 import akka.annotation.InternalApi
 import akka.persistence.SnapshotProtocol.{ LoadSnapshotFailed, LoadSnapshotResult }
 import akka.persistence._

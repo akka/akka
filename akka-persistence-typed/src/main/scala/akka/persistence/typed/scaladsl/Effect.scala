@@ -4,7 +4,6 @@
 
 package akka.persistence.typed.scaladsl
 
-import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.internal._
 

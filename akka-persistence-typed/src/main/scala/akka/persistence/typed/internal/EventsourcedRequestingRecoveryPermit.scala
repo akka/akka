@@ -4,10 +4,9 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.{ Behavior, PostStop, PreRestart }
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.persistence._
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
 
 /**

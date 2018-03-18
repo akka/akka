@@ -4,8 +4,8 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.{ Behavior, PostStop, Signal }
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, TimerScheduler }
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._

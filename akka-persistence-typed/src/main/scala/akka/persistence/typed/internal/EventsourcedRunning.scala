@@ -4,8 +4,7 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.{ Behavior, Signal }
-import akka.actor.typed.Behavior.StoppedBehavior
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors.MutableBehavior
 import akka.annotation.InternalApi
