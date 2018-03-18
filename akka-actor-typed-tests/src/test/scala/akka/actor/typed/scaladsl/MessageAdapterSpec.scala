@@ -4,11 +4,6 @@
 
 package akka.actor.typed.scaladsl
 
-import scala.concurrent.TimeoutException
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
-import scala.util.Failure
-import scala.util.Success
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.PostStop

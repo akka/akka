@@ -4,7 +4,7 @@
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.{ LogMarker, TestException, TypedAkkaSpec, scaladsl }
+import akka.actor.typed.{ LogMarker, TestException, TypedAkkaSpec }
 import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
 import akka.actor.typed.scaladsl.adapter._
@@ -12,7 +12,6 @@ import akka.event.Logging
 import akka.event.Logging.{ LogEventWithCause, LogEventWithMarker }
 import akka.testkit.typed.scaladsl.ActorTestKit
 
-import scala.util.control.NoStackTrace
 
 class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
 
