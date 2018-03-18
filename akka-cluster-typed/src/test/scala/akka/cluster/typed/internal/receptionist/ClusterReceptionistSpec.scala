@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets
 
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.{ ActorRef, ActorRefResolver, TypedAkkaSpecWithShutdown }
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
@@ -17,7 +16,6 @@ import akka.serialization.SerializerWithStringManifest
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import akka.cluster.typed.Join

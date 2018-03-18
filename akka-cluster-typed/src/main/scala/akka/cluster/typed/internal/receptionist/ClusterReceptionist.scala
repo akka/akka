@@ -16,7 +16,7 @@ import akka.cluster.ddata.{ DistributedData, ORMultiMap, ORMultiMapKey, Replicat
 import akka.cluster.{ Cluster, ClusterEvent }
 import akka.util.TypedMultiMap
 
-import scala.language.{ existentials, higherKinds }
+import scala.language.existentials
 import akka.actor.typed.scaladsl.adapter._
 
 /** INTERNAL API */
