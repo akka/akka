@@ -96,18 +96,16 @@ class MutableIntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       import ChatRoom._
 
       val gabbler =
-        Behaviors.receive[SessionEvent] { (_, msg) ⇒
-          msg match {
-            case SessionDenied(reason) ⇒
-              println(s"cannot start chat room session: $reason")
-              Behaviors.stopped
-            case SessionGranted(handle) ⇒
-              handle ! PostMessage("Hello World!")
-              Behaviors.same
-            case MessagePosted(screenName, message) ⇒
-              println(s"message has been posted by '$screenName': $message")
-              Behaviors.stopped
-          }
+        Behaviors.receiveMessage[SessionEvent] {
+          case SessionDenied(reason) ⇒
+            println(s"cannot start chat room session: $reason")
+            Behaviors.stopped
+          case SessionGranted(handle) ⇒
+            handle ! PostMessage("Hello World!")
+            Behaviors.same
+          case MessagePosted(screenName, message) ⇒
+            println(s"message has been posted by '$screenName': $message")
+            Behaviors.stopped
         }
       //#chatroom-gabbler
 

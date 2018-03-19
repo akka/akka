@@ -55,8 +55,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
     def watchWith(ctx: ActorContext[Any], target: ActorRef[_], msg: InternalCommand): Unit =
       ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx ⇒
         innerCtx.watch(target)
-        Behaviors.receive[Nothing]((_, _) ⇒ Behaviors.same)
-          .receiveSignal {
+        Behaviors.receiveSignal {
             case (_, Terminated(`target`)) ⇒
               ctx.self ! msg
               Behaviors.stopped

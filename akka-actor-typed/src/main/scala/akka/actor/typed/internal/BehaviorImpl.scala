@@ -69,8 +69,9 @@ import scala.reflect.ClassTag
   }
 
   /**
-   * Similar to [[ReceiveBehavior]] however does onMessage does not accept context.
-   * We implement it separately in order to be able to avoid wraping each function in a another function which drops the context parameter.
+   * Similar to [[ReceiveBehavior]] however `onMessage` does not accept context.
+   * We implement it separately in order to be able to avoid wrapping each function in
+   * another function which drops the context parameter.
    */
   class ReceiveMessageBehavior[T](
     val onMessage: T ⇒ Behavior[T],

@@ -5,8 +5,8 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.actor.typed.internal.{ BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl }
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.actor.typed.internal.{BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl}
+import akka.annotation.{ApiMayChange, DoNotInherit, InternalApi}
 
 import scala.reflect.ClassTag
 
@@ -21,7 +21,7 @@ object Behaviors {
 
   /**
    * `setup` is a factory for a behavior. Creation of the behavior instance is deferred until
-   * the actor is started, as opposed to [[Behaviors.Receive]] that creates the behavior instance
+   * the actor is started, as opposed to [[Behaviors.receive]] that creates the behavior instance
    * immediately before the actor is running. The `factory` function pass the `ActorContext`
    * as parameter and that can for example be used for spawning child actors.
    *
@@ -222,6 +222,7 @@ object Behaviors {
    * Immutable behavior that exposes additional fluent DSL methods
    * to further change the message or signal reception behavior.
    */
+  @DoNotInherit
   trait Receive[T] extends ExtensibleBehavior[T] {
     def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T]
 

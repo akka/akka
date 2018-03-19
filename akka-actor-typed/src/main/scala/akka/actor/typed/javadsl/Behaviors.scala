@@ -4,11 +4,11 @@
 
 package akka.actor.typed.javadsl
 
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{Function ⇒ JFunction}
 
 import scala.reflect.ClassTag
 import akka.util.ConstantFun
-import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
+import akka.japi.function.{Function2 ⇒ JapiFunction2}
 import akka.japi.function.Procedure2
 import akka.japi.pf.PFBuilder
 import akka.actor.typed.Behavior
@@ -16,8 +16,8 @@ import akka.actor.typed.ExtensibleBehavior
 import akka.actor.typed.Signal
 import akka.actor.typed.ActorRef
 import akka.actor.typed.SupervisorStrategy
-import akka.actor.typed.internal.{ BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl }
-import akka.annotation.ApiMayChange
+import akka.actor.typed.internal.{BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl}
+import akka.annotation.{ApiMayChange, DoNotInherit}
 
 import scala.collection.JavaConverters._
 /**
@@ -284,6 +284,7 @@ object Behaviors {
     TimerSchedulerImpl.withTimers(timers ⇒ factory.apply(timers))
 
   /** A specialized "receive" behavior that is implemented using message matching builders. */
+  @DoNotInherit
   trait Receive[T] extends ExtensibleBehavior[T]
 
   /**
