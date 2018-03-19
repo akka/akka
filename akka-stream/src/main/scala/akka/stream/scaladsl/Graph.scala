@@ -732,6 +732,8 @@ object Partition {
  * Fan-out the stream to several streams. emitting an incoming upstream element to one downstream consumer according
  * to the partitioner function applied to the element
  *
+ * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+ *
  * '''Emits when''' emits when an element is available from the input and the chosen output has demand
  *
  * '''Backpressures when''' the currently chosen output back-pressures
