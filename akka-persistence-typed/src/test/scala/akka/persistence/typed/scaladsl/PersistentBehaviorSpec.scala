@@ -27,7 +27,7 @@ object PersistentBehaviorSpec {
     }
 
     def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
-      state += (metadata.persistenceId -> (snapshot, metadata))
+      state = state.updated(metadata.persistenceId, (snapshot, metadata))
       Future.successful(())
     }
 
