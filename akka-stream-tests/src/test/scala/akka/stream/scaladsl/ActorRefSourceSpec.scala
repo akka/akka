@@ -99,6 +99,19 @@ class ActorRefSourceSpec extends StreamSpec {
       s.expectComplete()
     }
 
+    "signal buffered elements and complete the stream after receiving a Status.Success companion" in assertAllStagesStopped {
+      val s = TestSubscriber.manualProbe[Int]()
+      val ref = Source.actorRef(3, OverflowStrategy.fail).to(Sink.fromSubscriber(s)).run()
+      val sub = s.expectSubscription
+      ref ! 1
+      ref ! 2
+      ref ! 3
+      ref ! Status.Success
+      sub.request(10)
+      s.expectNext(1, 2, 3)
+      s.expectComplete()
+    }
+
     "not buffer elements after receiving Status.Success" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
       val ref = Source.actorRef(3, OverflowStrategy.dropBuffer).to(Sink.fromSubscriber(s)).run()

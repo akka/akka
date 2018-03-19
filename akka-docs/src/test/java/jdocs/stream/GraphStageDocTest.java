@@ -510,10 +510,10 @@ public class GraphStageDocTest extends AbstractJavaTest {
   // each time an event is pushed through it will trigger a period of silence
   public class TimedGate<A> extends GraphStage<FlowShape<A, A>> {
 
-    private final FiniteDuration silencePeriod;
+    private final int silencePeriodInSeconds;
 
-    public TimedGate(FiniteDuration silencePeriod) {
-      this.silencePeriod = silencePeriod;
+    public TimedGate(int silencePeriodInSeconds) {
+      this.silencePeriodInSeconds = silencePeriodInSeconds;
     }
 
     public final Inlet<A> in = Inlet.create("TimedGate.in");
@@ -540,7 +540,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
               else {
                 push(out, elem);
                 open = true;
-                scheduleOnce("key", silencePeriod);
+                scheduleOnce("key", java.time.Duration.ofSeconds(silencePeriodInSeconds));
               }
             }
           });
@@ -567,7 +567,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
     // tests:
     CompletionStage<Integer> result =
       Source.from(Arrays.asList(1, 2, 3))
-        .via(new TimedGate<>(Duration.create(2, "seconds")))
+        .via(new TimedGate<>(2))
         .takeWithin(Duration.create(250, "millis"))
         .runFold(0, (n, sum) -> n + sum, mat);
 

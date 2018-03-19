@@ -16,18 +16,19 @@ class Receptionist(system: ActorSystem[_]) extends Extension {
 
   private def hasCluster: Boolean = {
     // FIXME: replace with better indicator that cluster is enabled
-    val provider = system.settings.config.getString("akka.actor.provider")
-    (provider == "cluster") || (provider == "akka.cluster.ClusterActorRefProvider")
+    val provider = system.settings.untyped.ProviderClass
+    provider == "akka.cluster.ClusterActorRefProvider"
   }
 
   val ref: ActorRef[Receptionist.Command] = {
     val provider: ReceptionistBehaviorProvider =
       if (hasCluster) {
         system.dynamicAccess
-          .createInstanceFor[ReceptionistBehaviorProvider]("akka.cluster.typed.internal.receptionist.ClusterReceptionist$", Nil)
+          .getObjectFor[ReceptionistBehaviorProvider]("akka.cluster.typed.internal.receptionist.ClusterReceptionist")
           .recover {
-            case ex ⇒
-              throw new RuntimeException("ClusterReceptionist could not be loaded dynamically. Make sure you have 'akka-cluster-typed' in the classpath.")
+            case e ⇒
+              throw new RuntimeException("ClusterReceptionist could not be loaded dynamically. Make sure you have " +
+                "'akka-cluster-typed' in the classpath.", e)
           }.get
       } else LocalReceptionist
 
