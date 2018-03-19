@@ -180,14 +180,14 @@ import scala.util.control.NonFatal
         case Both(s) ⇒
           set(Inert)
           try tryOnError(s, ex)
-          finally if (t == null) throw ex // must throw NPE, rule 2:13
+          finally if (t == null) throw ex // must throw NPE, rule 2.13
         case s: Subscriber[_] ⇒ // spec violation
           getAndSet(Inert) match {
             case Inert ⇒ // nothing to be done
             case _     ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
           }
         case _ if t == null ⇒
-          // cancelled before onError(null), must throw NPE, rule 2:13
+          // cancelled before onError(null), must throw NPE, rule 2.13
           throw ex
         case _ ⇒ // spec violation or cancellation race, but nothing we can do
       }
