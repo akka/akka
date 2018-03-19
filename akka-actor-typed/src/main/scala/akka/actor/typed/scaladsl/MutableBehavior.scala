@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed.{ Behavior, ExtensibleBehavior, Signal }
