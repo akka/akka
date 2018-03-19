@@ -17,12 +17,11 @@ import akka.util.ByteString;
 
 import java.nio.file.Paths;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import jdocs.AbstractJavaTest;
-import scala.concurrent.duration.Duration;
 //#other-imports
 
 import org.junit.*;
@@ -66,7 +65,7 @@ public class QuickStartDocTest extends AbstractJavaTest {
     //#add-streams
     factorials
       .zipWith(Source.range(0, 99), (num, idx) -> String.format("%d! = %s", idx, num))
-      .throttle(1, Duration.create(1, TimeUnit.SECONDS), 1, ThrottleMode.shaping())
+      .throttle(1, Duration.ofSeconds(1), 1, ThrottleMode.shaping())
       //#add-streams
       .take(2)
       //#add-streams

@@ -9,27 +9,18 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.KillSwitches;
-import akka.stream.Materializer;
-import akka.stream.ThrottleMode;
-import akka.stream.UniqueKillSwitch;
+import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.javadsl.PartitionHub.ConsumerInfo;
-
-import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
+import jdocs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
 import java.util.function.ToLongBiFunction;
 
 public class HubDocTest extends AbstractJavaTest {
@@ -80,8 +71,8 @@ public class HubDocTest extends AbstractJavaTest {
     //#broadcast-hub
     // A simple producer that publishes a new "message" every second
     Source<String, Cancellable> producer = Source.tick(
-      FiniteDuration.create(1, TimeUnit.SECONDS),
-      FiniteDuration.create(1, TimeUnit.SECONDS),
+            Duration.ofSeconds(1),
+            Duration.ofSeconds(1),
       "New message"
     );
 
@@ -132,7 +123,7 @@ public class HubDocTest extends AbstractJavaTest {
     Flow<String, String, UniqueKillSwitch> busFlow =
       Flow.fromSinkAndSource(sink, source)
         .joinMat(KillSwitches.singleBidi(), Keep.right())
-        .backpressureTimeout(FiniteDuration.create(1, TimeUnit.SECONDS));
+        .backpressureTimeout(Duration.ofSeconds(1));
     //#pub-sub-3
 
     //#pub-sub-4
@@ -155,8 +146,8 @@ public class HubDocTest extends AbstractJavaTest {
     //#partition-hub
     // A simple producer that publishes a new "message-n" every second
     Source<String, Cancellable> producer = Source.tick(
-      FiniteDuration.create(1, TimeUnit.SECONDS),
-      FiniteDuration.create(1, TimeUnit.SECONDS),
+            Duration.ofSeconds(1),
+            Duration.ofSeconds(1),
       "message"
     ).zipWith(Source.range(0, 100), (a, b) -> a + "-" + b);
 
@@ -206,8 +197,8 @@ public class HubDocTest extends AbstractJavaTest {
     //#partition-hub-stateful
     // A simple producer that publishes a new "message-n" every second
     Source<String, Cancellable> producer = Source.tick(
-      FiniteDuration.create(1, TimeUnit.SECONDS),
-      FiniteDuration.create(1, TimeUnit.SECONDS),
+            Duration.ofSeconds(1),
+            Duration.ofSeconds(1),
       "message"
     ).zipWith(Source.range(0, 100), (a, b) -> a + "-" + b);
     
@@ -271,7 +262,7 @@ public class HubDocTest extends AbstractJavaTest {
     Source<Integer, NotUsed> fromProducer = runnableGraph.run(materializer);
 
     fromProducer.runForeach(msg -> System.out.println("consumer1: " + msg), materializer);
-    fromProducer.throttle(10, Duration.create(100, TimeUnit.MILLISECONDS), 10, ThrottleMode.shaping())
+    fromProducer.throttle(10, Duration.ofMillis(100), 10, ThrottleMode.shaping())
       .runForeach(msg -> System.out.println("consumer2: " + msg), materializer);
     //#partition-hub-fastest
 
