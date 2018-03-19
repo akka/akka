@@ -502,10 +502,11 @@ object Sink {
    * because of completion or error.
    *
    * If upstream completes before an element was received then the `Future` is completed with the value created by fallback.
-   * If upstream fails before an element was received, sinkFactory` throws an exception, or materialization of the internal
+   * If upstream fails before an element was received, `sinkFactory` throws an exception, or materialization of the internal
    * sink fails then the `Future` is completed with the exception.
    * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
+  @Deprecated
   @deprecated("Use lazyInitAsync instead. (lazyInitAsync no more needs a fallback function and the materialized value more clearly indicates if the internal sink was materialized or not.)", "2.5.11")
   def lazyInit[T, M](sinkFactory: T ⇒ Future[Sink[T, M]], fallback: () ⇒ M): Sink[T, Future[M]] =
     Sink.fromGraph(new LazySink[T, M](sinkFactory)).mapMaterializedValue(_.map(_.getOrElse(fallback()))(ExecutionContexts.sameThreadExecutionContext))
@@ -515,7 +516,7 @@ object Sink {
    * because of completion or error.
    *
    * If upstream completes before an element was received then the `Future` is completed with `None`.
-   * If upstream fails before an element was received, sinkFactory` throws an exception, or materialization of the internal
+   * If upstream fails before an element was received, `sinkFactory` throws an exception, or materialization of the internal
    * sink fails then the `Future` is completed with the exception.
    * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
