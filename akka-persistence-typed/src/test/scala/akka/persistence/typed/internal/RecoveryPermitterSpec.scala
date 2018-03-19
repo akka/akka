@@ -37,8 +37,6 @@ object RecoveryPermitterSpec {
 
   case object Recovered extends Event
 
-  case object Ping extends Event
-
   def persistentBehavior(
     name:            String,
     commandProbe:    TestProbe[Any],
