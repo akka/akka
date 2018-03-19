@@ -5,11 +5,10 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.actor.typed.internal.{ BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl }
+import akka.annotation.{ ApiMayChange, InternalApi }
 
 import scala.reflect.ClassTag
-import scala.util.control.Exception.Catcher
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].
@@ -22,7 +21,7 @@ object Behaviors {
 
   /**
    * `setup` is a factory for a behavior. Creation of the behavior instance is deferred until
-   * the actor is started, as opposed to [[Behaviors.receive]] that creates the behavior instance
+   * the actor is started, as opposed to [[Behaviors.Receive]] that creates the behavior instance
    * immediately before the actor is running. The `factory` function pass the `ActorContext`
    * as parameter and that can for example be used for spawning child actors.
    *
@@ -93,11 +92,11 @@ object Behaviors {
    * need and in fact should not use (close over) mutable variables, but instead
    * return a potentially different behavior encapsulating any state changes.
    */
-  def receive[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Immutable[T] =
-    new Immutable(onMessage)
+  def receive[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Receive[T] =
+    new ReceiveImpl(onMessage)
 
   /**
-   * Simplified version of [[receive]] with only a single argument - the message
+   * Simplified version of [[Receive]] with only a single argument - the message
    * to be handled. Useful for when the context is already accessible by other means,
    * like being wrapped in an [[setup]] or similar.
    *
@@ -111,20 +110,13 @@ object Behaviors {
    * need and in fact should not use (close over) mutable variables, but instead
    * return a potentially different behavior encapsulating any state changes.
    */
-  def receiveMessage[T](onMessage: T ⇒ Behavior[T]): Immutable[T] =
-    new Immutable({ (_, m) ⇒ onMessage(m) })
-
-  final class Immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T])
-    extends BehaviorImpl.ImmutableBehavior[T](onMessage) {
-
-    def onSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
-      new BehaviorImpl.ImmutableBehavior(onMessage, onSignal)
-  }
+  def receiveMessage[T](onMessage: T ⇒ Behavior[T]): Receive[T] =
+    new ReceiveMessageImpl(onMessage)
 
   /**
    * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
    */
-  def receivePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Immutable[T] =
+  def receivePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Receive[T] =
     Behaviors.receive[T] { (ctx, t) ⇒
       onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) ⇒ Behaviors.unhandled[T])
     }
@@ -132,7 +124,7 @@ object Behaviors {
   /**
    * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
    */
-  def receiveMessagePartial[T](onMessage: PartialFunction[T, Behavior[T]]): Immutable[T] =
+  def receiveMessagePartial[T](onMessage: PartialFunction[T, Behavior[T]]): Receive[T] =
     Behaviors.receive[T] { (_, t) ⇒
       onMessage.applyOrElse(t, (_: T) ⇒ Behaviors.unhandled[T])
     }
@@ -140,8 +132,8 @@ object Behaviors {
   /**
    * Construct an actor behavior that can react to lifecycle signals only.
    */
-  def onSignal[T](handler: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
-    receive[T]((_, _) ⇒ same).onSignal(handler)
+  def receiveSignal[T](handler: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
+    receive[T]((_, _) ⇒ same).receiveSignal(handler)
 
   /**
    * This type of Behavior wraps another Behavior while allowing you to perform
@@ -225,5 +217,30 @@ object Behaviors {
 
   // TODO
   // final case class Selective[T](timeout: FiniteDuration, selector: PartialFunction[T, Behavior[T]], onTimeout: () ⇒ Behavior[T])
+
+  /**
+   * Immutable behavior that exposes additional fluent DSL methods
+   * to further change the message or signal reception behavior.
+   */
+  trait Receive[T] extends ExtensibleBehavior[T] {
+    def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T]
+
+    // TODO orElse can be defined here
+  }
+
+  @InternalApi
+  private[akka] final class ReceiveImpl[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T])
+    extends BehaviorImpl.ReceiveBehavior[T](onMessage) with Receive[T] {
+
+    override def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
+      new BehaviorImpl.ReceiveBehavior(onMessage, onSignal)
+  }
+  @InternalApi
+  private[akka] final class ReceiveMessageImpl[T](onMessage: T ⇒ Behavior[T])
+    extends BehaviorImpl.ReceiveMessageBehavior[T](onMessage) with Receive[T] {
+
+    override def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
+      new BehaviorImpl.ReceiveMessageBehavior[T](onMessage, onSignal)
+  }
 
 }

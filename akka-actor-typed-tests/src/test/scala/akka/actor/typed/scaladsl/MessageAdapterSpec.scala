@@ -207,7 +207,7 @@ class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           case (_, wrapped) ⇒
             probe.ref ! wrapped
             Behaviors.same
-        }.onSignal {
+        }.receiveSignal {
           case (_, PostStop) ⇒
             probe.ref ! "stopped"
             Behaviors.same

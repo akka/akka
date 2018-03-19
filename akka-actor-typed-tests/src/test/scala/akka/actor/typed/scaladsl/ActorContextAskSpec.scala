@@ -98,7 +98,7 @@ class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           case (_, msg) ⇒
             probe.ref ! msg
             Behaviors.same
-        }.onSignal {
+        }.receiveSignal {
 
           case (_, PostStop) ⇒
             probe.ref ! "stopped"

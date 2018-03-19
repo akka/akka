@@ -43,7 +43,7 @@ object TypedWatchingUntypedSpec {
             // context.stop is an implicit extension method
             ctx.stop(untyped)
             Behaviors.same
-        } onSignal {
+        } receiveSignal {
           case (_, akka.actor.typed.Terminated(_)) ⇒
             Behaviors.stopped
         }

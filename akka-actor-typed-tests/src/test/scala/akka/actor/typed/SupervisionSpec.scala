@@ -57,7 +57,7 @@ object SupervisionSpec {
         case Throw(e) ⇒
           throw e
       }
-    } onSignal {
+    } receiveSignal {
       case (_, sig) ⇒
         monitor ! GotSignal(sig)
         Behaviors.same

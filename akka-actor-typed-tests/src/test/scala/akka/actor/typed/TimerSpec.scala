@@ -67,7 +67,7 @@ class TimerSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShu
           latch.await(10, TimeUnit.SECONDS)
           throw e
       }
-    } onSignal {
+    } receiveSignal {
       case (ctx, PreRestart) ⇒
         monitor ! GotPreRestart(timer.isTimerActive("T"))
         Behaviors.same

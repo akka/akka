@@ -59,7 +59,7 @@ class WatchSpec extends ActorTestKit
             ctx.watch(watchee)
             watchProbe.ref ! Done
             Behaviors.same
-        }.onSignal {
+        }.receiveSignal {
           case (_, t: Terminated) ⇒
             receivedTerminationSignal.success(t)
             Behaviors.stopped
@@ -91,7 +91,7 @@ class WatchSpec extends ActorTestKit
         Behaviors.receive[Any] { (ctx, msg) ⇒
           child ! msg
           Behaviors.same
-        }.onSignal {
+        }.receiveSignal {
           case (_, t: Terminated) ⇒
             probe.ref ! Failed(t)
             Behaviors.same
@@ -126,7 +126,7 @@ class WatchSpec extends ActorTestKit
         Behaviors.receive[Any] { (ctx, msg) ⇒
           middleManagement ! msg
           Behaviors.same
-        }.onSignal {
+        }.receiveSignal {
           case (_, t: Terminated) ⇒
             probe.ref ! Failed(t)
             Behaviors.stopped
@@ -262,7 +262,7 @@ class WatchSpec extends ActorTestKit
               Behaviors.same
             case (_, msg) ⇒
               Behaviors.stopped
-          }.onSignal {
+          }.receiveSignal {
             case (_, PostStop) ⇒
               Behaviors.stopped
           }

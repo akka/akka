@@ -160,7 +160,7 @@ object BehaviorSpec {
         SBehaviors.same
       case (_, Stop) ⇒ SBehaviors.stopped
       case (_, _)    ⇒ SBehaviors.unhandled
-    } onSignal {
+    } receiveSignal {
       case (_, signal) ⇒
         monitor ! GotSignal(signal)
         SBehaviors.same
@@ -344,7 +344,7 @@ class FullBehaviorSpec extends TypedAkkaSpec with Messages with BecomeWithLifecy
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = mkFull(monitor) → null
 }
 
-class ImmutableBehaviorSpec extends Messages with BecomeWithLifecycle with Stoppable {
+class ReceiveBehaviorSpec extends Messages with BecomeWithLifecycle with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
   private def behv(monitor: ActorRef[Event], state: State): Behavior[Command] = {
     SBehaviors.receive[Command] {
@@ -368,7 +368,7 @@ class ImmutableBehaviorSpec extends Messages with BecomeWithLifecycle with Stopp
         SBehaviors.same
       case (_, Stop)       ⇒ SBehaviors.stopped
       case (_, _: AuxPing) ⇒ SBehaviors.unhandled
-    } onSignal {
+    } receiveSignal {
       case (_, signal) ⇒
         monitor ! GotSignal(signal)
         SBehaviors.same
@@ -405,7 +405,7 @@ class ImmutableWithSignalScalaBehaviorSpec extends TypedAkkaSpec with Messages w
           case Stop       ⇒ SBehaviors.stopped
           case _: AuxPing ⇒ SBehaviors.unhandled
         }
-    } onSignal {
+    } receiveSignal {
       case (_, sig) ⇒
         monitor ! GotSignal(sig)
         SBehaviors.same

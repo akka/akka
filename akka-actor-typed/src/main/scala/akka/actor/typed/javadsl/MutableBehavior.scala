@@ -26,12 +26,12 @@ abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
   }
 
   @throws(classOf[Exception])
-  override final def receiveMessage(ctx: akka.actor.typed.ActorContext[T], msg: T): Behavior[T] =
-    receive.receiveMessage(msg)
+  override final def receive(ctx: akka.actor.typed.ActorContext[T], msg: T): Behavior[T] =
+    receive.receive(ctx, msg)
 
   @throws(classOf[Exception])
   override final def receiveSignal(ctx: akka.actor.typed.ActorContext[T], msg: Signal): Behavior[T] =
-    receive.receiveSignal(msg)
+    receive.receiveSignal(ctx, msg)
 
   def createReceive: Receive[T]
 

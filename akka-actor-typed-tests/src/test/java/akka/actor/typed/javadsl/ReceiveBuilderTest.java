@@ -59,6 +59,6 @@ public class ReceiveBuilderTest extends JUnitSuite {
   @Test
   public void testInitializationOrder() throws Exception {
     MyMutableBehavior mutable = new MyMutableBehavior(42);
-    assertEquals(Behaviors.unhandled(), mutable.receiveMessage(null, new BehaviorBuilderTest.Increase()));
+    assertEquals(Behaviors.unhandled(), mutable.receive(null, new BehaviorBuilderTest.Increase()));
   }
 }

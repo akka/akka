@@ -63,7 +63,7 @@ object AdapterSpec {
             ctx.stop(child)
             Behaviors.same
         }
-    } onSignal {
+    } receiveSignal {
       case (ctx, Terminated(ref)) ⇒
         probe ! "terminated"
         Behaviors.same

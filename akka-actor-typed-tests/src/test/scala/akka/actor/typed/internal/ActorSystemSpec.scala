@@ -71,7 +71,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
       val sys = system(
         Behaviors.receive[Probe] {
           case (_, _) ⇒ Behaviors.unhandled
-        } onSignal {
+        } receiveSignal {
           case (_, PostStop) ⇒
             inbox.ref ! "done"
             Behaviors.same

@@ -94,7 +94,7 @@ private[akka] object AdapterClusterImpl {
           Behaviors.same
 
       }
-    }.onSignal {
+    }.receiveSignal {
 
       case (_, Terminated(ref)) ⇒
         upSubscribers = upSubscribers.filterNot(_ == ref)

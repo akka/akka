@@ -7,18 +7,18 @@ package akka.actor.typed.javadsl
 import java.util.function.{ Function ⇒ JFunction }
 
 import scala.reflect.ClassTag
-import akka.util.OptionVal
+import akka.util.ConstantFun
 import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
-import akka.japi.function.{ Procedure, Procedure2 }
+import akka.japi.function.Procedure2
 import akka.japi.pf.PFBuilder
 import akka.actor.typed.Behavior
 import akka.actor.typed.ExtensibleBehavior
 import akka.actor.typed.Signal
 import akka.actor.typed.ActorRef
 import akka.actor.typed.SupervisorStrategy
-import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
 import akka.actor.typed.internal.{ BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl }
 import akka.annotation.ApiMayChange
+
 import scala.collection.JavaConverters._
 /**
  * Factories for [[akka.actor.typed.Behavior]].
@@ -26,8 +26,10 @@ import scala.collection.JavaConverters._
 @ApiMayChange
 object Behaviors {
 
-  private val _unitFunction = (_: SAC[Any], _: Any) ⇒ ()
-  private def unitFunction[T] = _unitFunction.asInstanceOf[((SAC[T], Signal) ⇒ Unit)]
+  private[this] val _two2same = new JapiFunction2[ActorContext[Any], Any, Behavior[Any]] {
+    override def apply(context: ActorContext[Any], msg: Any): Behavior[Any] = same
+  }
+  private[this] def two2same[T] = _two2same.asInstanceOf[JapiFunction2[ActorContext[T], T, Behavior[T]]]
 
   /**
    * `setup` is a factory for a behavior. Creation of the behavior instance is deferred until
@@ -105,7 +107,7 @@ object Behaviors {
    * state.
    */
   def receive[T](onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]]): Behavior[T] =
-    new BehaviorImpl.ImmutableBehavior((ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg))
+    new BehaviorImpl.ReceiveBehavior((ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg))
 
   /**
    * Simplified version of [[receive]] with only a single argument - the message
@@ -125,7 +127,7 @@ object Behaviors {
    * state.
    */
   def receiveMessage[T](onMessage: akka.japi.Function[T, Behavior[T]]): Behavior[T] =
-    new BehaviorImpl.ImmutableBehavior((_, msg) ⇒ onMessage.apply(msg))
+    new BehaviorImpl.ReceiveBehavior((_, msg) ⇒ onMessage.apply(msg))
 
   /**
    * Construct an actor behavior that can react to both incoming messages and
@@ -143,7 +145,7 @@ object Behaviors {
   def receive[T](
     onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]],
     onSignal:  JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
-    new BehaviorImpl.ImmutableBehavior(
+    new BehaviorImpl.ReceiveBehavior(
       (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
       { case (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig) })
   }
@@ -165,11 +167,8 @@ object Behaviors {
   /**
    * Construct an actor behavior that can react to lifecycle signals only.
    */
-  def onSignal[T](handler: JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
-    val jSame = new JapiFunction2[ActorContext[T], T, Behavior[T]] {
-      override def apply(ctx: ActorContext[T], msg: T) = same
-    }
-    receive(jSame, handler)
+  def receiveSignal[T](handler: JapiFunction2[ActorContext[T], Signal, Behavior[T]]): Behavior[T] = {
+    receive(two2same, handler)
   }
 
   /**
@@ -196,7 +195,7 @@ object Behaviors {
   def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] = {
     BehaviorImpl.tap(
       (ctx, msg) ⇒ monitor ! msg,
-      unitFunction,
+      ConstantFun.scalaAnyTwoToUnit,
       behavior)
   }
 
@@ -284,10 +283,8 @@ object Behaviors {
   def withTimers[T](factory: akka.japi.function.Function[TimerScheduler[T], Behavior[T]]): Behavior[T] =
     TimerSchedulerImpl.withTimers(timers ⇒ factory.apply(timers))
 
-  trait Receive[T] {
-    def receiveMessage(msg: T): Behavior[T]
-    def receiveSignal(msg: Signal): Behavior[T]
-  }
+  /** A specialized "receive" behavior that is implemented using message matching builders. */
+  trait Receive[T] extends ExtensibleBehavior[T]
 
   /**
    * Provide a MDC ("Mapped Diagnostic Context") for logging from the actor.

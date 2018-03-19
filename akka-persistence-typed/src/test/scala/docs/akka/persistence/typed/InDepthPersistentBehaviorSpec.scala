@@ -119,7 +119,7 @@ object InDepthPersistentBehaviorSpec {
 
   //#behavior
   def behavior(entityId: String): Behavior[BlogCommand] =
-    PersistentBehaviors.immutable[BlogCommand, BlogEvent, BlogState](
+    PersistentBehaviors.receive[BlogCommand, BlogEvent, BlogState](
       persistenceId = "Blog-" + entityId,
       initialState = BlogState.empty,
       commandHandler,

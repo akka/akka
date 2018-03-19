@@ -158,7 +158,7 @@ class IntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           ctx.watch(gabblerRef)
           chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
-          Behaviors.onSignal {
+          Behaviors.receiveSignal {
             case (_, Terminated(ref)) ⇒
               Behaviors.stopped
           }

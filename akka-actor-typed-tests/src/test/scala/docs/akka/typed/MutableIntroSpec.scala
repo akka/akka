@@ -122,7 +122,7 @@ class MutableIntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
             case "go" ⇒
               chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
               Behaviors.same
-          } onSignal {
+          } receiveSignal {
             case (_, Terminated(_)) ⇒
               println("Stopping guardian")
               Behaviors.stopped

@@ -42,7 +42,7 @@ object RecoveryPermitterSpec {
     commandProbe:    TestProbe[Any],
     eventProbe:      TestProbe[Any],
     throwOnRecovery: Boolean        = false): Behavior[Command] =
-    PersistentBehaviors.immutable[Command, Event, State](
+    PersistentBehaviors.receive[Command, Event, State](
       persistenceId = name,
       initialState = EmptyState,
       commandHandler = CommandHandler.command {
@@ -57,7 +57,7 @@ object RecoveryPermitterSpec {
       }
 
   def forwardingBehavior(target: TestProbe[Any]): Behavior[Any] =
-    Behaviors.immutable[Any] {
+    Behaviors.receive[Any] {
       (_, any) ⇒ target.ref ! any; Behaviors.same
     }
 }
@@ -188,7 +188,7 @@ class RecoveryPermitterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
           val persistentActor =
             ctx.spawnAnonymous(persistentBehavior("p3", p3, p3, throwOnRecovery = true))
           ctx.watch(persistentActor)
-          Behaviors.immutable[Command] {
+          Behaviors.receive[Command] {
             case (_, StopActor) ⇒
               stopProbe.ref ! persistentActor
               ctx.stop(persistentActor)

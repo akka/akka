@@ -45,7 +45,7 @@ object ClusterShardingPersistenceSpec {
   import PersistentBehaviors._
 
   def persistentActor(entityId: String): Behavior[Command] =
-    PersistentBehaviors.immutable[Command, String, String](
+    PersistentBehaviors.receive[Command, String, String](
       entityId,
       initialState = "",
       commandHandler = (_, state, cmd) ⇒ cmd match {

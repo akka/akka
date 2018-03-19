@@ -52,7 +52,7 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
         case RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot)
         case cmd: IncomingCommand[C]     ⇒ onCommand(cmd)
         case RecoveryPermitGranted       ⇒ Behaviors.unhandled // should not happen, we already have the permit
-      }.onSignal(returnPermitOnStop)
+      }.receiveSignal(returnPermitOnStop)
     }
   }
 

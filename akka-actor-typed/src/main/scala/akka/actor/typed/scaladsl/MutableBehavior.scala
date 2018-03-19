@@ -15,7 +15,7 @@ import akka.actor.typed.{ Behavior, ExtensibleBehavior, Signal }
  */
 abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
   @throws(classOf[Exception])
-  override final def receiveMessage(ctx: akka.actor.typed.ActorContext[T], msg: T): Behavior[T] =
+  override final def receive(ctx: akka.actor.typed.ActorContext[T], msg: T): Behavior[T] =
     onMessage(msg)
 
   /**

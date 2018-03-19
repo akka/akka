@@ -129,7 +129,7 @@ object PingPongExample {
       case PingServiceKey.Listing(listings) if listings.nonEmpty ⇒
         listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
         Behaviors.same
-    } onSignal {
+    } receiveSignal {
       case (_, Terminated(`ps`)) ⇒
         println("Ping service has shut down")
         Behaviors.stopped
@@ -145,7 +145,7 @@ object PingPongExample {
       case PingServiceKey.Listing(listings) if listings.nonEmpty ⇒
         listings.foreach(ps ⇒ ctx.spawnAnonymous(pinger(ps)))
         Behaviors.same
-    } onSignal {
+    } receiveSignal {
       case (_, Terminated(`ps`)) ⇒
         println("Ping service has shut down")
         Behaviors.stopped

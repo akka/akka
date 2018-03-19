@@ -74,7 +74,7 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
         case RecoveryTickEvent(snap) ⇒ onRecoveryTick(state, snap)
         case cmd: IncomingCommand[C] ⇒ onCommand(cmd)
         case RecoveryPermitGranted   ⇒ Behaviors.unhandled // should not happen, we already have the permit
-      }.onSignal(returnPermitOnStop)
+      }.receiveSignal(returnPermitOnStop)
     }
 
   private def onJournalResponse(

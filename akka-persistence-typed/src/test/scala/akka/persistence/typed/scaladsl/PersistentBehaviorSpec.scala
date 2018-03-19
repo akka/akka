@@ -84,7 +84,7 @@ object PersistentBehaviorSpec {
     persistenceId: String,
     loggingActor:  ActorRef[String],
     probe:         ActorRef[(State, Event)]): PersistentBehavior[Command, Event, State] = {
-    PersistentBehaviors.immutable[Command, Event, State](
+    PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
       commandHandler = (ctx, state, cmd) ⇒ cmd match {
@@ -413,7 +413,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val w = Behaviors.setup[Any] { (ctx) ⇒
         ctx.watch(toWatch)
         Behaviors.receive[Any] { (_, _) ⇒ Behaviors.same }
-          .onSignal {
+          .receiveSignal {
             case (_, s: Terminated) ⇒
               probe.ref ! "Terminated"
               Behaviors.stopped

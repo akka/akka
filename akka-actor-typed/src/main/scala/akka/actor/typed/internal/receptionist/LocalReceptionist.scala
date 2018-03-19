@@ -8,7 +8,7 @@ import akka.actor.typed.{ ActorRef, Behavior, Terminated }
 import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.actor.typed.scaladsl.Behaviors.{ immutable, same }
+import akka.actor.typed.scaladsl.Behaviors.{ receive, same }
 import akka.annotation.InternalApi
 import akka.util.TypedMultiMap
 
@@ -55,8 +55,8 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
     def watchWith(ctx: ActorContext[Any], target: ActorRef[_], msg: InternalCommand): Unit =
       ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx ⇒
         innerCtx.watch(target)
-        Behaviors.immutable[Nothing]((_, _) ⇒ Behaviors.same)
-          .onSignal {
+        Behaviors.receive[Nothing]((_, _) ⇒ Behaviors.same)
+          .receiveSignal {
             case (_, Terminated(`target`)) ⇒
               ctx.self ! msg
               Behaviors.stopped
@@ -111,7 +111,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
         next(newSubscriptions = subscriptions.removed(key)(subscriber))
     }
 
-    immutable[Any] { (ctx, msg) ⇒
+    receive[Any] { (ctx, msg) ⇒
       msg match {
         case cmd: Command         ⇒ onCommand(ctx, cmd)
         case cmd: InternalCommand ⇒ onInternal(ctx, cmd)

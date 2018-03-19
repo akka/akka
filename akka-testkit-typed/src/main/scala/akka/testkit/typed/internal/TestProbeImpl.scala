@@ -33,7 +33,7 @@ private[akka] object TestProbeImpl {
       case other           ⇒ queue.offerLast(other)
     }
     Behaviors.same
-  }.onSignal {
+  }.receiveSignal {
     case (_, t: Terminated) ⇒
       terminations.offerLast(t)
       Behaviors.same
