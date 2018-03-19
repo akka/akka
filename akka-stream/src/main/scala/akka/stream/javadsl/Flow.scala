@@ -13,7 +13,7 @@ import org.reactivestreams.Processor
 
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util
-import java.util.Comparator
+import java.util.{ Comparator, Optional }
 import java.util.concurrent.CompletionStage
 
 import akka.actor.ActorRef
@@ -207,20 +207,9 @@ object Flow {
 
   /**
    * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
-   * if there are no elements, because of completion or error.
-   * The materialized value of the `Flow` will be the materialized
-   * value of the created internal flow.
+   * if there are no elements, because of completion, cancellation, or error.
    *
-   * If `flowFactory` throws an exception and the supervision decision is
-   * [[akka.stream.Supervision.Stop]] the materialized value of the flow will be completed with
-   * the result of the `fallback`. For all other supervision options it will
-   * try to create flow with the next element.
-   *
-   * `fallback` will be executed when there was no elements and completed is received from upstream
-   * or when there was an exception either thrown by the `flowFactory` or during the internal flow
-   * materialization process.
-   *
-   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   * The materialized value of the `Flow` is the value that is created by the `fallback` function.
    *
    * '''Emits when''' the internal flow is successfully created and it emits
    *
@@ -230,11 +219,39 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
-  def lazyInit[I, O, M](flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]], fallback: function.Creator[M]): Flow[I, O, M] =
-    Flow.fromGraph(new LazyFlow[I, O, M](
-      t ⇒ flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
-      () ⇒ fallback.create()))
+  @Deprecated
+  @deprecated("Use lazyInitAsync instead. (lazyInitAsync returns a flow with a more useful materialized value.)", "2.5.12")
+  def lazyInit[I, O, M](flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]], fallback: function.Creator[M]): Flow[I, O, M] = {
+    import scala.compat.java8.FutureConverters._
+    val sflow = scaladsl.Flow
+      .fromGraph(new LazyFlow[I, O, M](t ⇒ flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)))
+      .mapMaterializedValue(_ ⇒ fallback.create())
+    new Flow(sflow)
+  }
 
+  /**
+   * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
+   * if there are no elements, because of completion, cancellation, or error.
+   *
+   * The materialized value of the `Flow` is a `Future[Option[M]]` that is completed with `Some(mat)` when the internal
+   * flow gets materialized or with `None` when there where no elements. If the flow materialization (including
+   * the call of the `flowFactory`) fails then the future is completed with a failure.
+   *
+   * '''Emits when''' the internal flow is successfully created and it emits
+   *
+   * '''Backpressures when''' the internal flow is successfully created and it backpressures
+   *
+   * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def lazyInitAsync[I, O, M](flowFactory: function.Creator[CompletionStage[Flow[I, O, M]]]): Flow[I, O, CompletionStage[Optional[M]]] = {
+    import scala.compat.java8.FutureConverters._
+
+    val sflow = scaladsl.Flow.lazyInitAsync(() ⇒ flowFactory.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(fut ⇒ fut.map(_.fold[Optional[M]](Optional.empty())(m ⇒ Optional.ofNullable(m)))(ExecutionContexts.sameThreadExecutionContext).toJava)
+    new Flow(sflow)
+  }
   /**
    * Upcast a stream of elements to a stream of supertypes of that element. Useful in combination with
    * fan-in combinators where you do not want to pay the cost of casting each element in a `map`.
