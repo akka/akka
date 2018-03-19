@@ -52,7 +52,7 @@ private[akka] object AdapterClusterImpl {
       }
     }
 
-    Behaviors.immutable[AnyRef] { (ctx, msg) ⇒
+    Behaviors.receive[AnyRef] { (ctx, msg) ⇒
 
       msg match {
         case Subscribe(subscriber: ActorRef[SelfUp] @unchecked, clazz) if clazz == classOf[SelfUp] ⇒
@@ -94,7 +94,7 @@ private[akka] object AdapterClusterImpl {
           Behaviors.same
 
       }
-    }.onSignal {
+    }.receiveSignal {
 
       case (_, Terminated(ref)) ⇒
         upSubscribers = upSubscribers.filterNot(_ == ref)
@@ -104,7 +104,7 @@ private[akka] object AdapterClusterImpl {
     }.narrow[ClusterStateSubscription]
   }
 
-  private def managerBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.immutable[ClusterCommand]((ctx, msg) ⇒
+  private def managerBehavior(adaptedCluster: akka.cluster.Cluster) = Behaviors.receive[ClusterCommand]((ctx, msg) ⇒
     msg match {
       case Join(address) ⇒
         adaptedCluster.join(address)

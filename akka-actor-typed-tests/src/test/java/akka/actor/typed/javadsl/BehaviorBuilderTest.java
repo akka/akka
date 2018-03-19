@@ -33,7 +33,7 @@ public class BehaviorBuilderTest extends JUnitSuite {
 
     @Test
     public void shouldCompile() {
-      Behavior<Message> b = Behaviors.immutable(Message.class)
+      Behavior<Message> b = Behaviors.receive(Message.class)
         .onMessage(One.class, (ctx, o) -> {
           o.foo();
           return same();
@@ -66,7 +66,7 @@ public class BehaviorBuilderTest extends JUnitSuite {
     }
 
     public Behavior<CounterMessage> immutableCounter(int currentValue) {
-      return Behaviors.immutable(CounterMessage.class)
+      return Behaviors.receive(CounterMessage.class)
           .onMessage(Increase.class, (ctx, o) -> {
             return immutableCounter(currentValue + 1);
           })

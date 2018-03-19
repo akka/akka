@@ -26,7 +26,7 @@ public class FaultToleranceDocTest extends JUnitSuite {
   @Test
   public void bubblingSample() {
     // #bubbling-example
-    final Behavior<Message> failingChildBehavior = Behaviors.immutable(Message.class)
+    final Behavior<Message> failingChildBehavior = Behaviors.receive(Message.class)
       .onMessage(Fail.class, (ctx, message) -> {
         throw new RuntimeException(message.text);
       })
@@ -42,7 +42,7 @@ public class FaultToleranceDocTest extends JUnitSuite {
       // here we don't handle Terminated at all which means that
       // when the child fails or stops gracefully this actor will
       // fail with a DeathWatchException
-      return Behaviors.immutable(Message.class)
+      return Behaviors.receive(Message.class)
         .onMessage(Message.class, (innerCtx, msg) -> {
           // just pass messages on to the child
           child.tell(msg);
@@ -58,7 +58,7 @@ public class FaultToleranceDocTest extends JUnitSuite {
       // here we don't handle Terminated at all which means that
       // when middle management fails with a DeathWatchException
       // this actor will also fail
-      return Behaviors.immutable(Message.class)
+      return Behaviors.receive(Message.class)
         .onMessage(Message.class, (innerCtx, msg) -> {
           // just pass messages on to the child
           middleManagement.tell(msg);

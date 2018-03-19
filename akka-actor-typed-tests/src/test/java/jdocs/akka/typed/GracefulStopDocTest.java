@@ -42,7 +42,7 @@ public class GracefulStopDocTest {
       }
     }
 
-    public static final Behavior<JobControlLanguage> mcpa = Behaviors.immutable(JobControlLanguage.class)
+    public static final Behavior<JobControlLanguage> mcpa = Behaviors.receive(JobControlLanguage.class)
         .onMessage(SpawnJob.class, (ctx, msg) -> {
           ctx.getSystem().log().info("Spawning job {}!", msg.name);
           ctx.spawn(Job.job(msg.name), msg.name);
@@ -57,7 +57,7 @@ public class GracefulStopDocTest {
 
           // perform graceful stop, executing cleanup before final system termination
           // behavior executing cleanup is passed as a parameter to Actor.stopped
-          return Behaviors.stopped(Behaviors.onSignal((context, PostStop) -> {
+          return Behaviors.stopped(Behaviors.receiveSignal((context, PostStop) -> {
             context.getSystem().log().info("Cleanup!");
             return Behaviors.same();
           }));
@@ -92,7 +92,7 @@ public class GracefulStopDocTest {
 
   public static class Job {
     public static Behavior<JobControl.JobControlLanguage> job(String name) {
-      return Behaviors.onSignal((ctx, PostStop) -> {
+      return Behaviors.receiveSignal((ctx, PostStop) -> {
         ctx.getSystem().log().info("Worker {} stopped", name);
         return Behaviors.same();
       });

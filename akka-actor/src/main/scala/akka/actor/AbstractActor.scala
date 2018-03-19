@@ -28,7 +28,8 @@ object AbstractActor {
      * Composes this `Receive` with a fallback which gets applied
      * where this partial function is not defined.
      */
-    def orElse(other: Receive): Receive = new Receive(onMessage.orElse(other.onMessage))
+    def orElse(other: Receive): Receive =
+      new Receive(onMessage.orElse(other.onMessage))
   }
 
   /**

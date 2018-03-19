@@ -18,20 +18,20 @@ final class GracefulStopSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
       val behavior =
         Behaviors.setup[akka.NotUsed] { context ⇒
-          val c1 = context.spawn[NotUsed](Behaviors.onSignal {
+          val c1 = context.spawn[NotUsed](Behaviors.receiveSignal {
             case (_, PostStop) ⇒
               probe.ref ! "child-done"
               Behaviors.stopped
           }, "child1")
 
-          val c2 = context.spawn[NotUsed](Behaviors.onSignal {
+          val c2 = context.spawn[NotUsed](Behaviors.receiveSignal {
             case (_, PostStop) ⇒
               probe.ref ! "child-done"
               Behaviors.stopped
           }, "child2")
 
           Behaviors.stopped {
-            Behaviors.onSignal {
+            Behaviors.receiveSignal {
               case (ctx, PostStop) ⇒
                 // cleanup function body
                 probe.ref ! "parent-done"
@@ -53,7 +53,7 @@ final class GracefulStopSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
         Behaviors.setup[akka.NotUsed] { context ⇒
           // do not spawn any children
           Behaviors.stopped {
-            Behaviors.onSignal {
+            Behaviors.receiveSignal {
               case (ctx, PostStop) ⇒
                 // cleanup function body
                 probe.ref ! Done

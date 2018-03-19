@@ -68,13 +68,13 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
 
   private def stay(state: ReplayingState[S]): Behavior[InternalProtocol] =
     withMdc(setup, MDC.ReplayingEvents) {
-      Behaviors.immutable[InternalProtocol] {
-        case (_, JournalResponse(r))      ⇒ onJournalResponse(state, r)
-        case (_, SnapshotterResponse(r))  ⇒ onSnapshotterResponse(r)
-        case (_, RecoveryTickEvent(snap)) ⇒ onRecoveryTick(state, snap)
-        case (_, cmd: IncomingCommand[C]) ⇒ onCommand(cmd)
-        case (_, RecoveryPermitGranted)   ⇒ Behaviors.unhandled // should not happen, we already have the permit
-      }.onSignal(returnPermitOnStop)
+      Behaviors.receiveMessage[InternalProtocol] {
+        case JournalResponse(r)      ⇒ onJournalResponse(state, r)
+        case SnapshotterResponse(r)  ⇒ onSnapshotterResponse(r)
+        case RecoveryTickEvent(snap) ⇒ onRecoveryTick(state, snap)
+        case cmd: IncomingCommand[C] ⇒ onCommand(cmd)
+        case RecoveryPermitGranted   ⇒ Behaviors.unhandled // should not happen, we already have the permit
+      }.receiveSignal(returnPermitOnStop)
     }
 
   private def onJournalResponse(

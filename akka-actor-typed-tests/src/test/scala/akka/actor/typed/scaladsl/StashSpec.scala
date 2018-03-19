@@ -23,7 +23,7 @@ object StashSpec {
       val buffer = StashBuffer[Command](capacity = 10)
 
       def active(processed: Vector[String]): Behavior[Command] =
-        Behaviors.immutable { (ctx, cmd) ⇒
+        Behaviors.receive { (ctx, cmd) ⇒
           cmd match {
             case msg: Msg ⇒
               active(processed :+ msg.s)
@@ -45,7 +45,7 @@ object StashSpec {
         }
 
       def stashing(processed: Vector[String]): Behavior[Command] =
-        Behaviors.immutable { (ctx, cmd) ⇒
+        Behaviors.receive { (ctx, cmd) ⇒
           cmd match {
             case msg: Msg ⇒
               buffer.stash(msg)
@@ -76,7 +76,7 @@ object StashSpec {
         }
 
       def unstashing(processed: Vector[String]): Behavior[Command] =
-        Behaviors.immutable { (ctx, cmd) ⇒
+        Behaviors.receive { (ctx, cmd) ⇒
           cmd match {
             case Unstashed(msg: Msg) ⇒
               ctx.log.debug(s"unstashed $msg")
@@ -118,7 +118,7 @@ object StashSpec {
       active(Vector.empty)
     }
 
-  class MutableStash(ctx: ActorContext[Command]) extends Behaviors.MutableBehavior[Command] {
+  class MutableStash(ctx: ActorContext[Command]) extends MutableBehavior[Command] {
 
     private val buffer = StashBuffer.apply[Command](capacity = 10)
     private var stashing = false
@@ -183,7 +183,7 @@ class ImmutableStashSpec extends StashSpec {
 class MutableStashSpec extends StashSpec {
   import StashSpec._
   def testQualifier: String = "mutable behavior"
-  def behaviorUnderTest: Behavior[Command] = Behaviors.mutable(ctx ⇒ new MutableStash(ctx))
+  def behaviorUnderTest: Behavior[Command] = Behaviors.setup(ctx ⇒ new MutableStash(ctx))
 }
 
 abstract class StashSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {

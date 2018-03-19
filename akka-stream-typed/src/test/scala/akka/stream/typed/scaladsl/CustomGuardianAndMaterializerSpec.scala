@@ -25,7 +25,7 @@ object CustomGuardianAndMaterializerSpec {
 class CustomGuardianAndMaterializerSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   import CustomGuardianAndMaterializerSpec._
 
-  val guardian = Behaviors.immutable[GuardianProtocol] {
+  val guardian = Behaviors.receive[GuardianProtocol] {
     (_, msg) ⇒ Behaviors.same
   }
 

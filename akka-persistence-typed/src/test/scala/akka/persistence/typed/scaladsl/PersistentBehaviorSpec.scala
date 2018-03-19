@@ -84,7 +84,7 @@ object PersistentBehaviorSpec {
     persistenceId: String,
     loggingActor:  ActorRef[String],
     probe:         ActorRef[(State, Event)]): PersistentBehavior[Command, Event, State] = {
-    PersistentBehaviors.immutable[Command, Event, State](
+    PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
       commandHandler = (ctx, state, cmd) ⇒ cmd match {
@@ -116,7 +116,7 @@ object PersistentBehaviorSpec {
           // purpose is to test signals
           val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type] { timers ⇒
             timers.startSingleTimer(Tick, Tick, 10.millis)
-            Behaviors.immutable((_, msg) ⇒ msg match {
+            Behaviors.receive((_, msg) ⇒ msg match {
               case Tick ⇒ Behaviors.stopped
             })
           })
@@ -412,8 +412,8 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val probe = TestProbe[String]()
       val w = Behaviors.setup[Any] { (ctx) ⇒
         ctx.watch(toWatch)
-        Behaviors.immutable[Any] { (_, _) ⇒ Behaviors.same }
-          .onSignal {
+        Behaviors.receive[Any] { (_, _) ⇒ Behaviors.same }
+          .receiveSignal {
             case (_, s: Terminated) ⇒
               probe.ref ! "Terminated"
               Behaviors.stopped

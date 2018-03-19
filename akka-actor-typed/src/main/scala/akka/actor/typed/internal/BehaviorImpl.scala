@@ -5,7 +5,7 @@
 package akka.actor.typed
 package internal
 
-import akka.util.LineNumbers
+import akka.util.{ ConstantFun, LineNumbers }
 import akka.annotation.InternalApi
 import akka.actor.typed.{ ActorContext ⇒ AC }
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
@@ -18,8 +18,8 @@ import scala.reflect.ClassTag
 @InternalApi private[akka] object BehaviorImpl {
   import Behavior._
 
-  private val _nullFun = (_: Any) ⇒ null
-  private def nullFun[T] = _nullFun.asInstanceOf[Any ⇒ T]
+  private[this] final val _any2null = (_: Any) ⇒ null
+  private[this] final def any2null[T] = _any2null.asInstanceOf[Any ⇒ T]
 
   implicit class ContextAs[T](val ctx: AC[T]) extends AnyVal {
     def as[U]: AC[U] = ctx.asInstanceOf[AC[U]]
@@ -46,8 +46,8 @@ import scala.reflect.ClassTag
     override def receiveSignal(ctx: AC[U], signal: Signal): Behavior[U] =
       widen(Behavior.interpretSignal(behavior, ctx.as[T], signal), ctx.as[T])
 
-    override def receiveMessage(ctx: AC[U], msg: U): Behavior[U] =
-      matcher.applyOrElse(msg, nullFun) match {
+    override def receive(ctx: AC[U], msg: U): Behavior[U] =
+      matcher.applyOrElse(msg, any2null) match {
         case null        ⇒ unhandled
         case transformed ⇒ widen(Behavior.interpretMessage(behavior, ctx.as[T], transformed), ctx.as[T])
       }
@@ -55,7 +55,7 @@ import scala.reflect.ClassTag
     override def toString: String = s"${behavior.toString}.widen(${LineNumbers(matcher)})"
   }
 
-  class ImmutableBehavior[T](
+  class ReceiveBehavior[T](
     val onMessage: (SAC[T], T) ⇒ Behavior[T],
     onSignal:      PartialFunction[(SAC[T], Signal), Behavior[T]] = Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
     extends ExtensibleBehavior[T] {
@@ -63,9 +63,27 @@ import scala.reflect.ClassTag
     override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
       onSignal.applyOrElse((ctx.asScala, msg), Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
 
-    override def receiveMessage(ctx: AC[T], msg: T) = onMessage(ctx.asScala, msg)
+    override def receive(ctx: AC[T], msg: T) = onMessage(ctx.asScala, msg)
 
-    override def toString = s"Immutable(${LineNumbers(onMessage)})"
+    override def toString = s"Receive(${LineNumbers(onMessage)})"
+  }
+
+  /**
+   * Similar to [[ReceiveBehavior]] however `onMessage` does not accept context.
+   * We implement it separately in order to be able to avoid wrapping each function in
+   * another function which drops the context parameter.
+   */
+  class ReceiveMessageBehavior[T](
+    val onMessage: T ⇒ Behavior[T],
+    onSignal:      PartialFunction[(SAC[T], Signal), Behavior[T]] = Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+    extends ExtensibleBehavior[T] {
+
+    override def receive(ctx: AC[T], msg: T) = onMessage(msg)
+
+    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
+      onSignal.applyOrElse((ctx.asScala, msg), Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+
+    override def toString = s"ReceiveMessage(${LineNumbers(onMessage)})"
   }
 
   def tap[T](
@@ -81,8 +99,8 @@ import scala.reflect.ClassTag
         onSignal(ctx, sig)
         true
       },
-      afterMessage = (_, _, b) ⇒ b, // TODO optimize by using more ConstantFun
-      afterSignal = (_, _, b) ⇒ b,
+      afterMessage = ConstantFun.scalaAnyThreeToThird,
+      afterSignal = ConstantFun.scalaAnyThreeToThird,
       behavior)(ClassTag(classOf[Any]))
   }
 
@@ -141,7 +159,7 @@ import scala.reflect.ClassTag
       intercept(afterSignal(ctx.asScala, signal, next), ctx)
     }
 
-    override def receiveMessage(ctx: AC[T], msg: T): Behavior[T] = {
+    override def receive(ctx: AC[T], msg: T): Behavior[T] = {
       msg match {
         case m: U ⇒
           val msg2 = beforeOnMessage(ctx.asScala.asInstanceOf[SAC[U]], m)

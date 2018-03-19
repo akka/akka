@@ -8,7 +8,7 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorInitializationException
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ Behaviors, MutableBehavior }
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.testkit.EventFilter
 import akka.testkit.typed.scaladsl._
@@ -40,7 +40,7 @@ object SupervisionSpec {
   class Exc3(msg: String = "exc-3") extends RuntimeException(msg) with NoStackTrace
 
   def targetBehavior(monitor: ActorRef[Event], state: State = State(0, Map.empty)): Behavior[Command] =
-    immutable[Command] { (ctx, cmd) ⇒
+    receive[Command] { (ctx, cmd) ⇒
       cmd match {
         case Ping ⇒
           monitor ! Pong
@@ -57,7 +57,7 @@ object SupervisionSpec {
         case Throw(e) ⇒
           throw e
       }
-    } onSignal {
+    } receiveSignal {
       case (_, sig) ⇒
         monitor ! GotSignal(sig)
         Behaviors.same
@@ -623,7 +623,7 @@ class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
     "fail when exception from MutableBehavior constructor" in new FailingConstructorTestSetup(failCount = 1) {
       val probe = TestProbe[Event]("evt")
-      val behv = supervise(mutable[Command](_ ⇒ new FailingConstructor(probe.ref)))
+      val behv = supervise(setup[Command](_ ⇒ new FailingConstructor(probe.ref)))
         .onFailure[Exception](SupervisorStrategy.restart)
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {

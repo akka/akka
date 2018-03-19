@@ -45,7 +45,7 @@ class TimerSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShu
       target(monitor, timer, nextCount)
     }
 
-    Behaviors.immutable[Command] { (ctx, cmd) ⇒
+    Behaviors.receive[Command] { (ctx, cmd) ⇒
       cmd match {
         case Tick(n) ⇒
           monitor ! Tock(n)
@@ -67,7 +67,7 @@ class TimerSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShu
           latch.await(10, TimeUnit.SECONDS)
           throw e
       }
-    } onSignal {
+    } receiveSignal {
       case (ctx, PreRestart) ⇒
         monitor ! GotPreRestart(timer.isTimerActive("T"))
         Behaviors.same

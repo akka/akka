@@ -73,7 +73,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
     "canonicalize behaviors" in {
       val probe = TestProbe[Event]()
 
-      lazy val behavior: Behavior[Command] = Behaviors.immutable[Command] { (_, message) ⇒
+      lazy val behavior: Behavior[Command] = Behaviors.receive[Command] { (_, message) ⇒
         message match {
           case Ping ⇒
             probe.ref ! Pong
@@ -103,10 +103,10 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
     "correctly wire the lifecycle hook" in {
       val probe = TestProbe[Event]()
 
-      val internal = (Behaviors.immutablePartial[Command] {
+      val internal = (Behaviors.receivePartial[Command] {
         case (_, Fail) ⇒
           throw new TestException("Boom")
-      } onSignal {
+      } receiveSignal {
         case (_, signal) ⇒
           probe.ref ! GotSignal(signal)
           Behaviors.same
@@ -122,9 +122,9 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
       val probe = TestProbe[Event]()
 
       val behavior: Behavior[Command] = (
-        Behaviors.immutablePartial[Command] {
+        Behaviors.receivePartial[Command] {
           case (_, Stop) ⇒ Behaviors.stopped
-        } onSignal {
+        } receiveSignal {
           case (_, signal) ⇒
             probe.ref ! GotSignal(signal)
             Behaviors.same
@@ -138,12 +138,12 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
     "restart and stop a child actor" in {
       val probe = TestProbe[Event]()
 
-      val child: Behavior[Command] = (Behaviors.immutablePartial[Command] {
+      val child: Behavior[Command] = (Behaviors.receivePartial[Command] {
         case (_, Fail) ⇒ throw new TestException("Boom")
         case (_, Ping) ⇒
           probe.ref ! Pong
           Behaviors.same
-      } onSignal {
+      } receiveSignal {
         case (_, signal) ⇒
           probe.ref ! GotChildSignal(signal)
           Behavior.stopped
@@ -156,11 +156,11 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
         ctx.watch(childRef)
         probe.ref ! ChildMade(childRef)
 
-        (Behaviors.immutablePartial[Command] {
+        (Behaviors.receivePartial[Command] {
           case (ctx, StopRef(ref)) ⇒
             ctx.stop(ref)
             Behavior.same
-        } onSignal {
+        } receiveSignal {
           case (_, signal) ⇒
             probe.ref ! GotSignal(signal)
             Behavior.stopped
@@ -185,11 +185,11 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
         val childRef = ctx.spawnAnonymous(child)
         ctx.watch(childRef)
         probe.ref ! ChildMade(childRef)
-        Behaviors.immutablePartial[Command] {
+        Behaviors.receivePartial[Command] {
           case (ctx, StopRef(ref)) ⇒
             ctx.stop(ref)
             Behaviors.same
-        } onSignal {
+        } receiveSignal {
           case (_, signal) ⇒
             probe.ref ! GotSignal(signal)
             Behavior.stopped
@@ -205,7 +205,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
       val probe = TestProbe[Int]()
       val internal = Behaviors.setup[Command](_ ⇒ {
         var counter = 0
-        Behaviors.immutablePartial[Command] {
+        Behaviors.receivePartial[Command] {
           case (_, Ping) ⇒
             counter += 1
             probe.ref ! counter
@@ -227,7 +227,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
       val probe = TestProbe[Int]()
       val internal = Behaviors.setup[Command](_ ⇒ {
         var counter = 0
-        Behaviors.immutablePartial[Command] {
+        Behaviors.receivePartial[Command] {
           case (_, Ping) ⇒
             counter += 1
             probe.ref ! counter
@@ -247,25 +247,25 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
     "stop upon stop" in {
       val probe = TestProbe[Event]()
-      val behavior = (Behaviors.immutablePartial[Command] {
+      val behavior = (Behaviors.receivePartial[Command] {
         case (_, Ping) ⇒
           probe.ref ! Pong
           Behaviors.same
         case (_, Fail) ⇒
           throw new TestException("boom")
-      } onSignal {
+      } receiveSignal {
         case (_, PostStop) ⇒
           probe.ref ! GotSignal(PostStop)
           Behavior.same
       }).decorate
       val actorToWatch = spawn(behavior)
       val watcher: ActorRef[Command] = spawn((
-        Behaviors.immutablePartial[Any] {
+        Behaviors.receivePartial[Any] {
           case (ctx, Ping) ⇒
             ctx.watch(actorToWatch)
             probe.ref ! Pong
             Behavior.same
-        } onSignal {
+        } receiveSignal {
           case (_, signal) ⇒
             probe.ref ! GotSignal(signal)
             Behavior.same
@@ -283,7 +283,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
     "not stop non-child actor" in {
       val probe = TestProbe[Event]()
       val victim = spawn(Behaviors.empty[Command])
-      val actor = spawn(Behaviors.immutablePartial[Command] {
+      val actor = spawn(Behaviors.receivePartial[Command] {
         case (_, Ping) ⇒
           probe.ref ! Pong
           Behaviors.same
@@ -305,7 +305,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
     "watch a child actor before its termination" in {
       val probe = TestProbe[Event]()
-      val child = Behaviors.immutablePartial[Command] {
+      val child = Behaviors.receivePartial[Command] {
         case (_, Stop) ⇒
           Behaviors.stopped
       }.decorate
@@ -314,11 +314,11 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
           val childRef = ctx.spawn(child, "A")
           ctx.watch(childRef)
           probe.ref ! ChildMade(childRef)
-          Behaviors.immutablePartial[Command] {
+          Behaviors.receivePartial[Command] {
             case (_, Ping) ⇒
               probe.ref ! Pong
               Behaviors.same
-          } onSignal {
+          } receiveSignal {
             case (_, signal) ⇒
               probe.ref ! GotSignal(signal)
               Behaviors.same
@@ -332,7 +332,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
     "watch a child actor after its termination" in {
       val probe = TestProbe[Event]()
-      val child = Behaviors.immutablePartial[Command] {
+      val child = Behaviors.receivePartial[Command] {
         case (_, Stop) ⇒
           Behaviors.stopped
       }.decorate
@@ -340,12 +340,12 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
         Behaviors.setup[Command](ctx ⇒ {
           val childRef = ctx.spawn(child, "A")
           probe.ref ! ChildMade(childRef)
-          Behaviors.immutablePartial[Command] {
+          Behaviors.receivePartial[Command] {
             case (ctx, Watch(ref)) ⇒
               ctx.watch(ref)
               probe.ref ! Pong
               Behaviors.same
-          } onSignal {
+          } receiveSignal {
             case (_, signal) ⇒
               probe.ref ! GotSignal(signal)
               Behaviors.same
@@ -363,7 +363,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
     "unwatch a child actor before its termination" in {
       val probe = TestProbe[Event]()
-      val child = Behaviors.immutablePartial[Command] {
+      val child = Behaviors.receivePartial[Command] {
         case (_, Stop) ⇒
           Behaviors.stopped
       }.decorate
@@ -371,7 +371,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
         Behaviors.setup[Command](ctx ⇒ {
           val childRef = ctx.spawn(child, "A")
           probe.ref ! ChildMade(childRef)
-          Behaviors.immutablePartial[Command] {
+          Behaviors.receivePartial[Command] {
             case (ctx, Watch(ref)) ⇒
               ctx.watch(ref)
               probe.ref ! Pong
@@ -380,7 +380,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
               ctx.unwatch(ref)
               probe.ref ! Pong
               Behaviors.same
-          } onSignal {
+          } receiveSignal {
             case (_, signal) ⇒
               probe.ref ! GotSignal(signal)
               Behaviors.same
@@ -398,10 +398,10 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
     "terminate upon not handling Terminated" in {
       val probe = TestProbe[Event]()
-      val child = (Behaviors.immutablePartial[Command] {
+      val child = (Behaviors.receivePartial[Command] {
         case (_, Stop) ⇒
           Behaviors.stopped
-      } onSignal {
+      } receiveSignal {
         case (_, signal) ⇒
           probe.ref ! GotChildSignal(signal)
           Behavior.same
@@ -411,18 +411,18 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
           val childRef = ctx.spawn(child, "A")
           ctx.watch(childRef)
           probe.ref ! ChildMade(childRef)
-          Behaviors.immutablePartial[Command] {
+          Behaviors.receivePartial[Command] {
             case (_, Inert) ⇒
               probe.ref ! InertEvent
-              Behaviors.immutable[Command] {
+              Behaviors.receive[Command] {
                 case (_, _) ⇒ Behaviors.unhandled
-              } onSignal {
+              } receiveSignal {
                 case (_, Terminated(_)) ⇒ Behaviors.unhandled
                 case (_, signal) ⇒
                   probe.ref ! GotSignal(signal)
                   Behaviors.same
               }
-          } onSignal {
+          } receiveSignal {
             case (_, signal) ⇒
               probe.ref ! GotSignal(signal)
               Behaviors.same
@@ -441,7 +441,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
     "return the right context info" in {
       type Info = (ActorSystem[Nothing], ActorRef[String])
       val probe = TestProbe[Info]
-      val actor = spawn(Behaviors.immutablePartial[String] {
+      val actor = spawn(Behaviors.receivePartial[String] {
         case (ctx, "info") ⇒
           probe.ref ! (ctx.system → ctx.self)
           Behaviors.same
@@ -453,7 +453,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
     "return right info about children" in {
       type Children = Seq[ActorRef[Nothing]]
       val probe = TestProbe[Children]()
-      val actor = spawn(Behaviors.immutablePartial[String] {
+      val actor = spawn(Behaviors.receivePartial[String] {
         case (ctx, "create") ⇒
           ctx.spawn(Behaviors.empty, "B")
           probe.ref ! ctx.child("B").toSeq
@@ -477,7 +477,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
     "set small receive timeout" in {
       val probe = TestProbe[Event]()
-      val actor = spawn(Behaviors.immutablePartial[Command] {
+      val actor = spawn(Behaviors.receivePartial[Command] {
         case (_, ReceiveTimeout) ⇒
           probe.ref ! GotReceiveTimeout
           Behaviors.same
@@ -493,7 +493,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
     "set large receive timeout" in {
       val probe = TestProbe[String]()
-      val actor = spawn(Behaviors.immutablePartial[String] {
+      val actor = spawn(Behaviors.receivePartial[String] {
         case (ctx, "schedule") ⇒
           ctx.schedule(1.second, probe.ref, "scheduled")
           Behaviors.same
@@ -518,7 +518,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
     "schedule a message" in {
       val probe = TestProbe[Event]()
-      val actor = spawn(Behaviors.immutablePartial[Command] {
+      val actor = spawn(Behaviors.receivePartial[Command] {
         case (ctx, Ping) ⇒
           ctx.schedule(1.nano, probe.ref, Pong)
           Behaviors.same
@@ -531,7 +531,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
       type Envelope = (ActorRef[String], String)
       val messages = TestProbe[Envelope]()
       val probe = TestProbe[ActorRef[String]]()
-      val actor = spawn(Behaviors.immutablePartial[String] {
+      val actor = spawn(Behaviors.receivePartial[String] {
         case (ctx, "message") ⇒
           messages.ref.tell((ctx.self, "received message"))
           Behaviors.same
@@ -560,7 +560,7 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
         Behaviors.setup[Command](ctx ⇒ {
           val child = ctx.spawnAnonymous(Behaviors.empty[Command])
           probe.ref ! ChildMade(child)
-          Behaviors.immutablePartial[Command] {
+          Behaviors.receivePartial[Command] {
             case (ctx, StopRef(ref)) ⇒
               ctx.stop(ref)
               probe.ref ! Pong

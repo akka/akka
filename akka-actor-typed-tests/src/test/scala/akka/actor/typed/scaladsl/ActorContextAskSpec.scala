@@ -42,7 +42,7 @@ class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       case class Ping(sender: ActorRef[Pong])
       case class Pong(selfName: String, threadName: String)
 
-      val pingPong = spawn(Behaviors.immutable[Ping] { (ctx, msg) ⇒
+      val pingPong = spawn(Behaviors.receive[Ping] { (ctx, msg) ⇒
         msg.sender ! Pong(ctx.self.path.name, Thread.currentThread().getName)
         Behaviors.same
       }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
@@ -58,7 +58,7 @@ class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           case Failure(ex)   ⇒ throw ex
         }
 
-        Behaviors.immutable {
+        Behaviors.receive {
           case (ctx, pong: Pong) ⇒
             probe.ref ! pong
             Behaviors.same
@@ -80,7 +80,7 @@ class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       case class Ping(respondTo: ActorRef[Pong.type]) extends Protocol
       case object Pong extends Protocol
 
-      val pingPong = spawn(Behaviors.immutable[Protocol]((_, msg) ⇒
+      val pingPong = spawn(Behaviors.receive[Protocol]((_, msg) ⇒
         msg match {
           case Ping(respondTo) ⇒
             respondTo ! Pong
@@ -94,11 +94,11 @@ class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           case Failure(x)   ⇒ x
         }
 
-        Behaviors.immutable[AnyRef] {
+        Behaviors.receive[AnyRef] {
           case (_, msg) ⇒
             probe.ref ! msg
             Behaviors.same
-        }.onSignal {
+        }.receiveSignal {
 
           case (_, PostStop) ⇒
             probe.ref ! "stopped"
@@ -123,7 +123,7 @@ class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           case Failure(x) ⇒ x
         }(20.millis, implicitly[ClassTag[String]])
 
-        Behaviors.immutable {
+        Behaviors.receive {
           case (_, msg) ⇒
             probe.ref ! msg
             Behaviors.same

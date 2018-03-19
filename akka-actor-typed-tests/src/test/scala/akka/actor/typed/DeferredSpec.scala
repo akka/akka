@@ -19,7 +19,7 @@ object DeferredSpec {
   case object Started extends Event
 
   def target(monitor: ActorRef[Event]): Behavior[Command] =
-    Behaviors.immutable((_, cmd) ⇒ cmd match {
+    Behaviors.receive((_, cmd) ⇒ cmd match {
       case Ping ⇒
         monitor ! Pong
         Behaviors.same
@@ -52,7 +52,7 @@ class DeferredSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           throw new RuntimeException("simulated exc from factory") with NoStackTrace
         })
         ctx.watch(child)
-        Behaviors.immutable[Command]((_, _) ⇒ Behaviors.same).onSignal {
+        Behaviors.receive[Command]((_, _) ⇒ Behaviors.same).receiveSignal {
           case (_, Terminated(`child`)) ⇒
             probe.ref ! Pong
             Behaviors.stopped
@@ -68,7 +68,7 @@ class DeferredSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       val behv = Behaviors.setup[Command] { ctx ⇒
         val child = ctx.spawnAnonymous(Behaviors.setup[Command](_ ⇒ Behaviors.stopped))
         ctx.watch(child)
-        Behaviors.immutable[Command]((_, _) ⇒ Behaviors.same).onSignal {
+        Behaviors.receive[Command]((_, _) ⇒ Behaviors.same).receiveSignal {
           case (_, Terminated(`child`)) ⇒
             probe.ref ! Pong
             Behaviors.stopped
