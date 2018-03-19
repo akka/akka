@@ -259,7 +259,7 @@ import scala.util.control.NonFatal
         case est @ Establishing(_, false, OptionVal.None) ⇒
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($est).onError(${t.getMessage}), loop")
           if (!compareAndSet(est, est.copy(onErrorBuffered = OptionVal.Some(ex)))) rec(ex)
-        case _ ⇒ // spec violation or cancellation race, but nothing we can do
+        case other ⇒ // spec violation or cancellation race, but nothing we can do
           if (t == null) throw ex // must throw NPE, rule 2.13
           // spec violation or cancellation race, but nothing we can do
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($other).onError(${t.getMessage}). spec violation or cancellation race")
