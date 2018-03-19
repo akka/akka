@@ -10,6 +10,7 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.MutableBehavior;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
 import akka.cluster.ClusterEvent;
@@ -31,7 +32,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
 
   static class RandomRouter {
 
-    private static class RouterBehavior<T> extends Behaviors.MutableBehavior<Object> {
+    private static class RouterBehavior<T> extends MutableBehavior<Object> {
       private final Class<T> messageClass;
       private final ServiceKey<T> serviceKey;
       private final List<ActorRef<T>> routees = new ArrayList<>();
@@ -73,7 +74,7 @@ public class ReceptionistExampleTest extends JUnitSuite {
       }
     }
 
-    private static class ClusterRouterBehavior<T> extends Behaviors.MutableBehavior<Object> {
+    private static class ClusterRouterBehavior<T> extends MutableBehavior<Object> {
       private final Class<T> messageClass;
       private final ServiceKey<T> serviceKey;
       private final List<ActorRef<T>> routees = new ArrayList<>();

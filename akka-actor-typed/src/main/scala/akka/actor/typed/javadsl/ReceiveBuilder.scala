@@ -12,7 +12,7 @@ import ReceiveBuilder._
 import akka.annotation.InternalApi
 
 /**
- * Used when implementing [[Behaviors.MutableBehavior]].
+ * Used when implementing [[MutableBehavior]].
  *
  * When handling a message or signal, this [[Behavior]] will consider all handlers in the order they were added,
  * looking for the first handler for which both the type and the (optional) predicate match.
@@ -145,7 +145,7 @@ object ReceiveBuilder {
 }
 
 /**
- * Receive type for [[Behaviors.MutableBehavior]]
+ * Receive type for [[MutableBehavior]]
  */
 private class BuiltReceive[T](
   private val messageHandlers: List[Case[T, T]],

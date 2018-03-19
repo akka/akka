@@ -26,7 +26,7 @@ import akka.actor.typed.Behavior;
 import akka.cluster.ddata.typed.javadsl.Replicator.Command;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Adapter;
-import akka.actor.typed.javadsl.Behaviors.MutableBehavior;
+import akka.actor.typed.javadsl.MutableBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 
 public class ReplicatorTest extends JUnitSuite {

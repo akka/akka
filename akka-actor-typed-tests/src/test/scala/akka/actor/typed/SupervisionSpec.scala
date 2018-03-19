@@ -8,7 +8,7 @@ import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorInitializationException
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ Behaviors, MutableBehavior }
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.testkit.EventFilter
 import akka.testkit.typed.scaladsl._

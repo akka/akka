@@ -44,40 +44,6 @@ object Behaviors {
     Behavior.DeferredBehavior(ctx ⇒ factory.apply(ctx.asJava))
 
   /**
-   * Mutable behavior can be implemented by extending this class and implement the
-   * abstract method [[MutableBehavior#onMessage]] and optionally override
-   * [[MutableBehavior#onSignal]].
-   *
-   * Instances of this behavior should be created via [[Behaviors#setup]] and if
-   * the [[ActorContext]] is needed it can be passed as a constructor parameter
-   * from the factory function.
-   *
-   * @see [[Behaviors#setup]]
-   */
-  abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
-    private var _receive: OptionVal[Receive[T]] = OptionVal.None
-    private def receive: Receive[T] = _receive match {
-      case OptionVal.None ⇒
-        val receive = createReceive
-        _receive = OptionVal.Some(receive)
-        receive
-      case OptionVal.Some(r) ⇒ r
-    }
-
-    @throws(classOf[Exception])
-    override final def receiveMessage(ctx: akka.actor.typed.ActorContext[T], msg: T): Behavior[T] =
-      receive.receiveMessage(msg)
-
-    @throws(classOf[Exception])
-    override final def receiveSignal(ctx: akka.actor.typed.ActorContext[T], msg: Signal): Behavior[T] =
-      receive.receiveSignal(msg)
-
-    def createReceive: Receive[T]
-
-    def receiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
-  }
-
-  /**
    * Return this behavior from message processing in order to advise the
    * system to reuse the previous behavior. This is provided in order to
    * avoid the allocation overhead of recreating the current behavior where

@@ -10,6 +10,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Behaviors.Receive;
 import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.MutableBehavior;
 //#imports
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -85,7 +86,7 @@ public class MutableIntroTest {
       return Behaviors.setup(ChatRoomBehavior::new);
     }
 
-    public static class ChatRoomBehavior extends Behaviors.MutableBehavior<RoomCommand> {
+    public static class ChatRoomBehavior extends MutableBehavior<RoomCommand> {
       final ActorContext<RoomCommand> ctx;
       final List<ActorRef<SessionCommand>> sessions = new ArrayList<>();
 

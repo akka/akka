@@ -170,7 +170,7 @@ public class InteractionPatternsTest extends JUnitSuite {
       }
     }
 
-    public static class Translator extends Behaviors.MutableBehavior<Command> {
+    public static class Translator extends MutableBehavior<Command> {
       private final ActorContext<Command> ctx;
       private final ActorRef<Backend.Request> backend;
       private final ActorRef<Backend.Response> backendResponseAdapter;
@@ -520,7 +520,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   }
 
   // per session actor behavior
-  class PrepareToLeaveHome extends Behaviors.MutableBehavior<Object> {
+  class PrepareToLeaveHome extends MutableBehavior<Object> {
     private final String whoIsLeaving;
     private final ActorRef<ReadyToLeaveHome> respondTo;
     private final ActorRef<GetKeys> keyCabinet;

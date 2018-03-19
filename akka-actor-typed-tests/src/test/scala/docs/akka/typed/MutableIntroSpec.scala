@@ -9,8 +9,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, MutableBehavior }
 import akka.testkit.typed.scaladsl.ActorTestKit
 
 import scala.concurrent.duration._
@@ -46,7 +45,7 @@ object MutableIntroSpec {
     def behavior(): Behavior[RoomCommand] =
       Behaviors.setup[RoomCommand](ctx ⇒ new ChatRoomBehavior(ctx))
 
-    class ChatRoomBehavior(ctx: ActorContext[RoomCommand]) extends Behaviors.MutableBehavior[RoomCommand] {
+    class ChatRoomBehavior(ctx: ActorContext[RoomCommand]) extends MutableBehavior[RoomCommand] {
       private var sessions: List[ActorRef[SessionCommand]] = List.empty
 
       override def onMessage(msg: RoomCommand): Behavior[RoomCommand] = {
