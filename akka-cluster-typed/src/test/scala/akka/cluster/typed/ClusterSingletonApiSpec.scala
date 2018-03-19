@@ -48,7 +48,7 @@ object ClusterSingletonApiSpec {
 
   case object Perish extends PingProtocol
 
-  val pingPong = Behaviors.immutable[PingProtocol] { (_, msg) ⇒
+  val pingPong = Behaviors.receive[PingProtocol] { (_, msg) ⇒
 
     msg match {
       case Ping(respondTo) ⇒

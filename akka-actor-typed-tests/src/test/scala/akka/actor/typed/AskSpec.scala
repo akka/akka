@@ -35,7 +35,7 @@ class AskSpec extends ActorTestKit
   implicit def executor: ExecutionContext =
     system.executionContext
 
-  val behavior: Behavior[Msg] = immutable[Msg] {
+  val behavior: Behavior[Msg] = receive[Msg] {
     case (_, foo: Foo) ⇒
       foo.replyTo ! "foo"
       Behaviors.same
@@ -119,7 +119,7 @@ class AskSpec extends ActorTestKit
 
       val probe = TestProbe[AnyRef]("probe")
       val behv =
-        Behaviors.immutable[String] {
+        Behaviors.receive[String] {
           case (ctx, "start-ask") ⇒
             ctx.ask[Question, Long](probe.ref)(Question(_)) {
               case Success(42L) ⇒

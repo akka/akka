@@ -224,7 +224,8 @@ Java
 
 There are a few things worth noting here:
 
-* To get access to the timers you start with `Behaviors.withTimers` that will pass a `TimerScheduler` instance to the function. This can be used with any type of `Behavior`, such as `immutable` or `mutable`.
+* To get access to the timers you start with `Behaviors.withTimers` that will pass a `TimerScheduler` instance to the function. 
+This can be used with any type of `Behavior`, including `receive`, `receiveMessage`, but also `setup` or any other behavior.
 * Each timer has a key and if a new timer with same key is started the previous is cancelled and it's guaranteed that a message from the previous timer is not received, even though it might already be enqueued in the mailbox when the new timer is started.
 * Both periodic and single message timers are supported. 
 * The `TimerScheduler` is mutable in itself, because it performs and manages the side effects of registering the scheduled tasks.

@@ -71,7 +71,7 @@ class RemoteMessageSpec extends AkkaSpec(RemoteMessageSpec.config) {
     "something something" in {
 
       val pingPromise = Promise[Done]()
-      val ponger = Behaviors.immutable[Ping]((_, msg) ⇒
+      val ponger = Behaviors.receive[Ping]((_, msg) ⇒
         msg match {
           case Ping(sender) ⇒
             pingPromise.success(Done)
@@ -92,7 +92,7 @@ class RemoteMessageSpec extends AkkaSpec(RemoteMessageSpec.config) {
           ActorRefResolver(typedSystem2).resolveActorRef[Ping](remoteRefStr)
 
         val pongPromise = Promise[Done]()
-        val recipient = system2.spawn(Behaviors.immutable[String] { (_, _) ⇒
+        val recipient = system2.spawn(Behaviors.receive[String] { (_, _) ⇒
           pongPromise.success(Done)
           Behaviors.stopped
         }, "recipient")

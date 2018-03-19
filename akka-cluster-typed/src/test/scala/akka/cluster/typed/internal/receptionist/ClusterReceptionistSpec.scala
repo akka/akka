@@ -56,7 +56,7 @@ object ClusterReceptionistSpec {
   case class Ping(respondTo: ActorRef[Pong.type]) extends PingProtocol
   case object Perish extends PingProtocol
 
-  val pingPongBehavior = Behaviors.immutable[PingProtocol] { (_, msg) ⇒
+  val pingPongBehavior = Behaviors.receive[PingProtocol] { (_, msg) ⇒
     msg match {
       case Ping(respondTo) ⇒
         respondTo ! Pong

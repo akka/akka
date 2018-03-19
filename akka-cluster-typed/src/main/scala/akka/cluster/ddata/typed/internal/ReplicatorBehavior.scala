@@ -59,7 +59,7 @@ import akka.actor.typed.Terminated
           }
         }
 
-        Behaviors.immutable[SReplicator.Command] { (ctx, msg) ⇒
+        Behaviors.receive[SReplicator.Command] { (ctx, msg) ⇒
           msg match {
             case cmd: SReplicator.Get[_] ⇒
               untypedReplicator.tell(
@@ -184,7 +184,7 @@ import akka.actor.typed.Terminated
 
           }
         }
-          .onSignal {
+          .receiveSignal {
             case (ctx, Terminated(ref: ActorRef[JReplicator.Changed[ReplicatedData]] @unchecked)) ⇒
               stopSubscribeAdapter(ref)
           }

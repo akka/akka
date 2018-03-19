@@ -5,11 +5,10 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.actor.typed.internal.{ BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl }
+import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 
 import scala.reflect.ClassTag
-import scala.util.control.Exception.Catcher
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].
@@ -22,7 +21,7 @@ object Behaviors {
 
   /**
    * `setup` is a factory for a behavior. Creation of the behavior instance is deferred until
-   * the actor is started, as opposed to [[Behaviors.immutable]] that creates the behavior instance
+   * the actor is started, as opposed to [[Behaviors.receive]] that creates the behavior instance
    * immediately before the actor is running. The `factory` function pass the `ActorContext`
    * as parameter and that can for example be used for spawning child actors.
    *
@@ -33,71 +32,6 @@ object Behaviors {
    */
   def setup[T](factory: ActorContext[T] ⇒ Behavior[T]): Behavior[T] =
     Behavior.DeferredBehavior(factory)
-
-  /**
-   * Factory for creating a [[MutableBehavior]] that typically holds mutable state as
-   * instance variables in the concrete [[MutableBehavior]] implementation class.
-   *
-   * Creation of the behavior instance is deferred, i.e. it is created via the `factory`
-   * function. The reason for the deferred creation is to avoid sharing the same instance in
-   * multiple actors, and to create a new instance when the actor is restarted.
-   *
-   * @param factory behavior factory that takes the child actor’s context as argument
-   * @return the deferred behavior
-   */
-  def mutable[T](factory: ActorContext[T] ⇒ MutableBehavior[T]): Behavior[T] =
-    setup(factory)
-
-  /**
-   * Mutable behavior can be implemented by extending this class and implement the
-   * abstract method [[MutableBehavior#onMessage]] and optionally override
-   * [[MutableBehavior#onSignal]].
-   *
-   * Instances of this behavior should be created via [[Behaviors#Mutable]] and if
-   * the [[ActorContext]] is needed it can be passed as a constructor parameter
-   * from the factory function.
-   *
-   * @see [[Behaviors#Mutable]]
-   */
-  abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
-    @throws(classOf[Exception])
-    override final def receiveMessage(ctx: akka.actor.typed.ActorContext[T], msg: T): Behavior[T] =
-      onMessage(msg)
-
-    /**
-     * Implement this method to process an incoming message and return the next behavior.
-     *
-     * The returned behavior can in addition to normal behaviors be one of the canned special objects:
-     * <ul>
-     * <li>returning `stopped` will terminate this Behavior</li>
-     * <li>returning `this` or `same` designates to reuse the current Behavior</li>
-     * <li>returning `unhandled` keeps the same Behavior and signals that the message was not yet handled</li>
-     * </ul>
-     *
-     */
-    @throws(classOf[Exception])
-    def onMessage(msg: T): Behavior[T]
-
-    @throws(classOf[Exception])
-    override final def receiveSignal(ctx: akka.actor.typed.ActorContext[T], msg: Signal): Behavior[T] =
-      onSignal.applyOrElse(msg, { case msg ⇒ Behavior.unhandled }: PartialFunction[Signal, Behavior[T]])
-
-    /**
-     * Override this method to process an incoming [[akka.actor.typed.Signal]] and return the next behavior.
-     * This means that all lifecycle hooks, ReceiveTimeout, Terminated and Failed messages
-     * can initiate a behavior change.
-     *
-     * The returned behavior can in addition to normal behaviors be one of the canned special objects:
-     *
-     *  * returning `stopped` will terminate this Behavior
-     *  * returning `this` or `same` designates to reuse the current Behavior
-     *  * returning `unhandled` keeps the same Behavior and signals that the message was not yet handled
-     *
-     * By default, partial function is empty and does not handle any signals.
-     */
-    @throws(classOf[Exception])
-    def onSignal: PartialFunction[Signal, Behavior[T]] = PartialFunction.empty
-  }
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -158,27 +92,48 @@ object Behaviors {
    * need and in fact should not use (close over) mutable variables, but instead
    * return a potentially different behavior encapsulating any state changes.
    */
-  def immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Immutable[T] =
-    new Immutable(onMessage)
+  def receive[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Receive[T] =
+    new ReceiveImpl(onMessage)
 
-  final class Immutable[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T])
-    extends BehaviorImpl.ImmutableBehavior[T](onMessage) {
-
-    def onSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
-      new BehaviorImpl.ImmutableBehavior(onMessage, onSignal)
-  }
+  /**
+   * Simplified version of [[Receive]] with only a single argument - the message
+   * to be handled. Useful for when the context is already accessible by other means,
+   * like being wrapped in an [[setup]] or similar.
+   *
+   * Construct an actor behavior that can react to both incoming messages and
+   * lifecycle signals. After spawning this actor from another actor (or as the
+   * guardian of an [[akka.actor.typed.ActorSystem]]) it will be executed within an
+   * [[ActorContext]] that allows access to the system, spawning and watching
+   * other actors, etc.
+   *
+   * This constructor is called immutable because the behavior instance does not
+   * need and in fact should not use (close over) mutable variables, but instead
+   * return a potentially different behavior encapsulating any state changes.
+   */
+  def receiveMessage[T](onMessage: T ⇒ Behavior[T]): Receive[T] =
+    new ReceiveMessageImpl(onMessage)
 
   /**
    * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
    */
-  def immutablePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Immutable[T] =
-    Behaviors.immutable[T] { (ctx, t) ⇒ onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) ⇒ Behaviors.unhandled[T]) }
+  def receivePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Receive[T] =
+    Behaviors.receive[T] { (ctx, t) ⇒
+      onMessage.applyOrElse((ctx, t), (_: (ActorContext[T], T)) ⇒ Behaviors.unhandled[T])
+    }
+
+  /**
+   * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
+   */
+  def receiveMessagePartial[T](onMessage: PartialFunction[T, Behavior[T]]): Receive[T] =
+    Behaviors.receive[T] { (_, t) ⇒
+      onMessage.applyOrElse(t, (_: T) ⇒ Behaviors.unhandled[T])
+    }
 
   /**
    * Construct an actor behavior that can react to lifecycle signals only.
    */
-  def onSignal[T](handler: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
-    immutable[T]((_, _) ⇒ same).onSignal(handler)
+  def receiveSignal[T](handler: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
+    receive[T]((_, _) ⇒ same).receiveSignal(handler)
 
   /**
    * This type of Behavior wraps another Behavior while allowing you to perform
@@ -262,5 +217,31 @@ object Behaviors {
 
   // TODO
   // final case class Selective[T](timeout: FiniteDuration, selector: PartialFunction[T, Behavior[T]], onTimeout: () ⇒ Behavior[T])
+
+  /**
+   * Immutable behavior that exposes additional fluent DSL methods
+   * to further change the message or signal reception behavior.
+   */
+  @DoNotInherit
+  trait Receive[T] extends ExtensibleBehavior[T] {
+    def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T]
+
+    // TODO orElse can be defined here
+  }
+
+  @InternalApi
+  private[akka] final class ReceiveImpl[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T])
+    extends BehaviorImpl.ReceiveBehavior[T](onMessage) with Receive[T] {
+
+    override def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
+      new BehaviorImpl.ReceiveBehavior(onMessage, onSignal)
+  }
+  @InternalApi
+  private[akka] final class ReceiveMessageImpl[T](onMessage: T ⇒ Behavior[T])
+    extends BehaviorImpl.ReceiveMessageBehavior[T](onMessage) with Receive[T] {
+
+    override def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
+      new BehaviorImpl.ReceiveMessageBehavior[T](onMessage, onSignal)
+  }
 
 }
