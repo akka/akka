@@ -186,6 +186,9 @@ import scala.util.control.NonFatal
             case Inert ⇒ // nothing to be done
             case _     ⇒ ErrorPublisher(ex, "failed-VirtualProcessor").subscribe(s)
           }
+        case _ if t == null ⇒
+          // cancelled before onError(null), must throw NPE, rule 2:13
+          throw ex
         case _ ⇒ // spec violation or cancellation race, but nothing we can do
       }
 
