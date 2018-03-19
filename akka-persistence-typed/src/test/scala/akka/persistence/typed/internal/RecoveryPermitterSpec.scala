@@ -21,7 +21,7 @@ import scala.util.control.NoStackTrace
 
 object RecoveryPermitterSpec {
 
-  class TestExc extends RuntimeException("simulated exc") with NoStackTrace
+  class TE extends RuntimeException("Boom!") with NoStackTrace
 
   trait State
 
@@ -53,7 +53,7 @@ object RecoveryPermitterSpec {
     ).onRecoveryCompleted {
         case (_, _) ⇒
           eventProbe.ref ! Recovered
-          if (throwOnRecovery) throw new TestExc
+          if (throwOnRecovery) throw new TE
       }
 
   def forwardingBehavior(target: TestProbe[Any]): Behavior[Any] =
