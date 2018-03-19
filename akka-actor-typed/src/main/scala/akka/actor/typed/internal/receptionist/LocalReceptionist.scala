@@ -55,11 +55,11 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
     def watchWith(ctx: ActorContext[Any], target: ActorRef[_], msg: InternalCommand): Unit =
       ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx ⇒
         innerCtx.watch(target)
-        Behaviors.receiveSignal {
-            case (_, Terminated(`target`)) ⇒
-              ctx.self ! msg
-              Behaviors.stopped
-          }
+        Behaviors.receiveSignal[Nothing] {
+          case (_, Terminated(`target`)) ⇒
+            ctx.self ! msg
+            Behaviors.stopped
+        }
       })
 
     // Helper that makes sure that subscribers are notified when an entry is changed
