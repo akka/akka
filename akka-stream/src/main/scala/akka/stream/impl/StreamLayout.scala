@@ -249,7 +249,7 @@ import scala.util.control.NonFatal
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(Both($s)).onError(${t.getMessage}) -> ErrorPublisher")
           set(Inert)
           try tryOnError(s, ex)
-          finally if (t == null) throw ex // must throw NPE, rule 2:13
+          finally if (t == null) throw ex // must throw NPE, rule 2.13
         case s: Subscriber[_] ⇒ // spec violation
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($s).onError(${t.getMessage}) -> Inert")
           getAndSet(Inert) match {
@@ -259,8 +259,8 @@ import scala.util.control.NonFatal
         case est @ Establishing(_, false, OptionVal.None) ⇒
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($est).onError(${t.getMessage}), loop")
           if (!compareAndSet(est, est.copy(onErrorBuffered = OptionVal.Some(ex)))) rec(ex)
-
-        case other ⇒
+        case _ ⇒ // spec violation or cancellation race, but nothing we can do
+          if (t == null) throw ex // must throw NPE, rule 2.13
           // spec violation or cancellation race, but nothing we can do
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode($other).onError(${t.getMessage}). spec violation or cancellation race")
       }

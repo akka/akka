@@ -6,9 +6,7 @@ package akka.stream
 
 import java.util.concurrent.{ Semaphore, TimeUnit }
 
-import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.impl.fusing.GraphStages
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._

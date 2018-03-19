@@ -4,7 +4,6 @@
 
 package akka.remote.artery
 
-import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
 import akka.remote.transport.netty.NettyTransportSpec._

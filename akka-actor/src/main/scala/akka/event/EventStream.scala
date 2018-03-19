@@ -4,8 +4,6 @@
 
 package akka.event
 
-import language.implicitConversions
-
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.event.Logging.simpleName
 import akka.util.Subclassification

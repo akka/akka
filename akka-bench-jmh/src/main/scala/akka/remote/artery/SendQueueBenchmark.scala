@@ -5,20 +5,14 @@
 package akka.remote.artery
 
 import java.util.concurrent.TimeUnit
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
-import scala.concurrent.Lock
-import scala.util.Success
-import akka.stream.impl.fusing.GraphStages
-import org.reactivestreams._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
-import java.util.concurrent.Semaphore
 import akka.stream.OverflowStrategy
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.CountDownLatch

@@ -4,7 +4,6 @@
 
 package akka.osgi
 
-import language.existentials
 import java.net.URL
 import java.util.Enumeration
 import org.osgi.framework.{ BundleContext, Bundle }

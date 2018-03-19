@@ -285,8 +285,6 @@ final class ORSet[A] private[akka] (
   extends DeltaReplicatedData
   with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
 
-  import ORSet.{ AddDeltaOp, RemoveDeltaOp }
-
   type T = ORSet[A]
   type D = ORSet.DeltaOp
 

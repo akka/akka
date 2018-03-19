@@ -43,9 +43,20 @@ public class FlowTest extends StreamTest {
     super(actorSystemResource);
   }
 
-    @ClassRule
+  @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest",
       AkkaSpec.testConf());
+
+  interface Fruit {}
+  static class Apple implements Fruit {};
+  static class Orange implements Fruit {};
+
+  public void compileOnlyUpcast() {
+    Flow<Apple, Apple, NotUsed> appleFlow = null;
+    Flow<Apple, Fruit, NotUsed> appleFruitFlow = Flow.upcast(appleFlow);
+
+    Flow<Apple, Fruit, NotUsed> fruitFlow = appleFruitFlow.intersperse(new Orange());
+  }
 
   @Test
   public void mustBeAbleToUseSimpleOperators() {

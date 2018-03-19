@@ -4,11 +4,7 @@
 
 package akka.testkit.typed
 
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.reflect.ClassTag
-import scala.collection.immutable
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.typed.ActorSystem
+import scala.concurrent.duration.FiniteDuration
 
 package object scaladsl {
 

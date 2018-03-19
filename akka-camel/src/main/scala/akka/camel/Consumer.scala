@@ -10,8 +10,6 @@ import akka.actor._
 import scala.concurrent.duration._
 import akka.dispatch.Mapper
 
-import scala.language.existentials
-
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
  */

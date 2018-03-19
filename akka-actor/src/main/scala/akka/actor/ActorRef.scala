@@ -10,7 +10,7 @@ import akka.dispatch.sysmsg._
 import java.lang.{ IllegalStateException, UnsupportedOperationException }
 
 import akka.serialization.{ JavaSerializer, Serialization }
-import akka.event.{ EventStream, Logging, LoggingAdapter, MarkerLoggingAdapter }
+import akka.event.{ EventStream, Logging, MarkerLoggingAdapter }
 
 import scala.annotation.tailrec
 import java.util.concurrent.ConcurrentHashMap
