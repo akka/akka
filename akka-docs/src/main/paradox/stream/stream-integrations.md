@@ -86,7 +86,8 @@ the queue and they will be emitted to the stream if there is demand from downstr
 be buffered until request for demand is received. 
 
 Use overflow strategy `akka.stream.OverflowStrategy.backpressure` to avoid dropping of elements if the 
-buffer is full.
+buffer is full, instead the returned @scala[`Future`]@java[`CompletionStage`] does not complete until there is space in the
+buffer and `offer` should not be called again until it completes.
 
 `SourceQueue.offer` returns @scala[`Future[QueueOfferResult]`]@java[`CompletionStage<QueueOfferResult>`] which completes with `QueueOfferResult.Enqueued`
 if element was added to buffer or sent downstream. It completes with `QueueOfferResult.Dropped` if element 
