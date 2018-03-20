@@ -15,7 +15,6 @@ import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration
 import akka.actor.Actor
 import scala.concurrent.duration.Duration
-import scala.language.existentials
 import java.io.NotSerializableException
 
 /**

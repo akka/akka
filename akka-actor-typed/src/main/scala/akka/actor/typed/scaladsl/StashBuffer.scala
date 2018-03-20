@@ -4,8 +4,6 @@
 
 package akka.actor.typed.scaladsl
 
-import java.util.function.{ Function ⇒ JFunction }
-
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.StashBufferImpl
 import akka.annotation.DoNotInherit

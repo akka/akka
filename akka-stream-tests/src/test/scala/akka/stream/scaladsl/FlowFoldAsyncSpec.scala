@@ -11,7 +11,6 @@ import akka.stream.Supervision.{ restartingDecider, resumingDecider }
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import akka.testkit.TestLatch
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration._

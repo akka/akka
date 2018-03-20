@@ -15,7 +15,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
-import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function ⇒ JFunction }

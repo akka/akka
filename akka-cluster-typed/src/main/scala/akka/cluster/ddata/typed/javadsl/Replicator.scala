@@ -6,13 +6,11 @@ package akka.cluster.ddata.typed.javadsl
 
 import java.util.function.{ Function ⇒ JFunction }
 import akka.cluster.{ ddata ⇒ dd }
-import akka.cluster.ddata.typed.scaladsl
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.cluster.ddata.typed.internal.ReplicatorBehavior
-import akka.cluster.ddata.typed.scaladsl
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration.Duration
@@ -23,7 +21,6 @@ import akka.actor.{ DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ddata.typed.internal.ReplicatorBehavior
-import akka.cluster.ddata.typed.scaladsl
 import akka.cluster.{ ddata ⇒ dd }
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }

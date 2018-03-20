@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import akka.{ Done, NotUsed }
+import akka.NotUsed
 import akka.actor.Status.Failure
 import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, ActorSystemImpl, Identify, Props }
 import akka.pattern._
@@ -12,13 +12,11 @@ import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.scaladsl._
 import akka.stream._
 import akka.testkit.{ AkkaSpec, ImplicitSender, SocketUtil, TestKit, TestProbe }
-import akka.util.{ ByteString, PrettyDuration }
+import akka.util.ByteString
 import com.typesafe.config._
 
-import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
-import scala.util.Success
 import scala.util.control.NoStackTrace
 
 object StreamRefsSpec {

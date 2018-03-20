@@ -4,7 +4,7 @@
 
 package akka.stream.impl
 
-import java.util.concurrent.{ TimeUnit, TimeoutException }
+import java.util.concurrent.TimeoutException
 
 import akka.Done
 import akka.stream.scaladsl._
@@ -361,7 +361,6 @@ class TimeoutsSpec extends StreamSpec {
 class TimeoutChecksSpec extends WordSpecLike with Matchers {
 
   "Timeout check interval" must {
-    import scala.concurrent.duration.{ Duration, FiniteDuration }
 
     "run twice for timeouts under 800ms" in {
       Timers.timeoutCheckInterval(800.millis) should ===(100.millis)

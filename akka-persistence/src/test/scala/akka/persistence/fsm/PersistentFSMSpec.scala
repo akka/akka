@@ -9,7 +9,6 @@ import java.io.File
 import akka.actor.{ ActorSystem, _ }
 import akka.persistence._
 import akka.persistence.fsm.PersistentFSM._
-import akka.persistence.fsm.PersistentFSMSpec.IntAdded
 import akka.testkit._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.apache.commons.io.FileUtils

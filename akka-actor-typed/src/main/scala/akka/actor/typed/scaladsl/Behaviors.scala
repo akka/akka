@@ -5,6 +5,7 @@
 package akka.actor.typed
 package scaladsl
 
+import akka.annotation.ApiMayChange
 import akka.actor.typed.internal.{ BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl }
 import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 
