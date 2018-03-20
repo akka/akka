@@ -120,6 +120,23 @@ backpressure the upstream producer until subscribers arrive. This behavior can b
 are no other subscribers, this will ensure that the producer is kept drained (dropping all elements) and once a new
 subscriber arrives it will adaptively slow down, ensuring no more messages are dropped.
 
+There is also another case when you could use an infinitive stream with `BroadcastHub`. It could change policy for
+the consumed records. Instead of skipping old elements for new sink you could set how many elements (upper bound)
+should be remained to be resent to a new sink. 
+
+Scala
+:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #broadcast-hub-retry }
+
+Java
+:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #broadcast-hub-retry } 
+
+@@@ note
+
+If an upper stream will be closed and there is no any attached sink to the source it also will be closed. 
+You could duplicate last N messages only with indefinite streams.
+
+@@@
+
 ### Combining dynamic stages to build a simple Publish-Subscribe service
 
 The features provided by the Hub implementations are limited by default. This is by design, as various combinations

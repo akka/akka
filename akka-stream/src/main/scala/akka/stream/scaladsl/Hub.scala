@@ -314,6 +314,34 @@ object BroadcastHub {
    * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own
    * [[Source]] for consuming the [[Sink]] of that materialization.
    *
+   * If parameter retryBufferSize is not equal zero, [[Source]] will duplicate last records for every new consumer.
+   *
+   * If the original [[Sink]] is failed, then the failure is immediately propagated to all of its materialized
+   * [[Source]]s (possibly jumping over already buffered elements). If the original [[Sink]] is completed, then
+   * all corresponding [[Source]]s are completed. Both failure and normal completion is "remembered" and later
+   * materializations of the [[Source]] will see the same (failure or completion) state. [[Source]]s that are
+   * cancelled are simply removed from the dynamic set of consumers.
+   *
+   * @param bufferSize Buffer size used by the producer. Gives an upper bound on how "far" from each other two
+   *                   concurrent consumers can be in terms of element. If this buffer is full, the producer
+   *                   is backpressured. Must be a power of two and less than 4096.
+   * @param retryBufferSize Count of remaining records for new consumers. Gives an upper bound on how "old" records
+   *                        from the latest can be produced for a new consumer. Must be non negative and less or equal
+   *                        than the buffer size. This size could be zero. In this case any consumer consumes
+   *                        all records and new consumers will not see that old records.
+   */
+  def sink[T](bufferSize: Int, retryBufferSize: Int): Sink[T, Source[T, NotUsed]] =
+    Sink.fromGraph(new BroadcastHub[T](bufferSize, retryBufferSize))
+
+  /**
+   * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
+   * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
+   * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
+   * broadcast elements from the original [[Sink]].
+   *
+   * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own
+   * [[Source]] for consuming the [[Sink]] of that materialization.
+   *
    * If the original [[Sink]] is failed, then the failure is immediately propagated to all of its materialized
    * [[Source]]s (possibly jumping over already buffered elements). If the original [[Sink]] is completed, then
    * all corresponding [[Source]]s are completed. Both failure and normal completion is "remembered" and later
@@ -324,7 +352,7 @@ object BroadcastHub {
    *                   concurrent consumers can be in terms of element. If this buffer is full, the producer
    *                   is backpressured. Must be a power of two and less than 4096.
    */
-  def sink[T](bufferSize: Int): Sink[T, Source[T, NotUsed]] = Sink.fromGraph(new BroadcastHub[T](bufferSize))
+  def sink[T](bufferSize: Int): Sink[T, Source[T, NotUsed]] = sink(bufferSize = bufferSize, retryBufferSize = 0)
 
   /**
    * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
@@ -349,10 +377,12 @@ object BroadcastHub {
 /**
  * INTERNAL API
  */
-private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
+private[akka] class BroadcastHub[T](bufferSize: Int, retryBufferSize: Int) extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
   require(bufferSize > 0, "Buffer size must be positive")
   require(bufferSize < 4096, "Buffer size larger then 4095 is not allowed")
   require((bufferSize & bufferSize - 1) == 0, "Buffer size must be a power of two")
+  require(retryBufferSize >= 0, "Retry size must be non negative")
+  require(retryBufferSize <= bufferSize, "Retry size can't be bigger than the buffer size")
 
   private val Mask = bufferSize - 1
   private val WheelMask = (bufferSize * 2) - 1
@@ -449,11 +479,17 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
             else if (head != finalOffset) {
               // If our final consumer goes away, we roll forward the buffer so a subsequent consumer does not
               // see the already consumed elements. This feature is quite handy.
-              while (head != finalOffset) {
+              val limitClear =
+                if (tail - finalOffset >= retryBufferSize) finalOffset
+                else if (tail - head < retryBufferSize) head
+                else tail - retryBufferSize
+
+              while (head != limitClear) {
                 queue(head & Mask) = null
                 head += 1
               }
-              head = finalOffset
+
+              head = limitClear
               if (!hasBeenPulled(in)) pull(in)
             }
           } else checkUnblock(previousOffset)
@@ -533,9 +569,14 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
     private def unblockIfPossible(offsetOfConsumerRemoved: Int): Boolean = {
       var unblocked = false
       if (offsetOfConsumerRemoved == head) {
+        // do not clear retry count (if less than retryBufferSize - do not clear)
+        val offset =
+          if (tail - head > retryBufferSize) tail - retryBufferSize
+          else head
+
         // Try to advance along the wheel. We can skip any wheel slots which have no waiting Consumers, until
         // we either find a nonempty one, or we reached the end of the buffer.
-        while (consumerWheel(head & WheelMask).isEmpty && head != tail) {
+        while (consumerWheel(head & WheelMask).isEmpty && head != offset) {
           queue(head & Mask) = null
           head += 1
           unblocked = true
@@ -591,6 +632,17 @@ private[akka] class BroadcastHub[T](bufferSize: Int) extends GraphStageWithMater
       val idx = tail & Mask
       val wheelSlot = tail & WheelMask
       queue(idx) = elem.asInstanceOf[AnyRef]
+
+      val diff = tail - head
+      if (retryBufferSize > 0 && diff > retryBufferSize) {
+        /* if no consumers on head - move head */
+        val consumersInSlot = consumerWheel(head & WheelMask)
+        if (consumersInSlot.isEmpty) {
+          /* forget about the oldest record */
+          head = head + 1
+        }
+      }
+
       // Publish the new tail before calling the wakeup
       tail = tail + 1
       wakeupIdx(wheelSlot)
