@@ -49,6 +49,22 @@ sealed abstract class Behavior[T] { behavior ⇒
  */
 abstract class ExtensibleBehavior[T] extends Behavior[T] {
   /**
+   * Process an incoming message and return the next behavior.
+   *
+   * The returned behavior can in addition to normal behaviors be one of the
+   * canned special objects:
+   *
+   *  * returning `stopped` will terminate this Behavior
+   *  * returning `same` designates to reuse the current Behavior
+   *  * returning `unhandled` keeps the same Behavior and signals that the message was not yet handled
+   *
+   * Code calling this method should use [[Behavior$]] `canonicalize` to replace
+   * the special objects with real Behaviors.
+   */
+  @throws(classOf[Exception])
+  def receive(ctx: ActorContext[T], msg: T): Behavior[T]
+
+  /**
    * Process an incoming [[Signal]] and return the next behavior. This means
    * that all lifecycle hooks, ReceiveTimeout, Terminated and Failed messages
    * can initiate a behavior change.
@@ -65,23 +81,6 @@ abstract class ExtensibleBehavior[T] extends Behavior[T] {
    */
   @throws(classOf[Exception])
   def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T]
-
-  /**
-   * Process an incoming message and return the next behavior.
-   *
-   * The returned behavior can in addition to normal behaviors be one of the
-   * canned special objects:
-   *
-   *  * returning `stopped` will terminate this Behavior
-   *  * returning `same` designates to reuse the current Behavior
-   *  * returning `unhandled` keeps the same Behavior and signals that the message was not yet handled
-   *
-   * Code calling this method should use [[Behavior$]] `canonicalize` to replace
-   * the special objects with real Behaviors.
-   */
-  @throws(classOf[Exception])
-  def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T]
-
 }
 
 object Behavior {
@@ -95,7 +94,7 @@ object Behavior {
      *
      * Example:
      * {{{
-     * immutable[String] { (ctx, msg) => println(msg); same }.widen[Number] {
+     * receive[String] { (ctx, msg) => println(msg); same }.widen[Number] {
      *   case b: BigDecimal => s"BigDecimal(&dollar;b)"
      *   case i: BigInteger => s"BigInteger(&dollar;i)"
      *   // drop all other kinds of Number
@@ -339,7 +338,7 @@ object Behavior {
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = msg match {
           case signal: Signal ⇒ ext.receiveSignal(ctx, signal)
-          case m              ⇒ ext.receiveMessage(ctx, m.asInstanceOf[T])
+          case m              ⇒ ext.receive(ctx, m.asInstanceOf[T])
         }
         start(possiblyDeferredResult, ctx)
     }

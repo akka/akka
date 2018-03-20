@@ -41,7 +41,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "start the guardian actor and terminate when it terminates" in {
       val t = withSystem(
         "a",
-        Behaviors.immutable[Probe] { case (_, p) ⇒ p.replyTo ! p.msg; Behaviors.stopped }, doTerminate = false) { sys ⇒
+        Behaviors.receive[Probe] { case (_, p) ⇒ p.replyTo ! p.msg; Behaviors.stopped }, doTerminate = false) { sys ⇒
           val inbox = TestInbox[String]("a")
           sys ! Probe("hello", inbox.ref)
           eventually {
@@ -57,7 +57,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
     // see issue #24172
     "shutdown if guardian shuts down immediately" in {
       val stoppable =
-        Behaviors.immutable[Done] {
+        Behaviors.receive[Done] {
           case (ctx, Done) ⇒ Behaviors.stopped
         }
       withSystem("shutdown", stoppable, doTerminate = false) { sys: ActorSystem[Done] ⇒
@@ -69,9 +69,9 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "terminate the guardian actor" in {
       val inbox = TestInbox[String]("terminate")
       val sys = system(
-        Behaviors.immutable[Probe] {
+        Behaviors.receive[Probe] {
           case (_, _) ⇒ Behaviors.unhandled
-        } onSignal {
+        } receiveSignal {
           case (_, PostStop) ⇒
             inbox.ref ! "done"
             Behaviors.same

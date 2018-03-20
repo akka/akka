@@ -27,7 +27,7 @@ object BehaviorTestKitSpec {
 
     def behavior: Behavior[Command] = init()
 
-    def init(): Behavior[Command] = Behaviors.immutable[Command] { (ctx, msg) ⇒
+    def init(): Behavior[Command] = Behaviors.receive[Command] { (ctx, msg) ⇒
       msg match {
         case SpawnChildren(numberOfChildren) if numberOfChildren > 0 ⇒
           0.until(numberOfChildren).foreach { i ⇒
@@ -67,7 +67,7 @@ object BehaviorTestKitSpec {
 
     sealed trait Action
 
-    val initial: Behavior[Action] = Behaviors.immutable[Action] { (_, msg) ⇒
+    val initial: Behavior[Action] = Behaviors.receive[Action] { (_, msg) ⇒
       msg match {
         case _ ⇒
           Behaviors.empty

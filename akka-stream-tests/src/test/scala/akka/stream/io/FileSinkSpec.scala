@@ -194,9 +194,13 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       //LazySink must wait for result of initialization even if got upstreamComplete
       targetFile { f ⇒
         val completion = Source(List(TestByteStrings.head))
-          .runWith(Sink.lazyInit[ByteString, Future[IOResult]](
-            _ ⇒ Future.successful(FileIO.toPath(f)), () ⇒ Future.successful(IOResult.createSuccessful(0)))
-            .mapMaterializedValue(_.flatMap(identity)(ExecutionContexts.sameThreadExecutionContext)))
+          .runWith(Sink.lazyInitAsync(
+            () ⇒ Future.successful(FileIO.toPath(f)))
+            // map a Future[Option[Future[IOResult]]] into a Future[Option[IOResult]]
+            .mapMaterializedValue(_.flatMap {
+              case Some(future) ⇒ future.map(Some(_))(ExecutionContexts.sameThreadExecutionContext)
+              case None         ⇒ Future.successful(None)
+            }(ExecutionContexts.sameThreadExecutionContext)))
 
         Await.result(completion, 3.seconds)
 

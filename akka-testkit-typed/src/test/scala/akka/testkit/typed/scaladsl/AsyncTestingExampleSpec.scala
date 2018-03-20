@@ -13,7 +13,7 @@ object AsyncTestingExampleSpec {
   case class Ping(msg: String, response: ActorRef[Pong])
   case class Pong(msg: String)
 
-  val echoActor = Behaviors.immutable[Ping] { (_, msg) ⇒
+  val echoActor = Behaviors.receive[Ping] { (_, msg) ⇒
     msg match {
       case Ping(m, replyTo) ⇒
         replyTo ! Pong(m)

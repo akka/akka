@@ -26,7 +26,7 @@ class LocalReceptionistSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
   val behaviorB = Behaviors.empty[ServiceB]
 
   case object Stop extends ServiceA with ServiceB
-  val stoppableBehavior = Behaviors.immutable[Any] { (_, msg) ⇒
+  val stoppableBehavior = Behaviors.receive[Any] { (_, msg) ⇒
     msg match {
       case Stop ⇒ Behavior.stopped
       case _    ⇒ Behavior.same

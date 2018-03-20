@@ -70,7 +70,7 @@ object RemoteContextAskSpec {
   case object Pong
   case class Ping(respondTo: ActorRef[Pong.type])
 
-  def pingPong = Behaviors.immutable[Ping] { (_, msg) ⇒
+  def pingPong = Behaviors.receive[Ping] { (_, msg) ⇒
     msg match {
       case Ping(sender) ⇒
         sender ! Pong
@@ -117,7 +117,7 @@ class RemoteContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           case Failure(ex)   ⇒ ex
         }
 
-        Behaviors.immutable { (_, msg) ⇒
+        Behaviors.receive { (_, msg) ⇒
           node1Probe.ref ! msg
           Behaviors.same
         }

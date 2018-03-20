@@ -36,7 +36,7 @@ private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](override val s
     requestRecoveryPermit()
 
     withMdc {
-      Behaviors.immutable[InternalProtocol] {
+      Behaviors.receive[InternalProtocol] {
         case (_, InternalProtocol.RecoveryPermitGranted) ⇒
           becomeReplaying()
 

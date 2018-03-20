@@ -9,10 +9,11 @@ import akka.japi.function.{ Creator, Function, Predicate }
 import akka.actor.typed.javadsl.Behaviors.Receive
 import akka.actor.typed.{ Behavior, Signal }
 import ReceiveBuilder._
+import akka.actor.typed
 import akka.annotation.InternalApi
 
 /**
- * Used when implementing [[Behaviors.MutableBehavior]].
+ * Used when implementing [[MutableBehavior]].
  *
  * When handling a message or signal, this [[Behavior]] will consider all handlers in the order they were added,
  * looking for the first handler for which both the type and the (optional) predicate match.
@@ -143,16 +144,18 @@ object ReceiveBuilder {
 }
 
 /**
- * Receive type for [[Behaviors.MutableBehavior]]
+ * Receive type for [[MutableBehavior]]
  */
-private class BuiltReceive[T](
+private final class BuiltReceive[T](
   private val messageHandlers: List[Case[T, T]],
   private val signalHandlers:  List[Case[T, Signal]]
 ) extends Receive[T] {
 
-  override def receiveMessage(msg: T): Behavior[T] = receive[T](msg, messageHandlers)
+  override def receive(ctx: typed.ActorContext[T], msg: T): Behavior[T] = receive[T](msg, messageHandlers)
+  //  override def receiveMessage(msg: T): Behavior[T] = receive[T](msg, messageHandlers)
 
-  override def receiveSignal(msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers)
+  override def receiveSignal(ctx: typed.ActorContext[T], msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers)
+  //  override def receiveSignal(msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers)
 
   @tailrec
   private def receive[M](msg: M, handlers: List[Case[T, M]]): Behavior[T] =

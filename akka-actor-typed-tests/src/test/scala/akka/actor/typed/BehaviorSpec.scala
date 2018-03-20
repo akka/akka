@@ -5,6 +5,7 @@
 package akka.actor.typed
 
 import akka.actor.typed.scaladsl.{ Behaviors ⇒ SBehaviors }
+import akka.actor.typed.scaladsl.{ MutableBehavior ⇒ SMutableBehavior }
 import akka.actor.typed.javadsl.{ ActorContext ⇒ JActorContext, Behaviors ⇒ JBehaviors }
 import akka.japi.function.{ Function ⇒ F1e, Function2 ⇒ F2, Procedure2 ⇒ P2 }
 import akka.japi.pf.{ FI, PFBuilder }
@@ -138,7 +139,7 @@ object BehaviorSpec {
   }
 
   def mkFull(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] = {
-    SBehaviors.immutable[Command] {
+    SBehaviors.receive[Command] {
       case (ctx, GetSelf) ⇒
         monitor ! Self(ctx.self)
         SBehaviors.same
@@ -159,7 +160,7 @@ object BehaviorSpec {
         SBehaviors.same
       case (_, Stop) ⇒ SBehaviors.stopped
       case (_, _)    ⇒ SBehaviors.unhandled
-    } onSignal {
+    } receiveSignal {
       case (_, signal) ⇒
         monitor ! GotSignal(signal)
         SBehaviors.same
@@ -343,10 +344,10 @@ class FullBehaviorSpec extends TypedAkkaSpec with Messages with BecomeWithLifecy
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = mkFull(monitor) → null
 }
 
-class ImmutableBehaviorSpec extends Messages with BecomeWithLifecycle with Stoppable {
+class ReceiveBehaviorSpec extends Messages with BecomeWithLifecycle with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
   private def behv(monitor: ActorRef[Event], state: State): Behavior[Command] = {
-    SBehaviors.immutable[Command] {
+    SBehaviors.receive[Command] {
       case (ctx, GetSelf) ⇒
         monitor ! Self(ctx.self)
         SBehaviors.same
@@ -367,7 +368,7 @@ class ImmutableBehaviorSpec extends Messages with BecomeWithLifecycle with Stopp
         SBehaviors.same
       case (_, Stop)       ⇒ SBehaviors.stopped
       case (_, _: AuxPing) ⇒ SBehaviors.unhandled
-    } onSignal {
+    } receiveSignal {
       case (_, signal) ⇒
         monitor ! GotSignal(signal)
         SBehaviors.same
@@ -380,7 +381,7 @@ class ImmutableWithSignalScalaBehaviorSpec extends TypedAkkaSpec with Messages w
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
 
   def behv(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] =
-    SBehaviors.immutable[Command] {
+    SBehaviors.receive[Command] {
       (ctx, msg) ⇒
         msg match {
           case GetSelf ⇒
@@ -404,7 +405,7 @@ class ImmutableWithSignalScalaBehaviorSpec extends TypedAkkaSpec with Messages w
           case Stop       ⇒ SBehaviors.stopped
           case _: AuxPing ⇒ SBehaviors.unhandled
         }
-    } onSignal {
+    } receiveSignal {
       case (_, sig) ⇒
         monitor ! GotSignal(sig)
         SBehaviors.same
@@ -416,7 +417,7 @@ class ImmutableScalaBehaviorSpec extends Messages with Become with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
 
   def behv(monitor: ActorRef[Event], state: State): Behavior[Command] =
-    SBehaviors.immutable[Command] { (ctx, msg) ⇒
+    SBehaviors.receive[Command] { (ctx, msg) ⇒
       msg match {
         case GetSelf ⇒
           monitor ! Self(ctx.self)
@@ -447,8 +448,8 @@ class MutableScalaBehaviorSpec extends Messages with Become with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
 
   def behv(monitor: ActorRef[Event]): Behavior[Command] =
-    SBehaviors.mutable[Command] { ctx ⇒
-      new SBehaviors.MutableBehavior[Command] {
+    SBehaviors.setup[Command] { ctx ⇒
+      new SMutableBehavior[Command] {
         private var state: State = StateA
 
         override def onMessage(msg: Command): Behavior[Command] = {
@@ -519,7 +520,7 @@ class RestarterScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec wi
 class ImmutableWithSignalJavaBehaviorSpec extends Messages with BecomeWithLifecycle with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
   def behv(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] =
-    JBehaviors.immutable(
+    JBehaviors.receive(
       fc((ctx, msg) ⇒ msg match {
         case GetSelf ⇒
           monitor ! Self(ctx.getSelf)
@@ -551,7 +552,7 @@ class ImmutableWithSignalJavaBehaviorSpec extends Messages with BecomeWithLifecy
 class ImmutableJavaBehaviorSpec extends Messages with Become with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
   def behv(monitor: ActorRef[Event], state: State): Behavior[Command] =
-    JBehaviors.immutable {
+    JBehaviors.receive {
       fc((ctx, msg) ⇒
         msg match {
           case GetSelf ⇒

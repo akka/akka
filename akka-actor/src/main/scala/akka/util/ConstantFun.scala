@@ -31,6 +31,7 @@ import akka.japi.{ Pair ⇒ JPair }
   def scalaAnyTwoToUnit[A, B]: (A, B) ⇒ Unit = two2unit
   def scalaAnyTwoToTrue[A, B]: (A, B) ⇒ Boolean = two2true
   def scalaAnyThreeToFalse[A, B, C]: (A, B, C) ⇒ Boolean = three2false
+  def scalaAnyThreeToThird[A, B, C]: (A, B, C) ⇒ C = three2third.asInstanceOf[(A, B, C) ⇒ C]
   def javaAnyToNone[A, B]: A ⇒ Option[B] = none
   def nullFun[T] = _nullFun.asInstanceOf[Any ⇒ T]
 
@@ -53,5 +54,7 @@ import akka.japi.{ Pair ⇒ JPair }
   private val two2unit = (_: Any, _: Any) ⇒ ()
 
   private val three2false = (_: Any, _: Any, _: Any) ⇒ false
+
+  private val three2third = (_: Any, _: Any, third: Any) ⇒ third
 
 }

@@ -32,7 +32,7 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
         spawn(Behaviors.setup[String] { ctx ⇒
           ctx.log.info("Started")
 
-          Behaviors.immutable { (ctx, msg) ⇒
+          Behaviors.receive { (ctx, msg) ⇒
             ctx.log.info("got message {}", msg)
             Behaviors.same
           }
@@ -202,7 +202,7 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
         },
         Behaviors.setup { ctx ⇒
           ctx.log.info("Starting")
-          Behaviors.immutable { (ctx, msg) ⇒
+          Behaviors.receive { (ctx, msg) ⇒
             ctx.log.info("Got message!")
             Behaviors.same
           }

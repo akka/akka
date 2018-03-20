@@ -45,7 +45,7 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
         second.tell(new Typed.Ping(context.getSelf().narrow()),
           Adapter.toUntyped(context.getSelf()));
 
-        return akka.actor.typed.javadsl.Behaviors.immutable(Typed.Command.class)
+        return akka.actor.typed.javadsl.Behaviors.receive(Typed.Command.class)
           .onMessage(Typed.Pong.class, (ctx, msg) -> {
             Adapter.stop(ctx, second);
             return same();

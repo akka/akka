@@ -43,7 +43,7 @@ object ClusterShardingPersistenceSpec {
   final case object StopPlz extends Command
 
   def persistentActor(entityId: String): Behavior[Command] =
-    PersistentBehaviors.immutable[Command, String, String](
+    PersistentBehaviors.receive[Command, String, String](
       entityId,
       initialState = "",
       commandHandler = (_, state, cmd) ⇒ cmd match {

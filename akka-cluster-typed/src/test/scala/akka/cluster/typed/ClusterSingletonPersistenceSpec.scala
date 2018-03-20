@@ -35,7 +35,7 @@ object ClusterSingletonPersistenceSpec {
   private final case object StopPlz extends Command
 
   val persistentActor: Behavior[Command] =
-    PersistentBehaviors.immutable[Command, String, String](
+    PersistentBehaviors.receive[Command, String, String](
       persistenceId = "TheSingleton",
       initialState = "",
       commandHandler = (_, state, cmd) ⇒ cmd match {

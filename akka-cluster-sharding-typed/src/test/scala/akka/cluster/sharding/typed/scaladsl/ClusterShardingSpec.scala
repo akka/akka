@@ -135,7 +135,7 @@ class ClusterShardingSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   }
 
   private val typeKey = EntityTypeKey[TestProtocol]("envelope-shard")
-  private val behavior = Behaviors.immutable[TestProtocol] {
+  private val behavior = Behaviors.receive[TestProtocol] {
     case (_, StopPlz()) ⇒
       Behaviors.stopped
 
@@ -150,7 +150,7 @@ class ClusterShardingSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   }
 
   private val typeKey2 = EntityTypeKey[IdTestProtocol]("no-envelope-shard")
-  private val behaviorWithId = Behaviors.immutable[IdTestProtocol] {
+  private val behaviorWithId = Behaviors.receive[IdTestProtocol] {
     case (_, IdStopPlz()) ⇒
       Behaviors.stopped
 
