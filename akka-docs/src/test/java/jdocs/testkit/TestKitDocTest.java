@@ -129,7 +129,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-within
     new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
-      within(Duration.Zero(), Duration.create(1, "second"), () -> {
+      within(java.time.Duration.ZERO, java.time.Duration.ofSeconds(1), () -> {
         assertEquals((Integer) 42, expectMsgClass(Integer.class));
         return null;
       });
@@ -190,7 +190,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-awaitCond
     new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
-      awaitCond(duration("1 second"), duration("100 millis"), this::msgAvailable);
+      awaitCond(java.time.Duration.ofSeconds(1), java.time.Duration.ofMillis(100), this::msgAvailable);
     }};
     //#test-awaitCond
   }
@@ -260,9 +260,9 @@ public class TestKitDocTest extends AbstractJavaTest {
   public void demonstrateDilated() {
     //#duration-dilation
     new TestKit(system) {{
-      final FiniteDuration original = duration("1 second");
-      final Duration stretched = dilated(original);
-      assertTrue("dilated", stretched.gteq(original));
+      final java.time.Duration original = java.time.Duration.ofSeconds(1);
+      final java.time.Duration stretched = dilated(original);
+      assertTrue("dilated", stretched.compareTo(original)  >= 0);
     }};
     //#duration-dilation
   }
@@ -399,7 +399,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-within-probe
     new TestKit(system) {{
       final TestKit probe = new TestKit(system);
-      within(duration("1 second"), () -> probe.expectMsgEquals("hello"));
+      within(java.time.Duration.ofSeconds(1), () -> probe.expectMsgEquals("hello"));
     }};
     //#test-within-probe
     } catch (AssertionError e) {
