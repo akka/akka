@@ -16,10 +16,10 @@ import akka.util.Timeout;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -147,12 +147,12 @@ public class RecipeGlobalRateLimit extends RecipeTest {
   public void work() throws Exception {
     new TestKit(system) {
       //#global-limiter-flow
-      public <T> Flow<T, T, NotUsed> limitGlobal(ActorRef limiter, FiniteDuration maxAllowedWait) {
+      public <T> Flow<T, T, NotUsed> limitGlobal(ActorRef limiter, Duration maxAllowedWait) {
         final int parallelism = 4;
         final Flow<T, T, NotUsed> f = Flow.create();
 
         return f.mapAsync(parallelism, element -> {
-          final Timeout triggerTimeout = new Timeout(maxAllowedWait);
+          final Timeout triggerTimeout = Timeout.create(maxAllowedWait);
           final CompletionStage<Object> limiterTriggerFuture =
             PatternsCS.ask(limiter, Limiter.WANT_TO_PASS, triggerTimeout);
           return limiterTriggerFuture.thenApplyAsync(response -> element, system.dispatcher());
@@ -187,7 +187,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
           }
         };
 
-        final FiniteDuration twoSeconds = (FiniteDuration) dilated(Duration.create(2, TimeUnit.SECONDS));
+        final java.time.Duration twoSeconds = dilated(java.time.Duration.ofSeconds(2));
 
         final Sink<String, TestSubscriber.Probe<String>> sink = TestSink.probe(system);
         final TestSubscriber.Probe<String> probe =
