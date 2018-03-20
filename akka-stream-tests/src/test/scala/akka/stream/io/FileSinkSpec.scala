@@ -16,9 +16,8 @@ import akka.stream.scaladsl.{ FileIO, Sink, Source }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream._
-import akka.util.{ ByteString, Timeout }
+import akka.util.ByteString
 import com.google.common.jimfs.{ Configuration, Jimfs }
-import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Await, Future }

@@ -7,7 +7,7 @@ package akka.stream.scaladsl
 import java.util.concurrent.{ LinkedBlockingQueue, ThreadLocalRandom }
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.stream.ActorAttributes.{ SupervisionStrategy, supervisionStrategy }
+import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.ReactiveStreamsCompliance
@@ -406,7 +406,6 @@ class FlowMapAsyncSpec extends StreamSpec {
     }
 
     "not invoke the decider twice for the same already failed future" in {
-      import system.dispatcher
       val failCount = new AtomicInteger(0)
       val result = Source(List(true, false))
         .mapAsync(1)(elem ⇒

@@ -8,23 +8,18 @@ import java.util.concurrent.ThreadLocalRandom
 
 import akka.NotUsed
 import akka.actor._
-import akka.stream.Supervision._
 import akka.stream.impl._
-import akka.stream.impl.fusing.ActorGraphInterpreter
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream._
-import akka.testkit.TestEvent.{ Mute, UnMute }
-import akka.testkit.{ EventFilter, TestDuration }
+import akka.testkit.TestDuration
 import com.typesafe.config.ConfigFactory
 import org.reactivestreams.{ Publisher, Subscriber }
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream.impl.fusing.GraphInterpreterShell
 
 object FlowSpec {
   class Fruit

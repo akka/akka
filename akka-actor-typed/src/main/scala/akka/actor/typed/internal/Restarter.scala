@@ -11,7 +11,6 @@ import akka.actor.DeadLetterSuppression
 import akka.actor.typed.SupervisorStrategy._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.event.Logging
 import akka.util.OptionVal
 
 import scala.concurrent.duration.{ Deadline, FiniteDuration }

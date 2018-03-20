@@ -13,7 +13,6 @@ import akka.stream.testkit.Utils.TE
 import scala.concurrent.duration._
 
 class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
-  import akka.stream.Supervision._
 
   "Interpreter" must {
 

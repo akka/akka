@@ -5,7 +5,6 @@
 package akka.stream.io.compression
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream }
-import java.util
 import java.util.concurrent.ThreadLocalRandom
 import java.util.zip.DataFormatException
 
