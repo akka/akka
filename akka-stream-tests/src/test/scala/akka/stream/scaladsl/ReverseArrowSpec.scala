@@ -8,7 +8,6 @@ import akka.stream.testkit._
 import akka.stream._
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import org.scalactic.ConversionCheckedTripleEquals
 
 class ReverseArrowSpec extends StreamSpec {
   import GraphDSL.Implicits._

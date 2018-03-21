@@ -16,7 +16,6 @@ import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.actor.typed.scaladsl.adapter._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpecLike }
 
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }

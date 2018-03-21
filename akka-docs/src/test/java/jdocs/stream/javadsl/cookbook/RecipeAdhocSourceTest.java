@@ -17,12 +17,13 @@ import akka.stream.testkit.javadsl.TestSink;
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.junit.Ignore;
+import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Promise;
-import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
+
+import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 public class RecipeAdhocSourceTest extends RecipeTest {
   static ActorSystem system;
   static Materializer mat;
-  FiniteDuration duration200mills = Duration.create(200, "milliseconds");
+  Duration duration200mills = Duration.ofMillis(200);
 
   @BeforeClass
   public static void setup() {
@@ -48,7 +49,7 @@ public class RecipeAdhocSourceTest extends RecipeTest {
   }
 
   //#adhoc-source
-  public <T> Source<T, ?> adhocSource(Source<T, ?> source, FiniteDuration timeout, int maxRetries) {
+  public <T> Source<T, ?> adhocSource(Source<T, ?> source, Duration timeout, int maxRetries) {
     return Source.lazily(
       () -> source.backpressureTimeout(timeout).recoverWithRetries(
         maxRetries,
@@ -204,7 +205,7 @@ public class RecipeAdhocSourceTest extends RecipeTest {
         Thread.sleep(500);
         assertEquals(TimeoutException.class, probe.expectError().getClass());
         probe.request(1); //send demand
-        probe.expectNoMessage(Duration.create(200, "milliseconds")); //but no more restart
+        probe.expectNoMessage(FiniteDuration.create(200, "milliseconds")); //but no more restart
       }
     };
   }

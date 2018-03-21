@@ -359,43 +359,74 @@ object PersistentActorSpec {
     }
 
   }
-  class DeferringWithPersistActor(name: String) extends ExamplePersistentActor(name) {
+  trait DeferActor extends PersistentActor {
+    def doDefer[A](event: A)(handler: A ⇒ Unit): Unit
+  }
+  trait DeferSync {
+    this: PersistentActor ⇒
+    def doDefer[A](event: A)(handler: A ⇒ Unit): Unit = defer(event)(handler)
+  }
+  trait DeferAsync {
+    this: PersistentActor ⇒
+    def doDefer[A](event: A)(handler: A ⇒ Unit): Unit = deferAsync(event)(handler)
+  }
+  abstract class DeferringWithPersistActor(name: String) extends ExamplePersistentActor(name) with DeferActor {
     val receiveCommand: Receive = {
       case Cmd(data) ⇒
-        deferAsync("d-1") { sender() ! _ }
+        doDefer("d-1") { sender() ! _ }
         persist(s"$data-2") { sender() ! _ }
-        deferAsync("d-3") { sender() ! _ }
-        deferAsync("d-4") { sender() ! _ }
+        doDefer("d-3") { sender() ! _ }
+        doDefer("d-4") { sender() ! _ }
     }
   }
-  class DeferringWithAsyncPersistActor(name: String) extends ExamplePersistentActor(name) {
+  class DeferringAsyncWithPersistActor(name: String) extends DeferringWithPersistActor(name) with DeferAsync
+  class DeferringSyncWithPersistActor(name: String) extends DeferringWithPersistActor(name) with DeferSync
+  abstract class DeferringWithAsyncPersistActor(name: String) extends ExamplePersistentActor(name) with DeferActor {
     val receiveCommand: Receive = {
       case Cmd(data) ⇒
-        deferAsync(s"d-$data-1") { sender() ! _ }
+        doDefer(s"d-$data-1") { sender() ! _ }
         persistAsync(s"pa-$data-2") { sender() ! _ }
-        deferAsync(s"d-$data-3") { sender() ! _ }
-        deferAsync(s"d-$data-4") { sender() ! _ }
+        doDefer(s"d-$data-3") { sender() ! _ }
+        doDefer(s"d-$data-4") { sender() ! _ }
     }
   }
-  class DeferringMixedCallsPPADDPADPersistActor(name: String) extends ExamplePersistentActor(name) {
+  class DeferringAsyncWithAsyncPersistActor(name: String) extends DeferringWithAsyncPersistActor(name) with DeferAsync
+  class DeferringSyncWithAsyncPersistActor(name: String) extends DeferringWithAsyncPersistActor(name) with DeferSync
+  abstract class DeferringMixedCallsPPADDPADPersistActor(name: String) extends ExamplePersistentActor(name) with DeferActor {
     val receiveCommand: Receive = {
       case Cmd(data) ⇒
         persist(s"p-$data-1") { sender() ! _ }
         persistAsync(s"pa-$data-2") { sender() ! _ }
-        deferAsync(s"d-$data-3") { sender() ! _ }
-        deferAsync(s"d-$data-4") { sender() ! _ }
+        doDefer(s"d-$data-3") { sender() ! _ }
+        doDefer(s"d-$data-4") { sender() ! _ }
         persistAsync(s"pa-$data-5") { sender() ! _ }
-        deferAsync(s"d-$data-6") { sender() ! _ }
+        doDefer(s"d-$data-6") { sender() ! _ }
     }
   }
-  class DeferringWithNoPersistCallsPersistActor(name: String) extends ExamplePersistentActor(name) {
+  class DeferringAsyncMixedCallsPPADDPADPersistActor(name: String) extends DeferringMixedCallsPPADDPADPersistActor(name) with DeferAsync
+  class DeferringSyncMixedCallsPPADDPADPersistActor(name: String) extends DeferringMixedCallsPPADDPADPersistActor(name) with DeferSync
+  abstract class DeferringWithNoPersistCallsPersistActor(name: String) extends ExamplePersistentActor(name) with DeferActor {
+    val receiveCommand: Receive = {
+      case Cmd(_) ⇒
+        doDefer("d-1") { sender() ! _ }
+        doDefer("d-2") { sender() ! _ }
+        doDefer("d-3") { sender() ! _ }
+    }
+  }
+  class DeferringAsyncWithNoPersistCallsPersistActor(name: String) extends DeferringWithNoPersistCallsPersistActor(name) with DeferAsync
+  class DeferringSyncWithNoPersistCallsPersistActor(name: String) extends DeferringWithNoPersistCallsPersistActor(name) with DeferSync
+  abstract class DeferringActor(name: String) extends ExamplePersistentActor(name) with DeferActor {
     val receiveCommand: Receive = {
       case Cmd(data) ⇒
-        deferAsync("d-1") { sender() ! _ }
-        deferAsync("d-2") { sender() ! _ }
-        deferAsync("d-3") { sender() ! _ }
+        sender() ! data
+        persist(()) { _ ⇒ } // skip calling defer immediately because of empty pending invocations
+        doDefer(Evt(s"$data-defer")) { evt ⇒
+          sender() ! evt.data
+        }
     }
   }
+  class DeferringAsyncActor(name: String) extends DeferringActor(name) with DeferAsync
+  class DeferringSyncActor(name: String) extends DeferringActor(name) with DeferSync
 
   class StressOrdering(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
@@ -936,69 +967,107 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsg(5.seconds, "done")
     }
     "allow deferring handlers in order to provide ordered processing in respect to persist handlers" in {
-      val persistentActor = namedPersistentActor[DeferringWithPersistActor]
-      persistentActor ! Cmd("a")
-      expectMsg("d-1")
-      expectMsg("a-2")
-      expectMsg("d-3")
-      expectMsg("d-4")
-      expectNoMsg(100.millis)
+      def test(actor: ActorRef): Unit = {
+        actor ! Cmd("a")
+        expectMsg("d-1")
+        expectMsg("a-2")
+        expectMsg("d-3")
+        expectMsg("d-4")
+        expectNoMsg(100.millis)
+      }
+
+      test(namedPersistentActor[DeferringAsyncWithPersistActor])
+      test(namedPersistentActor[DeferringSyncWithPersistActor])
     }
     "allow deferring handlers in order to provide ordered processing in respect to asyncPersist handlers" in {
-      val persistentActor = namedPersistentActor[DeferringWithAsyncPersistActor]
-      persistentActor ! Cmd("a")
-      expectMsg("d-a-1")
-      expectMsg("pa-a-2")
-      expectMsg("d-a-3")
-      expectMsg("d-a-4")
-      expectNoMsg(100.millis)
+      def test(actor: ActorRef): Unit = {
+        actor ! Cmd("a")
+        expectMsg("d-a-1")
+        expectMsg("pa-a-2")
+        expectMsg("d-a-3")
+        expectMsg("d-a-4")
+        expectNoMsg(100.millis)
+      }
+
+      test(namedPersistentActor[DeferringAsyncWithAsyncPersistActor])
+      test(namedPersistentActor[DeferringSyncWithAsyncPersistActor])
     }
     "invoke deferred handlers, in presence of mixed a long series persist / persistAsync calls" in {
-      val persistentActor = namedPersistentActor[DeferringMixedCallsPPADDPADPersistActor]
-      val p1, p2 = TestProbe()
+      def test(actor: ActorRef): Unit = {
+        val p1, p2 = TestProbe()
 
-      persistentActor.tell(Cmd("a"), p1.ref)
-      persistentActor.tell(Cmd("b"), p2.ref)
-      p1.expectMsg("p-a-1")
-      p1.expectMsg("pa-a-2")
-      p1.expectMsg("d-a-3")
-      p1.expectMsg("d-a-4")
-      p1.expectMsg("pa-a-5")
-      p1.expectMsg("d-a-6")
+        actor.tell(Cmd("a"), p1.ref)
+        actor.tell(Cmd("b"), p2.ref)
+        p1.expectMsg("p-a-1")
+        p1.expectMsg("pa-a-2")
+        p1.expectMsg("d-a-3")
+        p1.expectMsg("d-a-4")
+        p1.expectMsg("pa-a-5")
+        p1.expectMsg("d-a-6")
 
-      p2.expectMsg("p-b-1")
-      p2.expectMsg("pa-b-2")
-      p2.expectMsg("d-b-3")
-      p2.expectMsg("d-b-4")
-      p2.expectMsg("pa-b-5")
-      p2.expectMsg("d-b-6")
+        p2.expectMsg("p-b-1")
+        p2.expectMsg("pa-b-2")
+        p2.expectMsg("d-b-3")
+        p2.expectMsg("d-b-4")
+        p2.expectMsg("pa-b-5")
+        p2.expectMsg("d-b-6")
 
-      expectNoMsg(100.millis)
+        expectNoMsg(100.millis)
+      }
+
+      test(namedPersistentActor[DeferringAsyncMixedCallsPPADDPADPersistActor])
+      test(namedPersistentActor[DeferringSyncMixedCallsPPADDPADPersistActor])
     }
     "invoke deferred handlers right away, if there are no pending persist handlers registered" in {
-      val persistentActor = namedPersistentActor[DeferringWithNoPersistCallsPersistActor]
-      persistentActor ! Cmd("a")
-      expectMsg("d-1")
-      expectMsg("d-2")
-      expectMsg("d-3")
-      expectNoMsg(100.millis)
+      def test(actor: ActorRef): Unit = {
+        actor ! Cmd("a")
+        expectMsg("d-1")
+        expectMsg("d-2")
+        expectMsg("d-3")
+        expectNoMsg(100.millis)
+      }
+
+      test(namedPersistentActor[DeferringAsyncWithNoPersistCallsPersistActor])
+      test(namedPersistentActor[DeferringSyncWithNoPersistCallsPersistActor])
     }
     "invoke deferred handlers, preserving the original sender references" in {
-      val persistentActor = namedPersistentActor[DeferringWithAsyncPersistActor]
-      val p1, p2 = TestProbe()
+      def test(actor: ActorRef): Unit = {
+        val p1, p2 = TestProbe()
 
-      persistentActor.tell(Cmd("a"), p1.ref)
-      persistentActor.tell(Cmd("b"), p2.ref)
-      p1.expectMsg("d-a-1")
-      p1.expectMsg("pa-a-2")
-      p1.expectMsg("d-a-3")
-      p1.expectMsg("d-a-4")
+        actor.tell(Cmd("a"), p1.ref)
+        actor.tell(Cmd("b"), p2.ref)
+        p1.expectMsg("d-a-1")
+        p1.expectMsg("pa-a-2")
+        p1.expectMsg("d-a-3")
+        p1.expectMsg("d-a-4")
 
-      p2.expectMsg("d-b-1")
-      p2.expectMsg("pa-b-2")
-      p2.expectMsg("d-b-3")
-      p2.expectMsg("d-b-4")
-      expectNoMsg(100.millis)
+        p2.expectMsg("d-b-1")
+        p2.expectMsg("pa-b-2")
+        p2.expectMsg("d-b-3")
+        p2.expectMsg("d-b-4")
+        expectNoMsg(100.millis)
+      }
+
+      test(namedPersistentActor[DeferringAsyncWithAsyncPersistActor])
+      test(namedPersistentActor[DeferringSyncWithAsyncPersistActor])
+    }
+    "handle new messages before deferAsync handler is called" in {
+      val persistentActor = namedPersistentActor[DeferringAsyncActor]
+      persistentActor ! Cmd("x")
+      persistentActor ! Cmd("y")
+      expectMsg("x")
+      expectMsg("y") // "y" command was processed before event persisted
+      expectMsg("x-defer")
+      expectMsg("y-defer")
+    }
+    "handle defer sequentially" in {
+      val persistentActor = namedPersistentActor[DeferringSyncActor]
+      persistentActor ! Cmd("x")
+      persistentActor ! Cmd("y")
+      expectMsg("x")
+      expectMsg("x-defer")
+      expectMsg("y")
+      expectMsg("y-defer")
     }
     "receive RecoveryFinished if it is handled after all events have been replayed" in {
       val persistentActor1 = system.actorOf(Props(classOf[SnapshottingPersistentActor], name, testActor))

@@ -376,6 +376,21 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   }
 
   /**
+   * Internal API
+   */
+  @InternalApi
+  final private[akka] def internalDefer[A](event: A)(handler: A ⇒ Unit): Unit = {
+    if (recoveryRunning) throw new IllegalStateException("Cannot defer during replay. Events can be deferred when receiving RecoveryCompleted or later.")
+    if (pendingInvocations.isEmpty) {
+      handler(event)
+    } else {
+      pendingStashingPersistInvocations += 1
+      pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+      eventBatch = NonPersistentRepr(event, sender()) :: eventBatch
+    }
+  }
+
+  /**
    * Permanently deletes all persistent messages with sequence numbers less than or equal `toSequenceNr`.
    *
    * If the delete is successful a [[DeleteMessagesSuccess]] will be sent to the actor.

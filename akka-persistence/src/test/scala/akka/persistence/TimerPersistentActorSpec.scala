@@ -7,17 +7,11 @@ package akka.persistence
 import scala.concurrent.duration._
 import scala.runtime.BoxedUnit
 import scala.runtime.BoxedUnit
-import scala.util.control.NoStackTrace
 
-import akka.actor
 import akka.actor._
-import akka.event.Logging
-import akka.event.Logging.Warning
 import akka.japi.Procedure
-import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
+import akka.testkit.{ EventFilter, ImplicitSender }
 import com.typesafe.config.ConfigFactory
-import akka.testkit.TestProbe
-import akka.testkit.TestActors
 import akka.testkit.TestEvent.Mute
 
 object TimerPersistentActorSpec {

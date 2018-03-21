@@ -21,8 +21,6 @@ import akka.stream.impl.fusing.GroupBy
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import org.reactivestreams.Publisher
-import org.scalatest.concurrent.ScalaFutures
-import org.scalactic.ConversionCheckedTripleEquals
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.TestSink

@@ -18,7 +18,6 @@ import scala.util.control.NonFatal
  */
 @InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor with a.ActorLogging {
   import Behavior._
-  import ActorRefAdapter.toUntyped
 
   protected var behavior: Behavior[T] = _initialBehavior
 
