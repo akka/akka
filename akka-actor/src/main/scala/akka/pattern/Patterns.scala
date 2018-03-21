@@ -6,6 +6,7 @@ package akka.pattern
 import java.util.concurrent.{ Callable, CompletionStage, TimeUnit }
 
 import akka.actor.{ ActorSelection, Scheduler }
+import akka.util.JavaDurationConverters._
 
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
@@ -503,6 +504,19 @@ object PatternsCS {
    *
    * Useful when you need to wait for termination or compose ordered termination of several actors.
    *
+   * If the target actor isn't terminated within the timeout the [[java.util.concurrent.CompletionStage]]
+   * is completed with failure [[akka.pattern.AskTimeoutException]].
+   */
+  def gracefulStop(target: ActorRef, timeout: java.time.Duration): CompletionStage[java.lang.Boolean] =
+    gracefulStop(target, timeout.asScala)
+
+  /**
+   * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with success (value `true`) when
+   * existing messages of the target actor has been processed and the actor has been
+   * terminated.
+   *
+   * Useful when you need to wait for termination or compose ordered termination of several actors.
+   *
    * If you want to invoke specialized stopping logic on your target actor instead of PoisonPill, you can pass your
    * stop command as `stopMessage` parameter
    *
@@ -513,6 +527,22 @@ object PatternsCS {
     scalaGracefulStop(target, timeout, stopMessage).toJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
 
   /**
+   * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with success (value `true`) when
+   * existing messages of the target actor has been processed and the actor has been
+   * terminated.
+   *
+   * Useful when you need to wait for termination or compose ordered termination of several actors.
+   *
+   * If you want to invoke specialized stopping logic on your target actor instead of PoisonPill, you can pass your
+   * stop command as `stopMessage` parameter
+   *
+   * If the target actor isn't terminated within the timeout the [[java.util.concurrent.CompletionStage]]
+   * is completed with failure [[akka.pattern.AskTimeoutException]].
+   */
+  def gracefulStop(target: ActorRef, timeout: java.time.Duration, stopMessage: Any): CompletionStage[java.lang.Boolean] =
+    gracefulStop(target, timeout.asScala, stopMessage)
+
+  /**
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided Callable
    * after the specified duration.
    */
@@ -520,9 +550,23 @@ object PatternsCS {
     afterCompletionStage(duration, scheduler)(value.call())(context)
 
   /**
+   * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided Callable
+   * after the specified duration.
+   */
+  def after[T](duration: java.time.Duration, scheduler: Scheduler, context: ExecutionContext, value: Callable[CompletionStage[T]]): CompletionStage[T] =
+    after(duration.asScala, scheduler, context, value)
+
+  /**
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
   def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: CompletionStage[T]): CompletionStage[T] =
     afterCompletionStage(duration, scheduler)(value)(context)
+
+  /**
+   * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided value
+   * after the specified duration.
+   */
+  def after[T](duration: java.time.Duration, scheduler: Scheduler, context: ExecutionContext, value: CompletionStage[T]): CompletionStage[T] =
+    after(duration.asScala, scheduler, context, value)
 }

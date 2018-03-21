@@ -101,7 +101,11 @@ abstract class ActorSelection extends Serializable {
   /**
    * Java API for [[#resolveOne]]
    *
-   * Same as [[resolveOne]] but accepts Java [[java.time.Duration]] instead of Scala ones.
+   * Resolve the [[ActorRef]] matching this selection.
+   * The result is returned as a CompletionStage that is completed with the [[ActorRef]]
+   * if such an actor exists. It is completed with failure [[ActorNotFound]] if
+   * no such actor exists or the identification didn't complete within the
+   * supplied `timeout`.
    *
    */
   def resolveOneCS(timeout: java.time.Duration): CompletionStage[ActorRef] =

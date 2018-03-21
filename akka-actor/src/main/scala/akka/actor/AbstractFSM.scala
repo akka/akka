@@ -100,9 +100,14 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
     super.when(stateName, stateTimeout)(stateFunctionBuilder.build())
 
   /**
-   * Java API for [[#when]]
+   * Insert a new StateFunction at the end of the processing chain for the
+   * given state. If the stateTimeout parameter is set, entering this state
+   * without a differing explicit timeout setting will trigger a StateTimeout
+   * event; the same is true when using #stay.
    *
-   * Same as [[when]], but accepts Java [[java.time.Duration]] instead of Scala ones.
+   * @param stateName designator for the state
+   * @param stateTimeout default state timeout for this state
+   * @param stateFunctionBuilder partial function builder describing response to input
    */
   final def when(
     stateName:            S,
@@ -134,9 +139,13 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
     super.startWith(stateName, stateData, Option(timeout))
 
   /**
-   * Java API for [[#startWith]]
+   * Set initial state. Call this method from the constructor before the [[#initialize]] method.
+   * If different state is needed after a restart this method, followed by [[#initialize]], can
+   * be used in the actor life cycle hooks [[akka.actor.Actor#preStart]] and [[akka.actor.Actor#postRestart]].
    *
-   * Same as [[when]], but accepts Java [[java.time.Duration]] instead of Scala ones.
+   * @param stateName initial state designator
+   * @param stateData initial state data
+   * @param timeout state timeout for the initial state, overriding the default timeout for that state
    */
   final def startWith(stateName: S, stateData: D, timeout: java.time.Duration): Unit =
     super.startWith(stateName, stateData, Option(timeout.asScala))
@@ -409,9 +418,12 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
     setTimer(name, msg, timeout, false)
 
   /**
-   * Java API for [[#setTimer]]
-   *
-   * Same as [[when]], but accepts Java [[java.time.Duration]] instead of Scala ones.
+   * Schedule named timer to deliver message after given delay, possibly repeating.
+   * Any existing timer with the same name will automatically be canceled before
+   * adding the new timer.
+   * @param name identifier to be used with cancelTimer()
+   * @param msg message to be delivered
+   * @param timeout delay of first message delivery and between subsequent messages
    */
   final def setTimer(name: String, msg: Any, timeout: java.time.Duration): Unit =
     setTimer(name, msg, timeout.asScala, false)

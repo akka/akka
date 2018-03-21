@@ -109,8 +109,21 @@ trait Scheduler {
     runnable:     Runnable)(implicit executor: ExecutionContext): Cancellable
 
   /**
-   * Same as [[schedule(scala.concurrent.duration.FiniteDuration, scala.concurrent.duration.FiniteDuration, Runnable)]],
-   * but accepts Java [[java.time.Duration]] instead of Scala ones.
+   * Schedules a `Runnable` to be run repeatedly with an initial delay and
+   * a frequency. E.g. if you would like the function to be run after 2
+   * seconds and thereafter every 100ms you would set delay = Duration(2,
+   * TimeUnit.SECONDS) and interval = Duration(100, TimeUnit.MILLISECONDS). If
+   * the execution of the runnable takes longer than the interval, the
+   * subsequent execution will start immediately after the prior one completes
+   * (there will be no overlap of executions of the runnable). In such cases,
+   * the actual execution interval will differ from the interval passed to this
+   * method.
+   *
+   * If the `Runnable` throws an exception the repeated scheduling is aborted,
+   * i.e. the function will not be invoked any more.
+   *
+   * @throws IllegalArgumentException if the given delays exceed the maximum
+   * reach (calculated as: `delay / tickNanos > Int.MaxValue`).
    *
    * Java API
    */

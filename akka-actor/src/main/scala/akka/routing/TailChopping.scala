@@ -13,6 +13,7 @@ import akka.japi.Util.immutableSeq
 import scala.concurrent.{ ExecutionContext, Promise }
 import akka.pattern.{ AskTimeoutException, ask, pipe }
 import scala.concurrent.duration._
+import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
 
@@ -167,6 +168,16 @@ final case class TailChoppingPool(
   def this(nr: Int, within: FiniteDuration, interval: FiniteDuration) =
     this(nrOfInstances = nr, within = within, interval = interval)
 
+  /**
+   * Java API
+   * @param nr initial number of routees in the pool
+   * @param within expecting at least one reply within this duration, otherwise
+   *   it will reply with [[akka.pattern.AskTimeoutException]] in a [[akka.actor.Status.Failure]]
+   * @param interval duration after which next routee will be picked
+   */
+  def this(nr: Int, within: java.time.Duration, interval: java.time.Duration) =
+    this(nr, within.asScala, interval.asScala)
+
   override def createRouter(system: ActorSystem): Router =
     new Router(TailChoppingRoutingLogic(system.scheduler, within,
       interval, system.dispatchers.lookup(routerDispatcher)))
@@ -248,6 +259,17 @@ final case class TailChoppingGroup(
    */
   def this(routeePaths: java.lang.Iterable[String], within: FiniteDuration, interval: FiniteDuration) =
     this(paths = immutableSeq(routeePaths), within = within, interval = interval)
+
+  /**
+   * Java API
+   * @param routeePaths string representation of the actor paths of the routees, messages are
+   *   sent with [[akka.actor.ActorSelection]] to these paths
+   * @param within expecting at least one reply within this duration, otherwise
+   *   it will reply with [[akka.pattern.AskTimeoutException]] in a [[akka.actor.Status.Failure]]
+   * @param interval duration after which next routee will be picked
+   */
+  def this(routeePaths: java.lang.Iterable[String], within: java.time.Duration, interval: java.time.Duration) =
+    this(immutableSeq(routeePaths), within.asScala, interval.asScala)
 
   override def createRouter(system: ActorSystem): Router =
     new Router(TailChoppingRoutingLogic(system.scheduler, within, interval, system.dispatchers.lookup(routerDispatcher)))
