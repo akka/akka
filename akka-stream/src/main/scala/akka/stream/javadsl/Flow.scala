@@ -20,6 +20,7 @@ import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts
 import akka.stream.impl.fusing.LazyFlow
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 import scala.reflect.ClassTag
 
