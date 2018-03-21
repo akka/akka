@@ -80,7 +80,7 @@ class OptionalSnapshotStoreSpec extends ActorTestKit with TypedAkkaSpecWithShutd
       val log = logProbe(classOf[Logging.Error])
       val persistentActor = spawn(persistentBehavior(stateProbe))
       persistentActor ! AnyCommand
-      log.expectMessageType[Logging.Error].message.toString should include("No snapshot store configured")
+      log.expectMessageType[Logging.Error].cause.getMessage should include("No snapshot store configured")
       stateProbe.expectMessageType[State]
     }
 
