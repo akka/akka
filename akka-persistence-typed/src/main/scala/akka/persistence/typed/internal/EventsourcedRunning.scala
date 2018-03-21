@@ -150,7 +150,10 @@ private[akka] object EventsourcedRunning {
     withMdc(setup, MDC.RunningCmds) {
       Behaviors.receiveMessage[EventsourcedBehavior.InternalProtocol] {
         case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
-        case _                                ⇒ Behaviors.unhandled
+        case SnapshotterResponse(SaveSnapshotFailure(_, cause)) ⇒
+          log.error(cause.getMessage)
+          Behaviors.same
+        case _ ⇒ Behaviors.unhandled
       }
     }
 
