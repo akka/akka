@@ -366,6 +366,7 @@ if [ $dry_run ]; then
   echodry "  sbt deployRsync"
   echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads --exclude ${release_dir}/docs ${release_dir}/ ${publish_path}/"
 else
+  important tar -czf ${release_dir}/offline.tar.gz ${release_dir}/*
   important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'before publishing version $version'; true"
   important sbt "deployRsync ${release_server}"
   important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads --exclude ${release_dir}/docs ${release_dir}/ ${publish_path}/
