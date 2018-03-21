@@ -70,7 +70,9 @@ trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
     awaitAssert({
       val actual = storage.findMany(persistenceId, nextInd, msgs.size)
       actual match {
-        case Some(ls) => assert(ls.size == msgs.size && ls.diff(msgs).isEmpty, "Persisted messages do not correspond to expected ones")
+        case Some(reprs) =>
+          val payloads = reprs.map(_.payload)
+          assert(payloads.size == msgs.size && payloads.diff(msgs).isEmpty, s"Persisted messages $payloads do not correspond to expected ones")
         case None => assert(false, "No messages were persisted")
       }
     }, max = settings.assertTimeout)
@@ -103,9 +105,15 @@ trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
 
   }
 
-  override def clearAll(): Unit = storage.clearAll()
+  override def clearAll(): Unit = {
+    storage.clearAll()
+    nextIndexByPersistenceId = Map.empty
+  }
 
-  override def clearByPersistenceId(persistenceId: String): Unit = storage.clearByPersistenceId(persistenceId)
+  override def clearByPersistenceId(persistenceId: String): Unit = {
+    storage.clearByPersistenceId(persistenceId)
+    nextIndexByPersistenceId -= persistenceId
+  }
 
   private def awaitAssert[A](a: ⇒ A): A =
     awaitAssert(a, settings.assertTimeout, 100.millis)

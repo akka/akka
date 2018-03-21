@@ -41,8 +41,8 @@ class JournalSpec extends PersistenceTestKit with WordSpecLike {
 
       val a = system.actorOf(Props(classOf[A], "333"))
 
-      a ! B(1)
       a ! B(2)
+      a ! B(1)
 
       expectPersistedInAnyOrder("333", List(B(1), B(2)))
 
