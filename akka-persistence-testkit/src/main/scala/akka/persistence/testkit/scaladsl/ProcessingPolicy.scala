@@ -1,4 +1,4 @@
-package akka.persistence.testkit
+package akka.persistence.testkit.scaladsl
 
 import scala.collection.immutable
 
@@ -47,9 +47,7 @@ object ProcessingPolicy {
       }
     }
 
-
   }
-
 
   trait ProcessingResult
 
@@ -64,7 +62,6 @@ object ProcessingPolicy {
   case class Reject(error: Throwable) extends ProcessingFailure
 
   case class StorageFailure(error: Throwable) extends ProcessingFailure
-
 
 }
 
