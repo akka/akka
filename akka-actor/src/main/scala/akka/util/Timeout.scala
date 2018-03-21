@@ -33,5 +33,13 @@ object Timeout {
    */
   def apply(length: Long, unit: TimeUnit): Timeout = new Timeout(length, unit)
 
+  /**
+   * Create a Timeout from java.time.Duration.
+   */
+  def create(duration: java.time.Duration): Timeout = {
+    import JavaDurationConverters._
+    new Timeout(duration.asScala)
+  }
+
   implicit def durationToTimeout(duration: FiniteDuration): Timeout = new Timeout(duration)
 }

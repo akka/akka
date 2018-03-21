@@ -741,7 +741,7 @@ public class ActorDocTest extends AbstractJavaTest {
       {
         watch(b);
         system.stop(a);
-        assertEquals(expectMsgClass(Duration.create(2, TimeUnit.SECONDS), Terminated.class).actor(), b);
+        assertEquals(expectMsgClass(java.time.Duration.ofSeconds(2), Terminated.class).actor(), b);
       }
     };
   }
