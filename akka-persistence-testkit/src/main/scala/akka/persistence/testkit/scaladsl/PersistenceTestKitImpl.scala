@@ -1,21 +1,25 @@
-package akka.persistence.testkit
+package akka.persistence.testkit.scaladsl
 
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.BiFunction
 
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.persistence.journal.AsyncWriteJournal
+import akka.persistence.testkit.scaladsl.ProcessingPolicy.{FailNextN, PassAll, RejectNextN}
 import akka.persistence.{AtomicWrite, PersistentRepr}
 import com.typesafe.config.{Config, ConfigFactory}
-import akka.persistence.journal.AsyncWriteJournal
 
 import scala.annotation.tailrec
-import scala.concurrent.Future
 import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
+  import PersistenceTestKit._
+  import scala.concurrent.duration._
 
   implicit lazy val system = {
     //todo probably implement method for setting plugin in Persistence for testing purposes
@@ -28,6 +32,7 @@ trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
   implicit val ec = system.dispatcher
 
   private final lazy val storage = system.extension(InMemStorageExtension)
+  private final val settings = PersistenceTestExtensionId(system)
 
   //todo needs to be thread safe (atomic read-increment-write) for parallel tests?
   @volatile
@@ -40,62 +45,89 @@ trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
     awaitAssert({
       val actual = storage.findOneByIndex(persistenceId, nextInd).map(_.payload)
       assert(actual == expected, s"Failed to persist $msg, got $actual instead")
-    })
+    }, max = settings.assertTimeout)
 
     nextIndexByPersistenceId += (persistenceId -> (nextInd + 1))
 
   }
+
+  override def rejectNextPersisted(persistenceId: String): Unit = ???
+
+  override def failNextPersisted(persistenceId: String): Unit = ???
 
   override def persistForRecovery(persistenceId: String, msgs: immutable.Seq[Any]): Unit = {
     storage.addRaw(persistenceId, msgs)
     nextIndexByPersistenceId += persistenceId -> (nextIndexByPersistenceId.getOrElse(persistenceId, 0) + msgs.size)
   }
 
+  override def expectPersistedInOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit =
+    msgs.foreach(expectNextPersisted(persistenceId, _))
 
-  override def expectPersistedInOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit = {
+
+  override def expectPersistedInAnyOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit = {
+
     val nextInd = nextIndexByPersistenceId.getOrElse(persistenceId, 0)
     awaitAssert({
       val actual = storage.findMany(persistenceId, nextInd, msgs.size)
-    })
-    ???
-  }
+      actual match {
+        case Some(ls) => assert(ls.size == msgs.size && ls.diff(msgs).isEmpty, "Persisted messages do not correspond to expected ones")
+        case None => assert(false, "No messages were persisted")
+      }
+    }, max = settings.assertTimeout)
 
-  override def expectPersistedInAnyOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit = ???
+    nextIndexByPersistenceId += (persistenceId -> (nextInd + msgs.size))
+
+  }
 
   def withRecoveryPolicy(policy: ProcessingPolicy) = storage.setRecoveryPolicy(policy)
 
   def withWritingPolicy(policy: ProcessingPolicy) = storage.setWritingPolicy(policy)
 
-  def rejectNextPersisted(persistenceId: String) = ???
+  def rejectNextPersisted() = new RejectNextN(1, ExpectedRejection) {
 
-  def rejectNextPersisted() = ???
+    override def tryProcess(batch: immutable.Seq[Any]): ProcessingPolicy.ProcessingResult = {
+      val r = super.tryProcess(batch)
+      withWritingPolicy(PassAll)
+      r
+    }
 
-  def failNextPersisted(persistenceId: String) = ???
+  }
 
-  def failNextPersisted() = ???
+  def failNextPersisted() = new FailNextN(1, ExpectedFailure) {
+
+    override def tryProcess(batch: immutable.Seq[Any]): ProcessingPolicy.ProcessingResult = {
+      val r = super.tryProcess(batch)
+      withWritingPolicy(PassAll)
+      r
+    }
+
+  }
 
   override def clearAll(): Unit = storage.clearAll()
 
+  override def clearByPersistenceId(persistenceId: String): Unit = storage.clearByPersistenceId(persistenceId)
+
+  private def awaitAssert[A](a: ⇒ A): A =
+    awaitAssert(a, settings.assertTimeout, 100.millis)
+
 }
 
+object PersistenceTestKit {
+
+  object ExpectedFailure extends Throwable
+
+  object ExpectedRejection extends Throwable
+
+}
 
 trait UtilityAssertions {
 
   import scala.concurrent.duration._
 
-  protected val DefaultExpectOnePersistedTimeout: FiniteDuration
-
-  def awaitAssert[A](a: ⇒ A): A =
-    awaitAssert(a, None)
-
-  def awaitAssert[A](a: ⇒ A, max: FiniteDuration, interval: Duration = 100.millis): A =
-    awaitAssert(a, Some(max), interval)
-
   protected def now: FiniteDuration = System.nanoTime.nanos
 
-  private def awaitAssert[A](a: ⇒ A, max: Option[FiniteDuration] = None, interval: Duration = 100.millis): A = {
-    val _max = max.getOrElse(DefaultExpectOnePersistedTimeout)
-    val stop = now + _max
+  protected def awaitAssert[A](a: ⇒ A, max: FiniteDuration, interval: Duration = 100.millis): A = {
+    val stop = now + max
 
     @tailrec
     def poll(t: Duration): A = {
@@ -121,9 +153,8 @@ trait UtilityAssertions {
       }
     }
 
-    poll(_max min interval)
+    poll(max min interval)
   }
-
 
 }
 
@@ -133,7 +164,7 @@ trait InMemStorage {
 
   def findMany(persistenceId: String, fromInclusive: Int, maxNum: Int): Option[Vector[PersistentRepr]] =
     Option(eventsMap.get(persistenceId))
-      .flatMap(value => if(value.size > fromInclusive) Some(value.drop(fromInclusive).take(maxNum)) else None)
+      .flatMap(value ⇒ if (value.size > fromInclusive) Some(value.drop(fromInclusive).take(maxNum)) else None)
 
   def findOneByIndex(persistenceId: String, index: Int): Option[PersistentRepr] =
     Option(eventsMap.get(persistenceId))
@@ -145,7 +176,7 @@ trait InMemStorage {
   def addRaw(persistenceId: String, e: immutable.Seq[Any]): Unit =
     eventsMap.compute(persistenceId, (_: String, value: Vector[PersistentRepr]) ⇒ {
       Option(value).map(v ⇒ {
-        val start = v.lastOption.map(_.sequenceNr).getOrElse(0)
+        val start = v.lastOption.map(_.sequenceNr).getOrElse(0L)
         v ++ e.zipWithIndex.map(p ⇒ PersistentRepr(p._1, p._2 + start, persistenceId))
       }).getOrElse(e.zipWithIndex.map(p ⇒ PersistentRepr(p._1, p._2, persistenceId))).toVector
     })
@@ -183,9 +214,10 @@ trait InMemStorage {
 
   def clearAll() = eventsMap.clear()
 
-  def clearByPersistenceId(persistenceId: String) = ???
+  def clearByPersistenceId(persistenceId: String) = eventsMap.remove(persistenceId)
 
-  import java.util.{function ⇒ jf}
+  import java.util.{function => jf}
+
   import scala.language.implicitConversions
 
   private implicit def scalaFun1ToJava[T, R](f: T ⇒ R): jf.Function[T, R] = new jf.Function[T, R] {
@@ -199,10 +231,13 @@ trait InMemStorage {
 }
 
 trait InMemStorageEmulator extends InMemStorage {
+
   import ProcessingPolicy._
 
-  @volatile private var writingPolicy: ProcessingPolicy = ProcessingPolicy.PassAll
-  @volatile private var recoveryPolicy: ProcessingPolicy = ProcessingPolicy.PassAll
+  @volatile
+  private var writingPolicy: ProcessingPolicy = ProcessingPolicy.PassAll
+  @volatile
+  private var recoveryPolicy: ProcessingPolicy = ProcessingPolicy.PassAll
 
   /**
    *
@@ -232,7 +267,6 @@ trait InMemStorageEmulator extends InMemStorage {
   def setRecoveryPolicy(policy: ProcessingPolicy) = recoveryPolicy = policy
 
 }
-
 
 trait InMemEmulatorExtension extends InMemStorageEmulator with Extension
 
@@ -275,18 +309,17 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
   private implicit val ec = context.system.dispatcher
 
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
-    Future.fromTry(Try(messages.map(aw => storage.tryAdd(aw.payload))))
-
+    Future.fromTry(Try(messages.map(aw ⇒ storage.tryAdd(aw.payload))))
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
-    //todo should we emulate exception on delete?
+  //todo should we emulate exception on delete?
     Future.successful(storage.deleteToSeqNumber(persistenceId, toSequenceNr))
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
     Future.fromTry(Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(recoveryCallback)))
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
-    //todo should we emulate exception on readSeqNumber?
+  //todo should we emulate exception on readSeqNumber?
     Future.successful(storage.readHighestSequenceNum(persistenceId))
 
 }
@@ -306,7 +339,8 @@ object PersistenceTestKitPlugin {
 
 }
 
-object PersistenceTestExtensionId extends ExtensionId[PersistenceTestKitSettings]{
+object PersistenceTestExtensionId extends ExtensionId[PersistenceTestKitSettings] {
+
   import PersistenceTestKitSettings._
 
   override def createExtension(system: ExtendedActorSystem): PersistenceTestKitSettings =
@@ -314,17 +348,15 @@ object PersistenceTestExtensionId extends ExtensionId[PersistenceTestKitSettings
 
 }
 
-
 class PersistenceTestKitSettings(config: Config) extends Extension {
 
   import akka.util.Helpers._
 
-  val assertTimeout = config.getMillisDuration("timeout")
-
+  val assertTimeout: FiniteDuration = config.getMillisDuration("timeout")
 
 }
 
-object PersistenceTestKitSettings{
+object PersistenceTestKitSettings {
   val configPath = "akka.persistence.testkit"
 }
 
