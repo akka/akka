@@ -39,8 +39,8 @@ object ManyRecoveriesSpec {
     )
 
   def forwardBehavior(sender: TestProbe[String]): Behaviors.Receive[Int] =
-    Behaviors.receivePartial[Int] {
-      case (_, value) ⇒
+    Behaviors.receiveMessagePartial[Int] {
+      case value ⇒
         sender.ref ! value.toString
         Behaviors.same
     }
