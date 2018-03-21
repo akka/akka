@@ -4,6 +4,7 @@
 
 package jdocs.stream;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -26,7 +27,6 @@ import akka.stream.javadsl.*;
 import akka.stream.testkit.*;
 import akka.stream.testkit.javadsl.*;
 import akka.testkit.TestProbe;
-import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 
@@ -101,7 +101,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
       .grouped(2)
       .runWith(Sink.head(), mat);
     akka.pattern.PatternsCS.pipe(future, system.dispatcher()).to(probe.ref());
-    probe.expectMsg(Duration.create(3, TimeUnit.SECONDS),
+    probe.expectMsg(FiniteDuration.create(3, TimeUnit.SECONDS),
       Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4))
     );
     //#pipeto-testprobe
@@ -113,18 +113,18 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
   public void sinkActorRef() throws Exception {
     //#sink-actorref
     final Source<Tick, Cancellable> sourceUnderTest = Source.tick(
-      FiniteDuration.create(0, TimeUnit.MILLISECONDS),
-      FiniteDuration.create(200, TimeUnit.MILLISECONDS),
+      Duration.ZERO,
+      Duration.ofMillis(200),
       Tick.TOCK);
 
     final TestProbe probe = new TestProbe(system);
     final Cancellable cancellable = sourceUnderTest
       .to(Sink.actorRef(probe.ref(), Tick.COMPLETED)).run(mat);
-    probe.expectMsg(Duration.create(3, TimeUnit.SECONDS), Tick.TOCK);
-    probe.expectNoMsg(Duration.create(100, TimeUnit.MILLISECONDS));
-    probe.expectMsg(Duration.create(3, TimeUnit.SECONDS), Tick.TOCK);
+    probe.expectMsg(FiniteDuration.create(3, TimeUnit.SECONDS), Tick.TOCK);
+    probe.expectNoMsg(FiniteDuration.create(100, TimeUnit.MILLISECONDS));
+    probe.expectMsg(FiniteDuration.create(3, TimeUnit.SECONDS), Tick.TOCK);
     cancellable.cancel();
-    probe.expectMsg(Duration.create(3, TimeUnit.SECONDS), Tick.COMPLETED);
+    probe.expectMsg(FiniteDuration.create(3, TimeUnit.SECONDS), Tick.COMPLETED);
     //#sink-actorref
   }
 
@@ -207,7 +207,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     //#test-source-and-sink
     final Flow<Integer, Integer, NotUsed> flowUnderTest = Flow.of(Integer.class)
       .mapAsyncUnordered(2, sleep -> akka.pattern.PatternsCS.after(
-        Duration.create(10, TimeUnit.MILLISECONDS),
+        FiniteDuration.create(10, TimeUnit.MILLISECONDS),
         system.scheduler(),
         system.dispatcher(),
         CompletableFuture.completedFuture(sleep)

@@ -9,12 +9,14 @@ import akka.actor.ActorSystem;
 import akka.stream.KillSwitch;
 import akka.stream.KillSwitches;
 import akka.stream.Materializer;
-import akka.stream.javadsl.*;
-import scala.concurrent.duration.Duration;
+import akka.stream.javadsl.Keep;
+import akka.stream.javadsl.RestartSource;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 public class RestartDocTest {
 
@@ -54,8 +56,8 @@ public class RestartDocTest {
   public void recoverWithBackoffSource() {
     //#restart-with-backoff-source
     Source<ServerSentEvent, NotUsed> eventStream = RestartSource.withBackoff(
-        Duration.apply(3, TimeUnit.SECONDS), // min backoff
-        Duration.apply(30, TimeUnit.SECONDS), // max backoff
+            Duration.ofSeconds(3), // min backoff
+            Duration.ofSeconds(30), // max backoff
         0.2, // adds 20% "noise" to vary the intervals slightly
         20, // limits the amount of restarts to 20
         () ->
