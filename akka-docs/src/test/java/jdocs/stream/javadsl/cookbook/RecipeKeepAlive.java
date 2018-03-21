@@ -15,7 +15,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 public class RecipeKeepAlive extends RecipeTest {
   static ActorSystem system;
@@ -47,8 +47,8 @@ public class RecipeKeepAlive extends RecipeTest {
         //#inject-keepalive
         Flow<ByteString, ByteString, NotUsed> keepAliveInject =
           Flow.of(ByteString.class).keepAlive(
-              scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS),
-              () -> keepAliveMessage);
+                  Duration.ofSeconds(1),
+                  () -> keepAliveMessage);
         //#inject-keepalive
         //@formatter:on
 

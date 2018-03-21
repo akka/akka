@@ -4,14 +4,14 @@
 
 package jdocs.stream;
 
+//#imports
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-//#imports
-import akka.dispatch.Futures;
 import akka.japi.Option;
 import akka.japi.Pair;
 import akka.japi.Predicate;
+import akka.japi.Function;
 import akka.japi.function.Procedure;
 import akka.stream.*;
 import akka.stream.javadsl.*;
@@ -19,21 +19,15 @@ import akka.stream.stage.*;
 //#imports
 import akka.stream.testkit.TestPublisher;
 import akka.stream.testkit.TestSubscriber;
-import akka.japi.Function;
 import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
-import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContext;
-import scala.concurrent.Promise;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -568,7 +562,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
     CompletionStage<Integer> result =
       Source.from(Arrays.asList(1, 2, 3))
         .via(new TimedGate<>(2))
-        .takeWithin(Duration.create(250, "millis"))
+        .takeWithin(java.time.Duration.ofMillis(250))
         .runFold(0, (n, sum) -> n + sum, mat);
 
     assertEquals(new Integer(1), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
