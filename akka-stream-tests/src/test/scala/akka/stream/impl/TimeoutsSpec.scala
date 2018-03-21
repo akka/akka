@@ -5,11 +5,14 @@
 package akka.stream.impl
 
 import java.util.concurrent.TimeoutException
+
 import akka.Done
 import akka.stream.scaladsl._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream._
+import org.scalatest.{ Matchers, WordSpecLike }
+
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 
@@ -287,9 +290,9 @@ class TimeoutsSpec extends StreamSpec {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         import GraphDSL.Implicits._
         val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
-        Source.fromPublisher(upWrite) ~> timeoutStage.in1;
+        Source.fromPublisher(upWrite) ~> timeoutStage.in1
         timeoutStage.out1 ~> Sink.fromSubscriber(downRead)
-        Sink.fromSubscriber(upRead) <~ timeoutStage.out2;
+        Sink.fromSubscriber(upRead) <~ timeoutStage.out2
         timeoutStage.in2 <~ Source.fromPublisher(downWrite)
         ClosedShape
       }).run()
@@ -335,9 +338,9 @@ class TimeoutsSpec extends StreamSpec {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
         import GraphDSL.Implicits._
         val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
-        Source.fromPublisher(upWrite) ~> timeoutStage.in1;
+        Source.fromPublisher(upWrite) ~> timeoutStage.in1
         timeoutStage.out1 ~> Sink.fromSubscriber(downRead)
-        Sink.fromSubscriber(upRead) <~ timeoutStage.out2;
+        Sink.fromSubscriber(upRead) <~ timeoutStage.out2
         timeoutStage.in2 <~ Source.fromPublisher(downWrite)
         ClosedShape
       }).run()
@@ -349,6 +352,26 @@ class TimeoutsSpec extends StreamSpec {
       upRead.expectSubscriptionAndError(te)
       downRead.expectSubscriptionAndError(te)
       downWrite.expectCancellation()
+    }
+
+  }
+
+}
+
+class TimeoutChecksSpec extends WordSpecLike with Matchers {
+
+  "Timeout check interval" must {
+
+    "run twice for timeouts under 800ms" in {
+      Timers.timeoutCheckInterval(800.millis) should ===(100.millis)
+    }
+
+    "run every 8th of the value for timeouts for timeouts under 1s" in {
+      Timers.timeoutCheckInterval(999.millis).toNanos should ===(999.millis.toNanos / 8)
+    }
+
+    "run every 1s for timeouts over 1s" in {
+      Timers.timeoutCheckInterval(1001.millis) should ===(1.second)
     }
 
   }

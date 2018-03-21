@@ -1,19 +1,18 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.actor.ActorSelectionMessage
-import akka.actor.Address
 import akka.actor.ExtendedActorSystem
-import akka.actor.InternalActorRef
 import akka.actor.LocalRef
 import akka.actor.PossiblyHarmful
 import akka.actor.RepointableRef
 import akka.dispatch.sysmsg.SystemMessage
-import akka.event.{ LogMarker, Logging, LoggingReceive }
+import akka.event.{ LogMarker, Logging }
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteRef
 import akka.util.OptionVal

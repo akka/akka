@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdoc.akka.cluster.sharding.typed;
 
 import akka.actor.typed.ActorRef;
@@ -35,7 +36,7 @@ public class ShardingCompileOnlyTest {
   }
 
   public static Behavior<CounterCommand> counter(String entityId, Integer value) {
-    return Behaviors.immutable(CounterCommand.class)
+    return Behaviors.receive(CounterCommand.class)
       .onMessage(Increment.class, (ctx, msg) -> {
         return counter(entityId,value + 1);
       })

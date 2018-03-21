@@ -1,12 +1,11 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream
 
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
-import akka.stream.ActorAttributes.Dispatcher
-import akka.stream.Attributes.InputBuffer
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
@@ -56,6 +55,8 @@ abstract class Materializer {
    * within Sources, Sinks, etc. This [[scala.concurrent.ExecutionContextExecutor]]
    * can be used by parts of the flow to submit processing jobs for execution,
    * run Future callbacks, etc.
+   *
+   * Note that this is not necessarily the same execution context the stream stage itself is running on.
    */
   implicit def executionContext: ExecutionContextExecutor
 

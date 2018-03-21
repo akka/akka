@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import akka.actor.ActorSystem
@@ -67,6 +68,10 @@ private[remote] class OutboundHandshake(
       private var pendingMessage: OutboundEnvelope = null
       private var injectHandshakeTickScheduled = false
 
+      override def preStart(): Unit = {
+        scheduleOnce(HandshakeTimeout, timeout)
+      }
+
       // InHandler
       override def onPush(): Unit = {
         if (handshakeState != Completed)
@@ -96,11 +101,10 @@ private[remote] class OutboundHandshake(
           case Start ⇒
             val uniqueRemoteAddress = outboundContext.associationState.uniqueRemoteAddress
             if (uniqueRemoteAddress.isCompleted) {
-              handshakeState = Completed
+              handshakeCompleted()
             } else {
               // will pull when handshake reply is received (uniqueRemoteAddress completed)
               handshakeState = ReqInProgress
-              scheduleOnce(HandshakeTimeout, timeout)
               schedulePeriodically(HandshakeRetryTick, retryInterval)
 
               // The InboundHandshake stage will complete the uniqueRemoteAddress future
@@ -129,6 +133,7 @@ private[remote] class OutboundHandshake(
         scheduleOnce(InjectHandshakeTick, injectHandshakeInterval)
         val env: OutboundEnvelope = outboundEnvelopePool.acquire().init(
           recipient = OptionVal.None, message = HandshakeReq(outboundContext.localAddress, outboundContext.remoteAddress), sender = OptionVal.None)
+        outboundContext.associationState.lastUsedTimestamp.set(System.nanoTime())
         push(out, env)
       }
 

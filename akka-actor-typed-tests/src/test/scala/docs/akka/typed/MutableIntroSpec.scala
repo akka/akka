@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.akka.typed
 
 //#imports
@@ -8,9 +9,9 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.ActorContext
-import akka.testkit.typed.TestKit
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, MutableBehavior }
+import akka.testkit.typed.scaladsl.ActorTestKit
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
 //#imports
@@ -42,9 +43,9 @@ object MutableIntroSpec {
     //#chatroom-behavior
 
     def behavior(): Behavior[RoomCommand] =
-      Behaviors.mutable[RoomCommand](ctx ⇒ new ChatRoomBehavior(ctx))
+      Behaviors.setup[RoomCommand](ctx ⇒ new ChatRoomBehavior(ctx))
 
-    class ChatRoomBehavior(ctx: ActorContext[RoomCommand]) extends Behaviors.MutableBehavior[RoomCommand] {
+    class ChatRoomBehavior(ctx: ActorContext[RoomCommand]) extends MutableBehavior[RoomCommand] {
       private var sessions: List[ActorRef[SessionCommand]] = List.empty
 
       override def onMessage(msg: RoomCommand): Behavior[RoomCommand] = {
@@ -69,17 +70,15 @@ object MutableIntroSpec {
       room:       ActorRef[PublishSessionMessage],
       screenName: String,
       client:     ActorRef[SessionEvent]): Behavior[SessionCommand] =
-      Behaviors.immutable { (ctx, msg) ⇒
-        msg match {
-          case PostMessage(message) ⇒
-            // from client, publish to others via the room
-            room ! PublishSessionMessage(screenName, message)
-            Behaviors.same
-          case NotifyClient(message) ⇒
-            // published from the room
-            client ! message
-            Behaviors.same
-        }
+      Behaviors.receiveMessage {
+        case PostMessage(message) ⇒
+          // from client, publish to others via the room
+          room ! PublishSessionMessage(screenName, message)
+          Behaviors.same
+        case NotifyClient(message) ⇒
+          // published from the room
+          client ! message
+          Behaviors.same
       }
     //#chatroom-behavior
   }
@@ -87,7 +86,7 @@ object MutableIntroSpec {
 
 }
 
-class MutableIntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class MutableIntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   import MutableIntroSpec._
 
@@ -97,33 +96,31 @@ class MutableIntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
       import ChatRoom._
 
       val gabbler =
-        Behaviors.immutable[SessionEvent] { (_, msg) ⇒
-          msg match {
-            case SessionDenied(reason) ⇒
-              println(s"cannot start chat room session: $reason")
-              Behaviors.stopped
-            case SessionGranted(handle) ⇒
-              handle ! PostMessage("Hello World!")
-              Behaviors.same
-            case MessagePosted(screenName, message) ⇒
-              println(s"message has been posted by '$screenName': $message")
-              Behaviors.stopped
-          }
+        Behaviors.receiveMessage[SessionEvent] {
+          case SessionDenied(reason) ⇒
+            println(s"cannot start chat room session: $reason")
+            Behaviors.stopped
+          case SessionGranted(handle) ⇒
+            handle ! PostMessage("Hello World!")
+            Behaviors.same
+          case MessagePosted(screenName, message) ⇒
+            println(s"message has been posted by '$screenName': $message")
+            Behaviors.stopped
         }
       //#chatroom-gabbler
 
       //#chatroom-main
       val main: Behavior[String] =
-        Behaviors.deferred { ctx ⇒
+        Behaviors.setup { ctx ⇒
           val chatRoom = ctx.spawn(ChatRoom.behavior(), "chatroom")
           val gabblerRef = ctx.spawn(gabbler, "gabbler")
           ctx.watch(gabblerRef)
 
-          Behaviors.immutablePartial[String] {
-            case (_, "go") ⇒
+          Behaviors.receiveMessagePartial[String] {
+            case "go" ⇒
               chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
               Behaviors.same
-          } onSignal {
+          } receiveSignal {
             case (_, Terminated(_)) ⇒
               println("Stopping guardian")
               Behaviors.stopped

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.event.LoggingAdapter
@@ -9,7 +10,7 @@ import akka.Done
 import akka.stream.impl._
 import akka.stream.impl.fusing._
 import akka.stream.stage._
-import akka.util.ConstantFun
+import akka.util.{ ConstantFun, Timeout }
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -19,7 +20,11 @@ import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
+import akka.actor.ActorRef
 import akka.annotation.DoNotInherit
+
+import scala.annotation.implicitNotFound
+import scala.reflect.ClassTag
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -44,9 +49,29 @@ final class Flow[-In, +Out, +Mat](
 
   override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Flow[In, T, Mat3] = {
     if (this.isIdentity) {
-      new Flow(
-        LinearTraversalBuilder.fromBuilder(flow.traversalBuilder, flow.shape, combine),
-        flow.shape).asInstanceOf[Flow[In, T, Mat3]]
+      // optimization by returning flow if possible since we know Mat2 == Mat3 from flow
+      if (combine == Keep.right) Flow.fromGraph(flow).asInstanceOf[Flow[In, T, Mat3]]
+      else {
+        // Keep.none is optimized and we know left means Mat3 == NotUsed
+        val useCombine =
+          if (combine == Keep.left) Keep.none
+          else combine
+        new Flow(
+          LinearTraversalBuilder.empty().append(flow.traversalBuilder, flow.shape, useCombine),
+          flow.shape).asInstanceOf[Flow[In, T, Mat3]]
+      }
+    } else if (flow.traversalBuilder eq Flow.identityTraversalBuilder) {
+      // optimization by returning this if possible since we know Mat2 == Mat from this
+      if (combine == Keep.left) this.asInstanceOf[Flow[In, T, Mat3]]
+      else {
+        // Keep.none is somewhat optimized and we know Mat == NotUsed
+        val useCombine =
+          if (combine == Keep.right) Keep.none
+          else combine
+        new Flow(
+          traversalBuilder.append(LinearTraversalBuilder.empty(), shape, useCombine),
+          FlowShape[In, T](shape.in, flow.shape.out))
+      }
     } else {
       new Flow(
         traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
@@ -284,7 +309,8 @@ final class Flow[-In, +Out, +Mat](
       }
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
-  def asJava: javadsl.Flow[In, Out, Mat] = new javadsl.Flow(this)
+  def asJava[JIn <: In, JOut >: Out, JMat >: Mat]: javadsl.Flow[JIn, JOut, JMat] =
+    new javadsl.Flow(this)
 }
 
 object Flow {
@@ -493,6 +519,44 @@ object Flow {
       FlowShape(bidi.in1, bidi.out2)
     })
   // format: ON
+
+  /**
+   * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
+   * if there are no elements, because of completion, cancellation, or error.
+   *
+   * The materialized value of the `Flow` is the value that is created by the `fallback` function.
+   *
+   * '''Emits when''' the internal flow is successfully created and it emits
+   *
+   * '''Backpressures when''' the internal flow is successfully created and it backpressures
+   *
+   * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  @Deprecated
+  @deprecated("Use lazyInitAsync instead. (lazyInitAsync returns a flow with a more useful materialized value.)", "2.5.12")
+  def lazyInit[I, O, M](flowFactory: I ⇒ Future[Flow[I, O, M]], fallback: () ⇒ M): Flow[I, O, M] =
+    Flow.fromGraph(new LazyFlow[I, O, M](flowFactory)).mapMaterializedValue(_ ⇒ fallback())
+
+  /**
+   * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
+   * if there are no elements, because of completion, cancellation, or error.
+   *
+   * The materialized value of the `Flow` is a `Future[Option[M]]` that is completed with `Some(mat)` when the internal
+   * flow gets materialized or with `None` when there where no elements. If the flow materialization (including
+   * the call of the `flowFactory`) fails then the future is completed with a failure.
+   *
+   * '''Emits when''' the internal flow is successfully created and it emits
+   *
+   * '''Backpressures when''' the internal flow is successfully created and it backpressures
+   *
+   * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def lazyInitAsync[I, O, M](flowFactory: () ⇒ Future[Flow[I, O, M]]): Flow[I, O, Future[Option[M]]] =
+    Flow.fromGraph(new LazyFlow[I, O, M](_ ⇒ flowFactory()))
 }
 
 object RunnableGraph {
@@ -816,6 +880,114 @@ trait FlowOps[+Out, +Mat] {
   def mapAsyncUnordered[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T] = via(MapAsyncUnordered(parallelism, f))
 
   /**
+   * Use the `ask` pattern to send a request-reply message to the target `ref` actor.
+   * If any of the asks times out it will fail the stream with a [[akka.pattern.AskTimeoutException]].
+   *
+   * Do not forget to include the expected response type in the method call, like so:
+   *
+   * {{{
+   * flow.ask[ExpectedReply](ref)
+   * }}}
+   *
+   * otherwise `Nothing` will be assumed, which is most likely not what you want.
+   *
+   * Defaults to parallelism of 2 messages in flight, since while one ask message may be being worked on, the second one
+   * still be in the mailbox, so defaulting to sending the second one a bit earlier than when first ask has replied maintains
+   * a slightly healthier throughput.
+   *
+   * The mapTo class parameter is used to cast the incoming responses to the expected response type.
+   *
+   * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
+   * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+   *
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the futures (in submission order) created by the ask pattern internally are completed
+   *
+   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
+   *
+   * '''Fails when''' the passed in actor terminates, or a timeout is exceeded in any of the asks performed
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
+  def ask[S](ref: ActorRef)(implicit timeout: Timeout, tag: ClassTag[S]): Repr[S] =
+    ask(2)(ref)(timeout, tag)
+
+  /**
+   * Use the `ask` pattern to send a request-reply message to the target `ref` actor.
+   * If any of the asks times out it will fail the stream with a [[akka.pattern.AskTimeoutException]].
+   *
+   * Do not forget to include the expected response type in the method call, like so:
+   *
+   * {{{
+   * flow.ask[ExpectedReply](parallelism = 4)(ref)
+   * }}}
+   *
+   * otherwise `Nothing` will be assumed, which is most likely not what you want.
+   *
+   * Parallelism limits the number of how many asks can be "in flight" at the same time.
+   * Please note that the elements emitted by this stage are in-order with regards to the asks being issued
+   * (i.e. same behaviour as mapAsync).
+   *
+   * The mapTo class parameter is used to cast the incoming responses to the expected response type.
+   *
+   * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
+   * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+   *
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the futures (in submission order) created by the ask pattern internally are completed
+   *
+   * '''Backpressures when''' the number of futures reaches the configured parallelism and the downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all futures have been completed and all elements have been emitted
+   *
+   * '''Fails when''' the passed in actor terminates, or a timeout is exceeded in any of the asks performed
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  @implicitNotFound("Missing an implicit akka.util.Timeout for the ask() stage")
+  def ask[S](parallelism: Int)(ref: ActorRef)(implicit timeout: Timeout, tag: ClassTag[S]): Repr[S] = {
+    val askFlow = Flow[Out]
+      .watch(ref)
+      .mapAsync(parallelism) { el ⇒
+        akka.pattern.ask(ref).?(el)(timeout).mapTo[S](tag)
+      }
+      .recover[S] {
+        // the purpose of this recovery is to change the name of the stage in that exception
+        // we do so in order to help users find which stage caused the failure -- "the ask stage"
+        case ex: WatchedActorTerminatedException ⇒
+          throw new WatchedActorTerminatedException("ask()", ex.ref)
+      }
+      .named("ask")
+
+    via(askFlow)
+  }
+
+  /**
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   *
+   * '''Emits when''' upstream emits
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Fails when''' the watched actor terminates
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def watch(ref: ActorRef): Repr[Out] =
+    via(Watch(ref))
+
+  /**
    * Only pass on those elements that satisfy the given predicate.
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
@@ -922,6 +1094,25 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def collect[T](pf: PartialFunction[Out, T]): Repr[T] = via(Collect(pf))
+
+  /**
+   * Transform this stream by testing the type of each of the elements
+   * on which the element is an instance of the provided type as they pass through this processing step.
+   *
+   * Non-matching elements are filtered out.
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the element is an instance of the provided type
+   *
+   * '''Backpressures when''' the element is an instance of the provided type and downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def collectType[T](implicit tag: ClassTag[T]): Repr[T] =
+    collect { case c if tag.runtimeClass.isInstance(c) ⇒ c.asInstanceOf[T] }
 
   /**
    * Chunk up this stream into groups of the given size, with the last group
@@ -2277,7 +2468,7 @@ trait FlowOps[+Out, +Mat] {
   def to[Mat2](sink: Graph[SinkShape[Out], Mat2]): Closed
 
   /**
-   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that pass
    * through will also be sent to the [[Sink]].
    *
    * '''Emits when''' element is available and demand exists both from the Sink and the downstream.
@@ -2286,14 +2477,14 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Completes when''' upstream completes
    *
-   * '''Cancels when''' downstream cancels
+   * '''Cancels when''' downstream or Sink cancels
    */
   def alsoTo(that: Graph[SinkShape[Out], _]): Repr[Out] = via(alsoToGraph(that))
 
   protected def alsoToGraph[M](that: Graph[SinkShape[Out], M]): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
     GraphDSL.create(that) { implicit b ⇒ r ⇒
       import GraphDSL.Implicits._
-      val bcast = b.add(Broadcast[Out](2))
+      val bcast = b.add(Broadcast[Out](2, eagerCancel = true))
       bcast.out(1) ~> r
       FlowShape(bcast.in, bcast.out(0))
     }
@@ -2318,6 +2509,30 @@ trait FlowOps[+Out, +Mat] {
       val partition = b.add(new Partition[Out](2, out ⇒ if (when(out)) 1 else 0, true))
       partition.out(1) ~> r
       FlowShape(partition.in, partition.out(0))
+    }
+
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]] as a wire tap, meaning that elements that pass
+   * through will also be sent to the wire-tap Sink, without the latter affecting the mainline flow.
+   * If the wire-tap Sink backpressures, elements that would've been sent to it will be dropped instead.
+   *
+   * '''Emits when''' element is available and demand exists from the downstream; the element will
+   * also be sent to the wire-tap Sink if there is demand.
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def wireTap(that: Graph[SinkShape[Out], _]): Repr[Out] = via(wireTapGraph(that))
+
+  protected def wireTapGraph[M](that: Graph[SinkShape[Out], M]): Graph[FlowShape[Out @uncheckedVariance, Out], M] =
+    GraphDSL.create(that) { implicit b ⇒ r ⇒
+      import GraphDSL.Implicits._
+      val bcast = b.add(WireTap[Out]())
+      bcast.out1 ~> r
+      FlowShape(bcast.in, bcast.out0)
     }
 
   def withAttributes(attr: Attributes): Repr[Out]
@@ -2549,7 +2764,7 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
     viaMat(orElseGraph(secondary))(matF)
 
   /**
-   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that passes
+   * Attaches the given [[Sink]] to this [[Flow]], meaning that elements that pass
    * through will also be sent to the [[Sink]].
    *
    * @see [[#alsoTo]]
@@ -2571,6 +2786,19 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def divertToMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2], when: Out ⇒ Boolean)(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[Out, Mat3] =
     viaMat(divertToGraph(that, when))(matF)
+
+  /**
+   * Attaches the given [[Sink]] to this [[Flow]] as a wire tap, meaning that elements that pass
+   * through will also be sent to the wire-tap Sink, without the latter affecting the mainline flow.
+   * If the wire-tap Sink backpressures, elements that would've been sent to it will be dropped instead.
+   *
+   * @see [[#wireTap]]
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def wireTapMat[Mat2, Mat3](that: Graph[SinkShape[Out], Mat2])(matF: (Mat, Mat2) ⇒ Mat3): ReprMat[Out, Mat3] =
+    viaMat(wireTapGraph(that))(matF)
 
   /**
    * Materializes to `Future[Done]` that completes on getting termination message.

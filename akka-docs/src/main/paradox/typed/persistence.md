@@ -62,8 +62,10 @@ and can be used to create various effects such as:
 
 External side effects can be performed after successful persist with the `andThen` function e.g 
 @scala[`Effect.persist(..).andThen`]@java[`Effect().persist(..).andThen`].
-In the example below a reply is sent to the `replyTo` ActorRef. Note that the new state after applying
-the event is passed as parameter to the `andThen` function.
+
+In the example below a reply is sent to the `replyTo` ActorRef. Note that the new state after applying 
+the event is passed as parameter to the `andThen` function. All `andThen*` registered callbacks
+are executed after successful execution of the persist statement (or immediately, in case of `none` and `unhandled`).
 
 ### Event handler
 
@@ -231,6 +233,6 @@ Java
 
 ## Current limitations
 
-* The `PersistentBehavior` can't be wrapped in other behaviors, such as `Behaviors.deferred`. See [#23694](https://github.com/akka/akka/issues/23694)
+* The `PersistentBehavior` can't be wrapped in other behaviors, such as `Behaviors.setup`. See [#23694](https://github.com/akka/akka/issues/23694)
 
 

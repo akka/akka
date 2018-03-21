@@ -1,12 +1,13 @@
 /**
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 package internal
 package adapter
 
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.Behavior.UntypedBehavior
+import akka.actor.typed.Behavior.UntypedPropsBehavior
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 import akka.{ ConfigurationException, actor ⇒ a }
@@ -81,7 +82,6 @@ import scala.concurrent.duration._
     actorLogger match {
       case OptionVal.Some(logger) ⇒ logger
       case OptionVal.None ⇒
-        import scala.language.existentials
         val logSource = self.path.toString
         val logClass = classOf[Behavior[_]] // FIXME figure out a better class somehow
         val system = untyped.system.asInstanceOf[ExtendedActorSystem]
@@ -125,9 +125,10 @@ import scala.concurrent.duration._
 
   def spawnAnonymous[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], props: Props): ActorRef[T] = {
     behavior match {
-      case b: UntypedBehavior[_] ⇒
+      case b: UntypedPropsBehavior[_] ⇒
         // TODO dispatcher from props
-        ActorRefAdapter(ctx.actorOf(b.untypedProps))
+        ActorRefAdapter(ctx.actorOf(b.untypedProps(props)))
+
       case _ ⇒
         try {
           Behavior.validateAsInitial(behavior)
@@ -141,9 +142,10 @@ import scala.concurrent.duration._
 
   def spawn[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], name: String, props: Props): ActorRef[T] = {
     behavior match {
-      case b: UntypedBehavior[_] ⇒
+      case b: UntypedPropsBehavior[_] ⇒
         // TODO dispatcher from props
-        ActorRefAdapter(ctx.actorOf(b.untypedProps, name))
+        ActorRefAdapter(ctx.actorOf(b.untypedProps(props), name))
+
       case _ ⇒
         try {
           Behavior.validateAsInitial(behavior)

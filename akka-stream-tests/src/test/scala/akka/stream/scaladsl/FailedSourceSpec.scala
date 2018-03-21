@@ -1,16 +1,13 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.stream.ActorMaterializer
-import akka.stream.testkit.{ StreamSpec, TestSubscriber, Utils }
+import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.testkit.DefaultTimeout
-import org.scalatest.time.{ Millis, Span }
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.util.Failure
 import scala.util.control.NoStackTrace
 
 class FailedSourceSpec extends StreamSpec with DefaultTimeout {

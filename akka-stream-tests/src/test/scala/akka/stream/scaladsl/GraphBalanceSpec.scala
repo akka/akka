@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.scaladsl
 
 import scala.concurrent.Await
@@ -7,7 +11,6 @@ import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
-import akka.util.ByteString
 
 class GraphBalanceSpec extends StreamSpec {
 

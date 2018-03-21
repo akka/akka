@@ -1,23 +1,24 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.{ LogMarker, TestException, TypedAkkaSpec, scaladsl }
+import akka.actor.typed.{ LogMarker, TestException, TypedAkkaSpec }
 import akka.testkit.EventFilter
-import akka.testkit.typed.TestKit
 import com.typesafe.config.ConfigFactory
 import akka.actor.typed.scaladsl.adapter._
 import akka.event.Logging
 import akka.event.Logging.{ LogEventWithCause, LogEventWithMarker }
+import akka.testkit.typed.scaladsl.ActorTestKit
 
-import scala.util.control.NoStackTrace
+class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
 
-class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
-  """
+  override def config = ConfigFactory.parseString(
+    """
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.TestEventListener"]
-  """)) with TypedAkkaSpec {
+  """)
 
   val marker = LogMarker("marker")
   val cause = new TestException("böö")
@@ -28,10 +29,10 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
 
     "be conveniently available from the ctx" in {
       val actor = EventFilter.info("Started", source = "akka://ActorLoggingSpec/user/the-actor", occurrences = 1).intercept {
-        spawn(Behaviors.deferred[String] { ctx ⇒
+        spawn(Behaviors.setup[String] { ctx ⇒
           ctx.log.info("Started")
 
-          Behaviors.immutable { (ctx, msg) ⇒
+          Behaviors.receive { (ctx, msg) ⇒
             ctx.log.info("got message {}", msg)
             Behaviors.same
           }
@@ -46,13 +47,16 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
     "pass markers to the log" in {
       EventFilter.custom({
         case event: LogEventWithMarker if event.marker == marker ⇒ true
-      }, occurrences = 5).intercept(
-        spawn(Behaviors.deferred[Any] { ctx ⇒
+      }, occurrences = 9).intercept(
+        spawn(Behaviors.setup[Any] { ctx ⇒
           ctx.log.debug(marker, "whatever")
           ctx.log.info(marker, "whatever")
           ctx.log.warning(marker, "whatever")
           ctx.log.error(marker, "whatever")
           ctx.log.error(marker, cause, "whatever")
+          Logging.AllLogLevels.foreach(level ⇒ {
+            ctx.log.log(level, marker, "whatever")
+          })
           Behaviors.stopped
         })
       )
@@ -62,7 +66,7 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
       EventFilter.custom({
         case event: LogEventWithCause if event.cause == cause ⇒ true
       }, occurrences = 2).intercept(
-        spawn(Behaviors.deferred[Any] { ctx ⇒
+        spawn(Behaviors.setup[Any] { ctx ⇒
           ctx.log.warning(cause, "whatever")
           ctx.log.warning(marker, cause, "whatever")
           Behaviors.stopped
@@ -76,8 +80,8 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
 
       EventFilter.custom({
         case _ ⇒ true // any is fine, we're just after the right count of statements reaching the listener
-      }, occurrences = 72).intercept {
-        spawn(Behaviors.deferred[String] { ctx ⇒
+      }, occurrences = 120).intercept {
+        spawn(Behaviors.setup[String] { ctx ⇒
           ctx.log.debug("message")
           ctx.log.debug("{}", "arg1")
           ctx.log.debug("{} {}", "arg1", "arg2")
@@ -156,6 +160,22 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
           ctx.log.error(marker, cause, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
           ctx.log.error(marker, cause, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
 
+          Logging.AllLogLevels.foreach(level ⇒ {
+            ctx.log.log(level, "message")
+            ctx.log.log(level, "{}", "arg1")
+            ctx.log.log(level, "{} {}", "arg1", "arg2")
+            ctx.log.log(level, "{} {} {}", "arg1", "arg2", "arg3")
+            ctx.log.log(level, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+            ctx.log.log(level, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+
+            ctx.log.log(level, marker, "message")
+            ctx.log.log(level, marker, "{}", "arg1")
+            ctx.log.log(level, marker, "{} {}", "arg1", "arg2")
+            ctx.log.log(level, marker, "{} {} {}", "arg1", "arg2", "arg3")
+            ctx.log.log(level, marker, "{} {} {} {}", "arg1", "arg2", "arg3", "arg4")
+            ctx.log.log(level, marker, "{} {} {} {} {}", Array("arg1", "arg2", "arg3", "arg4", "arg5"))
+          })
+
           Behaviors.stopped
         })
       }
@@ -180,9 +200,9 @@ class ActorLoggingSpec extends TestKit(ConfigFactory.parseString(
             )
           else Map("txId" -> msg.transactionId)
         },
-        Behaviors.deferred { ctx ⇒
+        Behaviors.setup { ctx ⇒
           ctx.log.info("Starting")
-          Behaviors.immutable { (ctx, msg) ⇒
+          Behaviors.receive { (ctx, msg) ⇒
             ctx.log.info("Got message!")
             Behaviors.same
           }

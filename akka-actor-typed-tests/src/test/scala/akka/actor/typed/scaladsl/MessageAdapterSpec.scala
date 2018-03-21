@@ -1,13 +1,8 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
-package akka.actor.typed.scaladsl
 
-import scala.concurrent.TimeoutException
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
-import scala.util.Failure
-import scala.util.Success
+package akka.actor.typed.scaladsl
 
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorRef
@@ -16,8 +11,7 @@ import akka.actor.typed.Props
 import akka.actor.typed.TestException
 import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.testkit.EventFilter
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 object MessageAdapterSpec {
@@ -36,8 +30,9 @@ object MessageAdapterSpec {
     """)
 }
 
-class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAkkaSpecWithShutdown {
+class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
+  override def config = MessageAdapterSpec.config
   implicit val untyped = system.toUntyped // FIXME no typed event filter yet
 
   "Message adapters" must {
@@ -49,14 +44,14 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       case class AnotherPong(selfName: String, threadName: String)
 
-      val pingPong = spawn(Behaviors.immutable[Ping] { (ctx, msg) ⇒
+      val pingPong = spawn(Behaviors.receive[Ping] { (ctx, msg) ⇒
         msg.sender ! Pong(ctx.self.path.name, Thread.currentThread().getName)
         Behaviors.same
       }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
 
       val probe = TestProbe[AnotherPong]()
 
-      val snitch = Behaviors.deferred[AnotherPong] { (ctx) ⇒
+      val snitch = Behaviors.setup[AnotherPong] { (ctx) ⇒
 
         val replyTo = ctx.messageAdapter[Response](_ ⇒
           AnotherPong(ctx.self.path.name, Thread.currentThread().getName))
@@ -67,7 +62,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
           AnotherPong(ctx.self.path.name, Thread.currentThread().getName))
         pingPong ! Ping(replyTo2)
 
-        Behaviors.immutable {
+        Behaviors.receive {
           case (_, anotherPong: AnotherPong) ⇒
             probe.ref ! anotherPong
             Behaviors.same
@@ -96,7 +91,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       case class Wrapped(qualifier: String, response: Response)
 
-      val pingPong = spawn(Behaviors.immutable[Ping] { (_, msg) ⇒
+      val pingPong = spawn(Behaviors.receive[Ping] { (_, msg) ⇒
         msg match {
           case Ping1(sender) ⇒
             sender ! Pong1("hello-1")
@@ -109,7 +104,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       val probe = TestProbe[Wrapped]()
 
-      val snitch = Behaviors.deferred[Wrapped] { (ctx) ⇒
+      val snitch = Behaviors.setup[Wrapped] { (ctx) ⇒
 
         ctx.messageAdapter[Response](pong ⇒ Wrapped(qualifier = "wrong", pong)) // this is replaced
         val replyTo1: ActorRef[Response] = ctx.messageAdapter(pong ⇒ Wrapped(qualifier = "1", pong))
@@ -117,7 +112,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
         pingPong ! Ping1(replyTo1)
         pingPong ! Ping2(replyTo2)
 
-        Behaviors.immutable {
+        Behaviors.receive {
           case (_, wrapped) ⇒
             probe.ref ! wrapped
             Behaviors.same
@@ -140,7 +135,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       case class Wrapped(qualifier: String, response: Response)
 
-      val pingPong = spawn(Behaviors.immutable[Ping] { (_, msg) ⇒
+      val pingPong = spawn(Behaviors.receive[Ping] { (_, msg) ⇒
         msg match {
           case Ping1(sender) ⇒
             sender ! Pong1("hello-1")
@@ -154,7 +149,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
 
       val probe = TestProbe[Wrapped]()
 
-      val snitch = Behaviors.deferred[Wrapped] { (ctx) ⇒
+      val snitch = Behaviors.setup[Wrapped] { (ctx) ⇒
 
         val replyTo1 = ctx.messageAdapter[Pong1](pong ⇒ Wrapped(qualifier = "1", pong))
         pingPong ! Ping1(replyTo1)
@@ -163,7 +158,7 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
         pingPong ! Ping2(replyTo1.asInstanceOf[ActorRef[Pong2]])
         pingPong ! Ping1(replyTo1)
 
-        Behaviors.immutable {
+        Behaviors.receive {
           case (_, wrapped) ⇒
             probe.ref ! wrapped
             Behaviors.same
@@ -184,14 +179,14 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
       case class Pong(greeting: String)
       case class Wrapped(count: Int, response: Pong)
 
-      val pingPong = spawn(Behaviors.immutable[Ping] { (_, ping) ⇒
+      val pingPong = spawn(Behaviors.receive[Ping] { (_, ping) ⇒
         ping.sender ! Pong("hello")
         Behaviors.same
       })
 
       val probe = TestProbe[Any]()
 
-      val snitch = Behaviors.deferred[Wrapped] { (ctx) ⇒
+      val snitch = Behaviors.setup[Wrapped] { (ctx) ⇒
 
         var count = 0
         val replyTo = ctx.messageAdapter[Pong] { pong ⇒
@@ -203,11 +198,11 @@ class MessageAdapterSpec extends TestKit(MessageAdapterSpec.config) with TypedAk
           pingPong ! Ping(replyTo)
         }
 
-        Behaviors.immutable[Wrapped] {
+        Behaviors.receive[Wrapped] {
           case (_, wrapped) ⇒
             probe.ref ! wrapped
             Behaviors.same
-        }.onSignal {
+        }.receiveSignal {
           case (_, PostStop) ⇒
             probe.ref ! "stopped"
             Behaviors.same

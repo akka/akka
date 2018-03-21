@@ -1,13 +1,13 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ ActorRef, PostStop, Props, TypedAkkaSpecWithShutdown }
 import akka.testkit.EventFilter
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.TimeoutException
@@ -30,7 +30,9 @@ object ActorContextAskSpec {
     """)
 }
 
-class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with TypedAkkaSpecWithShutdown {
+class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+
+  override def config = ActorContextAskSpec.config
 
   implicit val untyped = system.toUntyped // FIXME no typed event filter yet
 
@@ -40,14 +42,14 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
       case class Ping(sender: ActorRef[Pong])
       case class Pong(selfName: String, threadName: String)
 
-      val pingPong = spawn(Behaviors.immutable[Ping] { (ctx, msg) ⇒
+      val pingPong = spawn(Behaviors.receive[Ping] { (ctx, msg) ⇒
         msg.sender ! Pong(ctx.self.path.name, Thread.currentThread().getName)
         Behaviors.same
       }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
 
       val probe = TestProbe[AnyRef]()
 
-      val snitch = Behaviors.deferred[Pong] { (ctx) ⇒
+      val snitch = Behaviors.setup[Pong] { (ctx) ⇒
 
         // Timeout comes from TypedAkkaSpec
 
@@ -56,7 +58,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
           case Failure(ex)   ⇒ throw ex
         }
 
-        Behaviors.immutable {
+        Behaviors.receive {
           case (ctx, pong: Pong) ⇒
             probe.ref ! pong
             Behaviors.same
@@ -78,7 +80,7 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
       case class Ping(respondTo: ActorRef[Pong.type]) extends Protocol
       case object Pong extends Protocol
 
-      val pingPong = spawn(Behaviors.immutable[Protocol]((_, msg) ⇒
+      val pingPong = spawn(Behaviors.receive[Protocol]((_, msg) ⇒
         msg match {
           case Ping(respondTo) ⇒
             respondTo ! Pong
@@ -86,17 +88,17 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
         }
       ))
 
-      val snitch = Behaviors.deferred[AnyRef] { (ctx) ⇒
+      val snitch = Behaviors.setup[AnyRef] { (ctx) ⇒
         ctx.ask(pingPong)(Ping) {
           case Success(msg) ⇒ throw new NotImplementedError(msg.toString)
           case Failure(x)   ⇒ x
         }
 
-        Behaviors.immutable[AnyRef] {
+        Behaviors.receive[AnyRef] {
           case (_, msg) ⇒
             probe.ref ! msg
             Behaviors.same
-        }.onSignal {
+        }.receiveSignal {
 
           case (_, PostStop) ⇒
             probe.ref ! "stopped"
@@ -114,14 +116,14 @@ class ActorContextAskSpec extends TestKit(ActorContextAskSpec.config) with Typed
 
     "deal with timeouts in ask" in {
       val probe = TestProbe[AnyRef]()
-      val snitch = Behaviors.deferred[AnyRef] { (ctx) ⇒
+      val snitch = Behaviors.setup[AnyRef] { (ctx) ⇒
 
         ctx.ask[String, String](system.deadLetters)(ref ⇒ "boo") {
           case Success(m) ⇒ m
           case Failure(x) ⇒ x
         }(20.millis, implicitly[ClassTag[String]])
 
-        Behaviors.immutable {
+        Behaviors.receive {
           case (_, msg) ⇒
             probe.ref ! msg
             Behaviors.same

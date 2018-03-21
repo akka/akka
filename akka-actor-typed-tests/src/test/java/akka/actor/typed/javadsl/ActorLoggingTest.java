@@ -1,15 +1,16 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.javadsl;
 
 import akka.actor.typed.Behavior;
 import akka.event.Logging;
 import akka.japi.pf.PFBuilder;
 import akka.testkit.CustomEventFilter;
-import akka.testkit.typed.TestKit;
+import akka.testkit.typed.javadsl.TestKitJunitResource;
 import com.typesafe.config.ConfigFactory;
-import org.junit.AfterClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.FiniteDuration;
@@ -20,16 +21,12 @@ import java.util.concurrent.TimeUnit;
 
 public class ActorLoggingTest extends JUnitSuite {
 
-  private final static TestKit testKit = new TestKit("ActorLoggingTest",
+  @ClassRule
+  public static final TestKitJunitResource testKit = new TestKitJunitResource(
     ConfigFactory.parseString(
-      "akka.loglevel = INFO\n" +
+    "akka.loglevel = INFO\n" +
       "akka.loggers = [\"akka.testkit.TestEventListener\"]"
     ));
-
-  @AfterClass
-  public static void tearDown() {
-    testKit.shutdown();
-  }
 
   interface Protocol {
     String getTransactionId();
@@ -54,7 +51,7 @@ public class ActorLoggingTest extends JUnitSuite {
         mdc.put("txId", msg.getTransactionId());
         return mdc;
       },
-      Behaviors.immutable(Protocol.class)
+      Behaviors.receive(Protocol.class)
         .onMessage(Message.class, (ctx, msg) -> {
           ctx.getLog().info(msg.toString());
           return Behaviors.same();

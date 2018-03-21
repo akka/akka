@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.javadsl
 
 import java.util.function.{ BiFunction, Function ⇒ JFunction }
@@ -234,7 +235,7 @@ trait ActorContext[T] {
    *
    * A message adapter (and the returned `ActorRef`) has the same lifecycle as
    * this actor. It's recommended to register the adapters in a top level
-   * `Behaviors.deferred` or constructor of `MutableBehavior` but it's possible to
+   * `Behaviors.setup` or constructor of `MutableBehavior` but it's possible to
    * register them later also if needed. Message adapters don't have to be stopped since
    * they consume no resources other than an entry in an internal `Map` and the number
    * of adapters are bounded since it's only possible to have one per message class.

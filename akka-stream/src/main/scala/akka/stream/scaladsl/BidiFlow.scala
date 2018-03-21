@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.NotUsed
@@ -14,7 +15,8 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
   override val shape:            BidiShape[I1, O1, I2, O2]
 ) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
 
-  def asJava: javadsl.BidiFlow[I1, O1, I2, O2, Mat] = new javadsl.BidiFlow(this)
+  def asJava[JI1 <: I1, JO1 >: O1, JI2 <: I2, JO2 >: O2, JMat >: Mat]: javadsl.BidiFlow[JI1, JO1, JI2, JO2, JMat] =
+    new javadsl.BidiFlow(this)
 
   /**
    * Add the given BidiFlow as the next step in a bidirectional transformation

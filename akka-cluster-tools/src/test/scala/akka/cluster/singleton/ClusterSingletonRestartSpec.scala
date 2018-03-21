@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.singleton
 
 import scala.concurrent.duration._
@@ -8,7 +9,6 @@ import akka.actor.ActorSystem
 import akka.actor.PoisonPill
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
-import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import akka.testkit.TestActors
 import akka.testkit.TestProbe

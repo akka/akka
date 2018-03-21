@@ -1,13 +1,13 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl
 
 import java.util.concurrent.CompletionStage
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 import akka.stream.OverflowStrategies._
 import akka.stream._
 import akka.stream.stage._

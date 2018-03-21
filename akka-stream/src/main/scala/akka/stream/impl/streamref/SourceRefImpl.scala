@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.streamref
 
 import akka.NotUsed
@@ -15,7 +16,6 @@ import akka.stream.stage._
 import akka.util.{ OptionVal, PrettyDuration }
 
 import scala.concurrent.{ Future, Promise }
-import scala.language.implicitConversions
 
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi
@@ -139,7 +139,7 @@ private[stream] final class SourceRefStageImpl[Out](
 
       lazy val initialReceive: ((ActorRef, Any)) ⇒ Unit = {
         case (sender, msg @ StreamRefsProtocol.OnSubscribeHandshake(remoteRef)) ⇒
-          cancelTimer("SubscriptionTimeoutTimerKey")
+          cancelTimer(SubscriptionTimeoutTimerKey)
           observeAndValidateSender(remoteRef, "Illegal sender in SequencedOnNext")
           log.debug("[{}] Received handshake {} from {}", stageActorName, msg, sender)
 

@@ -1,13 +1,14 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.ddata
 
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.util.HashCode
 import akka.annotation.InternalApi
-import akka.cluster.ddata.ORMap.{ AtomicDeltaOp, ZeroTag }
+import akka.cluster.ddata.ORMap.ZeroTag
 
 import scala.collection.immutable
 

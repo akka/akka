@@ -1,9 +1,8 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
-package akka.actor.typed.scaladsl
 
-import java.util.function.{ Function ⇒ JFunction }
+package akka.actor.typed.scaladsl
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.StashBufferImpl

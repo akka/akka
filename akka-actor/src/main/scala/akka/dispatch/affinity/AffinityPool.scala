@@ -9,7 +9,7 @@ import java.lang.invoke.MethodType.methodType
 import java.util.Collections
 import java.util.concurrent.TimeUnit.MICROSECONDS
 import java.util.concurrent._
-import java.util.concurrent.atomic.{ AtomicInteger, AtomicReference }
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
 import java.lang.Integer.reverseBytes
 
@@ -337,11 +337,19 @@ private[akka] final class AffinityPoolConfigurator(config: Config, prerequisites
         exception)
     }).get
 
-  override def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory =
+  override def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
+    val tf = threadFactory match {
+      case m: MonitorableThreadFactory ⇒
+        // add the dispatcher id to the thread names
+        m.withName(m.name + "-" + id)
+      case other ⇒ other
+    }
+
     new ExecutorServiceFactory {
       override def createExecutorService: ExecutorService =
-        new AffinityPool(id, poolSize, taskQueueSize, threadFactory, idleCpuLevel, queueSelectorFactory.create(), rejectionHandlerFactory.create()).start()
+        new AffinityPool(id, poolSize, taskQueueSize, tf, idleCpuLevel, queueSelectorFactory.create(), rejectionHandlerFactory.create()).start()
     }
+  }
 }
 
 trait RejectionHandler {

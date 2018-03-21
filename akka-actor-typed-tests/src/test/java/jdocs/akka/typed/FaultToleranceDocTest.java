@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.akka.typed;
 
 import akka.actor.typed.ActorRef;
@@ -25,13 +26,13 @@ public class FaultToleranceDocTest extends JUnitSuite {
   @Test
   public void bubblingSample() {
     // #bubbling-example
-    final Behavior<Message> failingChildBehavior = Behaviors.immutable(Message.class)
+    final Behavior<Message> failingChildBehavior = Behaviors.receive(Message.class)
       .onMessage(Fail.class, (ctx, message) -> {
         throw new RuntimeException(message.text);
       })
       .build();
 
-    Behavior<Message> middleManagementBehavior = Behaviors.deferred((ctx) -> {
+    Behavior<Message> middleManagementBehavior = Behaviors.setup((ctx) -> {
       ctx.getLog().info("Middle management starting up");
       final ActorRef<Message> child = ctx.spawn(failingChildBehavior, "child");
       // we want to know when the child terminates, but since we do not handle
@@ -41,7 +42,7 @@ public class FaultToleranceDocTest extends JUnitSuite {
       // here we don't handle Terminated at all which means that
       // when the child fails or stops gracefully this actor will
       // fail with a DeathWatchException
-      return Behaviors.immutable(Message.class)
+      return Behaviors.receive(Message.class)
         .onMessage(Message.class, (innerCtx, msg) -> {
           // just pass messages on to the child
           child.tell(msg);
@@ -49,7 +50,7 @@ public class FaultToleranceDocTest extends JUnitSuite {
         }).build();
     });
 
-    Behavior<Message> bossBehavior = Behaviors.deferred((ctx) -> {
+    Behavior<Message> bossBehavior = Behaviors.setup((ctx) -> {
       ctx.getLog().info("Boss starting up");
       final ActorRef<Message> middleManagement = ctx.spawn(middleManagementBehavior, "middle-management");
       ctx.watch(middleManagement);
@@ -57,7 +58,7 @@ public class FaultToleranceDocTest extends JUnitSuite {
       // here we don't handle Terminated at all which means that
       // when middle management fails with a DeathWatchException
       // this actor will also fail
-      return Behaviors.immutable(Message.class)
+      return Behaviors.receive(Message.class)
         .onMessage(Message.class, (innerCtx, msg) -> {
           // just pass messages on to the child
           middleManagement.tell(msg);

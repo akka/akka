@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 package internal
 package adapter
@@ -17,7 +18,6 @@ import scala.util.control.NonFatal
  */
 @InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor with a.ActorLogging {
   import Behavior._
-  import ActorRefAdapter.toUntyped
 
   protected var behavior: Behavior[T] = _initialBehavior
 
@@ -133,7 +133,7 @@ import scala.util.control.NonFatal
   protected def start(): Unit = {
     context.become(running)
     initializeContext()
-    behavior = validateAsInitial(undefer(behavior, ctx))
+    behavior = validateAsInitial(Behavior.start(behavior, ctx))
     if (!isAlive(behavior)) context.stop(self)
   }
 
@@ -144,7 +144,7 @@ import scala.util.control.NonFatal
 
   override def postRestart(reason: Throwable): Unit = {
     initializeContext()
-    behavior = validateAsInitial(undefer(behavior, ctx))
+    behavior = validateAsInitial(Behavior.start(behavior, ctx))
     if (!isAlive(behavior)) context.stop(self)
   }
 

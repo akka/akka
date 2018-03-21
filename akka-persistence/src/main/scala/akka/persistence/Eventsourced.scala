@@ -7,7 +7,7 @@ package akka.persistence
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ ActorCell, DeadLetter, StashOverflowException }
+import akka.actor.{ Actor, ActorCell, DeadLetter, StashOverflowException }
 import akka.annotation.InternalApi
 import akka.dispatch.Envelope
 import akka.event.{ Logging, LoggingAdapter }
@@ -18,28 +18,26 @@ import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
-/**
- * INTERNAL API
- */
+/** INTERNAL API */
+@InternalApi
 private[persistence] object Eventsourced {
-  // ok to wrap around (2*Int.MaxValue restarts will not happen within a journal roundtrip)
+  // ok to wrap around (2*Int.MaxValue restarts will not happen within a journal round-trip)
   private val instanceIdCounter = new AtomicInteger(1)
 
-  private sealed trait PendingHandlerInvocation {
+  /** INTERNAL API */
+  private[akka] sealed trait PendingHandlerInvocation {
     def evt: Any
 
     def handler: Any ⇒ Unit
   }
 
-  /** forces actor to stash incoming commands until all these invocations are handled */
-  private final case class StashingHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
+  /** INTERNAL API: forces actor to stash incoming commands until all these invocations are handled */
+  private[akka] final case class StashingHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
+  /** INTERNAL API: does not force the actor to stash commands; Originates from either `persistAsync` or `defer` calls */
+  private[akka] final case class AsyncHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
 
-  /** does not force the actor to stash commands; Originates from either `persistAsync` or `defer` calls */
-  private final case class AsyncHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
-
-  /** message used to detect that recovery timed out */
-  private final case class RecoveryTick(snapshot: Boolean)
-
+  /** INTERNAL API: message used to detect that recovery timed out */
+  private[akka] final case class RecoveryTick(snapshot: Boolean)
 }
 
 /**
@@ -409,6 +407,21 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   }
 
   /**
+   * Internal API
+   */
+  @InternalApi
+  final private[akka] def internalDefer[A](event: A)(handler: A ⇒ Unit): Unit = {
+    if (recoveryRunning) throw new IllegalStateException("Cannot defer during replay. Events can be deferred when receiving RecoveryCompleted or later.")
+    if (pendingInvocations.isEmpty) {
+      handler(event)
+    } else {
+      pendingStashingPersistInvocations += 1
+      pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+      eventBatch = NonPersistentRepr(event, sender()) :: eventBatch
+    }
+  }
+
+  /**
    * Permanently deletes all persistent messages with sequence numbers less than or equal `toSequenceNr`.
    *
    * If the delete is successful a [[DeleteMessagesSuccess]] will be sent to the actor.
@@ -493,7 +506,13 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     }
 
     private val recoveryBehavior: Receive = {
-      val _receiveRecover = receiveRecover
+      val _receiveRecover = try receiveRecover catch {
+        case NonFatal(e) ⇒
+          try onRecoveryFailure(e, Some(e))
+          finally context.stop(self)
+          returnRecoveryPermit()
+          Actor.emptyBehavior
+      }
 
       {
         case PersistentRepr(payload, _) if recoveryRunning && _receiveRecover.isDefinedAt(payload) ⇒

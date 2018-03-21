@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.persistence;
 
 import akka.actor.*;
@@ -438,7 +439,7 @@ public class LambdaPersistenceDocTest {
           sender().tell(e, self());
         });
 
-        deferAsync(String.format("evt-%s-3", c), e -> {
+        defer(String.format("evt-%s-3", c), e -> {
           sender().tell(e, self());
         });
       }

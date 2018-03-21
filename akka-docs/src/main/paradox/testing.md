@@ -190,7 +190,7 @@ an exception or the `max` duration is used up. If the timeout expires the
 last exception is thrown. @scala[The interval defaults to 100 ms and the maximum defaults
 to the time remaining in the innermost enclosing [within](#testkit-within)
 block. The interval defaults to 100 ms and the maximum defaults to the time
-remaining in the innermost enclosing [within](#testkit-within) block.]
+remaining in the innermost enclosing [within](#testkit-within) block.] Return an arbitrary value that would be returned from awaitAssert if successful, if not interested in such value you can return null.
 
 * @scala[`ignoreMsg(pf: PartialFunction[AnyRef, Boolean])`]@java[`public void ignoreMsg(Function<Object, Boolean> f)`]
 @scala[`ignoreMsg`]@java[`public void ignoreMsg()`]
@@ -237,6 +237,27 @@ akka.loggers = [akka.testkit.TestEventListener]
 ```
 
 @@@
+
+### Overriding behavior
+
+Sometimes you want to 'hook into' your actor to be able to test some internals.
+Usually it is better to test an actors' external interface, but for example if
+you want to test timing-sensitive behavior this can come in handy. Say for
+instance you want to test an actor that schedules a task:
+
+Scala
+:  @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #timer }
+
+Java
+:  @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #timer }
+
+You can override the method that does the scheduling in your test:
+
+Scala
+:  @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #timer-test }
+
+Java
+:  @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #timer-test }
 
 <a id="testkit-within"></a>
 ### Timing Assertions

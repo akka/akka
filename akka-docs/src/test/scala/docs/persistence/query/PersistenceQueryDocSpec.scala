@@ -66,7 +66,7 @@ object PersistenceQueryDocSpec {
      * as the `offset` parameter in a subsequent query.
      */
     override def eventsByTag(
-      tag: String, offset: Offset = Sequence(0L)): Source[EventEnvelope, NotUsed] = offset match {
+      tag: String, offset: Offset): Source[EventEnvelope, NotUsed] = offset match {
       case Sequence(offsetValue) ⇒
         val props = MyEventsByTagPublisher.props(tag, offsetValue, refreshInterval)
         Source.actorPublisher[EventEnvelope](props)
@@ -77,8 +77,8 @@ object PersistenceQueryDocSpec {
     }
 
     override def eventsByPersistenceId(
-      persistenceId: String, fromSequenceNr: Long = 0L,
-      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
+      persistenceId: String, fromSequenceNr: Long,
+      toSequenceNr: Long): Source[EventEnvelope, NotUsed] = {
       // implement in a similar way as eventsByTag
       ???
     }
@@ -165,7 +165,7 @@ object PersistenceQueryDocSpec {
 
     // Using an example (Reactive Streams) Database driver
     readJournal
-      .eventsByPersistenceId("user-1337")
+      .eventsByPersistenceId("user-1337", fromSequenceNr = 0L, toSequenceNr = Long.MaxValue)
       .map(envelope ⇒ envelope.event)
       .map(convertToReadSideTypes) // convert to datatype
       .grouped(20) // batch inserts into groups of 20
@@ -238,7 +238,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     // assuming journal is able to work with numeric offsets we can:
 
     val blueThings: Source[EventEnvelope, NotUsed] =
-      readJournal.eventsByTag("blue")
+      readJournal.eventsByTag("blue", Offset.noOffset)
 
     // find top 10 blue things:
     val top10BlueThings: Future[Vector[Any]] =
@@ -252,7 +252,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     //#events-by-tag
 
     //#events-by-persistent-id
-    readJournal.eventsByPersistenceId("user-us-1337")
+    readJournal.eventsByPersistenceId("user-us-1337", fromSequenceNr = 0L, toSequenceNr = Long.MaxValue)
 
     //#events-by-persistent-id
 
@@ -318,7 +318,7 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     val store: ExampleStore = ???
 
     readJournal
-      .eventsByTag("bid")
+      .eventsByTag("bid", NoOffset)
       .mapAsync(1) { e ⇒ store.save(e) }
       .runWith(Sink.ignore)
     //#projection-into-different-store-simple

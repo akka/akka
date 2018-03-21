@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.testkit
 
 /**
@@ -5,13 +9,10 @@ package akka.testkit
  */
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
-import java.util.concurrent.Callable
 
 import akka.actor.ExtendedActorSystem
 import akka.serialization.{ BaseSerializer, JavaSerializer }
 import akka.util.ClassLoaderObjectInputStream
-
-import scala.util.DynamicVariable
 
 /**
  * This Serializer uses standard Java Serialization and is useful for tests where ad-hoc messages are created and sent

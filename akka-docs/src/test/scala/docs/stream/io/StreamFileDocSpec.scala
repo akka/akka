@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.stream.io
 
 import java.nio.file.{ Files, Paths }
@@ -8,7 +9,6 @@ import java.nio.file.{ Files, Paths }
 import akka.stream._
 import akka.stream.scaladsl.{ FileIO, Sink }
 import akka.stream.testkit.Utils._
-import akka.stream.testkit._
 import akka.util.ByteString
 import akka.testkit.AkkaSpec
 

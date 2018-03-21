@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.akka.typed
 
 //#imports
@@ -11,7 +12,7 @@ import akka.NotUsed
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
-import akka.testkit.typed.TestKit
+import akka.testkit.typed.scaladsl.ActorTestKit
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
@@ -26,7 +27,7 @@ object IntroSpec {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
     final case class Greeted(whom: String)
 
-    val greeter = Behaviors.immutable[Greet] { (_, msg) ⇒
+    val greeter = Behaviors.receive[Greet] { (_, msg) ⇒
       println(s"Hello ${msg.whom}!")
       msg.replyTo ! Greeted(msg.whom)
       Behaviors.same
@@ -62,7 +63,7 @@ object IntroSpec {
       chatRoom(List.empty)
 
     private def chatRoom(sessions: List[ActorRef[SessionCommand]]): Behavior[RoomCommand] =
-      Behaviors.immutable[RoomCommand] { (ctx, msg) ⇒
+      Behaviors.receive[RoomCommand] { (ctx, msg) ⇒
         msg match {
           case GetSession(screenName, client) ⇒
             // create a child actor for further interaction with the client
@@ -82,7 +83,7 @@ object IntroSpec {
       room:       ActorRef[PublishSessionMessage],
       screenName: String,
       client:     ActorRef[SessionEvent]): Behavior[SessionCommand] =
-      Behaviors.immutable { (ctx, msg) ⇒
+      Behaviors.receive { (ctx, msg) ⇒
         msg match {
           case PostMessage(message) ⇒
             // from client, publish to others via the room
@@ -100,7 +101,7 @@ object IntroSpec {
 
 }
 
-class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class IntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   import IntroSpec._
 
@@ -131,7 +132,7 @@ class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
       import ChatRoom._
 
       val gabbler =
-        Behaviors.immutable[SessionEvent] { (_, msg) ⇒
+        Behaviors.receive[SessionEvent] { (_, msg) ⇒
           msg match {
             //#chatroom-gabbler
             // We document that the compiler warns about the missing handler for `SessionDenied`
@@ -151,13 +152,13 @@ class IntroSpec extends TestKit with TypedAkkaSpecWithShutdown {
 
       //#chatroom-main
       val main: Behavior[NotUsed] =
-        Behaviors.deferred { ctx ⇒
+        Behaviors.setup { ctx ⇒
           val chatRoom = ctx.spawn(ChatRoom.behavior, "chatroom")
           val gabblerRef = ctx.spawn(gabbler, "gabbler")
           ctx.watch(gabblerRef)
           chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
-          Behaviors.onSignal {
+          Behaviors.receiveSignal {
             case (_, Terminated(ref)) ⇒
               Behaviors.stopped
           }

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 
 import java.util.concurrent.CountDownLatch
@@ -11,13 +12,11 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
-import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl._
+import akka.testkit.TimingTest
+import akka.testkit.typed.scaladsl.{ ActorTestKit, _ }
 import org.scalatest.WordSpecLike
 
-class TimerSpec extends TestKit("TimerSpec")
-  with WordSpecLike {
+class TimerSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShutdown {
 
   sealed trait Command
   case class Tick(n: Int) extends Command
@@ -32,10 +31,9 @@ class TimerSpec extends TestKit("TimerSpec")
   case class Tock(n: Int) extends Event
   case class GotPostStop(timerActive: Boolean) extends Event
   case class GotPreRestart(timerActive: Boolean) extends Event
+  case object Cancelled extends Event
 
   class Exc extends RuntimeException("simulated exc") with NoStackTrace
-
-  implicit val testSettings = TestKitSettings(system)
 
   val interval = 1.second
 
@@ -46,7 +44,7 @@ class TimerSpec extends TestKit("TimerSpec")
       target(monitor, timer, nextCount)
     }
 
-    Behaviors.immutable[Command] { (ctx, cmd) ⇒
+    Behaviors.receive[Command] { (ctx, cmd) ⇒
       cmd match {
         case Tick(n) ⇒
           monitor ! Tock(n)
@@ -60,6 +58,7 @@ class TimerSpec extends TestKit("TimerSpec")
           Behaviors.stopped
         case Cancel ⇒
           timer.cancel("T")
+          monitor ! Cancelled
           Behaviors.same
         case Throw(e) ⇒
           throw e
@@ -67,7 +66,7 @@ class TimerSpec extends TestKit("TimerSpec")
           latch.await(10, TimeUnit.SECONDS)
           throw e
       }
-    } onSignal {
+    } receiveSignal {
       case (ctx, PreRestart) ⇒
         monitor ! GotPreRestart(timer.isTimerActive("T"))
         Behaviors.same
@@ -78,7 +77,7 @@ class TimerSpec extends TestKit("TimerSpec")
   }
 
   "A timer" must {
-    "schedule non-repeated ticks" in {
+    "schedule non-repeated ticks" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startSingleTimer("T", Tick(1), 10.millis)
@@ -93,7 +92,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "schedule repeated ticks" in {
+    "schedule repeated ticks" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -111,7 +110,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "replace timer" in {
+    "replace timer" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -131,7 +130,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "cancel timer" in {
+    "cancel timer" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -141,13 +140,20 @@ class TimerSpec extends TestKit("TimerSpec")
       val ref = spawn(behv)
       probe.expectMessage(Tock(1))
       ref ! Cancel
+      probe.fishForMessage(3.seconds) {
+        // we don't know that we will see exactly one tock
+        case _: Tock   ⇒ FishingOutcomes.continue
+        // but we know that after we saw Cancelled we won't see any more
+        case Cancelled ⇒ FishingOutcomes.complete
+        case msg       ⇒ FishingOutcomes.fail(s"unexpected msg: $msg")
+      }
       probe.expectNoMessage(interval + 100.millis.dilated)
 
       ref ! End
       probe.expectMessage(GotPostStop(false))
     }
 
-    "discard timers from old incarnation after restart, alt 1" in {
+    "discard timers from old incarnation after restart, alt 1" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val startCounter = new AtomicInteger(0)
       val behv = Behaviors.supervise(Behaviors.withTimers[Command] { timer ⇒
@@ -171,7 +177,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "discard timers from old incarnation after restart, alt 2" in {
+    "discard timers from old incarnation after restart, alt 2" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.supervise(Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -197,7 +203,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "cancel timers when stopped from exception" in {
+    "cancel timers when stopped from exception" taggedAs TimingTest in {
       val probe = TestProbe[Event]()
       val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
@@ -208,7 +214,7 @@ class TimerSpec extends TestKit("TimerSpec")
       probe.expectMessage(GotPostStop(false))
     }
 
-    "cancel timers when stopped voluntarily" in {
+    "cancel timers when stopped voluntarily" taggedAs TimingTest in {
       val probe = TestProbe[Event]()
       val behv = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)

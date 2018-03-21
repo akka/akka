@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 package internal
 
@@ -18,7 +19,6 @@ import scala.util.Try
 
 import akka.annotation.InternalApi
 import akka.util.OptionVal
-import akka.event.LoggingAdapter
 import akka.util.Timeout
 
 /**

@@ -1,18 +1,17 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import akka.actor.{ Actor, ActorLogging, ActorSelection, Address, NoSerializationVerificationNeeded, RootActorPath }
+import akka.actor.{ Actor, ActorLogging, ActorSelection, Address, NoSerializationVerificationNeeded }
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterSettings.DataCenter
-import akka.event.Logging
 import akka.remote.FailureDetectorRegistry
 import akka.util.ConstantFun
 
-import scala.collection.{ SortedSet, immutable, breakOut }
+import scala.collection.{ SortedSet, breakOut }
 
 /**
  * INTERNAL API

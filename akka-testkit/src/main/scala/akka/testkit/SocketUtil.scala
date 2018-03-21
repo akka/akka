@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit
 
 import scala.collection.immutable
@@ -15,8 +16,6 @@ import java.net.StandardProtocolFamily
  * Utilities to get free socket address.
  */
 object SocketUtil {
-
-  import scala.language.reflectiveCalls
 
   val RANDOM_LOOPBACK_ADDRESS = "RANDOM_LOOPBACK_ADDRESS"
 

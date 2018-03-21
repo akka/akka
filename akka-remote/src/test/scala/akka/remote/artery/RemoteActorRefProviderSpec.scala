@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import akka.actor.{ EmptyLocalActorRef, InternalActorRef }
 import akka.remote.RemoteActorRef
 import akka.testkit.{ EventFilter, TestActors }
-import akka.actor.Props
 import akka.actor.ExtendedActorSystem
 import akka.actor.ActorRefScope
 

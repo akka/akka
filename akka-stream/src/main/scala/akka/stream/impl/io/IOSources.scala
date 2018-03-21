@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.io
 
 import java.io.InputStream
@@ -10,6 +11,7 @@ import java.nio.file.{ Files, NoSuchFileException, Path, StandardOpenOption }
 
 import akka.Done
 import akka.annotation.InternalApi
+import akka.stream.ActorAttributes.Dispatcher
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.{ ErrorPublisher, SourceModule }
 import akka.stream.stage._
@@ -153,7 +155,9 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
     val pub = try {
       val is = createInputStream() // can throw, i.e. FileNotFound
 
-      val props = InputStreamPublisher.props(is, ioResultPromise, chunkSize)
+      val props = InputStreamPublisher
+        .props(is, ioResultPromise, chunkSize)
+        .withDispatcher(Dispatcher.resolve(context))
 
       val ref = materializer.actorOf(context, props)
       akka.stream.actor.ActorPublisher[ByteString](ref)

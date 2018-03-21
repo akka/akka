@@ -1,15 +1,15 @@
 /**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 package scaladsl
 
 import akka.Done
 import akka.NotUsed
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 
-final class GracefulStopSpec extends TestKit with TypedAkkaSpecWithShutdown {
+final class GracefulStopSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   "Graceful stop" must {
 
@@ -17,21 +17,21 @@ final class GracefulStopSpec extends TestKit with TypedAkkaSpecWithShutdown {
       val probe = TestProbe[String]("probe")
 
       val behavior =
-        Behaviors.deferred[akka.NotUsed] { context ⇒
-          val c1 = context.spawn[NotUsed](Behaviors.onSignal {
+        Behaviors.setup[akka.NotUsed] { context ⇒
+          val c1 = context.spawn[NotUsed](Behaviors.receiveSignal {
             case (_, PostStop) ⇒
               probe.ref ! "child-done"
               Behaviors.stopped
           }, "child1")
 
-          val c2 = context.spawn[NotUsed](Behaviors.onSignal {
+          val c2 = context.spawn[NotUsed](Behaviors.receiveSignal {
             case (_, PostStop) ⇒
               probe.ref ! "child-done"
               Behaviors.stopped
           }, "child2")
 
           Behaviors.stopped {
-            Behaviors.onSignal {
+            Behaviors.receiveSignal {
               case (ctx, PostStop) ⇒
                 // cleanup function body
                 probe.ref ! "parent-done"
@@ -50,10 +50,10 @@ final class GracefulStopSpec extends TestKit with TypedAkkaSpecWithShutdown {
       val probe = TestProbe[Done]("probe")
 
       val behavior =
-        Behaviors.deferred[akka.NotUsed] { context ⇒
+        Behaviors.setup[akka.NotUsed] { context ⇒
           // do not spawn any children
           Behaviors.stopped {
-            Behaviors.onSignal {
+            Behaviors.receiveSignal {
               case (ctx, PostStop) ⇒
                 // cleanup function body
                 probe.ref ! Done

@@ -1,8 +1,14 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.remote.artery
 
 import akka.actor.ActorSystem
+import akka.remote.RARP
 import akka.remote.RemoteTransportException
 import akka.testkit.SocketUtil
+import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
 
@@ -32,9 +38,15 @@ class ArteryFailedToBindSpec extends WordSpec with Matchers {
         val ex = intercept[RemoteTransportException] {
           ActorSystem("BindTest2", config)
         }
-        ex.getMessage should equal("Inbound Aeron channel is in errored state. See Aeron logs for details.")
+        RARP(as).provider.transport.asInstanceOf[ArteryTransport].settings.Transport match {
+          case ArterySettings.AeronUpd ⇒
+            ex.getMessage should ===("Inbound Aeron channel is in errored state. See Aeron logs for details.")
+          case ArterySettings.Tcp | ArterySettings.TlsTcp ⇒
+            ex.getMessage should startWith("Failed to bind TCP")
+        }
+
       } finally {
-        as.terminate()
+        TestKit.shutdownActorSystem(as)
       }
     }
   }

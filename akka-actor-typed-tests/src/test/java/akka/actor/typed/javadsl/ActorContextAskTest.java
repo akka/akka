@@ -1,13 +1,13 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.javadsl;
 
-import akka.actor.ActorSystem;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
-import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
+import akka.testkit.typed.javadsl.TestKitJunitResource;
 import akka.testkit.typed.javadsl.TestProbe;
 import akka.util.Timeout;
 import org.junit.ClassRule;
@@ -19,10 +19,7 @@ import java.util.concurrent.TimeUnit;
 public class ActorContextAskTest extends JUnitSuite {
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("ActorSelectionTest",
-      AkkaSpec.testConf());
-
-  private final ActorSystem system = actorSystemResource.getSystem();
+  public static final TestKitJunitResource testKit = new TestKitJunitResource(AkkaSpec.testConf());
 
   static class Ping {
     final ActorRef<Pong> respondTo;
@@ -34,17 +31,15 @@ public class ActorContextAskTest extends JUnitSuite {
 
   @Test
   public void provideASafeAsk() {
-    final Behavior<Ping> pingPongBehavior = Behaviors.immutable((ActorContext<Ping> context, Ping message) -> {
+    final Behavior<Ping> pingPongBehavior = Behaviors.receive((ActorContext<Ping> context, Ping message) -> {
       message.respondTo.tell(new Pong());
       return Behaviors.same();
     });
 
-    final ActorRef<Ping> pingPong = Adapter.spawnAnonymous(system, pingPongBehavior);
+    final ActorRef<Ping> pingPong = testKit.spawn(pingPongBehavior);
+    final TestProbe<Object> probe = testKit.createTestProbe();
 
-
-    final TestProbe<Object> probe = new TestProbe<>(Adapter.toTyped(system));
-
-    final Behavior<Object> snitch = Behaviors.deferred((ActorContext<Object> ctx) -> {
+    final Behavior<Object> snitch = Behaviors.setup((ActorContext<Object> ctx) -> {
       ctx.ask(Pong.class,
           pingPong,
           new Timeout(3, TimeUnit.SECONDS),
@@ -54,15 +49,15 @@ public class ActorContextAskTest extends JUnitSuite {
             else return exception;
           });
 
-      return Behaviors.immutable((ActorContext<Object> context, Object message) -> {
+      return Behaviors.receive((ActorContext<Object> context, Object message) -> {
         probe.ref().tell(message);
         return Behaviors.same();
       });
     });
 
-    Adapter.spawnAnonymous(system, snitch);
+    testKit.spawn(snitch);
 
-    probe.expectMessageType(Pong.class);
+    probe.expectMessageClass(Pong.class);
   }
 
 

@@ -50,7 +50,7 @@ public class AdapterTest extends JUnitSuite {
 
     static Behavior<String> create(akka.actor.ActorRef ref, akka.actor.ActorRef probe) {
       Typed1 logic = new Typed1(ref, probe);
-      return immutable(
+      return receive(
           (ctx, msg) -> logic.onMessage(ctx, msg),
           (ctx, sig) -> logic.onSignal(ctx, sig));
     }
@@ -187,7 +187,7 @@ public class AdapterTest extends JUnitSuite {
   }
 
   static Behavior<Typed2Msg> typed2() {
-      return Behaviors.immutable((ctx, msg) -> {
+      return Behaviors.receive((ctx, msg) -> {
         if (msg instanceof Ping) {
           ActorRef<String> replyTo = ((Ping) msg).replyTo;
           replyTo.tell("pong");

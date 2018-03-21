@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.stream.cookbook
 
 import akka.NotUsed
@@ -23,14 +27,12 @@ class RecipeByteStrings extends RecipeSpec {
         val in = Inlet[ByteString]("Chunker.in")
         val out = Outlet[ByteString]("Chunker.out")
         override val shape = FlowShape.of(in, out)
-
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           private var buffer = ByteString.empty
 
           setHandler(out, new OutHandler {
             override def onPull(): Unit = {
-              if (isClosed(in)) emitChunk()
-              else pull(in)
+              emitChunk()
             }
           })
           setHandler(in, new InHandler {
@@ -64,7 +66,6 @@ class RecipeByteStrings extends RecipeSpec {
               push(out, chunk)
             }
           }
-
         }
       }
 
@@ -72,7 +73,6 @@ class RecipeByteStrings extends RecipeSpec {
       //#bytestring-chunker
 
       val chunksFuture = chunksStream.limit(10).runWith(Sink.seq)
-
       val chunks = Await.result(chunksFuture, 3.seconds)
 
       chunks.forall(_.size <= 2) should be(true)

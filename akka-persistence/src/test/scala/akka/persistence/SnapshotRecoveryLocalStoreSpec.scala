@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.persistence
 
 import akka.actor.{ ActorLogging, ActorRef, Props }

@@ -1,11 +1,12 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.actor.{ Actor, ActorLogging, ActorPath, ActorRef, ActorSelection, Address, DeadLetterSuppression, RootActorPath }
+import akka.actor.{ Actor, ActorLogging, ActorPath, ActorSelection, Address, DeadLetterSuppression, RootActorPath }
 import akka.cluster.ClusterEvent._
 import akka.remote.FailureDetectorRegistry
 import akka.remote.HeartbeatMessage

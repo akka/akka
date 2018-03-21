@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.testkit.scaladsl
 
 import akka.stream._
@@ -8,7 +9,7 @@ import akka.stream.Attributes.none
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 
-import akka.actor.ActorSystem;
+import akka.actor.ActorSystem
 
 /**
  * Factory methods for test sources.

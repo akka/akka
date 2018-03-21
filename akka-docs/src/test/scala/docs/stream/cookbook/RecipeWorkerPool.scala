@@ -1,9 +1,12 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.stream.cookbook
 
 import akka.NotUsed
 import akka.stream.FlowShape
 import akka.stream.scaladsl._
-import akka.testkit.TestProbe
 
 import scala.concurrent.Await
 import scala.concurrent.duration._

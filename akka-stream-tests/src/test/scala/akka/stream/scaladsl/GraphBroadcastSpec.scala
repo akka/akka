@@ -1,7 +1,12 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.TestSink
-import scala.concurrent.{ Future, Await }
+import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
+
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import akka.stream._
 import akka.stream.testkit._
@@ -240,13 +245,22 @@ class GraphBroadcastSpec extends StreamSpec {
       ps2.expectComplete()
     }
 
-    "alsoTo must continue if sink cancels" in assertAllStagesStopped {
-      val p, p2 = TestSink.probe[Int](system)
-      val (ps1, ps2) = Source(1 to 6).alsoToMat(p)(Keep.right).toMat(p2)(Keep.both).run()
-      ps2.request(6)
-      ps1.cancel()
-      ps2.expectNext(1, 2, 3, 4, 5, 6)
-      ps2.expectComplete()
+    "cancel if alsoTo side branch cancels" in assertAllStagesStopped {
+      val in = TestSource.probe[Int](system)
+      val outSide = TestSink.probe[Int](system)
+      val (pIn, pSide) = in.alsoToMat(outSide)(Keep.both).toMat(Sink.ignore)(Keep.left).run()
+
+      pSide.cancel()
+      pIn.expectCancellation()
+    }
+
+    "cancel if alsoTo main branch cancels" in assertAllStagesStopped {
+      val in = TestSource.probe[Int](system)
+      val outMain = TestSink.probe[Int](system)
+      val (pIn, pMain) = in.alsoToMat(Sink.ignore)(Keep.left).toMat(outMain)(Keep.both).run()
+
+      pMain.cancel()
+      pIn.expectCancellation()
     }
   }
 

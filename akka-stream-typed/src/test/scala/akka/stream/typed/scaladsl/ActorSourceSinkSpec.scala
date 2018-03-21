@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com/>
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.typed.scaladsl
 
 import akka.actor.typed.ActorRef
@@ -11,8 +12,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.typed.ActorMaterializer
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl._
+import akka.testkit.typed.scaladsl.{ ActorTestKit, _ }
 
 object ActorSourceSinkSpec {
 
@@ -23,7 +23,7 @@ object ActorSourceSinkSpec {
   case object Failed extends AckProto
 }
 
-class ActorSourceSinkSpec extends TestKit with TypedAkkaSpecWithShutdown {
+class ActorSourceSinkSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   import ActorSourceSinkSpec._
 
   implicit val mat = ActorMaterializer()
@@ -48,7 +48,7 @@ class ActorSourceSinkSpec extends TestKit with TypedAkkaSpecWithShutdown {
     "obey protocol" in {
       val p = TestProbe[AckProto]()
 
-      val autoPilot = Behaviors.immutable[AckProto] {
+      val autoPilot = Behaviors.receive[AckProto] {
         (ctx, msg) ⇒
           msg match {
             case m @ Init(sender) ⇒

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor
 
 import java.util.concurrent.atomic.AtomicReference
@@ -18,7 +19,7 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, Future }
 import scala.language.postfixOps
 
 object TypedActorSpec {

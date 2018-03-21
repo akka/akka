@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.testkit;
 
 //#fullsample
@@ -66,10 +67,10 @@ public class TestKitSampleTest extends AbstractJavaTest {
       // like a real resource would be passed in production
       subject.tell(probe.getRef(), getRef());
       // await the correct response
-      expectMsg(duration("1 second"), "done");
+      expectMsg(java.time.Duration.ofSeconds(1), "done");
       
       // the run() method needs to finish within 3 seconds
-      within(duration("3 seconds"), () -> {
+      within(java.time.Duration.ofSeconds(3), () -> {
         subject.tell("hello", getRef());
 
         // This is a demo: would normally use expectMsgEquals().
@@ -77,9 +78,9 @@ public class TestKitSampleTest extends AbstractJavaTest {
         awaitCond(probe::msgAvailable);
 
         // response must have been enqueued to us before probe
-        expectMsg(Duration.Zero(), "world");
+        expectMsg(java.time.Duration.ZERO, "world");
         // check that the probe we injected earlier got the msg
-        probe.expectMsg(Duration.Zero(), "hello");
+        probe.expectMsg(java.time.Duration.ZERO, "hello");
         Assert.assertEquals(getRef(), probe.getLastSender());
 
         // Will wait for the rest of the 3 seconds

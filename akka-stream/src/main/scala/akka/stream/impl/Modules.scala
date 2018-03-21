@@ -1,20 +1,18 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl
 
 import akka.NotUsed
 import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.dispatch.Dispatchers
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
 import org.reactivestreams._
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.Promise
 import akka.event.Logging
-import akka.util.OptionVal
 
 /**
  * INTERNAL API

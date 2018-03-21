@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl;
 
 import akka.Done;
@@ -10,6 +11,7 @@ import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.stream.*;
+import akka.stream.scaladsl.FlowSpec;
 import akka.util.ConstantFun;
 import akka.stream.javadsl.GraphDSL.Builder;
 import akka.stream.stage.*;
@@ -41,9 +43,20 @@ public class FlowTest extends StreamTest {
     super(actorSystemResource);
   }
 
-    @ClassRule
+  @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest",
       AkkaSpec.testConf());
+
+  interface Fruit {}
+  static class Apple implements Fruit {};
+  static class Orange implements Fruit {};
+
+  public void compileOnlyUpcast() {
+    Flow<Apple, Apple, NotUsed> appleFlow = null;
+    Flow<Apple, Fruit, NotUsed> appleFruitFlow = Flow.upcast(appleFlow);
+
+    Flow<Apple, Fruit, NotUsed> fruitFlow = appleFruitFlow.intersperse(new Orange());
+  }
 
   @Test
   public void mustBeAbleToUseSimpleOperators() {
@@ -52,7 +65,7 @@ public class FlowTest extends StreamTest {
     final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
     final Source<Integer, NotUsed> ints = Source.from(input);
     final Flow<Integer, String, NotUsed> flow1 = Flow.of(Integer.class).drop(2).take(3
-    ).takeWithin(FiniteDuration.create(10, TimeUnit.SECONDS
+    ).takeWithin(java.time.Duration.ofSeconds(10
     )).map(new Function<Integer, String>() {
       public String apply(Integer elem) {
         return lookup[elem];
@@ -67,7 +80,7 @@ public class FlowTest extends StreamTest {
       public java.util.List<String> apply(java.util.List<String> elem) {
         return elem;
       }
-    }).groupedWithin(100, FiniteDuration.create(50, TimeUnit.MILLISECONDS)
+    }).groupedWithin(100, java.time.Duration.ofMillis(50)
     ).mapConcat(new Function<java.util.List<String>, java.lang.Iterable<String>>() {
           public java.util.List<String> apply(java.util.List<String> elem) {
             return elem;
@@ -192,13 +205,13 @@ public class FlowTest extends StreamTest {
 
       public final Inlet<Integer> in = Inlet.create("in");
       public final Outlet<Integer> out = Outlet.create("out");
-  
+
       @Override
       public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
         return new GraphStageLogic(shape()) {
           int sum = 0;
           int count = 0;
-          
+
           {
             setHandler(in, new AbstractInHandler() {
               @Override
@@ -211,7 +224,7 @@ public class FlowTest extends StreamTest {
                     } else {
                       emitMultiple(out, Arrays.asList(element, element).iterator());
                     }
-                
+
               }
             });
             setHandler(out, new AbstractOutHandler() {
@@ -223,14 +236,14 @@ public class FlowTest extends StreamTest {
           }
         };
       }
-  
+
       @Override
       public FlowShape<Integer, Integer> shape() {
         return FlowShape.of(in, out);
       }
                                                                             }
     );
-    Source.from(input).via(flow).runForeach((Procedure<Integer>) elem -> 
+    Source.from(input).via(flow).runForeach((Procedure<Integer>) elem ->
       probe.getRef().tell(elem, ActorRef.noSender()), materializer);
 
     probe.expectMsgEquals(0);
@@ -315,7 +328,7 @@ public class FlowTest extends StreamTest {
     return new GraphStage<FlowShape<T, T>>() {
       public final Inlet<T> in = Inlet.create("in");
       public final Outlet<T> out = Outlet.create("out");
-  
+
       @Override
       public GraphStageLogic createLogic(Attributes inheritedAttributes) throws Exception {
         return new GraphStageLogic(shape()) {
@@ -683,6 +696,16 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseCollectType() throws Exception {
+    final TestKit probe = new TestKit(system);
+    final Iterable<FlowSpec.Fruit> input = Arrays.asList(new FlowSpec.Apple(), new FlowSpec.Orange());
+
+    Source.from(input).via(Flow.of(FlowSpec.Fruit.class).collectType(FlowSpec.Apple.class))
+        .runForeach((apple) -> probe.getRef().tell(apple, ActorRef.noSender()), materializer);
+    probe.expectMsgAnyClassOf(FlowSpec.Apple.class);
+  }
+
+  @Test
   public void mustBeAbleToRecover() throws Exception {
     final TestPublisher.ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
     final TestKit probe = new TestKit(system);
@@ -949,5 +972,18 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseDivertTo() {
     final Flow<Integer, Integer, NotUsed> f = Flow.of(Integer.class).divertTo(Sink.ignore(), e -> true);
     final Flow<Integer, Integer, String> f2 = Flow.of(Integer.class).divertToMat(Sink.ignore(), e -> true, (i, n) -> "foo");
+  }
+
+  @Test
+  public void mustBeAbleToUseLazyInit() throws Exception {
+    final CompletionStage<Flow<Integer, Integer, NotUsed>> future = new CompletableFuture<Flow<Integer, Integer, NotUsed>>();
+    future.toCompletableFuture().complete(Flow.fromFunction((id) -> id));
+    Integer result =
+            Source.range(1, 10)
+                    .via(Flow.lazyInitAsync(() -> future))
+                    .runWith(Sink.<Integer>head(), materializer)
+                    .toCompletableFuture().get(3, TimeUnit.SECONDS);
+
+    assertEquals((Object) 1, result);
   }
 }

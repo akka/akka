@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor
 
 import scala.language.implicitConversions
@@ -17,8 +18,7 @@ import java.util.regex.Pattern
 
 import akka.pattern.ask
 import akka.routing.MurmurHash
-import akka.util.Helpers
-import akka.util.Timeout
+import akka.util.{ Helpers, JavaDurationConverters, Timeout }
 import akka.dispatch.ExecutionContexts
 
 import scala.compat.java8.FutureConverters
@@ -96,6 +96,21 @@ abstract class ActorSelection extends Serializable {
    */
   def resolveOneCS(timeout: FiniteDuration): CompletionStage[ActorRef] =
     FutureConverters.toJava[ActorRef](resolveOne(timeout))
+
+  /**
+   * Java API for [[#resolveOne]]
+   *
+   * Resolve the [[ActorRef]] matching this selection.
+   * The result is returned as a CompletionStage that is completed with the [[ActorRef]]
+   * if such an actor exists. It is completed with failure [[ActorNotFound]] if
+   * no such actor exists or the identification didn't complete within the
+   * supplied `timeout`.
+   *
+   */
+  def resolveOneCS(timeout: java.time.Duration): CompletionStage[ActorRef] = {
+    import JavaDurationConverters._
+    resolveOneCS(timeout.asScala)
+  }
 
   override def toString: String = {
     val builder = new java.lang.StringBuilder()

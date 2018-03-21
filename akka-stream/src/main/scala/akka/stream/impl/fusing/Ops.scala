@@ -1,25 +1,28 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.fusing
 
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
+import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.dispatch.ExecutionContexts
 import akka.event.Logging.LogLevel
 import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.impl.{ ConstantFun, ReactiveStreamsCompliance, Stages, Buffer ⇒ BufferImpl }
-import akka.stream.scaladsl.{ Source, SourceQueue }
+import akka.stream.impl.{ ReactiveStreamsCompliance, Buffer ⇒ BufferImpl }
+import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
-import scala.concurrent.Future
+import scala.concurrent.{ Future, Promise }
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.{ Failure, Success, Try }
 import akka.stream.ActorAttributes.SupervisionStrategy
@@ -359,8 +362,7 @@ private[stream] object Collect {
   override def toString: String = "Scan"
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with InHandler with OutHandler {
-      self ⇒
+    new GraphStageLogic(shape) with InHandler with OutHandler { self ⇒
 
       private var aggregator = zero
       private lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
@@ -422,8 +424,7 @@ private[stream] object Collect {
   override val toString: String = "ScanAsync"
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with InHandler with OutHandler {
-      self ⇒
+    new GraphStageLogic(shape) with InHandler with OutHandler { self ⇒
 
       private var current: Out = zero
       private var eventualCurrent: Future[Out] = Future.successful(current)
@@ -1324,6 +1325,33 @@ private[stream] object Collect {
     }
 }
 
+@InternalApi private[akka] final case class Watch[T](targetRef: ActorRef) extends SimpleLinearGraphStage[T] {
+
+  override def initialAttributes = DefaultAttributes.watch
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+
+      private lazy val self = getStageActor {
+        case (_, Terminated(`targetRef`)) ⇒
+          failStage(new WatchedActorTerminatedException("Watch", targetRef))
+      }
+
+      override def preStart(): Unit = {
+        // initialize self, and watch the target
+        self.watch(targetRef)
+      }
+
+      override def onPull(): Unit =
+        pull(in)
+
+      override def onPush(): Unit =
+        push(out, grab(in))
+
+      setHandlers(in, out, this)
+    }
+}
+
 /**
  * INTERNAL API
  */
@@ -1382,7 +1410,8 @@ private[stream] object Collect {
         if (isEnabled(logLevels.onFailure))
           logLevels.onFailure match {
             case Logging.ErrorLevel ⇒ log.error(cause, "[{}] Upstream failed.", name)
-            case level              ⇒ log.log(level, "[{}] Upstream failed, cause: {}: {}", name, Logging.simpleName(cause.getClass), cause.getMessage)
+            case level ⇒ log.log(level, "[{}] Upstream failed, cause: {}: {}", name, Logging.simpleName(cause
+              .getClass), cause.getMessage)
           }
 
         super.onUpstreamFailure(cause)
@@ -1433,7 +1462,8 @@ private[stream] object Collect {
 
   private final val DefaultLoggerName = "akka.stream.Log"
   private final val OffInt = LogLevels.Off.asInt
-  private final val DefaultLogLevels = LogLevels(onElement = Logging.DebugLevel, onFinish = Logging.DebugLevel, onFailure = Logging.ErrorLevel)
+  private final val DefaultLogLevels = LogLevels(onElement = Logging.DebugLevel, onFinish = Logging
+    .DebugLevel, onFailure = Logging.ErrorLevel)
 }
 
 /**
@@ -1452,6 +1482,7 @@ private[stream] object Collect {
 @InternalApi private[akka] object GroupedWeightedWithin {
   val groupedWeightedWithinTimer = "GroupedWeightedWithinTimer"
 }
+
 /**
  * INTERNAL API
  */
@@ -1579,6 +1610,7 @@ private[stream] object Collect {
       if (isAvailable(out)) emitGroup()
       else pushEagerly = true
     }
+
     setHandlers(in, out, this)
   }
 }
@@ -1611,6 +1643,7 @@ private[stream] object Collect {
             cancelTimer(timerName)
             onTimer(timerName)
           }
+          grabAndPull()
         }
       case DropHead ⇒
         () ⇒ {
@@ -1761,8 +1794,7 @@ private[stream] object Collect {
 @InternalApi private[akka] final class Reduce[T](val f: (T, T) ⇒ T) extends SimpleLinearGraphStage[T] {
   override def initialAttributes: Attributes = DefaultAttributes.reduce
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
-    self ⇒
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler { self ⇒
     override def toString = s"Reduce.Logic(aggregator=$aggregator)"
 
     var aggregator: T = _
@@ -1926,4 +1958,202 @@ private[stream] object Collect {
 
   override def toString = "StatefulMapConcat"
 
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi final private[akka] class LazyFlow[I, O, M](flowFactory: I ⇒ Future[Flow[I, O, M]])
+  extends GraphStageWithMaterializedValue[FlowShape[I, O], Future[Option[M]]] {
+  val in = Inlet[I]("lazyFlow.in")
+  val out = Outlet[O]("lazyFlow.out")
+
+  override def initialAttributes = DefaultAttributes.lazyFlow
+
+  override val shape: FlowShape[I, O] = FlowShape.of(in, out)
+
+  override def toString: String = "LazyFlow"
+
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+
+    val matPromise = Promise[Option[M]]()
+    val stageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+
+      var switching = false
+
+      //
+      // implementation of handler methods in initial state
+      //
+
+      override def onPush(): Unit = {
+        val element = grab(in)
+        switching = true
+        val cb = getAsyncCallback[Try[Flow[I, O, M]]] {
+          case Success(flow) ⇒
+            // check if the stage is still in need for the lazy flow
+            // (there could have been an onUpstreamFailure or onDownstreamFinish in the meantime that has completed the promise)
+            if (!matPromise.isCompleted) {
+              try {
+                val mat = switchTo(flow, element)
+                matPromise.success(Some(mat))
+              } catch {
+                case NonFatal(e) ⇒
+                  matPromise.failure(e)
+                  failStage(e)
+              }
+            }
+          case Failure(e) ⇒
+            matPromise.failure(e)
+            failStage(e)
+        }
+        try {
+          flowFactory(element).onComplete(cb.invoke)(ExecutionContexts.sameThreadExecutionContext)
+        } catch {
+          case NonFatal(e) ⇒
+            matPromise.failure(e)
+            failStage(e)
+        }
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        // ignore onUpstreamFinish while the stage is switching but setKeepGoing
+        if (switching) {
+          setKeepGoing(true)
+        } else {
+          matPromise.success(None)
+          super.onUpstreamFinish()
+        }
+      }
+
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        matPromise.failure(ex)
+        super.onUpstreamFailure(ex)
+      }
+
+      override def onDownstreamFinish(): Unit = {
+        matPromise.success(None)
+        super.onDownstreamFinish()
+      }
+
+      override def onPull(): Unit = {
+        pull(in)
+      }
+
+      setHandler(in, this)
+      setHandler(out, this)
+
+      private def switchTo(flow: Flow[I, O, M], firstElement: I): M = {
+
+        var firstElementPushed = false
+
+        //
+        // ports are wired in the following way:
+        //
+        // in ~> subOutlet ~> lazyFlow ~> subInlet ~> out
+        //
+
+        val subInlet = new SubSinkInlet[O]("LazyFlowSubSink")
+        val subOutlet = new SubSourceOutlet[I]("LazyFlowSubSource")
+
+        val matVal = Source.fromGraph(subOutlet.source)
+          .viaMat(flow)(Keep.right)
+          .toMat(subInlet.sink)(Keep.left)
+          .run()(interpreter.subFusingMaterializer)
+
+        // The lazily materialized flow may be constructed from a sink and a source. Therefore termination
+        // signals (completion, cancellation, and errors) are not guaranteed to pass through the flow. This
+        // means that this stage must not be completed as soon as one side of the flow is finished.
+        //
+        // Invariant: isClosed(out) == subInlet.isClosed after each event because termination signals (i.e.
+        // completion, cancellation, and failure) between these two ports are always forwarded.
+        //
+        // However, isClosed(in) and subOutlet.isClosed may be different. This happens if upstream completes before
+        // the cached element was pushed.
+        def maybeCompleteStage(): Unit = {
+          if (isClosed(in) && subOutlet.isClosed && isClosed(out)) {
+            completeStage()
+          }
+        }
+
+        // The stage must not be shut down automatically; it is completed when maybeCompleteStage decides
+        setKeepGoing(true)
+
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = {
+            subOutlet.push(grab(in))
+          }
+          override def onUpstreamFinish(): Unit = {
+            if (firstElementPushed) {
+              subOutlet.complete()
+              maybeCompleteStage()
+            }
+          }
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            // propagate exception irrespective if the cached element has been pushed or not
+            subOutlet.fail(ex)
+            maybeCompleteStage()
+          }
+        })
+
+        setHandler(out, new OutHandler {
+          override def onPull(): Unit = {
+            subInlet.pull()
+          }
+          override def onDownstreamFinish(): Unit = {
+            subInlet.cancel()
+            maybeCompleteStage()
+          }
+        })
+
+        subOutlet.setHandler(new OutHandler {
+          override def onPull(): Unit = {
+            if (firstElementPushed) {
+              pull(in)
+            } else {
+              // the demand can be satisfied right away by the cached element
+              firstElementPushed = true
+              subOutlet.push(firstElement)
+              // in.onUpstreamFinished was not propagated if it arrived before the cached element was pushed
+              // -> check if the completion must be propagated now
+              if (isClosed(in)) {
+                subOutlet.complete()
+                maybeCompleteStage()
+              }
+            }
+          }
+          override def onDownstreamFinish(): Unit = {
+            if (!isClosed(in)) {
+              cancel(in)
+            }
+            maybeCompleteStage()
+          }
+        })
+
+        subInlet.setHandler(new InHandler {
+          override def onPush(): Unit = {
+            push(out, subInlet.grab())
+          }
+          override def onUpstreamFinish(): Unit = {
+            complete(out)
+            maybeCompleteStage()
+          }
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            fail(out, ex)
+            maybeCompleteStage()
+          }
+        })
+
+        if (isClosed(out)) {
+          // downstream may have been canceled while the stage was switching
+          subInlet.cancel()
+        } else {
+          subInlet.pull()
+        }
+
+        matVal
+      }
+
+    }
+    (stageLogic, matPromise.future)
+  }
 }

@@ -1,11 +1,11 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.metrics
 
 import com.codahale.metrics._
 
-import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import com.typesafe.config.Config

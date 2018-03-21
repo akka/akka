@@ -160,6 +160,13 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
     }
   }
 
+  def awaitCountSubscribers(expected: Int, topic: String): Unit = {
+    awaitAssert {
+      mediator ! CountSubscribers(topic)
+      expectMsgType[Int] should ===(expected)
+    }
+  }
+
   "A DistributedPubSubMediator" must {
 
     "startup 2 node cluster" in within(15 seconds) {
@@ -568,6 +575,22 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
       enterBarrier("after-get-topics")
 
+    }
+
+    "remove topic subscribers when they terminate" in within(15 seconds) {
+      runOn(first) {
+        val s1 = Subscribe("topic_b1", createChatUser("u18"))
+        mediator ! s1
+        expectMsg(SubscribeAck(s1))
+
+        awaitCountSubscribers(1, "topic_b1")
+
+        chatUser("u18") ! PoisonPill
+
+        awaitCountSubscribers(0, "topic_b1")
+      }
+
+      enterBarrier("after-15")
     }
   }
 

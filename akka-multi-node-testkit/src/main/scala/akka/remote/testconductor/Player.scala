@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.testconductor
 
 import java.util.concurrent.TimeoutException
@@ -72,8 +73,6 @@ trait Player { this: TestConductorExt ⇒
    * set in [[akka.remote.testconductor.Conductor]]`.startController()`.
    */
   def startClient(name: RoleName, controllerAddr: InetSocketAddress): Future[Done] = {
-    import ClientFSM._
-    import akka.actor.FSM._
     import Settings.BarrierTimeout
 
     if (_client ne null) throw new IllegalStateException("TestConductorClient already started")
@@ -99,7 +98,7 @@ trait Player { this: TestConductorExt ⇒
       val barrierTimeout = stop.timeLeft
       if (barrierTimeout < Duration.Zero) {
         client ! ToServer(FailBarrier(b))
-        throw new TimeoutException("Server timed out while waiting for barrier " + b);
+        throw new TimeoutException("Server timed out while waiting for barrier " + b)
       }
       try {
         implicit val timeout = Timeout(barrierTimeout + Settings.QueryTimeout.duration)

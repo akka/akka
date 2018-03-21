@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import scala.concurrent.duration._
@@ -11,6 +12,8 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.testkit.TestProbe
+
+import scala.concurrent.Promise
 
 object ActorRefBackpressureSinkSpec {
   val initMessage = "start"
@@ -123,11 +126,12 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       val fw = createActor(classOf[Fw2])
       val sink = Sink.actorRefWithAck(fw, initMessage, ackMessage, completeMessage)
         .withAttributes(inputBuffer(bufferSize, bufferSize))
-      val probe = Source(1 to streamElementCount)
-        .alsoToMat(Flow[Int].take(bufferSize).watchTermination()(Keep.right).to(Sink.ignore))(Keep.right)
+      val bufferFullProbe = Promise[akka.Done.type]
+      Source(1 to streamElementCount)
+        .alsoTo(Flow[Int].drop(bufferSize - 1).to(Sink.foreach(_ ⇒ bufferFullProbe.trySuccess(akka.Done))))
         .to(sink)
         .run()
-      probe.futureValue should ===(akka.Done)
+      bufferFullProbe.future.futureValue should ===(akka.Done)
       expectMsg(initMessage)
       fw ! TriggerAckMessage
       for (i ← 1 to streamElementCount) {

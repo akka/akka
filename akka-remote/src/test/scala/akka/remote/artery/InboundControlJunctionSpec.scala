@@ -1,8 +1,12 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
+import scala.util.Try
+
+import akka.Done
 import akka.actor.Address
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
@@ -56,6 +60,7 @@ class InboundControlJunctionSpec
         override def notify(env: InboundEnvelope) = {
           observerProbe.ref ! env.message
         }
+        override def controlSubjectCompleted(signal: Try[Done]): Unit = ()
       })
 
       downstream.request(10)

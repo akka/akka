@@ -1,20 +1,18 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import java.util.Queue
-import akka.stream.stage.GraphStage
+
 import akka.stream.stage.OutHandler
 import akka.stream.Attributes
 import akka.stream.Outlet
 import akka.stream.SourceShape
 import akka.stream.stage.GraphStageLogic
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.stream.stage.GraphStageWithMaterializedValue
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueueTail
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicInteger
+
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.util.Try
@@ -43,7 +41,8 @@ private[remote] object SendQueue {
 /**
  * INTERNAL API
  */
-private[remote] final class SendQueue[T] extends GraphStageWithMaterializedValue[SourceShape[T], SendQueue.QueueValue[T]] {
+private[remote] final class SendQueue[T](postStopAction: Vector[T] ⇒ Unit)
+  extends GraphStageWithMaterializedValue[SourceShape[T], SendQueue.QueueValue[T]] {
   import SendQueue._
 
   val out: Outlet[T] = Outlet("SendQueue.out")
@@ -101,9 +100,17 @@ private[remote] final class SendQueue[T] extends GraphStageWithMaterializedValue
       }
 
       override def postStop(): Unit = {
-        // TODO quarantine will currently always be done when control stream is terminated, see issue #21359
-        if (consumerQueue ne null)
+        var pending = Vector.newBuilder[T]
+        if (consumerQueue ne null) {
+          var msg = consumerQueue.poll()
+          while (msg != null) {
+            pending += msg
+            msg = consumerQueue.poll()
+          }
           consumerQueue.clear()
+        }
+        postStopAction(pending.result())
+
         super.postStop()
       }
 

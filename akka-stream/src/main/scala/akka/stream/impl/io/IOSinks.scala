@@ -1,16 +1,16 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.io
 
 import java.io.OutputStream
-import java.nio.file.{ Path, OpenOption }
+import java.nio.file.{ OpenOption, Path }
 
 import akka.annotation.InternalApi
+import akka.stream.ActorAttributes.Dispatcher
 import akka.stream._
 import akka.stream.impl.SinkModule
-import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
-import akka.stream.ActorAttributes.Dispatcher
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -33,9 +33,9 @@ import scala.concurrent.{ Future, Promise }
 
     val ioResultPromise = Promise[IOResult]()
     val props = FileSubscriber.props(f, ioResultPromise, maxInputBufferSize, startPosition, options)
-    val dispatcher = context.effectiveAttributes.get[Dispatcher](IODispatcher).dispatcher
 
-    val ref = materializer.actorOf(context, props.withDispatcher(dispatcher))
+    val ref = materializer.actorOf(context, props.withDispatcher(Dispatcher.resolve(context)))
+
     (akka.stream.actor.ActorSubscriber[ByteString](ref), ioResultPromise.future)
   }
 
@@ -61,7 +61,9 @@ import scala.concurrent.{ Future, Promise }
 
     val maxInputBufferSize = context.effectiveAttributes.mandatoryAttribute[Attributes.InputBuffer].max
 
-    val props = OutputStreamSubscriber.props(os, ioResultPromise, maxInputBufferSize, autoFlush)
+    val props = OutputStreamSubscriber
+      .props(os, ioResultPromise, maxInputBufferSize, autoFlush)
+      .withDispatcher(Dispatcher.resolve(context))
 
     val ref = materializer.actorOf(context, props)
     (akka.stream.actor.ActorSubscriber[ByteString](ref), ioResultPromise.future)

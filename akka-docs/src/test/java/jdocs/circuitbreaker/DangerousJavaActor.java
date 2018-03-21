@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.circuitbreaker;
 
 //#imports1
@@ -27,7 +28,7 @@ public class DangerousJavaActor extends AbstractActor {
     this.breaker = new CircuitBreaker(
       getContext().dispatcher(), getContext().system().scheduler(),
       5, Duration.create(10, "s"), Duration.create(1, "m"))
-      .onOpen(this::notifyMeOnOpen);
+      .addOnOpenListener(this::notifyMeOnOpen);
   }
 
   public void notifyMeOnOpen() {

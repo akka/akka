@@ -1,17 +1,18 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import akka.NotUsed
 import akka.actor.ActorIdentity
 import akka.actor.ActorSystem
 import akka.actor.Identify
-import akka.actor.PoisonPill
 import akka.actor.RootActorPath
 import akka.remote.{ AddressUidExtension, RARP, UniqueAddress }
 import akka.remote.artery.SystemMessageDelivery._
@@ -22,8 +23,10 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
+import akka.testkit.TestEvent
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import akka.util.OptionVal
@@ -33,8 +36,13 @@ object SystemMessageDeliverySpec {
   case class TestSysMsg(s: String) extends SystemMessageDelivery.AckedDeliveryMessage
 
   val config = ConfigFactory.parseString(
-    """
-       akka.loglevel = DEBUG
+    s"""
+       akka.loglevel = INFO
+       akka.remote.artery.advanced.stop-idle-outbound-after = 1000 ms
+       akka.remote.artery.advanced.inject-handshake-interval = 500 ms
+       akka.remote.watch-failure-detector.heartbeat-interval = 2 s
+       akka.remote.artery.log-received-messages = on
+       akka.remote.artery.log-sent-messages = on
     """.stripMargin).withFallback(ArterySpecSupport.defaultConfig)
 
 }
@@ -54,6 +62,9 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
   implicit val mat = ActorMaterializer(matSettings)(system)
 
   private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity = 16)
+
+  system.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = ".*negative acknowledgement.*")))
+  systemB.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = ".*negative acknowledgement.*")))
 
   private def send(sendCount: Int, resendInterval: FiniteDuration, outboundContext: OutboundContext): Source[OutboundEnvelope, NotUsed] = {
     val deadLetters = TestProbe().ref
@@ -103,7 +114,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
   "System messages" must {
 
     "be delivered with real actors" in {
-      systemB.actorOf(TestActors.echoActorProps, "echo")
+      val systemBRef = systemB.actorOf(TestActors.echoActorProps, "echo")
 
       val remoteRef = {
         system.actorSelection(rootB / "user" / "echo") ! Identify(None)
@@ -111,8 +122,37 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
       }
 
       watch(remoteRef)
-      remoteRef ! PoisonPill
+      systemB.stop(systemBRef)
       expectTerminated(remoteRef)
+    }
+
+    "be delivered when concurrent idle stopping" in {
+      // it's configured with short stop-idle-outbound-after to stress exercise stopping of idle outbound streams
+      // at the same time as system messages are sent
+
+      val systemBRef = systemB.actorOf(TestActors.echoActorProps, "echo2")
+
+      val remoteRef = {
+        system.actorSelection(rootB / "user" / "echo2") ! Identify(None)
+        expectMsgType[ActorIdentity].ref.get
+      }
+
+      val idleTimeout = RARP(system).provider.transport.asInstanceOf[ArteryTransport].settings.Advanced.StopIdleOutboundAfter
+      val rnd = ThreadLocalRandom.current()
+
+      (1 to 5).foreach { _ ⇒
+        (1 to 1).foreach { _ ⇒
+          watch(remoteRef)
+          unwatch(remoteRef)
+        }
+        Thread.sleep((idleTimeout - 10.millis).toMillis + rnd.nextInt(20))
+      }
+
+      watch(remoteRef)
+      remoteRef ! "ping2"
+      expectMsg("ping2")
+      systemB.stop(systemBRef)
+      expectTerminated(remoteRef, 5.seconds)
     }
 
     "be flushed on shutdown" in {
@@ -147,7 +187,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
       val inboundContextA = new TestInboundContext(addressB, controlSubject)
       val outboundContextA = inboundContextA.association(addressB.address)
 
-      val sink = send(sendCount = 5, resendInterval = 60.seconds, outboundContextA)
+      val sink = send(sendCount = 5, resendInterval = 1.second, outboundContextA)
         .via(drop(dropSeqNumbers = Vector(3L, 4L)))
         .via(inbound(inboundContextB))
         .map(_.message.asInstanceOf[TestSysMsg])
@@ -181,7 +221,7 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
       val inboundContextA = new TestInboundContext(addressB, controlSubject)
       val outboundContextA = inboundContextA.association(addressB.address)
 
-      val sink = send(sendCount = 3, resendInterval = 60.seconds, outboundContextA)
+      val sink = send(sendCount = 3, resendInterval = 1.second, outboundContextA)
         .via(drop(dropSeqNumbers = Vector(1L)))
         .via(inbound(inboundContextB))
         .map(_.message.asInstanceOf[TestSysMsg])
@@ -235,40 +275,40 @@ class SystemMessageDeliverySpec extends ArteryMultiNodeSpec(SystemMessageDeliver
     }
 
     "deliver all during stress and random dropping" in {
-      val N = 10000
-      val dropRate = 0.1
+      val N = 500
+      val dropRate = 0.05
       val controlSubject = new TestControlMessageSubject
       val inboundContextB = new TestInboundContext(addressB, controlSubject, replyDropRate = dropRate)
       val inboundContextA = new TestInboundContext(addressB, controlSubject)
       val outboundContextA = inboundContextA.association(addressB.address)
 
       val output =
-        send(N, 1.second, outboundContextA)
+        send(N, 100.millis, outboundContextA)
           .via(randomDrop(dropRate))
           .via(inbound(inboundContextB))
           .map(_.message.asInstanceOf[TestSysMsg])
           .runWith(Sink.seq)
 
-      Await.result(output, 20.seconds) should ===((1 to N).map(n ⇒ TestSysMsg("msg-" + n)).toVector)
+      Await.result(output, 30.seconds) should ===((1 to N).map(n ⇒ TestSysMsg("msg-" + n)).toVector)
     }
 
     "deliver all during throttling and random dropping" in {
-      val N = 500
-      val dropRate = 0.1
+      val N = 100
+      val dropRate = 0.05
       val controlSubject = new TestControlMessageSubject
       val inboundContextB = new TestInboundContext(addressB, controlSubject, replyDropRate = dropRate)
       val inboundContextA = new TestInboundContext(addressB, controlSubject)
       val outboundContextA = inboundContextA.association(addressB.address)
 
       val output =
-        send(N, 1.second, outboundContextA)
+        send(N, 300.millis, outboundContextA)
           .throttle(200, 1.second, 10, ThrottleMode.shaping)
           .via(randomDrop(dropRate))
           .via(inbound(inboundContextB))
           .map(_.message.asInstanceOf[TestSysMsg])
           .runWith(Sink.seq)
 
-      Await.result(output, 20.seconds) should ===((1 to N).map(n ⇒ TestSysMsg("msg-" + n)).toVector)
+      Await.result(output, 30.seconds) should ===((1 to N).map(n ⇒ TestSysMsg("msg-" + n)).toVector)
     }
   }
 }

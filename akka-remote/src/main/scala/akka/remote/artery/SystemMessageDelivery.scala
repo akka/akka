@@ -1,15 +1,18 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import akka.util.PrettyDuration.PrettyPrintableDuration
 import java.util.ArrayDeque
+
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+
 import akka.Done
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
@@ -27,11 +30,14 @@ import akka.actor.ActorRef
 import akka.dispatch.sysmsg.SystemMessage
 import scala.util.control.NoStackTrace
 
+import akka.event.Logging
+import akka.stream.stage.StageLogging
+import akka.util.OptionVal
+
 /**
  * INTERNAL API
  */
 private[remote] object SystemMessageDelivery {
-  // FIXME serialization of these messages
   final case class SystemMessageEnvelope(message: AnyRef, seqNo: Long, ackReplyTo: UniqueAddress) extends ArteryMessage
   final case class Ack(seqNo: Long, from: UniqueAddress) extends Reply
   final case class Nack(seqNo: Long, from: UniqueAddress) extends Reply
@@ -65,7 +71,7 @@ private[remote] class SystemMessageDelivery(
   override val shape: FlowShape[OutboundEnvelope, OutboundEnvelope] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with InHandler with OutHandler with ControlMessageObserver {
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler with ControlMessageObserver with StageLogging {
 
       private var replyObserverAttached = false
       private var seqNo = 0L // sequence number for the first message will be 1
@@ -80,6 +86,8 @@ private[remote] class SystemMessageDelivery(
       private def localAddress = outboundContext.localAddress
       private def remoteAddress = outboundContext.remoteAddress
 
+      override protected def logSource: Class[_] = classOf[SystemMessageDelivery]
+
       override def preStart(): Unit = {
         implicit val ec = materializer.executionContext
         outboundContext.controlSubject.attach(this).foreach {
@@ -89,19 +97,14 @@ private[remote] class SystemMessageDelivery(
               pull(in) // onPull from downstream already called
           }.invoke
         }
-
-        outboundContext.controlSubject.stopped.onComplete {
-          getAsyncCallback[Try[Done]] {
-            case Success(_)     ⇒ completeStage()
-            case Failure(cause) ⇒ failStage(cause)
-          }.invoke
-        }
       }
 
       override def postStop(): Unit = {
-        // TODO quarantine will currently always be done when control stream is terminated, see issue #21359
+        val pendingCount = unacknowledged.size
         sendUnacknowledgedToDeadLetters()
         unacknowledged.clear()
+        if (pendingCount > 0)
+          outboundContext.quarantine(s"SystemMessageDelivery stopped with [$pendingCount] pending system messages.")
         outboundContext.controlSubject.detach(this)
       }
 
@@ -133,6 +136,14 @@ private[remote] class SystemMessageDelivery(
         }
       }
 
+      // ControlMessageObserver, external call
+      override def controlSubjectCompleted(signal: Try[Done]): Unit = {
+        getAsyncCallback[Try[Done]] {
+          case Success(_)     ⇒ completeStage()
+          case Failure(cause) ⇒ failStage(cause)
+        }.invoke(signal)
+      }
+
       private val ackCallback = getAsyncCallback[Ack] { reply ⇒
         ack(reply.seqNo)
       }
@@ -140,9 +151,11 @@ private[remote] class SystemMessageDelivery(
       private val nackCallback = getAsyncCallback[Nack] { reply ⇒
         if (reply.seqNo <= seqNo) {
           ack(reply.seqNo)
-          if (reply.seqNo > resendingFromSeqNo)
-            resending = unacknowledged.clone()
-          tryResend()
+          log.warning(
+            "Received negative acknowledgement of system message from [{}], highest acknowledged [{}]",
+            outboundContext.remoteAddress, reply.seqNo)
+          // Nack should be very rare (connection issue) so no urgency of resending, it will be resent
+          // by the scheduled tick.
         }
       }
 
@@ -167,8 +180,20 @@ private[remote] class SystemMessageDelivery(
       }
 
       private def tryResend(): Unit = {
-        if (isAvailable(out) && !resending.isEmpty)
-          pushCopy(resending.poll())
+        if (isAvailable(out) && !resending.isEmpty) {
+          val env = resending.poll()
+
+          if (log.isDebugEnabled) {
+            env.message match {
+              case SystemMessageEnvelope(msg, n, _) ⇒
+                log.debug("Resending system message [{}] [{}]", Logging.simpleName(msg), n)
+              case _ ⇒
+                log.debug("Resending control message [{}]", Logging.simpleName(env.message))
+            }
+          }
+
+          pushCopy(env)
+        }
       }
 
       // important to not send the buffered instance, since it's mutable
@@ -268,16 +293,25 @@ private[remote] class SystemMessageAcker(inboundContext: InboundContext) extends
   override val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with InHandler with OutHandler {
+    new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
       // TODO we might need have to prune old unused entries
       var sequenceNumbers = Map.empty[UniqueAddress, Long]
 
       def localAddress = inboundContext.localAddress
 
+      override protected def logSource: Class[_] = classOf[SystemMessageAcker]
+
       // InHandler
       override def onPush(): Unit = {
         val env = grab(in)
+
+        // for logging
+        def fromRemoteAddressStr: String = env.association match {
+          case OptionVal.Some(a) ⇒ a.remoteAddress.toString
+          case OptionVal.None    ⇒ "N/A"
+        }
+
         env.message match {
           case sysEnv @ SystemMessageEnvelope(_, n, ackReplyTo) ⇒
             val expectedSeqNo = sequenceNumbers.get(ackReplyTo) match {
@@ -290,9 +324,16 @@ private[remote] class SystemMessageAcker(inboundContext: InboundContext) extends
               val unwrapped = env.withMessage(sysEnv.message)
               push(out, unwrapped)
             } else if (n < expectedSeqNo) {
+              if (log.isDebugEnabled)
+                log.debug(
+                  "Deduplicate system message [{}] from [{}], expected [{}]",
+                  n, fromRemoteAddressStr, expectedSeqNo)
               inboundContext.sendControl(ackReplyTo.address, Ack(expectedSeqNo - 1, localAddress))
               pull(in)
             } else {
+              log.warning(
+                "Sending negative acknowledgement of system message [{}] from [{}], highest acknowledged [{}]",
+                n, fromRemoteAddressStr, expectedSeqNo - 1)
               inboundContext.sendControl(ackReplyTo.address, Nack(expectedSeqNo - 1, localAddress))
               pull(in)
             }

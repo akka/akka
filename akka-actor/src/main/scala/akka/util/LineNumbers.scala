@@ -1,12 +1,14 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.util
 
-import java.io.DataInputStream
-import scala.annotation.{ switch }
+import java.io.{ DataInputStream, InputStream }
+import java.lang.invoke.SerializedLambda
+
+import scala.annotation.switch
 import scala.util.control.NonFatal
-import java.io.InputStream
 
 /**
  * This is a minimized byte-code parser that concentrates exclusively on line
@@ -196,10 +198,10 @@ object LineNumbers {
       val writeReplace = c.getDeclaredMethod("writeReplace")
       writeReplace.setAccessible(true)
       writeReplace.invoke(l) match {
-        //        case serialized: SerializedLambda ⇒
-        //          if (debug) println(s"LNB:     found Lambda implemented in ${serialized.getImplClass}:${serialized.getImplMethodName}")
-        //          Option(c.getClassLoader.getResourceAsStream(serialized.getImplClass + ".class"))
-        //            .map(_ -> Some(serialized.getImplMethodName))
+        case serialized: SerializedLambda ⇒
+          if (debug) println(s"LNB:     found Lambda implemented in ${serialized.getImplClass}:${serialized.getImplMethodName}")
+          Option(c.getClassLoader.getResourceAsStream(serialized.getImplClass + ".class"))
+            .map(_ -> Some(serialized.getImplMethodName))
         case _ ⇒ None
       }
     } catch {

@@ -1,16 +1,13 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
-import scala.collection.immutable
 import akka.testkit._
-import akka.routing._
 import akka.actor._
-import akka.remote.routing._
 import com.typesafe.config._
-import akka.testkit.TestActors.echoActorProps
-import akka.remote.{ RARP, RemoteScope }
+import akka.remote.RARP
 
 object RemoteDeploymentSpec {
   class Echo1 extends Actor {

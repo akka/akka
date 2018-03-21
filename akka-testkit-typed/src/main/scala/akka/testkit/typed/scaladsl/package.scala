@@ -1,13 +1,10 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.typed
 
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.reflect.ClassTag
-import scala.collection.immutable
-import java.util.concurrent.TimeUnit.MILLISECONDS
-import akka.actor.typed.ActorSystem
+import scala.concurrent.duration.FiniteDuration
 
 package object scaladsl {
 
@@ -27,8 +24,7 @@ package object scaladsl {
    *
    */
   implicit class TestDuration(val duration: FiniteDuration) extends AnyVal {
-    def dilated(implicit settings: TestKitSettings): FiniteDuration =
-      (duration * settings.TestTimeFactor).asInstanceOf[FiniteDuration]
+    def dilated(implicit settings: TestKitSettings): FiniteDuration = settings.dilated(duration)
   }
 
 }

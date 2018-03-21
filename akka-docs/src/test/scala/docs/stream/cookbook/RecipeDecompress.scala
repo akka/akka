@@ -1,18 +1,13 @@
 /**
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.stream.cookbook
 
-import java.io.ByteArrayOutputStream
-import java.nio.charset.StandardCharsets
-import java.util.zip.GZIPOutputStream
-
-import akka.stream.impl.io.compression.GzipCompressor
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 
-import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.akka.persistence.typed
 
 import akka.actor.typed.Behavior
@@ -14,7 +15,7 @@ object BasicPersistentBehaviorsSpec {
   case class State()
 
   val behavior: Behavior[Command] =
-    PersistentBehaviors.immutable[Command, Event, State](
+    PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
       initialState = State(),
       commandHandler = (ctx, state, cmd) ⇒ ???,
@@ -23,7 +24,7 @@ object BasicPersistentBehaviorsSpec {
 
   //#recovery
   val recoveryBehavior: Behavior[Command] =
-    PersistentBehaviors.immutable[Command, Event, State](
+    PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
       initialState = State(),
       commandHandler = (ctx, state, cmd) ⇒ ???,
@@ -35,7 +36,7 @@ object BasicPersistentBehaviorsSpec {
 
   //#tagging
   val taggingBehavior: Behavior[Command] =
-    PersistentBehaviors.immutable[Command, Event, State](
+    PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
       initialState = State(),
       commandHandler = (ctx, state, cmd) ⇒ ???,

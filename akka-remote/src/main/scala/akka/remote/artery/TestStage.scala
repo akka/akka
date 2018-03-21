@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
-import scala.concurrent.duration._
 import akka.actor.Address
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.stream.Attributes
@@ -107,94 +107,76 @@ private[remote] final case class TestState(
 /**
  * INTERNAL API
  */
-private[remote] class OutboundTestStage(outboundContext: OutboundContext, state: SharedTestState, enabled: Boolean)
+private[remote] class OutboundTestStage(outboundContext: OutboundContext, state: SharedTestState)
   extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
   val in: Inlet[OutboundEnvelope] = Inlet("OutboundTestStage.in")
   val out: Outlet[OutboundEnvelope] = Outlet("OutboundTestStage.out")
   override val shape: FlowShape[OutboundEnvelope, OutboundEnvelope] = FlowShape(in, out)
 
-  override def createLogic(inheritedAttributes: Attributes) = {
-    if (enabled) {
-      new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+  override def createLogic(inheritedAttributes: Attributes) =
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
-        // InHandler
-        override def onPush(): Unit = {
-          val env = grab(in)
-          if (state.isBlackhole(outboundContext.localAddress.address, outboundContext.remoteAddress)) {
-            log.debug(
-              "dropping outbound message [{}] to [{}] because of blackhole",
-              Logging.messageClassName(env.message), outboundContext.remoteAddress)
-            pull(in) // drop message
-          } else
-            push(out, env)
-        }
-
-        // OutHandler
-        override def onPull(): Unit = pull(in)
-
-        setHandlers(in, out, this)
+      // InHandler
+      override def onPush(): Unit = {
+        val env = grab(in)
+        if (state.isBlackhole(outboundContext.localAddress.address, outboundContext.remoteAddress)) {
+          log.debug(
+            "dropping outbound message [{}] to [{}] because of blackhole",
+            Logging.messageClassName(env.message), outboundContext.remoteAddress)
+          pull(in) // drop message
+        } else
+          push(out, env)
       }
-    } else {
-      new GraphStageLogic(shape) with InHandler with OutHandler {
-        override def onPush(): Unit = push(out, grab(in))
-        override def onPull(): Unit = pull(in)
-        setHandlers(in, out, this)
-      }
+
+      // OutHandler
+      override def onPull(): Unit = pull(in)
+
+      setHandlers(in, out, this)
     }
-  }
 
 }
 
 /**
  * INTERNAL API
  */
-private[remote] class InboundTestStage(inboundContext: InboundContext, state: SharedTestState, enabled: Boolean)
+private[remote] class InboundTestStage(inboundContext: InboundContext, state: SharedTestState)
   extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   val in: Inlet[InboundEnvelope] = Inlet("InboundTestStage.in")
   val out: Outlet[InboundEnvelope] = Outlet("InboundTestStage.out")
   override val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
 
-  override def createLogic(inheritedAttributes: Attributes) = {
-    if (enabled) {
-      new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+  override def createLogic(inheritedAttributes: Attributes) =
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
-        // InHandler
-        override def onPush(): Unit = {
-          state.getInboundFailureOnce match {
-            case Some(shouldFailEx) ⇒
-              log.info("Fail inbound stream from [{}]: {}", classOf[InboundTestStage].getName, shouldFailEx.getMessage)
-              failStage(shouldFailEx)
-            case _ ⇒
-              val env = grab(in)
-              env.association match {
-                case OptionVal.None ⇒
-                  // unknown, handshake not completed
+      // InHandler
+      override def onPush(): Unit = {
+        state.getInboundFailureOnce match {
+          case Some(shouldFailEx) ⇒
+            log.info("Fail inbound stream from [{}]: {}", classOf[InboundTestStage].getName, shouldFailEx.getMessage)
+            failStage(shouldFailEx)
+          case _ ⇒
+            val env = grab(in)
+            env.association match {
+              case OptionVal.None ⇒
+                // unknown, handshake not completed
+                push(out, env)
+              case OptionVal.Some(association) ⇒
+                if (state.isBlackhole(inboundContext.localAddress.address, association.remoteAddress)) {
+                  log.debug(
+                    "dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",
+                    Logging.messageClassName(env.message), association.remoteAddress, env.originUid)
+                  pull(in) // drop message
+                } else
                   push(out, env)
-                case OptionVal.Some(association) ⇒
-                  if (state.isBlackhole(inboundContext.localAddress.address, association.remoteAddress)) {
-                    log.debug(
-                      "dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",
-                      Logging.messageClassName(env.message), association.remoteAddress, env.originUid)
-                    pull(in) // drop message
-                  } else
-                    push(out, env)
-              }
-          }
+            }
         }
-
-        // OutHandler
-        override def onPull(): Unit = pull(in)
-
-        setHandlers(in, out, this)
       }
-    } else {
-      new GraphStageLogic(shape) with InHandler with OutHandler {
-        override def onPush(): Unit = push(out, grab(in))
-        override def onPull(): Unit = pull(in)
-        setHandlers(in, out, this)
-      }
+
+      // OutHandler
+      override def onPull(): Unit = pull(in)
+
+      setHandlers(in, out, this)
     }
-  }
 
 }
 

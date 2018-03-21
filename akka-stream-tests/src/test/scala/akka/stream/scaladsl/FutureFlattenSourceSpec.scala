@@ -1,11 +1,11 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import java.util.concurrent.{ CompletableFuture, TimeUnit }
 
-import akka.Done
 import akka.stream._
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue }
 import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }

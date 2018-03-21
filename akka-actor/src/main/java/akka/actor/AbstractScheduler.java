@@ -4,6 +4,7 @@
 
 package akka.actor;
 
+import akka.util.JavaDurationConverters;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -33,7 +34,26 @@ public abstract class AbstractScheduler extends AbstractSchedulerBase {
    */
   @Override
   public abstract Cancellable schedule(FiniteDuration initialDelay,
-      FiniteDuration interval, Runnable runnable, ExecutionContext executor);
+                                       FiniteDuration interval,
+                                       Runnable runnable,
+                                       ExecutionContext executor);
+
+  /**
+   * Schedules a function to be run repeatedly with an initial delay and
+   * a frequency. E.g. if you would like the function to be run after 2
+   * seconds and thereafter every 100ms you would set delay = Duration(2,
+   * TimeUnit.SECONDS) and interval = Duration.ofMillis(100)
+   */
+  public Cancellable schedule(final java.time.Duration initialDelay,
+                              final java.time.Duration interval,
+                              final Runnable runnable,
+                              final ExecutionContext executor) {
+      return schedule(
+              JavaDurationConverters.asFiniteDuration(initialDelay),
+              JavaDurationConverters.asFiniteDuration(interval),
+              runnable,
+              executor);
+  }
 
   /**
    * Schedules a Runnable to be run once with a delay, i.e. a time period that
@@ -41,7 +61,17 @@ public abstract class AbstractScheduler extends AbstractSchedulerBase {
    */
   @Override
   public abstract Cancellable scheduleOnce(FiniteDuration delay, Runnable runnable,
-      ExecutionContext executor);
+                                           ExecutionContext executor);
+
+  /**
+   * Schedules a Runnable to be run once with a delay, i.e. a time period that
+   * has to pass before the runnable is executed.
+   */
+  public Cancellable scheduleOnce(final java.time.Duration delay,
+                                  final Runnable runnable,
+                                  final ExecutionContext executor) {
+      return scheduleOnce(JavaDurationConverters.asFiniteDuration(delay), runnable, executor);
+  }
 
   /**
    * The maximum supported task frequency of this scheduler, i.e. the inverse

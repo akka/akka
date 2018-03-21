@@ -1,12 +1,13 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import akka.actor.InternalActorRef
 import akka.util.OptionVal
-import akka.actor.Address
 import akka.actor.ActorRef
+import akka.actor.NoSerializationVerificationNeeded
 
 /**
  * INTERNAL API
@@ -31,7 +32,7 @@ private[remote] object InboundEnvelope {
 /**
  * INTERNAL API
  */
-private[remote] trait InboundEnvelope {
+private[remote] trait InboundEnvelope extends NoSerializationVerificationNeeded {
   def recipient: OptionVal[InternalActorRef]
   def sender: OptionVal[ActorRef]
   def originUid: Long

@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding.typed.scaladsl
 
 import akka.actor.typed.ActorRef
@@ -10,9 +11,8 @@ import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
-import akka.persistence.typed.scaladsl.PersistentBehaviors
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 object ClusterShardingPersistenceSpec {
@@ -42,10 +42,8 @@ object ClusterShardingPersistenceSpec {
   final case class Get(replyTo: ActorRef[String]) extends Command
   final case object StopPlz extends Command
 
-  import PersistentBehaviors._
-
   def persistentActor(entityId: String): Behavior[Command] =
-    PersistentBehaviors.immutable[Command, String, String](
+    PersistentBehaviors.receive[Command, String, String](
       entityId,
       initialState = "",
       commandHandler = (_, state, cmd) ⇒ cmd match {
@@ -61,9 +59,11 @@ object ClusterShardingPersistenceSpec {
 
 }
 
-class ClusterShardingPersistenceSpec extends TestKit("ClusterShardingPersistenceSPec", ClusterShardingPersistenceSpec.config)
+class ClusterShardingPersistenceSpec extends ActorTestKit
   with TypedAkkaSpecWithShutdown {
   import ClusterShardingPersistenceSpec._
+
+  override def config = ClusterShardingPersistenceSpec.config
 
   val sharding = ClusterSharding(system)
 

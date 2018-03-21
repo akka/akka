@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import java.util.concurrent.CompletionStage
@@ -86,6 +87,15 @@ final class Source[+Out, +Mat](
    */
   override def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
     new Source[Out, Mat2](traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]), shape)
+
+  /**
+   * Materializes this Source, immediately returning (1) its materialized value, and (2) a new Source
+   * that can be used to consume elements from the newly materialized Source.
+   */
+  def preMaterialize()(implicit materializer: Materializer): (Mat, ReprMat[Out, NotUsed]) = {
+    val (mat, pub) = toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
+    (mat, Source.fromPublisher(pub))
+  }
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
@@ -185,7 +195,7 @@ final class Source[+Out, +Mat](
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.
    */
-  def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)
+  def asJava[JOut >: Out, JMat >: Mat]: javadsl.Source[JOut, JMat] = new javadsl.Source(this)
 
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
@@ -413,6 +423,16 @@ object Source {
     Source.fromGraph(new LazySource[T, M](create))
 
   /**
+   * Creates a `Source` from supplied future factory that is not called until downstream demand. When source gets
+   * materialized the materialized future is completed with the value from the factory. If downstream cancels or fails
+   * without any demand the create factory is never called and the materialized `Future` is failed.
+   *
+   * @see [[Source.lazily]]
+   */
+  def lazilyAsync[T](create: () ⇒ Future[T]): Source[T, Future[NotUsed]] =
+    lazily(() ⇒ fromFuture(create()))
+
+  /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
   def asSubscriber[T]: Source[T, Subscriber[T]] =
@@ -509,7 +529,10 @@ object Source {
    */
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
     actorRef(
-      { case akka.actor.Status.Success(_) ⇒ },
+      {
+        case akka.actor.Status.Success    ⇒
+        case akka.actor.Status.Success(_) ⇒
+      },
       { case akka.actor.Status.Failure(cause) ⇒ cause },
       bufferSize, overflowStrategy)
 
@@ -612,7 +635,7 @@ object Source {
    * `Restart` supervision strategy will close and create blocking IO again. Default strategy is `Stop` which means
    * that stream will be terminated on error in `read` function by default.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
@@ -635,7 +658,7 @@ object Source {
    * `Restart` supervision strategy will close and create resource. Default strategy is `Stop` which means
    * that stream will be terminated on error in `read` function (or future) by default.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.

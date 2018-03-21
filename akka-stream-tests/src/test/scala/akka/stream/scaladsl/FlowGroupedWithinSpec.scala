@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import scala.collection.immutable
@@ -11,7 +12,6 @@ import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, ThrottleMode 
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 
-import scala.concurrent.Await
 import akka.testkit.TimingTest
 import akka.util.ConstantFun
 

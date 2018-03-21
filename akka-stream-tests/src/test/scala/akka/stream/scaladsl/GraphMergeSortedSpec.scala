@@ -1,15 +1,13 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.stream._
 import akka.stream.testkit.TwoStreamsSetup
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalatest.concurrent.ScalaFutures
-import scala.concurrent.duration._
-import org.scalactic.ConversionCheckedTripleEquals
 import org.scalacheck.Shrink
 
 class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyChecks {

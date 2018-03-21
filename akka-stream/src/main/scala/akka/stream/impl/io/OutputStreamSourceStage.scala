@@ -1,27 +1,24 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.io
 
 import java.io.{ IOException, OutputStream }
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingQueue }
-import akka.stream.{ Outlet, SourceShape, Attributes }
+
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.OutputStreamSourceStage._
 import akka.stream.stage._
+import akka.stream.{ ActorMaterializerHelper, Attributes, Outlet, SourceShape }
 import akka.util.ByteString
+
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
-import akka.stream.ActorAttributes
-import akka.stream.impl.Stages.DefaultAttributes.IODispatcher
-import akka.stream.ActorAttributes.Dispatcher
-import scala.concurrent.ExecutionContext
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerHelper
 
 private[stream] object OutputStreamSourceStage {
   sealed trait AdapterToStageMessage
@@ -41,8 +38,6 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, OutputStream) = {
     val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
-
-    val dispatcherId = inheritedAttributes.get[Dispatcher](IODispatcher).dispatcher
 
     require(maxBuffer > 0, "Buffer size must be greater than 0")
 
@@ -109,8 +104,10 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
         }
 
       override def preStart(): Unit = {
-        dispatcher = ActorMaterializerHelper.downcast(materializer).system.dispatchers.lookup(dispatcherId)
-        super.preStart()
+        // this stage is running on the blocking IO dispatcher by default, but we also want to schedule futures
+        // that are blocking, so we need to look it up
+        val actorMat = ActorMaterializerHelper.downcast(materializer)
+        dispatcher = actorMat.system.dispatchers.lookup(actorMat.settings.blockingIoDispatcher)
       }
 
       setHandler(out, new OutHandler {

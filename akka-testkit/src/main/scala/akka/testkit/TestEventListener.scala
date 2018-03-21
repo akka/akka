@@ -1,9 +1,9 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit
 
-import language.existentials
 import scala.util.matching.Regex
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
@@ -12,7 +12,7 @@ import akka.actor.{ DeadLetter, ActorSystem, UnhandledMessage }
 import akka.dispatch.sysmsg.{ SystemMessage, Terminate }
 import akka.event.Logging.{ Warning, LogEvent, InitializeLogger, Info, Error, Debug, LoggerInitialized }
 import akka.event.Logging
-import akka.actor.{ ActorRef, NoSerializationVerificationNeeded }
+import akka.actor.NoSerializationVerificationNeeded
 import akka.japi.Util.immutableSeq
 import java.lang.{ Iterable ⇒ JIterable }
 import akka.util.BoxedType

@@ -1,13 +1,13 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed.Behavior
-import akka.testkit.typed.EffectfulActorContext
-import akka.testkit.typed.TestInbox
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import akka.testkit.typed.internal.EffectfulActorContext
+import akka.testkit.typed.scaladsl.TestInbox
+import org.scalatest.{ Matchers, WordSpec }
 
 class StashBufferSpec extends WordSpec with Matchers {
 
@@ -85,7 +85,7 @@ class StashBufferSpec extends WordSpec with Matchers {
 
       val valueInbox = TestInbox[String]()
       def behavior(state: String): Behavior[String] =
-        Behaviors.immutable[String] { (_, msg) ⇒
+        Behaviors.receive[String] { (_, msg) ⇒
           if (msg == "get") {
             valueInbox.ref ! state
             Behaviors.same
@@ -95,7 +95,7 @@ class StashBufferSpec extends WordSpec with Matchers {
         }
 
       buffer.unstashAll(ctx, behavior(""))
-      valueInbox.expectMsg("m1m2m3")
+      valueInbox.expectMessage("m1m2m3")
       buffer.isEmpty should ===(true)
     }
 
@@ -108,17 +108,17 @@ class StashBufferSpec extends WordSpec with Matchers {
 
       val valueInbox = TestInbox[String]()
       def behavior(state: String): Behavior[String] =
-        Behaviors.immutable[String] { (_, msg) ⇒
+        Behaviors.receive[String] { (_, msg) ⇒
           if (msg == "get") {
             valueInbox.ref ! state
             Behaviors.same
           } else {
-            Behaviors.deferred[String](_ ⇒ behavior(state + msg))
+            Behaviors.setup[String](_ ⇒ behavior(state + msg))
           }
         }
 
       buffer.unstashAll(ctx, behavior(""))
-      valueInbox.expectMsg("m1m2m3")
+      valueInbox.expectMessage("m1m2m3")
       buffer.isEmpty should ===(true)
     }
 
@@ -131,7 +131,7 @@ class StashBufferSpec extends WordSpec with Matchers {
 
       val valueInbox = TestInbox[String]()
       def behavior(state: String): Behavior[String] =
-        Behaviors.immutable[String] { (_, msg) ⇒
+        Behaviors.receive[String] { (_, msg) ⇒
           if (msg == "get") {
             valueInbox.ref ! state
             Behaviors.same
@@ -147,7 +147,7 @@ class StashBufferSpec extends WordSpec with Matchers {
       // the call is made, not unstash new messages added to the buffer while
       // unstashing.
       val b2 = buffer.unstashAll(ctx, behavior(""))
-      valueInbox.expectMsg("m1m3")
+      valueInbox.expectMessage("m1m3")
       buffer.size should ===(1)
       buffer.head should ===("m2")
 

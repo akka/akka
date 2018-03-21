@@ -1,9 +1,9 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
-import akka.NotUsed
 import akka.stream.impl.fusing.GraphStages
 import akka.stream._
 import akka.stream.testkit._
@@ -364,7 +364,6 @@ class GraphDSLCompileSpec extends StreamSpec {
     "suitably override attribute handling methods" in {
       import akka.stream.Attributes._
       val ga = GraphDSL.create() { implicit b ⇒
-        import GraphDSL.Implicits._
         val id = b.add(GraphStages.identity[Any])
 
         FlowShape(id.in, id.out)

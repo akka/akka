@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -247,8 +247,8 @@ final class ClusterShardingSettings(
    */
   @InternalApi
   private[akka] def shouldHostShard(cluster: Cluster): Boolean =
-    (role.isEmpty || cluster.selfMember.roles(role.get)) &&
-      (dataCenter.isEmpty || cluster.selfMember.dataCenter.contains(dataCenter.get))
+    role.forall(cluster.selfMember.roles.contains) &&
+      dataCenter.forall(cluster.selfMember.dataCenter.contains)
 
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.option(role))
 

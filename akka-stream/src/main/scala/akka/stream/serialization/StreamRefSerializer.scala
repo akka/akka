@@ -1,17 +1,15 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.serialization
 
 import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
-import akka.stream.{ SourceRef, StreamRefMessages }
+import akka.stream.StreamRefMessages
 import akka.stream.impl.streamref._
-
-import scala.concurrent.duration._
-import scala.concurrent.Await
 
 /** INTERNAL API */
 @InternalApi

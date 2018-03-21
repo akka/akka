@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding.typed
 package scaladsl
 
@@ -19,7 +20,6 @@ import akka.actor.typed.ExtensionId
 import akka.actor.typed.Props
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
-import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl

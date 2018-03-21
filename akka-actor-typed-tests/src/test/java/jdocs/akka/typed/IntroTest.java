@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.akka.typed;
 
 //#imports
@@ -47,7 +48,7 @@ public class IntroTest {
       }
     }
 
-    public static final Behavior<Greet> greeter = Behaviors.immutable((ctx, msg) -> {
+    public static final Behavior<Greet> greeter = Behaviors.receive((ctx, msg) -> {
       System.out.println("Hello " + msg.whom + "!");
       msg.replyTo.tell(new Greeted(msg.whom));
       return Behaviors.same();
@@ -140,7 +141,7 @@ public class IntroTest {
     }
 
     private static Behavior<RoomCommand> chatRoom(List<ActorRef<SessionCommand>> sessions) {
-      return Behaviors.immutable(RoomCommand.class)
+      return Behaviors.receive(RoomCommand.class)
         .onMessage(GetSession.class, (ctx, getSession) -> {
           ActorRef<SessionEvent> client = getSession.replyTo;
           ActorRef<SessionCommand> ses = ctx.spawn(
@@ -165,7 +166,7 @@ public class IntroTest {
         ActorRef<RoomCommand> room,
         String screenName,
         ActorRef<SessionEvent> client) {
-      return Behaviors.immutable(ChatRoom.SessionCommand.class)
+      return Behaviors.receive(ChatRoom.SessionCommand.class)
           .onMessage(PostMessage.class, (ctx, post) -> {
             // from client, publish to others via the room
             room.tell(new PublishSessionMessage(screenName, post.message));
@@ -189,7 +190,7 @@ public class IntroTest {
     }
 
     public static Behavior<ChatRoom.SessionEvent> behavior() {
-      return Behaviors.immutable(ChatRoom.SessionEvent.class)
+      return Behaviors.receive(ChatRoom.SessionEvent.class)
         .onMessage(ChatRoom.SessionDenied.class, (ctx, msg) -> {
           System.out.println("cannot start chat room session: " + msg.reason);
           return Behaviors.stopped();
@@ -212,7 +213,7 @@ public class IntroTest {
   public static void runChatRoom() throws Exception {
 
     //#chatroom-main
-    Behavior<Void> main = Behaviors.deferred(ctx -> {
+    Behavior<Void> main = Behaviors.setup(ctx -> {
       ActorRef<ChatRoom.RoomCommand> chatRoom =
         ctx.spawn(ChatRoom.behavior(), "chatRoom");
       ActorRef<ChatRoom.SessionEvent> gabbler =
@@ -220,7 +221,7 @@ public class IntroTest {
       ctx.watch(gabbler);
       chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
 
-      return Behaviors.immutable(Void.class)
+      return Behaviors.receive(Void.class)
         .onSignal(Terminated.class, (c, sig) -> Behaviors.stopped())
         .build();
     });

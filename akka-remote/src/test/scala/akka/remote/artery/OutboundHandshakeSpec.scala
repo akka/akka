@@ -1,16 +1,14 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import scala.concurrent.duration._
 import akka.actor.Address
-import akka.remote.EndpointManager.Send
-import akka.remote.RemoteActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.remote.artery.OutboundHandshake.HandshakeTimeoutException
-import akka.remote.artery.SystemMessageDelivery._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Keep
@@ -20,7 +18,6 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import akka.testkit.TestProbe
 import akka.util.OptionVal
 
 class OutboundHandshakeSpec extends AkkaSpec with ImplicitSender {

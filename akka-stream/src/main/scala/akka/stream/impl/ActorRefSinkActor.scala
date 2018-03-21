@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl
 
 import akka.stream.actor.ActorSubscriber
 import akka.actor.ActorRef
 import akka.stream.actor.ActorSubscriberMessage
-import akka.actor.Status
 import akka.stream.actor.WatermarkRequestStrategy
 import akka.actor.Props
 import akka.actor.Terminated

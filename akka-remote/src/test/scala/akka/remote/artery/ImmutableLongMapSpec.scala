@@ -1,9 +1,9 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
-import scala.concurrent.duration._
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 import akka.util.OptionVal

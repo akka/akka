@@ -7,14 +7,9 @@ package akka.stream.impl.fusing
 import akka.stream.testkit.StreamSpec
 
 import scala.util.control.NoStackTrace
-import akka.stream.{ ActorAttributes, Attributes, Supervision }
-import akka.stream.stage._
-import akka.testkit.AkkaSpec
+import akka.stream.Supervision
 
 class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit {
-  import Supervision.stoppingDecider
-  import Supervision.resumingDecider
-  import Supervision.restartingDecider
 
   val TE = new Exception("TEST") with NoStackTrace {
     override def toString = "TE"

@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.akka.typed;
 
 //#import
@@ -11,8 +12,8 @@ import akka.Done;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.testkit.typed.BehaviorTestkit;
-import akka.testkit.typed.TestInbox;
+import akka.testkit.typed.javadsl.TestInbox;
+import akka.testkit.typed.javadsl.BehaviorTestKit;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -88,7 +89,7 @@ public class StashDocTest extends JUnitSuite {
     }
 
     Behavior<Command> behavior() {
-      return Behaviors.deferred(ctx -> {
+      return Behaviors.setup(ctx -> {
         db.load(id)
             .whenComplete((value, cause) -> {
             if (cause == null)
@@ -102,7 +103,7 @@ public class StashDocTest extends JUnitSuite {
     }
 
     private Behavior<Command> init() {
-      return Behaviors.immutable(Command.class)
+      return Behaviors.receive(Command.class)
           .onMessage(InitialState.class, (ctx, msg) -> {
             // now we are ready to handle stashed messages if any
             return buffer.unstashAll(ctx, active(msg.value));
@@ -119,7 +120,7 @@ public class StashDocTest extends JUnitSuite {
     }
 
     private Behavior<Command> active(String state) {
-      return Behaviors.immutable(Command.class)
+      return Behaviors.receive(Command.class)
           .onMessage(Get.class, (ctx, msg) -> {
             msg.replyTo.tell(state);
             return Behaviors.same();
@@ -138,7 +139,7 @@ public class StashDocTest extends JUnitSuite {
     }
 
     private Behavior<Command> saving(String state, ActorRef<Done> replyTo) {
-      return Behaviors.immutable(Command.class)
+      return Behaviors.receive(Command.class)
           .onMessageEquals(SaveSuccess.instance, ctx -> {
             replyTo.tell(Done.getInstance());
             return buffer.unstashAll(ctx, active(state));
@@ -178,23 +179,23 @@ public class StashDocTest extends JUnitSuite {
       }
     };
     final DataAccess dataAccess = new DataAccess("17", db);
-    BehaviorTestkit<DataAccess.Command> testKit = BehaviorTestkit.create(dataAccess.behavior());
-    TestInbox<String> getInbox = TestInbox.apply("getInbox");
-    testKit.run(new DataAccess.Get(getInbox.ref()));
-    DataAccess.Command initialStateMsg = testKit.selfInbox().receiveMsg();
+    BehaviorTestKit<DataAccess.Command> testKit = BehaviorTestKit.create(dataAccess.behavior());
+    TestInbox<String> getInbox = TestInbox.create("getInbox");
+    testKit.run(new DataAccess.Get(getInbox.getRef()));
+    DataAccess.Command initialStateMsg = testKit.selfInbox().receiveMessage();
     testKit.run(initialStateMsg);
-    getInbox.expectMsg("TheValue");
+    getInbox.expectMessage("TheValue");
 
-    TestInbox<Done> saveInbox = TestInbox.apply("saveInbox");
-    testKit.run(new DataAccess.Save("UpdatedValue", saveInbox.ref()));
-    testKit.run(new DataAccess.Get(getInbox.ref()));
-    DataAccess.Command saveSuccessMsg = testKit.selfInbox().receiveMsg();
+    TestInbox<Done> saveInbox = TestInbox.create("saveInbox");
+    testKit.run(new DataAccess.Save("UpdatedValue", saveInbox.getRef()));
+    testKit.run(new DataAccess.Get(getInbox.getRef()));
+    DataAccess.Command saveSuccessMsg = testKit.selfInbox().receiveMessage();
     testKit.run(saveSuccessMsg);
-    saveInbox.expectMsg(Done.getInstance());
-    getInbox.expectMsg("UpdatedValue");
+    saveInbox.expectMessage(Done.getInstance());
+    getInbox.expectMessage("UpdatedValue");
 
-    testKit.run(new DataAccess.Get(getInbox.ref()));
-    getInbox.expectMsg("UpdatedValue");
+    testKit.run(new DataAccess.Get(getInbox.getRef()));
+    getInbox.expectMessage("UpdatedValue");
   }
 
 }

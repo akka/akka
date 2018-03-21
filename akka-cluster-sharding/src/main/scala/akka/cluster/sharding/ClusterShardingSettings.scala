@@ -1,13 +1,16 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
+import akka.annotation.InternalApi
 import com.typesafe.config.Config
+import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManagerSettings
 
 object ClusterShardingSettings {
@@ -203,6 +206,11 @@ final class ClusterShardingSettings(
   require(
     stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
     s"Unknown 'state-store-mode' [$stateStoreMode], valid values are '$StateStoreModeDData' or '$StateStoreModePersistence'")
+
+  /** If true, this node should run the shard region, otherwise just a shard proxy should started on this node. */
+  @InternalApi
+  private[akka] def shouldHostShard(cluster: Cluster): Boolean =
+    role.forall(cluster.selfMember.roles.contains)
 
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.roleOption(role))
 

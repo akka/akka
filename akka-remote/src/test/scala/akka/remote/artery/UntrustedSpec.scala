@@ -9,15 +9,12 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
-import akka.actor.ActorSystem
 import akka.actor.Deploy
-import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.actor.Terminated
-import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.actor.ActorSelection

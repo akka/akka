@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicBoolean
@@ -43,12 +44,15 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
    * INTERNAL API
    */
   @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
-    // if the props already have a dispatcher set we respect that, if not
-    // we take it from the attributes
-    val effectiveProps =
-      if (props.dispatcher == Dispatchers.DefaultDispatcherId)
+    val effectiveProps = props.dispatcher match {
+      case Dispatchers.DefaultDispatcherId ⇒
         props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
-      else props
+      case ActorAttributes.IODispatcher.dispatcher ⇒
+        // this one is actually not a dispatcher but a relative config key pointing containing the actual dispatcher name
+        props.withDispatcher(settings.blockingIoDispatcher)
+      case _ ⇒ props
+    }
+
     actorOf(effectiveProps, context.islandName)
   }
 
@@ -173,7 +177,7 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
 @InternalApi private[akka] class StreamSupervisor(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean) extends Actor {
   import akka.stream.impl.StreamSupervisor._
 
-  override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
+  override def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   def receive = {
     case Materialize(props, name) ⇒

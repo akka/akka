@@ -1,14 +1,15 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.typed
 
 import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
-import akka.testkit.typed.scaladsl.TestProbe
-import akka.testkit.typed.{ TestKit, TestKitSettings }
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.testkit.typed.TestKitSettings
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
@@ -32,7 +33,9 @@ object ClusterApiSpec {
     """)
 }
 
-class ClusterApiSpec extends TestKit("ClusterApiSpec", ClusterApiSpec.config) with TypedAkkaSpecWithShutdown with ScalaFutures {
+class ClusterApiSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with ScalaFutures {
+
+  override def config = ClusterApiSpec.config
 
   val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)

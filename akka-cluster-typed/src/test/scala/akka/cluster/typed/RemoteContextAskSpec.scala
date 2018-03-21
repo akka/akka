@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.typed
 
 import java.nio.charset.StandardCharsets
@@ -11,12 +12,10 @@ import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorRefResolver, ActorSystem, TypedAkkaSpecWithShutdown }
 import akka.serialization.SerializerWithStringManifest
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.actor.typed.scaladsl.adapter._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpecLike }
 
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
@@ -71,7 +70,7 @@ object RemoteContextAskSpec {
   case object Pong
   case class Ping(respondTo: ActorRef[Pong.type])
 
-  def pingPong = Behaviors.immutable[Ping] { (_, msg) ⇒
+  def pingPong = Behaviors.receive[Ping] { (_, msg) ⇒
     msg match {
       case Ping(sender) ⇒
         sender ! Pong
@@ -83,9 +82,11 @@ object RemoteContextAskSpec {
 
 }
 
-class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with TypedAkkaSpecWithShutdown {
+class RemoteContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   import RemoteContextAskSpec._
+
+  override def config = RemoteContextAskSpec.config
 
   "Asking another actor through the ActorContext across remoting" must {
 
@@ -95,7 +96,7 @@ class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with Typ
       node1.manager ! Join(node1.selfMember.address)
 
       Receptionist(system).ref ! Receptionist.Subscribe(pingPongKey, node1Probe.ref)
-      node1Probe.expectMessageType[Receptionist.Listing[_]]
+      node1Probe.expectMessageType[Receptionist.Listing]
 
       val system2 = ActorSystem(pingPong, system.name, system.settings.config)
       val node2 = Cluster(system2)
@@ -103,12 +104,12 @@ class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with Typ
 
       val node2Probe = TestProbe[AnyRef]()(system2)
       Receptionist(system2).ref ! Receptionist.Register(pingPongKey, system2, node2Probe.ref)
-      node2Probe.expectMessageType[Registered[_]]
+      node2Probe.expectMessageType[Registered]
 
       // wait until the service is seen on the first node
-      val remoteRef = node1Probe.expectMessageType[Receptionist.Listing[Ping]].serviceInstances.head
+      val remoteRef = node1Probe.expectMessageType[Receptionist.Listing].serviceInstances(pingPongKey).head
 
-      spawn(Behaviors.deferred[AnyRef] { (ctx) ⇒
+      spawn(Behaviors.setup[AnyRef] { (ctx) ⇒
         implicit val timeout: Timeout = 3.seconds
 
         ctx.ask(remoteRef)(Ping) {
@@ -116,7 +117,7 @@ class RemoteContextAskSpec extends TestKit(RemoteContextAskSpec.config) with Typ
           case Failure(ex)   ⇒ ex
         }
 
-        Behaviors.immutable { (_, msg) ⇒
+        Behaviors.receive { (_, msg) ⇒
           node1Probe.ref ! msg
           Behaviors.same
         }

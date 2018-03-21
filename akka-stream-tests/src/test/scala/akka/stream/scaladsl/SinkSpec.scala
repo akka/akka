@@ -1,18 +1,23 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import java.util
 import java.util.function
-import java.util.function.{ BinaryOperator, BiConsumer, Supplier, ToIntFunction }
+import java.util.function.{ BiConsumer, BinaryOperator, Supplier, ToIntFunction }
 import java.util.stream.Collector.Characteristics
 import java.util.stream.{ Collector, Collectors }
+
 import akka.stream._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.DefaultTimeout
+import org.reactivestreams.Publisher
 import org.scalatest.concurrent.ScalaFutures
+
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
@@ -317,4 +322,54 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       matVal.failed.futureValue shouldBe a[AbruptStageTerminationException]
     }
   }
+
+  "Sink pre-materialization" must {
+    "materialize the sink and wrap its exposed publisher in a Source" in {
+      val publisherSink: Sink[String, Publisher[String]] = Sink.asPublisher[String](false)
+      val (matPub, sink) = publisherSink.preMaterialize()
+
+      val probe = Source.fromPublisher(matPub).runWith(TestSink.probe)
+      probe.expectNoMessage(100.millis)
+
+      Source.single("hello").runWith(sink)
+
+      probe.ensureSubscription()
+      probe.requestNext("hello")
+      probe.expectComplete()
+    }
+    "materialize the sink and wrap its exposed publisher(fanout) in a Source twice" in {
+      val publisherSink: Sink[String, Publisher[String]] = Sink.asPublisher[String](fanout = true)
+      val (matPub, sink) = publisherSink.preMaterialize()
+
+      val probe1 = Source.fromPublisher(matPub).runWith(TestSink.probe)
+      val probe2 = Source.fromPublisher(matPub).runWith(TestSink.probe)
+
+      Source.single("hello").runWith(sink)
+
+      probe1.ensureSubscription()
+      probe1.requestNext("hello")
+      probe1.expectComplete()
+
+      probe2.ensureSubscription()
+      probe2.requestNext("hello")
+      probe2.expectComplete()
+    }
+    "materialize the sink and wrap its exposed publisher(not fanout), should fail the second materialization" in {
+      val publisherSink: Sink[String, Publisher[String]] = Sink.asPublisher[String](fanout = false)
+      val (matPub, sink) = publisherSink.preMaterialize()
+
+      val probe1 = Source.fromPublisher(matPub).runWith(TestSink.probe)
+      val probe2 = Source.fromPublisher(matPub).runWith(TestSink.probe)
+
+      Source.single("hello").runWith(sink)
+
+      probe1.ensureSubscription()
+      probe1.requestNext("hello")
+      probe1.expectComplete()
+
+      probe2.ensureSubscription()
+      probe2.expectError().getMessage should include("only supports one subscriber")
+    }
+  }
+
 }

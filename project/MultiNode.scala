@@ -1,10 +1,12 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka
 
 import akka.TestExtras.Filter.Keys._
-import com.typesafe.sbt.{ SbtScalariform, SbtMultiJvm }
+import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.multiJvmCreateLogger
+import com.typesafe.sbt.{SbtMultiJvm, SbtScalariform}
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import sbt._
@@ -59,7 +61,20 @@ object MultiNode extends AutoPlugin {
         jvmOptions in MultiJvm := defaultMultiJvmOptions,
         compileInputs in (MultiJvm, compile) := ((compileInputs in (MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm)).value,
         scalacOptions in MultiJvm := (scalacOptions in Test).value,
-        compile in MultiJvm := ((compile in MultiJvm) triggeredBy (compile in Test)).value) ++
+        compile in MultiJvm := ((compile in MultiJvm) triggeredBy (compile in Test)).value,
+        logLevel in multiJvmCreateLogger := Level.Debug, //  to see ssh establishment
+        multiJvmCreateLogger in MultiJvm := { // to use normal sbt logging infra instead of custom sbt-multijvm-one
+          val previous = (multiJvmCreateLogger in MultiJvm).value
+          val logger = streams.value.log
+          (name: String) =>
+            new Logger {
+              def trace(t: => Throwable) { logger.trace(t) }
+              def success(message: => String) { success(message) }
+              def log(level: Level.Value, message: => String): Unit =
+                logger.log(level, s"[${scala.Console.BLUE}$name${scala.Console.RESET}] $message")
+            }
+        }
+      ) ++
         CliOptions.hostsFileName.map(multiNodeHostsFileName in MultiJvm := _) ++
         CliOptions.javaName.map(multiNodeJavaName in MultiJvm := _) ++
         CliOptions.targetDirName.map(multiNodeTargetDirName in MultiJvm := _) ++

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.ddata.protobuf
 
 import scala.concurrent.duration._
@@ -13,7 +14,6 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.cluster.ddata.GSet
 import akka.cluster.ddata.GSetKey
-import akka.cluster.ddata.PruningState
 import akka.cluster.ddata.PruningState.PruningInitialized
 import akka.cluster.ddata.PruningState.PruningPerformed
 import akka.cluster.ddata.Replicator._

@@ -107,7 +107,7 @@ their registration order, i.e. the last registered first.
 
 A message adapter (and the returned `ActorRef`) has the same lifecycle as
 the receiving actor. It's recommended to register the adapters in a top level
-`Behaviors.deferred` or constructor of `MutableBehavior` but it's possible to
+`Behaviors.setup` or constructor of `MutableBehavior` but it's possible to
 register them later also if needed.
 
 The adapter function is running in the receiving actor and can safely access state of it, but if it throws an exception the actor is stopped.
@@ -224,7 +224,8 @@ Java
 
 There are a few things worth noting here:
 
-* To get access to the timers you start with `Behaviors.withTimers` that will pass a `TimerScheduler` instance to the function. This can be used with any type of `Behavior`, such as `immutable` or `mutable`.
+* To get access to the timers you start with `Behaviors.withTimers` that will pass a `TimerScheduler` instance to the function. 
+This can be used with any type of `Behavior`, including `receive`, `receiveMessage`, but also `setup` or any other behavior.
 * Each timer has a key and if a new timer with same key is started the previous is cancelled and it's guaranteed that a message from the previous timer is not received, even though it might already be enqueued in the mailbox when the new timer is started.
 * Both periodic and single message timers are supported. 
 * The `TimerScheduler` is mutable in itself, because it performs and manages the side effects of registering the scheduled tasks.

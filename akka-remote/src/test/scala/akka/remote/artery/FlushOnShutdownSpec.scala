@@ -1,12 +1,11 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
-import akka.actor.{ Actor, ActorIdentity, ActorSystem, Identify, Props, RootActorPath }
-import akka.remote.RARP
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
-import com.typesafe.config.ConfigFactory
+import akka.actor.{ Actor, ActorIdentity, Identify, Props }
+import akka.testkit.TestProbe
 
 import scala.concurrent.Await
 import scala.concurrent.duration._

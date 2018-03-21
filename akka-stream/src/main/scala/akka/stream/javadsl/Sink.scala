@@ -1,11 +1,12 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl
 
 import java.util.Optional
 
-import akka.{ Done, NotUsed }
+import akka.{ Done, NotUsed, japi }
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
@@ -18,6 +19,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 import java.util.concurrent.CompletionStage
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 
 /** Java API */
@@ -266,18 +268,33 @@ object Sink {
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
    * because of completion or error.
    *
-   * If `sinkFactory` throws an exception and the supervision decision is
-   * [[akka.stream.Supervision.Stop]] the `Future` will be completed with failure. For all other supervision options it will
-   * try to create sink with next element
-   *
-   * `fallback` will be executed when there was no elements and completed is received from upstream.
-   *
-   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   * If upstream completes before an element was received then the `Future` is completed with the value created by fallback.
+   * If upstream fails before an element was received, `sinkFactory` throws an exception, or materialization of the internal
+   * sink fails then the `Future` is completed with the exception.
+   * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
+  @Deprecated
+  @deprecated("Use lazyInitAsync instead. (lazyInitAsync no more needs a fallback function and the materialized value more clearly indicates if the internal sink was materialized or not.)", "2.5.11")
   def lazyInit[T, M](sinkFactory: function.Function[T, CompletionStage[Sink[T, M]]], fallback: function.Creator[M]): Sink[T, CompletionStage[M]] =
     new Sink(scaladsl.Sink.lazyInit[T, M](
       t ⇒ sinkFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
       () ⇒ fallback.create()).mapMaterializedValue(_.toJava))
+
+  /**
+   * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
+   * because of completion or error.
+   *
+   * If upstream completes before an element was received then the `Future` is completed with `None`.
+   * If upstream fails before an element was received, `sinkFactory` throws an exception, or materialization of the internal
+   * sink fails then the `Future` is completed with the exception.
+   * Otherwise the `Future` is completed with the materialized value of the internal sink.
+   */
+  def lazyInitAsync[T, M](sinkFactory: function.Creator[CompletionStage[Sink[T, M]]]): Sink[T, CompletionStage[Optional[M]]] = {
+    val sSink = scaladsl.Sink.lazyInitAsync[T, M](
+      () ⇒ sinkFactory.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)
+    ).mapMaterializedValue(fut ⇒ fut.map(_.fold(Optional.empty[M]())(m ⇒ Optional.ofNullable(m)))(ExecutionContexts.sameThreadExecutionContext).toJava)
+    new Sink(sSink)
+  }
 }
 
 /**
@@ -286,7 +303,7 @@ object Sink {
  * A `Sink` is a set of stream processing steps that has one open input.
  * Can be used as a `Subscriber`
  */
-final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
+final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
 
   override def shape: SinkShape[In] = delegate.shape
   override def traversalBuilder: LinearTraversalBuilder = delegate.traversalBuilder
@@ -320,6 +337,17 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
    */
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): Sink[In, Mat2] =
     new Sink(delegate.mapMaterializedValue(f.apply _))
+
+  /**
+   * Materializes this Sink, immediately returning (1) its materialized value, and (2) a new Sink
+   * that can be consume elements 'into' the pre-materialized one.
+   *
+   * Useful for when you need a materialized value of a Sink when handing it out to someone to materialize it for you.
+   */
+  def preMaterialize(materializer: Materializer): japi.Pair[Mat @uncheckedVariance, Sink[In @uncheckedVariance, NotUsed]] = {
+    val (mat, sink) = delegate.preMaterialize()(materializer)
+    akka.japi.Pair(mat, sink.asJava)
+  }
 
   /**
    * Replace the attributes of this [[Sink]] with the given ones. If this Sink is a composite

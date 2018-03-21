@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.stream.cookbook
 
 import akka.stream.Attributes
@@ -91,7 +95,7 @@ class RecipeHold extends RecipeSpec {
         .run()
 
       val subscription = sub.expectSubscription()
-      sub.expectNoMsg(100.millis)
+      sub.expectNoMessage(100.millis)
 
       subscription.request(1)
       sub.expectNext(0)
@@ -121,10 +125,10 @@ class RecipeHold extends RecipeSpec {
       source.via(new HoldWithWait).to(sink).run()
 
       val subscription = sub.expectSubscription()
-      sub.expectNoMsg(100.millis)
+      sub.expectNoMessage(100.millis)
 
       subscription.request(1)
-      sub.expectNoMsg(100.millis)
+      sub.expectNoMessage(100.millis)
 
       pub.sendNext(1)
       sub.expectNext(1)

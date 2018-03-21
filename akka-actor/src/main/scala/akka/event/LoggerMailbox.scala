@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.event
 
 import akka.dispatch.MessageQueue
@@ -10,7 +11,6 @@ import com.typesafe.config.Config
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import akka.dispatch.ProducesMessageQueue
-import akka.event.Logging.Debug
 import akka.event.Logging.LogEvent
 
 trait LoggerMessageQueueSemantics

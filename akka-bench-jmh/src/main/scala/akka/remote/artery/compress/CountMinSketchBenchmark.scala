@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery.compress
 
 import java.util.Random
@@ -40,7 +41,7 @@ class CountMinSketchBenchmark {
   @Benchmark
   @OperationsPerInvocation(8192)
   def updateRandomNumbers(blackhole: Blackhole): Unit = {
-    var i: Int = 0;
+    var i: Int = 0
     while (i < 8192) {
       blackhole.consume(countMinSketch.addObjectAndEstimateCount(preallocateIds(i), preallocateValues(i)))
       i += 1

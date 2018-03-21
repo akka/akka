@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
@@ -9,8 +10,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
-import akka.testkit.typed.TestKit
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
@@ -25,16 +25,17 @@ object AskSpec {
   final case class Stop(replyTo: ActorRef[Unit]) extends Msg
 }
 
-class AskSpec
-  extends TestKit("AskSpec", ConfigFactory.parseString("akka.loggers = [ akka.testkit.TestEventListener ]"))
-  with TypedAkkaSpec with ScalaFutures {
+class AskSpec extends ActorTestKit
+  with TypedAkkaSpecWithShutdown with ScalaFutures {
+  override def name = "AskSpec"
+  override def config = ConfigFactory.parseString("akka.loggers = [ akka.testkit.TestEventListener ]")
 
   import AskSpec._
 
   implicit def executor: ExecutionContext =
     system.executionContext
 
-  val behavior: Behavior[Msg] = immutable[Msg] {
+  val behavior: Behavior[Msg] = receive[Msg] {
     case (_, foo: Foo) ⇒
       foo.replyTo ! "foo"
       Behaviors.same
@@ -118,7 +119,7 @@ class AskSpec
 
       val probe = TestProbe[AnyRef]("probe")
       val behv =
-        Behaviors.immutable[String] {
+        Behaviors.receive[String] {
           case (ctx, "start-ask") ⇒
             ctx.ask[Question, Long](probe.ref)(Question(_)) {
               case Success(42L) ⇒

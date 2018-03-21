@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka
 
 import sbt._
@@ -20,7 +21,7 @@ object Dependencies {
   val aeronVersion = "1.7.0"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.12", "2.12.4"),
+    crossScalaVersions := Seq("2.11.12", "2.12.5"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
@@ -65,7 +66,6 @@ object Dependencies {
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.6.0" // ApacheV2, OpenLDAP Public License
 
-    // For akka-http-testkit-java
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
     // For Java 8 Conversions
@@ -118,6 +118,8 @@ object Dependencies {
 
       val levelDB = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided" // ApacheV2
       val levelDBNative = "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % "optional;provided" // New BSD
+
+      val junit = Compile.junit % "optional;provided;test"
     }
 
   }
@@ -130,7 +132,10 @@ object Dependencies {
 
   val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
-  val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck.value)
+  val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath,
+    Test.mockito, Test.scalacheck.value, Test.jimfs)
+
+  val typedTestkit = l ++= Seq(Provided.junit)
 
   val remote = l ++= Seq(netty, aeronDriver, aeronClient, Test.junit, Test.scalatest.value, Test.jimfs)
 

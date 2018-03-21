@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 package internal
 
@@ -10,7 +11,6 @@ import akka.actor.DeadLetterSuppression
 import akka.actor.typed.SupervisorStrategy._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.event.Logging
 import akka.util.OptionVal
 
 import scala.concurrent.duration.{ Deadline, FiniteDuration }
@@ -23,7 +23,7 @@ import scala.util.control.NonFatal
  */
 @InternalApi private[akka] object Supervisor {
   def apply[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], strategy: SupervisorStrategy): Behavior[T] =
-    Behaviors.deferred[T] { ctx ⇒
+    Behaviors.setup[T] { ctx ⇒
       val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
       val supervisor: Supervisor[T, Thr] = strategy match {
         case Restart(-1, _, loggingEnabled) ⇒
@@ -91,7 +91,7 @@ import scala.util.control.NonFatal
     } catch handleException(ctx, behavior)
   }
 
-  override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
+  override def receive(ctx: ActorContext[T], msg: T): Behavior[T] = {
     try {
       val b = Behavior.interpretMessage(behavior, ctx, msg)
       supervise(b, ctx)
@@ -112,7 +112,7 @@ import scala.util.control.NonFatal
 
   def init(ctx: ActorContext[T]) =
     // no handling of errors for Resume as that could lead to infinite restart-loop
-    wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), afterException = false)
+    wrap(Behavior.validateAsInitial(Behavior.start(behavior, ctx)), afterException = false)
 
   override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Supervisor[T, Thr]] = {
     case NonFatal(ex: Thr) ⇒
@@ -132,7 +132,7 @@ import scala.util.control.NonFatal
   override val behavior: Behavior[T], override val loggingEnabled: Boolean) extends Supervisor[T, Thr] {
 
   def init(ctx: ActorContext[T]): Supervisor[T, Thr] =
-    wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), false)
+    wrap(Behavior.validateAsInitial(Behavior.start(behavior, ctx)), false)
 
   override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Behavior[T]] = {
     case NonFatal(ex: Thr) ⇒
@@ -154,7 +154,7 @@ import scala.util.control.NonFatal
 
   override def init(ctx: ActorContext[T]) =
     // no handling of errors for Restart as that could lead to infinite restart-loop
-    wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), afterException = false)
+    wrap(Behavior.validateAsInitial(Behavior.start(behavior, ctx)), afterException = false)
 
   override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Supervisor[T, Thr]] = {
     case NonFatal(ex: Thr) ⇒
@@ -177,7 +177,7 @@ import scala.util.control.NonFatal
 
   override def init(ctx: ActorContext[T]) =
     try {
-      wrap(Behavior.validateAsInitial(Behavior.undefer(behavior, ctx)), afterException = false)
+      wrap(Behavior.validateAsInitial(Behavior.start(behavior, ctx)), afterException = false)
     } catch {
       case NonFatal(ex: Thr) ⇒
         log(ctx, ex)
@@ -252,7 +252,7 @@ import scala.util.control.NonFatal
 
   def init(ctx: ActorContext[Any]): Supervisor[Any, Thr] =
     try {
-      val startedBehavior = Behavior.validateAsInitial(Behavior.undefer(initialBehavior, ctx))
+      val startedBehavior = Behavior.validateAsInitial(Behavior.start(initialBehavior, ctx))
       new BackoffRestarter(initialBehavior, startedBehavior, strategy, restartCount, blackhole)
     } catch {
       case NonFatal(ex: Thr) ⇒
@@ -271,7 +271,7 @@ import scala.util.control.NonFatal
       super.receiveSignal(ctx, signal)
   }
 
-  override def receiveMessage(ctx: ActorContext[Any], msg: Any): Behavior[Any] = {
+  override def receive(ctx: ActorContext[Any], msg: Any): Behavior[Any] = {
     // intercept the scheduled messages and drop incoming messages if we are in backoff mode
     msg match {
       case ScheduledRestart ⇒
@@ -289,7 +289,7 @@ import scala.util.control.NonFatal
           ctx.asScala.system.toUntyped.eventStream.publish(Dropped(msg, ctx.asScala.self))
           Behavior.same
         } else
-          super.receiveMessage(ctx, msg)
+          super.receive(ctx, msg)
     }
   }
 

@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.serialization
 
 import java.util.concurrent.ConcurrentHashMap
@@ -9,7 +10,7 @@ import java.util.{ BitSet ⇒ ProgrammaticJavaDummy }
 import java.util.{ Date ⇒ SerializableDummy }
 
 import akka.actor.setup.ActorSystemSetup
-import akka.actor.{ ActorSystem, BootstrapSetup, ExtendedActorSystem, Terminated }
+import akka.actor.{ ActorSystem, BootstrapSetup, ExtendedActorSystem }
 import akka.testkit.{ AkkaSpec, TestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
