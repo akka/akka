@@ -118,7 +118,7 @@ Java
 
 While the above example shows composing two 2-input `ZipWith`s, in reality ZipWith already provides 
 numerous overloads including a 3 (and many more) parameter versions. So this could be implemented 
-using one ZipWith using the 3 parameter version, like this: `ZipWith((a, b, c) => out)`.
+using one ZipWith using the 3 parameter version, like this: @scala[`ZipWith((a, b, c) => out)`]@java[`ZipWith.create((a, b, c) -> out)`].
 (The ZipWith with N input has N+1 type parameter; the last type param is the output type.)
 
 @@@
