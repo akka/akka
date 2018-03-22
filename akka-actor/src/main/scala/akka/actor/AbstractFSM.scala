@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import akka.util.JavaDurationConverters
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -429,7 +430,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    */
   final def setTimer(name: String, msg: Any, timeout: java.time.Duration): Unit = {
     import JavaDurationConverters._
-    setTimer(name, msg, timeout.asScala)
+    setTimer(name, msg, timeout.asScala, false)
   }
 
   /**
@@ -445,17 +446,6 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
     import JavaDurationConverters._
     setTimer(name, msg, timeout.asScala, repeat)
   }
-
-  /**
-   * Schedule named timer to deliver message after given delay, possibly repeating.
-   * Any existing timer with the same name will automatically be canceled before
-   * adding the new timer.
-   * @param name identifier to be used with cancelTimer()
-   * @param msg message to be delivered
-   * @param timeout delay of first message delivery and between subsequent messages
-   */
-  final def setTimer(name: String, msg: Any, timeout: java.time.Duration): Unit =
-    setTimer(name, msg, timeout.asScala, false)
 
   /**
    * Default reason if calling `stop()`.
