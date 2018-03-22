@@ -253,8 +253,8 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         .map(_ ⇒ ByteString.empty) // make it a Flow[ByteString] again
     }
 
-    val host = localAddress.address.host.get
-    val port = localAddress.address.port.get
+    val host = bindAddress.address.host.get
+    val port = bindAddress.address.port.get
 
     val connectionSource: Source[Tcp.IncomingConnection, Future[ServerBinding]] =
       if (tlsEnabled) {
