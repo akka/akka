@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.tutorial_5;
 
 import akka.actor.ActorRef;
@@ -202,7 +203,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
     queryActor.tell(new Device.RespondTemperature(0L, Optional.of(1.0)), device1.getRef());
 
     DeviceGroup.RespondAllTemperatures response = requester.expectMsgClass(
-            FiniteDuration.create(5, TimeUnit.SECONDS),
+            java.time.Duration.ofSeconds(5),
             DeviceGroup.RespondAllTemperatures.class);
     assertEquals(1L, response.requestId);
 

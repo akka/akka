@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import java.io.File
@@ -9,7 +10,7 @@ import java.nio.file.StandardOpenOption._
 
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io._
-import akka.stream.{ ActorAttributes, IOResult }
+import akka.stream.IOResult
 import akka.util.ByteString
 
 import scala.concurrent.Future

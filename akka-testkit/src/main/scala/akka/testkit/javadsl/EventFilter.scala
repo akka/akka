@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.javadsl
 
 import java.util.function.Supplier
@@ -28,8 +29,8 @@ class EventFilter(clazz: Class[_], system: ActorSystem) {
     else
       null
 
-  private var source: String = null
-  private var message: String = null
+  private var source: String = _
+  private var message: String = _
   private var pattern: Boolean = false
   private var complete: Boolean = false
   private var occurrences: Int = Integer.MAX_VALUE

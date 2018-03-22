@@ -1,9 +1,8 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
-package akka.testkit.typed.javadsl
 
-import java.util.concurrent.TimeUnit
+package akka.testkit.typed.javadsl
 
 import akka.actor.Scheduler
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }

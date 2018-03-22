@@ -1,14 +1,12 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
-import scala.concurrent.duration._
-import akka.actor.{ ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, RootActorPath }
-import akka.remote.RARP
-import akka.testkit.{ AkkaSpec, ImplicitSender }
+import akka.actor.{ ActorIdentity, Identify, RootActorPath }
+import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
-import com.typesafe.config.ConfigFactory
 import akka.testkit.EventFilter
 
 object SerializationErrorSpec {

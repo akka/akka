@@ -1,16 +1,12 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.receptionist
 
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Extension
-import akka.actor.typed.ExtensionId
-import akka.actor.typed.internal.receptionist.ReceptionistBehaviorProvider
-import akka.actor.typed.internal.receptionist.ReceptionistImpl
-import akka.actor.typed.receptionist.Receptionist.{ Find, Registered }
+import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
+import akka.actor.typed.internal.receptionist._
+import akka.annotation.DoNotInherit
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -20,30 +16,26 @@ class Receptionist(system: ActorSystem[_]) extends Extension {
 
   private def hasCluster: Boolean = {
     // FIXME: replace with better indicator that cluster is enabled
-    val provider = system.settings.config.getString("akka.actor.provider")
-    (provider == "cluster") || (provider == "akka.cluster.ClusterActorRefProvider")
+    val provider = system.settings.untyped.ProviderClass
+    provider == "akka.cluster.ClusterActorRefProvider"
   }
 
   val ref: ActorRef[Receptionist.Command] = {
-    val behavior =
-      if (hasCluster)
+    val provider: ReceptionistBehaviorProvider =
+      if (hasCluster) {
         system.dynamicAccess
-          .createInstanceFor[ReceptionistBehaviorProvider]("akka.cluster.typed.internal.receptionist.ClusterReceptionist$", Nil)
+          .getObjectFor[ReceptionistBehaviorProvider]("akka.cluster.typed.internal.receptionist.ClusterReceptionist")
           .recover {
-            case ex ⇒
-              system.log.error(
-                ex,
-                "ClusterReceptionist could not be loaded dynamically. Make sure you have all required binaries on the classpath.")
-              ReceptionistImpl
-          }.get.behavior
-
-      else ReceptionistImpl.localOnlyBehavior
+            case e ⇒
+              throw new RuntimeException("ClusterReceptionist could not be loaded dynamically. Make sure you have " +
+                "'akka-cluster-typed' in the classpath.", e)
+          }.get
+      } else LocalReceptionist
 
     ActorRef(
-      system.systemActorOf(behavior, "receptionist")(
+      system.systemActorOf(provider.behavior, "receptionist")(
         // FIXME: where should that timeout be configured? Shouldn't there be a better `Extension`
         //        implementation that does this dance for us?
-
         10.seconds))
   }
 }
@@ -53,13 +45,13 @@ object ServiceKey {
    * Scala API: Creates a service key. The given ID should uniquely define a service with a given protocol.
    */
   def apply[T](id: String)(implicit classTag: ClassTag[T]): ServiceKey[T] =
-    ReceptionistImpl.DefaultServiceKey(id, classTag.runtimeClass.getName)
+    DefaultServiceKey(id, classTag.runtimeClass.getName)
 
   /**
    * Java API: Creates a service key. The given ID should uniquely define a service with a given protocol.
    */
   def create[T](clazz: Class[T], id: String): ServiceKey[T] =
-    ReceptionistImpl.DefaultServiceKey(id, clazz.getName)
+    DefaultServiceKey(id, clazz.getName)
 
 }
 
@@ -68,8 +60,11 @@ object ServiceKey {
  * T, meaning that it signifies that the type T is the entry point into the
  * protocol spoken by that service (think of it as the set of first messages
  * that a client could send).
+ *
+ * Not for user extension, see factories in companion object: [[ServiceKey#create]] and [[ServiceKey#apply]]
  */
-abstract class ServiceKey[T] extends Receptionist.AbstractServiceKey { key ⇒
+@DoNotInherit
+abstract class ServiceKey[T] extends AbstractServiceKey { key ⇒
   type Protocol = T
   def id: String
   def asServiceKey: ServiceKey[T] = this
@@ -98,81 +93,20 @@ abstract class ServiceKey[T] extends Receptionist.AbstractServiceKey { key ⇒
  * publish their identity together with the protocols that they implement. Other
  * Actors need only know the Receptionist’s identity in order to be able to use
  * the services of the registered Actors.
+ *
+ * These are the messages (and the extension) for interacting with the receptionist.
+ * The receptionist is easiest accessed through the system: [[ActorSystem.receptionist]]
  */
 object Receptionist extends ExtensionId[Receptionist] {
   def createExtension(system: ActorSystem[_]): Receptionist = new Receptionist(system)
   def get(system: ActorSystem[_]): Receptionist = apply(system)
 
   /**
-   * Internal representation of [[ServiceKey]] which is needed
-   * in order to use a TypedMultiMap (using keys with a type parameter does not
-   * work in Scala 2.x).
-   *
-   * Internal API
-   */
-  @InternalApi
-  private[akka] sealed abstract class AbstractServiceKey {
-    type Protocol
-
-    /** Type-safe down-cast */
-    def asServiceKey: ServiceKey[Protocol]
-  }
-
-  /** Internal superclass for external and internal commands */
-  @InternalApi
-  sealed private[akka] abstract class AllCommands
-
-  /**
    * The set of commands accepted by a Receptionist.
+   *
+   * Not for user Extension
    */
-  sealed abstract class Command extends AllCommands
-  @InternalApi
-  private[typed] abstract class InternalCommand extends AllCommands
-
-  /**
-   * Internal API
-   */
-  @InternalApi
-  private[akka] object MessageImpls {
-    // some trixery here to provide a nice _and_ safe API in the face
-    // of type erasure, more type safe factory methods for each message
-    // is the user API below while still hiding the type parameter so that
-    // users don't incorrecly match against it
-
-    final case class Register[T] private[akka] (
-      key:             ServiceKey[T],
-      serviceInstance: ActorRef[T],
-      replyTo:         Option[ActorRef[Receptionist.Registered]]) extends Command
-
-    final case class Registered[T] private[akka] (key: ServiceKey[T], _serviceInstance: ActorRef[T]) extends Receptionist.Registered {
-      def isForKey(key: ServiceKey[_]): Boolean = key == this.key
-      def serviceInstance[M](key: ServiceKey[M]): ActorRef[M] = {
-        if (key != this.key) throw new IllegalArgumentException(s"Wrong key [$key] used, must use listing key [${this.key}]")
-        _serviceInstance.asInstanceOf[ActorRef[M]]
-      }
-
-      def getServiceInstance[M](key: ServiceKey[M]): ActorRef[M] =
-        serviceInstance(key)
-    }
-
-    final case class Find[T] private[akka] (key: ServiceKey[T], replyTo: ActorRef[Receptionist.Listing]) extends Command
-
-    final case class Listing[T] private[akka] (key: ServiceKey[T], _serviceInstances: Set[ActorRef[T]]) extends Receptionist.Listing {
-
-      def isForKey(key: ServiceKey[_]): Boolean = key == this.key
-
-      def serviceInstances[M](key: ServiceKey[M]): Set[ActorRef[M]] = {
-        if (key != this.key) throw new IllegalArgumentException(s"Wrong key [$key] used, must use listing key [${this.key}]")
-        _serviceInstances.asInstanceOf[Set[ActorRef[M]]]
-      }
-
-      def getServiceInstances[M](key: ServiceKey[M]): java.util.Set[ActorRef[M]] =
-        serviceInstances(key).asJava
-    }
-
-    final case class Subscribe[T] private[akka] (key: ServiceKey[T], subscriber: ActorRef[Receptionist.Listing]) extends Command
-
-  }
+  @DoNotInherit abstract class Command
 
   /**
    * Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]. Multiple
@@ -188,12 +122,12 @@ object Receptionist extends ExtensionId[Receptionist] {
      * Create a Register without Ack that the service was registered
      */
     def apply[T](key: ServiceKey[T], service: ActorRef[T]): Command =
-      new MessageImpls.Register[T](key, service, None)
+      new ReceptionistMessages.Register[T](key, service, None)
     /**
      * Create a Register with an actor that will get an ack that the service was registered
      */
     def apply[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Registered]): Command =
-      new MessageImpls.Register[T](key, service, Some(replyTo))
+      new ReceptionistMessages.Register[T](key, service, Some(replyTo))
   }
   /**
    * Java API: A Register message without Ack that the service was registered
@@ -213,7 +147,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * Not for user extension
    */
   @DoNotInherit
-  sealed trait Registered {
+  trait Registered {
 
     def isForKey(key: ServiceKey[_]): Boolean
 
@@ -239,7 +173,7 @@ object Receptionist extends ExtensionId[Receptionist] {
      * Scala API
      */
     def apply[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Registered =
-      new MessageImpls.Registered(key, serviceInstance)
+      new ReceptionistMessages.Registered(key, serviceInstance)
 
   }
   /**
@@ -260,7 +194,7 @@ object Receptionist extends ExtensionId[Receptionist] {
      * Scala API:
      */
     def apply[T](key: ServiceKey[T], subscriber: ActorRef[Listing]): Command =
-      new MessageImpls.Subscribe(key, subscriber)
+      new ReceptionistMessages.Subscribe(key, subscriber)
 
   }
 
@@ -280,12 +214,12 @@ object Receptionist extends ExtensionId[Receptionist] {
   object Find {
     /** Scala API: */
     def apply[T](key: ServiceKey[T], replyTo: ActorRef[Listing]): Command =
-      new MessageImpls.Find(key, replyTo)
+      new ReceptionistMessages.Find(key, replyTo)
 
     /**
      * Special factory to make using Find with ask easier
      */
-    def apply[T](key: ServiceKey[T]): ActorRef[Listing] ⇒ Command = ref ⇒ new MessageImpls.Find(key, ref)
+    def apply[T](key: ServiceKey[T]): ActorRef[Listing] ⇒ Command = ref ⇒ new ReceptionistMessages.Find(key, ref)
   }
 
   /**
@@ -303,7 +237,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * Not for user extension.
    */
   @DoNotInherit
-  sealed trait Listing {
+  trait Listing {
     /** Scala API */
     def key: ServiceKey[_]
     /** Java API */
@@ -329,7 +263,7 @@ object Receptionist extends ExtensionId[Receptionist] {
   object Listing {
     /** Scala API: */
     def apply[T](key: ServiceKey[T], serviceInstances: Set[ActorRef[T]]): Listing =
-      new MessageImpls.Listing[T](key, serviceInstances)
+      new ReceptionistMessages.Listing[T](key, serviceInstances)
 
   }
 

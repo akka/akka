@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package doc.akka.cluster.sharding.typed
 
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
@@ -29,7 +30,7 @@ object ShardingCompileOnlySpec {
   final case class GetValue(replyTo: ActorRef[Int]) extends CounterCommand
   case object GoodByeCounter extends CounterCommand
 
-  def counter(entityId: String, value: Int): Behavior[CounterCommand] = Behaviors.immutable[CounterCommand] {
+  def counter(entityId: String, value: Int): Behavior[CounterCommand] = Behaviors.receive[CounterCommand] {
     case (ctx, Increment) ⇒
       counter(entityId, value + 1)
     case (ctx, GetValue(replyTo)) ⇒

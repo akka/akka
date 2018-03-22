@@ -1,10 +1,12 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.MutableBehavior
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
 import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
@@ -19,9 +21,15 @@ object WatchSpec {
   case object Stop
 
   val terminatorBehavior =
-    Behaviors.immutable[Stop.type] {
+    Behaviors.receive[Stop.type] {
       case (_, Stop) ⇒ Behaviors.stopped
     }
+
+  val mutableTerminatorBehavior = new MutableBehavior[Stop.type] {
+    override def onMessage(msg: Stop.type) = msg match {
+      case Stop ⇒ Behaviors.stopped
+    }
+  }
 
   sealed trait Message
   sealed trait CustomTerminationMessage extends Message
@@ -46,12 +54,12 @@ class WatchSpec extends ActorTestKit
 
     val watcher = systemActor(
       Behaviors.supervise(
-        Behaviors.immutable[StartWatching] {
+        Behaviors.receive[StartWatching] {
           case (ctx, StartWatching(watchee)) ⇒
             ctx.watch(watchee)
             watchProbe.ref ! Done
             Behaviors.same
-        }.onSignal {
+        }.receiveSignal {
           case (_, t: Terminated) ⇒
             receivedTerminationSignal.success(t)
             Behaviors.stopped
@@ -75,15 +83,15 @@ class WatchSpec extends ActorTestKit
       val probe = TestProbe[Any]()
       val ex = new TestException("boom")
       val parent = spawn(Behaviors.setup[Any] { ctx ⇒
-        val child = ctx.spawn(Behaviors.immutable[Any]((ctx, msg) ⇒
+        val child = ctx.spawn(Behaviors.receive[Any]((ctx, msg) ⇒
           throw ex
         ), "child")
         ctx.watch(child)
 
-        Behaviors.immutable[Any] { (ctx, msg) ⇒
+        Behaviors.receive[Any] { (ctx, msg) ⇒
           child ! msg
           Behaviors.same
-        }.onSignal {
+        }.receiveSignal {
           case (_, t: Terminated) ⇒
             probe.ref ! Failed(t)
             Behaviors.same
@@ -102,12 +110,12 @@ class WatchSpec extends ActorTestKit
       val ex = new TestException("boom")
       val grossoBosso = spawn(Behaviors.setup[Any] { ctx ⇒
         val middleManagement = ctx.spawn(Behaviors.setup[Any] { ctx ⇒
-          val sixPackJoe = ctx.spawn(Behaviors.immutable[Any]((ctx, msg) ⇒
+          val sixPackJoe = ctx.spawn(Behaviors.receive[Any]((ctx, msg) ⇒
             throw ex
           ), "joe")
           ctx.watch(sixPackJoe)
 
-          Behaviors.immutable[Any] { (ctx, msg) ⇒
+          Behaviors.receive[Any] { (ctx, msg) ⇒
             sixPackJoe ! msg
             Behaviors.same
           } // no handling of terminated, even though we watched!!!
@@ -115,10 +123,10 @@ class WatchSpec extends ActorTestKit
 
         ctx.watch(middleManagement)
 
-        Behaviors.immutable[Any] { (ctx, msg) ⇒
+        Behaviors.receive[Any] { (ctx, msg) ⇒
           middleManagement ! msg
           Behaviors.same
-        }.onSignal {
+        }.receiveSignal {
           case (_, t: Terminated) ⇒
             probe.ref ! Failed(t)
             Behaviors.stopped
@@ -153,7 +161,7 @@ class WatchSpec extends ActorTestKit
 
       val watcher = systemActor(
         Behaviors.supervise(
-          Behaviors.immutable[Message] {
+          Behaviors.receive[Message] {
             case (ctx, StartWatchingWith(watchee, msg)) ⇒
               ctx.watchWith(watchee, msg)
               watchProbe.ref ! Done
@@ -189,7 +197,7 @@ class WatchSpec extends ActorTestKit
 
       val watcher = systemActor(
         Behaviors.supervise(
-          Behaviors.immutable[Message] {
+          Behaviors.receive[Message] {
             case (ctx, StartWatching(watchee)) ⇒
               ctx.watch(watchee)
               Behaviors.same
@@ -219,7 +227,7 @@ class WatchSpec extends ActorTestKit
 
       val watcher = systemActor(
         Behaviors.supervise(
-          Behaviors.immutable[Message] {
+          Behaviors.receive[Message] {
             case (ctx, StartWatchingWith(watchee, msg)) ⇒
               ctx.unwatch(watchee)
               ctx.watchWith(watchee, msg)
@@ -245,7 +253,7 @@ class WatchSpec extends ActorTestKit
 
       val watcher = systemActor(
         Behaviors.supervise(
-          Behaviors.immutable[Message] {
+          Behaviors.receive[Message] {
             case (ctx, StartWatchingWith(watchee, msg)) ⇒
               ctx.watchWith(watchee, msg)
               Behaviors.same
@@ -254,7 +262,7 @@ class WatchSpec extends ActorTestKit
               Behaviors.same
             case (_, msg) ⇒
               Behaviors.stopped
-          }.onSignal {
+          }.receiveSignal {
             case (_, PostStop) ⇒
               Behaviors.stopped
           }

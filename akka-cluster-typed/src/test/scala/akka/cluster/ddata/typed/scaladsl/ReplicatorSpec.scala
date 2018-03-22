@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.ddata.typed.scaladsl
 
 import akka.actor.Scheduler
@@ -57,7 +58,7 @@ object ReplicatorSpec {
       replicator ! Replicator.Subscribe(Key, changedAdapter)
 
       def behavior(cachedValue: Int): Behavior[ClientCommand] = {
-        Behaviors.immutable[ClientCommand] { (ctx, msg) ⇒
+        Behaviors.receive[ClientCommand] { (ctx, msg) ⇒
           msg match {
             case Increment ⇒
               replicator ! Replicator.Update(Key, GCounter.empty, Replicator.WriteLocal, updateResponseAdapter)(_ + 1)

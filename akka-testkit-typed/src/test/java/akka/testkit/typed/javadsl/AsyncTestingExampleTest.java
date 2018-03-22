@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
@@ -34,7 +35,7 @@ public class AsyncTestingExampleTest {
     }
   }
 
-  Behavior<Ping> echoActor = Behaviors.immutable((ctx, ping) -> {
+  Behavior<Ping> echoActor = Behaviors.receive((ctx, ping) -> {
     ping.replyTo.tell(new Pong(ping.msg));
     return Behaviors.same();
   });

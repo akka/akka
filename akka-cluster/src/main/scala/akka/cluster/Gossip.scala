@@ -4,7 +4,7 @@
 
 package akka.cluster
 
-import scala.collection.{ SortedSet, immutable }
+import scala.collection.immutable
 import ClusterSettings.DataCenter
 import MemberStatus._
 import akka.annotation.InternalApi

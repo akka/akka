@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.testkit.typed.scaladsl
 
 //#imports
@@ -9,7 +13,7 @@ import org.scalatest.{ Matchers, WordSpec }
 
 object SyncTestingExampleSpec {
   //#child
-  val childActor = Behaviors.immutable[String] { (_, _) ⇒
+  val childActor = Behaviors.receiveMessage[String] { _ ⇒
     Behaviors.same[String]
   }
   //#child
@@ -22,7 +26,7 @@ object SyncTestingExampleSpec {
   case object SayHelloToAnonymousChild extends Cmd
   case class SayHello(who: ActorRef[String]) extends Cmd
 
-  val myBehavior = Behaviors.immutablePartial[Cmd] {
+  val myBehavior = Behaviors.receivePartial[Cmd] {
     case (ctx, CreateChild(name)) ⇒
       ctx.spawn(childActor, name)
       Behaviors.same

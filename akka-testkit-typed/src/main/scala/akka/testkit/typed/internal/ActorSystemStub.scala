@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.typed.internal
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
@@ -9,7 +10,7 @@ import akka.actor.typed.internal.ActorRefImpl
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Dispatchers, Extension, ExtensionId, Logger, Props, Settings, Terminated }
 import akka.annotation.InternalApi
 import akka.util.Timeout
-import akka.{ actor ⇒ a, event ⇒ e }
+import akka.{ actor ⇒ a }
 import com.typesafe.config.ConfigFactory
 
 import scala.compat.java8.FutureConverters

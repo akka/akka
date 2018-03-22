@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import scala.annotation.tailrec
@@ -27,7 +28,6 @@ private[akka] object ImmutableLongMap {
  */
 private[akka] class ImmutableLongMap[A >: Null] private (
   private val keys: Array[Long], private val values: Array[A])(implicit t: ClassTag[A]) {
-  import ImmutableLongMap.MaxScanLength
 
   val size: Int = keys.length
 

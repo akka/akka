@@ -1,10 +1,10 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.typed.scaladsl
 
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
 import scala.concurrent.duration._
 
@@ -40,11 +40,11 @@ class TestProbeSpec extends AbstractActorSpec {
     "allow probing for actor stop when actor has not stopped yet" in {
       case object Stop
       val probe = TestProbe()
-      val ref = spawn(Behaviors.immutable[Stop.type]((ctx, message) ⇒
+      val ref = spawn(Behaviors.receive[Stop.type]((ctx, message) ⇒
         Behaviors.withTimers { (timer) ⇒
           timer.startSingleTimer("key", Stop, 300.millis)
 
-          Behaviors.immutable((ctx, stop) ⇒
+          Behaviors.receive((ctx, stop) ⇒
             Behaviors.stopped
           )
         }

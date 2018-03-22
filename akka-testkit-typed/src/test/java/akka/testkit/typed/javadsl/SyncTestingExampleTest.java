@@ -1,9 +1,12 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.testkit.typed.javadsl;
 
 //#imports
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
-import akka.testkit.typed.javadsl.*;
 //#imports
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
@@ -11,7 +14,7 @@ import org.scalatest.junit.JUnitSuite;
 public class SyncTestingExampleTest extends JUnitSuite {
 
   //#child
-  public static Behavior<String> childActor = Behaviors.immutable((ctx, msg) -> Behaviors.same());
+  public static Behavior<String> childActor = Behaviors.receive((ctx, msg) -> Behaviors.same());
   //#child
 
   //#under-test
@@ -38,7 +41,7 @@ public class SyncTestingExampleTest extends JUnitSuite {
     }
   }
 
-  public static Behavior<Command> myBehavior = Behaviors.immutable(Command.class)
+  public static Behavior<Command> myBehavior = Behaviors.receive(Command.class)
     .onMessage(CreateAChild.class, (ctx, msg) -> {
       ctx.spawn(childActor, msg.childName);
       return Behaviors.same();

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 package scaladsl
 
@@ -16,7 +17,7 @@ final class OnSignalSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
         Behaviors.setup[Nothing] { context ⇒
           val stoppedChild = context.spawn(Behaviors.stopped, "stopped-child")
           context.watch(stoppedChild)
-          Behaviors.onSignal[Nothing] {
+          Behaviors.receiveSignal[Nothing] {
             case (_, Terminated(`stoppedChild`)) ⇒
               probe.ref ! Done
               Behaviors.stopped

@@ -1,12 +1,11 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 package aeron
 
 import akka.util.PrettyDuration.PrettyPrintableDuration
-import java.nio.ByteBuffer
-import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.typed
 
 import java.nio.charset.StandardCharsets
@@ -47,7 +48,7 @@ object ClusterSingletonApiSpec {
 
   case object Perish extends PingProtocol
 
-  val pingPong = Behaviors.immutable[PingProtocol] { (_, msg) ⇒
+  val pingPong = Behaviors.receive[PingProtocol] { (_, msg) ⇒
 
     msg match {
       case Ping(respondTo) ⇒

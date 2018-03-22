@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 // Prevent package clashes with the Java examples:
 package docs.tutorial_1
 

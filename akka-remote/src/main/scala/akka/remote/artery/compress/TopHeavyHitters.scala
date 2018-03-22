@@ -1,12 +1,12 @@
 /*
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery.compress
 
 import java.util.Objects
-import java.util.concurrent.atomic.AtomicReference
 
-import scala.annotation.{ switch, tailrec }
+import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
 /**

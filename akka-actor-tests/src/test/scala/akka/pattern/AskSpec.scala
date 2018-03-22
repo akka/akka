@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.pattern
 
 import akka.actor._
 import akka.testkit.{ TestProbe, AkkaSpec }
 import akka.util.Timeout
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Await
 import scala.concurrent.duration._

@@ -27,7 +27,7 @@ object BehaviorTestKitSpec {
 
     def behavior: Behavior[Command] = init()
 
-    def init(): Behavior[Command] = Behaviors.immutable[Command] { (ctx, msg) ⇒
+    def init(): Behavior[Command] = Behaviors.receive[Command] { (ctx, msg) ⇒
       msg match {
         case SpawnChildren(numberOfChildren) if numberOfChildren > 0 ⇒
           0.until(numberOfChildren).foreach { i ⇒
@@ -67,7 +67,7 @@ object BehaviorTestKitSpec {
 
     sealed trait Action
 
-    val initial: Behavior[Action] = Behaviors.immutable[Action] { (_, msg) ⇒
+    val initial: Behavior[Action] = Behaviors.receive[Action] { (_, msg) ⇒
       msg match {
         case _ ⇒
           Behaviors.empty
@@ -81,6 +81,16 @@ object BehaviorTestKitSpec {
 class BehaviorTestKitSpec extends WordSpec with Matchers {
 
   private val props = Props.empty
+
+  "BehaviorTeskit" must {
+
+    "allow assertions on effect type" in {
+      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      testkit.run(SpawnAnonymous(1))
+      val spawnAnonymous = testkit.expectEffectType[Effects.SpawnedAnonymous[_]]
+      spawnAnonymous.props should ===(Props.empty)
+    }
+  }
 
   "BehaviorTestkit's spawn" must {
     "create children when no props specified" in {

@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.ddata.typed.internal
 
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
-import scala.concurrent.Future
 
 import akka.annotation.InternalApi
 import akka.cluster.{ ddata ⇒ dd }
@@ -17,7 +17,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.util.Timeout
 import akka.cluster.ddata.ReplicatedData
-import akka.cluster.ddata.Key
 import akka.actor.typed.Terminated
 
 /**
@@ -58,7 +57,7 @@ import akka.actor.typed.Terminated
           }
         }
 
-        Behaviors.immutable[SReplicator.Command] { (ctx, msg) ⇒
+        Behaviors.receive[SReplicator.Command] { (ctx, msg) ⇒
           msg match {
             case cmd: SReplicator.Get[_] ⇒
               untypedReplicator.tell(
@@ -183,7 +182,7 @@ import akka.actor.typed.Terminated
 
           }
         }
-          .onSignal {
+          .receiveSignal {
             case (ctx, Terminated(ref: ActorRef[JReplicator.Changed[ReplicatedData]] @unchecked)) ⇒
               stopSubscribeAdapter(ref)
           }

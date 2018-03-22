@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.typed.internal
 
 import java.util
@@ -13,6 +14,7 @@ import akka.testkit.typed.scaladsl.Effects._
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 
@@ -29,6 +31,9 @@ private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior
 
   private var currentUncanonical = _initialBehavior
   private var current = Behavior.validateAsInitial(Behavior.start(_initialBehavior, ctx))
+
+  // execute any future tasks scheduled in Actor's constructor
+  runAllTasks()
 
   override def retrieveEffect(): Effect = ctx.effectQueue.poll() match {
     case null ⇒ NoEffects
@@ -58,10 +63,21 @@ private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior
 
   override def expectEffect(expectedEffect: Effect): Unit = {
     ctx.effectQueue.poll() match {
-      case null   ⇒ assert(assertion = false, s"expected: $expectedEffect but no effects were recorded")
+      case null   ⇒ throw new AssertionError(s"expected: $expectedEffect but no effects were recorded")
       case effect ⇒ assert(expectedEffect == effect, s"expected: $expectedEffect but found $effect")
     }
   }
+
+  def expectEffectClass[E <: Effect](effectClass: Class[E]): E = {
+    ctx.effectQueue.poll() match {
+      case null ⇒ throw new AssertionError(s"expected: effect type ${effectClass.getName} but no effects were recorded")
+      case effect if effectClass.isAssignableFrom(effect.getClass) ⇒ effect.asInstanceOf[E]
+      case other ⇒ throw new AssertionError(s"expected: effect class ${effectClass.getName} but found $other")
+    }
+  }
+
+  def expectEffectType[E <: Effect](implicit classTag: ClassTag[E]): E =
+    expectEffectClass(classTag.runtimeClass.asInstanceOf[Class[E]])
 
   def returnedBehavior: Behavior[T] = currentUncanonical
   def currentBehavior: Behavior[T] = current
@@ -76,14 +92,18 @@ private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior
       throw e
   }
 
+  private def runAllTasks(): Unit = {
+    ctx.executionContext match {
+      case controlled: ControlledExecutor ⇒ controlled.runAll()
+      case _                              ⇒
+    }
+  }
+
   override def run(msg: T): Unit = {
     try {
       currentUncanonical = Behavior.interpretMessage(current, ctx, msg)
       current = Behavior.canonicalize(currentUncanonical, current, ctx)
-      ctx.executionContext match {
-        case controlled: ControlledExecutor ⇒ controlled.runAll()
-        case _                              ⇒
-      }
+      runAllTasks()
     } catch handleException
   }
 

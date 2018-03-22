@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.javadsl;
 
 import akka.actor.typed.*;
@@ -32,8 +33,8 @@ public class ActorCompile {
     }
   }
 
-  Behavior<MyMsg> actor1 = immutable((ctx, msg) -> stopped(), (ctx, signal) -> same());
-  Behavior<MyMsg> actor2 = immutable((ctx, msg) -> unhandled());
+  Behavior<MyMsg> actor1 = Behaviors.receive((ctx, msg) -> stopped(), (ctx, signal) -> same());
+  Behavior<MyMsg> actor2 = Behaviors.receive((ctx, msg) -> unhandled());
   Behavior<MyMsg> actor4 = empty();
   Behavior<MyMsg> actor5 = ignore();
   Behavior<MyMsg> actor6 = tap((ctx, signal) -> {}, (ctx, msg) -> {}, actor5);
@@ -43,14 +44,14 @@ public class ActorCompile {
     return monitor(self, ignore());
   });
   Behavior<MyMsg> actor9 = widened(actor7, pf -> pf.match(MyMsgA.class, x -> x));
-  Behavior<MyMsg> actor10 = immutable((ctx, msg) -> stopped(actor4), (ctx, signal) -> same());
+  Behavior<MyMsg> actor10 = Behaviors.receive((ctx, msg) -> stopped(actor4), (ctx, signal) -> same());
 
   ActorSystem<MyMsg> system = ActorSystem.create(actor1, "Sys");
 
   {
-    Behaviors.<MyMsg>immutable((ctx, msg) -> {
+    Behaviors.<MyMsg>receive((ctx, msg) -> {
       if (msg instanceof MyMsgA) {
-        return immutable((ctx2, msg2) -> {
+        return Behaviors.receive((ctx2, msg2) -> {
           if (msg2 instanceof MyMsgB) {
             ((MyMsgA) msg).replyTo.tell(((MyMsgB) msg2).greeting);
 
@@ -78,7 +79,7 @@ public class ActorCompile {
     }
 
     @Override
-    public Behavior<MyMsg> receiveMessage(ActorContext<MyMsg> ctx, MyMsg msg) throws Exception {
+    public Behavior<MyMsg> receive(ActorContext<MyMsg> ctx, MyMsg msg) throws Exception {
       ActorRef<String> adapter = ctx.asJava().messageAdapter(String.class, s -> new MyMsgB(s.toUpperCase()));
       return this;
     }

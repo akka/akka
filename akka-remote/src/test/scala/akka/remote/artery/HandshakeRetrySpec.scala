@@ -1,12 +1,13 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import scala.concurrent.duration._
 
 import akka.actor._
-import akka.testkit.{ AkkaSpec, ImplicitSender }
+import akka.testkit.ImplicitSender
 import akka.testkit.SocketUtil
 import akka.testkit.TestActors
 import com.typesafe.config.ConfigFactory

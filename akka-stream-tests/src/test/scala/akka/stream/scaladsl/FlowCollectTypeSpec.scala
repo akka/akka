@@ -1,11 +1,10 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
-import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
-
-import akka.stream.testkit.{ ScriptedTest, StreamSpec }
+import akka.stream.testkit.StreamSpec
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 
 class FlowCollectTypeSpec extends StreamSpec {

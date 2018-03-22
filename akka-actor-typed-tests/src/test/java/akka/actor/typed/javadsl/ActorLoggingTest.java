@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.javadsl;
 
 import akka.actor.typed.Behavior;
@@ -50,7 +51,7 @@ public class ActorLoggingTest extends JUnitSuite {
         mdc.put("txId", msg.getTransactionId());
         return mdc;
       },
-      Behaviors.immutable(Protocol.class)
+      Behaviors.receive(Protocol.class)
         .onMessage(Message.class, (ctx, msg) -> {
           ctx.getLog().info(msg.toString());
           return Behaviors.same();

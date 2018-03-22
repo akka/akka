@@ -1,10 +1,10 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote
 
 import akka.event.Logging.Warning
-import akka.event.jul.Logger
 import akka.remote.FailureDetector.Clock
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec

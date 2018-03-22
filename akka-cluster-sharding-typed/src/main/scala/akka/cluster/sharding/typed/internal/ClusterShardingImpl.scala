@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding.typed
 package internal
 
@@ -14,7 +15,7 @@ import akka.actor.{ InternalActorRef, Scheduler }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
-import akka.actor.typed.Behavior.UntypedBehavior
+import akka.actor.typed.Behavior.UntypedPropsBehavior
 import akka.actor.typed.Props
 import akka.actor.typed.internal.adapter.ActorRefAdapter
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
@@ -142,8 +143,8 @@ import akka.japi.function.{ Function ⇒ JFunction }
 
         val untypedEntityPropsFactory: String ⇒ akka.actor.Props = { entityId ⇒
           behavior(entityId) match {
-            case u: UntypedBehavior[_] ⇒ u.untypedProps // PersistentBehavior
-            case b                     ⇒ PropsAdapter(b, entityProps)
+            case u: UntypedPropsBehavior[_] ⇒ u.untypedProps(Props.empty) // PersistentBehavior
+            case b                          ⇒ PropsAdapter(b, entityProps)
           }
         }
 

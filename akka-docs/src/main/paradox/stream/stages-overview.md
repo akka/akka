@@ -426,10 +426,15 @@ Invoke a callback when the stream has completed or failed.
 
 ---------------------------------------------------------------
 
-### lazyInit
+### lazyInitAsync
 
-Invoke sinkFactory function to create a real sink upon receiving the first element. Internal `Sink` will not be created if there are no elements,
-because of completion or error. *fallback* will be invoked if there was no elements and completed is received from upstream.
+Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
+because of completion or error.
+
+- If upstream completes before an element was received then the @scala[`Future`]@java[`CompletionStage`] is completed with @scala[`None`]@java[an empty `Optional`].
+- If upstream fails before an element was received, `sinkFactory` throws an exception, or materialization of the internal
+  sink fails then the @scala[`Future`]@java[`CompletionStage`] is completed with the exception.
+- Otherwise the @scala[`Future`]@java[`CompletionStage`] is completed with the materialized value of the internal sink.
 
 **cancels** never
 
@@ -1120,20 +1125,16 @@ also be sent to the wire-tap `Sink` if there is demand.
 
 ---------------------------------------------------------------
 
-### lazyInit
+### lazyInitAsync
 
 Creates a real `Flow` upon receiving the first element by calling relevant `flowFactory` given as an argument.
 Internal `Flow` will not be created if there are no elements, because of completion or error.
 The materialized value of the `Flow` will be the materialized value of the created internal flow.
 
-If `flowFactory` throws an exception and the supervision decision is
-`akka.stream.Supervision.Stop` the materialized value of the flow will be completed with
-the result of the `fallback` argument. For all other supervision options it will
-try to create flow with the next element.
-
-The `fallback` will be executed when there was no elements and completed is received from upstream
-or when there was an exception either thrown by the `flowFactory` or during the internal flow
-materialization process.
+The materialized value of the `Flow` is a @scala[`Future[Option[M]]`]@java[`CompletionStage<Optional<M>>`] that is 
+completed with @scala[`Some(mat)`]@java[`Optional.of(mat)`] when the internal flow gets materialized or with @scala[`None`]
+@java[an empty optional] when there where no elements. If the flow materialization (including the call of the `flowFactory`) 
+fails then the future is completed with a failure.
 
 Adheres to the `ActorAttributes.SupervisionStrategy` attribute.
 

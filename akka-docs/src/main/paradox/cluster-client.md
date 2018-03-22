@@ -186,7 +186,7 @@ Maven
 <a id="cluster-client-config"></a>
 ## Configuration
 
-The @unidoc[ClusterClientReceptionist] extension (or @unidoc[ClusterReceptionistSettings]) can be configured
+The @unidoc[ClusterClientReceptionist] extension (or @unidoc[akka.cluster.client.ClusterReceptionistSettings]) can be configured
 with the following properties:
 
 @@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #receptionist-ext-config }

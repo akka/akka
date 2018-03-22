@@ -1,13 +1,12 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import akka.annotation.InternalApi
 import akka.stream.scaladsl.PartitionHub
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue
-import java.util.concurrent.atomic.AtomicInteger
-import org.agrona.concurrent.ManyToManyConcurrentArrayQueue
 
 /**
  * INTERNAL API

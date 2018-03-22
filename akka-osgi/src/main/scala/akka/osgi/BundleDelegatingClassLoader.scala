@@ -1,9 +1,9 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.osgi
 
-import language.existentials
 import java.net.URL
 import java.util.Enumeration
 import org.osgi.framework.{ BundleContext, Bundle }

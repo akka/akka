@@ -1,11 +1,12 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import scala.concurrent.duration._
 
-import akka.actor.{ ActorIdentity, ActorSystem, Identify }
+import akka.actor.{ ActorIdentity, Identify }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import akka.actor.RootActorPath
@@ -21,7 +22,6 @@ object HandshakeDenySpec {
 }
 
 class HandshakeDenySpec extends ArteryMultiNodeSpec(HandshakeDenySpec.commonConfig) with ImplicitSender {
-  import HandshakeDenySpec._
 
   var systemB = newRemoteSystem(name = Some("systemB"))
 

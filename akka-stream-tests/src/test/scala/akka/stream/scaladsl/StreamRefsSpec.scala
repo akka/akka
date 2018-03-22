@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.NotUsed
@@ -9,12 +10,11 @@ import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, A
 import akka.pattern._
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.scaladsl._
-import akka.stream.{ ActorMaterializer, SinkRef, SourceRef, StreamRefAttributes }
+import akka.stream._
 import akka.testkit.{ AkkaSpec, ImplicitSender, SocketUtil, TestKit, TestProbe }
-import akka.util.{ ByteString, PrettyDuration }
+import akka.util.ByteString
 import com.typesafe.config._
 
-import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
@@ -68,7 +68,6 @@ object StreamRefsSpec {
           .run()
 
         ref pipeTo sender()
-
       //      case "send-bulk" ⇒
       //        /*
       //         * Here we're able to send a source to a remote recipient
@@ -273,6 +272,17 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       val ex = probe.expectError()
       ex.getMessage should include("has terminated! Tearing down this side of the stream as well.")
     }
+
+    // bug #24626
+    "not receive subscription timeout when got subscribed" in {
+      remoteActor ! "give-subscribe-timeout"
+      val remoteSource: SourceRef[String] = expectMsgType[SourceRef[String]]
+      // materialize directly and start consuming, timeout is 500ms
+      remoteSource.throttle(1, 100.millis, 1, ThrottleMode.Shaping)
+        .take(10) // 10 * 100 millis - way more than timeout for good measure
+        .runWith(Sink.seq)
+        .futureValue // this would fail if it timed out
+    }
   }
 
   "A SinkRef" must {
@@ -336,6 +346,21 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
 
       // the local "remote sink" should cancel, since it should notice the origin target actor is dead
       probe.expectCancellation()
+    }
+
+    // bug #24626
+    "now receive timeout if subscribing is already done to the sink ref" in {
+      remoteActor ! "receive-subscribe-timeout"
+      val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
+      Source.repeat("whatever")
+        .throttle(1, 100.millis, 1, ThrottleMode.Shaping)
+        .take(10) // the timeout is 500ms, so this makes sure we run more time than that
+        .runWith(remoteSink)
+
+      (0 to 9).foreach { _ ⇒
+        p.expectMsg("whatever")
+      }
+      p.expectMsg("<COMPLETE>")
     }
 
     "respect back -pressure from (implied by origin Sink)" in {

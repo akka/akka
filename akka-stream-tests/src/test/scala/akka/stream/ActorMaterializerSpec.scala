@@ -1,14 +1,18 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream
 
 import akka.Done
 import akka.actor.{ Actor, ActorSystem, PoisonPill, Props }
 import akka.stream.ActorMaterializerSpec.ActorWithMaterializer
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
-import akka.stream.scaladsl.{ Flow, Sink, Source }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.testkit.{ ImplicitSender, TestActor, TestLatch, TestProbe }
+import akka.testkit.{ ImplicitSender, TestActor, TestProbe }
 
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{ Failure, Try }
 

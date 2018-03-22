@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.typed
 
 import java.nio.charset.StandardCharsets
@@ -15,7 +16,6 @@ import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.actor.typed.scaladsl.adapter._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpecLike }
 
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
@@ -70,7 +70,7 @@ object RemoteContextAskSpec {
   case object Pong
   case class Ping(respondTo: ActorRef[Pong.type])
 
-  def pingPong = Behaviors.immutable[Ping] { (_, msg) ⇒
+  def pingPong = Behaviors.receive[Ping] { (_, msg) ⇒
     msg match {
       case Ping(sender) ⇒
         sender ! Pong
@@ -117,7 +117,7 @@ class RemoteContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           case Failure(ex)   ⇒ ex
         }
 
-        Behaviors.immutable { (_, msg) ⇒
+        Behaviors.receive { (_, msg) ⇒
           node1Probe.ref ! msg
           Behaviors.same
         }

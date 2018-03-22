@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.akka.typed.coexistence
 
 import akka.actor.typed._
@@ -53,7 +57,7 @@ object UntypedWatchingTypedSpec {
     case object Pong
 
     val behavior: Behavior[Command] =
-      Behaviors.immutable { (ctx, msg) ⇒
+      Behaviors.receive { (ctx, msg) ⇒
         msg match {
           case Ping(replyTo) ⇒
             println(s"${ctx.self} got Ping from $replyTo")

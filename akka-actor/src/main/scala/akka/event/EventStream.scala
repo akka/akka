@@ -1,9 +1,8 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
-package akka.event
 
-import language.implicitConversions
+package akka.event
 
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.event.Logging.simpleName

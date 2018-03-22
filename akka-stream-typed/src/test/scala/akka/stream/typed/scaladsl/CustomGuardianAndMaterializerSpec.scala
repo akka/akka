@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.typed.scaladsl
 
 import scala.concurrent.Future
@@ -24,7 +25,7 @@ object CustomGuardianAndMaterializerSpec {
 class CustomGuardianAndMaterializerSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   import CustomGuardianAndMaterializerSpec._
 
-  val guardian = Behaviors.immutable[GuardianProtocol] {
+  val guardian = Behaviors.receive[GuardianProtocol] {
     (_, msg) ⇒ Behaviors.same
   }
 

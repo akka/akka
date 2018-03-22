@@ -1,12 +1,11 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
-import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorRefScope, ActorSelection, ActorSystem, ExtendedActorSystem, Identify, PoisonPill, Props, Terminated }
-import akka.remote.RARP
-import akka.testkit.{ AkkaSpec, ImplicitSender, SocketUtil, TestActors }
-import com.typesafe.config.ConfigFactory
+import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorRefScope, ActorSelection, Identify, PoisonPill, Props, Terminated }
+import akka.testkit.{ ImplicitSender, SocketUtil, TestActors }
 
 import scala.concurrent.duration._
 import akka.testkit.JavaSerializable

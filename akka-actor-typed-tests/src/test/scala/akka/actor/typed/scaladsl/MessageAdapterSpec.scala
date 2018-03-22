@@ -1,13 +1,9 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.scaladsl
 
-import scala.concurrent.TimeoutException
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
-import scala.util.Failure
-import scala.util.Success
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.PostStop
@@ -48,7 +44,7 @@ class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
       case class AnotherPong(selfName: String, threadName: String)
 
-      val pingPong = spawn(Behaviors.immutable[Ping] { (ctx, msg) ⇒
+      val pingPong = spawn(Behaviors.receive[Ping] { (ctx, msg) ⇒
         msg.sender ! Pong(ctx.self.path.name, Thread.currentThread().getName)
         Behaviors.same
       }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
@@ -66,7 +62,7 @@ class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           AnotherPong(ctx.self.path.name, Thread.currentThread().getName))
         pingPong ! Ping(replyTo2)
 
-        Behaviors.immutable {
+        Behaviors.receive {
           case (_, anotherPong: AnotherPong) ⇒
             probe.ref ! anotherPong
             Behaviors.same
@@ -95,7 +91,7 @@ class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
       case class Wrapped(qualifier: String, response: Response)
 
-      val pingPong = spawn(Behaviors.immutable[Ping] { (_, msg) ⇒
+      val pingPong = spawn(Behaviors.receive[Ping] { (_, msg) ⇒
         msg match {
           case Ping1(sender) ⇒
             sender ! Pong1("hello-1")
@@ -116,7 +112,7 @@ class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
         pingPong ! Ping1(replyTo1)
         pingPong ! Ping2(replyTo2)
 
-        Behaviors.immutable {
+        Behaviors.receive {
           case (_, wrapped) ⇒
             probe.ref ! wrapped
             Behaviors.same
@@ -139,7 +135,7 @@ class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
       case class Wrapped(qualifier: String, response: Response)
 
-      val pingPong = spawn(Behaviors.immutable[Ping] { (_, msg) ⇒
+      val pingPong = spawn(Behaviors.receive[Ping] { (_, msg) ⇒
         msg match {
           case Ping1(sender) ⇒
             sender ! Pong1("hello-1")
@@ -162,7 +158,7 @@ class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
         pingPong ! Ping2(replyTo1.asInstanceOf[ActorRef[Pong2]])
         pingPong ! Ping1(replyTo1)
 
-        Behaviors.immutable {
+        Behaviors.receive {
           case (_, wrapped) ⇒
             probe.ref ! wrapped
             Behaviors.same
@@ -183,7 +179,7 @@ class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       case class Pong(greeting: String)
       case class Wrapped(count: Int, response: Pong)
 
-      val pingPong = spawn(Behaviors.immutable[Ping] { (_, ping) ⇒
+      val pingPong = spawn(Behaviors.receive[Ping] { (_, ping) ⇒
         ping.sender ! Pong("hello")
         Behaviors.same
       })
@@ -202,11 +198,11 @@ class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           pingPong ! Ping(replyTo)
         }
 
-        Behaviors.immutable[Wrapped] {
+        Behaviors.receive[Wrapped] {
           case (_, wrapped) ⇒
             probe.ref ! wrapped
             Behaviors.same
-        }.onSignal {
+        }.receiveSignal {
           case (_, PostStop) ⇒
             probe.ref ! "stopped"
             Behaviors.same

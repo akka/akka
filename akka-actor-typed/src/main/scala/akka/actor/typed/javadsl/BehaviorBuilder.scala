@@ -140,8 +140,6 @@ class BehaviorBuilder[T] private (
 object BehaviorBuilder {
   def create[T]: BehaviorBuilder[T] = new BehaviorBuilder[T](Nil, Nil)
 
-  import scala.language.existentials
-
   /** INTERNAL API */
   @InternalApi
   private[javadsl] final case class Case[BT, MT](`type`: Class[_ <: MT], test: Option[MT ⇒ Boolean], handler: (ActorContext[BT], MT) ⇒ Behavior[BT])
@@ -251,7 +249,7 @@ private class BuiltBehavior[T](
   private val signalHandlers:  List[Case[T, Signal]]
 ) extends ExtensibleBehavior[T] {
 
-  override def receiveMessage(ctx: typed.ActorContext[T], msg: T): Behavior[T] = receive[T](ctx.asJava, msg, messageHandlers)
+  override def receive(ctx: typed.ActorContext[T], msg: T): Behavior[T] = receive[T](ctx.asJava, msg, messageHandlers)
 
   override def receiveSignal(ctx: typed.ActorContext[T], msg: Signal): Behavior[T] = receive[Signal](ctx.asJava, msg, signalHandlers)
 

@@ -1,18 +1,17 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.scaladsl.adapter
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
-import akka.actor.{ InvalidMessageException, Props }
+import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.{ Done, NotUsed, actor ⇒ untyped }
 import akka.testkit._
-import akka.actor.typed.Behavior.UntypedBehavior
-
-import scala.concurrent.Await
+import akka.actor.typed.Behavior.UntypedPropsBehavior
 
 object AdapterSpec {
   val untyped1: untyped.Props = untyped.Props(new Untyped1)
@@ -33,7 +32,7 @@ object AdapterSpec {
   }
 
   def typed1(ref: untyped.ActorRef, probe: ActorRef[String]): Behavior[String] =
-    Behaviors.immutable[String] {
+    Behaviors.receive[String] {
       (ctx, msg) ⇒
         msg match {
           case "send" ⇒
@@ -62,7 +61,7 @@ object AdapterSpec {
             ctx.stop(child)
             Behaviors.same
         }
-    } onSignal {
+    } receiveSignal {
       case (ctx, Terminated(ref)) ⇒
         probe ! "terminated"
         Behaviors.same
@@ -131,7 +130,7 @@ object AdapterSpec {
   }
 
   def typed2: Behavior[Typed2Msg] =
-    Behaviors.immutable { (ctx, msg) ⇒
+    Behaviors.receive { (ctx, msg) ⇒
       msg match {
         case Ping(replyTo) ⇒
           replyTo ! "pong"
@@ -171,7 +170,7 @@ class AdapterSpec extends AkkaSpec {
       for { _ ← 0 to 10 } {
         var system: akka.actor.typed.ActorSystem[Done] = null
         try {
-          system = ActorSystem.create(Behaviors.immutable[Done] { (ctx, msg) ⇒
+          system = ActorSystem.create(Behaviors.receive[Done] { (ctx, msg) ⇒
             ctx.self ! Done
             msg match {
               case Done ⇒ Behaviors.stopped
@@ -301,8 +300,9 @@ class AdapterSpec extends AkkaSpec {
 
     "spawn untyped behavior anonymously" in {
       val probe = TestProbe()
-      val untypedBehavior: Behavior[String] = new UntypedBehavior[String] {
-        override private[akka] def untypedProps: Props = untypedForwarder(probe.ref)
+      val untypedBehavior: Behavior[String] = new UntypedPropsBehavior[String] {
+        override def untypedProps(props: akka.actor.typed.Props): akka.actor.Props =
+          untypedForwarder(probe.ref)
       }
       val ref = system.spawnAnonymous(untypedBehavior)
       ref ! "hello"
@@ -311,8 +311,9 @@ class AdapterSpec extends AkkaSpec {
 
     "spawn untyped behavior" in {
       val probe = TestProbe()
-      val untypedBehavior: Behavior[String] = new UntypedBehavior[String] {
-        override private[akka] def untypedProps: Props = untypedForwarder(probe.ref)
+      val untypedBehavior: Behavior[String] = new UntypedPropsBehavior[String] {
+        override def untypedProps(props: akka.actor.typed.Props): akka.actor.Props =
+          untypedForwarder(probe.ref)
       }
       val ref = system.spawn(untypedBehavior, "test")
       ref ! "hello"

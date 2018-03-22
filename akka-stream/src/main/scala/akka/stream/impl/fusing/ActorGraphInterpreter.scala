@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.fusing
 
 import java.util
@@ -203,6 +204,8 @@ import scala.util.control.NonFatal
         tryCancel(subscription)
       } else if (downstreamCanceled) {
         upstreamCompleted = true
+        tryCancel(subscription)
+      } else if (upstream != null) { // reactive streams spec 2.5
         tryCancel(subscription)
       } else {
         upstream = subscription

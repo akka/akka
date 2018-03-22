@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 package internal
 
@@ -10,7 +11,6 @@ import akka.actor.DeadLetterSuppression
 import akka.actor.typed.SupervisorStrategy._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.event.Logging
 import akka.util.OptionVal
 
 import scala.concurrent.duration.{ Deadline, FiniteDuration }
@@ -91,7 +91,7 @@ import scala.util.control.NonFatal
     } catch handleException(ctx, behavior)
   }
 
-  override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
+  override def receive(ctx: ActorContext[T], msg: T): Behavior[T] = {
     try {
       val b = Behavior.interpretMessage(behavior, ctx, msg)
       supervise(b, ctx)
@@ -271,7 +271,7 @@ import scala.util.control.NonFatal
       super.receiveSignal(ctx, signal)
   }
 
-  override def receiveMessage(ctx: ActorContext[Any], msg: Any): Behavior[Any] = {
+  override def receive(ctx: ActorContext[Any], msg: Any): Behavior[Any] = {
     // intercept the scheduled messages and drop incoming messages if we are in backoff mode
     msg match {
       case ScheduledRestart ⇒
@@ -289,7 +289,7 @@ import scala.util.control.NonFatal
           ctx.asScala.system.toUntyped.eventStream.publish(Dropped(msg, ctx.asScala.self))
           Behavior.same
         } else
-          super.receiveMessage(ctx, msg)
+          super.receive(ctx, msg)
     }
   }
 

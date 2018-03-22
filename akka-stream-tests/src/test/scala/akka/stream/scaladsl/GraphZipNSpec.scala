@@ -1,13 +1,13 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream._
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.collection.immutable
 

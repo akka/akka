@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.actor
 
 import akka.actor.{ ActorRef, PoisonPill, Props }

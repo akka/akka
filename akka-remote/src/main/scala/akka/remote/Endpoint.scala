@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote
 
 import akka.actor.OneForOneStrategy
@@ -8,7 +9,7 @@ import akka.actor.SupervisorStrategy._
 import akka.actor.Terminated
 import akka.actor._
 import akka.dispatch.sysmsg.SystemMessage
-import akka.event.{ LogMarker, Logging, LoggingAdapter, MarkerLoggingAdapter }
+import akka.event.{ LogMarker, Logging, MarkerLoggingAdapter }
 import akka.pattern.pipe
 import akka.remote.EndpointManager.{ Link, ResendState, Send }
 import akka.remote.EndpointWriter.{ FlushAndStop, StoppedReading }

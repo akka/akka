@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl
 
 import java.io.File
@@ -8,7 +9,7 @@ import java.nio.file.{ OpenOption, Path }
 import java.util
 import java.util.concurrent.CompletionStage
 
-import akka.stream.{ ActorAttributes, IOResult, javadsl, scaladsl }
+import akka.stream.{ IOResult, javadsl, scaladsl }
 import akka.util.ByteString
 
 import scala.collection.JavaConverters._

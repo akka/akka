@@ -1,17 +1,20 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.internal.receptionist
 
 import java.nio.charset.StandardCharsets
 
-import akka.actor.typed.internal.receptionist.ReceptionistImpl.DefaultServiceKey
 import akka.actor.typed.receptionist.ServiceKey
 import akka.annotation.InternalApi
 import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 
+/**
+ * Internal API
+ */
 @InternalApi
-class ServiceKeySerializer(val system: akka.actor.ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
+final class ServiceKeySerializer(val system: akka.actor.ExtendedActorSystem) extends SerializerWithStringManifest with BaseSerializer {
   def manifest(o: AnyRef): String = o match {
     case key: DefaultServiceKey[_] ⇒ key.typeName
     case _ ⇒

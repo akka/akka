@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.ddata
 
 import scala.annotation.tailrec
@@ -283,8 +284,6 @@ final class ORSet[A] private[akka] (
   override val delta:            Option[ORSet.DeltaOp] = None)
   extends DeltaReplicatedData
   with ReplicatedDataSerialization with RemovedNodePruning with FastMerge {
-
-  import ORSet.{ AddDeltaOp, RemoveDeltaOp }
 
   type T = ORSet[A]
   type D = ORSet.DeltaOp

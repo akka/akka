@@ -1,13 +1,12 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
-import akka.actor.{ ActorSystem, ExtendedActorSystem }
-import akka.remote.RARP
+import akka.actor.ActorSystem
 import akka.testkit.SocketUtil._
-import akka.testkit.{ AkkaSpec, EventFilter, ImplicitSender, TestActors, TestEvent, TestProbe }
-import com.typesafe.config.ConfigFactory
+import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestEvent, TestProbe }
 
 import scala.concurrent.duration._
 

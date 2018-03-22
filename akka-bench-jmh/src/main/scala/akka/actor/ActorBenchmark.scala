@@ -1,14 +1,13 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor
 
-import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
-import scala.annotation.tailrec
 import BenchmarkActors._
 import scala.concurrent.duration._
 

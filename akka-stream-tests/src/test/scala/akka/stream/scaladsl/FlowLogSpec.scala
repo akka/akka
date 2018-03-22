@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.NotUsed
@@ -10,7 +11,7 @@ import akka.stream.Attributes.LogLevels
 import akka.stream.Supervision._
 import akka.stream.testkit.{ StreamSpec, ScriptedTest }
 import akka.stream._
-import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.testkit.TestProbe
 
 import scala.concurrent.duration._
 import scala.concurrent.Await

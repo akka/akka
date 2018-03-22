@@ -1,13 +1,13 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.javadsl
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.EmptyProps
 import akka.actor.typed.ActorRef
-import akka.actor.typed.internal.adapter.ActorRefAdapter
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.internal.adapter.ActorContextAdapter

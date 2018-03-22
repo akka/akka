@@ -1,14 +1,13 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster
 
-import akka.actor.{ ActorSystem, Address }
+import akka.actor.ActorSystem
 import akka.cluster.MemberStatus.Removed
 import akka.testkit.TestKitBase
 import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.collection.{ immutable ⇒ im }
 
 /**
  * Builds on TestKitBase to provide some extra utilities to run cluster test.

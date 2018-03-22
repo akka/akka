@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl;
 
 import akka.Done;
@@ -42,9 +43,20 @@ public class FlowTest extends StreamTest {
     super(actorSystemResource);
   }
 
-    @ClassRule
+  @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest",
       AkkaSpec.testConf());
+
+  interface Fruit {}
+  static class Apple implements Fruit {};
+  static class Orange implements Fruit {};
+
+  public void compileOnlyUpcast() {
+    Flow<Apple, Apple, NotUsed> appleFlow = null;
+    Flow<Apple, Fruit, NotUsed> appleFruitFlow = Flow.upcast(appleFlow);
+
+    Flow<Apple, Fruit, NotUsed> fruitFlow = appleFruitFlow.intersperse(new Orange());
+  }
 
   @Test
   public void mustBeAbleToUseSimpleOperators() {
@@ -53,7 +65,7 @@ public class FlowTest extends StreamTest {
     final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
     final Source<Integer, NotUsed> ints = Source.from(input);
     final Flow<Integer, String, NotUsed> flow1 = Flow.of(Integer.class).drop(2).take(3
-    ).takeWithin(FiniteDuration.create(10, TimeUnit.SECONDS
+    ).takeWithin(java.time.Duration.ofSeconds(10
     )).map(new Function<Integer, String>() {
       public String apply(Integer elem) {
         return lookup[elem];
@@ -68,7 +80,7 @@ public class FlowTest extends StreamTest {
       public java.util.List<String> apply(java.util.List<String> elem) {
         return elem;
       }
-    }).groupedWithin(100, FiniteDuration.create(50, TimeUnit.MILLISECONDS)
+    }).groupedWithin(100, java.time.Duration.ofMillis(50)
     ).mapConcat(new Function<java.util.List<String>, java.lang.Iterable<String>>() {
           public java.util.List<String> apply(java.util.List<String> elem) {
             return elem;
@@ -966,16 +978,9 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseLazyInit() throws Exception {
     final CompletionStage<Flow<Integer, Integer, NotUsed>> future = new CompletableFuture<Flow<Integer, Integer, NotUsed>>();
     future.toCompletableFuture().complete(Flow.fromFunction((id) -> id));
-    Creator<NotUsed> ignoreFunction = new Creator<NotUsed>() {
-      @Override
-      public NotUsed create() throws Exception {
-        return NotUsed.getInstance();
-      }
-    };
-
     Integer result =
             Source.range(1, 10)
-                    .via(Flow.lazyInit((i) -> future, ignoreFunction))
+                    .via(Flow.lazyInitAsync(() -> future))
                     .runWith(Sink.<Integer>head(), materializer)
                     .toCompletableFuture().get(3, TimeUnit.SECONDS);
 

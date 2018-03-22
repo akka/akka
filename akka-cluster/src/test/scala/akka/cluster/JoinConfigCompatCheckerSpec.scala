@@ -1,17 +1,14 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster
 
-import akka.actor.{ ActorSystem, Address }
-import akka.cluster.InternalClusterAction.LeaderActionsTick
-import akka.cluster.MemberStatus.{ Removed, Up }
+import akka.cluster.MemberStatus.Up
 import akka.testkit.{ AkkaSpec, LongRunningTest }
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.duration._
-import scala.collection.JavaConverters._
 import scala.collection.{ immutable ⇒ im }
 
 object JoinConfigCompatCheckerSpec {

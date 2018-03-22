@@ -1,29 +1,25 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.NotUsed
 import akka.actor._
-import akka.stream.Supervision._
 import akka.stream.impl._
-import akka.stream.impl.fusing.ActorGraphInterpreter
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream._
-import akka.testkit.TestEvent.{ Mute, UnMute }
-import akka.testkit.{ EventFilter, TestDuration }
+import akka.testkit.TestDuration
 import com.typesafe.config.ConfigFactory
 import org.reactivestreams.{ Publisher, Subscriber }
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream.impl.fusing.GraphInterpreterShell
 
 object FlowSpec {
   class Fruit
@@ -281,6 +277,31 @@ class FlowSpec extends StreamSpec(ConfigFactory.parseString("akka.actor.debug.re
         Source(1 to 10).via(identity2).limit(100).runWith(Sink.seq),
         3.seconds) should ===(1 to 10)
     }
+
+    "eliminate passed in when matval from passed in not used" in {
+      val map = Flow.fromFunction((n: Int) ⇒ n + 1)
+      val result = map.viaMat(Flow[Int])(Keep.left)
+      result shouldBe theSameInstanceAs(map)
+    }
+
+    "not eliminate passed in when matval from passed in is used" in {
+      val map = Flow.fromFunction((n: Int) ⇒ n + 1)
+      val result = map.viaMat(Flow[Int])(Keep.right)
+      result shouldNot be theSameInstanceAs (map)
+    }
+
+    "eliminate itself if identity" in {
+      val map = Flow.fromFunction((n: Int) ⇒ n + 1)
+      val result = Flow[Int].viaMat(map)(Keep.right)
+      result shouldBe theSameInstanceAs(map)
+    }
+
+    "not eliminate itself if identity but matval is used" in {
+      val map = Flow.fromFunction((n: Int) ⇒ n + 1)
+      val result = Flow[Int].viaMat(map)(Keep.left)
+      result shouldNot be theSameInstanceAs (map)
+    }
+
   }
 
   "A Flow with multiple subscribers (FanOutBox)" must {

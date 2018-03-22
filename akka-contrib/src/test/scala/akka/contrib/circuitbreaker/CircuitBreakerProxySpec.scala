@@ -1,14 +1,14 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.contrib.circuitbreaker
 
 import akka.actor.{ ActorRef, PoisonPill }
 import akka.contrib.circuitbreaker.CircuitBreakerProxy._
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.util.Timeout
-import org.scalatest.time.{ Millis, Second, Span }
-import org.scalatest.{ GivenWhenThen, Matchers }
+import org.scalatest.GivenWhenThen
 
 import scala.concurrent.duration._
 import scala.language.postfixOps

@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.typed.internal
 
 import akka.actor.typed.scaladsl.Behaviors
@@ -19,7 +20,7 @@ private[akka] object ActorTestKitGuardian {
   final case class SpawnActor[T](name: String, behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
   final case class SpawnActorAnonymous[T](behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
 
-  val testKitGuardian: Behavior[TestKitCommand] = Behaviors.immutable[TestKitCommand] {
+  val testKitGuardian: Behavior[TestKitCommand] = Behaviors.receive[TestKitCommand] {
     case (ctx, SpawnActor(name, behavior, reply, props)) ⇒
       reply ! ctx.spawn(behavior, name, props)
       Behaviors.same

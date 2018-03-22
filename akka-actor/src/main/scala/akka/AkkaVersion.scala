@@ -1,11 +1,10 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka
 
 import akka.annotation.InternalApi
-
-import scala.annotation.varargs
 
 final class UnsupportedAkkaVersion private[akka] (msg: String) extends RuntimeException(msg)
 

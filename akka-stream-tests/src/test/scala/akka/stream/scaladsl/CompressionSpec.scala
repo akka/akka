@@ -1,13 +1,13 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import java.nio.charset.StandardCharsets
 
 import akka.stream.impl.io.compression.{ DeflateCompressor, GzipCompressor }
 import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.util.ByteString
 

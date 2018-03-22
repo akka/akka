@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.akka.typed;
 
 //#import
@@ -102,7 +103,7 @@ public class StashDocTest extends JUnitSuite {
     }
 
     private Behavior<Command> init() {
-      return Behaviors.immutable(Command.class)
+      return Behaviors.receive(Command.class)
           .onMessage(InitialState.class, (ctx, msg) -> {
             // now we are ready to handle stashed messages if any
             return buffer.unstashAll(ctx, active(msg.value));
@@ -119,7 +120,7 @@ public class StashDocTest extends JUnitSuite {
     }
 
     private Behavior<Command> active(String state) {
-      return Behaviors.immutable(Command.class)
+      return Behaviors.receive(Command.class)
           .onMessage(Get.class, (ctx, msg) -> {
             msg.replyTo.tell(state);
             return Behaviors.same();
@@ -138,7 +139,7 @@ public class StashDocTest extends JUnitSuite {
     }
 
     private Behavior<Command> saving(String state, ActorRef<Done> replyTo) {
-      return Behaviors.immutable(Command.class)
+      return Behaviors.receive(Command.class)
           .onMessageEquals(SaveSuccess.instance, ctx -> {
             replyTo.tell(Done.getInstance());
             return buffer.unstashAll(ctx, active(state));

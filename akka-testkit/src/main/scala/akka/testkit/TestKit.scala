@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit
 
 import language.postfixOps
@@ -13,7 +14,7 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor._
-import akka.util.{ BoxedType, OptionVal, Timeout }
+import akka.util.{ BoxedType, Timeout }
 
 import scala.util.control.NonFatal
 import scala.Some

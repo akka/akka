@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.akka.typed.coexistence;
 
 import akka.actor.AbstractActor;
@@ -44,7 +45,7 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
         second.tell(new Typed.Ping(context.getSelf().narrow()),
           Adapter.toUntyped(context.getSelf()));
 
-        return akka.actor.typed.javadsl.Behaviors.immutable(Typed.Command.class)
+        return akka.actor.typed.javadsl.Behaviors.receive(Typed.Command.class)
           .onMessage(Typed.Pong.class, (ctx, msg) -> {
             Adapter.stop(ctx, second);
             return same();

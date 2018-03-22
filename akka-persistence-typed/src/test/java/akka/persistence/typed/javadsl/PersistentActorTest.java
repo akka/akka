@@ -1,17 +1,15 @@
 /**
  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.persistence.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.Pair;
 import akka.japi.function.Function3;
-import akka.persistence.typed.scaladsl.PersistentActorSpec;
-import akka.persistence.typed.scaladsl.PersistentActorSpec$;
-import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.persistence.typed.scaladsl.PersistentBehaviorSpec$;
 import akka.testkit.typed.javadsl.TestKitJunitResource;
-import akka.testkit.typed.scaladsl.ActorTestKit;
 import akka.testkit.typed.javadsl.TestProbe;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -26,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 public class PersistentActorTest {
 
   @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource(PersistentActorSpec$.MODULE$.config());
+  public static final TestKitJunitResource testKit = new TestKitJunitResource(PersistentBehaviorSpec$.MODULE$.config());
 
   static final Incremented timeoutEvent = new Incremented(100);
   static final State emptyState = new State(0, Collections.emptyList());
@@ -203,7 +201,7 @@ public class PersistentActorTest {
           .matchCommand(IncrementLater.class, (ctx, state, command) -> {
             ActorRef<Object> delay = ctx.spawnAnonymous(Behaviors.withTimers(timers -> {
               timers.startSingleTimer(Tick.instance, Tick.instance, FiniteDuration.create(10, TimeUnit.MILLISECONDS));
-              return Behaviors.immutable((context, o) -> Behaviors.stopped());
+              return Behaviors.receive((context, o) -> Behaviors.stopped());
             }));
             ctx.watchWith(delay, new DelayFinished());
             return Effect().none();

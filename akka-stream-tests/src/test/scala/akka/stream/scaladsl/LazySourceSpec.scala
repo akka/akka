@@ -1,13 +1,14 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.Done
 import akka.stream.impl.LazySource
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
+import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.{ ActorMaterializer, Attributes, Outlet, SourceShape }

@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 package scaladsl
 
-import akka.actor.typed.Behavior.UntypedBehavior
+import akka.actor.typed.Behavior.UntypedPropsBehavior
 import akka.actor.typed.internal.adapter._
 
 /**
@@ -38,8 +39,8 @@ package object adapter {
 
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] = {
       behavior match {
-        case b: UntypedBehavior[_] ⇒
-          ActorRefAdapter(sys.actorOf(b.untypedProps))
+        case b: UntypedPropsBehavior[_] ⇒
+          ActorRefAdapter(sys.actorOf(b.untypedProps(props)))
         case _ ⇒
           ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props)))
       }
@@ -47,8 +48,8 @@ package object adapter {
 
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] = {
       behavior match {
-        case b: UntypedBehavior[_] ⇒
-          ActorRefAdapter(sys.actorOf(b.untypedProps, name))
+        case b: UntypedPropsBehavior[_] ⇒
+          ActorRefAdapter(sys.actorOf(b.untypedProps(props), name))
         case _ ⇒
           ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props), name))
       }

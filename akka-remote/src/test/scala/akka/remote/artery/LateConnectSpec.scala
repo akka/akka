@@ -1,14 +1,13 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import scala.concurrent.duration._
 
-import akka.actor.ActorSystem
 import akka.actor.RootActorPath
 import akka.remote.RARP
-import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.SocketUtil
 import akka.testkit.TestActors

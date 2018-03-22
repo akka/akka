@@ -1,17 +1,16 @@
 /**
- * Copyright (C) 2017-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.javadsl;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.Done;
-import akka.testkit.AkkaSpec;
 import akka.testkit.typed.javadsl.TestKitJunitResource;
 import org.junit.ClassRule;
 import org.scalatest.junit.JUnitSuite;
-import scala.concurrent.Await;
 import scala.concurrent.duration.Duration;
 import akka.util.Timeout;
 import org.junit.Test;
@@ -44,13 +43,13 @@ public class WatchTest extends JUnitSuite {
   // final FiniteDuration fiveSeconds = FiniteDuration.create(5, TimeUnit.SECONDS);
   final Timeout timeout = new Timeout(Duration.create(5, TimeUnit.SECONDS));
 
-  final Behavior<Stop> exitingActor = immutable((ctx, msg) -> {
+  final Behavior<Stop> exitingActor = receive((ctx, msg) -> {
     System.out.println("Stopping!");
     return stopped();
   });
 
   private Behavior<RunTest> waitingForTermination(ActorRef<Done> replyWhenTerminated) {
-    return immutable(
+    return receive(
       (ctx, msg) -> unhandled(),
       (ctx, sig) -> {
         if (sig instanceof Terminated) {
@@ -62,7 +61,7 @@ public class WatchTest extends JUnitSuite {
   }
 
   private Behavior<Message> waitingForMessage(ActorRef<Done> replyWhenReceived) {
-    return immutable(
+    return receive(
       (ctx, msg) -> {
         if (msg instanceof CustomTerminationMessage) {
           replyWhenReceived.tell(Done.getInstance());
@@ -76,7 +75,7 @@ public class WatchTest extends JUnitSuite {
 
   @Test
   public void shouldWatchTerminatingActor() throws Exception {
-    Behavior<RunTest> exiting = Behaviors.immutable(RunTest.class)
+    Behavior<RunTest> exiting = Behaviors.receive(RunTest.class)
       .onMessage(RunTest.class, (ctx, msg) -> {
         ActorRef<Stop> watched = ctx.spawn(exitingActor, "exitingActor");
         ctx.watch(watched);
@@ -91,7 +90,7 @@ public class WatchTest extends JUnitSuite {
 
   @Test
   public void shouldWatchWithCustomMessage() throws Exception {
-    Behavior<Message> exiting = Behaviors.immutable(Message.class)
+    Behavior<Message> exiting = Behaviors.receive(Message.class)
       .onMessage(RunTest.class, (ctx, msg) -> {
         ActorRef<Stop> watched = ctx.spawn(exitingActor, "exitingActor");
         ctx.watchWith(watched, new CustomTerminationMessage());

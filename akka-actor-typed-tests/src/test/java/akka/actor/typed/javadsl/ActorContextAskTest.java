@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
-import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import akka.testkit.typed.javadsl.TestKitJunitResource;
 import akka.testkit.typed.javadsl.TestProbe;
@@ -31,7 +31,7 @@ public class ActorContextAskTest extends JUnitSuite {
 
   @Test
   public void provideASafeAsk() {
-    final Behavior<Ping> pingPongBehavior = Behaviors.immutable((ActorContext<Ping> context, Ping message) -> {
+    final Behavior<Ping> pingPongBehavior = Behaviors.receive((ActorContext<Ping> context, Ping message) -> {
       message.respondTo.tell(new Pong());
       return Behaviors.same();
     });
@@ -49,7 +49,7 @@ public class ActorContextAskTest extends JUnitSuite {
             else return exception;
           });
 
-      return Behaviors.immutable((ActorContext<Object> context, Object message) -> {
+      return Behaviors.receive((ActorContext<Object> context, Object message) -> {
         probe.ref().tell(message);
         return Behaviors.same();
       });

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import java.util.ArrayDeque
@@ -167,7 +168,6 @@ private[remote] class OutboundControlJunction(
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
 
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging with OutboundControlIngress {
-      import OutboundControlJunction._
 
       val sendControlMessageCallback = getAsyncCallback[ControlMessage](internalSendControlMessage)
       private val maxControlMessageBufferSize: Int = outboundContext.settings.Advanced.OutboundControlQueueSize

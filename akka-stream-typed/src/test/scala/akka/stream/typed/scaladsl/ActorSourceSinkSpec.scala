@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com/>
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.typed.scaladsl
 
 import akka.actor.typed.ActorRef
@@ -47,7 +48,7 @@ class ActorSourceSinkSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
     "obey protocol" in {
       val p = TestProbe[AckProto]()
 
-      val autoPilot = Behaviors.immutable[AckProto] {
+      val autoPilot = Behaviors.receive[AckProto] {
         (ctx, msg) ⇒
           msg match {
             case m @ Init(sender) ⇒

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster
 
 import akka.actor._
@@ -11,18 +12,16 @@ import akka.cluster.ClusterEvent._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.Done
 import akka.actor.CoordinatedShutdown.Reason
-import akka.cluster.ClusterUserAction.JoinTo
 import akka.pattern.ask
 import akka.remote.QuarantinedEvent
 import akka.util.Timeout
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
-import language.existentials
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.

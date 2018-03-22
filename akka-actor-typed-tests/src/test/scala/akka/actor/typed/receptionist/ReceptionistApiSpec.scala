@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.receptionist
 
 import akka.actor.typed.{ ActorRef, ActorSystem }
@@ -66,7 +67,7 @@ object ReceptionistApiSpec {
       // to cover as much of the API as possible
       ctx.system.receptionist ! Receptionist.Register(key, ctx.self.narrow, ctx.self.narrow)
 
-      Behaviors.immutable { (ctx, msg) ⇒
+      Behaviors.receive { (ctx, msg) ⇒
         msg match {
           case key.Listing(services) ⇒
             services.foreach(_ ! "woho")

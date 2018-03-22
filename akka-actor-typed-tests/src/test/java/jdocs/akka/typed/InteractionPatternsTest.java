@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.akka.typed;
 
 import akka.actor.typed.ActorRef;
@@ -31,7 +32,7 @@ public class InteractionPatternsTest extends JUnitSuite {
     }
   }
 
-  static final Behavior<PrintMe> printerBehavior = Behaviors.immutable(PrintMe.class)
+  static final Behavior<PrintMe> printerBehavior = Behaviors.receive(PrintMe.class)
     .onMessage(PrintMe.class, (ctx, printMe) -> {
       ctx.getLog().info(printMe.message);
       return Behaviors.same();
@@ -60,7 +61,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
     // #request-response-respond
     // actor behavior
-    Behaviors.immutable(Request.class)
+    Behaviors.receive(Request.class)
       .onMessage(Request.class, (ctx, request) -> {
         // ... process request ...
         request.respondTo.tell(new Response("Here's your response!"));
@@ -169,7 +170,7 @@ public class InteractionPatternsTest extends JUnitSuite {
       }
     }
 
-    public static class Translator extends Behaviors.MutableBehavior<Command> {
+    public static class Translator extends MutableBehavior<Command> {
       private final ActorContext<Command> ctx;
       private final ActorRef<Backend.Request> backend;
       private final ActorRef<Backend.Response> backendResponseAdapter;
@@ -289,7 +290,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
   private static Behavior<Msg> idle(TimerScheduler<Msg> timers, ActorRef<Batch> target,
                                     FiniteDuration after, int maxSize) {
-    return Behaviors.immutable(Msg.class)
+    return Behaviors.receive(Msg.class)
       .onMessage(Msg.class, (ctx, msg) -> {
         timers.startSingleTimer(TIMER_KEY, new TimeoutMsg(), after);
         List<Msg> buffer = new ArrayList<>();
@@ -301,7 +302,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
   private static Behavior<Msg> active(List<Msg> buffer, TimerScheduler<Msg> timers,
                                       ActorRef<Batch> target, FiniteDuration after, int maxSize) {
-    return Behaviors.immutable(Msg.class)
+    return Behaviors.receive(Msg.class)
       .onMessage(TimeoutMsg.class, (ctx, msg) -> {
         target.tell(new Batch(buffer));
         return idle(timers, target, after, maxSize);
@@ -358,7 +359,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   }
 
   static final Behavior<HalCommand> halBehavior =
-    Behaviors.immutable(HalCommand.class)
+    Behaviors.receive(HalCommand.class)
       .onMessage(OpenThePodBayDoorsPlease.class, (ctx, msg) -> {
         msg.respondTo.tell(new HalResponse("I'm sorry, Dave. I'm afraid I can't do that."));
         return Behaviors.same();
@@ -416,7 +417,7 @@ public class InteractionPatternsTest extends JUnitSuite {
           }
         });
 
-      return Behaviors.immutable(DaveProtocol.class)
+      return Behaviors.receive(DaveProtocol.class)
         // the adapted message ends up being processed like any other
         // message sent to the actor
         .onMessage(AdaptedResponse.class, (innerCtx, response) -> {
@@ -510,7 +511,7 @@ public class InteractionPatternsTest extends JUnitSuite {
       final ActorRef<GetKeys> keyCabinet = ctx.spawn(keyCabinetBehavior, "key-cabinet");
       final ActorRef<GetWallet> drawer = ctx.spawn(drawerBehavior, "drawer");
 
-      return Behaviors.immutable(HomeCommand.class)
+      return Behaviors.receive(HomeCommand.class)
         .onMessage(LeaveHome.class, (innerCtx, msg) -> {
           ctx.spawn(new PrepareToLeaveHome(msg.who, msg.respondTo, keyCabinet, drawer), "leaving" + msg.who);
           return Behavior.same();
@@ -519,7 +520,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   }
 
   // per session actor behavior
-  class PrepareToLeaveHome extends Behaviors.MutableBehavior<Object> {
+  class PrepareToLeaveHome extends MutableBehavior<Object> {
     private final String whoIsLeaving;
     private final ActorRef<ReadyToLeaveHome> respondTo;
     private final ActorRef<GetKeys> keyCabinet;

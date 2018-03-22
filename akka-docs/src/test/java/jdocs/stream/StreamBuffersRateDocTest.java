@@ -1,23 +1,22 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.stream;
 
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-
 import akka.NotUsed;
-import jdocs.AbstractJavaTest;
-import akka.testkit.javadsl.TestKit;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import scala.concurrent.duration.FiniteDuration;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.stream.*;
 import akka.stream.javadsl.*;
+import akka.testkit.javadsl.TestKit;
+import jdocs.AbstractJavaTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.time.Duration;
+import java.util.Arrays;
 
 public class StreamBuffersRateDocTest extends AbstractJavaTest {
 
@@ -76,12 +75,11 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
   @Test
   public void demonstrateBufferAbstractionLeak() {
     //#buffering-abstraction-leak
-    final FiniteDuration oneSecond =
-        FiniteDuration.create(1, TimeUnit.SECONDS);
+    final Duration oneSecond = Duration.ofSeconds(1);
     final Source<String, Cancellable> msgSource =
         Source.tick(oneSecond, oneSecond, "message!");
     final Source<String, Cancellable> tickSource =
-        Source.tick(oneSecond.mul(3), oneSecond.mul(3), "tick");
+        Source.tick(oneSecond.multipliedBy(3), oneSecond.multipliedBy(3), "tick");
     final Flow<String, Integer, NotUsed> conflate =
         Flow.of(String.class).conflateWithSeed(
             first -> 1, (count, elem) -> count + 1);

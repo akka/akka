@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.agent
 
 import language.postfixOps
@@ -8,7 +12,7 @@ import scala.util.control.NonFatal
 import akka.util.Timeout
 import akka.testkit._
 import scala.concurrent.stm._
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import java.util.concurrent.{ CountDownLatch }
 
 class CountDownFunction[A](num: Int = 1) extends Function1[A, A] {
   val latch = new CountDownLatch(num)

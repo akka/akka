@@ -1,7 +1,8 @@
-package akka.cluster.sharding
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
 
-import scala.concurrent.duration._
-import scala.language.postfixOps
+package akka.cluster.sharding
 
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.testkit.AkkaSpec

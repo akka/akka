@@ -1,20 +1,21 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.Done
 import akka.stream.Attributes._
+import akka.stream.OverflowStrategies.EmitEarly
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.stream.{ ActorMaterializer, Attributes, BufferOverflowException, DelayOverflowStrategy }
+import akka.stream._
+import akka.testkit.TimingTest
 
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream.ThrottleMode
-import akka.testkit.TimingTest
 
 class FlowDelaySpec extends StreamSpec {
 
@@ -190,5 +191,14 @@ class FlowDelaySpec extends StreamSpec {
         .expectComplete()
     }
 
+    "not drop messages on overflow when EmitEarly" in {
+      val probe = Source(1 to 2)
+        .delay(1.second, EmitEarly).withAttributes(Attributes.inputBuffer(1, 1))
+        .runWith(TestSink.probe)
+
+      probe.request(10)
+        .expectNextN(1 to 2)
+        .expectComplete()
+    }
   }
 }

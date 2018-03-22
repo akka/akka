@@ -1,12 +1,14 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.akka.persistence.typed
 
 import akka.Done
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.typed.scaladsl.PersistentBehaviors
-import akka.persistence.typed.scaladsl.PersistentBehaviors.{ CommandHandler, Effect }
+import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
+import akka.persistence.typed.scaladsl.Effect
 
 object InDepthPersistentBehaviorSpec {
 
@@ -117,7 +119,7 @@ object InDepthPersistentBehaviorSpec {
 
   //#behavior
   def behavior(entityId: String): Behavior[BlogCommand] =
-    PersistentBehaviors.immutable[BlogCommand, BlogEvent, BlogState](
+    PersistentBehaviors.receive[BlogCommand, BlogEvent, BlogState](
       persistenceId = "Blog-" + entityId,
       initialState = BlogState.empty,
       commandHandler,

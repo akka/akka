@@ -1,13 +1,17 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package jdocs.stream;
 
+//#imports
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-//#imports
-import akka.dispatch.Futures;
 import akka.japi.Option;
 import akka.japi.Pair;
 import akka.japi.Predicate;
+import akka.japi.Function;
 import akka.japi.function.Procedure;
 import akka.stream.*;
 import akka.stream.javadsl.*;
@@ -15,21 +19,15 @@ import akka.stream.stage.*;
 //#imports
 import akka.stream.testkit.TestPublisher;
 import akka.stream.testkit.TestSubscriber;
-import akka.japi.Function;
 import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
-import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContext;
-import scala.concurrent.Promise;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -506,10 +504,10 @@ public class GraphStageDocTest extends AbstractJavaTest {
   // each time an event is pushed through it will trigger a period of silence
   public class TimedGate<A> extends GraphStage<FlowShape<A, A>> {
 
-    private final FiniteDuration silencePeriod;
+    private final int silencePeriodInSeconds;
 
-    public TimedGate(FiniteDuration silencePeriod) {
-      this.silencePeriod = silencePeriod;
+    public TimedGate(int silencePeriodInSeconds) {
+      this.silencePeriodInSeconds = silencePeriodInSeconds;
     }
 
     public final Inlet<A> in = Inlet.create("TimedGate.in");
@@ -536,7 +534,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
               else {
                 push(out, elem);
                 open = true;
-                scheduleOnce("key", silencePeriod);
+                scheduleOnce("key", java.time.Duration.ofSeconds(silencePeriodInSeconds));
               }
             }
           });
@@ -563,8 +561,8 @@ public class GraphStageDocTest extends AbstractJavaTest {
     // tests:
     CompletionStage<Integer> result =
       Source.from(Arrays.asList(1, 2, 3))
-        .via(new TimedGate<>(Duration.create(2, "seconds")))
-        .takeWithin(Duration.create(250, "millis"))
+        .via(new TimedGate<>(2))
+        .takeWithin(java.time.Duration.ofMillis(250))
         .runFold(0, (n, sum) -> n + sum, mat);
 
     assertEquals(new Integer(1), result.toCompletableFuture().get(3, TimeUnit.SECONDS));

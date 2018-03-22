@@ -1,15 +1,13 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.testkit.DefaultTimeout
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{ Span, Millis }
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.control.NoStackTrace
 import akka.stream._
 import akka.stream.testkit._
 import akka.NotUsed

@@ -5,8 +5,8 @@
 package akka.stream.impl.fusing
 
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.atomic.AtomicInteger
 
+import akka.Done
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance.SpecViolation
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -16,7 +16,7 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.testkit.{ EventFilter, TestLatch }
 
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
@@ -425,6 +425,27 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
       val propagatedError = downstream.expectError()
       propagatedError shouldBe an[AbruptTerminationException]
+    }
+
+    // reproduces #24719
+    "not allow a second subscriber" in {
+      val done = Promise[Done]()
+      Source.single(Source.fromPublisher(new Publisher[Int] {
+        def subscribe(s: Subscriber[_ >: Int]): Unit = {
+          s.onSubscribe(new Subscription {
+            def cancel(): Unit = ()
+            def request(n: Long): Unit = ()
+          })
+          // reactive streams 2.5 - must cancel if called with onSubscribe when already have one running
+          s.onSubscribe(new Subscription {
+            def cancel(): Unit =
+              done.trySuccess(Done)
+            def request(n: Long): Unit =
+              done.tryFailure(new IllegalStateException("request should not have been invoked"))
+          })
+        }
+      })).flatMapConcat(identity).runWith(Sink.ignore)
+      done.future.futureValue // would throw on failure
     }
 
   }

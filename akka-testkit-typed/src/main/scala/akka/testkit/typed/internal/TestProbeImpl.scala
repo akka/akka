@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.typed.internal
 
 import java.util.concurrent.atomic.AtomicInteger
@@ -19,20 +20,20 @@ import akka.util.{ BoxedType, Timeout }
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.control.{ NoStackTrace, NonFatal }
+import scala.util.control.NonFatal
 
 @InternalApi
 private[akka] object TestProbeImpl {
   private val testActorId = new AtomicInteger(0)
 
   private case class WatchActor[U](actor: ActorRef[U])
-  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] = Behaviors.immutable[M] { (ctx, msg) ⇒
+  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] = Behaviors.receive[M] { (ctx, msg) ⇒
     msg match {
       case WatchActor(ref) ⇒ ctx.watch(ref)
       case other           ⇒ queue.offerLast(other)
     }
     Behaviors.same
-  }.onSignal {
+  }.receiveSignal {
     case (_, t: Terminated) ⇒
       terminations.offerLast(t)
       Behaviors.same

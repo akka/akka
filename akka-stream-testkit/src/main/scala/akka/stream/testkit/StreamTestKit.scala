@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.testkit
 
 import akka.actor.{ ActorRef, ActorSystem, DeadLetterSuppression, NoSerializationVerificationNeeded }
@@ -12,12 +13,11 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.language.existentials
 import java.io.StringWriter
 import java.io.PrintWriter
 import java.util.concurrent.CountDownLatch
 
-import akka.testkit.TestActor.{ AutoPilot, NoAutoPilot }
+import akka.testkit.TestActor.AutoPilot
 
 /**
  * Provides factory methods for various Publishers.

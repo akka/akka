@@ -1,12 +1,13 @@
 /*
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.{ Done, NotUsed }
 import akka.stream._
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
+import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestProbe
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import org.scalatest.Assertion

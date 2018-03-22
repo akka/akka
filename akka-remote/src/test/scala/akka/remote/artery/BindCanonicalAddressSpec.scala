@@ -1,6 +1,9 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.remote.artery
 
-import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
 import akka.remote.transport.netty.NettyTransportSpec._

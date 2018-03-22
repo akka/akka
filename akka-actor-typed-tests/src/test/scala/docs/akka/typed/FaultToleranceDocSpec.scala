@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.akka.typed
 
 import akka.actor.typed.scaladsl.Behaviors
@@ -26,7 +27,7 @@ class FaultToleranceDocSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
       sealed trait Message
       case class Fail(text: String) extends Message
 
-      val worker = Behaviors.immutable[Message] { (ctx, msg) ⇒
+      val worker = Behaviors.receive[Message] { (ctx, msg) ⇒
         msg match {
           case Fail(text) ⇒ throw new RuntimeException(text)
         }
@@ -40,7 +41,7 @@ class FaultToleranceDocSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
         // here we don't handle Terminated at all which means that
         // when the child fails or stops gracefully this actor will
         // fail with a DeathWatchException
-        Behaviors.immutable[Message] { (ctx, msg) ⇒
+        Behaviors.receive[Message] { (ctx, msg) ⇒
           child ! msg
           Behaviors.same
         }
@@ -54,7 +55,7 @@ class FaultToleranceDocSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
         // here we don't handle Terminated at all which means that
         // when middle management fails with a DeathWatchException
         // this actor will also fail
-        Behaviors.immutable[Message] { (ctx, msg) ⇒
+        Behaviors.receive[Message] { (ctx, msg) ⇒
           middleManagment ! msg
           Behaviors.same
         }

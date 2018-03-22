@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.fusing
 
 import akka.actor.ActorRef
@@ -11,7 +12,6 @@ import java.util.concurrent.ThreadLocalRandom
 
 import akka.Done
 import akka.annotation.InternalApi
-import akka.util.OptionVal
 
 import scala.concurrent.Promise
 import scala.util.control.NonFatal

@@ -1,12 +1,11 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl
 
 import akka.annotation.InternalApi
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
-
-import scala.concurrent.{ ExecutionContext, Promise }
 
 /**
  * INTERNAL API

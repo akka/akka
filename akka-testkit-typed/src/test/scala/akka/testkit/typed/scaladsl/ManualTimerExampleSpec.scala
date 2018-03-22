@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.testkit.typed.scaladsl
 
 //#manual-scheduling-simple
@@ -20,7 +24,7 @@ class ManualTimerExampleSpec extends AbstractActorSpec {
       val probe = TestProbe[Tock.type]()
       val behavior = Behaviors.withTimers[Tick.type] { timer ⇒
         timer.startSingleTimer("T", Tick, 10.millis)
-        Behaviors.immutable { (ctx, Tick) ⇒
+        Behaviors.receive { (ctx, Tick) ⇒
           probe.ref ! Tock
           Behaviors.same
         }
@@ -44,7 +48,7 @@ class ManualTimerExampleSpec extends AbstractActorSpec {
       val probe = TestProbe[Tock.type]()
       val behavior = Behaviors.withTimers[Tick.type] { timer ⇒
         timer.startPeriodicTimer("T", Tick, 10.millis)
-        Behaviors.immutable { (ctx, Tick) ⇒
+        Behaviors.receive { (ctx, Tick) ⇒
           probe.ref ! Tock
           Behaviors.same
         }
@@ -72,7 +76,7 @@ class ManualTimerExampleSpec extends AbstractActorSpec {
 
       val behavior = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
-        Behaviors.immutable { (ctx, cmd) ⇒
+        Behaviors.receive { (ctx, cmd) ⇒
           cmd match {
             case Tick(n) ⇒
               probe.ref ! Tock(n)

@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package jdocs.stream;
 
 import akka.NotUsed;
@@ -13,8 +17,8 @@ import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.FiniteDuration;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
@@ -48,7 +52,7 @@ class KillSwitchDocTest extends AbstractJavaTest {
     //#unique-shutdown
     final Source<Integer, NotUsed> countingSrc =
       Source.from(new ArrayList<>(Arrays.asList(1, 2, 3, 4)))
-        .delay(FiniteDuration.apply(1, TimeUnit.SECONDS), DelayOverflowStrategy.backpressure());
+        .delay(Duration.ofSeconds(1), DelayOverflowStrategy.backpressure());
     final Sink<Integer, CompletionStage<Integer>> lastSnk = Sink.last();
 
     final Pair<UniqueKillSwitch, CompletionStage<Integer>> stream = countingSrc
@@ -71,7 +75,7 @@ class KillSwitchDocTest extends AbstractJavaTest {
     //#unique-abort
     final Source<Integer, NotUsed> countingSrc =
       Source.from(new ArrayList<>(Arrays.asList(1, 2, 3, 4)))
-        .delay(FiniteDuration.apply(1, TimeUnit.SECONDS), DelayOverflowStrategy.backpressure());
+        .delay(Duration.ofSeconds(1), DelayOverflowStrategy.backpressure());
     final Sink<Integer, CompletionStage<Integer>> lastSnk = Sink.last();
 
     final Pair<UniqueKillSwitch, CompletionStage<Integer>> stream = countingSrc
@@ -94,7 +98,7 @@ class KillSwitchDocTest extends AbstractJavaTest {
     //#shared-shutdown
     final Source<Integer, NotUsed> countingSrc =
       Source.from(new ArrayList<>(Arrays.asList(1, 2, 3, 4)))
-        .delay(FiniteDuration.apply(1, TimeUnit.SECONDS), DelayOverflowStrategy.backpressure());
+        .delay( Duration.ofSeconds(1), DelayOverflowStrategy.backpressure());
     final Sink<Integer, CompletionStage<Integer>> lastSnk = Sink.last();
     final SharedKillSwitch killSwitch = KillSwitches.shared("my-kill-switch");
 
@@ -102,7 +106,7 @@ class KillSwitchDocTest extends AbstractJavaTest {
       .viaMat(killSwitch.flow(), Keep.right())
       .toMat(lastSnk, Keep.right()).run(mat);
     final CompletionStage<Integer> completionStageDelayed = countingSrc
-      .delay(FiniteDuration.apply(1, TimeUnit.SECONDS), DelayOverflowStrategy.backpressure())
+      .delay( Duration.ofSeconds(1), DelayOverflowStrategy.backpressure())
       .viaMat(killSwitch.flow(), Keep.right())
       .toMat(lastSnk, Keep.right()).run(mat);
 
@@ -123,7 +127,7 @@ class KillSwitchDocTest extends AbstractJavaTest {
     //#shared-abort
     final Source<Integer, NotUsed> countingSrc =
       Source.from(new ArrayList<>(Arrays.asList(1, 2, 3, 4)))
-        .delay(FiniteDuration.apply(1, TimeUnit.SECONDS), DelayOverflowStrategy.backpressure());
+        .delay( Duration.ofSeconds(1), DelayOverflowStrategy.backpressure());
     final Sink<Integer, CompletionStage<Integer>> lastSnk = Sink.last();
     final SharedKillSwitch killSwitch = KillSwitches.shared("my-kill-switch");
 

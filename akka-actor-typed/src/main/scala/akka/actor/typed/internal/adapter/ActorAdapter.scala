@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2018 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed
 package internal
 package adapter
@@ -17,7 +18,6 @@ import scala.util.control.NonFatal
  */
 @InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor with a.ActorLogging {
   import Behavior._
-  import ActorRefAdapter.toUntyped
 
   protected var behavior: Behavior[T] = _initialBehavior
 

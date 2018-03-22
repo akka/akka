@@ -295,7 +295,7 @@ object PersistenceDocSpec {
           sender() ! c
           persist(s"evt-$c-1") { e ⇒ sender() ! e }
           persist(s"evt-$c-2") { e ⇒ sender() ! e }
-          deferAsync(s"evt-$c-3") { e ⇒ sender() ! e }
+          defer(s"evt-$c-3") { e ⇒ sender() ! e }
         }
       }
     }

@@ -1,11 +1,11 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.pattern
 
 import akka.actor._
 import akka.testkit.{ AkkaSpec, TestProbe, ImplicitSender }
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._

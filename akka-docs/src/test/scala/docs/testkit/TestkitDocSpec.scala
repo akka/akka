@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.testkit
 
 import language.postfixOps
@@ -238,7 +239,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     val probe = new TestProbe(system) {
       def expectUpdate(x: Int) = {
         expectMsgPF() {
-          case Update(id, _) if id == x ⇒ true
+          case Update(id, _) if id == x ⇒ ()
         }
         sender() ! "ACK"
       }

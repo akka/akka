@@ -235,6 +235,10 @@ Scala
 Java
 :  @@snip [SerializationDocTest.java]($code$/java/jdocs/serialization/SerializationDocTest.java) { #external-address-default }
 
+Another solution is to encapsulate your serialization code in `Serialization.withTransportInformation`. 
+It ensures the actorRefs are serialized using systems default address when 
+no other address is available.
+
 ### Deep serialization of Actors
 
 The recommended approach to do deep serialization of internal actor state is to use Akka @ref:[Persistence](persistence.md).

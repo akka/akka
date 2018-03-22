@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed.Behavior
@@ -84,7 +85,7 @@ class StashBufferSpec extends WordSpec with Matchers {
 
       val valueInbox = TestInbox[String]()
       def behavior(state: String): Behavior[String] =
-        Behaviors.immutable[String] { (_, msg) ⇒
+        Behaviors.receive[String] { (_, msg) ⇒
           if (msg == "get") {
             valueInbox.ref ! state
             Behaviors.same
@@ -107,7 +108,7 @@ class StashBufferSpec extends WordSpec with Matchers {
 
       val valueInbox = TestInbox[String]()
       def behavior(state: String): Behavior[String] =
-        Behaviors.immutable[String] { (_, msg) ⇒
+        Behaviors.receive[String] { (_, msg) ⇒
           if (msg == "get") {
             valueInbox.ref ! state
             Behaviors.same
@@ -130,7 +131,7 @@ class StashBufferSpec extends WordSpec with Matchers {
 
       val valueInbox = TestInbox[String]()
       def behavior(state: String): Behavior[String] =
-        Behaviors.immutable[String] { (_, msg) ⇒
+        Behaviors.receive[String] { (_, msg) ⇒
           if (msg == "get") {
             valueInbox.ref ! state
             Behaviors.same

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl;
 
 import akka.Done;
@@ -19,11 +20,11 @@ import akka.stream.testkit.TestPublisher;
 import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
-import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.util.Try;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -46,6 +47,20 @@ public class SourceTest extends StreamTest {
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("SourceTest",
     AkkaSpec.testConf());
 
+
+  interface Fruit {}
+  static class Apple implements Fruit {};
+  static class Orange implements Fruit {};
+
+  public void compileOnlyUpcast() {
+    Source<Apple, NotUsed> apples = null;
+    Source<Orange, NotUsed> oranges = null;
+    Source<Fruit, NotUsed> appleFruits = Source.upcast(apples);
+    Source<Fruit, NotUsed> orangeFruits = Source.upcast(oranges);
+
+    Source<Fruit, NotUsed> fruits = appleFruits.merge(orangeFruits);
+  }
+
   @Test
   public void mustBeAbleToUseSimpleOperators() {
     final TestKit probe = new TestKit(system);
@@ -56,12 +71,12 @@ public class SourceTest extends StreamTest {
     ints
       .drop(2)
       .take(3)
-      .takeWithin(FiniteDuration.create(10, TimeUnit.SECONDS))
+      .takeWithin(Duration.ofSeconds(10))
       .map(elem -> lookup[elem])
       .filter(elem -> !elem.equals("c"))
       .grouped(2)
       .mapConcat(elem -> elem)
-      .groupedWithin(100, FiniteDuration.create(50, TimeUnit.MILLISECONDS))
+      .groupedWithin(100, Duration.ofMillis(50))
       .mapConcat(elem -> elem)
       .runFold("", (acc, elem) -> acc + elem, materializer)
       .thenAccept(elem -> probe.getRef().tell(elem, ActorRef.noSender()));
@@ -417,8 +432,8 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustProduceTicks() throws Exception {
     final TestKit probe = new TestKit(system);
-    Source<String, Cancellable> tickSource = Source.tick(FiniteDuration.create(1, TimeUnit.SECONDS),
-        FiniteDuration.create(500, TimeUnit.MILLISECONDS), "tick");
+    Source<String, Cancellable> tickSource = Source.tick(Duration.ofSeconds(1),
+            Duration.ofMillis(500), "tick");
     @SuppressWarnings("unused")
     Cancellable cancellable = tickSource.to(Sink.foreach(new Procedure<String>() {
       public void apply(String elem) {
@@ -435,8 +450,8 @@ public class SourceTest extends StreamTest {
   @Test
   @SuppressWarnings("unused")
   public void mustCompileMethodsWithJavaDuration() {
-    Source<NotUsed, Cancellable> tickSource = Source.tick(java.time.Duration.ofSeconds(1),
-            java.time.Duration.ofMillis(500), NotUsed.getInstance());
+    Source<NotUsed, Cancellable> tickSource = Source.tick(Duration.ofSeconds(1),
+            Duration.ofMillis(500), NotUsed.getInstance());
   }
 
   @Test
@@ -627,7 +642,7 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals(0);
     probe.expectMsgEquals(1);
 
-    FiniteDuration duration = Duration.apply(200, TimeUnit.MILLISECONDS);
+    FiniteDuration duration = FiniteDuration.apply(200, TimeUnit.MILLISECONDS);
 
     probe.expectNoMsg(duration);
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -804,7 +819,7 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseInitialTimeout() throws Throwable {
     try {
       try {
-        Source.maybe().initialTimeout(Duration.create(1, "second")).runWith(Sink.head(), materializer)
+        Source.maybe().initialTimeout(Duration.ofSeconds(1)).runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
@@ -819,7 +834,7 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseCompletionTimeout() throws Throwable {
     try {
       try {
-        Source.maybe().completionTimeout(Duration.create(1, "second")).runWith(Sink.head(), materializer)
+        Source.maybe().completionTimeout(Duration.ofSeconds(1)).runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
@@ -834,7 +849,7 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseIdleTimeout() throws Throwable {
     try {
       try {
-        Source.maybe().idleTimeout(Duration.create(1, "second")).runWith(Sink.head(), materializer)
+        Source.maybe().idleTimeout(Duration.ofSeconds(1)).runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
@@ -848,14 +863,10 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustBeAbleToUseIdleInject() throws Exception {
     Integer result =
-        Source.maybe()
-            .keepAlive(Duration.create(1, "second"), new Creator<Integer>() {
-              public Integer create() {
-                return 0;
-              }
-            })
-            .takeWithin(Duration.create(1500, "milliseconds"))
-            .runWith(Sink.<Integer>head(), materializer)
+        Source.<Integer>maybe()
+            .keepAlive(Duration.ofSeconds(1), () -> 0)
+            .takeWithin(Duration.ofMillis(1500))
+            .runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     assertEquals((Object) 0, result);
@@ -871,8 +882,8 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseThrottle() throws Exception {
     Integer result =
         Source.from(Arrays.asList(0, 1, 2))
-            .throttle(10, FiniteDuration.create(1, TimeUnit.SECONDS), 10, ThrottleMode.shaping())
-            .throttle(10, FiniteDuration.create(1, TimeUnit.SECONDS), 10, ThrottleMode.enforcing())
+            .throttle(10, Duration.ofSeconds(1), 10, ThrottleMode.shaping())
+            .throttle(10, Duration.ofSeconds(1), 10, ThrottleMode.enforcing())
             .runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
 

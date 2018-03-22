@@ -1,9 +1,9 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl
 
-import language.existentials
 import akka.actor.{ DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.annotation.InternalApi
 

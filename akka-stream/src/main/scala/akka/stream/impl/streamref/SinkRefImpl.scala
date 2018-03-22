@@ -1,12 +1,12 @@
 /**
- * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.streamref
 
-import scala.language.implicitConversions
 import akka.Done
 import akka.NotUsed
-import akka.actor.{ ActorRef, ActorSystem, Terminated }
+import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream._
@@ -175,6 +175,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
       def observeAndValidateSender(partner: ActorRef, failureMsg: String): Unit = {
         if (partnerRef.isEmpty) {
           partnerRef = OptionVal(partner)
+          cancelTimer(SubscriptionTimeoutTimerKey)
           self.watch(partner)
 
           completedBeforeRemoteConnected match {

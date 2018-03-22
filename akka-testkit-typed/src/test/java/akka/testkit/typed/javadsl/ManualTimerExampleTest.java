@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit.typed.javadsl;
 
 //#manual-scheduling-simple
@@ -34,7 +35,7 @@ public class ManualTimerExampleTest extends JUnitSuite {
     TestProbe<Tock> probe = testKit.createTestProbe();
     Behavior<Tick> behavior = Behaviors.withTimers(timer -> {
       timer.startSingleTimer("T", new Tick(), Duration.create(10, TimeUnit.MILLISECONDS));
-      return Behaviors.immutable( (ctx, tick) -> {
+      return Behaviors.receive( (ctx, tick) -> {
         probe.ref().tell(new Tock());
         return Behaviors.same();
       });

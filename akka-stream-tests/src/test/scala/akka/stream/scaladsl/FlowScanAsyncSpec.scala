@@ -1,9 +1,10 @@
 /**
  * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
-import akka.{ NotUsed, pattern }
+import akka.pattern
 import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit.TestSubscriber.Probe
