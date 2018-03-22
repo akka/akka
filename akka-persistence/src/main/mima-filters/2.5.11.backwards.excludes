@@ -2,3 +2,8 @@
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Persistence.journalConfigFor")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Persistence.journalFor")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Persistence.snapshotStoreFor")
+
+# Remove backward compatibility on akka-persistence defer methods
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.AbstractPersistentActorLike.defer")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.PersistentActor.defer")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.internalDefer")
