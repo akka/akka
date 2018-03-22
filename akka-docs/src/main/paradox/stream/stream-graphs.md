@@ -114,6 +114,14 @@ Scala
 Java
 :   @@snip [StreamPartialGraphDSLDocTest.java]($code$/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #simple-partial-graph-dsl }
 
+@@@ note
+
+While the above example shows composing two 2-input `ZipWith`s, in reality ZipWith already provides 
+numerous overloads including a 3 (and many more) parameter versions. So this could be implemented 
+using one ZipWith using the 3 parameter version, like this: @scala[`ZipWith((a, b, c) => out)`]@java[`ZipWith.create((a, b, c) -> out)`].
+(The ZipWith with N input has N+1 type parameter; the last type param is the output type.)
+
+@@@
 
 As you can see, first we construct the partial graph that @scala[contains all the zipping and comparing of stream
 elements. This partial graph will have three inputs and one output, wherefore we use the `UniformFanInShape`]@java[describes how to compute the maximum of two input streams.
