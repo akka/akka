@@ -1,16 +1,19 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.persistence.testkit.scaladsl
 
 import java.util.UUID
 
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId}
-import akka.persistence.testkit.scaladsl.ProcessingPolicy.{FailNextN, PassAll, RejectNextN}
-import com.typesafe.config.{Config, ConfigFactory}
+import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId }
+import akka.persistence.testkit.scaladsl.ProcessingPolicy.{ FailNextN, PassAll, RejectNextN }
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
-
 
 trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
   import PersistenceTestKit._
@@ -20,7 +23,8 @@ trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
     //todo probably implement method for setting plugin in Persistence for testing purposes
     ActorSystem(
       s"persistence-testkit-${UUID.randomUUID()}",
-      PersistenceTestKitPlugin.PersitenceTestkitPluginConfig
+      PersistenceTestKitPlugin.PersitenceTestkitJournalConfig
+        .withFallback(PersistenceTestKitSnapshotPlugin.PersitenceTestkitSnapshotStoreConfig)
         .withFallback(ConfigFactory.defaultApplication()))
   }
 
@@ -58,17 +62,16 @@ trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
   override def expectPersistedInOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit =
     msgs.foreach(expectNextPersisted(persistenceId, _))
 
-
   override def expectPersistedInAnyOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit = {
 
     val nextInd = nextIndexByPersistenceId.getOrElse(persistenceId, 0)
     awaitAssert({
       val actual = storage.findMany(persistenceId, nextInd, msgs.size)
       actual match {
-        case Some(reprs) =>
+        case Some(reprs) ⇒
           val ls = reprs.map(_.payload)
           assert(ls.size == msgs.size && ls.diff(msgs).isEmpty, "Persisted messages do not correspond to expected ones")
-        case None => assert(false, "No messages were persisted")
+        case None ⇒ assert(false, "No messages were persisted")
       }
     }, max = settings.assertTimeout)
 
@@ -128,7 +131,6 @@ object PersistenceTestKit {
 
   }
 
-
   object Settings {
     val configPath = "akka.persistence.testkit"
   }
@@ -138,10 +140,6 @@ object PersistenceTestKit {
   object ExpectedRejection extends Throwable
 
 }
-
-
-
-
 
 trait PersistentTestKitOps {
 
@@ -166,7 +164,6 @@ trait PersistentTestKitOps {
   def clearByPersistenceId(persistenceId: String)
 
 }
-
 
 trait UtilityAssertions {
 

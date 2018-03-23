@@ -5,7 +5,7 @@ import akka.persistence.PersistentActor
 import akka.testkit.ImplicitSender
 import org.scalatest.WordSpecLike
 
-class JournalSpec extends PersistenceTestKit with WordSpecLike {
+class TestKitSpec extends PersistenceTestKit with WordSpecLike {
 
   "PersistenceTestkit" should {
 
