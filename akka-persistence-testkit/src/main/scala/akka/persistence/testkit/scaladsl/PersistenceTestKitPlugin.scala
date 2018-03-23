@@ -1,47 +1,45 @@
-package akka.persistence.testkit.scaladsl
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
 
+package akka.persistence.testkit.scaladsl
 
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence._
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
 
-
 class PersistenceTestKitPlugin extends AsyncWriteJournal {
 
   private final val storage = InMemStorageExtension(context.system)
-
-  private implicit val ec = context.system.dispatcher
 
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
     Future.fromTry(Try(messages.map(aw ⇒ storage.tryAdd(aw.payload))))
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
-  //todo should we emulate exception on delete?
+    //todo should we emulate exception on delete?
     Future.successful(storage.deleteToSeqNumber(persistenceId, toSequenceNr))
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
     Future.fromTry(Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(recoveryCallback)))
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
-  //todo should we emulate exception on readSeqNumber?
+    //todo should we emulate exception on readSeqNumber?
     Future.successful(storage.readHighestSequenceNum(persistenceId))
 
 }
 
-
-
 object PersistenceTestKitPlugin {
 
-  val PluginId = "persistence.testkit.plugin"
+  val PluginId = "akka.persistence.testkit.journal.pluginid"
 
   import scala.collection.JavaConverters._
 
-  val PersitenceTestkitPluginConfig: Config = ConfigFactory.parseMap(
+  val PersitenceTestkitJournalConfig: Config = ConfigFactory.parseMap(
     Map(
       "akka.persistence.journal.plugin" -> PluginId,
       s"$PluginId.class" -> s"${classOf[PersistenceTestKitPlugin].getName}"
@@ -50,17 +48,36 @@ object PersistenceTestKitPlugin {
 
 }
 
-
 class PersistenceTestKitSnapshotPlugin extends SnapshotStore {
 
+  private val storage = SnapShotStorageEmulatorExtension(context.system)
 
-  override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = ???
+  override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] =
+    Future.successful(storage.read(persistenceId).flatMap(_.reverseIterator.find(v ⇒ criteria.matches(v._1)).map(v ⇒ SelectedSnapshot(v._1, v._2))))
 
-  override def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = ???
+  override def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] =
+    Future.successful(storage.add(metadata.persistenceId, (metadata, snapshot)))
 
-  override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = ???
+  override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] =
+    Future.successful(storage.delete(metadata.persistenceId, _._1 == metadata))
 
-  override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = ???
+  override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] =
+    Future.successful(storage.delete(persistenceId, v ⇒ criteria.matches(v._1)))
+
 }
 
+object PersistenceTestKitSnapshotPlugin {
+
+  val PluginId = "akka.persistence.testkit.snapshotstore.pluginid"
+
+  import scala.collection.JavaConverters._
+
+  val PersitenceTestkitSnapshotStoreConfig: Config = ConfigFactory.parseMap(
+    Map(
+      "akka.persistence.snapshot-store.plugin" -> PluginId,
+      s"$PluginId.class" -> s"${classOf[PersistenceTestKitSnapshotPlugin].getName}"
+    ).asJava
+  )
+
+}
 
