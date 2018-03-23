@@ -140,6 +140,18 @@ The process of preparing and running a `SinkRef` powered distributed stream is s
   (i.e. by using "merge preferred" or any other variation of the fan-in stages).
 @@@
 
+### Delivery guarantees
+
+Stream refs utilise normal actor messaging for their trainsport, and as such provide the same level of basic delivery guarantees. Stream refs do extend the semantics somewhat by demand re-delivery and sequence fault detection; in other words:
+
+- messages are sent over actor remoting
+  - which relies on TCP (classic remoting, or artery tcp) or Aeron UDP for basic redelivery mechanisms
+- messages are guaranteed to to be in-order
+- messages can be lost, however:
+  - a *dropped demand signal* will be re-delivered automatically (similar to system messages)
+  - a *dropped element* signal* will cause the stream to *fail*
+  
+
 ## Bulk Stream References
 
 @@@ warning
