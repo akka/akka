@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.persistence.testkit.scaladsl
 
 import akka.actor.Props
@@ -35,7 +39,6 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike {
       expectPersistedInOrder("222", List(B(1), B(2)))
 
     }
-
 
     "expect next N valid messages in any order" in {
 

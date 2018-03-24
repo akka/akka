@@ -27,9 +27,12 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
     Future.fromTry(Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(recoveryCallback)))
 
-  override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
+  override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = {
     //todo should we emulate exception on readSeqNumber?
-    Future.successful(storage.readHighestSequenceNum(persistenceId))
+    val found = storage.reloadHighestSequenceNum(persistenceId)
+    val sn = if (found < fromSequenceNr) fromSequenceNr else found
+    Future.successful(sn)
+  }
 
 }
 
@@ -59,7 +62,7 @@ class PersistenceTestKitSnapshotPlugin extends SnapshotStore {
     Future.successful(storage.add(metadata.persistenceId, (metadata, snapshot)))
 
   override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] =
-    Future.successful(storage.delete(metadata.persistenceId, _._1 == metadata))
+    Future.successful(storage.delete(metadata.persistenceId, _._1.sequenceNr == metadata.sequenceNr))
 
   override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] =
     Future.successful(storage.delete(persistenceId, v ⇒ criteria.matches(v._1)))
