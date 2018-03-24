@@ -5,17 +5,20 @@
 package akka.persistence.testkit.scaladsl
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.function.BiFunction
+import java.util.function.{ BiFunction, Consumer }
 
 import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.persistence.{ PersistentRepr, SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 
 trait InMemStorage[K, T] {
 
   private final val eventsMap: ConcurrentHashMap[K, Vector[T]] = new ConcurrentHashMap()
+
+  def forEachKey(f: K ⇒ Unit) = eventsMap.forEachKey(Runtime.getRuntime.availableProcessors(), f)
 
   def findMany(key: K, fromInclusive: Int, maxNum: Int): Option[Vector[T]] =
     read(key)
@@ -54,53 +57,112 @@ trait InMemStorage[K, T] {
       value.filterNot(needsToBeDeleted)
     })
 
-  def read(key: K): Option[Vector[T]] = Option(eventsMap.get(key))
+  def updateExisting(key: K, updater: Vector[T] ⇒ Vector[T]) =
+    eventsMap.computeIfPresent(key, (_: K, value: Vector[T]) ⇒ {
+      updater(value)
+    })
 
-  def clearAll() = eventsMap.clear()
+  def read(key: K): Option[Vector[T]] =
+    Option(eventsMap.get(key))
 
-  def removeKey(key: K) = eventsMap.remove(key)
+  def clearAll() =
+    eventsMap.clear()
+
+  def removeKey(key: K) =
+    eventsMap.remove(key)
+
+  def removeKey(key: K, value: Vector[T]): Boolean =
+    eventsMap.remove(key, value)
 
   import java.util.{ function ⇒ jf }
 
   import scala.language.implicitConversions
 
-  private implicit def scalaFun1ToJava[T, R](f: T ⇒ R): jf.Function[T, R] = new jf.Function[T, R] {
+  protected implicit def scalaFun1ToJava[T, R](f: T ⇒ R): jf.Function[T, R] = new jf.Function[T, R] {
     override def apply(t: T): R = f(t)
   }
 
-  private implicit def scalaFun2ToJava[T, M, R](f: (T, M) ⇒ R): jf.BiFunction[T, M, R] = new BiFunction[T, M, R] {
+  protected implicit def scalaFunToConsumer[T](f: T ⇒ Unit): jf.Consumer[T] = new Consumer[T] {
+    override def accept(t: T): Unit = f(t)
+  }
+
+  protected implicit def scalaFun2ToJava[T, M, R](f: (T, M) ⇒ R): jf.BiFunction[T, M, R] = new BiFunction[T, M, R] {
     override def apply(t: T, u: M): R = f(t, u)
   }
 
 }
 
-trait ReprInMemStorage extends InMemStorage[String, PersistentRepr] {
+trait HighestSeqNumberSupport[K, V] extends InMemStorage[K, V] {
+
+  private final val seqNumbers = new ConcurrentHashMap[K, Long]()
+
+  import scala.math._
+
+  def reprToSeqNum(repr: V): Long
+
+  def read(key: K, fromInclusive: Long, toInclusive: Long, maxNumber: Long): immutable.Seq[V] =
+    read(key).getOrElse(Vector.empty)
+      .dropWhile(reprToSeqNum(_) < fromInclusive)
+      //we dont need to read highestSeqNumber because it will in any case stop at it if toInclusive > highestSeqNumber
+      .takeWhile(reprToSeqNum(_) <= toInclusive)
+      .take(if (maxNumber > Int.MaxValue) Int.MaxValue else maxNumber.toInt)
+
+  @tailrec
+  final def removePreservingSeqNumber(key: K): Unit = {
+    val value = read(key)
+    value match {
+      case Some(v) ⇒
+        reloadHighestSequenceNum(key)
+        if (!removeKey(key, v)) removePreservingSeqNumber(key)
+      case None ⇒
+    }
+  }
+
+  def reloadHighestSequenceNum(key: K): Long =
+    seqNumbers.compute(key, (_: K, sn: Long) ⇒ {
+      val savedSn = Option(sn)
+      val storeSn =
+        read(key)
+          .flatMap(_.lastOption)
+          .map(reprToSeqNum)
+      (for {
+        fsn ← savedSn
+        ssn ← storeSn
+      } yield max(fsn, ssn))
+        .orElse(savedSn)
+        .orElse(storeSn)
+        .getOrElse(0L)
+    })
+
+  def deleteToSeqNumber(key: K, toSeqNumberInclusive: Long): Unit =
+    updateExisting(key, value ⇒ {
+      reloadHighestSequenceNum(key)
+      value.dropWhile(reprToSeqNum(_) <= toSeqNumberInclusive)
+    })
+
+  override def clearAll(): Unit = {
+    seqNumbers.clear()
+    super.clearAll()
+  }
+
+  def clearAllPreservingSeqNumbers() =
+    forEachKey(removePreservingSeqNumber)
+
+}
+
+trait ReprInMemStorage extends HighestSeqNumberSupport[String, PersistentRepr] {
 
   override def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {
-    val sn = readHighestSequenceNum(key)
+    val sn = reloadHighestSequenceNum(key)
     elems.zipWithIndex.map(p ⇒ PersistentRepr(p._1, p._2 + sn, key))
   }
+
+  override def reprToSeqNum(repr: PersistentRepr): Long = repr.sequenceNr
 
   def add(elems: immutable.Seq[PersistentRepr]): Unit =
     elems
       .groupBy(_.persistenceId)
       .foreach(gr ⇒ add(gr._1, gr._2))
-
-  def deleteToSeqNumber(persistenceId: String, toSeqNumberInclusive: Long): Unit =
-    delete(persistenceId, _.sequenceNr <= toSeqNumberInclusive)
-
-  def read(persistenceId: String, fromInclusive: Long, toInclusive: Long, maxNumber: Long): immutable.Seq[PersistentRepr] =
-    read(persistenceId).getOrElse(Vector.empty)
-      .dropWhile(_.sequenceNr < fromInclusive)
-      //we dont need to read highestSeqNumber because it will in any case stop at it if toInclusive > highestSeqNumber
-      .takeWhile(_.sequenceNr <= toInclusive)
-      .take(maxNumber.toInt)
-
-  def readHighestSequenceNum(persistenceId: String): Long =
-    read(persistenceId)
-      .flatMap(_.lastOption)
-      .map(_.sequenceNr)
-      .getOrElse(0L)
 
 }
 
@@ -142,18 +204,14 @@ trait InMemStorageEmulator extends ReprInMemStorage {
 
 }
 
-trait SnapshotInMemStorage extends InMemStorage[String, (SnapshotMetadata, Any)] {
+trait SnapshotInMemStorage extends HighestSeqNumberSupport[String, (SnapshotMetadata, Any)] {
 
   override def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[(SnapshotMetadata, Any)] = {
-    val sn = readHighestSequenceNum(key)
+    val sn = reloadHighestSequenceNum(key)
     elems.zipWithIndex.map(p ⇒ (SnapshotMetadata(key, p._2 + sn), p._1))
   }
 
-  def readHighestSequenceNum(persistenceId: String): Long =
-    read(persistenceId)
-      .flatMap(_.lastOption)
-      .map(_._1.sequenceNr)
-      .getOrElse(0L)
+  override def reprToSeqNum(repr: (SnapshotMetadata, Any)): Long = repr._1.sequenceNr
 
 }
 
