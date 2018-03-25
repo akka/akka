@@ -9,6 +9,7 @@ import java.io.NotSerializableException
 import akka.persistence.CapabilityFlag
 import akka.persistence.journal.JournalSpec
 import akka.persistence.snapshot.SnapshotStoreSpec
+import akka.persistence.testkit.scaladsl.InMemStorageEmulator.JournalPolicy
 import akka.persistence.testkit.scaladsl.ProcessingPolicy.{ ProcessingSuccess, Reject }
 
 import scala.collection.immutable
@@ -17,7 +18,7 @@ class PersistenceTestkitJournalCompatSpec extends JournalSpec(config = Persisten
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    InMemStorageExtension(system).setWritingPolicy(new ProcessingPolicy {
+    InMemStorageExtension(system).setWritingPolicy(new JournalPolicy {
       override def tryProcess(batch: immutable.Seq[Any]): ProcessingPolicy.ProcessingResult = {
         val allSerializable =
           batch

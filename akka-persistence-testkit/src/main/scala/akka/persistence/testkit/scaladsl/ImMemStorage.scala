@@ -8,9 +8,10 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.function.{ BiFunction, Consumer }
 
 import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.persistence.testkit.scaladsl.ProcessingPolicy.{ BasicPolicies, ProcessingSuccess, Reject, StorageFailure }
 import akka.persistence.{ PersistentRepr, SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 
-import scala.annotation.tailrec
+import scala.annotation.{ meta, tailrec }
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 
@@ -78,16 +79,16 @@ trait InMemStorage[K, T] {
 
   import scala.language.implicitConversions
 
-  protected implicit def scalaFun1ToJava[T, R](f: T ⇒ R): jf.Function[T, R] = new jf.Function[T, R] {
-    override def apply(t: T): R = f(t)
+  protected implicit def scalaFun1ToJava[I, R](f: I ⇒ R): jf.Function[I, R] = new jf.Function[I, R] {
+    override def apply(t: I): R = f(t)
   }
 
-  protected implicit def scalaFunToConsumer[T](f: T ⇒ Unit): jf.Consumer[T] = new Consumer[T] {
-    override def accept(t: T): Unit = f(t)
+  protected implicit def scalaFunToConsumer[I](f: I ⇒ Unit): jf.Consumer[I] = new Consumer[I] {
+    override def accept(t: I): Unit = f(t)
   }
 
-  protected implicit def scalaFun2ToJava[T, M, R](f: (T, M) ⇒ R): jf.BiFunction[T, M, R] = new BiFunction[T, M, R] {
-    override def apply(t: T, u: M): R = f(t, u)
+  protected implicit def scalaFun2ToJava[I, M, R](f: (I, M) ⇒ R): jf.BiFunction[I, M, R] = new BiFunction[I, M, R] {
+    override def apply(t: I, u: M): R = f(t, u)
   }
 
 }
@@ -167,13 +168,12 @@ trait ReprInMemStorage extends HighestSeqNumberSupport[String, PersistentRepr] {
 }
 
 trait InMemStorageEmulator extends ReprInMemStorage {
-
-  import ProcessingPolicy._
+  import InMemStorageEmulator._
 
   @volatile
-  private var writingPolicy: ProcessingPolicy = ProcessingPolicy.PassAll
+  private var writingPolicy: JournalPolicy = JournalPolicies.PassAll
   @volatile
-  private var recoveryPolicy: ProcessingPolicy = ProcessingPolicy.PassAll
+  private var recoveryPolicy: JournalPolicy = JournalPolicies.PassAll
 
   /**
    *
@@ -198,9 +198,17 @@ trait InMemStorageEmulator extends ReprInMemStorage {
     }
   }
 
-  def setWritingPolicy(policy: ProcessingPolicy) = writingPolicy = policy
+  def setWritingPolicy(policy: JournalPolicy) = writingPolicy = policy
 
-  def setRecoveryPolicy(policy: ProcessingPolicy) = recoveryPolicy = policy
+  def setRecoveryPolicy(policy: JournalPolicy) = recoveryPolicy = policy
+
+}
+
+object InMemStorageEmulator {
+
+  type JournalPolicy = ProcessingPolicy[immutable.Seq[Any]]
+
+  object JournalPolicies extends BasicPolicies[immutable.Seq[Any]]
 
 }
 
@@ -216,10 +224,50 @@ trait SnapshotInMemStorage extends HighestSeqNumberSupport[String, (SnapshotMeta
 }
 
 trait SnapShotStorageEmulator extends SnapshotInMemStorage {
+  import SnapShotStorageEmulator._
 
-  def tryAdd(meta: SnapshotMetadata, payload: Any): Try[Unit] = ???
+  @volatile
+  private var writingPolicy: SnapshotWritePolicy = SnapshotWritePolicies.PassAll
+  @volatile
+  private var recoveryPolicy: SnapshotReadPolicy = SnapshotReadPolicies.PassAll
 
-  def tryRead(persistenceId: String, criteria: SnapshotSelectionCriteria): Option[SelectedSnapshot] = ???
+  def tryAdd(meta: SnapshotMetadata, payload: Any): Unit = {
+    writingPolicy.tryProcess(payload) match {
+      case ProcessingSuccess ⇒
+        add(meta.persistenceId, (meta, payload))
+        Success(())
+      case StorageFailure(e) ⇒ throw e
+      case Reject(e)         ⇒ throw e
+    }
+  }
+
+  def tryRead(persistenceId: String, criteria: SnapshotSelectionCriteria): Option[SelectedSnapshot] = {
+    val selectedSnapshot =
+      read(persistenceId)
+        .flatMap(_.reverseIterator.find(v ⇒ criteria.matches(v._1))
+          .map(v ⇒ SelectedSnapshot(v._1, v._2)))
+    recoveryPolicy.tryProcess(selectedSnapshot.map(_.snapshot)) match {
+      case ProcessingSuccess ⇒ selectedSnapshot
+      case StorageFailure(e) ⇒ throw e
+      case Reject(e)         ⇒ throw e
+    }
+  }
+
+  def setWritingPolicy(policy: SnapshotWritePolicy) = writingPolicy = policy
+
+  def setRecoveryPolicy(policy: SnapshotReadPolicy) = recoveryPolicy = policy
+
+}
+
+object SnapShotStorageEmulator {
+
+  type SnapshotWritePolicy = ProcessingPolicy[Any]
+
+  type SnapshotReadPolicy = ProcessingPolicy[Option[Any]]
+
+  object SnapshotWritePolicies extends BasicPolicies[Any]
+
+  object SnapshotReadPolicies extends BasicPolicies[Option[Any]]
 
 }
 

@@ -56,15 +56,17 @@ class PersistenceTestKitSnapshotPlugin extends SnapshotStore {
   private val storage = SnapShotStorageEmulatorExtension(context.system)
 
   override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] =
-    Future.successful(storage.read(persistenceId).flatMap(_.reverseIterator.find(v ⇒ criteria.matches(v._1)).map(v ⇒ SelectedSnapshot(v._1, v._2))))
+    Future.fromTry(Try(storage.tryRead(persistenceId, criteria)))
 
   override def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] =
-    Future.successful(storage.add(metadata.persistenceId, (metadata, snapshot)))
+    Future.fromTry(Try(storage.tryAdd(metadata, snapshot)))
 
   override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] =
+    //todo do we need to emulate delete failure?
     Future.successful(storage.delete(metadata.persistenceId, _._1.sequenceNr == metadata.sequenceNr))
 
   override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] =
+    //todo do we need to emulate delete failure?
     Future.successful(storage.delete(persistenceId, v ⇒ criteria.matches(v._1)))
 
 }
