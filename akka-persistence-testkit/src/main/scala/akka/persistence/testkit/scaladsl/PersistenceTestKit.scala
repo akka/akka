@@ -7,6 +7,7 @@ package akka.persistence.testkit.scaladsl
 import java.util.UUID
 
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId }
+import akka.persistence.testkit.scaladsl.InMemStorageEmulator.{ JournalPolicies, JournalPolicy }
 import akka.persistence.testkit.scaladsl.ProcessingPolicy.{ FailNextN, PassAll, RejectNextN }
 import com.typesafe.config.{ Config, ConfigFactory }
 
@@ -79,25 +80,25 @@ trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
 
   }
 
-  def withRecoveryPolicy(policy: ProcessingPolicy) = storage.setRecoveryPolicy(policy)
+  def withRecoveryPolicy(policy: JournalPolicy) = storage.setRecoveryPolicy(policy)
 
-  def withWritingPolicy(policy: ProcessingPolicy) = storage.setWritingPolicy(policy)
+  def withWritingPolicy(policy: JournalPolicy) = storage.setWritingPolicy(policy)
 
-  def rejectNextPersisted() = new RejectNextN(1, ExpectedRejection) {
+  def rejectNextPersisted() = new JournalPolicies.RejectNextN(1, ExpectedRejection) {
 
     override def tryProcess(batch: immutable.Seq[Any]): ProcessingPolicy.ProcessingResult = {
       val r = super.tryProcess(batch)
-      withWritingPolicy(PassAll)
+      withWritingPolicy(JournalPolicies.PassAll)
       r
     }
 
   }
 
-  def failNextPersisted() = new FailNextN(1, ExpectedFailure) {
+  def failNextPersisted() = new JournalPolicies.FailNextN(1, ExpectedFailure) {
 
     override def tryProcess(batch: immutable.Seq[Any]): ProcessingPolicy.ProcessingResult = {
       val r = super.tryProcess(batch)
-      withWritingPolicy(PassAll)
+      withWritingPolicy(JournalPolicies.PassAll)
       r
     }
 
