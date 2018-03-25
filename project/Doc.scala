@@ -8,7 +8,7 @@ import sbt._
 import sbtunidoc.BaseUnidocPlugin.autoImport.{ unidoc, unidocProjectFilter }
 import sbtunidoc.JavaUnidocPlugin.autoImport.JavaUnidoc
 import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
-import sbtunidoc.GenJavadocPlugin.autoImport.Genjavadoc
+import sbtunidoc.GenJavadocPlugin.autoImport._
 import sbt.Keys._
 import sbt.File
 import scala.annotation.tailrec
@@ -132,6 +132,7 @@ object BootstrapGenjavadoc extends AutoPlugin {
 
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
     Seq(
+      unidocGenjavadocVersion := "0.11",
       scalacOptions in Compile ++= Seq("-P:genjavadoc:fabricateParams=true", "-P:genjavadoc:suppressSynthetic=false")
     )
   ).getOrElse(Nil)
