@@ -253,21 +253,21 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         .map(_ ⇒ ByteString.empty) // make it a Flow[ByteString] again
     }
 
-    val host = localAddress.address.host.get
-    val port = localAddress.address.port.get
+    val bindHost = bindAddress.address.host.get
+    val bindPort = bindAddress.address.port.get
 
     val connectionSource: Source[Tcp.IncomingConnection, Future[ServerBinding]] =
       if (tlsEnabled) {
         val sslProvider = sslEngineProvider.get
         Tcp().bindTlsWithSSLEngine(
-          interface = host,
-          port = port,
-          createSSLEngine = () ⇒ sslProvider.createServerSSLEngine(host, port),
-          verifySession = session ⇒ optionToTry(sslProvider.verifyServerSession(host, session)))
+          interface = bindHost,
+          port = bindPort,
+          createSSLEngine = () ⇒ sslProvider.createServerSSLEngine(bindHost, bindPort),
+          verifySession = session ⇒ optionToTry(sslProvider.verifyServerSession(bindHost, session)))
       } else {
         Tcp().bind(
-          interface = host,
-          port = port,
+          interface = bindHost,
+          port = bindPort,
           halfClose = false)
       }
 
@@ -290,7 +290,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
         // only on initial startup, when ActorSystem is starting
         Await.result(binding, settings.Bind.BindTimeout)
-        afr.loFreq(TcpInbound_Bound, s"$host:$port")
+        afr.loFreq(TcpInbound_Bound, s"$bindHost:$bindPort")
         Some(binding)
       case s @ Some(_) ⇒
         // already bound, when restarting
