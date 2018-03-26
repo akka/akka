@@ -7,6 +7,7 @@ package jdocs.future;
 //#imports1
 import akka.dispatch.*;
 import jdocs.AbstractJavaTest;
+import scala.Function0;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
 import scala.concurrent.Await;
@@ -19,7 +20,9 @@ import akka.util.Timeout;
 //#imports2
 import scala.concurrent.duration.Duration;
 import akka.japi.Function;
-import java.util.concurrent.Callable;
+
+import java.util.concurrent.*;
+
 import static akka.dispatch.Futures.future;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -58,13 +61,15 @@ import static akka.pattern.Patterns.after;
 import java.util.Arrays;
 //#imports7
 
+
+//#imports8
+
+import static akka.pattern.PatternsCS.retry;
+
+//#imports8
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
 
 import scala.compat.java8.FutureConverters;
 
@@ -539,6 +544,18 @@ public class FutureDocTest extends AbstractJavaTest {
       Arrays.<Future<String>>asList(future, delayed), ec);
     //#after
     Await.result(result, Duration.create(2, SECONDS));
+  }
+
+  @Test
+  public void useRetry() throws Exception {
+
+    //#retry
+    final ExecutionContext ec = system.dispatcher();
+    Callable<CompletionStage<String>> attempt = () -> CompletableFuture.completedFuture("test");
+    CompletionStage<String> retriedFuture = retry(attempt, 3, Duration.create(200, "millis"), system.scheduler(), ec);
+    //#retry
+
+    retriedFuture.toCompletableFuture().get(2, SECONDS);
   }
 
   @Test
