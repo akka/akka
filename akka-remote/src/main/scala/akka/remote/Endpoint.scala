@@ -67,19 +67,22 @@ private[remote] class DefaultMessageDispatcher(
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)
     val originalReceiver = recipient.path
 
-    def msgLog = s"RemoteMessage: [$payload] to [$recipient]<+[$originalReceiver] from [$sender()]"
+    def logMessageReceived(messageType: String): Unit = {
+      if (LogReceive && log.isDebugEnabled)
+        log.debug(s"received $messageType RemoteMessage: [{}] to [{}]<+[{}] from [{}]", payload, recipient, originalReceiver, sender)
+    }
 
     recipient match {
 
       case `remoteDaemon` ⇒
         if (UntrustedMode) log.debug(LogMarker.Security, "dropping daemon message in untrusted mode")
         else {
-          if (LogReceive) log.debug("received daemon message {}", msgLog)
+          logMessageReceived("daemon message")
           remoteDaemon ! payload
         }
 
       case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒
-        if (LogReceive) log.debug("received local message {}", msgLog)
+        logMessageReceived("local message")
         payload match {
           case sel: ActorSelectionMessage ⇒
             if (UntrustedMode && (!TrustedSelectionPaths.contains(sel.elements.mkString("/", "/", "")) ||
@@ -99,7 +102,7 @@ private[remote] class DefaultMessageDispatcher(
         }
 
       case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal && !UntrustedMode ⇒
-        if (LogReceive) log.debug("received remote-destined message {}", msgLog)
+        logMessageReceived("remote-destined message")
         if (provider.transport.addresses(recipientAddress))
           // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
           r.!(payload)(sender)
@@ -778,7 +781,7 @@ private[remote] class EndpointWriter(
   def writeSend(s: Send): Boolean = try {
     handle match {
       case Some(h) ⇒
-        if (provider.remoteSettings.LogSend) {
+        if (provider.remoteSettings.LogSend && log.isDebugEnabled) {
           def msgLog = s"RemoteMessage: [${s.message}] to [${s.recipient}]<+[${s.recipient.path}] from [${s.senderOption.getOrElse(extendedSystem.deadLetters)}]"
           log.debug("sending message {}", msgLog)
         }
@@ -896,7 +899,7 @@ private[remote] class EndpointWriter(
   private def serializeMessage(msg: Any): SerializedMessage = handle match {
     case Some(h) ⇒
       Serialization.currentTransportInformation.withValue(Serialization.Information(h.localAddress, extendedSystem)) {
-        (MessageSerializer.serialize(extendedSystem, msg.asInstanceOf[AnyRef]))
+        MessageSerializer.serialize(extendedSystem, msg.asInstanceOf[AnyRef])
       }
     case None ⇒
       throw new EndpointException("Internal error: No handle was present during serialization of outbound message.")
