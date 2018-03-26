@@ -372,7 +372,7 @@ it is possible to disable the additional serializers and continue using Java ser
 
 ```ruby
 akka.actor {
-  # Set this to off to disable serialization-bindings define in
+  # Set this to off to disable serialization-bindings defined in
   # additional-serialization-bindings. That should only be needed
   # for backwards compatibility reasons.
   enable-additional-serialization-bindings = off
