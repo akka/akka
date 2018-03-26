@@ -1711,6 +1711,10 @@ trait FlowOps[+Out, +Mat] {
    * a new substream is opened and subsequently fed with all elements belonging to
    * that key.
    *
+   * Note that when a substream completes, if its key appears subsequently then
+   * it is treated as a new key. This operation does not retain a memory of what keys
+   * were previously encountered; only the keys that are active.
+   *
    * The object returned from this method is not a normal [[Source]] or [[Flow]],
    * it is a [[SubFlow]]. This means that after this combinator all transformations
    * are applied to all encountered substreams in the same fashion. Substream mode

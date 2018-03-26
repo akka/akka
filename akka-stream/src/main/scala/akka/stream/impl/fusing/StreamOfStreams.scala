@@ -224,7 +224,6 @@ import scala.collection.JavaConverters._
     parent ⇒
     lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
     private val activeSubstreamsMap = new java.util.HashMap[Any, SubstreamSource]()
-    private val closedSubstreams = new java.util.HashSet[Any]()
     private var timeout: FiniteDuration = _
     private var substreamWaitingToBePushed: Option[SubstreamSource] = None
     private var nextElementKey: K = null.asInstanceOf[K]
@@ -304,8 +303,6 @@ import scala.collection.JavaConverters._
       } else {
         if (activeSubstreamsMap.size == maxSubstreams)
           fail(new IllegalStateException(s"Cannot open substream for key '$key': too many substreams open"))
-        else if (closedSubstreams.contains(key) && !hasBeenPulled(in))
-          pull(in)
         else runSubstream(key, elem)
       }
     } catch {
@@ -335,7 +332,6 @@ import scala.collection.JavaConverters._
       val substreamSource = activeSubstreamsMap.get(timerKey)
       if (substreamSource != null) {
         substreamSource.timeout(timeout)
-        closedSubstreams.add(timerKey)
         activeSubstreamsMap.remove(timerKey)
         if (isClosed(in)) tryCompleteAll()
       }
@@ -349,7 +345,6 @@ import scala.collection.JavaConverters._
       private def completeSubStream(): Unit = {
         complete()
         activeSubstreamsMap.remove(key)
-        closedSubstreams.add(key)
       }
 
       private def tryCompleteHandler(): Unit = {
