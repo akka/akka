@@ -54,14 +54,14 @@ private[remote] class MessageDispatcher(
         } else {
           if (LogReceive && debugLogEnabled) log.debug(
             "received daemon message [{}] from [{}]",
-            messageClassName(message), senderOption.getOrElse(originAddress.getOrElse("")))
+            message, senderOption.getOrElse(originAddress.getOrElse("")))
           remoteDaemon ! message
         }
 
       case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒
         if (LogReceive && debugLogEnabled) log.debug(
           "received message [{}] to [{}] from [{}]",
-          messageClassName(message), recipient, senderOption.getOrElse(""))
+          message, recipient, senderOption.getOrElse(""))
         message match {
           case sel: ActorSelectionMessage ⇒
             if (UntrustedMode && (!TrustedSelectionPaths.contains(sel.elements.mkString("/", "/", "")) ||
@@ -86,7 +86,7 @@ private[remote] class MessageDispatcher(
       case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal && !UntrustedMode ⇒
         if (LogReceive && debugLogEnabled) log.debug(
           "received remote-destined message [{}] to [{}] from [{}]",
-          messageClassName(message), recipient, senderOption.getOrElse(originAddress.getOrElse("")))
+          message, recipient, senderOption.getOrElse(originAddress.getOrElse("")))
         // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
         r.!(message)(sender)
 
