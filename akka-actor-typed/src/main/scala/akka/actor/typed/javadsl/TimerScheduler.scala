@@ -8,7 +8,7 @@ import scala.concurrent.duration.FiniteDuration
 
 /**
  * Support for scheduled `self` messages in an actor.
- * It is used with `Actor.withTimers`, which also takes care of the
+ * It is used with `Behaviors.withTimers`, which also takes care of the
  * lifecycle of the timers such as cancelling them when the actor
  * is restarted or stopped.
  *
