@@ -37,13 +37,11 @@ private[akka] object EventsourcedBehavior {
     // format: ON
   }
 
-  def withMdc(setup: EventsourcedSetup[_, _, _], phaseName: String)(b: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
-    val mdc = Map(
+  def withMdc(setup: EventsourcedSetup[_, _, _], phaseName: String)(b: Behavior[InternalProtocol]): Behavior[InternalProtocol] =
+    Behaviors.withMdc(Map(
       "persistenceId" → setup.persistenceId,
       "phase" → phaseName
-    )
-    Behaviors.withMdc(_ ⇒ mdc, b)
-  }
+    ))(b)
 
   /** Protocol used internally by the eventsourced behaviors, never exposed to user-land */
   sealed trait InternalProtocol
