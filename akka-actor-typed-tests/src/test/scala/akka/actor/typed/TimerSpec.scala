@@ -231,7 +231,7 @@ class TimerSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShu
         outerTimer.startPeriodicTimer("outer-key", "outer-msg", 50.millis)
         Behaviors.withTimers { innerTimer ⇒
           innerTimer.startPeriodicTimer("inner-key", "inner-msg", 50.millis)
-          Behaviors.immutable { (ctx, msg) ⇒
+          Behaviors.receiveMessage { msg ⇒
             if (msg == "stop") Behaviors.stopped
             else {
               probe.ref ! msg
@@ -256,7 +256,7 @@ class TimerSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShu
       val probe = TestProbe[String]()
       def newBehavior(n: Int): Behavior[String] = Behaviors.withTimers[String] { timers ⇒
         timers.startPeriodicTimer(s"key${n}", s"msg${n}", 50.milli)
-        Behaviors.immutable[String] { (ctx, msg) ⇒
+        Behaviors.receiveMessage { msg ⇒
           if (msg == "stop") Behaviors.stopped
           else {
             probe.ref ! msg
