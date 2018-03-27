@@ -351,7 +351,7 @@ Best practice is that Akka remoting nodes should only be accessible from the adj
 enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate by
 compromising any node with certificates issued by the same internal PKI tree.
 
-It is also security best-practice to [disable the Java serializer](#disable-java-serializer) because of
+It is also security best-practice to @ref[disable the Java serializer](serialization.md#disable-java-serializer) because of
 its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
 
 <a id="remote-tls"></a>
@@ -687,53 +687,10 @@ Scala
 Java
 :  @@snip [ByteBufferSerializerDocTest.java]($code$/java/jdocs/actor/ByteBufferSerializerDocTest.java) { #bytebufserializer-with-manifest }
 
+<a id="disable-java-serializer"></a>
 ### Disabling the Java Serializer
 
-It is possible to completely disable Java Serialization for the entire Actor system.
-
-Java serialization is known to be slow and [prone to attacks](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995)
-of various kinds - it never was designed for high throughput messaging after all. However, it is very
-convenient to use, thus it remained the default serialization mechanism that Akka used to
-serialize user messages as well as some of its internal messages in previous versions.
-Since the release of Artery, Akka internals do not rely on Java serialization anymore (exceptions to that being `java.lang.Throwable` and "remote deployment").
-
-@@@ note
-
-Akka does not use Java Serialization for any of its internal messages.
-It is highly encouraged to disable java serialization, so please plan to do so at the earliest possibility you have in your project.
-
-One may think that network bandwidth and latency limit the performance of remote messaging, but serialization is a more typical bottleneck.
-
-@@@
-
-For user messages, the default serializer, implemented using Java serialization, remains available and enabled.
-We do however recommend to disable it entirely and utilise a proper serialization library instead in order effectively utilise
-the improved performance and ability for rolling deployments using Artery. Libraries that we recommend to use include,
-but are not limited to, [Kryo](https://github.com/EsotericSoftware/kryo) by using the [akka-kryo-serialization](https://github.com/romix/akka-kryo-serialization) library or [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) if you want
-more control over the schema evolution of your messages.
-
-In order to completely disable Java Serialization in your Actor system you need to add the following configuration to
-your `application.conf`:
-
-```ruby
-akka.actor.allow-java-serialization = off
-```
-
-This will completely disable the use of `akka.serialization.JavaSerialization` by the
-Akka Serialization extension, instead `DisabledJavaSerializer` will
-be inserted which will fail explicitly if attempts to use java serialization are made.
-
-It will also enable the above mentioned *enable-additional-serialization-bindings*.
-
-The log messages emitted by such serializer SHOULD be treated as potential
-attacks which the serializer prevented, as they MAY indicate an external operator
-attempting to send malicious messages intending to use java serialization as attack vector.
-The attempts are logged with the SECURITY marker.
-
-Please note that this option does not stop you from manually invoking java serialization.
-
-Please note that this means that you will have to configure different serializers which will able to handle all of your
-remote messages. Please refer to the @ref:[Serialization](serialization.md) documentation as well as [ByteBuffer based serialization](#remote-bytebuffer-serialization) to learn how to do this.
+It is highly recommended that you @ref[disable Java serialization](serialization.md#disable-java-serializer).
 
 ## Routers with Remote Destinations
 
