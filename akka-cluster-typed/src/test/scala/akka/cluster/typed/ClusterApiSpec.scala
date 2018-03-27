@@ -104,7 +104,7 @@ class ClusterApiSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Sc
         node2Probe.expectNoMessage()
 
       } finally {
-        Await.result(system2.terminate(), 5.seconds)
+        ActorTestKit.shutdown(adaptedSystem2)
       }
     }
   }
