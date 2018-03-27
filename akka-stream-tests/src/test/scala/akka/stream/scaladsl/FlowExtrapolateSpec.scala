@@ -4,22 +4,23 @@
 
 package akka.stream.scaladsl
 
+import java.util.concurrent.ThreadLocalRandom
+
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.scaladsl.TestSink
 
-class FlowExpandSpec extends StreamSpec {
+class FlowExtrapolateSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
 
   implicit val materializer = ActorMaterializer(settings)
 
-  "Expand" must {
+  "Extrapolate" must {
 
     "pass-through elements unchanged when there is no rate difference" in {
       // Shadow the fuzzed materializer (see the ordering guarantee needed by the for loop below).
@@ -28,8 +29,8 @@ class FlowExpandSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
-      // Simply repeat the last element as an extrapolation step
-      Source.fromPublisher(publisher).expand(Iterator.single).to(Sink.fromSubscriber(subscriber)).run()
+      // Provide an empty stream
+      Source.fromPublisher(publisher).extrapolate(_ ⇒ Iterator.empty).to(Sink.fromSubscriber(subscriber)).run()
 
       for (i ← 1 to 100) {
         // Order is important here: If the request comes first it will be extrapolated!
@@ -40,17 +41,18 @@ class FlowExpandSpec extends StreamSpec {
       subscriber.cancel()
     }
 
-    "expand elements while upstream is silent" in {
+    "extrapolate from elements while upstream is silent" in {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
       // Simply repeat the last element as an extrapolation step
-      Source.fromPublisher(publisher).expand(Iterator.continually(_)).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).extrapolate(e ⇒ Iterator.continually(e + 1)).to(Sink.fromSubscriber(subscriber)).run()
 
       publisher.sendNext(42)
+      subscriber.requestNext(42)
 
       for (_ ← 1 to 100) {
-        subscriber.requestNext(42)
+        subscriber.requestNext(42 + 1)
       }
 
       publisher.sendNext(-42)
@@ -62,12 +64,28 @@ class FlowExpandSpec extends StreamSpec {
       subscriber.cancel()
     }
 
-    "do not drop last element" in {
+    "always emit the initial element first" in {
+      val publisher = TestPublisher.probe[Int]()
+      val subscriber = TestSubscriber.probe[Int]()
+
+      val testInit = 44
+
+      // Simply repeat the last element as an extrapolation step
+      Source.fromPublisher(publisher).extrapolate(Iterator.continually(_), initial = Some(testInit)).to(Sink.fromSubscriber(subscriber)).run()
+
+      publisher.sendNext(42)
+      subscriber.requestNext(testInit)
+      subscriber.requestNext(42)
+
+      subscriber.cancel()
+    }
+
+    "do not drop the last element" in {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
       // Simply repeat the last element as an extrapolation step
-      Source.fromPublisher(publisher).expand(Iterator.continually(_)).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).extrapolate(_ ⇒ Iterator.empty).to(Sink.fromSubscriber(subscriber)).run()
 
       publisher.sendNext(1)
       subscriber.requestNext(1)
@@ -85,7 +103,7 @@ class FlowExpandSpec extends StreamSpec {
     "work on a variable rate chain" in {
       val future = Source(1 to 100)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
-        .expand(Iterator.continually(_))
+        .extrapolate(Iterator.continually(_))
         .runFold(Set.empty[Int])(_ + _)
 
       Await.result(future, 10.seconds) should contain theSameElementsAs (1 to 100).toSet
@@ -95,7 +113,7 @@ class FlowExpandSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(publisher).expand(Iterator.continually(_)).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).extrapolate(Iterator.continually(_)).to(Sink.fromSubscriber(subscriber)).run()
 
       publisher.sendNext(1)
       subscriber.requestNext(1)
