@@ -203,19 +203,6 @@ object Behaviors {
     TimerSchedulerImpl.withTimers(factory)
 
   /**
-   * Per message MDC (Mapped Diagnostic Context) logging.
-   *
-   * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
-   *                 each message processing by the inner behavior is done.
-   * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
-   *                 `ActorContext.log`
-   *
-   * See also [[akka.actor.typed.Logger.withMdc]]
-   */
-  def withMdc[T](mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](Map.empty, mdcForMessage, behavior)
-
-  /**
    * Static MDC (Mapped Diagnostic Context)
    *
    * @param staticMdc This MDC is setup in the logging context for every message
@@ -225,7 +212,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](staticMdc: Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](staticMdc, WithMdcBehavior.noMdcPerMessage, behavior)
+    withMdc[T](staticMdc, (_: T) ⇒ Map.empty[String, Any])(behavior)
 
   /**
    * Combination of static and per message MDC (Mapped Diagnostic Context).
@@ -233,6 +220,8 @@ object Behaviors {
    * Each message will get the static MDC plus the MDC returned for the message. If the same key
    * are in both the static and the per message MDC the per message one overwrites the static one
    * in the resulting log entries.
+   *
+   * The `staticMdc` or `mdcForMessage` may be empty.
    *
    * @param staticMdc A static MDC applied for each message
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after

@@ -4,10 +4,12 @@
 
 package akka.persistence.typed.internal
 
+import akka.actor.typed.Logger
 import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer, TimerScheduler }
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.typed.internal.EventsourcedBehavior.MDC
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl.PersistentBehaviors
 import akka.util.Collections.EmptyImmutableSeq
@@ -46,8 +48,6 @@ private[persistence] final case class EventsourcedSetup[C, E, S](
 
   def commandContext: ActorContext[C] = context.asInstanceOf[ActorContext[C]]
 
-  def log = context.log
-
   val persistence: Persistence = Persistence(context.system.toUntyped)
 
   val journal: ActorRef = persistence.journalFor(settings.journalPluginId)
@@ -60,6 +60,25 @@ private[persistence] final case class EventsourcedSetup[C, E, S](
   }
 
   def selfUntyped = context.self.toUntyped
+
+  private var mdc: Map[String, Any] = Map.empty
+  private var _log = context.log // changed when mdc is changed
+  def log: Logger = {
+    if (_log == null)
+      _log = context.log.withMdc(mdc) // lazy init if mdc changed
+    _log
+  }
+
+  def setMdc(newMdc: Map[String, Any]): EventsourcedSetup[C, E, S] = {
+    mdc = newMdc
+    _log = null // lazy init
+    this
+  }
+
+  def setMdc(phaseName: String): EventsourcedSetup[C, E, S] = {
+    setMdc(MDC.create(persistenceId, phaseName))
+    this
+  }
 
 }
 
