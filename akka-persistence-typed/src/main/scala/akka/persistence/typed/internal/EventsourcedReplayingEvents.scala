@@ -37,7 +37,8 @@ private[persistence] object EventsourcedReplayingEvents {
   private[persistence] final case class ReplayingState[State](
     seqNr:               Long,
     state:               State,
-    eventSeenInInterval: Boolean = false
+    eventSeenInInterval: Boolean,
+    toSeqNr:             Long
   )
 
   def apply[C, E, S](
@@ -57,7 +58,7 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
     Behaviors.setup { _ ⇒
       startRecoveryTimer(setup.timers, setup.settings.recoveryEventTimeout)
 
-      replayEvents(state.seqNr + 1L, setup.recovery.toSequenceNr)
+      replayEvents(state.seqNr + 1L, state.toSeqNr)
 
       stay(state)
     }

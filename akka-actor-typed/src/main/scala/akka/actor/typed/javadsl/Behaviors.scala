@@ -4,6 +4,7 @@
 
 package akka.actor.typed.javadsl
 
+import java.util.Collections
 import java.util.function.{ Function ⇒ JFunction }
 
 import akka.actor.typed.{ ActorRef, Behavior, ExtensibleBehavior, Signal, SupervisorStrategy }
@@ -12,7 +13,6 @@ import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.japi.function.{ Procedure2, Function2 ⇒ JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.ConstantFun
-
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 /**
@@ -283,6 +283,20 @@ object Behaviors {
   trait Receive[T] extends ExtensibleBehavior[T]
 
   /**
+   * Per message MDC (Mapped Diagnostic Context) logging.
+   *
+   * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
+   *                 each message processing by the inner behavior is done.
+   * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
+   *                 `ActorContext.log`
+   *
+   * See also [[akka.actor.typed.Logger.withMdc]]
+   */
+  def withMdc[T](
+    mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]], behavior: Behavior[T]): Behavior[T] =
+    withMdc(Collections.emptyMap[String, Any], mdcForMessage, behavior)
+
+  /**
    * Static MDC (Mapped Diagnostic Context)
    *
    * @param staticMdc This MDC is setup in the logging context for every message
@@ -301,7 +315,7 @@ object Behaviors {
    * are in both the static and the per message MDC the per message one overwrites the static one
    * in the resulting log entries.
    *
-   * * The `staticMdc` or `mdcForMessage` may be empty or `null`.
+   * * The `staticMdc` or `mdcForMessage` may be empty.
    *
    * @param staticMdc A static MDC applied for each message
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after

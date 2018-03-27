@@ -203,6 +203,19 @@ object Behaviors {
     TimerSchedulerImpl.withTimers(factory)
 
   /**
+   * Per message MDC (Mapped Diagnostic Context) logging.
+   *
+   * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
+   *                 each message processing by the inner behavior is done.
+   * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
+   *                 `ActorContext.log`
+   *
+   * See also [[akka.actor.typed.Logger.withMdc]]
+   */
+  def withMdc[T](mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+    withMdc[T](Map.empty[String, Any], mdcForMessage)(behavior)
+
+  /**
    * Static MDC (Mapped Diagnostic Context)
    *
    * @param staticMdc This MDC is setup in the logging context for every message

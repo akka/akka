@@ -29,11 +29,11 @@ private[akka] object EventsourcedBehavior {
 
   object MDC {
     // format: OFF
-    val AwaitingPermit = "get-permit"
+    val AwaitingPermit    = "get-permit"
     val ReplayingSnapshot = "replay-snap"
-    val ReplayingEvents = "replay-evts"
-    val RunningCmds = "running-cmnds"
-    val PersistingEvents = "persist-evts"
+    val ReplayingEvents   = "replay-evts"
+    val RunningCmds       = "running-cmnds"
+    val PersistingEvents  = "persist-evts"
     // format: ON
 
     def create(persistenceId: String, phaseName: String): Map[String, Any] = {

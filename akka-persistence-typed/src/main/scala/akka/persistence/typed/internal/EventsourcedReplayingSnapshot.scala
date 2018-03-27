@@ -119,15 +119,9 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
   private def becomeReplayingEvents(state: S, lastSequenceNr: Long, toSnr: Long): Behavior[InternalProtocol] = {
     cancelRecoveryTimer(setup.timers)
 
-    val rec = setup.recovery.copy(
-      toSequenceNr = toSnr,
-      fromSnapshot = SnapshotSelectionCriteria.None
-    )
-
     EventsourcedReplayingEvents[C, E, S](
-      setup.copy(recovery = rec),
-      // setup.internalStash, // TODO move it out of setup
-      EventsourcedReplayingEvents.ReplayingState(lastSequenceNr, state)
+      setup,
+      EventsourcedReplayingEvents.ReplayingState(lastSequenceNr, state, eventSeenInInterval = false, toSnr)
     )
   }
 
