@@ -9,7 +9,7 @@ import akka.pattern.BackoffSupervisor
 import akka.stream._
 import akka.stream.stage.{ GraphStage, InHandler, OutHandler, TimerGraphStageLogicWithLogging }
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 /**
  * A RestartSource wraps a [[Source]] that gets restarted when it completes or fails.
@@ -363,6 +363,7 @@ private final class RestartWithBackoffFlow[In, Out](
   val out = Outlet[Out]("RestartWithBackoffFlow.out")
 
   override def shape = FlowShape(in, out)
+
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
     "Flow", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures, maxRestarts) {
 
@@ -371,9 +372,14 @@ private final class RestartWithBackoffFlow[In, Out](
     override protected def logSource = self.getClass
 
     override protected def startGraph() = {
-      val sourceOut = createSubOutlet(in)
-      val sinkIn = createSubInlet(out)
-      Source.fromGraph(sourceOut.source).via(flowFactory()).runWith(sinkIn.sink)(subFusingMaterializer)
+      val sourceOut: SubSourceOutlet[In] = createSubOutlet(in)
+      val sinkIn: SubSinkInlet[Out] = createSubInlet(out)
+
+      Source.fromGraph(sourceOut.source)
+        .via(StreamUtils.delayCancellation[In](10.millis))
+        .via(flowFactory())
+        .runWith(sinkIn.sink)(subFusingMaterializer)
+
       if (isAvailable(out)) {
         sinkIn.pull()
       }
@@ -419,6 +425,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   maxRestarts:    Int) extends TimerGraphStageLogicWithLogging(shape) {
   var restartCount = 0
   var resetDeadline = minBackoff.fromNow
+
   // This is effectively only used for flows, if either the main inlet or outlet of this stage finishes, then we
   // don't want to restart the sub inlet when it finishes, we just finish normally.
   var finishing = false
@@ -426,19 +433,27 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   protected def startGraph(): Unit
   protected def backoff(): Unit
 
+  /**
+   * @param out The permanent outlet
+   * @return A sub sink inlet that's sink is attached to the wrapped stage
+   */
   protected final def createSubInlet[T](out: Outlet[T]): SubSinkInlet[T] = {
     val sinkIn = new SubSinkInlet[T](s"RestartWithBackoff$name.subIn")
 
     sinkIn.setHandler(new InHandler {
       override def onPush() = push(out, sinkIn.grab())
+
       override def onUpstreamFinish() = {
         if (finishing || maxRestartsReached() || onlyOnFailures) {
           complete(out)
         } else {
-          log.debug("Restarting graph due to finished upstream")
           scheduleRestartTimer()
         }
       }
+
+      /*
+       * Upstream in this context is the wrapped stage.
+       */
       override def onUpstreamFailure(ex: Throwable) = {
         if (finishing || maxRestartsReached()) {
           fail(out, ex)
@@ -456,10 +471,13 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
         sinkIn.cancel()
       }
     })
-
     sinkIn
   }
 
+  /**
+   * @param in The permanent inlet for this stage
+   * @return Temporary SubSourceOutlet for this "restart"
+   */
   protected final def createSubOutlet[T](in: Inlet[T]): SubSourceOutlet[T] = {
     val sourceOut = new SubSourceOutlet[T](s"RestartWithBackoff$name.subOut")
 
@@ -471,11 +489,17 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
           pull(in)
         }
       }
+
+      /*
+       * Downstream in this context is the wrapped stage.
+       *
+       * Can either be a failure or a cancel in the wrapped state.
+       * onlyOnFailures is thus racy so a delay to cancellation is added in the case of a flow.
+       */
       override def onDownstreamFinish() = {
         if (finishing || maxRestartsReached() || onlyOnFailures) {
           cancel(in)
         } else {
-          log.debug("Graph in finished")
           scheduleRestartTimer()
         }
       }
@@ -498,7 +522,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
     sourceOut
   }
 
-  protected final def maxRestartsReached() = {
+  protected final def maxRestartsReached(): Boolean = {
     // Check if the last start attempt was more than the minimum backoff
     if (resetDeadline.isOverdue()) {
       log.debug("Last restart attempt was more than {} ago, resetting restart count", minBackoff)
@@ -508,7 +532,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   }
 
   // Set a timer to restart after the calculated delay
-  protected final def scheduleRestartTimer() = {
+  protected final def scheduleRestartTimer(): Unit = {
     val restartDelay = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
     log.debug("Restarting graph in {}", restartDelay)
     scheduleOnce("RestartTimer", restartDelay)
