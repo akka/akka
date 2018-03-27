@@ -171,11 +171,11 @@ object Behaviors {
    * val dbConnector: Behavior[DbCommand] = ...
    *
    * val dbRestarts =
-   *    Actor.supervise(dbConnector)
+   *    Behaviors.supervise(dbConnector)
    *      .onFailure(SupervisorStrategy.restart) // handle all NonFatal exceptions
    *
    * val dbSpecificResumes =
-   *    Actor.supervise(dbConnector)
+   *    Behaviors.supervise(dbConnector)
    *      .onFailure[IndexOutOfBoundsException](SupervisorStrategy.resume) // resume for IndexOutOfBoundsException exceptions
    * }}}
    */
