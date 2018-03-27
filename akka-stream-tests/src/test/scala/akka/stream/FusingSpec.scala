@@ -16,6 +16,8 @@ class FusingSpec extends StreamSpec {
     GraphInterpreter.currentInterpreter.context
   }
 
+  val snitchFlow = Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x }).async
+
   "SubFusingActorMaterializer" must {
 
     "work with asynchronous boundaries in the subflows" in {
@@ -32,7 +34,7 @@ class FusingSpec extends StreamSpec {
     "use multiple actors when there are asynchronous boundaries in the subflows (manual)" in {
       val async = Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x }).async
       Source(0 to 9)
-        .map(x ⇒ { testActor ! actorRunningStage; x })
+        .via(snitchFlow.async)
         .flatMapMerge(5, i ⇒ Source.single(i).via(async))
         .grouped(1000)
         .runWith(Sink.head)
@@ -43,10 +45,9 @@ class FusingSpec extends StreamSpec {
     }
 
     "use multiple actors when there are asynchronous boundaries in the subflows (combinator)" in {
-      val flow = Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x })
       Source(0 to 9)
-        .map(x ⇒ { testActor ! actorRunningStage; x })
-        .flatMapMerge(5, i ⇒ Source.single(i).via(flow.async))
+        .via(snitchFlow)
+        .flatMapMerge(5, i ⇒ Source.single(i).via(snitchFlow.async))
         .grouped(1000)
         .runWith(Sink.head)
         .futureValue
@@ -56,12 +57,11 @@ class FusingSpec extends StreamSpec {
     }
 
     "use one actor per grouped substream when there is an async boundary around the flow (manual)" in {
-      val flow = Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x }).async
       val in = 0 to 9
       Source(in)
-        .via(Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x }))
+        .via(snitchFlow)
         .groupBy(in.size, identity)
-        .via(flow)
+        .via(snitchFlow.async)
         .mergeSubstreams
         .runWith(Sink.seq)
         .futureValue.sorted should ===(in)
@@ -71,12 +71,11 @@ class FusingSpec extends StreamSpec {
     }
 
     "use one actor per grouped substream when there is an async boundary around the flow (combinator)" in {
-      val flow = Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x })
       val in = 0 to 9
       Source(in)
-        .via(Flow[Int].map(x ⇒ { testActor ! actorRunningStage; x }))
+        .via(snitchFlow)
         .groupBy(in.size, identity)
-        .via(flow)
+        .via(snitchFlow)
         .async
         .mergeSubstreams
         .runWith(Sink.seq)
