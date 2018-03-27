@@ -5,9 +5,13 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
+import akka.annotation.ApiMayChange
 import akka.pattern.BackoffSupervisor
+import akka.stream.Attributes.Attribute
 import akka.stream._
-import akka.stream.stage.{ GraphStage, InHandler, OutHandler, TimerGraphStageLogicWithLogging }
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
+import akka.stream.scaladsl.RestartWithBackoffFlow.Delay
+import akka.stream.stage._
 
 import scala.concurrent.duration._
 
@@ -366,6 +370,7 @@ private final class RestartWithBackoffFlow[In, Out](
 
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
     "Flow", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures, maxRestarts) {
+    val delay = inheritedAttributes.get[Delay](Delay(50.millis)).duration
 
     var activeOutIn: Option[(SubSourceOutlet[In], SubSinkInlet[Out])] = None
 
@@ -376,7 +381,8 @@ private final class RestartWithBackoffFlow[In, Out](
       val sinkIn: SubSinkInlet[Out] = createSubInlet(out)
 
       Source.fromGraph(sourceOut.source)
-        .via(StreamUtils.delayCancellation[In](10.millis))
+        // Temp fix while waiting cause of cancellation. See #23909
+        .via(RestartWithBackoffFlow.delayCancellation[In](delay))
         .via(flowFactory())
         .runWith(sinkIn.sink)(subFusingMaterializer)
 
@@ -549,4 +555,52 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
 
   // When the stage starts, start the source
   override def preStart() = startGraph()
+}
+
+object RestartWithBackoffFlow {
+
+  /**
+   * Temporary attribute that can override the time a [[RestartWithBackoffFlow]] waits
+   * for a failure before cancelling.
+   *
+   * See https://github.com/akka/akka/issues/24529
+   *
+   * Will be removed if/when cancellation can include a cause.
+   */
+  @ApiMayChange
+  case class Delay(duration: FiniteDuration) extends Attribute
+
+  /**
+   * Returns a flow that is almost identity but delays propagation of cancellation from downstream to upstream.
+   *
+   * Once the down stream is finish calls to onPush are ignored.
+   */
+  private def delayCancellation[T](duration: FiniteDuration): Flow[T, T, NotUsed] =
+    Flow.fromGraph(new DelayCancellationStage(duration))
+
+  final class DelayCancellationStage[T](delay: FiniteDuration) extends SimpleLinearGraphStage[T] {
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+
+      setHandlers(in, out, this)
+
+      def onPush(): Unit = push(out, grab(in))
+      def onPull(): Unit = pull(in)
+
+      override def onDownstreamFinish(): Unit = {
+        scheduleOnce("CompleteState", delay)
+        setHandler(
+          in,
+          new InHandler {
+            def onPush(): Unit = {}
+          }
+        )
+      }
+
+      override protected def onTimer(timerKey: Any): Unit = {
+        log.debug(s"Stage was canceled after delay of $delay")
+        completeStage()
+      }
+    }
+  }
 }

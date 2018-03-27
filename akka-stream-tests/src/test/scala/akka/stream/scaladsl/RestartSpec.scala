@@ -6,10 +6,11 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.stream.scaladsl.RestartWithBackoffFlow.Delay
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.{ ActorMaterializer, OverflowStrategy }
+import akka.stream.{ ActorMaterializer, Attributes, OverflowStrategy }
 import akka.testkit.{ DefaultTimeout, TestDuration }
 import akka.{ Done, NotUsed }
 
@@ -462,7 +463,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       (minBackoff, maxBackoff, randomFactor, maxRestarts) ⇒ RestartFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts)
     }
 
-    def setupFlow(minBackoff: FiniteDuration, maxBackoff: FiniteDuration, maxRestarts: Int = -1, onlyOnFailures: Boolean = false): (AtomicInteger, TestPublisher.Probe[String], TestSubscriber.Probe[String], TestPublisher.Probe[String], TestSubscriber.Probe[String]) = {
+    def setupFlow(minBackoff: FiniteDuration, maxBackoff: FiniteDuration, maxRestarts: Int = -1, onlyOnFailures: Boolean = false) = {
       val created = new AtomicInteger()
 
       val (flowInSource: TestPublisher.Probe[String], flowInProbe: TestSubscriber.Probe[String]) = TestSource.probe[String]
@@ -747,11 +748,12 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val failsSomeTimes = Flow[Int].map { i ⇒
         if (i % 3 == 0) throw TE("fail") else i
       }
+
       val restartOnFailures =
         RestartFlow.onFailuresWithBackoff(1.second, 2.seconds, 0.2, 2)(() ⇒ {
           flowCreations.incrementAndGet()
           failsSomeTimes
-        })
+        }).addAttributes(Attributes(Delay(100.millis)))
 
       val elements = Source(1 to 7)
         .via(restartOnFailures)
