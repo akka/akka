@@ -19,7 +19,7 @@ import akka.annotation.InternalApi
     staticMdc:     Map[String, Any],
     mdcForMessage: T ⇒ Map[String, Any],
     behavior:      Behavior[T]): Behavior[T] =
-    // FIXME this is needed for every custom decorating behavior - provide public tool for it
+
     behavior match {
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[T] { ctx ⇒
@@ -64,7 +64,7 @@ import akka.annotation.InternalApi
       case other                     ⇒ new WithMdcBehavior(staticMdc, mdcForMessage, other)
     }
 
-  override def receiveMessage(ctx: ActorContext[T], msg: T): Behavior[T] = {
+  override def receive(ctx: ActorContext[T], msg: T): Behavior[T] = {
     val mdc = staticMdc ++ mdcForMessage(msg)
     ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = mdc
     val next =

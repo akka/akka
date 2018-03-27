@@ -4,12 +4,12 @@
 
 package akka.actor.typed.javadsl
 
-import java.util.function.{ Function => JFunction }
+import java.util.function.{ Function ⇒ JFunction }
 
 import akka.actor.typed.{ ActorRef, Behavior, ExtensibleBehavior, Signal, SupervisorStrategy }
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehavior }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
-import akka.japi.function.{ Procedure2, Function2 => JapiFunction2 }
+import akka.japi.function.{ Procedure2, Function2 ⇒ JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.ConstantFun
 

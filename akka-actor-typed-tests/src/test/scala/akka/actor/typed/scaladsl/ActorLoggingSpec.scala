@@ -196,22 +196,22 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
       val behaviors = Behaviors.withMdc[Protocol](
         Map("static" -> 1),
         // FIXME why u no infer the type here Scala??
-        { (msg: Protocol) ⇒
+        (msg: Protocol) ⇒
           if (msg.transactionId == 1)
             Map(
-              "txId" -> msg.transactionId,
-              "first" -> true
-            )
+            "txId" -> msg.transactionId,
+            "first" -> true
+          )
           else Map("txId" -> msg.transactionId)
-        },
-        Behaviors.setup { ctx ⇒
-          ctx.log.info("Starting")
-          Behaviors.receive { (ctx, msg) ⇒
-            ctx.log.info("Got message!")
-            Behaviors.same
+      ) {
+          Behaviors.setup { ctx ⇒
+            ctx.log.info("Starting")
+            Behaviors.receiveMessage { msg ⇒
+              ctx.log.info("Got message!")
+              Behaviors.same
+            }
           }
         }
-      )
 
       // mdc on defer is empty (thread and timestamp MDC is added by logger backend)
       val ref = EventFilter.custom({
@@ -258,8 +258,6 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
             }
           }
         }
-
-      println(behavior)
 
       val ref = spawn(behavior)
       EventFilter.custom({
