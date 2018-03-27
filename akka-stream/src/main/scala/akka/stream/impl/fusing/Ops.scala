@@ -1924,7 +1924,20 @@ private[stream] object Collect {
 
     def pushPull(): Unit =
       if (hasNext) {
-        push(out, currentIterator.next())
+        try {
+          val el = currentIterator.next()
+          println(s"el = ${el}")
+          push(out, el)
+        } catch {
+          case NonFatal(ex) ⇒ decider(ex) match {
+            case Supervision.Stop              ⇒ failStage(ex)
+            case Supervision.Resume if hasNext ⇒ pushPull()
+            case Supervision.Resume            ⇒ ??? // FIXME should get the next from f();  // if (!hasBeenPulled(in)) pull(in)
+            case Supervision.Restart ⇒
+              restartState()
+              if (!hasBeenPulled(in)) pull(in)
+          }
+        }
         if (!hasNext && isClosed(in)) completeStage()
       } else if (!isClosed(in))
         pull(in)

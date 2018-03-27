@@ -5,10 +5,10 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
+
 import scala.collection.immutable
 import scala.concurrent.duration._
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.stream.{ ActorAttributes, ActorMaterializer, ActorMaterializerSettings, Supervision }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.testkit.EventFilter
@@ -44,6 +44,18 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
     c.expectError().getMessage should be("not two")
     sub.request(2)
     c.expectNoMsg(100.millis)
+  }
+
+  "xoxo continue when iterator throws" in {
+    val iterable = new immutable.Iterable[Int] {
+      override def iterator: Iterator[Int] =
+        (1 to 3).iterator.map(x ⇒ if (x == 2) throw new IllegalStateException("not two") else x)
+    }
+    val p = Source.fromIterator(() ⇒ iterable.iterator)
+      .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
+      .runWith(Sink.seq).futureValue
+
+    p should ===(List(1, 3))
   }
 
   "produce onError when Source construction throws" in {
