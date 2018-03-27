@@ -9,7 +9,7 @@ import java.nio.file.{ OpenOption, Path }
 import java.util
 import java.util.concurrent.CompletionStage
 
-import akka.stream.{ ActorAttributes, IOResult, javadsl, scaladsl }
+import akka.stream.{ IOResult, javadsl, scaladsl }
 import akka.util.ByteString
 
 import scala.collection.JavaConverters._

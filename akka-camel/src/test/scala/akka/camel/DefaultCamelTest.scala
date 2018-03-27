@@ -10,7 +10,7 @@ import org.scalatest.Matchers
 import org.scalatest.mock.MockitoSugar
 import org.apache.camel.ProducerTemplate
 import org.scalatest.WordSpec
-import akka.event.{ LoggingAdapter, MarkerLoggingAdapter }
+import akka.event.MarkerLoggingAdapter
 import akka.actor.ActorSystem.Settings
 import com.typesafe.config.ConfigFactory
 import org.apache.camel.impl.DefaultCamelContext

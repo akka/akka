@@ -4,9 +4,8 @@
 
 package akka.actor
 
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.DoNotInherit
 import akka.japi.pf.ReceiveBuilder
-import akka.japi.pf.UnitPFBuilder
 
 import scala.runtime.BoxedUnit
 import java.util.Optional
@@ -29,7 +28,8 @@ object AbstractActor {
      * Composes this `Receive` with a fallback which gets applied
      * where this partial function is not defined.
      */
-    def orElse(other: Receive): Receive = new Receive(onMessage.orElse(other.onMessage))
+    def orElse(other: Receive): Receive =
+      new Receive(onMessage.orElse(other.onMessage))
   }
 
   /**

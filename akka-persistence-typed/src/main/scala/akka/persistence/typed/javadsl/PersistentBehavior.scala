@@ -92,7 +92,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
 
   /** INTERNAL API */
   @InternalApi private[akka] override def untypedProps(props: akka.actor.typed.Props): akka.actor.Props = {
-    val behaviorImpl = scaladsl.PersistentBehaviors.immutable[Command, Event, State](
+    val behaviorImpl = scaladsl.PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
       initialState,
       (c, state, cmd) ⇒ commandHandler()(c.asJava, state, cmd).asInstanceOf[EffectImpl[Event, State]],

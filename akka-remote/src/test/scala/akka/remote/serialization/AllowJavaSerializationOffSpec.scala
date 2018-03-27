@@ -5,7 +5,7 @@
 package akka.remote.serialization
 
 import akka.actor.setup.ActorSystemSetup
-import akka.actor.{ ActorSystem, BootstrapSetup, ExtendedActorSystem, Terminated }
+import akka.actor.{ ActorSystem, BootstrapSetup, ExtendedActorSystem }
 import akka.serialization._
 import akka.testkit.{ AkkaSpec, TestKit, TestProbe }
 import com.typesafe.config.ConfigFactory

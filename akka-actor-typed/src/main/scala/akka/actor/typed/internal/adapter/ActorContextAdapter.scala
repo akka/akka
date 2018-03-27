@@ -82,7 +82,6 @@ import scala.concurrent.duration._
     actorLogger match {
       case OptionVal.Some(logger) ⇒ logger
       case OptionVal.None ⇒
-        import scala.language.existentials
         val logSource = self.path.toString
         val logClass = classOf[Behavior[_]] // FIXME figure out a better class somehow
         val system = untyped.system.asInstanceOf[ExtendedActorSystem]

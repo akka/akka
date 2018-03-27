@@ -38,7 +38,7 @@ object StashDocSpec {
         val buffer = StashBuffer[Command](capacity = 100)
 
         def init(): Behavior[Command] =
-          Behaviors.immutable[Command] { (ctx, msg) ⇒
+          Behaviors.receive[Command] { (ctx, msg) ⇒
             msg match {
               case InitialState(value) ⇒
                 // now we are ready to handle stashed messages if any
@@ -53,7 +53,7 @@ object StashDocSpec {
           }
 
         def active(state: String): Behavior[Command] =
-          Behaviors.immutable { (ctx, msg) ⇒
+          Behaviors.receive { (ctx, msg) ⇒
             msg match {
               case Get(replyTo) ⇒
                 replyTo ! state
@@ -69,7 +69,7 @@ object StashDocSpec {
           }
 
         def saving(state: String, replyTo: ActorRef[Done]): Behavior[Command] =
-          Behaviors.immutable[Command] { (ctx, msg) ⇒
+          Behaviors.receive[Command] { (ctx, msg) ⇒
             msg match {
               case SaveSuccess ⇒
                 replyTo ! Done

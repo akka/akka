@@ -4,8 +4,6 @@
 
 package akka.actor.dungeon
 
-import java.io.NotSerializableException
-
 import akka.actor.Actor
 import akka.actor.Props
 

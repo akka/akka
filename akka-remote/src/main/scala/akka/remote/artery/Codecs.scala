@@ -22,8 +22,6 @@ import akka.util.{ OptionVal, Unsafe }
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
-import akka.util.ByteStringBuilder
-import java.nio.ByteOrder
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.serialization.SerializerWithStringManifest
 
@@ -141,8 +139,7 @@ private[remote] class Encoder(
           if (debugLogSendEnabled)
             log.debug(
               "sending remote message [{}] to [{}] from [{}]",
-              Logging.messageClassName(outboundEnvelope.message),
-              outboundEnvelope.recipient.getOrElse(""), outboundEnvelope.sender.getOrElse(""))
+              outboundEnvelope.message, outboundEnvelope.recipient.getOrElse(""), outboundEnvelope.sender.getOrElse(""))
 
           push(out, envelope)
 

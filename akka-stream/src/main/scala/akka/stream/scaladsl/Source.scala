@@ -529,7 +529,10 @@ object Source {
    */
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
     actorRef(
-      { case akka.actor.Status.Success(_) ⇒ },
+      {
+        case akka.actor.Status.Success    ⇒
+        case akka.actor.Status.Success(_) ⇒
+      },
       { case akka.actor.Status.Failure(cause) ⇒ cause },
       bufferSize, overflowStrategy)
 

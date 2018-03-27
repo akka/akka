@@ -4,10 +4,9 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.{ Behavior, Signal }
-import akka.actor.typed.Behavior.StoppedBehavior
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.Behaviors.MutableBehavior
+import akka.actor.typed.scaladsl.MutableBehavior
 import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
@@ -148,9 +147,9 @@ private[akka] object EventsourcedRunning {
     }
 
     withMdc(setup, MDC.RunningCmds) {
-      Behaviors.immutable[EventsourcedBehavior.InternalProtocol] {
-        case (_, IncomingCommand(c: C @unchecked)) ⇒ onCommand(state, c)
-        case _                                     ⇒ Behaviors.unhandled
+      Behaviors.receiveMessage[EventsourcedBehavior.InternalProtocol] {
+        case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
+        case _                                ⇒ Behaviors.unhandled
       }
     }
 

@@ -4,12 +4,9 @@
 
 package akka.remote
 
-import java.util.concurrent.ThreadLocalRandom
-
 import akka.actor._
 import akka.remote.transport._
 import akka.testkit._
-import akka.util.ByteString
 import com.typesafe.config._
 
 import scala.concurrent.duration._

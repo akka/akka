@@ -6,11 +6,10 @@ package akka.persistence.typed.internal
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer }
-import akka.actor.{ DeadLetter, ExtendedActorSystem, StashOverflowException }
+import akka.actor.{ DeadLetter, StashOverflowException }
 import akka.annotation.InternalApi
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
-import akka.persistence.{ StashOverflowStrategy, _ }
-import akka.util.Collections.EmptyImmutableSeq
+import akka.persistence._
 import akka.util.ConstantFun
 import akka.{ actor ⇒ a }
 

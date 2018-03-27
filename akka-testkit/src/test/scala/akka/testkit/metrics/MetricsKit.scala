@@ -6,7 +6,6 @@ package akka.testkit.metrics
 
 import com.codahale.metrics._
 
-import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import com.typesafe.config.Config

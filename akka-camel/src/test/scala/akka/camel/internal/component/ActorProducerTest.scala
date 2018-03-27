@@ -18,12 +18,12 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach, Suite, WordSpecLik
 import akka.camel.TestSupport._
 import java.util.concurrent.{ CountDownLatch, TimeoutException }
 
-import org.mockito.{ ArgumentMatcher, ArgumentMatchers, Mockito, Matchers ⇒ MMatchers }
+import org.mockito.{ ArgumentMatcher, ArgumentMatchers, Mockito }
 import org.scalatest.Matchers
 import akka.actor.Status.Failure
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem.Settings
-import akka.event.{ LoggingAdapter, MarkerLoggingAdapter }
+import akka.event.MarkerLoggingAdapter
 import akka.testkit.{ TestKit, TestLatch, TestProbe, TimingTest }
 import org.apache.camel.impl.DefaultCamelContext
 

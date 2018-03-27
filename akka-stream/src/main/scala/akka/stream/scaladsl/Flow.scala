@@ -522,20 +522,9 @@ object Flow {
 
   /**
    * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
-   * if there are no elements, because of completion or error.
-   * The materialized value of the `Flow` will be the materialized
-   * value of the created internal flow.
+   * if there are no elements, because of completion, cancellation, or error.
    *
-   * If `flowFactory` throws an exception and the supervision decision is
-   * [[akka.stream.Supervision.Stop]] the materialized value of the flow will be completed with
-   * the result of the `fallback`. For all other supervision options it will
-   * try to create flow with the next element.
-   *
-   * `fallback` will be executed when there was no elements and completed is received from upstream
-   * or when there was an exception either thrown by the `flowFactory` or during the internal flow
-   * materialization process.
-   *
-   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   * The materialized value of the `Flow` is the value that is created by the `fallback` function.
    *
    * '''Emits when''' the internal flow is successfully created and it emits
    *
@@ -545,8 +534,29 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
+  @Deprecated
+  @deprecated("Use lazyInitAsync instead. (lazyInitAsync returns a flow with a more useful materialized value.)", "2.5.12")
   def lazyInit[I, O, M](flowFactory: I ⇒ Future[Flow[I, O, M]], fallback: () ⇒ M): Flow[I, O, M] =
-    Flow.fromGraph(new LazyFlow[I, O, M](flowFactory, fallback))
+    Flow.fromGraph(new LazyFlow[I, O, M](flowFactory)).mapMaterializedValue(_ ⇒ fallback())
+
+  /**
+   * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
+   * if there are no elements, because of completion, cancellation, or error.
+   *
+   * The materialized value of the `Flow` is a `Future[Option[M]]` that is completed with `Some(mat)` when the internal
+   * flow gets materialized or with `None` when there where no elements. If the flow materialization (including
+   * the call of the `flowFactory`) fails then the future is completed with a failure.
+   *
+   * '''Emits when''' the internal flow is successfully created and it emits
+   *
+   * '''Backpressures when''' the internal flow is successfully created and it backpressures
+   *
+   * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def lazyInitAsync[I, O, M](flowFactory: () ⇒ Future[Flow[I, O, M]]): Flow[I, O, Future[Option[M]]] =
+    Flow.fromGraph(new LazyFlow[I, O, M](_ ⇒ flowFactory()))
 }
 
 object RunnableGraph {
@@ -1622,7 +1632,7 @@ trait FlowOps[+Out, +Mat] {
     via(Batch(max, costFn, seed, aggregate).withAttributes(DefaultAttributes.batchWeighted))
 
   /**
-   * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older
+   * Allows a faster downstream to progress independently of a slower upstream by extrapolating elements from an older
    * element until new element comes from the upstream. For example an expand step might repeat the last element for
    * the subscriber until it receives an update from upstream.
    *
@@ -1631,7 +1641,7 @@ trait FlowOps[+Out, +Mat] {
    * subscriber.
    *
    * Expand does not support [[akka.stream.Supervision.Restart]] and [[akka.stream.Supervision.Resume]].
-   * Exceptions from the `seed` or `extrapolate` functions will complete the stream with failure.
+   * Exceptions from the `seed` function will complete the stream with failure.
    *
    * '''Emits when''' downstream stops backpressuring
    *
@@ -1641,11 +1651,43 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    *
-   * @param seed Provides the first state for extrapolation using the first unconsumed element
-   * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
-   *                    state.
+   * @param expander       Takes the current extrapolation state to produce an output element and the next extrapolation
+   *                       state.
+   * @see [[#extrapolate]] for a version that always preserves the original element and allows for an initial "startup"
+   *                       element.
    */
-  def expand[U](extrapolate: Out ⇒ Iterator[U]): Repr[U] = via(new Expand(extrapolate))
+  def expand[U](expander: Out ⇒ Iterator[U]): Repr[U] = via(new Expand(expander))
+
+  /**
+   * Allows a faster downstream to progress independent of a slower upstream.
+   *
+   * This is achieved by introducing "extrapolated" elements - based on those from upstream - whenever downstream
+   * signals demand.
+   *
+   * Extrapolate does not support [[akka.stream.Supervision.Restart]] and [[akka.stream.Supervision.Resume]].
+   * Exceptions from the `extrapolate` function will complete the stream with failure.
+   *
+   * '''Emits when''' downstream stops backpressuring, AND EITHER upstream emits OR initial element is present OR
+   * `extrapolate` is non-empty and applicable
+   *
+   * '''Backpressures when''' downstream backpressures or current `extrapolate` runs empty
+   *
+   * '''Completes when''' upstream completes and current `extrapolate` runs empty
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param extrapolator takes the current upstream element and provides a sequence of "extrapolated" elements based
+   *                    on the original, to be emitted in case downstream signals demand.
+   * @param initial the initial element to be emitted, in case upstream is able to stall the entire stream.
+   * @see [[#expand]]    for a version that can overwrite the original element.
+   */
+  def extrapolate[U >: Out](extrapolator: U ⇒ Iterator[U], initial: Option[U] = None): Repr[U] = {
+    val expandArg = (u: U) ⇒ Iterator.single(u) ++ extrapolator(u)
+
+    val expandStep = new Expand[U, U](expandArg)
+
+    initial.map(e ⇒ prepend(Source.single(e)).via(expandStep)).getOrElse(via(expandStep))
+  }
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.

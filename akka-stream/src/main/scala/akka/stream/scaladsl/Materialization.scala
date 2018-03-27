@@ -4,8 +4,6 @@
 
 package akka.stream.scaladsl
 
-import scala.concurrent.Future
-
 import akka.NotUsed
 
 /**

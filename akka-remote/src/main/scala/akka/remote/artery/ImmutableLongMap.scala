@@ -28,7 +28,6 @@ private[akka] object ImmutableLongMap {
  */
 private[akka] class ImmutableLongMap[A >: Null] private (
   private val keys: Array[Long], private val values: Array[A])(implicit t: ClassTag[A]) {
-  import ImmutableLongMap.MaxScanLength
 
   val size: Int = keys.length
 

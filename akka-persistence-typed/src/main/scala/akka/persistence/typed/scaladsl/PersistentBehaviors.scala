@@ -18,7 +18,7 @@ object PersistentBehaviors {
   /**
    * Create a `Behavior` for a persistent actor.
    */
-  def immutable[Command, Event, State](
+  def receive[Command, Event, State](
     persistenceId:  String,
     initialState:   State,
     commandHandler: CommandHandler[Command, Event, State],

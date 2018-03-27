@@ -6,8 +6,8 @@ package akka.remote.artery
 
 import scala.concurrent.duration._
 
-import akka.actor.{ ActorIdentity, ActorSystem, Identify }
-import akka.testkit.{ AkkaSpec, ImplicitSender }
+import akka.actor.{ ActorIdentity, Identify }
+import akka.testkit.ImplicitSender
 import akka.testkit.SocketUtil
 import akka.testkit.TestActors
 import com.typesafe.config.ConfigFactory

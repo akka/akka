@@ -7,13 +7,11 @@ package akka.actor.typed.scaladsl.adapter
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
-import akka.actor.{ InvalidMessageException, Props }
+import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.{ Done, NotUsed, actor ⇒ untyped }
 import akka.testkit._
 import akka.actor.typed.Behavior.UntypedPropsBehavior
-
-import scala.concurrent.Await
 
 object AdapterSpec {
   val untyped1: untyped.Props = untyped.Props(new Untyped1)
@@ -34,7 +32,7 @@ object AdapterSpec {
   }
 
   def typed1(ref: untyped.ActorRef, probe: ActorRef[String]): Behavior[String] =
-    Behaviors.immutable[String] {
+    Behaviors.receive[String] {
       (ctx, msg) ⇒
         msg match {
           case "send" ⇒
@@ -63,7 +61,7 @@ object AdapterSpec {
             ctx.stop(child)
             Behaviors.same
         }
-    } onSignal {
+    } receiveSignal {
       case (ctx, Terminated(ref)) ⇒
         probe ! "terminated"
         Behaviors.same
@@ -132,7 +130,7 @@ object AdapterSpec {
   }
 
   def typed2: Behavior[Typed2Msg] =
-    Behaviors.immutable { (ctx, msg) ⇒
+    Behaviors.receive { (ctx, msg) ⇒
       msg match {
         case Ping(replyTo) ⇒
           replyTo ! "pong"
@@ -172,7 +170,7 @@ class AdapterSpec extends AkkaSpec {
       for { _ ← 0 to 10 } {
         var system: akka.actor.typed.ActorSystem[Done] = null
         try {
-          system = ActorSystem.create(Behaviors.immutable[Done] { (ctx, msg) ⇒
+          system = ActorSystem.create(Behaviors.receive[Done] { (ctx, msg) ⇒
             ctx.self ! Done
             msg match {
               case Done ⇒ Behaviors.stopped

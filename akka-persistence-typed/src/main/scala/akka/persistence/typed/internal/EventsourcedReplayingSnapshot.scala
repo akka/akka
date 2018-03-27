@@ -5,8 +5,8 @@
 package akka.persistence.typed.internal
 
 import akka.actor.typed.scaladsl.Behaviors.same
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, TimerScheduler }
-import akka.actor.typed.{ Behavior, PostStop, Signal }
+import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
+import akka.actor.typed.Behavior
 import akka.annotation.InternalApi
 import akka.persistence.SnapshotProtocol.{ LoadSnapshotFailed, LoadSnapshotResult }
 import akka.persistence._
@@ -46,13 +46,13 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
     loadSnapshot(setup.recovery.fromSnapshot, setup.recovery.toSequenceNr)
 
     withMdc(setup, MDC.ReplayingSnapshot) {
-      Behaviors.immutable[InternalProtocol] {
-        case (_, SnapshotterResponse(r))      ⇒ onSnapshotterResponse(r)
-        case (_, JournalResponse(r))          ⇒ onJournalResponse(r)
-        case (_, RecoveryTickEvent(snapshot)) ⇒ onRecoveryTick(snapshot)
-        case (_, cmd: IncomingCommand[C])     ⇒ onCommand(cmd)
-        case (_, RecoveryPermitGranted)       ⇒ Behaviors.unhandled // should not happen, we already have the permit
-      }.onSignal(returnPermitOnStop)
+      Behaviors.receiveMessage[InternalProtocol] {
+        case SnapshotterResponse(r)      ⇒ onSnapshotterResponse(r)
+        case JournalResponse(r)          ⇒ onJournalResponse(r)
+        case RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot)
+        case cmd: IncomingCommand[C]     ⇒ onCommand(cmd)
+        case RecoveryPermitGranted       ⇒ Behaviors.unhandled // should not happen, we already have the permit
+      }.receiveSignal(returnPermitOnStop)
     }
   }
 

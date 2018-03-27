@@ -1,0 +1,10 @@
+# #23841 Remove backward compatibility on some akka-persistence internal API
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Persistence.journalConfigFor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Persistence.journalFor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Persistence.snapshotStoreFor")
+
+# #24508 Adding defer method to PersistentActor
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.PersistentActor.defer")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.internalDefer")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.AbstractPersistentActorLike.defer")
+

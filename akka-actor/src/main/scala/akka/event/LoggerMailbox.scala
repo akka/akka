@@ -11,7 +11,6 @@ import com.typesafe.config.Config
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
 import akka.dispatch.ProducesMessageQueue
-import akka.event.Logging.Debug
 import akka.event.Logging.LogEvent
 
 trait LoggerMessageQueueSemantics

@@ -5,7 +5,6 @@
 package akka.stream.impl.fusing
 
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
 import akka.stream._

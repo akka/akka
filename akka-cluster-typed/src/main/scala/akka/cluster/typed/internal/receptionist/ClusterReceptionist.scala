@@ -16,7 +16,7 @@ import akka.cluster.ddata.{ DistributedData, ORMultiMap, ORMultiMapKey, Replicat
 import akka.cluster.{ Cluster, ClusterEvent }
 import akka.util.TypedMultiMap
 
-import scala.language.{ existentials, higherKinds }
+import scala.language.existentials
 import akka.actor.typed.scaladsl.adapter._
 
 /** INTERNAL API */
@@ -136,8 +136,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       def watchWith(ctx: ActorContext[Any], target: ActorRef[_], msg: InternalCommand): Unit =
         ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx ⇒
           innerCtx.watch(target)
-          Behaviors.immutable[Nothing]((_, _) ⇒ Behaviors.same)
-            .onSignal {
+          Behaviors.receive[Nothing]((_, _) ⇒ Behaviors.same)
+            .receiveSignal {
               case (_, Terminated(`target`)) ⇒
                 ctx.self ! msg
                 Behaviors.stopped
@@ -263,7 +263,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             Behavior.same
       }
 
-      Behaviors.immutable[Any] { (ctx, msg) ⇒
+      Behaviors.receive[Any] { (ctx, msg) ⇒
         msg match {
           // support two heterogenous types of messages without union types
           case cmd: Command         ⇒ onCommand(cmd)
