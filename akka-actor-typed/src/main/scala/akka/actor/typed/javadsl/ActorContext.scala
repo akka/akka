@@ -4,6 +4,7 @@
 
 package akka.actor.typed.javadsl
 
+import java.time.Duration
 import java.util.function.{ BiFunction, Function ⇒ JFunction }
 
 import akka.annotation.DoNotInherit
@@ -12,8 +13,6 @@ import akka.actor.typed._
 import java.util.Optional
 
 import akka.util.Timeout
-
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContextExecutor
 
 /**
@@ -181,13 +180,13 @@ trait ActorContext[T] {
   /**
    * Schedule the sending of a notification in case no other
    * message is received during the given period of time. The timeout starts anew
-   * with each received message. Provide `Duration.Undefined` to switch off this
+   * with each received message. Use `cancelReceiveTimeout` to switch off this
    * mechanism.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
-  def setReceiveTimeout(d: FiniteDuration, msg: T): Unit
+  def setReceiveTimeout(d: Duration, msg: T): Unit
 
   /**
    * Cancel the sending of receive timeout notifications.
@@ -208,7 +207,7 @@ trait ActorContext[T] {
    * This method is thread-safe and can be called from other threads than the ordinary
    * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
-  def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): akka.actor.Cancellable
+  def schedule[U](delay: Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable
 
   /**
    * This Actor’s execution context. It can be used to run asynchronous tasks
