@@ -7,18 +7,17 @@ package akka.cluster.typed.internal.receptionist
 import akka.actor.typed.internal.receptionist.{ AbstractServiceKey, ReceptionistBehaviorProvider, ReceptionistMessages }
 import akka.actor.typed.receptionist.Receptionist.Command
 import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.actor.typed.{ ActorRef, Behavior, Terminated }
-import akka.actor.{ Address, ExtendedActorSystem }
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ddata.{ DistributedData, ORMultiMap, ORMultiMapKey, Replicator }
 import akka.cluster.{ Cluster, ClusterEvent, UniqueAddress }
-import akka.util.{ OptionVal, TypedMultiMap }
+import akka.remote.AddressUidExtension
+import akka.util.TypedMultiMap
 
 import scala.language.existentials
-import akka.actor.typed.scaladsl.adapter._
-import akka.remote.AddressUidExtension
 
 /** INTERNAL API */
 @InternalApi
@@ -30,13 +29,16 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   private final val ReceptionistKey = ORMultiMapKey[ServiceKey[_], Entry]("ReceptionistKey")
   private final val EmptyORMultiMap = ORMultiMap.empty[ServiceKey[_], Entry]
 
-  case class Entry(ref: ActorRef[_], systemUid: Long) {
+  // values contain system uid to make it possible to discern actors at the same
+  // path in different incarnations of a cluster node
+  final case class Entry(ref: ActorRef[_], systemUid: Long) {
     def uniqueAddress(selfUniqueAddress: UniqueAddress): UniqueAddress =
       if (ref.path.address.hasLocalScope) selfUniqueAddress
       else UniqueAddress(ref.path.address, systemUid)
     override def toString = ref.path.toString + "#" + ref.path.uid
   }
-  case class ServiceRegistry(map: ORMultiMap[ServiceKey[_], Entry]) extends AnyVal {
+
+  final case class ServiceRegistry(map: ORMultiMap[ServiceKey[_], Entry]) extends AnyVal {
 
     // let's hide all the ugly casts we can in here
     def getActorRefsFor[T](key: AbstractServiceKey): Set[ActorRef[key.Protocol]] =
@@ -65,7 +67,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
   }
   object ServiceRegistry {
-    val empty = ServiceRegistry(EmptyORMultiMap)
+    final val Empty = ServiceRegistry(EmptyORMultiMap)
 
     def collectChangedKeys(previousState: ServiceRegistry, newState: ServiceRegistry): Set[AbstractServiceKey] = {
       val allKeys = previousState.toORMultiMap.entries.keySet ++ newState.toORMultiMap.entries.keySet
@@ -118,7 +120,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
     behavior(
       setup,
-      ServiceRegistry.empty,
+      ServiceRegistry.Empty,
       TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV]
     )
   }.narrow[Command]

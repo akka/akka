@@ -6,18 +6,18 @@ package akka.cluster.typed.internal.receptionist
 
 import java.nio.charset.StandardCharsets
 
-import akka.actor.{ExtendedActorSystem, RootActorPath}
-import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import akka.actor.{ ExtendedActorSystem, RootActorPath }
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ActorRef, ActorRefResolver}
+import akka.actor.typed.{ ActorRef, ActorRefResolver }
 import akka.cluster.MemberStatus
-import akka.cluster.typed.{Cluster, Join}
+import akka.cluster.typed.{ Cluster, Join }
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.typed.FishingOutcome
-import akka.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
-import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.{Matchers, WordSpec}
+import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
