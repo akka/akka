@@ -53,6 +53,8 @@ object StashingBehaviors {
 
   // TODO implement one in terms of the other
 
+  // TODO implement collect(f1, f2, f3, (f1, f2, f3) => Behavior)
+
   /**
    * Keep stashing incoming messages until the passed in [[scala.concurrent.Future]] `f` completes successfully.
    *
