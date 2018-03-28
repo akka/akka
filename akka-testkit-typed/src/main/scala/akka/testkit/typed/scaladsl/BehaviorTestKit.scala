@@ -59,6 +59,11 @@ trait BehaviorTestKit[T] {
   def retrieveAllEffects(): immutable.Seq[Effect]
 
   /**
+   * Returns if there have been any effects.
+   */
+  def hasEffects(): Boolean
+
+  /**
    * Asserts that the oldest effect is the expectedEffect. Removing it from
    * further assertions.
    */
@@ -68,7 +73,12 @@ trait BehaviorTestKit[T] {
    * Asserts that the oldest effect is of type T. Consumes and returns the concrete effect for
    * further direct assertions.
    */
-  def expectEffectType[T <: Effect](implicit classTag: ClassTag[T]): T
+  def expectEffectType[E <: Effect](implicit classTag: ClassTag[E]): E
+
+  /**
+   * Asserts that the oldest effect matches the given partial function.
+   */
+  def expectEffectPF[R](f: PartialFunction[Effect, R]): R
 
   /**
    * The current behavior, can change any time `run` is called

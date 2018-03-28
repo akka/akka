@@ -82,13 +82,40 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
 
   private val props = Props.empty
 
-  "BehaviorTeskit" must {
+  "BehaviorTestKit" must {
 
     "allow assertions on effect type" in {
       val testkit = BehaviorTestKit[Father.Command](Father.init())
       testkit.run(SpawnAnonymous(1))
       val spawnAnonymous = testkit.expectEffectType[Effects.SpawnedAnonymous[_]]
       spawnAnonymous.props should ===(Props.empty)
+    }
+
+    "return if effects have taken place" in {
+      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      testkit.hasEffects() should ===(false)
+      testkit.run(SpawnAnonymous(1))
+      testkit.hasEffects() should ===(true)
+    }
+
+    "allow assertions using partial functions - no match" in {
+      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      testkit.run(SpawnChildren(1))
+      val ae = intercept[AssertionError] {
+        testkit.expectEffectPF {
+          case SpawnedAnonymous(_, _) ⇒
+        }
+      }
+      ae.getMessage should startWith("expected matching effect but got: ")
+    }
+
+    "allow assertions using partial functions - match" in {
+      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      testkit.run(SpawnChildren(1))
+      val childName = testkit.expectEffectPF {
+        case Spawned(_, name, _) ⇒ name
+      }
+      childName should ===("child0")
     }
   }
 
