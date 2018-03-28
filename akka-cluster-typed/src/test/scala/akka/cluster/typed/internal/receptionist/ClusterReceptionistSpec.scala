@@ -275,22 +275,13 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
         val testKit3 = new ActorTestKit {
           override protected def name: String = system1.name
-          def system1NodeString = {
-            val address = clusterNode1.selfMember.address
-            s"akka://${system1.name}@${address.host.get}:${address.port.get}"
-          }
-
-          // joining through seed node list
-          override def config: Config = ConfigFactory.parseString(
-            s"""
-               akka.remote.artery.canonical.port = ${clusterNode2.selfMember.address.port.get}
-               akka.cluster.seed-nodes = [ "$system1NodeString" ]
-            """).withFallback(testKit2.config)
+          override def config: Config = testKit1.config
         }
         try {
           val system3 = testKit3.system
           system1.log.debug("Starting system3 at same hostname port as system2, uid: [{}]", Cluster(system3).selfMember.uniqueAddress.longUid)
           val clusterNode3 = Cluster(system3)
+          clusterNode3.manager ! Join(clusterNode1.selfMember.address)
           val regProbe3 = TestProbe[Any]()(system3)
 
           // and registers the same service key
