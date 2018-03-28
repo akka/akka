@@ -181,7 +181,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       val fromProducer: Source[Int, NotUsed] = runnableGraph.run()
 
       fromProducer.runForeach(msg ⇒ println("consumer1: " + msg))
-      fromProducer.throttle(10, 100.millis, 10, ThrottleMode.Shaping)
+      fromProducer.throttle(10, 100.millis)
         .runForeach(msg ⇒ println("consumer2: " + msg))
       //#partition-hub-fastest
     }

@@ -70,6 +70,13 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
   "An ActorContext" must {
 
+    "be usable from Behavior.interpretMessage" in {
+      // compilation only
+      lazy val b: Behavior[String] = Behaviors.receive { (ctx, msg) ⇒
+        Behavior.interpretMessage(b, ctx, msg)
+      }
+    }
+
     "canonicalize behaviors" in {
       val probe = TestProbe[Event]()
 

@@ -20,6 +20,7 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.Timeout;
 
+import com.typesafe.config.ConfigFactory;
 import docs.persistence.query.MyEventsByTagPublisher;
 import org.reactivestreams.Subscriber;
 import scala.concurrent.duration.FiniteDuration;

@@ -430,6 +430,27 @@ class FutureDocSpec extends AkkaSpec {
     intercept[IllegalStateException] { Await.result(result, 2 second) }
   }
 
+  "demonstrate pattern.retry" in {
+    //#retry
+    implicit val scheduler = system.scheduler
+    //Given some future that will succeed eventually
+    @volatile var failCount = 0
+    def attempt() = {
+      if (failCount < 5) {
+        failCount += 1
+        Future.failed(new IllegalStateException(failCount.toString))
+      } else Future.successful(5)
+    }
+    //Return a new future that will retry up to 10 times
+    val retried = akka.pattern.retry(
+      attempt,
+      10,
+      100 milliseconds)
+    //#retry
+
+    Await.result(retried, 1 second) should ===(5)
+  }
+
   "demonstrate context.dispatcher" in {
     //#context-dispatcher
     class A extends Actor {

@@ -12,6 +12,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import akka.NotUsed;
 import jdocs.AbstractJavaTest;
@@ -207,7 +208,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     //#test-source-and-sink
     final Flow<Integer, Integer, NotUsed> flowUnderTest = Flow.of(Integer.class)
       .mapAsyncUnordered(2, sleep -> akka.pattern.PatternsCS.after(
-        FiniteDuration.create(10, TimeUnit.MILLISECONDS),
+        Duration.ofMillis(10),
         system.scheduler(),
         system.dispatcher(),
         CompletableFuture.completedFuture(sleep)

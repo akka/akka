@@ -51,7 +51,7 @@ Scala
 :   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #simple-graph-dsl }
 
 Java
-:   @@snip [GraphDSLDocTest.java]($code$/java/jdocs/stream/GraphDSLDocTest.java) { #simple-graph-dsl }
+:   @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #simple-graph-dsl }
 
 @@@ note
 
@@ -86,7 +86,17 @@ Scala
 :   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-reusing-a-flow }
 
 Java
-:   @@snip [GraphDSLDocTest.java]($code$/java/jdocs/stream/GraphDSLDocTest.java) { #graph-dsl-reusing-a-flow }
+:   @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-reusing-a-flow }
+
+In some cases we may have a list of graph elements, for example if they are dynamically created. 
+If these graphs have similar signatures, we can construct a graph collecting all their materialized values as a collection:
+
+Scala
+:   @@snip [GraphOpsIntegrationSpec.scala]($akka$/akka-stream-tests/src/test/scala/akka/stream/scaladsl/GraphOpsIntegrationSpec.scala) { #graph-from-list }
+
+Java
+:   @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-from-list }
+
 
 <a id="partial-graph-dsl"></a>
 ## Constructing and combining Partial Graphs
@@ -114,6 +124,14 @@ Scala
 Java
 :   @@snip [StreamPartialGraphDSLDocTest.java]($code$/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #simple-partial-graph-dsl }
 
+@@@ note
+
+While the above example shows composing two 2-input `ZipWith`s, in reality ZipWith already provides 
+numerous overloads including a 3 (and many more) parameter versions. So this could be implemented 
+using one ZipWith using the 3 parameter version, like this: @scala[`ZipWith((a, b, c) => out)`]@java[`ZipWith.create((a, b, c) -> out)`].
+(The ZipWith with N input has N+1 type parameter; the last type param is the output type.)
+
+@@@
 
 As you can see, first we construct the partial graph that @scala[contains all the zipping and comparing of stream
 elements. This partial graph will have three inputs and one output, wherefore we use the `UniformFanInShape`]@java[describes how to compute the maximum of two input streams.
@@ -336,7 +354,7 @@ Scala
 :   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-matvalue }
 
 Java
-:   @@snip [GraphDSLDocTest.java]($code$/java/jdocs/stream/GraphDSLDocTest.java) { #graph-dsl-matvalue }
+:   @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-matvalue }
 
 
 Be careful not to introduce a cycle where the materialized value actually contributes to the materialized value.
@@ -346,7 +364,7 @@ Scala
 :  @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-matvalue-cycle }
 
 Java
-:  @@snip [GraphDSLDocTest.java]($code$/java/jdocs/stream/GraphDSLDocTest.java) { #graph-dsl-matvalue-cycle }
+:  @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-matvalue-cycle }
 
 
 <a id="graph-cycles"></a>

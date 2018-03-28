@@ -278,7 +278,7 @@ public class RouterDocTest extends AbstractJavaTest {
     //#scatter-gather-pool-1
 
     //#scatter-gather-pool-2
-    FiniteDuration within = FiniteDuration.create(10, TimeUnit.SECONDS); 
+    java.time.Duration within = java.time.Duration.ofSeconds(10);
     ActorRef router18 =
       getContext().actorOf(new ScatterGatherFirstCompletedPool(5, within).props(
         Props.create(Worker.class)), "router18");

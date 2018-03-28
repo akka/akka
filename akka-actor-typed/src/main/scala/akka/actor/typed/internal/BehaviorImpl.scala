@@ -27,10 +27,9 @@ import scala.reflect.ClassTag
 
   def widened[T, U](behavior: Behavior[T], matcher: PartialFunction[U, T]): Behavior[U] = {
     behavior match {
-      case d: DeferredBehavior[T] ⇒
+      case d: DeferredBehavior[t] ⇒
         DeferredBehavior[U] { ctx ⇒
-          val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
-          val b = Behavior.validateAsInitial(Behavior.start(d, c))
+          val b = Behavior.validateAsInitial(Behavior.start(d, ctx.as[t]))
           Widened(b, matcher)
         }
       case _ ⇒
@@ -129,8 +128,7 @@ import scala.reflect.ClassTag
     behavior match {
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[T] { ctx ⇒
-          val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
-          val b = Behavior.validateAsInitial(Behavior.start(d, c))
+          val b = Behavior.validateAsInitial(Behavior.start(d, ctx))
           Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, b, toStringPrefix)
         }
       case _ ⇒

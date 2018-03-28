@@ -58,6 +58,11 @@ abstract class BehaviorTestKit[T] {
   def getAllEffects(): java.util.List[Effect]
 
   /**
+   * Returns if there have been any effects.
+   */
+  def hasEffects(): Boolean
+
+  /**
    * Asserts that the oldest effect is the expectedEffect. Removing it from
    * further assertions.
    */

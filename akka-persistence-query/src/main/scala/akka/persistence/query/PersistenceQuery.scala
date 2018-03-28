@@ -5,11 +5,13 @@
 package akka.persistence.query
 
 import java.util.concurrent.atomic.AtomicReference
+
 import akka.actor._
 import akka.event.Logging
+
 import scala.annotation.tailrec
 import scala.util.Failure
-import com.typesafe.config.Config
+import com.typesafe.config.{ Config, ConfigFactory }
 
 /**
  * Persistence extension for queries.
@@ -42,18 +44,30 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
   /**
    * Scala API: Returns the [[akka.persistence.query.scaladsl.ReadJournal]] specified by the given
    * read journal configuration entry.
+   *
+   * The provided readJournalPluginConfig will be used to configure the journal plugin instead of the actor system
+   * config.
+   */
+  final def readJournalFor[T <: scaladsl.ReadJournal](readJournalPluginId: String, readJournalPluginConfig: Config): T =
+    readJournalPluginFor(readJournalPluginId, readJournalPluginConfig).scaladslPlugin.asInstanceOf[T]
+
+  /**
+   * Scala API: Returns the [[akka.persistence.query.scaladsl.ReadJournal]] specified by the given
+   * read journal configuration entry.
    */
   final def readJournalFor[T <: scaladsl.ReadJournal](readJournalPluginId: String): T =
-    readJournalPluginFor(readJournalPluginId).scaladslPlugin.asInstanceOf[T]
+    readJournalFor(readJournalPluginId, ConfigFactory.empty)
 
   /**
    * Java API: Returns the [[akka.persistence.query.javadsl.ReadJournal]] specified by the given
    * read journal configuration entry.
    */
-  final def getReadJournalFor[T <: javadsl.ReadJournal](clazz: Class[T], readJournalPluginId: String): T =
-    readJournalPluginFor(readJournalPluginId).javadslPlugin.asInstanceOf[T]
+  final def getReadJournalFor[T <: javadsl.ReadJournal](clazz: Class[T], readJournalPluginId: String, readJournalPluginConfig: Config): T =
+    readJournalPluginFor(readJournalPluginId, readJournalPluginConfig).javadslPlugin.asInstanceOf[T]
 
-  @tailrec private def readJournalPluginFor(readJournalPluginId: String): PluginHolder = {
+  final def getReadJournalFor[T <: javadsl.ReadJournal](clazz: Class[T], readJournalPluginId: String): T = getReadJournalFor[T](clazz, readJournalPluginId, ConfigFactory.empty())
+
+  @tailrec private def readJournalPluginFor(readJournalPluginId: String, readJournalPluginConfig: Config): PluginHolder = {
     val configPath = readJournalPluginId
     val extensionIdMap = readJournalPluginExtensionIds.get
     extensionIdMap.get(configPath) match {
@@ -62,20 +76,21 @@ class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
       case None ⇒
         val extensionId = new ExtensionId[PluginHolder] {
           override def createExtension(system: ExtendedActorSystem): PluginHolder = {
-            val provider = createPlugin(configPath)
+            val provider = createPlugin(configPath, readJournalPluginConfig)
             PluginHolder(provider.scaladslReadJournal(), provider.javadslReadJournal())
           }
         }
         readJournalPluginExtensionIds.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
-        readJournalPluginFor(readJournalPluginId) // Recursive invocation.
+        readJournalPluginFor(readJournalPluginId, readJournalPluginConfig) // Recursive invocation.
     }
   }
 
-  private def createPlugin(configPath: String): ReadJournalProvider = {
+  private def createPlugin(configPath: String, readJournalPluginConfig: Config): ReadJournalProvider = {
+    val mergedConfig = readJournalPluginConfig.withFallback(system.settings.config)
     require(
-      !isEmpty(configPath) && system.settings.config.hasPath(configPath),
+      !isEmpty(configPath) && mergedConfig.hasPath(configPath),
       s"'reference.conf' is missing persistence read journal plugin config path: '${configPath}'")
-    val pluginConfig = system.settings.config.getConfig(configPath)
+    val pluginConfig = mergedConfig.getConfig(configPath)
     val pluginClassName = pluginConfig.getString("class")
     log.debug(s"Create plugin: ${configPath} ${pluginClassName}")
     val pluginClass = system.dynamicAccess.getClassFor[AnyRef](pluginClassName).get

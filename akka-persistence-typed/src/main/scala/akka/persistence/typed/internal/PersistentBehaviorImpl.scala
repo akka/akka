@@ -6,7 +6,7 @@ package akka.persistence.typed.internal
 
 import akka.actor.typed
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, StashBuffer }
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
@@ -25,31 +25,39 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   tagger:            Event ⇒ Set[String]                                       = (_: Event) ⇒ Set.empty[String],
   snapshotWhen:      (State, Event, Long) ⇒ Boolean                            = ConstantFun.scalaAnyThreeToFalse,
   recovery:          Recovery                                                  = Recovery()
-) extends PersistentBehavior[Command, Event, State] {
+) extends PersistentBehavior[Command, Event, State] with EventsourcedStashReferenceManagement {
 
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
     Behaviors.setup[EventsourcedBehavior.InternalProtocol] { ctx ⇒
       Behaviors.withTimers { timers ⇒
-        val settings = EventsourcedSettings(ctx.system)
-        val setup = EventsourcedSetup(
-          ctx,
-          timers,
-          persistenceId,
-          initialState,
-          commandHandler,
-          eventHandler,
-          WriterIdentity.newIdentity(),
-          recoveryCompleted,
-          tagger,
-          snapshotWhen,
-          recovery,
-          holdingRecoveryPermit = false,
-          settings = settings,
-          internalStash = StashBuffer(settings.stashCapacity)
-        ).withJournalPluginId(journalPluginId.getOrElse(""))
-          .withSnapshotPluginId(snapshotPluginId.getOrElse(""))
+        {
+          val settings = EventsourcedSettings(ctx.system)
+          val internalStash = stashBuffer(settings)
+          Behaviors.tap(
+            onMessage = (_, _) ⇒ Unit,
+            onSignal = onSignalCleanup,
+            behavior = {
+              val setup = new EventsourcedSetup(
+                ctx,
+                timers,
+                persistenceId,
+                initialState,
+                commandHandler,
+                eventHandler,
+                WriterIdentity.newIdentity(),
+                recoveryCompleted,
+                tagger,
+                snapshotWhen,
+                recovery,
+                holdingRecoveryPermit = false,
+                settings = settings,
+                internalStash = internalStash
+              )
 
-        EventsourcedRequestingRecoveryPermit(setup)
+              EventsourcedRequestingRecoveryPermit(setup)
+            }
+          )
+        }
       }
     }.widen[Any] {
       case res: JournalProtocol.Response           ⇒ InternalProtocol.JournalResponse(res)

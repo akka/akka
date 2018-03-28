@@ -74,7 +74,7 @@ object PerformanceSpec {
       ).onRecoveryCompleted {
           case (_, _) ⇒ if (parameters.every(1000)) print("r")
         }
-    }).onFailure(SupervisorStrategy.resume)
+    }).onFailure(SupervisorStrategy.restart)
   }
 
   def eventSourcedTestPersistenceBehavior(name: String, probe: TestProbe[Command]) =
@@ -85,6 +85,7 @@ object PerformanceSpec {
           if (parameters.every(1000)) print(".")
           if (parameters.shouldFail) throw TE("boom")
         })
+      case _ ⇒ Effect.none
     }
 }
 
@@ -130,9 +131,8 @@ class PerformanceSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with E
     "have some reasonable throughput" in {
       stressEventSourcedPersistentActor(None)
     }
-    //    FIXME: PersistentActor survives exception but persistent behavior does not, losing pending messages
-    //    "have some reasonable throughput under failure conditions" in {
-    //      stressEventSourcedPersistentActor(Some(loadCycles / 10))
-    //    }
+    "have some reasonable throughput under failure conditions" in {
+      stressEventSourcedPersistentActor(Some(loadCycles / 10))
+    }
   }
 }
