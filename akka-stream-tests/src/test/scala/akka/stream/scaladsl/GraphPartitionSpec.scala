@@ -47,7 +47,7 @@ class GraphPartitionSpec extends StreamSpec {
         val partition = b.add(Partition[Int](3, {
           case g if (g > 3)  ⇒ 0
           case l if (l < 3)  ⇒ 1
-          case e if (e == 3) ⇒ throw new RuntimeException()
+          case e if (e == 3) ⇒ throw TE("Resume")
         }))
         Source(List(1, 2, 3, 4, 5)) ~> partition.in
         partition.out(0) ~> sink1.in
@@ -68,7 +68,7 @@ class GraphPartitionSpec extends StreamSpec {
         val partition = b.add(Partition[Int](3, {
           case g if (g > 3)  ⇒ 0
           case l if (l < 3)  ⇒ 1
-          case e if (e == 3) ⇒ throw new RuntimeException()
+          case e if (e == 3) ⇒ throw TE("Restart")
         }))
         Source(List(1, 2, 3, 4, 5)) ~> partition.in
         partition.out(0) ~> sink1.in
