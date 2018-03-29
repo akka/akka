@@ -24,7 +24,7 @@ import scala.concurrent.duration._
   // lazily initialized
   private var actorLogger: OptionVal[Logger] = OptionVal.None
 
-  override def self = ActorRefAdapter(untyped.self)
+  override val self = ActorRefAdapter(untyped.self)
   override val system = ActorSystemAdapter(untyped.system)
   override def children = untyped.children.map(ActorRefAdapter(_))
   override def child(name: String) = untyped.child(name).map(ActorRefAdapter(_))

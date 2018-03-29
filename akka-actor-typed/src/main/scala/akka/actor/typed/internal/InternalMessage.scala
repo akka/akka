@@ -4,20 +4,21 @@
 
 package akka.actor.typed.internal
 
+import akka.actor.InternalMessage
 import akka.annotation.InternalApi
 
 /**
  * INTERNAL API: Wrapping of messages that should be adapted by
  * adapters registered with `ActorContext.messageAdapter`.
  */
-@InternalApi private[akka] final case class AdaptWithRegisteredMessageAdapter[U](msg: U)
+@InternalApi private[akka] final case class AdaptWithRegisteredMessageAdapter[U](msg: U) extends InternalMessage
 
 /**
  * INTERNAL API: Wrapping of messages that should be adapted by the included
  * function. Used by `ActorContext.spawnMessageAdapter` so that the function is
- * applied in the "parent" actor (for better thread safetey)..
+ * applied in the "parent" actor (for better thread safety)..
  */
-@InternalApi private[akka] final case class AdaptMessage[U, T](msg: U, adapter: U ⇒ T) {
+@InternalApi private[akka] final case class AdaptMessage[U, T](msg: U, adapter: U ⇒ T) extends InternalMessage {
   def adapt(): T = adapter(msg)
 }
 

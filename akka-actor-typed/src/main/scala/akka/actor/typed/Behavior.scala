@@ -325,19 +325,18 @@ object Behavior {
 
   private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] = {
     behavior match {
-      case null ⇒ throw new InvalidMessageException("[null] is not an allowed behavior")
-      case SameBehavior | UnhandledBehavior ⇒
-        throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
-      case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
-      case IgnoreBehavior         ⇒ SameBehavior.asInstanceOf[Behavior[T]]
-      case s: StoppedBehavior[T]  ⇒ s
-      case EmptyBehavior          ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = msg match {
           case signal: Signal ⇒ ext.receiveSignal(ctx, signal)
           case m              ⇒ ext.receive(ctx, m.asInstanceOf[T])
         }
         start(possiblyDeferredResult, ctx)
+      case s: StoppedBehavior[T] ⇒ s
+      case EmptyBehavior         ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
+      case IgnoreBehavior        ⇒ SameBehavior.asInstanceOf[Behavior[T]]
+      case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
+      case SameBehavior | UnhandledBehavior ⇒
+        throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
     }
   }
 

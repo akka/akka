@@ -18,7 +18,7 @@ import akka.annotation.InternalApi
       if (isGuardian)
         akka.actor.Props(new GuardianActorAdapter(behavior()))
       else
-        akka.actor.Props(new ActorAdapter(behavior()))
+        akka.actor.Props(new OptimizedActorAdapter(behavior()))
 
     (deploy.firstOrElse[DispatcherSelector](DispatcherDefault()) match {
       case _: DispatcherDefault          ⇒ props

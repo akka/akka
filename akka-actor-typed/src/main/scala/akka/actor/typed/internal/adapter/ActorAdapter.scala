@@ -6,6 +6,8 @@ package akka.actor.typed
 package internal
 package adapter
 
+import akka.actor.InternalMessage
+
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
@@ -38,6 +40,14 @@ import scala.util.control.NonFatal
   def receive = running
 
   def running: Receive = {
+    // optimization, minimize type matches that has to be done for every message
+    case internal: InternalMessage ⇒
+      handleInternalMessage(internal)
+    case msg: T @unchecked ⇒
+      handleMessage(msg)
+  }
+
+  protected final def handleInternalMessage(msg: InternalMessage): Unit = msg match {
     case a.Terminated(ref) ⇒
       val msg =
         if (failures contains ref) {
@@ -59,34 +69,30 @@ import scala.util.control.NonFatal
       }
     case AdaptWithRegisteredMessageAdapter(msg) ⇒
       adaptAndHandle(msg)
-    case msg: T @unchecked ⇒
-      handleMessage(msg)
   }
 
-  private def handleMessage(msg: T): Unit = {
+  protected final def handleMessage(msg: T): Unit = {
     next(Behavior.interpretMessage(behavior, ctx, msg), msg)
   }
 
   private def next(b: Behavior[T], msg: Any): Unit = {
-    if (Behavior.isUnhandled(b)) unhandled(msg)
-    else {
-      b match {
-        case s: StoppedBehavior[T] ⇒
-          // use StoppedBehavior with previous behavior or an explicitly given `postStop` behavior
-          // until Terminate is received, i.e until postStop is invoked, and there PostStop
-          // will be signaled to the previous/postStop behavior
-          s.postStop match {
-            case OptionVal.None ⇒
-              // use previous as the postStop behavior
-              behavior = new Behavior.StoppedBehavior(OptionVal.Some(behavior))
-            case OptionVal.Some(postStop) ⇒
-              // use the given postStop behavior, but canonicalize it
-              behavior = new Behavior.StoppedBehavior(OptionVal.Some(Behavior.canonicalize(postStop, behavior, ctx)))
-          }
-          context.stop(self)
-        case _ ⇒
-          behavior = Behavior.canonicalize(b, behavior, ctx)
-      }
+    b match {
+      case _: UnhandledBehavior.type ⇒ unhandled(msg)
+      case s: StoppedBehavior[T] ⇒
+        // use StoppedBehavior with previous behavior or an explicitly given `postStop` behavior
+        // until Terminate is received, i.e until postStop is invoked, and there PostStop
+        // will be signaled to the previous/postStop behavior
+        s.postStop match {
+          case OptionVal.None ⇒
+            // use previous as the postStop behavior
+            behavior = new Behavior.StoppedBehavior(OptionVal.Some(behavior))
+          case OptionVal.Some(postStop) ⇒
+            // use the given postStop behavior, but canonicalize it
+            behavior = new Behavior.StoppedBehavior(OptionVal.Some(Behavior.canonicalize(postStop, behavior, ctx)))
+        }
+        context.stop(self)
+      case _ ⇒
+        behavior = Behavior.canonicalize(b, behavior, ctx)
     }
   }
 
@@ -175,6 +181,22 @@ import scala.util.control.NonFatal
 
   protected def initializeContext(): Unit = {
     _ctx = new ActorContextAdapter[T](context)
+  }
+}
+
+@InternalApi
+private[typed] final class OptimizedActorAdapter[T](_initialBehavior: Behavior[T]) extends ActorAdapter[T](_initialBehavior) {
+  override def receive: Receive = null // not used
+
+  override protected[akka] def aroundReceive(receive: Receive, msg: Any): Unit = {
+    // as we know we never become in "normal" typed actors, it is just the behavior
+    // that changes, we can avoid the partial function/behavior stack entirely
+    // we also know that the receive should be total, so we can avoid the orElse part as well
+    msg match {
+      // optimization, minimize type matches that has to be done for every message
+      case internal: InternalMessage ⇒ handleInternalMessage(internal)
+      case msg: T @unchecked ⇒ handleMessage(msg)
+    }
   }
 }
 
