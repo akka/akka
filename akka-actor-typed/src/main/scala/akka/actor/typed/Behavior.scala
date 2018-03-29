@@ -314,22 +314,32 @@ object Behavior {
   /**
    * Execute the behavior with the given message
    */
-  def interpretMessage[T](behavior: Behavior[T], ctx: ActorContext[T], msg: T): Behavior[T] =
-    interpret(behavior, ctx, msg)
+  def interpretMessage[T](behavior: Behavior[T], ctx: ActorContext[T], msg: T): Behavior[T] = {
+    // optimization: duplicated logic with interpretSignal to avoid having to do the extra
+    // message typecheck in the happy case
+    behavior match {
+      case ext: ExtensibleBehavior[T] ⇒
+        val possiblyDeferredResult = ext.receive(ctx, msg.asInstanceOf[T])
+        start(possiblyDeferredResult, ctx)
+      case s: StoppedBehavior[T] ⇒ s
+      case EmptyBehavior         ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
+      case IgnoreBehavior        ⇒ SameBehavior.asInstanceOf[Behavior[T]]
+      case _: UntypedPropsBehavior[_] ⇒
+        throw new IllegalArgumentException(s"cannot wrap behavior [$behavior] in " +
+          "Behaviors.setup, Behaviors.supervise or similar")
+      case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
+    }
+  }
 
   /**
    * Execute the behavior with the given signal
    */
-  def interpretSignal[T](behavior: Behavior[T], ctx: ActorContext[T], signal: Signal): Behavior[T] =
-    interpret(behavior, ctx, signal)
-
-  private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] = {
+  def interpretSignal[T](behavior: Behavior[T], ctx: ActorContext[T], signal: Signal): Behavior[T] = {
+    // optimization: duplicated logic with interpretMessage to avoid having to do the extra
+    // message typecheck in the happy case
     behavior match {
       case ext: ExtensibleBehavior[T] ⇒
-        val possiblyDeferredResult = msg match {
-          case signal: Signal ⇒ ext.receiveSignal(ctx, signal)
-          case m              ⇒ ext.receive(ctx, m.asInstanceOf[T])
-        }
+        val possiblyDeferredResult = ext.receiveSignal(ctx, signal)
         start(possiblyDeferredResult, ctx)
       case s: StoppedBehavior[T] ⇒ s
       case EmptyBehavior         ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]

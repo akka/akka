@@ -195,7 +195,7 @@ private[typed] final class OptimizedActorAdapter[T](_initialBehavior: Behavior[T
     msg match {
       // optimization, minimize type matches that has to be done for every message
       case internal: InternalMessage ⇒ handleInternalMessage(internal)
-      case msg: T @unchecked ⇒ handleMessage(msg)
+      case msg: T @unchecked         ⇒ handleMessage(msg)
     }
   }
 }
