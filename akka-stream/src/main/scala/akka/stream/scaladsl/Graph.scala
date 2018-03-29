@@ -21,6 +21,7 @@ import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.Promise
+import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
@@ -763,24 +764,23 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int, val e
 
     def onPush() = {
       val elem = grab(in)
-      try {
-        val idx = partitioner(elem)
-        if (idx < 0 || idx >= outputPorts) {
-          failStage(PartitionOutOfBoundsException(s"partitioner must return an index in the range [0,${outputPorts - 1}]. returned: [$idx] for input [${elem.getClass.getName}]."))
-        } else if (!isClosed(out(idx))) {
-          if (isAvailable(out(idx))) {
-            push(out(idx), elem)
-            if (out.exists(isAvailable(_)))
-              pull(in)
-          } else {
-            outPendingElem = elem
-            outPendingIdx = idx
-          }
+      Try(partitioner(elem)) match {
+        case Success(idx) ⇒
+          if (idx < 0 || idx >= outputPorts) {
+            failStage(PartitionOutOfBoundsException(s"partitioner must return an index in the range [0,${outputPorts - 1}]. returned: [$idx] for input [${elem.getClass.getName}]."))
+          } else if (!isClosed(out(idx))) {
+            if (isAvailable(out(idx))) {
+              push(out(idx), elem)
+              if (out.exists(isAvailable(_)))
+                pull(in)
+            } else {
+              outPendingElem = elem
+              outPendingIdx = idx
+            }
 
-        } else if (out.exists(isAvailable(_)))
-          pull(in)
-      } catch {
-        case NonFatal(ex) ⇒ decider(ex) match {
+          } else if (out.exists(isAvailable(_)))
+            pull(in)
+        case Failure(ex) ⇒ decider(ex) match {
           case Supervision.Stop ⇒
             failStage(ex)
           case Supervision.Restart ⇒
