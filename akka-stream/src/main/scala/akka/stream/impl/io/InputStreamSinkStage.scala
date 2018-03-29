@@ -25,7 +25,9 @@ private[stream] object InputStreamSinkStage {
   case object Close extends AdapterToStageMessage
 
   sealed trait StreamToAdapterMessage
-  case class Data(data: ByteString) extends StreamToAdapterMessage
+  case class Data(data: ByteString) extends StreamToAdapterMessage {
+    require(data.nonEmpty)
+  }
   case object Finished extends StreamToAdapterMessage
   case object Initialized extends StreamToAdapterMessage
   case class Failed(cause: Throwable) extends StreamToAdapterMessage
@@ -74,7 +76,10 @@ private[stream] object InputStreamSinkStage {
       def onPush(): Unit = {
         //1 is buffer for Finished or Failed callback
         require(dataQueue.remainingCapacity() > 1)
-        dataQueue.add(Data(grab(in)))
+        val bs = grab(in)
+        if (bs.nonEmpty) {
+          dataQueue.add(Data(bs))
+        }
         if (dataQueue.remainingCapacity() > 1) sendPullIfAllowed()
       }
 
@@ -127,7 +132,7 @@ private[stream] object InputStreamSinkStage {
 
   @scala.throws(classOf[IOException])
   override def read(): Int = {
-    val a = Array[Byte](1)
+    val a = new Array[Byte](1)
     if (read(a, 0, 1) != -1) a(0) & 0xff
     else -1
   }
