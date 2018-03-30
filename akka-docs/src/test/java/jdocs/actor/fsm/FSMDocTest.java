@@ -75,7 +75,7 @@ public class FSMDocTest extends AbstractJavaTest {
     //#transition-syntax
     onTransition(
       matchState(Active, Idle, () -> setTimer("timeout",
-        Tick, Duration.create(1, SECONDS), true)).
+        Tick, java.time.Duration.ofSeconds(1L), true)).
       state(Active, null, () -> cancelTimer("timeout")).
       state(null, Idle, (f, t) -> log().info("entering Idle from " + f)));
     //#transition-syntax

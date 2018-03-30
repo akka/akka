@@ -15,7 +15,6 @@ import akka.pattern.ask
 import akka.pattern.pipe
 import akka.dispatch.ExecutionContexts
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
 import akka.util.JavaDurationConverters._

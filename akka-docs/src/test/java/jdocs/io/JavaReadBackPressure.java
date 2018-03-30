@@ -11,7 +11,7 @@ import akka.io.Inet;
 import akka.io.Tcp;
 import akka.io.TcpMessage;
 import akka.util.ByteString;
-import scala.concurrent.duration.FiniteDuration;
+import java.time.Duration;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -60,7 +60,7 @@ public class JavaReadBackPressure {
         private void demonstrateConnect() {
             //#pull-mode-connect
             final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
-            FiniteDuration timeout = null;
+            Duration timeout = null;
             tcp.tell(
                TcpMessage.connect(new InetSocketAddress("localhost", 3000), null, options, timeout, true),
               getSelf()

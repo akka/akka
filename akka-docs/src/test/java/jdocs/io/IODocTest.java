@@ -16,7 +16,7 @@ import akka.io.Tcp;
 import akka.io.TcpMessage;
 import akka.io.TcpSO;
 import akka.util.ByteString;
-import scala.concurrent.duration.FiniteDuration;
+import java.time.Duration;
 //#imports
 
 public class IODocTest {
@@ -42,7 +42,7 @@ public class IODocTest {
               1234);
           final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
           options.add(TcpSO.keepAlive(true));
-          FiniteDuration timeout = null;
+          Duration timeout = null;
           tcp.tell(TcpMessage.connect(remoteAddr, localAddr, options, timeout, false), getSelf());
           //#connect-with-options
         })

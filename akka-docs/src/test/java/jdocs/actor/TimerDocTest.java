@@ -5,8 +5,7 @@
 package jdocs.actor;
 
 //#timers
-import java.util.concurrent.TimeUnit;
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 import akka.actor.AbstractActorWithTimers;
 
 //#timers
@@ -24,8 +23,7 @@ public class TimerDocTest {
     }
 
     public MyActor() {
-      getTimers().startSingleTimer(TICK_KEY, new FirstTick(), 
-        Duration.create(500, TimeUnit.MILLISECONDS));
+      getTimers().startSingleTimer(TICK_KEY, new FirstTick(), Duration.ofMillis(500));
     }
 
     @Override
@@ -33,8 +31,7 @@ public class TimerDocTest {
       return receiveBuilder()
         .match(FirstTick.class, message -> {
           // do something useful here
-          getTimers().startPeriodicTimer(TICK_KEY, new Tick(), 
-              Duration.create(1, TimeUnit.SECONDS));
+          getTimers().startPeriodicTimer(TICK_KEY, new Tick(), Duration.ofSeconds(1));
         })
         .match(Tick.class, message -> {
             // do something useful here  
