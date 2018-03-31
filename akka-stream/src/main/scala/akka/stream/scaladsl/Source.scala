@@ -7,23 +7,23 @@ package akka.stream.scaladsl
 import java.util.UUID
 import java.util.concurrent.CompletionStage
 
-import akka.actor.{ActorRef, Cancellable, Props}
+import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.annotation.InternalApi
 import akka.stream.actor.ActorPublisher
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages._
-import akka.stream.impl.{PublisherSource, _}
-import akka.stream.{Outlet, SourceShape, _}
+import akka.stream.impl.{ PublisherSource, _ }
+import akka.stream.{ Outlet, SourceShape, _ }
 import akka.util.ConstantFun
-import akka.{Done, NotUsed}
-import org.reactivestreams.{Publisher, Subscriber}
+import akka.{ Done, NotUsed }
+import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ Future, Promise }
 import akka.stream.stage.GraphStageWithMaterializedValue
 
 import scala.collection.generic.CanBuildFrom
@@ -673,18 +673,4 @@ object Source {
   def unfoldResourceAsync[T, S](create: () ⇒ Future[S], read: (S) ⇒ Future[Option[T]], close: (S) ⇒ Future[Done]): Source[T, NotUsed] =
     Source.fromGraph(new UnfoldResourceSourceAsync(create, read, close))
 
-  def mergeLast[A, M[X] <: TraversableOnce[X]](in: M[Source[A, _]])(implicit cbf: CanBuildFrom[M[Source[A, _]], A, M[A]]): Source[M[A], _] = {
-    in
-      .toSeq
-      .zipWithIndex
-      .map { case (source, index) => source.map(value => (index, value)) }
-      .reduce(_.merge(_))
-      .scan(Map.empty[Int, A]) { case (acc, (index, value)) => acc.updated(index, value) }
-      .dropWhile(_.size < in.size)
-      .map { x =>
-        val b = cbf.apply()
-        b ++= x.values
-        b.result()
-      }
-  }
 }
