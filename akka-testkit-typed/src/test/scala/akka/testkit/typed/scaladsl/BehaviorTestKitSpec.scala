@@ -6,7 +6,7 @@ package akka.testkit.typed.scaladsl
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ Behavior, Props }
-import akka.testkit.typed.scaladsl.Effects.{ Spawned, SpawnedAdapter, SpawnedAnonymous }
+import akka.testkit.typed.scaladsl.Effects.{ Spawned, SpawnedAdapter, SpawnedAnonymous, Watched, Unwatched }
 import akka.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Father }
 import akka.testkit.typed.scaladsl.BehaviorTestKitSpec.Father._
 import org.scalatest.{ Matchers, WordSpec }
@@ -24,10 +24,10 @@ object BehaviorTestKitSpec {
     case class SpawnAnonymousWithProps(numberOfChildren: Int, props: Props) extends Command
     case object SpawnAdapter extends Command
     case class SpawnAdapterWithName(name: String) extends Command
+    case class SpawnAndWatchUnwatch(name: String) extends Command
+    case class SpawnAndWatchWith(name: String) extends Command
 
-    def behavior: Behavior[Command] = init()
-
-    def init(): Behavior[Command] = Behaviors.receive[Command] { (ctx, msg) ⇒
+    val init: Behavior[Command] = Behaviors.receive[Command] { (ctx, msg) ⇒
       msg match {
         case SpawnChildren(numberOfChildren) if numberOfChildren > 0 ⇒
           0.until(numberOfChildren).foreach { i ⇒
@@ -59,6 +59,15 @@ object BehaviorTestKitSpec {
             r: Reproduce ⇒ SpawnAnonymous(r.times)
           }, name)
           Behaviors.same
+        case SpawnAndWatchUnwatch(name) =>
+          val c = ctx.spawn(Child.initial, name)
+          ctx.watch(c)
+          ctx.unwatch(c)
+          Behaviors.same
+        case m @ SpawnAndWatchWith(name) =>
+          val c = ctx.spawn(Child.initial, name)
+          ctx.watchWith(c, m)
+          Behaviors.same
       }
     }
   }
@@ -85,21 +94,21 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
   "BehaviorTestKit" must {
 
     "allow assertions on effect type" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnAnonymous(1))
       val spawnAnonymous = testkit.expectEffectType[Effects.SpawnedAnonymous[_]]
       spawnAnonymous.props should ===(Props.empty)
     }
 
     "return if effects have taken place" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.hasEffects() should ===(false)
       testkit.run(SpawnAnonymous(1))
       testkit.hasEffects() should ===(true)
     }
 
     "allow assertions using partial functions - no match" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnChildren(1))
       val ae = intercept[AssertionError] {
         testkit.expectEffectPF {
@@ -110,7 +119,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
     }
 
     "allow assertions using partial functions - match" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnChildren(1))
       val childName = testkit.expectEffectPF {
         case Spawned(_, name, _) ⇒ name
@@ -121,14 +130,14 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
 
   "BehaviorTestkit's spawn" must {
     "create children when no props specified" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnChildren(2))
       val effects = testkit.retrieveAllEffects()
       effects should contain only (Spawned(Child.initial, "child0"), Spawned(Child.initial, "child1", Props.empty))
     }
 
     "create children when props specified and record effects" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnChildrenWithProps(2, props))
       val effects = testkit.retrieveAllEffects()
       effects should contain only (Spawned(Child.initial, "child0", props), Spawned(Child.initial, "child1", props))
@@ -137,14 +146,14 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
 
   "BehaviorTestkit's spawnAnonymous" must {
     "create children when no props specified and record effects" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnAnonymous(2))
       val effects = testkit.retrieveAllEffects()
       effects shouldBe Seq(SpawnedAnonymous(Child.initial, Props.empty), SpawnedAnonymous(Child.initial, Props.empty))
     }
 
     "create children when props specified and record effects" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
 
       testkit.run(SpawnAnonymousWithProps(2, props))
       val effects = testkit.retrieveAllEffects()
@@ -154,14 +163,14 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
 
   "BehaviorTestkit's spawnMessageAdapter" must {
     "create adapters without name and record effects" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnAdapter)
       val effects = testkit.retrieveAllEffects()
       effects shouldBe Seq(SpawnedAdapter)
     }
 
     "create adapters with name and record effects" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnAdapterWithName("adapter"))
       val effects = testkit.retrieveAllEffects()
       effects shouldBe Seq(SpawnedAdapter)
@@ -170,10 +179,33 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
 
   "BehaviorTestkit's run" can {
     "run behaviors with messages without canonicalization" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init())
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnAdapterWithName("adapter"))
       testkit.currentBehavior should not be Behavior.same
       testkit.returnedBehavior shouldBe Behavior.same
+    }
+  }
+
+  "BehaviorTestKit’s watch" must {
+    "record effects for watching and unwatching" in {
+      val testkit = BehaviorTestKit(Father.init)
+      testkit.run(SpawnAndWatchUnwatch("hello"))
+      val child = testkit.childInbox("hello").ref
+      testkit.retrieveAllEffects() should be(Seq(
+        Spawned(Child.initial, "hello", Props.empty),
+        Watched(child),
+        Unwatched(child),
+      ))
+    }
+
+    "record effects for watchWith" in {
+      val testkit = BehaviorTestKit(Father.init)
+      testkit.run(SpawnAndWatchWith("hello"))
+      val child = testkit.childInbox("hello").ref
+      testkit.retrieveAllEffects() should be(Seq(
+        Spawned(Child.initial, "hello", Props.empty),
+        Watched(child),
+      ))
     }
   }
 }
