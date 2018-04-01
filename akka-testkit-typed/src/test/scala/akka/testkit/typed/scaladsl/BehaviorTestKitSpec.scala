@@ -59,12 +59,12 @@ object BehaviorTestKitSpec {
             r: Reproduce ⇒ SpawnAnonymous(r.times)
           }, name)
           Behaviors.same
-        case SpawnAndWatchUnwatch(name) =>
+        case SpawnAndWatchUnwatch(name) ⇒
           val c = ctx.spawn(Child.initial, name)
           ctx.watch(c)
           ctx.unwatch(c)
           Behaviors.same
-        case m @ SpawnAndWatchWith(name) =>
+        case m @ SpawnAndWatchWith(name) ⇒
           val c = ctx.spawn(Child.initial, name)
           ctx.watchWith(c, m)
           Behaviors.same
@@ -194,7 +194,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       testkit.retrieveAllEffects() should be(Seq(
         Spawned(Child.initial, "hello", Props.empty),
         Watched(child),
-        Unwatched(child),
+        Unwatched(child)
       ))
     }
 
@@ -204,7 +204,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       val child = testkit.childInbox("hello").ref
       testkit.retrieveAllEffects() should be(Seq(
         Spawned(Child.initial, "hello", Props.empty),
-        Watched(child),
+        Watched(child)
       ))
     }
   }
