@@ -6,10 +6,8 @@ package akka.testkit.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 public class TestProbeTest {
 
@@ -21,12 +19,12 @@ public class TestProbeTest {
       // ... something ...
       return null;
     });
-    probe.awaitAssert(FiniteDuration.apply(3, TimeUnit.SECONDS), () -> {
+    probe.awaitAssert(Duration.ofSeconds(3), () -> {
       // ... something ...
       return null;
     });
     String awaitAssertResult =
-      probe.awaitAssert(FiniteDuration.apply(3, TimeUnit.SECONDS), FiniteDuration.apply(100, TimeUnit.MILLISECONDS), () -> {
+      probe.awaitAssert(Duration.ofSeconds(3), Duration.ofMillis(100), () -> {
         // ... something ...
         return "some result";
       });
@@ -35,16 +33,16 @@ public class TestProbeTest {
     probe.expectNoMessage();
 
     ActorRef<String> ref = null;
-    probe.expectTerminated(ref, FiniteDuration.apply(1, TimeUnit.SECONDS));
+    probe.expectTerminated(ref, Duration.ofSeconds(1));
 
-    FiniteDuration remaining = probe.remaining();
-    probe.fishForMessage(FiniteDuration.apply(3, TimeUnit.SECONDS), "hint", (msg) -> {
+    Duration remaining = probe.getRemaining();
+    probe.fishForMessage(Duration.ofSeconds(3), "hint", (msg) -> {
       if (msg.equals("one")) return FishingOutcomes.continueAndIgnore();
       else if (msg.equals("two")) return FishingOutcomes.complete();
       else return FishingOutcomes.fail("error");
     });
 
-    String withinResult = probe.within(FiniteDuration.apply(3, TimeUnit.SECONDS), () -> {
+    String withinResult = probe.within(Duration.ofSeconds(3), () -> {
       // ... something ...
       return "result";
     });

@@ -13,10 +13,9 @@ import akka.testkit.typed.javadsl.TestKitJunitResource;
 import akka.testkit.typed.javadsl.TestProbe;
 import org.junit.ClassRule;
 import org.junit.Test;
-import scala.concurrent.duration.FiniteDuration;
 
+import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -200,7 +199,7 @@ public class PersistentActorTest {
           })
           .matchCommand(IncrementLater.class, (ctx, state, command) -> {
             ActorRef<Object> delay = ctx.spawnAnonymous(Behaviors.withTimers(timers -> {
-              timers.startSingleTimer(Tick.instance, Tick.instance, FiniteDuration.create(10, TimeUnit.MILLISECONDS));
+              timers.startSingleTimer(Tick.instance, Tick.instance, Duration.ofMillis(10));
               return Behaviors.receive((context, o) -> Behaviors.stopped());
             }));
             ctx.watchWith(delay, new DelayFinished());
@@ -208,7 +207,7 @@ public class PersistentActorTest {
           })
           .matchCommand(DelayFinished.class, (ctx, state, finished) -> Effect().persist(new Incremented(10)))
           .matchCommand(Increment100OnTimeout.class, (ctx, state, msg) -> {
-            ctx.setReceiveTimeout(FiniteDuration.create(10, TimeUnit.MILLISECONDS), new Timeout());
+            ctx.setReceiveTimeout(Duration.ofMillis(10), new Timeout());
             return Effect().none();
           })
           .matchCommand(Timeout.class,
@@ -334,7 +333,7 @@ public class PersistentActorTest {
     TestProbe<State> probe = testKit.createTestProbe();
     ActorRef<Command> c = testKit.spawn(counter("c12"));
     c.tell(new StopThenLog());
-    probe.expectTerminated(c, FiniteDuration.create(1, TimeUnit.SECONDS));
+    probe.expectTerminated(c, Duration.ofSeconds(1));
   }
   // FIXME test with by state command handler
 }

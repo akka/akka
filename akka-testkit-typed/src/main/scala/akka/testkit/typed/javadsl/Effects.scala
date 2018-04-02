@@ -4,10 +4,11 @@
 
 package akka.testkit.typed.javadsl
 
+import java.time.Duration
+
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.testkit.typed.Effect
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import akka.util.JavaDurationConverters._
 
 /**
  * Factories for behavior effects for [[BehaviorTestKit]], each effect has a suitable equals and can be used to compare
@@ -57,14 +58,14 @@ object Effects {
   /**
    * The behavior set a new receive timeout, with `msg` as timeout notification
    */
-  def receiveTimeoutSet[T](d: Duration, msg: T): Effect = ReceiveTimeoutSet(d, msg)
+  def receiveTimeoutSet[T](d: Duration, msg: T): Effect = ReceiveTimeoutSet(d.asScala, msg)
 
   /**
    * The behavior used `ctx.schedule` to schedule `msg` to be sent to `target` after `delay`
    * FIXME what about events scheduled through the scheduler?
    */
-  def scheduled[U](delay: FiniteDuration, target: ActorRef[U], msg: U): Effect =
-    Scheduled(delay, target, msg)
+  def scheduled[U](delay: Duration, target: ActorRef[U], msg: U): Effect =
+    Scheduled(delay.asScala, target, msg)
 
   /**
    * Used to represent an empty list of effects - in other words, the behavior didn't do anything observable
