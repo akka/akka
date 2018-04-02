@@ -7,7 +7,7 @@ package akka.stream.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
-import akka.stream.ThrottleMode.{Enforcing, Shaping}
+import akka.stream.ThrottleMode.{ Enforcing, Shaping }
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
