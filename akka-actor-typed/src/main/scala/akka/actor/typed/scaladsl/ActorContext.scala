@@ -161,7 +161,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
   /**
    * Schedule the sending of a notification in case no other
    * message is received during the given period of time. The timeout starts anew
-   * with each received message. Provide `Duration.Undefined` to switch off this
+   * with each received message. Use `cancelReceiveTimeout` to switch off this
    * mechanism.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from threads other

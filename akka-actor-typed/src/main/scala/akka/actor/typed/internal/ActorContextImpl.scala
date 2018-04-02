@@ -20,6 +20,7 @@ import scala.util.Try
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 import akka.util.Timeout
+import akka.util.JavaDurationConverters._
 
 /**
  * INTERNAL API
@@ -67,6 +68,12 @@ import akka.util.Timeout
     system.asInstanceOf[ActorSystem[Void]]
 
   override def getLog: Logger = log
+
+  override def setReceiveTimeout(d: java.time.Duration, msg: T): Unit =
+    setReceiveTimeout(d.asScala, msg)
+
+  override def schedule[U](delay: java.time.Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable =
+    schedule(delay.asScala, target, msg)
 
   override def spawn[U](behavior: akka.actor.typed.Behavior[U], name: String): akka.actor.typed.ActorRef[U] =
     spawn(behavior, name, Props.empty)

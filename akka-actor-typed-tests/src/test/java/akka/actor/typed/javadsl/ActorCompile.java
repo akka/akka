@@ -7,10 +7,10 @@ package akka.actor.typed.javadsl;
 import akka.actor.typed.*;
 import akka.actor.typed.ActorContext;
 
+import java.time.Duration;
+
 import static akka.actor.typed.javadsl.Behaviors.*;
 
-import java.util.concurrent.TimeUnit;
-import scala.concurrent.duration.Duration;
 
 @SuppressWarnings("unused")
 public class ActorCompile {
@@ -65,7 +65,7 @@ public class ActorCompile {
 
   {
     Behavior<MyMsg> b = Behaviors.withTimers(timers -> {
-      timers.startPeriodicTimer("key", new MyMsgB("tick"), Duration.create(1, TimeUnit.SECONDS));
+      timers.startPeriodicTimer("key", new MyMsgB("tick"), Duration.ofSeconds(1));
       return Behaviors.ignore();
     });
   }
@@ -92,20 +92,20 @@ public class ActorCompile {
     SupervisorStrategy strategy2 = SupervisorStrategy.restart().withLoggingEnabled(false);
     SupervisorStrategy strategy3 = SupervisorStrategy.resume();
     SupervisorStrategy strategy4 =
-      SupervisorStrategy.restartWithLimit(3, Duration.create(1, TimeUnit.SECONDS));
+      SupervisorStrategy.restartWithLimit(3, Duration.ofSeconds(1));
 
     SupervisorStrategy strategy5 =
       SupervisorStrategy.restartWithBackoff(
-        Duration.create(200, TimeUnit.MILLISECONDS),
-        Duration.create(10, TimeUnit.SECONDS),
+        Duration.ofMillis(200),
+        Duration.ofSeconds(10),
         0.1);
 
     BackoffSupervisorStrategy strategy6 =
         SupervisorStrategy.restartWithBackoff(
-          Duration.create(200, TimeUnit.MILLISECONDS),
-          Duration.create(10, TimeUnit.SECONDS),
+            Duration.ofMillis(200),
+            Duration.ofSeconds(10),
           0.1);
-    SupervisorStrategy strategy7 = strategy6.withResetBackoffAfter(Duration.create(2, TimeUnit.SECONDS));
+    SupervisorStrategy strategy7 = strategy6.withResetBackoffAfter(Duration.ofSeconds(2));
 
     Behavior<MyMsg> behv =
       Behaviors.supervise(
