@@ -6,16 +6,17 @@ package akka.persistence.typed.javadsl
 
 import java.util.Collections
 
-import akka.actor.typed.Behavior.UntypedPropsBehavior
-import akka.actor.typed.internal.adapter.PropsAdapter
+import akka.actor.typed
+import akka.actor.typed.Behavior
+import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.ApiMayChange
 import akka.persistence.typed._
 import akka.persistence.typed.internal._
 
 /** Java API */
 @ApiMayChange
-abstract class PersistentBehavior[Command, Event, State >: Null](val persistenceId: String) extends UntypedPropsBehavior[Command] {
+abstract class PersistentBehavior[Command, Event, State >: Null](val persistenceId: String) extends DeferredBehavior[Command] {
 
   /**
    * Factory of effects.
@@ -78,28 +79,60 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
   def onRecoveryCompleted(ctx: ActorContext[Command], state: State): Unit = {}
 
   /**
+   * Override and define that snapshot should be saved every N events.
+   *
+   * If this is overridden `shouldSnapshot` is not used.
+   *
+   * @return number of events between snapshots, should be greater than 0
+   * @see [[PersistentBehavior#shouldSnapshot]]
+   */
+  def snapshotEvery(): Long = 0L
+
+  /**
    * Initiates a snapshot if the given function returns true.
    * When persisting multiple events at once the snapshot is triggered after all the events have
    * been persisted.
    *
-   * `predicate` receives the State, Event and the sequenceNr used for the Event
+   * receives the State, Event and the sequenceNr used for the Event
+   *
+   * @return `true` if snapshot should be saved for the given event
+   * @see [[PersistentBehavior#snapshotEvery]]
    */
   def shouldSnapshot(state: State, event: Event, sequenceNr: Long): Boolean = false
+
   /**
    * The `tagger` function should give event tags, which will be used in persistence query
    */
   def tagsFor(event: Event): java.util.Set[String] = Collections.emptySet()
 
-  /** INTERNAL API */
-  @InternalApi private[akka] override def untypedProps(props: akka.actor.typed.Props): akka.actor.Props = {
-    val behaviorImpl = scaladsl.PersistentBehaviors.receive[Command, Event, State](
+  /**
+   * INTERNAL API: DeferredBehavior init
+   */
+  override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
+
+    val snapshotWhen: (State, Event, Long) ⇒ Boolean = { (state, event, seqNr) ⇒
+      val n = snapshotEvery()
+      if (n > 0)
+        seqNr % n == 0
+      else
+        shouldSnapshot(state, event, seqNr)
+    }
+
+    val tagger: Event ⇒ Set[String] = { event ⇒
+      import scala.collection.JavaConverters._
+      val tags = tagsFor(event)
+      if (tags.isEmpty) Set.empty
+      else tags.asScala.toSet
+    }
+
+    scaladsl.PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
       initialState,
       (c, state, cmd) ⇒ commandHandler()(c.asJava, state, cmd).asInstanceOf[EffectImpl[Event, State]],
-      eventHandler()(_, _)
-    )
-
-    PropsAdapter(() ⇒ behaviorImpl, props)
+      eventHandler()(_, _))
+      .onRecoveryCompleted((ctx, state) ⇒ onRecoveryCompleted(ctx.asJava, state))
+      .snapshotWhen(snapshotWhen)
+      .withTagger(tagger)
   }
 
 }
