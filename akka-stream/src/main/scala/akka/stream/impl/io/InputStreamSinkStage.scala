@@ -25,9 +25,8 @@ private[stream] object InputStreamSinkStage {
   case object Close extends AdapterToStageMessage
 
   sealed trait StreamToAdapterMessage
-  case class Data(data: ByteString) extends StreamToAdapterMessage {
-    require(data.nonEmpty)
-  }
+  // Only non-empty ByteString is expected as Data
+  case class Data(data: ByteString) extends StreamToAdapterMessage
   case object Finished extends StreamToAdapterMessage
   case object Initialized extends StreamToAdapterMessage
   case class Failed(cause: Throwable) extends StreamToAdapterMessage
