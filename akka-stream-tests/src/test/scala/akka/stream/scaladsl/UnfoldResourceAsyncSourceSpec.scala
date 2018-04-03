@@ -339,6 +339,18 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       Await.ready(closeLatch, remainingOrDefault)
     }
+
+    "close resource when stream is quickly cancelled" in assertAllStagesStopped {
+      val closePromise = Promise[Done]()
+      Source.unfoldResourceAsync[String, Unit](
+        // delay it a bit to give cancellation time to come upstream
+        () ⇒ akka.pattern.after(100.millis, system.scheduler)(Future.successful(())),
+        _ ⇒ Future.successful(Some("whatever")),
+        _ ⇒ closePromise.success(Done).future
+      ).runWith(Sink.cancelled)
+
+      closePromise.future.futureValue should ===(Done)
+    }
   }
 
 }

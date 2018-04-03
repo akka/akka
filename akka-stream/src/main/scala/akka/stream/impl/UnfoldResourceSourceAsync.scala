@@ -30,6 +30,8 @@ import scala.util.control.NonFatal
     lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
     private implicit def ec = ActorMaterializerHelper.downcast(materializer).system.dispatcher
     private var state: Option[S] = None
+    // needed to make sure to close the resource in case the stage stops while the resource is opening
+    @volatile private var stoppedEarly: Boolean = false
 
     private val createdCallback = getAsyncCallback[Try[S]] {
       case Success(resource) ⇒
@@ -83,7 +85,13 @@ import scala.util.control.NonFatal
       }
 
     override def postStop(): Unit = {
-      state.foreach(r ⇒ close(r))
+      state match {
+        case Some(r) ⇒
+          close(r)
+          state = None
+        case None ⇒
+          stoppedEarly = true
+      }
     }
 
     private def restartResource(): Unit = {
@@ -102,7 +110,14 @@ import scala.util.control.NonFatal
     }
 
     private def createResource(): Unit = {
-      create().onComplete(createdCallback)
+      create().onComplete { resource ⇒
+        if (stoppedEarly) {
+          resource match {
+            case Success(r)  ⇒ close(r)
+            case Failure(ex) ⇒ throw ex
+          }
+        } else createdCallback(resource)
+      }
     }
 
     setHandler(out, this)
