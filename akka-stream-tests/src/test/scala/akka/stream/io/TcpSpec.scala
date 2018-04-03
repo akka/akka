@@ -411,12 +411,13 @@ class TcpSpec extends StreamSpec("""
         """
           akka.loglevel = DEBUG
         """).withFallback(system.settings.config))
+
       try {
         import system2.dispatcher
         val mat2 = ActorMaterializer.create(system2)
 
         val serverAddress = temporaryServerAddress()
-        val binding = Tcp(system2).bindAndHandle(Flow[ByteString], serverAddress.getHostString, serverAddress.getPort)(mat2)
+        val binding = Tcp(system2).bindAndHandle(Flow[ByteString], serverAddress.getHostString, serverAddress.getPort)(mat2).futureValue
 
         val probe = TestProbe()
         val testMsg = ByteString(0)
@@ -445,9 +446,7 @@ class TcpSpec extends StreamSpec("""
 
         result.failed.futureValue shouldBe a[StreamTcpException]
 
-        binding.map(_.unbind()).recover { case NonFatal(_) ⇒ () }.foreach { _ ⇒
-          shutdown(system2)
-        }
+        binding.unbind()
       } finally {
         TestKit.shutdownActorSystem(system2)
       }
