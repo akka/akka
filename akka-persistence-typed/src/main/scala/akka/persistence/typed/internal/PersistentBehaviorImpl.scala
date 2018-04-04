@@ -31,7 +31,9 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
     Behaviors.setup[EventsourcedBehavior.InternalProtocol] { ctx ⇒
       Behaviors.withTimers { timers ⇒
         val settings = EventsourcedSettings(ctx.system)
-        val setup = EventsourcedSetup(
+          .withJournalPluginId(journalPluginId.getOrElse(""))
+          .withSnapshotPluginId(snapshotPluginId.getOrElse(""))
+        val setup = new EventsourcedSetup(
           ctx,
           timers,
           persistenceId,
@@ -46,8 +48,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
           holdingRecoveryPermit = false,
           settings = settings,
           internalStash = StashBuffer(settings.stashCapacity)
-        ).withJournalPluginId(journalPluginId.getOrElse(""))
-          .withSnapshotPluginId(snapshotPluginId.getOrElse(""))
+        )
 
         EventsourcedRequestingRecoveryPermit(setup)
       }

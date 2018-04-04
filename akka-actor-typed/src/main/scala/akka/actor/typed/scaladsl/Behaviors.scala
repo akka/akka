@@ -213,7 +213,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](Map.empty, mdcForMessage, behavior)
+    withMdc[T](Map.empty[String, Any], mdcForMessage)(behavior)
 
   /**
    * Static MDC (Mapped Diagnostic Context)
@@ -225,7 +225,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](staticMdc: Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](staticMdc, WithMdcBehavior.noMdcPerMessage, behavior)
+    withMdc[T](staticMdc, (_: T) ⇒ Map.empty[String, Any])(behavior)
 
   /**
    * Combination of static and per message MDC (Mapped Diagnostic Context).
@@ -233,6 +233,8 @@ object Behaviors {
    * Each message will get the static MDC plus the MDC returned for the message. If the same key
    * are in both the static and the per message MDC the per message one overwrites the static one
    * in the resulting log entries.
+   *
+   * The `staticMdc` or `mdcForMessage` may be empty.
    *
    * @param staticMdc A static MDC applied for each message
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after

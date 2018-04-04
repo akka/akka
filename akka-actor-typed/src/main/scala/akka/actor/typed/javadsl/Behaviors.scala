@@ -4,6 +4,7 @@
 
 package akka.actor.typed.javadsl
 
+import java.util.Collections
 import java.util.function.{ Function ⇒ JFunction }
 
 import akka.actor.typed.{ ActorRef, Behavior, ExtensibleBehavior, Signal, SupervisorStrategy }
@@ -12,7 +13,6 @@ import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.japi.function.{ Procedure2, Function2 ⇒ JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.ConstantFun
-
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 /**
@@ -294,7 +294,7 @@ object Behaviors {
    */
   def withMdc[T](
     mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]], behavior: Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](Map.empty, message ⇒ mdcForMessage.apply(message).asScala.toMap, behavior)
+    withMdc(Collections.emptyMap[String, Any], mdcForMessage, behavior)
 
   /**
    * Static MDC (Mapped Diagnostic Context)
@@ -306,7 +306,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](staticMdc: java.util.Map[String, Any], behavior: Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](staticMdc.asScala.toMap, WithMdcBehavior.noMdcPerMessage, behavior)
+    withMdc(staticMdc, null, behavior)
 
   /**
    * Combination of static and per message MDC (Mapped Diagnostic Context).
@@ -314,6 +314,8 @@ object Behaviors {
    * Each message will get the static MDC plus the MDC returned for the message. If the same key
    * are in both the static and the per message MDC the per message one overwrites the static one
    * in the resulting log entries.
+   *
+   * * The `staticMdc` or `mdcForMessage` may be empty.
    *
    * @param staticMdc A static MDC applied for each message
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
@@ -326,10 +328,23 @@ object Behaviors {
   def withMdc[T](
     staticMdc:     java.util.Map[String, Any],
     mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
-    behavior:      Behavior[T]): Behavior[T] =
+    behavior:      Behavior[T]): Behavior[T] = {
+
+    def asScalaMap(m: java.util.Map[String, Any]): Map[String, Any] = {
+      if (m == null || m.isEmpty) Map.empty[String, Any]
+      else m.asScala.toMap
+    }
+
+    val mdcForMessageFun: T ⇒ Map[String, Any] =
+      if (mdcForMessage == null) Map.empty
+      else {
+        message ⇒ asScalaMap(mdcForMessage.apply(message))
+      }
+
     WithMdcBehavior[T](
-      staticMdc.asScala.toMap,
-      message ⇒ mdcForMessage.apply(message).asScala.toMap,
+      asScalaMap(staticMdc),
+      mdcForMessageFun,
       behavior)
+  }
 
 }
