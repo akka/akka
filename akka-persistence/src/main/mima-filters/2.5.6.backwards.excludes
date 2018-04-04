@@ -1,2 +1,2 @@
 # #23436 AbstractPersistentLoggingFSM, this is not binary compatible but previous was not possible to use at all 
-ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.fsm.AbstractPersistentFSM.domainEventClass")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.fsm.AbstractPersistentLoggingFSM.domainEventClass")
