@@ -27,6 +27,11 @@ private[akka] abstract class AbstractServiceKey {
  *
  * Internal API
  */
+@InternalApi
 final case class DefaultServiceKey[T](id: String, typeName: String) extends ServiceKey[T] {
+
+  // note that the hash code of this is used to shard over ddata keys in cluster receptionist
+  // so be careful about changes that would lead to a different hash
+
   override def toString: String = s"ServiceKey[$typeName]($id)"
 }
