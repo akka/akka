@@ -20,13 +20,15 @@ object AkkaBuild {
 
   lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization := "com.typesafe.akka",
-    version := "2.5-SNAPSHOT")
+    version := (version in ThisBuild).value)
 
   lazy val rootSettings = Release.settings ++
     UnidocRoot.akkaSettings ++
     Formatting.formatSettings ++
     Protobuf.settings ++ Seq(
-      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean)
+      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
+      version in ThisBuild := "2.5-SNAPSHOT"
+    )
 
   lazy val mayChangeSettings = Seq(
     description := """|This module of Akka is marked as
