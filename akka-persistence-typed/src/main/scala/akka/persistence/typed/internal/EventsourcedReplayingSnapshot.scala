@@ -32,7 +32,7 @@ import akka.persistence.typed.internal.EventsourcedBehavior._
 private[akka] object EventsourcedReplayingSnapshot {
 
   def apply[C, E, S](setup: EventsourcedSetup[C, E, S]): Behavior[InternalProtocol] =
-    new EventsourcedReplayingSnapshot(setup).createBehavior()
+    new EventsourcedReplayingSnapshot(setup.setMdc(MDC.ReplayingSnapshot)).createBehavior()
 
 }
 
@@ -45,15 +45,13 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
 
     loadSnapshot(setup.recovery.fromSnapshot, setup.recovery.toSequenceNr)
 
-    withMdc(setup, MDC.ReplayingSnapshot) {
-      Behaviors.receiveMessage[InternalProtocol] {
-        case SnapshotterResponse(r)      ⇒ onSnapshotterResponse(r)
-        case JournalResponse(r)          ⇒ onJournalResponse(r)
-        case RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot)
-        case cmd: IncomingCommand[C]     ⇒ onCommand(cmd)
-        case RecoveryPermitGranted       ⇒ Behaviors.unhandled // should not happen, we already have the permit
-      }.receiveSignal(returnPermitOnStop)
-    }
+    Behaviors.receiveMessage[InternalProtocol] {
+      case SnapshotterResponse(r)      ⇒ onSnapshotterResponse(r)
+      case JournalResponse(r)          ⇒ onJournalResponse(r)
+      case RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot)
+      case cmd: IncomingCommand[C]     ⇒ onCommand(cmd)
+      case RecoveryPermitGranted       ⇒ Behaviors.unhandled // should not happen, we already have the permit
+    }.receiveSignal(returnPermitOnStop)
   }
 
   /**
@@ -121,15 +119,9 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
   private def becomeReplayingEvents(state: S, lastSequenceNr: Long, toSnr: Long): Behavior[InternalProtocol] = {
     cancelRecoveryTimer(setup.timers)
 
-    val rec = setup.recovery.copy(
-      toSequenceNr = toSnr,
-      fromSnapshot = SnapshotSelectionCriteria.None
-    )
-
     EventsourcedReplayingEvents[C, E, S](
-      setup.copy(recovery = rec),
-      // setup.internalStash, // TODO move it out of setup
-      EventsourcedReplayingEvents.ReplayingState(lastSequenceNr, state)
+      setup,
+      EventsourcedReplayingEvents.ReplayingState(lastSequenceNr, state, eventSeenInInterval = false, toSnr)
     )
   }
 

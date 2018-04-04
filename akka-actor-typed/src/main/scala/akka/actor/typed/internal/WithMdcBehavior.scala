@@ -4,6 +4,8 @@
 
 package akka.actor.typed.internal
 
+import scala.collection.immutable.HashMap
+
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.internal.adapter.AbstractLogger
 import akka.actor.typed.{ ActorContext, Behavior, ExtensibleBehavior, Signal }
@@ -65,7 +67,7 @@ import akka.annotation.InternalApi
     }
 
   override def receive(ctx: ActorContext[T], msg: T): Behavior[T] = {
-    val mdc = staticMdc ++ mdcForMessage(msg)
+    val mdc = merge(staticMdc, mdcForMessage(msg))
     ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = mdc
     val next =
       try {
@@ -74,6 +76,17 @@ import akka.annotation.InternalApi
         ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = Map.empty
       }
     wrapWithMdc(next, ctx)
+  }
+
+  private def merge(staticMdc: Map[String, Any], mdcForMessage: Map[String, Any]): Map[String, Any] = {
+    if (staticMdc.isEmpty) mdcForMessage
+    else if (mdcForMessage.isEmpty) staticMdc
+    else if (staticMdc.isInstanceOf[HashMap[String, Any]] && mdcForMessage.isInstanceOf[HashMap[String, Any]]) {
+      // merged is more efficient than ++
+      mdcForMessage.asInstanceOf[HashMap[String, Any]].merged(staticMdc.asInstanceOf[HashMap[String, Any]])(null)
+    } else {
+      staticMdc ++ mdcForMessage
+    }
   }
 
   override def receiveSignal(ctx: ActorContext[T], signal: Signal): Behavior[T] = {
