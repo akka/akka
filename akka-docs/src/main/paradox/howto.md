@@ -164,3 +164,9 @@ Finally we are able to execute an actor and receive the results or exceptions.
 @@snip [SupervisedAskSpec.java]($code$/java/jdocs/pattern/SupervisedAskSpec.java)
 
 @@@
+
+## Scalable Distributed Eventsourcing and CQRS
+
+The Lagom Framework encodes many best practices in combining @ref:[Akka Persistence](persistence.md) and @ref:[Akka Persistence Query](persistence-query.md) 
+with @ref:[Cluster Sharding](cluster-sharding.md) to build scalable and resilient systems with Event Sourcing and CQRS.
+

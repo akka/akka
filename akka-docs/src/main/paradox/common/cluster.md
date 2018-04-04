@@ -2,7 +2,7 @@
 
 @@@ note
 
-This document describes the design concepts of the clustering.
+This document describes the design concepts of Akka Cluster.
 
 @@@
 
@@ -11,6 +11,12 @@ This document describes the design concepts of the clustering.
 Akka Cluster provides a fault-tolerant decentralized peer-to-peer based cluster
 [membership](#membership) service with no single point of failure or single point of bottleneck.
 It does this using [gossip](#gossip) protocols and an automatic [failure detector](#failure-detector).
+
+Akka cluster allows for building distributed system, where a system spans multiple nodes. It is not intended as a 
+general communication between separate systems. See the discussion on 
+@scala[[Internal and External Commmunication](https://www.lagomframework.com/documentation/latest/scala/InternalAndExternalCommunication.html)]
+@java[[Internal and External Communication](https://www.lagomframework.com/documentation/latest/java/InternalAndExternalCommunication.html)]
+in the docs of the Lagom Framework (where each micro service is an Akka Cluster) for some background on this.
 
 ## Terms
 
