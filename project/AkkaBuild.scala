@@ -20,6 +20,7 @@ object AkkaBuild {
 
   lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization := "com.typesafe.akka",
+    // use the same value as in the build scope, so it can be overriden by stampVersion
     version := (version in ThisBuild).value)
 
   lazy val rootSettings = Release.settings ++
