@@ -16,7 +16,7 @@ import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.japi.Util.{ immutableSeq, immutableSingletonSeq }
 import akka.util.Timeout
 import akka.util.Reflect.instantiator
-import akka.serialization.{ JavaSerializer, SerializationExtension }
+import akka.serialization.{ JavaSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.dispatch._
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import java.util.concurrent.TimeoutException
@@ -152,11 +152,14 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       case ps if ps.length == 0 ⇒ SerializedMethodCall(method.getDeclaringClass, method.getName, method.getParameterTypes, Array())
       case ps ⇒
         val serialization = SerializationExtension(akka.serialization.JavaSerializer.currentSystem.value)
-        val serializedParameters = new Array[(Int, Class[_], Array[Byte])](ps.length)
+        val serializedParameters = new Array[(Int, String, Array[Byte])](ps.length)
         for (i ← 0 until ps.length) {
           val p = ps(i)
           val s = serialization.findSerializerFor(p)
-          val m = if (s.includeManifest) p.getClass else null
+          val m = s match {
+            case s2: SerializerWithStringManifest ⇒ s2.manifest(p)
+            case _                                ⇒ if (s.includeManifest) p.getClass.getName else ""
+          }
           serializedParameters(i) = (s.identifier, m, s toBinary parameters(i)) //Mutable for the sake of sanity
         }
 
@@ -169,7 +172,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    *
    * Represents the serialized form of a MethodCall, uses readResolve and writeReplace to marshall the call
    */
-  private[akka] final case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializedParameters: Array[(Int, Class[_], Array[Byte])]) {
+  private[akka] final case class SerializedMethodCall(ownerType: Class[_], methodName: String, parameterTypes: Array[Class[_]], serializedParameters: Array[(Int, String, Array[Byte])]) {
 
     //TODO implement writeObject and readObject to serialize
     //TODO Possible optimization is to special encode the parameter-types to conserve space
@@ -186,8 +189,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           val deserializedParameters: Array[AnyRef] = new Array[AnyRef](a.length) //Mutable for the sake of sanity
           for (i ← 0 until a.length) {
             val (sId, manifest, bytes) = a(i)
-            deserializedParameters(i) =
-              serialization.serializerByIdentity(sId).fromBinary(bytes, Option(manifest))
+            deserializedParameters(i) = serialization.deserialize(bytes, sId, manifest).get
           }
 
           deserializedParameters

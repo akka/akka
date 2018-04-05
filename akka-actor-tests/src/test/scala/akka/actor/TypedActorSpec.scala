@@ -11,8 +11,8 @@ import akka.actor.TypedActor._
 import akka.japi.{ Option ⇒ JOption }
 import akka.pattern.ask
 import akka.routing.RoundRobinGroup
-import akka.serialization.JavaSerializer
-import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, TimingTest, filterEvents }
+import akka.serialization.{JavaSerializer, SerializerWithStringManifest}
+import akka.testkit.{AkkaSpec, DefaultTimeout, EventFilter, TimingTest, filterEvents}
 import akka.util.Timeout
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
@@ -32,6 +32,8 @@ object TypedActorSpec {
         fixed-pool-size = 60
       }
     }
+    akka.actor.serializers.sample = "akka.actor.TypedActorSpec$SampleSerializerWithStringManifest$"
+    akka.actor.serialization-bindings."akka.actor.TypedActorSpec$WithStringSerializedClass" = sample
     akka.actor.serialize-messages = off
     """
 
@@ -47,7 +49,7 @@ object TypedActorSpec {
         val currentItems = current.get
         val newItems = currentItems match {
           case Nil ⇒ items
-          case xs  ⇒ xs
+          case xs ⇒ xs
         }
 
         if (current.compareAndSet(currentItems, newItems.tail)) newItems.head
@@ -106,7 +108,7 @@ object TypedActorSpec {
     @throws(classOf[TimeoutException])
     def read(): Int
 
-    def testMethodCallSerialization(foo: Foo, s: String, i: Int): Unit = throw new IllegalStateException("expected")
+    def testMethodCallSerialization(foo: Foo, s: String, i: Int, o: WithStringSerializedClass): Unit = throw new IllegalStateException("expected")
   }
 
   class Bar extends Foo with Serializable {
@@ -200,8 +202,60 @@ object TypedActorSpec {
     }
   }
 
-  trait F { def f(pow: Boolean): Int }
-  class FI extends F { def f(pow: Boolean): Int = if (pow) throw new IllegalStateException("expected") else 1 }
+  trait F {
+    def f(pow: Boolean): Int
+  }
+
+  class FI extends F {
+    def f(pow: Boolean): Int = if (pow) throw new IllegalStateException("expected") else 1
+  }
+
+  object SampleSerializerWithStringManifest extends SerializerWithStringManifest {
+
+    val manifest = "M"
+
+    /**
+     * Completely unique value to identify this implementation of Serializer, used to optimize network traffic.
+     * Values from 0 to 40 are reserved for Akka internal usage.
+     */
+    override def identifier: Int = 777
+
+    /**
+     * Return the manifest (type hint) that will be provided in the fromBinary method.
+     * Use `""` if manifest is not needed.
+     */
+    override def manifest(o: AnyRef): String = manifest
+
+    /**
+     * Serializes the given object into an Array of Byte
+     */
+    override def toBinary(o: AnyRef): Array[Byte] = o match {
+      case _: WithStringSerializedClass => Array(255.toByte)
+      case _ => throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
+    }
+
+    /**
+     * Produces an object from an array of bytes, with an optional type-hint;
+     * the class should be loaded using ActorSystem.dynamicAccess.
+     *
+     * It's recommended to throw `java.io.NotSerializableException` in `fromBinary`
+     * if the manifest is unknown. This makes it possible to introduce new message
+     * types and send them to nodes that don't know about them. This is typically
+     * needed when performing rolling upgrades, i.e. running a cluster with mixed
+     * versions for while. `NotSerializableException` is treated as a transient
+     * problem in the TCP based remoting layer. The problem will be logged
+     * and message is dropped. Other exceptions will tear down the TCP connection
+     * because it can be an indication of corrupt bytes from the underlying transport.
+     */
+    override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
+      case "M" if bytes.length == 1 && bytes(0) == 255.toByte => WithStringSerializedClass()
+      case _ => throw new IllegalArgumentException(s"Cannot deserialize object with manifest $manifest")
+    }
+  }
+
+  case class WithStringSerializedClass()
+
+
 }
 
 class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
@@ -445,7 +499,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       import java.io._
       val someFoo: Foo = new Bar
       JavaSerializer.currentSystem.withValue(system.asInstanceOf[ExtendedActorSystem]) {
-        val m = TypedActor.MethodCall(classOf[Foo].getDeclaredMethod("testMethodCallSerialization", Array[Class[_]](classOf[Foo], classOf[String], classOf[Int]): _*), Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef]))
+        val m = TypedActor.MethodCall(classOf[Foo].getDeclaredMethod("testMethodCallSerialization", Array[Class[_]](classOf[Foo], classOf[String], classOf[Int], classOf[WithStringSerializedClass]): _*), Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef], WithStringSerializedClass()))
         val baos = new ByteArrayOutputStream(8192 * 4)
         val out = new ObjectOutputStream(baos)
 
@@ -457,12 +511,14 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
         val mNew = in.readObject().asInstanceOf[TypedActor.MethodCall]
 
         mNew.method should ===(m.method)
-        mNew.parameters should have size 3
+        mNew.parameters should have size 4
         mNew.parameters(0) should not be null
         mNew.parameters(0).getClass should ===(classOf[Bar])
         mNew.parameters(1) should ===(null)
         mNew.parameters(2) should not be null
         mNew.parameters(2).asInstanceOf[Int] should ===(1)
+        mNew.parameters(3) should not be null
+        mNew.parameters(3).asInstanceOf[WithStringSerializedClass] should ===(WithStringSerializedClass())
       }
     }
 
