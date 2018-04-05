@@ -340,6 +340,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       Await.ready(closeLatch, remainingOrDefault)
     }
 
+    // these two reproduces different aspects of #24839
     "close resource when stream is quickly cancelled" in assertAllStagesStopped {
       val closePromise = Promise[Done]()
       Source.unfoldResourceAsync[String, Unit](
@@ -350,6 +351,20 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       ).runWith(Sink.cancelled)
 
       closePromise.future.futureValue should ===(Done)
+    }
+
+    "close resource when stream is quickly cancelled reproducer 2" in {
+      val closed = Promise[Done]()
+      Source
+        .unfoldResourceAsync[String, Iterator[String]](
+          { () ⇒ Future(Iterator("a", "b", "c")) },
+          { m ⇒ Future(if (m.hasNext) Some(m.next()) else None) },
+          { _ ⇒ closed.success(Done).future }
+        )
+        .map(m ⇒ println(s"Elem=> $m"))
+        .runWith(Sink.cancelled)
+
+      closed.future.futureValue // will timeout if bug is still here
     }
   }
 
