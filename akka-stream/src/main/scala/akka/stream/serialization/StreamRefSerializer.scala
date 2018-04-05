@@ -7,7 +7,7 @@ package akka.stream.serialization
 import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
-import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
+import akka.serialization._
 import akka.stream.StreamRefMessages
 import akka.stream.impl.streamref._
 
@@ -105,15 +105,9 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
       .setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(p)))
       .setSerializerId(msgSerializer.identifier)
 
-    msgSerializer match {
-      case ser2: SerializerWithStringManifest ⇒
-        val manifest = ser2.manifest(p)
-        if (manifest != "")
-          payloadBuilder.setMessageManifest(ByteString.copyFromUtf8(manifest))
-      case _ ⇒
-        if (msgSerializer.includeManifest)
-          payloadBuilder.setMessageManifest(ByteString.copyFromUtf8(p.getClass.getName))
-    }
+    Serializer.manifestFor(msgSerializer, p)
+      .filter(_.nonEmpty)
+      .foreach(ms ⇒ payloadBuilder.setMessageManifest(ByteString.copyFromUtf8(ms)))
 
     StreamRefMessages.SequencedOnNext.newBuilder()
       .setSeqNr(o.seqNr)

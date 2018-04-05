@@ -5,9 +5,8 @@
 package akka.actor
 
 import language.existentials
-
 import scala.util.control.NonFatal
-import scala.util.{ Try, Success, Failure }
+import scala.util.{ Failure, Success, Try }
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
@@ -16,7 +15,7 @@ import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.japi.Util.{ immutableSeq, immutableSingletonSeq }
 import akka.util.Timeout
 import akka.util.Reflect.instantiator
-import akka.serialization.{ JavaSerializer, SerializationExtension, SerializerWithStringManifest }
+import akka.serialization.{ JavaSerializer, SerializationExtension, Serializer }
 import akka.dispatch._
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import java.util.concurrent.TimeoutException
@@ -156,10 +155,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         for (i ← 0 until ps.length) {
           val p = ps(i)
           val s = serialization.findSerializerFor(p)
-          val m = s match {
-            case s2: SerializerWithStringManifest ⇒ s2.manifest(p)
-            case _                                ⇒ if (s.includeManifest) p.getClass.getName else ""
-          }
+          val m = Serializer.manifestFor(s, p).getOrElse("")
           serializedParameters(i) = (s.identifier, m, s toBinary parameters(i)) //Mutable for the sake of sanity
         }
 

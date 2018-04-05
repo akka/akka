@@ -167,15 +167,9 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       val serializer = serialization.findSerializerFor(payload)
       val builder = mf.PersistentPayload.newBuilder()
 
-      serializer match {
-        case ser2: SerializerWithStringManifest ⇒
-          val manifest = ser2.manifest(payload)
-          if (manifest != PersistentRepr.Undefined)
-            builder.setPayloadManifest(ByteString.copyFromUtf8(manifest))
-        case _ ⇒
-          if (serializer.includeManifest)
-            builder.setPayloadManifest(ByteString.copyFromUtf8(payload.getClass.getName))
-      }
+      Serializer.manifestFor(serializer, payload)
+        .filter(_ != PersistentRepr.Undefined)
+        .foreach(ms ⇒ builder.setPayloadManifest(ByteString.copyFromUtf8(ms)))
 
       builder.setPayload(ByteString.copyFrom(serializer.toBinary(payload)))
       builder.setSerializerId(serializer.identifier)

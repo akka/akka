@@ -8,10 +8,8 @@ import akka.remote.WireFormats._
 import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.remote.artery.{ EnvelopeBuffer, HeaderBuilder, OutboundEnvelope }
-import akka.serialization.Serialization
-import akka.serialization.ByteBufferSerializer
-import akka.serialization.SerializationExtension
-import akka.serialization.SerializerWithStringManifest
+import akka.serialization._
+
 import scala.util.control.NonFatal
 
 /**
@@ -46,15 +44,9 @@ private[akka] object MessageSerializer {
     try {
       builder.setMessage(ByteString.copyFrom(serializer.toBinary(message)))
       builder.setSerializerId(serializer.identifier)
-      serializer match {
-        case ser2: SerializerWithStringManifest ⇒
-          val manifest = ser2.manifest(message)
-          if (manifest != "")
-            builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
-        case _ ⇒
-          if (serializer.includeManifest)
-            builder.setMessageManifest(ByteString.copyFromUtf8(message.getClass.getName))
-      }
+      Serializer.manifestFor(serializer, message)
+        .filter(_.nonEmpty)
+        .foreach(m ⇒ builder.setMessageManifest(ByteString.copyFromUtf8(m)))
       builder.build
     } catch {
       case NonFatal(e) ⇒
@@ -68,21 +60,13 @@ private[akka] object MessageSerializer {
     val serializer = serialization.findSerializerFor(message)
 
     headerBuilder setSerializer serializer.identifier
-
-    def manifest: String = serializer match {
-      case ser: SerializerWithStringManifest ⇒ ser.manifest(message)
-      case _                                 ⇒ if (serializer.includeManifest) message.getClass.getName else ""
-    }
+    val manifest: String = Serializer.manifestFor(serializer, message).getOrElse("")
+    headerBuilder setManifest manifest
+    envelope.writeHeader(headerBuilder, outboundEnvelope)
 
     serializer match {
-      case ser: ByteBufferSerializer ⇒
-        headerBuilder setManifest manifest
-        envelope.writeHeader(headerBuilder, outboundEnvelope)
-        ser.toBinary(message, envelope.byteBuffer)
-      case _ ⇒
-        headerBuilder setManifest manifest
-        envelope.writeHeader(headerBuilder, outboundEnvelope)
-        envelope.byteBuffer.put(serializer.toBinary(message))
+      case ser: ByteBufferSerializer ⇒ ser.toBinary(message, envelope.byteBuffer)
+      case _                         ⇒ envelope.byteBuffer.put(serializer.toBinary(message))
     }
   }
 

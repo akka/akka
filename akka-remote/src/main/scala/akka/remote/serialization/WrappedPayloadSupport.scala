@@ -6,8 +6,7 @@ package akka.remote.serialization
 
 import akka.actor.ExtendedActorSystem
 import akka.remote.ContainerFormats
-import akka.serialization.SerializationExtension
-import akka.serialization.SerializerWithStringManifest
+import akka.serialization.{ SerializationExtension, Serializer }
 import akka.protobuf.ByteString
 
 /**
@@ -26,15 +25,9 @@ private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
       .setEnclosedMessage(ByteString.copyFrom(serializer.toBinary(payload)))
       .setSerializerId(serializer.identifier)
 
-    serializer match {
-      case ser2: SerializerWithStringManifest ⇒
-        val manifest = ser2.manifest(payload)
-        if (manifest != "")
-          builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
-      case _ ⇒
-        if (serializer.includeManifest)
-          builder.setMessageManifest(ByteString.copyFromUtf8(payload.getClass.getName))
-    }
+    Serializer.manifestFor(serializer, payload)
+      .filter(_.nonEmpty)
+      .foreach(ms ⇒ builder.setMessageManifest(ByteString.copyFromUtf8(ms)))
 
     builder
   }
