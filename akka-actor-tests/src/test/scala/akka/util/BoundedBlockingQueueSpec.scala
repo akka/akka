@@ -5,19 +5,19 @@
 package akka.util
 
 import java.util
-import java.util.concurrent.locks.{Condition, LockSupport, ReentrantLock}
+import java.util.concurrent.locks.{ Condition, LockSupport, ReentrantLock }
 import java.util.concurrent._
 
-import org.scalatest.concurrent.{Signaler, ThreadSignaler}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.concurrent.{ Signaler, ThreadSignaler }
+import org.scalatest.{ Matchers, WordSpec }
 import org.scalatest.time.SpanSugar._
-import org.scalatest.time.{Span, SpanSugar}
+import org.scalatest.time.{ Span, SpanSugar }
 import org.scalatest.exceptions.TestFailedDueToTimeoutException
 import org.scalactic.source.Position
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.{ MatchResult, Matcher }
 
 import scala.collection.mutable
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
 import scala.util.control.Exception
 import DefaultExecutionContext._
 
@@ -546,7 +546,7 @@ class BoundedBlockingQueueSpec
       queue.retainAll(elems.asJava) should equal(true)
       queue.remainingCapacity() should equal(1)
       queue.toArray() shouldNot contain("Akka")
-      queue.toArray() should contain theSameElementsAs(elems)
+      queue.toArray() should contain theSameElementsAs (elems)
     }
 
     "return false if no elements were removed" in {
@@ -556,7 +556,7 @@ class BoundedBlockingQueueSpec
       queue.put("World")
 
       queue.retainAll(elems.asJava) should equal(false)
-      queue.toArray() should contain allOf("Hello", "World")
+      queue.toArray() should contain allOf ("Hello", "World")
     }
   }
 
@@ -806,12 +806,12 @@ trait QueueSetupHelper {
 }
 
 /**
-  * Schedule every Future on a new thread.
-  * Ensures that we don't accidentally run things on one thread that should be concurrent.
-  */
+ * Schedule every Future on a new thread.
+ * Ensures that we don't accidentally run things on one thread that should be concurrent.
+ */
 object DefaultExecutionContext {
   implicit val ec: ExecutionContextExecutor = ExecutionContext.fromExecutor(new Executor {
-    override def execute(command: Runnable): Unit =  new Thread() {
+    override def execute(command: Runnable): Unit = new Thread() {
       override def run(): Unit = command.run()
     }.start()
   })

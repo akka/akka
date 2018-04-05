@@ -4,7 +4,7 @@
 
 package akka.util
 
-import java.util.concurrent.locks.{Condition, ReentrantLock}
+import java.util.concurrent.locks.{ Condition, ReentrantLock }
 import java.util.concurrent.{ TimeUnit, BlockingQueue }
 import java.util.{ AbstractQueue, Queue, Collection, Iterator }
 
