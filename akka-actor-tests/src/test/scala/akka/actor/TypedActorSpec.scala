@@ -11,8 +11,8 @@ import akka.actor.TypedActor._
 import akka.japi.{ Option ⇒ JOption }
 import akka.pattern.ask
 import akka.routing.RoundRobinGroup
-import akka.serialization.{JavaSerializer, SerializerWithStringManifest}
-import akka.testkit.{AkkaSpec, DefaultTimeout, EventFilter, TimingTest, filterEvents}
+import akka.serialization.{ JavaSerializer, SerializerWithStringManifest }
+import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, TimingTest, filterEvents }
 import akka.util.Timeout
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
@@ -49,7 +49,7 @@ object TypedActorSpec {
         val currentItems = current.get
         val newItems = currentItems match {
           case Nil ⇒ items
-          case xs ⇒ xs
+          case xs  ⇒ xs
         }
 
         if (current.compareAndSet(currentItems, newItems.tail)) newItems.head
@@ -230,8 +230,8 @@ object TypedActorSpec {
      * Serializes the given object into an Array of Byte
      */
     override def toBinary(o: AnyRef): Array[Byte] = o match {
-      case _: WithStringSerializedClass => Array(255.toByte)
-      case _ => throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
+      case _: WithStringSerializedClass ⇒ Array(255.toByte)
+      case _                            ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
     }
 
     /**
@@ -248,13 +248,12 @@ object TypedActorSpec {
      * because it can be an indication of corrupt bytes from the underlying transport.
      */
     override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-      case "M" if bytes.length == 1 && bytes(0) == 255.toByte => WithStringSerializedClass()
-      case _ => throw new IllegalArgumentException(s"Cannot deserialize object with manifest $manifest")
+      case manifest if bytes.length == 1 && bytes(0) == 255.toByte ⇒ WithStringSerializedClass()
+      case _ ⇒ throw new IllegalArgumentException(s"Cannot deserialize object with manifest $manifest")
     }
   }
 
   case class WithStringSerializedClass()
-
 
 }
 
