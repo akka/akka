@@ -4,9 +4,10 @@
 
 package akka.util
 
-import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.locks.{Condition, ReentrantLock}
 import java.util.concurrent.{ TimeUnit, BlockingQueue }
 import java.util.{ AbstractQueue, Queue, Collection, Iterator }
+
 import annotation.tailrec
 
 /**
@@ -28,14 +29,18 @@ class BoundedBlockingQueue[E <: AnyRef](
       require(maxCapacity > 0)
   }
 
-  protected val lock = new ReentrantLock(false)
+  protected val lock = createLock()
+  protected val notEmpty = createNotEmptyCondition()
+  protected val notFull = createNotFullCondition()
 
-  private val notEmpty = lock.newCondition()
-  private val notFull = lock.newCondition()
+  protected def createLock(): ReentrantLock = new ReentrantLock(false)
+  protected def createNotEmptyCondition(): Condition = lock.newCondition()
+  protected def createNotFullCondition(): Condition = lock.newCondition()
 
   def put(e: E) { //Blocks until not full
     if (e eq null) throw new NullPointerException
     lock.lockInterruptibly()
+
     try {
       @tailrec def putElement() {
         if (backing.size() < maxCapacity) {
