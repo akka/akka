@@ -317,6 +317,7 @@ object Behavior {
   def interpretMessage[T](behavior: Behavior[T], ctx: ActorContext[T], msg: T): Behavior[T] = {
     // optimization: duplicated logic with interpretSignal to avoid having to do the extra
     // message type check in the happy case
+    if (msg == null) throw InvalidMessageException("null messages not allowed")
     behavior match {
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = ext.receive(ctx, msg.asInstanceOf[T])
@@ -337,6 +338,7 @@ object Behavior {
    * Execute the behavior with the given signal
    */
   def interpretSignal[T](behavior: Behavior[T], ctx: ActorContext[T], signal: Signal): Behavior[T] = {
+    if (signal == null) throw InvalidMessageException("null signals not allowed")
     // optimization: duplicated logic with interpretMessage to avoid having to do the extra
     // message type check in the happy case
     behavior match {
