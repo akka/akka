@@ -214,39 +214,15 @@ object TypedActorSpec {
 
     val manifest = "M"
 
-    /**
-     * Completely unique value to identify this implementation of Serializer, used to optimize network traffic.
-     * Values from 0 to 40 are reserved for Akka internal usage.
-     */
     override def identifier: Int = 777
 
-    /**
-     * Return the manifest (type hint) that will be provided in the fromBinary method.
-     * Use `""` if manifest is not needed.
-     */
     override def manifest(o: AnyRef): String = manifest
 
-    /**
-     * Serializes the given object into an Array of Byte
-     */
     override def toBinary(o: AnyRef): Array[Byte] = o match {
       case _: WithStringSerializedClass ⇒ Array(255.toByte)
       case _                            ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
     }
 
-    /**
-     * Produces an object from an array of bytes, with an optional type-hint;
-     * the class should be loaded using ActorSystem.dynamicAccess.
-     *
-     * It's recommended to throw `java.io.NotSerializableException` in `fromBinary`
-     * if the manifest is unknown. This makes it possible to introduce new message
-     * types and send them to nodes that don't know about them. This is typically
-     * needed when performing rolling upgrades, i.e. running a cluster with mixed
-     * versions for while. `NotSerializableException` is treated as a transient
-     * problem in the TCP based remoting layer. The problem will be logged
-     * and message is dropped. Other exceptions will tear down the TCP connection
-     * because it can be an indication of corrupt bytes from the underlying transport.
-     */
     override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
       case manifest if bytes.length == 1 && bytes(0) == 255.toByte ⇒ WithStringSerializedClass()
       case _ ⇒ throw new IllegalArgumentException(s"Cannot deserialize object with manifest $manifest")
