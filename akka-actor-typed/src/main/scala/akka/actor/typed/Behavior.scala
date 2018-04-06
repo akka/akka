@@ -316,7 +316,7 @@ object Behavior {
    */
   def interpretMessage[T](behavior: Behavior[T], ctx: ActorContext[T], msg: T): Behavior[T] = {
     // optimization: duplicated logic with interpretSignal to avoid having to do the extra
-    // message typecheck in the happy case
+    // message type check in the happy case
     behavior match {
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = ext.receive(ctx, msg.asInstanceOf[T])
@@ -324,6 +324,8 @@ object Behavior {
       case s: StoppedBehavior[T] ⇒ s
       case EmptyBehavior         ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case IgnoreBehavior        ⇒ SameBehavior.asInstanceOf[Behavior[T]]
+      case SameBehavior | UnhandledBehavior ⇒
+        throw new IllegalArgumentException(s"cannot interpretMessage with [$behavior] as behavior")
       case _: UntypedPropsBehavior[_] ⇒
         throw new IllegalArgumentException(s"cannot wrap behavior [$behavior] in " +
           "Behaviors.setup, Behaviors.supervise or similar")
@@ -336,7 +338,7 @@ object Behavior {
    */
   def interpretSignal[T](behavior: Behavior[T], ctx: ActorContext[T], signal: Signal): Behavior[T] = {
     // optimization: duplicated logic with interpretMessage to avoid having to do the extra
-    // message typecheck in the happy case
+    // message type check in the happy case
     behavior match {
       case ext: ExtensibleBehavior[T] ⇒
         val possiblyDeferredResult = ext.receiveSignal(ctx, signal)
@@ -344,6 +346,8 @@ object Behavior {
       case s: StoppedBehavior[T] ⇒ s
       case EmptyBehavior         ⇒ UnhandledBehavior.asInstanceOf[Behavior[T]]
       case IgnoreBehavior        ⇒ SameBehavior.asInstanceOf[Behavior[T]]
+      case SameBehavior | UnhandledBehavior ⇒
+        throw new IllegalArgumentException(s"cannot interpretSignal with [$behavior] as behavior")
       case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
       case SameBehavior | UnhandledBehavior ⇒
         throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
