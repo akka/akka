@@ -45,14 +45,42 @@ object DeletionApiTryout {
        // purely side-effect stuff here - feels bad, but alternative would be a declarative
        // way of describing what deletions to perform - which also feels bad
        val snapshotsBeforePreviousSnapshotDeleted: Future[Done] =
-         SnapshotManagement(ctx).deleteSnapshots(persistenceId, SnapshotSelectionCriteria(sequenceNumber - 11))
+         SnapshotManagement(ctx).deleteSnapshotsPriorTo(persistenceId, SnapshotSelectionCriteria.Latest)
        val eventsUpToLastSnapshotDeleted: Future[Done] =
-         JournalManagement(ctx).deleteEvents(persistenceId, sequenceNumber - 11)
+         JournalManagement(ctx).deleteEventsUntil(persistenceId, sequenceNumber - 11)
 
        snapshotsBeforePreviousSnapshotDeleted.zip(eventsUpToLastSnapshotDeleted).onComplete(maybeDone =>
          // another chance to side effect
 
        )
      }
+
+  // alternative, more declarative idea
+  def behavior(entityId: String): Behavior[Command] =
+    PersistentBehaviors.receive[Command, Modified, State](
+      persistenceId = "State-" + entityId,
+      initialState = State.empty,
+      commandHandler,
+      eventHandler
+    ).withSnapshots(SnapshotSettings.every(5).keep(2).deletePreviousEvents())
+    .withSnapshots(SnapshotSettings.snapshotWhen(predicate).keep(1))
+
+
+  def someArbitraryPartOfTheSystem(): Unit = {
+    val listOfPersistenceIds = List("a-one", "a-two", "a-one-two-thre-four")
+
+    // user would have to somehow make sure they don't start the persistent actor/have it running though
+    val journalManagement = JournalManagement(system, journalPluginId)
+    val snapshotManagement = SnapshotManagement(system, snapshotPluginId)
+    listOfPersistenceIds.foreach { id =>
+      journalManagement.deleteEventsUntil(id, Long.MaxValue).flatMap(_ =>
+        snapshotManagement.deleteSnapshotsPriorTo(persistenceId, SnapshotSelectionCriteria(Long.MaxValue))
+      )
+    }
+
+    // maybe access to the management apis should be through a typed Persistence extension
+    // for easier discoverability?
+    Persistence(system).journalManagement(journalPluginId)
+  }
 }
 
