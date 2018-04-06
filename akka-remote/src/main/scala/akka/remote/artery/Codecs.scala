@@ -14,7 +14,7 @@ import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.artery.compress._
 import akka.remote.{ MessageSerializer, OversizedPayloadException, RemoteActorRefProvider, UniqueAddress }
-import akka.serialization.{ Serialization, SerializationExtension, Serializer }
+import akka.serialization.{ Serialization, SerializationExtension, Serializers }
 import akka.stream._
 import akka.stream.stage._
 import akka.util.{ OptionVal, Unsafe }
@@ -673,9 +673,7 @@ private[remote] class DuplicateHandshakeReq(
         if (_serializerId == -1) {
           val serialization = SerializationExtension(system)
           val ser = serialization.serializerFor(classOf[HandshakeReq])
-          _manifest = Serializer
-            .manifestFor(ser, HandshakeReq(inboundContext.localAddress, inboundContext.localAddress.address))
-            .getOrElse("")
+          _manifest = Serializers.manifestFor(ser, HandshakeReq(inboundContext.localAddress, inboundContext.localAddress.address))
           _serializerId = ser.identifier
         }
       }

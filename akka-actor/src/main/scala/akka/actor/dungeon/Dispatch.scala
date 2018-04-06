@@ -11,7 +11,7 @@ import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Unsafe
 import akka.actor._
-import akka.serialization.{ DisabledJavaSerializer, SerializationExtension, Serializer }
+import akka.serialization.{ DisabledJavaSerializer, SerializationExtension, Serializers }
 
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.control.Exception.Catcher
@@ -170,10 +170,8 @@ private[akka] trait Dispatch { this: ActorCell ⇒
       obj // skip check for known "local" messages
     else {
       val bytes = serializer.toBinary(obj)
-
-      Serializer.manifestFor(serializer, obj)
-        .map(m ⇒ s.deserialize(bytes, serializer.identifier, m).get)
-        .getOrElse(s.deserialize(bytes, obj.getClass).get)
+      val ms = Serializers.manifestFor(serializer, obj)
+      s.deserialize(bytes, serializer.identifier, ms).get
     }
   }
 

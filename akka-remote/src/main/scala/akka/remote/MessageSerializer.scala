@@ -44,9 +44,10 @@ private[akka] object MessageSerializer {
     try {
       builder.setMessage(ByteString.copyFrom(serializer.toBinary(message)))
       builder.setSerializerId(serializer.identifier)
-      Serializer.manifestFor(serializer, message)
-        .filter(_.nonEmpty)
-        .foreach(m ⇒ builder.setMessageManifest(ByteString.copyFromUtf8(m)))
+
+      val ms = Serializers.manifestFor(serializer, message)
+      if (ms.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(ms))
+
       builder.build
     } catch {
       case NonFatal(e) ⇒
@@ -60,8 +61,7 @@ private[akka] object MessageSerializer {
     val serializer = serialization.findSerializerFor(message)
 
     headerBuilder setSerializer serializer.identifier
-    val manifest: String = Serializer.manifestFor(serializer, message).getOrElse("")
-    headerBuilder setManifest manifest
+    headerBuilder setManifest Serializers.manifestFor(serializer, message)
     envelope.writeHeader(headerBuilder, outboundEnvelope)
 
     serializer match {

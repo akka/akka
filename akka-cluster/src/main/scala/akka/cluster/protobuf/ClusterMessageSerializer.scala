@@ -10,7 +10,7 @@ import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster._
 import akka.cluster.protobuf.msg.{ ClusterMessages ⇒ cm }
-import akka.serialization.{ BaseSerializer, SerializationExtension, Serializer, SerializerWithStringManifest }
+import akka.serialization._
 import akka.protobuf.{ ByteString, MessageLite }
 
 import scala.annotation.tailrec
@@ -173,7 +173,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
     val serializer = serialization.findSerializerFor(pool)
     builder.setSerializerId(serializer.identifier)
       .setData(ByteString.copyFrom(serializer.toBinary(pool)))
-    val manifest = Serializer.manifestFor(serializer, pool).getOrElse("")
+    val manifest = Serializers.manifestFor(serializer, pool)
     builder.setManifest(manifest)
     builder.build()
   }

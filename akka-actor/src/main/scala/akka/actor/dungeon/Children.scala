@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.collection.immutable
 import akka.actor._
-import akka.serialization.{ SerializationExtension, Serializer }
+import akka.serialization.{ SerializationExtension, Serializers }
 import akka.util.{ Helpers, Unsafe }
 import java.util.Optional
 
@@ -251,9 +251,8 @@ private[akka] trait Children { this: ActorCell ⇒
               val o = arg.asInstanceOf[AnyRef]
               val serializer = ser.findSerializerFor(o)
               val bytes = serializer.toBinary(o)
-              Serializer.manifestFor(serializer, o)
-                .map(ms ⇒ ser.deserialize(bytes, serializer.identifier, ms).get != null)
-                .getOrElse(ser.deserialize(bytes, arg.getClass).get != null)
+              val ms = Serializers.manifestFor(serializer, o)
+              ser.deserialize(bytes, serializer.identifier, ms).get != null
             })
       } catch {
         case NonFatal(e) ⇒ throw new IllegalArgumentException(s"pre-creation serialization check failed at [${cell.self.path}/$name]", e)

@@ -54,9 +54,8 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
     val out = new ByteArrayOutputStream
     writeInt(out, snapshotSerializer.identifier)
 
-    Serializer.manifestFor(snapshotSerializer, snapshot)
-      .filter(_.nonEmpty)
-      .foreach(ms ⇒ out.write(ms.getBytes(UTF_8)))
+    val ms = Serializers.manifestFor(snapshotSerializer, snapshot)
+    if (ms.nonEmpty) out.write(ms.getBytes(UTF_8))
 
     out.toByteArray
   }

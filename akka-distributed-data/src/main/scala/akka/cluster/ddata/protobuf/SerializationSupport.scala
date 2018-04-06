@@ -141,9 +141,8 @@ trait SerializationSupport {
         setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(m)))
         .setSerializerId(msgSerializer.identifier)
 
-      Serializer.manifestFor(msgSerializer, m)
-        .filter(_.nonEmpty)
-        .foreach(ms ⇒ builder.setMessageManifest(ByteString.copyFromUtf8(ms)))
+      val ms = Serializers.manifestFor(msgSerializer, m)
+      if (ms.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(ms))
 
       builder.build()
     }

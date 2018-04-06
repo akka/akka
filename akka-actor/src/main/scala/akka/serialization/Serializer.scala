@@ -76,11 +76,11 @@ trait Serializer {
   final def fromBinary(bytes: Array[Byte], clazz: Class[_]): AnyRef = fromBinary(bytes, Option(clazz))
 }
 
-object Serializer {
+object Serializers {
 
-  def manifestFor(s: Serializer, message: AnyRef): Option[String] = s match {
-    case s2: SerializerWithStringManifest ⇒ Some(s2.manifest(message))
-    case _                                ⇒ if (s.includeManifest) Some(message.getClass.getName) else None
+  def manifestFor(s: Serializer, message: AnyRef): String = s match {
+    case s2: SerializerWithStringManifest ⇒ s2.manifest(message)
+    case _                                ⇒ if (s.includeManifest) message.getClass.getName else ""
   }
 
 }

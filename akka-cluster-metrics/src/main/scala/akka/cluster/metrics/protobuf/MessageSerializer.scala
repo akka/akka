@@ -11,7 +11,7 @@ import java.{ lang ⇒ jl }
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages ⇒ cm }
 import akka.cluster.metrics._
-import akka.serialization.{ BaseSerializer, SerializationExtension, Serializer, SerializerWithStringManifest }
+import akka.serialization.{ BaseSerializer, SerializationExtension, Serializers, SerializerWithStringManifest }
 import akka.util.ClassLoaderObjectInputStream
 import akka.protobuf.{ ByteString, MessageLite }
 
@@ -122,7 +122,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     builder.setData(ByteString.copyFrom(serializer.toBinary(selector)))
       .setSerializerId(serializer.identifier)
 
-    val manifest = Serializer.manifestFor(serializer, selector).getOrElse("")
+    val manifest = Serializers.manifestFor(serializer, selector)
     builder.setManifest(manifest)
 
     builder.build()

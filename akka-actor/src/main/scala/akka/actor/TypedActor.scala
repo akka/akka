@@ -15,12 +15,13 @@ import akka.japi.{ Creator, Option ⇒ JOption }
 import akka.japi.Util.{ immutableSeq, immutableSingletonSeq }
 import akka.util.Timeout
 import akka.util.Reflect.instantiator
-import akka.serialization.{ JavaSerializer, SerializationExtension, Serializer }
+import akka.serialization.{ JavaSerializer, SerializationExtension, Serializers }
 import akka.dispatch._
 import java.util.concurrent.atomic.{ AtomicReference ⇒ AtomVar }
 import java.util.concurrent.TimeoutException
 import java.io.ObjectStreamException
-import java.lang.reflect.{ InvocationTargetException, Method, InvocationHandler, Proxy }
+import java.lang.reflect.{ InvocationHandler, InvocationTargetException, Method, Proxy }
+
 import akka.pattern.AskTimeoutException
 
 /**
@@ -155,7 +156,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         for (i ← 0 until ps.length) {
           val p = ps(i)
           val s = serialization.findSerializerFor(p)
-          val m = Serializer.manifestFor(s, p).getOrElse("")
+          val m = Serializers.manifestFor(s, p)
           serializedParameters(i) = (s.identifier, m, s toBinary parameters(i)) //Mutable for the sake of sanity
         }
 
