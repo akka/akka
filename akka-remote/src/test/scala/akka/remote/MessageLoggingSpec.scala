@@ -52,8 +52,9 @@ class ClassicMessageLoggingSpec extends MessageLoggingSpec(config(false))
 
 abstract class MessageLoggingSpec(config: Config) extends AkkaSpec(config) with ImplicitSender {
 
-  val remoteSystem = ActorSystem("remote-sys", config)
+  val remoteSystem = ActorSystem("remote-sys", ConfigFactory.load(config))
   val remoteAddress = remoteSystem.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+
   "Message logging" must {
     "not be on if debug logging not enabled" in {
       remoteSystem.actorOf(Props[BadActor], "bad")
