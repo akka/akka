@@ -132,8 +132,11 @@ private[stream] object InputStreamSinkStage {
   @scala.throws(classOf[IOException])
   override def read(): Int = {
     val a = new Array[Byte](1)
-    if (read(a, 0, 1) != -1) a(0) & 0xff
-    else -1
+    read(a, 0, 1) match {
+      case 1   ⇒ a(0) & 0xff
+      case -1  ⇒ -1
+      case len ⇒ throw new IllegalStateException(s"Invalid length [$len]")
+    }
   }
 
   @scala.throws(classOf[IOException])
