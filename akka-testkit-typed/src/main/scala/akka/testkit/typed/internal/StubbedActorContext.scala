@@ -7,12 +7,14 @@ package akka.testkit.typed.internal
 import akka.actor.typed._
 import akka.actor.typed.internal._
 import akka.actor.typed.internal.adapter.AbstractLogger
-import akka.actor.{ ActorPath, InvalidMessageException }
+import akka.actor.{ ActorPath, InvalidMessageException, Address, RootActorPath }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.util.{ Helpers, OptionVal }
 import akka.{ actor ⇒ untyped }
+
+import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.TreeMap
@@ -27,9 +29,8 @@ import scala.concurrent.duration.FiniteDuration
  */
 @InternalApi
 private[akka] final class FunctionRef[-T](
-  _path:      ActorPath,
-  send:       (T, FunctionRef[T]) ⇒ Unit,
-  _terminate: FunctionRef[T] ⇒ Unit)
+  override val path: ActorPath,
+  send:              (T, FunctionRef[T]) ⇒ Unit)
   extends ActorRef[T] with ActorRefImpl[T] {
 
   override def tell(msg: T): Unit = {
@@ -37,7 +38,6 @@ private[akka] final class FunctionRef[-T](
     send(msg, this)
   }
 
-  override def path = _path
   override def sendSystem(signal: SystemMessage): Unit = {}
   override def isLocal = true
 }
@@ -85,7 +85,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
   }
 }
 
-private[akka] final class StubbedLoggerWithMdc(actual: StubbedLogger) extends AbstractLogger {
+@InternalApi private[akka] final class StubbedLoggerWithMdc(actual: StubbedLogger) extends AbstractLogger {
   override def isErrorEnabled: Boolean = actual.isErrorEnabled
   override def isWarningEnabled: Boolean = actual.isWarningEnabled
   override def isInfoEnabled: Boolean = actual.isInfoEnabled
@@ -130,12 +130,16 @@ private[akka] final class StubbedLoggerWithMdc(actual: StubbedLogger) extends Ab
  * created child Actors by a synchronous Inbox (see `Inbox.sync`).
  */
 @InternalApi private[akka] class StubbedActorContext[T](
-  val name: String) extends ActorContextImpl[T] {
+  val path: ActorPath) extends ActorContextImpl[T] {
+
+  def this(name: String) = {
+    this(RootActorPath(Address("akka.actor.typed.inbox", "anonymous")) / name withUid ThreadLocalRandom.current().nextInt())
+  }
 
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] val selfInbox = new TestInboxImpl[T](name)
+  @InternalApi private[akka] val selfInbox = new TestInboxImpl[T](path)
 
   override val self = selfInbox.ref
   override val system = new ActorSystemStub("StubbedActorContext")
@@ -149,7 +153,7 @@ private[akka] final class StubbedLoggerWithMdc(actual: StubbedLogger) extends Ab
   override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ref)
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
-    val i = new TestInboxImpl[U](childName.next())
+    val i = new TestInboxImpl[U](path / childName.next())
     _children += i.ref.path.name → i
     i.ref
   }
@@ -158,7 +162,7 @@ private[akka] final class StubbedLoggerWithMdc(actual: StubbedLogger) extends Ab
       case Some(_) ⇒ throw untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
         // FIXME correct child path for the Inbox ref
-        val i = new TestInboxImpl[U](name)
+        val i = new TestInboxImpl[U](path / name)
         _children += name → i
         i.ref
     }
@@ -194,13 +198,12 @@ private[akka] final class StubbedLoggerWithMdc(actual: StubbedLogger) extends Ab
   @InternalApi private[akka] def internalSpawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
 
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
-    val i = new TestInboxImpl[U](n)
+    val i = new TestInboxImpl[U](path / n)
     _children += i.ref.path.name → i
 
     new FunctionRef[U](
       self.path / i.ref.path.name,
-      (msg, _) ⇒ { val m = f(msg); if (m != null) { selfInbox.ref ! m; i.ref ! msg } },
-      (self) ⇒ selfInbox.ref.sorry.sendSystem(DeathWatchNotification(self, null)))
+      (msg, _) ⇒ { val m = f(msg); if (m != null) { selfInbox.ref ! m; i.ref ! msg } })
   }
 
   /**

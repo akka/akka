@@ -4,16 +4,26 @@
 
 package akka.testkit.typed.javadsl
 
+import akka.actor.{ Address, RootActorPath }
+
 import akka.actor.typed.ActorRef
 import akka.annotation.DoNotInherit
 import akka.testkit.typed.internal.TestInboxImpl
+
+import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
 object TestInbox {
-  def create[T](name: String): TestInbox[T] = new TestInboxImpl(name)
-  def create[T](): TestInbox[T] = new TestInboxImpl[T]("inbox")
+  def create[T](name: String): TestInbox[T] = {
+    val uid = ThreadLocalRandom.current().nextInt()
+    new TestInboxImpl(RootActorPath(Address("akka.actor.typed.inbox", "anonymous")) / name withUid (uid))
+  }
+  def create[T](): TestInbox[T] = {
+    val uid = ThreadLocalRandom.current().nextInt()
+    new TestInboxImpl(RootActorPath(Address("akka.actor.typed.inbox", "anonymous")) / "inbox" withUid (uid))
+  }
 }
 
 /**

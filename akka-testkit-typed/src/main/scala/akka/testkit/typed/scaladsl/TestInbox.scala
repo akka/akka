@@ -4,15 +4,21 @@
 
 package akka.testkit.typed.scaladsl
 
+import akka.actor.{ Address, RootActorPath }
 import akka.actor.typed.ActorRef
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.testkit.typed.internal.TestInboxImpl
+
+import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
 
 @ApiMayChange
 object TestInbox {
-  def apply[T](name: String = "inbox"): TestInbox[T] = new TestInboxImpl(name)
+  def apply[T](name: String = "inbox"): TestInbox[T] = {
+    val uid = ThreadLocalRandom.current().nextInt()
+    new TestInboxImpl(RootActorPath(Address("akka.actor.typed.inbox", "anonymous")).child(name).withUid(uid))
+  }
 }
 
 /**

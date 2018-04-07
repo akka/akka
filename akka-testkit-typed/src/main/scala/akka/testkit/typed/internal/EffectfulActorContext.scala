@@ -6,7 +6,7 @@ package akka.testkit.typed.internal
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
-import akka.actor.Cancellable
+import akka.actor.{ Cancellable, ActorPath }
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.annotation.InternalApi
 import akka.testkit.typed.Effect
@@ -17,7 +17,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class EffectfulActorContext[T](name: String) extends StubbedActorContext[T](name) {
+@InternalApi private[akka] final class EffectfulActorContext[T](path: ActorPath) extends StubbedActorContext[T](path) {
 
   private[akka] val effectQueue = new ConcurrentLinkedQueue[Effect]
 

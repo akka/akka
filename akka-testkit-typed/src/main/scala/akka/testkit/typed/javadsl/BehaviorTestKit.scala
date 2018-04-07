@@ -4,22 +4,27 @@
 
 package akka.testkit.typed.javadsl
 
+import akka.actor.{ Address, RootActorPath }
 import akka.actor.typed.{ Behavior, Signal }
 import akka.annotation.DoNotInherit
 import akka.testkit.typed.Effect
 import akka.testkit.typed.internal.BehaviorTestKitImpl
 
+import java.util.concurrent.ThreadLocalRandom
+
 object BehaviorTestKit {
   /**
    * JAVA API
    */
-  def create[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] =
-    new BehaviorTestKitImpl[T](name, initialBehavior)
+  def create[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
+    val uid = ThreadLocalRandom.current().nextInt()
+    new BehaviorTestKitImpl(RootActorPath(Address("akka.actor.typed.inbox", "anonymous")) / name withUid (uid), initialBehavior)
+  }
   /**
    * JAVA API
    */
   def create[T](initialBehavior: Behavior[T]): BehaviorTestKit[T] =
-    new BehaviorTestKitImpl[T]("testkit", initialBehavior)
+    create(initialBehavior, "testkit")
 
 }
 
@@ -72,7 +77,7 @@ abstract class BehaviorTestKit[T] {
    * Asserts that the oldest effect is an instance of of class T. Consumes and returns the concrete effect for
    * further direct assertions.
    */
-  def expectEffectClass[T <: Effect](effectClass: Class[T]): T
+  def expectEffectClass[U <: Effect](effectClass: Class[U]): U
 
   /**
    * The current behavior, can change any time `run` is called
