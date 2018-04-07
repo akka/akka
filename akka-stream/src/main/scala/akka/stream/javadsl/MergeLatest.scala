@@ -19,8 +19,6 @@ import scala.reflect.ClassTag
  *
  * '''Emits when''' element is available from some input and each input emits at least one element from stream start
  *
- * '''Backpressures when''' downstream backpressures
- *
  * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
  *
  * '''Cancels when''' downstream cancels

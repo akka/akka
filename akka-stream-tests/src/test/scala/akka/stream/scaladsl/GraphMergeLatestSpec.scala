@@ -37,9 +37,9 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val (in1, in2, in3) = RunnableGraph.fromGraph(GraphDSL.create(up1, up2, up3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
         val m = b.add(MergeLatest[Int](3))
 
-        s1 ~> m.in(0)
-        s2 ~> m.in(1)
-        s3 ~> m.in(2)
+        s1 ~> m
+        s2 ~> m
+        s3 ~> m
         m.out ~> Sink.fromSubscriber(probe)
         ClosedShape
       }).run()
@@ -69,9 +69,9 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val (in1, in2, in3) = RunnableGraph.fromGraph(GraphDSL.create(up1, up2, up3)((_, _, _)) { implicit b ⇒ (s1, s2, s3) ⇒
         val m = b.add(MergeLatest[Int](3))
 
-        s1 ~> m.in(0)
-        s2 ~> m.in(1)
-        s3 ~> m.in(2)
+        s1 ~> m
+        s2 ~> m
+        s3 ~> m
         m.out ~> Sink.fromSubscriber(probe)
         ClosedShape
       }).run()
@@ -115,7 +115,7 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
         val merge = b.add(MergeLatest[Int](1))
         val source = b.add(Source(1 to 3))
 
-        source ~> merge.in(0)
+        source ~> merge
         SourceShape(merge.out)
       }).runFold(Seq[List[Int]]())(_ :+ _)
 
@@ -130,8 +130,8 @@ class GraphMergeLatestSpec extends TwoStreamsSetup {
       val (in1, in2) = RunnableGraph.fromGraph(GraphDSL.create(up1, up2)((_, _)) { implicit b ⇒ (s1, s2) ⇒
         val m = b.add(MergeLatest[Int](2, true))
 
-        s1 ~> m.in(0)
-        s2 ~> m.in(1)
+        s1 ~> m
+        s2 ~> m
         m.out ~> Sink.fromSubscriber(probe)
         ClosedShape
       }).run()

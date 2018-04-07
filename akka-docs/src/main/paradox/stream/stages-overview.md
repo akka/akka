@@ -1766,6 +1766,19 @@ sources has elements ready the relative priorities for those sources are used to
 
 ---------------------------------------------------------------
 
+### mergeLatest
+
+MergeLatest joins elements from N input streams into stream of lists of size N.
+i-th element in list is the latest emitted element from i-th input stream.
+MergeLatest emits list for each element emitted from some input stream,
+but only after each stream emitted at least one element
+
+**emits** when element is available from some input and each input emits at least one element from stream start
+
+**completes** all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+
+---------------------------------------------------------------
+
 ### zip
 
 Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*] and passes the @scala[tuples] @java[pairs] downstream.
