@@ -50,4 +50,6 @@ private[akka] final class TestInboxImpl[T](path: ActorPath)
 
   def hasMessages: Boolean = q.peek() != null
 
+  @InternalApi private[akka] def as[U]: TestInboxImpl[U] = this.asInstanceOf[TestInboxImpl[U]]
+
 }

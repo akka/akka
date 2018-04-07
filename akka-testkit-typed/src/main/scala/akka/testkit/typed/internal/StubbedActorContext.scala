@@ -7,14 +7,15 @@ package akka.testkit.typed.internal
 import akka.actor.typed._
 import akka.actor.typed.internal._
 import akka.actor.typed.internal.adapter.AbstractLogger
-import akka.actor.{ ActorPath, InvalidMessageException, Address, RootActorPath }
+import akka.testkit.typed.scaladsl.TestInbox
+import akka.actor.{ ActorPath, InvalidMessageException }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.util.{ Helpers, OptionVal }
 import akka.{ actor ⇒ untyped }
 
-import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom.{ current ⇒ rnd }
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.TreeMap
@@ -133,7 +134,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
   val path: ActorPath) extends ActorContextImpl[T] {
 
   def this(name: String) = {
-    this(RootActorPath(Address("akka.actor.typed.inbox", "anonymous")) / name withUid ThreadLocalRandom.current().nextInt())
+    this(TestInbox.address / name withUid rnd().nextInt())
   }
 
   /**
@@ -143,28 +144,27 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
 
   override val self = selfInbox.ref
   override val system = new ActorSystemStub("StubbedActorContext")
-  private var _children = TreeMap.empty[String, TestInboxImpl[_]]
+  private var _children = TreeMap.empty[String, BehaviorTestKitImpl[_]]
   private val childName = Iterator from 0 map (Helpers.base64(_))
   private val loggingAdapter = new StubbedLogger
 
-  override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.ref)
+  override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.ctx.self)
   def childrenNames: Iterable[String] = _children.keys
 
-  override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ref)
+  override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ctx.self)
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
-    val i = new TestInboxImpl[U](path / childName.next())
-    _children += i.ref.path.name → i
-    i.ref
+    val btk = new BehaviorTestKitImpl[U](path / childName.next() withUid rnd().nextInt(), behavior)
+    _children += btk.ctx.self.path.name → btk
+    btk.ctx.self
   }
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] =
     _children get name match {
       case Some(_) ⇒ throw untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
-        // FIXME correct child path for the Inbox ref
-        val i = new TestInboxImpl[U](path / name)
-        _children += name → i
-        i.ref
+        val btk = new BehaviorTestKitImpl[U](path / name withUid rnd().nextInt(), behavior)
+        _children += name → btk
+        btk.ctx.self
     }
 
   /**
@@ -198,12 +198,13 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
   @InternalApi private[akka] def internalSpawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
 
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
-    val i = new TestInboxImpl[U](path / n)
-    _children += i.ref.path.name → i
+    val p = path / n withUid rnd().nextInt()
+    val i = new BehaviorTestKitImpl[U](p, Behavior.ignore)
+    _children += p.name → i
 
     new FunctionRef[U](
-      self.path / i.ref.path.name,
-      (msg, _) ⇒ { val m = f(msg); if (m != null) { selfInbox.ref ! m; i.ref ! msg } })
+      p,
+      (msg, _) ⇒ { val m = f(msg); if (m != null) { selfInbox.ref ! m; i.selfInbox.ref ! msg } })
   }
 
   /**
@@ -211,15 +212,25 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
    * by one of the spawn methods earlier.
    */
   def childInbox[U](child: ActorRef[U]): TestInboxImpl[U] = {
-    val inbox = _children(child.path.name).asInstanceOf[TestInboxImpl[U]]
-    if (inbox.ref != child) throw new IllegalArgumentException(s"$child is not a child of $this")
-    inbox
+    val btk = _children(child.path.name)
+    if (btk.ctx.self != child) throw new IllegalArgumentException(s"$child is not a child of $this")
+    btk.ctx.selfInbox.as[U]
+  }
+
+  /**
+   * Retrieve the BehaviorTestKit for the given child actor. The passed ActorRef must be one that was returned
+   * by one of the spawn methods earlier.
+   */
+  def childTestKit[U](child: ActorRef[U]): BehaviorTestKitImpl[U] = {
+    val btk = _children(child.path.name)
+    if (btk.ctx.self != child) throw new IllegalArgumentException(s"$child is not a child of $this")
+    btk.as
   }
 
   /**
    * Retrieve the inbox representing the child actor with the given name.
    */
-  def childInbox[U](name: String): Option[TestInboxImpl[U]] = _children.get(name).map(_.asInstanceOf[TestInboxImpl[U]])
+  def childInbox[U](name: String): Option[TestInboxImpl[U]] = _children.get(name).map(_.ctx.selfInbox.as[U])
 
   /**
    * Remove the given inbox from the list of children, for example after
