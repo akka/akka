@@ -4,9 +4,10 @@
 
 package akka.testkit.typed.scaladsl
 
+import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ Behavior, Props }
-import akka.testkit.typed.scaladsl.Effects.{ Spawned, SpawnedAdapter, SpawnedAnonymous, Watched, Unwatched }
+import akka.actor.typed.{ ActorRef, Behavior, Props }
+import akka.testkit.typed.scaladsl.Effects.{ Spawned, SpawnedAdapter, SpawnedAnonymous, SpawnedAnonymousAdapter, Watched, Unwatched }
 import akka.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Father }
 import akka.testkit.typed.scaladsl.BehaviorTestKitSpec.Father._
 import org.scalatest.{ Matchers, WordSpec }
@@ -26,6 +27,8 @@ object BehaviorTestKitSpec {
     case class SpawnAdapterWithName(name: String) extends Command
     case class SpawnAndWatchUnwatch(name: String) extends Command
     case class SpawnAndWatchWith(name: String) extends Command
+    case class SpawnSession(replyTo: ActorRef[ActorRef[String]], sessionHandler: ActorRef[String]) extends Command
+    case class KillSession(session: ActorRef[String], replyTo: ActorRef[Done]) extends Command
 
     val init: Behavior[Command] = Behaviors.receive[Command] { (ctx, msg) ⇒
       msg match {
@@ -67,6 +70,17 @@ object BehaviorTestKitSpec {
         case m @ SpawnAndWatchWith(name) ⇒
           val c = ctx.spawn(Child.initial, name)
           ctx.watchWith(c, m)
+          Behaviors.same
+        case SpawnSession(replyTo, sessionHandler) ⇒
+          val session = ctx.spawnAnonymous[String](Behaviors.receiveMessage { msg ⇒
+            sessionHandler ! msg
+            Behavior.same
+          })
+          replyTo ! session
+          Behaviors.same
+        case KillSession(session, replyTo) ⇒
+          ctx.stop(session)
+          replyTo ! Done
           Behaviors.same
       }
     }
@@ -166,14 +180,14 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnAdapter)
       val effects = testkit.retrieveAllEffects()
-      effects shouldBe Seq(SpawnedAdapter)
+      effects shouldBe Seq(SpawnedAnonymousAdapter())
     }
 
     "create adapters with name and record effects" in {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnAdapterWithName("adapter"))
       val effects = testkit.retrieveAllEffects()
-      effects shouldBe Seq(SpawnedAdapter)
+      effects shouldBe Seq(SpawnedAdapter("adapter"))
     }
   }
 
@@ -206,6 +220,30 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
         Spawned(Child.initial, "hello", Props.empty),
         Watched(child)
       ))
+    }
+  }
+
+  "BehaviorTestKit’s child actor support" must {
+    "allow retrieving and killing" in {
+      val testkit = BehaviorTestKit(Father.init)
+      val i = TestInbox[ActorRef[String]]()
+      val h = TestInbox[String]()
+      testkit.run(SpawnSession(i.ref, h.ref))
+
+      val sessionRef = i.receiveMessage()
+      i.hasMessages shouldBe false
+      val (s: SpawnedAnonymous[_]) :: Nil = testkit.retrieveAllEffects()
+      // must be able to get the created ref, even without explicit reply
+      s.ref shouldBe sessionRef
+
+      val session = testkit.childTestKit(sessionRef)
+      session.run("hello")
+      h.receiveAll() shouldBe Seq("hello")
+
+      val d = TestInbox[Done]()
+      testkit.run(KillSession(sessionRef, d.ref))
+
+      d.receiveAll shouldBe Seq(Done)
     }
   }
 }
