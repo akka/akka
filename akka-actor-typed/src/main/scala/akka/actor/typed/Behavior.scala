@@ -325,7 +325,7 @@ object Behavior {
 
   private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] = {
     behavior match {
-      case null ⇒ throw new InvalidMessageException("[null] is not an allowed message")
+      case null ⇒ throw new InvalidMessageException("[null] is not an allowed behavior")
       case SameBehavior | UnhandledBehavior ⇒
         throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
       case _: UntypedPropsBehavior[_] ⇒

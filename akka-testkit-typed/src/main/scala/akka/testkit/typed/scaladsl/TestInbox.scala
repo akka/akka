@@ -17,8 +17,10 @@ import scala.collection.immutable
 object TestInbox {
   def apply[T](name: String = "inbox"): TestInbox[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
-    new TestInboxImpl(RootActorPath(Address("akka.actor.typed.inbox", "anonymous")).child(name).withUid(uid))
+    new TestInboxImpl(address / name withUid uid)
   }
+
+  private[akka] val address = RootActorPath(Address("akka.actor.typed.inbox", "anonymous"))
 }
 
 /**

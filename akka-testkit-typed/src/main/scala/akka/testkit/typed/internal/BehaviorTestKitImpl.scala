@@ -8,7 +8,7 @@ import java.util
 
 import akka.actor.ActorPath
 
-import akka.actor.typed.{ Behavior, PostStop, Signal }
+import akka.actor.typed.{ Behavior, PostStop, Signal, ActorRef }
 import akka.annotation.InternalApi
 import akka.testkit.typed.Effect
 import akka.testkit.typed.scaladsl.Effects._
@@ -31,6 +31,8 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
   // really this should be private, make so when we port out tests that need it
   private[akka] val ctx = new EffectfulActorContext[T](_path)
 
+  private[akka] def as[U]: BehaviorTestKitImpl[U] = this.asInstanceOf[BehaviorTestKitImpl[U]]
+
   private var currentUncanonical = _initialBehavior
   private var current = Behavior.validateAsInitial(Behavior.start(_initialBehavior, ctx))
 
@@ -47,6 +49,8 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
     assert(inbox.isDefined, s"Child not created: $name. Children created: [${ctx.childrenNames.mkString(",")}]")
     inbox.get
   }
+
+  override def childTestKit[U](child: ActorRef[U]): BehaviorTestKitImpl[U] = ctx.childTestKit(child)
 
   override def selfInbox(): TestInboxImpl[T] = ctx.selfInbox
 
