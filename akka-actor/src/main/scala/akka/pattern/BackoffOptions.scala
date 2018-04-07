@@ -132,7 +132,7 @@ object Backoff {
     minBackoff:   java.time.Duration,
     maxBackoff:   java.time.Duration,
     randomFactor: Double): BackoffOptions =
-    BackoffOptionsImpl(RestartImpliesFailure, childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor)
+    onFailure(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor)
 
   /**
    * Back-off options for creating a back-off supervisor actor that expects a child actor to stop on failure.
@@ -254,7 +254,7 @@ object Backoff {
     minBackoff:   java.time.Duration,
     maxBackoff:   java.time.Duration,
     randomFactor: Double): BackoffOptions =
-    BackoffOptionsImpl(StopImpliesFailure, childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor)
+    onStop(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor)
 
 }
 

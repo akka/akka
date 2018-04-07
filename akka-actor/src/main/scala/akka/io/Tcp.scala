@@ -687,7 +687,7 @@ object TcpMessage {
     localAddress:  InetSocketAddress,
     options:       JIterable[SocketOption],
     timeout:       java.time.Duration,
-    pullMode:      Boolean): Command = Connect(remoteAddress, Option(localAddress), options, Option(timeout.asScala), pullMode)
+    pullMode:      Boolean): Command = connect(remoteAddress, localAddress, options, timeout.asScala, pullMode)
 
   /**
    * Connect to the given `remoteAddress` without binding to a local address and without

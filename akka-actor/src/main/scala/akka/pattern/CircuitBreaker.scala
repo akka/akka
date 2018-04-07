@@ -134,7 +134,7 @@ class CircuitBreaker(
   }
 
   def this(executor: ExecutionContext, scheduler: Scheduler, maxFailures: Int, callTimeout: java.time.Duration, resetTimeout: java.time.Duration) = {
-    this(scheduler, maxFailures, callTimeout.asScala, resetTimeout.asScala, 36500.days, 1.0)(executor)
+    this(executor, scheduler, maxFailures, callTimeout.asScala, resetTimeout.asScala)
   }
 
   // add the old constructor to make it binary compatible
@@ -159,7 +159,7 @@ class CircuitBreaker(
    * @param maxResetTimeout the upper bound of resetTimeout
    */
   def withExponentialBackoff(maxResetTimeout: java.time.Duration): CircuitBreaker = {
-    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout, maxResetTimeout.asScala, 2.0)(executor)
+    withExponentialBackoff(maxResetTimeout.asScala)
   }
 
   /**

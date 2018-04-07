@@ -72,7 +72,7 @@ object BackoffSupervisor {
     minBackoff:   java.time.Duration,
     maxBackoff:   java.time.Duration,
     randomFactor: Double): Props = {
-    propsWithSupervisorStrategy(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, SupervisorStrategy.defaultStrategy)
+    props(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor)
   }
 
   /**
