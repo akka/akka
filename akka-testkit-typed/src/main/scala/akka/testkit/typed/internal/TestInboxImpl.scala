@@ -4,10 +4,10 @@
 
 package akka.testkit.typed.internal
 
-import java.util.concurrent.{ ConcurrentLinkedQueue, ThreadLocalRandom }
+import java.util.concurrent.ConcurrentLinkedQueue
 
 import akka.actor.typed.ActorRef
-import akka.actor.{ Address, RootActorPath }
+import akka.actor.ActorPath
 import akka.annotation.InternalApi
 
 import scala.annotation.tailrec
@@ -17,21 +17,17 @@ import scala.collection.immutable
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class TestInboxImpl[T](name: String)
+private[akka] final class TestInboxImpl[T](path: ActorPath)
   extends akka.testkit.typed.javadsl.TestInbox[T]
   with akka.testkit.typed.scaladsl.TestInbox[T] {
 
   private val q = new ConcurrentLinkedQueue[T]
 
-  override val ref: ActorRef[T] = {
-    val uid = ThreadLocalRandom.current().nextInt()
-    val path = RootActorPath(Address("akka.actor.typed.inbox", "anonymous")).child(name).withUid(uid)
-    new FunctionRef[T](path, (msg, self) ⇒ q.add(msg), (self) ⇒ ())
-  }
+  override val ref: ActorRef[T] = new FunctionRef[T](path, (msg, self) ⇒ q.add(msg))
   override def getRef() = ref
 
   override def receiveMessage(): T = q.poll() match {
-    case null ⇒ throw new NoSuchElementException(s"polling on an empty inbox: $name")
+    case null ⇒ throw new NoSuchElementException(s"polling on an empty inbox: $path")
     case x    ⇒ x
   }
 
