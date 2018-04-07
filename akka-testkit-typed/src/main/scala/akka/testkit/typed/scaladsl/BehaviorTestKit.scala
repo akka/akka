@@ -4,17 +4,22 @@
 
 package akka.testkit.typed.scaladsl
 
+import akka.actor.{ Address, RootActorPath }
 import akka.actor.typed.{ Behavior, Signal }
 import akka.annotation.DoNotInherit
 import akka.testkit.typed.Effect
 import akka.testkit.typed.internal.BehaviorTestKitImpl
 
+import java.util.concurrent.ThreadLocalRandom
+
 import scala.collection.immutable
 import scala.reflect.ClassTag
 
 object BehaviorTestKit {
-  def apply[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] =
-    new BehaviorTestKitImpl[T](name, initialBehavior)
+  def apply[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
+    val uid = ThreadLocalRandom.current().nextInt()
+    new BehaviorTestKitImpl(RootActorPath(Address("akka.actor.typed.inbox", "anonymous")) / name withUid (uid), initialBehavior)
+  }
   def apply[T](initialBehavior: Behavior[T]): BehaviorTestKit[T] =
     apply(initialBehavior, "testkit")
 

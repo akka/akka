@@ -6,6 +6,8 @@ package akka.testkit.typed.internal
 
 import java.util
 
+import akka.actor.ActorPath
+
 import akka.actor.typed.{ Behavior, PostStop, Signal }
 import akka.annotation.InternalApi
 import akka.testkit.typed.Effect
@@ -22,12 +24,12 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior: Behavior[T])
+private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehavior: Behavior[T])
   extends akka.testkit.typed.javadsl.BehaviorTestKit[T]
   with akka.testkit.typed.scaladsl.BehaviorTestKit[T] {
 
   // really this should be private, make so when we port out tests that need it
-  private[akka] val ctx = new EffectfulActorContext[T](_name)
+  private[akka] val ctx = new EffectfulActorContext[T](_path)
 
   private var currentUncanonical = _initialBehavior
   private var current = Behavior.validateAsInitial(Behavior.start(_initialBehavior, ctx))
