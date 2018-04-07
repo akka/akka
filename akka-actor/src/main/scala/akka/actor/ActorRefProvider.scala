@@ -689,14 +689,16 @@ private[akka] class LocalActorRefProvider private[akka] (
   def resolveActorRef(path: String): ActorRef = path match {
     case ActorPathExtractor(address, elems) if address == rootPath.address ⇒ resolveActorRef(rootGuardian, elems)
     case _ ⇒
-      log.debug("resolve of unknown path [{}] failed", path)
+      log.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
       deadLetters
   }
 
   def resolveActorRef(path: ActorPath): ActorRef = {
     if (path.root == rootPath) resolveActorRef(rootGuardian, path.elements)
     else {
-      log.debug("resolve of foreign ActorPath [{}] failed", path)
+      log.debug(
+        "Resolve (deserialization) of foreign path [{}] doesn't match root path [{}], using deadLetters.",
+        path, rootPath)
       deadLetters
     }
   }
@@ -706,11 +708,15 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   private[akka] def resolveActorRef(ref: InternalActorRef, pathElements: Iterable[String]): InternalActorRef =
     if (pathElements.isEmpty) {
-      log.debug("resolve of empty path sequence fails (per definition)")
+      log.debug("Resolve (deserialization) of empty path doesn't match an active actor, using deadLetters.")
       deadLetters
     } else ref.getChild(pathElements.iterator) match {
       case Nobody ⇒
-        log.debug("resolve of path sequence [/{}] failed", pathElements.mkString("/"))
+        if (log.isDebugEnabled)
+          log.debug(
+            "Resolve (deserialization) of path [{}] doesn't match an active actor. " +
+              "It has probably been stopped, using deadLetters.",
+            pathElements.mkString("/"))
         new EmptyLocalActorRef(system.provider, ref.path / pathElements, eventStream)
       case x ⇒ x
     }
