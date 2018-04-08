@@ -256,4 +256,4 @@ To get from this guide to a complete application you would likely need to provid
 
  * [Akka HTTP](https://doc.akka.io/docs/akka-http/current/introduction.html) is a HTTP server and client library, making it possible to publish and consume HTTP endpoints
  * [Play Framework](https://www.playframework.com) is a full fledged web framework that is built on top of Akka HTTP, it integrates well with Akka and can be used to create a complete modern web UI 
- * [Lagom](https://www.lagomframework.com) is an opinionated micro service framework built on top of Akka, encoding many best practices around Akka 
+ * [Lagom](https://www.lagomframework.com) is an opinionated microservice framework built on top of Akka, encoding many best practices around Akka and Play 

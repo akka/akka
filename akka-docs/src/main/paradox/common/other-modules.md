@@ -33,4 +33,4 @@ a HTML template language etc. It is built on top of Akka HTTP, and integrates we
 
 ### [Lagom](https://www.lagomframework.com)
 
-Lagom is a micro service framework which strives to be opinionated and encode best practices for building micro service systems with Akka and Play.
+Lagom is a microservice framework which strives to be opinionated and encode best practices for building microservice systems with Akka and Play.

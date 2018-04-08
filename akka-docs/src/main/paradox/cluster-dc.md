@@ -50,8 +50,8 @@ to use @ref[Distributed Data](distributed-data.md) across the separate clusters.
 We often recommend implementing a micro-service as one Akka Cluster. The external API of the
 service would be HTTP or a message broker, and not Akka Remoting or Cluster (see additional discussion
  in the Lagom Framework docs: 
-@scala[[Internal and External Commmunication](https://www.lagomframework.com/documentation/latest/scala/InternalAndExternalCommunication.html)]
-@java[[Internal and External Communication](https://www.lagomframework.com/documentation/latest/java/InternalAndExternalCommunication.html)]), 
+@scala[[Internal and External Commmunication](https://www.lagomframework.com/documentation/current/scala/InternalAndExternalCommunication.html)]
+@java[[Internal and External Communication](https://www.lagomframework.com/documentation/current/java/InternalAndExternalCommunication.html)]), 
 but the internal communication within the service that is running on several nodes would use ordinary actor 
 messaging or the tools based on Akka Cluster. When deploying this service to multiple data
 centers it would be inconvenient if the internal communication could not use ordinary actor 
