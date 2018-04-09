@@ -12,18 +12,18 @@ import scala.reflect.ClassTag
 import scala.language.higherKinds
 
 /**
-  * MergeLatest joins elements from N input streams into stream of lists of size N.
-  * i-th element in list is the latest emitted element from i-th input stream.
-  * MergeLatest emits list for each element emitted from some input stream,
-  * but only after each stream emitted at least one element
-  *
-  * '''Emits when''' element is available from some input and each input emits at least one element from stream start
-  *
-  * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
-  *
-  * '''Cancels when''' downstream cancels
-  *
-  */
+ * MergeLatest joins elements from N input streams into stream of lists of size N.
+ * i-th element in list is the latest emitted element from i-th input stream.
+ * MergeLatest emits list for each element emitted from some input stream,
+ * but only after each stream emitted at least one element
+ *
+ * '''Emits when''' element is available from some input and each input emits at least one element from stream start
+ *
+ * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+ *
+ * '''Cancels when''' downstream cancels
+ *
+ */
 object MergeLatest {
   /**
    * Create a new `MergeLatest` with the specified number of input ports.
