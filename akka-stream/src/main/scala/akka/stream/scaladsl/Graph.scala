@@ -825,7 +825,10 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int, val e
 
 object Balance {
   /**
-   * Create a new `Balance` with the specified number of output ports.
+   * Create a new `Balance` with the specified number of output ports. This method sets `eagerCancel` to `false`.
+   * To specify a different value for the `eagerCancel` parameter, then instantiate Balance using the constructor.
+   *
+   * If `eagerCancel` is true, balance cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
    *
    * @param outputPorts number of output ports
    * @param waitForAllDownstreams if you use `waitForAllDownstreams = true` it will not start emitting
@@ -833,7 +836,7 @@ object Balance {
    *   default value is `false`
    */
   def apply[T](outputPorts: Int, waitForAllDownstreams: Boolean = false): Balance[T] =
-    new Balance(outputPorts, waitForAllDownstreams)
+    new Balance(outputPorts, waitForAllDownstreams, false)
 }
 
 /**
@@ -849,11 +852,16 @@ object Balance {
  *
  * '''Completes when''' upstream completes
  *
- * '''Cancels when''' all downstreams cancel
+ * '''Cancels when''' If eagerCancel is enabled: when any downstream cancels; otherwise: when all downstreams cancel
  */
-final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
+final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean, val eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
   // one output might seem counter intuitive but saves us from special handling in other places
   require(outputPorts >= 1, "A Balance must have one or more output ports")
+
+  @Deprecated
+  @deprecated("Use the constructor which also specifies the `eagerCancel` parameter", since = "2.5.12")
+  def this(outputPorts: Int, waitForAllDownstreams: Boolean) = this(outputPorts, waitForAllDownstreams, false)
+
   val in: Inlet[T] = Inlet[T]("Balance.in")
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Balance.out" + i))
   override def initialAttributes = DefaultAttributes.balance
@@ -908,11 +916,14 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean)
         }
 
         override def onDownstreamFinish() = {
-          downstreamsRunning -= 1
-          if (downstreamsRunning == 0) completeStage()
-          else if (!hasPulled && needDownstreamPulls > 0) {
-            needDownstreamPulls -= 1
-            if (needDownstreamPulls == 0 && !hasBeenPulled(in)) pull(in)
+          if (eagerCancel) completeStage()
+          else {
+            downstreamsRunning -= 1
+            if (downstreamsRunning == 0) completeStage()
+            else if (!hasPulled && needDownstreamPulls > 0) {
+              needDownstreamPulls -= 1
+              if (needDownstreamPulls == 0 && !hasBeenPulled(in)) pull(in)
+            }
           }
         }
       })

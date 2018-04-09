@@ -1917,6 +1917,8 @@ Emit each incoming element each of `n` outputs.
 
 **completes** when upstream completes
 
+**cancels** depends on the `eagerCancel` flag. If it is true, when any downstream cancels, if false, when all downstreams cancel.
+
 ---------------------------------------------------------------
 
 ### balance
@@ -1928,6 +1930,8 @@ Fan-out the stream to several streams. Each upstream element is emitted to the f
 **backpressures** when all of the outputs backpressure
 
 **completes** when upstream completes
+
+**cancels** depends on the `eagerCancel` flag. If it is true, when any downstream cancels, if false, when all downstreams cancel.
 
 ---------------------------------------------------------------
 
@@ -1941,6 +1945,8 @@ partitioner function applied to the element.
 **backpressures** when the chosen output backpressures
 
 **completes** when upstream completes and no output is pending
+
+**cancels** depends on the `eagerCancel` flag. If it is true, when any downstream cancels, if false, when all downstreams cancel.
 
 ---------------------------------------------------------------
 
