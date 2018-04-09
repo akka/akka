@@ -401,7 +401,7 @@ private[akka] class RemoteActorRefProvider(
             new EmptyLocalActorRef(this, RootActorPath(address) / elems, eventStream)
         }
       case _ ⇒
-        log.debug("resolve of unknown path [{}] failed", path)
+        log.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
         deadLetters
     }
   }
@@ -434,7 +434,7 @@ private[akka] class RemoteActorRefProvider(
         }
       }
     case _ ⇒
-      log.debug("resolve of unknown path [{}] failed", path)
+      log.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
       deadLetters
   }
 
