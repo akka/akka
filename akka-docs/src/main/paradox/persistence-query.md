@@ -343,7 +343,7 @@ has completed. It is recommended that the plugin use a configuration property na
 ## Scaling out
 
 In a use case where the number of events are very high, the work needed for each event is high or where
-where resilience is important so that if a node crashes the persistent queries are quickly started on a new node and can
+resilience is important so that if a node crashes the persistent queries are quickly started on a new node and can
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) together with event tagging is an excellent fit to 
 shard events over a cluster.
 
