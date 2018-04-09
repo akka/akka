@@ -31,8 +31,10 @@ object MergeLatest {
    * @param inputPorts number of input ports
    * @param eagerComplete if true, the merge latest will complete as soon as one of its inputs completes.
    */
-  def apply[T: ClassTag](inputPorts: Int, eagerComplete: Boolean = false): GraphStage[UniformFanInShape[T, java.util.List[T]]] =
+  def create[T](inputPorts: Int, eagerComplete: Boolean = false, clazz: Class[T]): GraphStage[UniformFanInShape[T, java.util.List[T]]] = {
+    implicit val classTag: ClassTag[T] = ClassTag(clazz)
     new MergeLatest[T, java.util.List[T]](inputPorts, eagerComplete)(x ⇒ x.toList.asJava)
+  }
 
 }
 
