@@ -71,9 +71,9 @@ final class MergeLatest[T: ClassTag, M](val inputPorts: Int, val eagerClose: Boo
         })
     }
 
-    def onPull(): Unit = {
+    override def onPull(): Unit = {
       var i = 0
-      while( i < inputPorts){
+      while (i < inputPorts) {
         if (!hasBeenPulled(in(i))) tryPull(in(i))
         i += 1
       }
