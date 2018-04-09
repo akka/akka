@@ -36,7 +36,7 @@ import scala.util.control.NonFatal
         state = Some(resource)
         if (isAvailable(out)) onPull()
       case Failure(t) ⇒ failStage(t)
-    }.invoke _
+    }.invokeWithFeedback _
 
     private val errorHandler: PartialFunction[Throwable, Unit] = {
       case NonFatal(ex) ⇒ decider(ex) match {
@@ -102,7 +102,16 @@ import scala.util.control.NonFatal
     }
 
     private def createResource(): Unit = {
-      create().onComplete(createdCallback)
+      create().onComplete { resource ⇒
+        createdCallback(resource).recover {
+          case _: StreamDetachedException ⇒
+            // stream stopped
+            resource match {
+              case Success(r)  ⇒ close(r)
+              case Failure(ex) ⇒ throw ex // failed to open but stream is stopped already
+            }
+        }
+      }
     }
 
     setHandler(out, this)
