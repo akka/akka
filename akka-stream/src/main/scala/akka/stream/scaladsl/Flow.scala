@@ -2981,8 +2981,31 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
    * event, and may therefor affect performance.
    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+   *
+   *
+   * @deprecated Use monitor() or monitorMat(combine) instead
    */
+  @Deprecated
+  @deprecated("2.5.12", "Use monitor() or monitorMat(combine) instead")
   def monitor[Mat2]()(combine: (Mat, FlowMonitor[Out]) ⇒ Mat2): ReprMat[Out, Mat2] =
     viaMat(GraphStages.monitor)(combine)
+
+  /**
+   * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
+   * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+   * event, and may therefor affect performance.
+   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+   */
+  def monitorMat[Mat2](combine: (Mat, FlowMonitor[Out]) ⇒ Mat2): ReprMat[Out, Mat2] =
+    viaMat(GraphStages.monitor)(combine)
+
+  /**
+   * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
+   * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+   * event, and may therefor affect performance.
+   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+   */
+  def monitor: ReprMat[Out, FlowMonitor[Out]] =
+    monitorMat(Keep.right)
 
 }

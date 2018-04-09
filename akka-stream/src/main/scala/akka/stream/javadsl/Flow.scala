@@ -2992,9 +2992,33 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
    * event, and may therefor affect performance.
    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+   *
+   * @deprecated Use monitor() or monitorMat(combine) instead
    */
+  @Deprecated
+  @deprecated("2.5.12", "Use monitor() or monitorMat(combine) instead")
   def monitor[M]()(combine: function.Function2[Mat, FlowMonitor[Out], M]): javadsl.Flow[In, Out, M] =
-    new Flow(delegate.monitor()(combinerToScala(combine)))
+    new Flow(delegate.monitorMat(combinerToScala(combine)))
+
+  /**
+   * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
+   * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+   * event, and may therefor affect performance.
+   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+   *
+   * @deprecated Use monitor() or monitorMat(combine) instead
+   */
+  def monitorMat[M](combine: function.Function2[Mat, FlowMonitor[Out], M]): javadsl.Flow[In, Out, M] =
+    new Flow(delegate.monitorMat(combinerToScala(combine)))
+
+  /**
+   * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
+   * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+   * event, and may therefor affect performance.
+   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+   */
+  def monitor(): Flow[In, Out, FlowMonitor[Out]] =
+    monitorMat(Keep.right)
 
   /**
    * Delays the initial element by the specified duration.
