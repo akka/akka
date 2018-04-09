@@ -42,6 +42,18 @@ private[remote] object SystemMessageDelivery {
   final case class Ack(seqNo: Long, from: UniqueAddress) extends Reply
   final case class Nack(seqNo: Long, from: UniqueAddress) extends Reply
 
+  /**
+   * Sent when an incarnation of an Association is quarantined. Consumed by the
+   * SystemMessageDelivery stage on the sending side, i.e. not sent to remote system.
+   * The SystemMessageDelivery stage will clear the sequence number and other state associated
+   * with that incarnation.
+   *
+   * The incarnation counter is bumped when the handshake is completed, so a new incarnation
+   * corresponds to a new UID of the remote system.
+   *
+   * The SystemMessageDelivery stage also detects that the incarnation has changed when sending or resending
+   * system messages.
+   */
   final case class ClearSystemMessageDelivery(incarnation: Int)
 
   final class GaveUpSystemMessageException(msg: String) extends RuntimeException(msg) with NoStackTrace
@@ -196,7 +208,7 @@ private[remote] class SystemMessageDelivery(
           }
 
           if (incarnation != outboundContext.associationState.incarnation) {
-            log.debug("Noticed new incarnation of $remoteAddressLogParam from tryResend, clear state")
+            log.debug("Noticed new incarnation of [{}] from tryResend, clear state", remoteAddressLogParam)
             clear()
           }
 
@@ -218,7 +230,7 @@ private[remote] class SystemMessageDelivery(
               if (seqNo == 0) {
                 incarnation = outboundContext.associationState.incarnation
               } else if (incarnation != outboundContext.associationState.incarnation) {
-                log.debug("Noticed new incarnation of $remoteAddressLogParam from onPush, clear state")
+                log.debug("Noticed new incarnation of [{}] from onPush, clear state", remoteAddressLogParam)
                 clear()
               }
               seqNo += 1
@@ -247,7 +259,7 @@ private[remote] class SystemMessageDelivery(
               pushCopy(outboundEnvelope)
           case ClearSystemMessageDelivery(i) ⇒
             if (i <= incarnation) {
-              log.debug("Clear system message delivery of $remoteAddressLogParam")
+              log.debug("Clear system message delivery of [{}]", remoteAddressLogParam)
               clear()
             }
             pull(in)
