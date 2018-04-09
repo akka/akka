@@ -687,6 +687,20 @@ If failure messages are left unhandled by the actor, a default warning log messa
 No default action is performed on the success messages, however you're free to handle them e.g. in order to delete
 an in memory representation of the snapshot, or in the case of failure to attempt save the snapshot again.
 
+
+## Scaling out
+
+In a use case where the number of persistent actors needed are higher than what would fit in the memory of one node or
+where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can
+resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a 
+cluster and address them by id.
+
+The [Lagom framework](https://www.lagom-framework.com), which is built on top of Akka encodes many of the best practices 
+around this. For more details see @java[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/java/ES_CQRS.html)]
+@scala[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/scala/ES_CQRS.html)] and 
+@java[[Persistent Entity](https://www.lagomframework.com/documentation/current/java/PersistentEntity.html)] 
+@scala[[Persistent Entity](https://www.lagomframework.com/documentation/current/scala/PersistentEntity.html)] in the Lagom documentation.
+
 <a id="at-least-once-delivery"></a>
 ## At-Least-Once Delivery
 
