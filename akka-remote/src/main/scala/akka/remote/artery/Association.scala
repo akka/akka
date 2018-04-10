@@ -344,10 +344,11 @@ private[remote] class Association(
 
     val state = associationState
     val quarantined = state.isQuarantined()
+    val messageIsClearSystemMessageDelivery = message.isInstanceOf[ClearSystemMessageDelivery]
 
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
-    if (message.isInstanceOf[ActorSelectionMessage] || !quarantined || message == ClearSystemMessageDelivery) {
-      if (quarantined && message != ClearSystemMessageDelivery) {
+    if (message.isInstanceOf[ActorSelectionMessage] || !quarantined || messageIsClearSystemMessageDelivery) {
+      if (quarantined && !messageIsClearSystemMessageDelivery) {
         log.debug("Quarantine piercing attempt with message [{}] to [{}]", Logging.messageClassName(message), recipient.getOrElse(""))
         startQuarantinedIdleTimer()
       }
@@ -359,7 +360,7 @@ private[remote] class Association(
               quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
               dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
             }
-          case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | ClearSystemMessageDelivery ⇒
+          case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | _: ClearSystemMessageDelivery ⇒
             // ActorSelectionMessage with PriorityMessage is used by cluster and remote failure detector heartbeating
             if (!controlQueue.offer(outboundEnvelope)) {
               dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
@@ -475,7 +476,7 @@ private[remote] class Association(
                 clearOutboundCompression()
                 clearInboundCompression(u)
                 // end delivery of system messages to that incarnation after this point
-                send(ClearSystemMessageDelivery, OptionVal.None, OptionVal.None)
+                send(ClearSystemMessageDelivery(current.incarnation), OptionVal.None, OptionVal.None)
                 // try to tell the other system that we have quarantined it
                 sendControl(Quarantined(localAddress, peer))
                 startQuarantinedIdleTimer()
@@ -483,11 +484,12 @@ private[remote] class Association(
                 quarantine(reason, uid) // recursive
             }
           case Some(peer) ⇒
-            log.debug(
+            log.info(
               "Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. {}",
               remoteAddress, u, peer.uid, reason)
+            send(ClearSystemMessageDelivery(current.incarnation - 1), OptionVal.None, OptionVal.None)
           case None ⇒
-            log.debug(
+            log.info(
               "Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. {}",
               remoteAddress, reason)
         }
