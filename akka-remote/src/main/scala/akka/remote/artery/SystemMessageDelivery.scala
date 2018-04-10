@@ -42,7 +42,19 @@ private[remote] object SystemMessageDelivery {
   final case class Ack(seqNo: Long, from: UniqueAddress) extends Reply
   final case class Nack(seqNo: Long, from: UniqueAddress) extends Reply
 
-  final case object ClearSystemMessageDelivery
+  /**
+   * Sent when an incarnation of an Association is quarantined. Consumed by the
+   * SystemMessageDelivery stage on the sending side, i.e. not sent to remote system.
+   * The SystemMessageDelivery stage will clear the sequence number and other state associated
+   * with that incarnation.
+   *
+   * The incarnation counter is bumped when the handshake is completed, so a new incarnation
+   * corresponds to a new UID of the remote system.
+   *
+   * The SystemMessageDelivery stage also detects that the incarnation has changed when sending or resending
+   * system messages.
+   */
+  final case class ClearSystemMessageDelivery(incarnation: Int)
 
   final class GaveUpSystemMessageException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
@@ -75,6 +87,7 @@ private[remote] class SystemMessageDelivery(
 
       private var replyObserverAttached = false
       private var seqNo = 0L // sequence number for the first message will be 1
+      private var incarnation = outboundContext.associationState.incarnation
       private val unacknowledged = new ArrayDeque[OutboundEnvelope]
       private var resending = new ArrayDeque[OutboundEnvelope]
       private var resendingFromSeqNo = -1L
@@ -85,6 +98,8 @@ private[remote] class SystemMessageDelivery(
 
       private def localAddress = outboundContext.localAddress
       private def remoteAddress = outboundContext.remoteAddress
+      private def remoteAddressLogParam: String =
+        outboundContext.associationState.uniqueRemoteAddressValue().getOrElse(remoteAddress).toString
 
       override protected def logSource: Class[_] = classOf[SystemMessageDelivery]
 
@@ -192,6 +207,11 @@ private[remote] class SystemMessageDelivery(
             }
           }
 
+          if (incarnation != outboundContext.associationState.incarnation) {
+            log.debug("Noticed new incarnation of [{}] from tryResend, clear state", remoteAddressLogParam)
+            clear()
+          }
+
           pushCopy(env)
         }
       }
@@ -207,6 +227,12 @@ private[remote] class SystemMessageDelivery(
         outboundEnvelope.message match {
           case msg @ (_: SystemMessage | _: AckedDeliveryMessage) ⇒
             if (unacknowledged.size < maxBufferSize) {
+              if (seqNo == 0) {
+                incarnation = outboundContext.associationState.incarnation
+              } else if (incarnation != outboundContext.associationState.incarnation) {
+                log.debug("Noticed new incarnation of [{}] from onPush, clear state", remoteAddressLogParam)
+                clear()
+              }
               seqNo += 1
               if (unacknowledged.isEmpty)
                 ackTimestamp = System.nanoTime()
@@ -231,8 +257,11 @@ private[remote] class SystemMessageDelivery(
             // pass on HandshakeReq
             if (isAvailable(out))
               pushCopy(outboundEnvelope)
-          case ClearSystemMessageDelivery ⇒
-            clear()
+          case ClearSystemMessageDelivery(i) ⇒
+            if (i <= incarnation) {
+              log.debug("Clear system message delivery of [{}]", remoteAddressLogParam)
+              clear()
+            }
             pull(in)
           case _ ⇒
             // e.g. ActorSystemTerminating or ActorSelectionMessage with PriorityMessage, no need for acked delivery
@@ -255,6 +284,7 @@ private[remote] class SystemMessageDelivery(
       private def clear(): Unit = {
         sendUnacknowledgedToDeadLetters()
         seqNo = 0L // sequence number for the first message will be 1
+        incarnation = outboundContext.associationState.incarnation
         unacknowledged.clear()
         resending.clear()
         resendingFromSeqNo = -1L
