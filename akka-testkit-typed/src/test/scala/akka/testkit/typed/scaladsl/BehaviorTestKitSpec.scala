@@ -5,12 +5,15 @@
 package akka.testkit.typed.scaladsl
 
 import akka.Done
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
+import akka.actor.typed.Props
+import akka.actor.typed.receptionist.Receptionist
+import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, Behavior, Props }
-import akka.testkit.typed.scaladsl.Effects.{ Spawned, SpawnedAdapter, SpawnedAnonymous, SpawnedAnonymousAdapter, Watched, Unwatched }
-import akka.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Father }
-import akka.testkit.typed.scaladsl.BehaviorTestKitSpec.Father._
-import org.scalatest.{ Matchers, WordSpec }
+import akka.testkit.typed.scaladsl.Effects._
+import org.scalatest.Matchers
+import org.scalatest.WordSpec
 
 object BehaviorTestKitSpec {
   object Father {
@@ -103,6 +106,10 @@ object BehaviorTestKitSpec {
 
 class BehaviorTestKitSpec extends WordSpec with Matchers {
 
+  import BehaviorTestKitSpec.Child
+  import BehaviorTestKitSpec.Father
+  import BehaviorTestKitSpec.Father._
+
   private val props = Props.empty
 
   "BehaviorTestKit" must {
@@ -139,6 +146,33 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
         case Spawned(_, name, _) ⇒ name
       }
       childName should ===("child0")
+    }
+
+    "support extensions and stub implementation of extension" in {
+
+      val serviceKey = ServiceKey[String]("hello")
+      val replyTo = TestInbox[Receptionist.Listing]("replyTo")
+      val receptionistInbox = TestInbox[Receptionist.Command]("receptionist")
+
+      val receptionistStub = new Receptionist {
+        override def ref: ActorRef[Receptionist.Command] = receptionistInbox.ref
+      }
+
+      val b = Behaviors.setup[Father.Command] { ctx ⇒
+        val r = Receptionist(ctx.system)
+        r.ref ! Receptionist.Find(serviceKey, replyTo.ref)
+        Father.init
+      }
+
+      val testkitSetup = BehaviorTestKitSetup(b).withExtension(Receptionist, receptionistStub)
+
+      BehaviorTestKit[Father.Command](testkitSetup)
+
+      receptionistInbox.expectMessage(Receptionist.Find(serviceKey, replyTo.ref))
+    }
+
+    "support extensions and stub implementation of extension in child actors" in {
+      ???
     }
   }
 

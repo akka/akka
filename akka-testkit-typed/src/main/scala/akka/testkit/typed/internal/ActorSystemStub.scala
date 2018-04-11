@@ -15,12 +15,16 @@ import com.typesafe.config.ConfigFactory
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
+import scala.collection.mutable
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] final class ActorSystemStub(val name: String)
   extends ActorSystem[Nothing] with ActorRef[Nothing] with ActorRefImpl[Nothing] {
+
+  // synchronized access
+  private val extensions: mutable.Map[ExtensionId[_], Extension] = mutable.Map.empty
 
   override val path: a.ActorPath = a.RootActorPath(a.Address("akka", name)) / "user"
 
@@ -63,18 +67,35 @@ import scala.concurrent._
 
   override def printTree: String = "no tree for ActorSystemStub"
 
-  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(implicit timeout: Timeout): Future[ActorRef[U]] = {
+  override def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(implicit timeout: Timeout): Future[ActorRef[U]] = {
     Future.failed(new UnsupportedOperationException("ActorSystemStub cannot create system actors"))
   }
 
-  def registerExtension[T <: Extension](ext: ExtensionId[T]): T =
-    throw new UnsupportedOperationException("ActorSystemStub cannot register extensions")
+  def registerExtension[T <: Extension](ext: ExtensionId[T], extImpl: T): Unit = extensions.synchronized {
+    extensions += ext -> extImpl
+  }
 
-  def extension[T <: Extension](ext: ExtensionId[T]): T =
-    throw new UnsupportedOperationException("ActorSystemStub cannot register extensions")
+  override def registerExtension[T <: Extension](ext: ExtensionId[T]): T = extensions.synchronized {
+    extensions.get(ext) match {
+      case None ⇒
+        val instance = ext.createExtension(this)
+        extensions += ext -> instance
+        instance
+      case Some(existing) ⇒ existing.asInstanceOf[T]
+    }
+  }
 
-  def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean =
-    throw new UnsupportedOperationException("ActorSystemStub cannot register extensions")
+  override def extension[T <: Extension](ext: ExtensionId[T]): T = extensions.synchronized {
+    extensions.get(ext) match {
+      case None           ⇒ throw new IllegalArgumentException(s"Trying to get non-registered extension [$ext]")
+      case Some(existing) ⇒ existing.asInstanceOf[T]
+    }
+  }
 
-  def log: Logger = new StubbedLogger
+  override def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean = extensions.synchronized {
+    extensions.contains(ext)
+  }
+
+  override def log: Logger = new StubbedLogger
+
 }
