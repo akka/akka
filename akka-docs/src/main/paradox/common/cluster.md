@@ -14,8 +14,8 @@ It does this using [gossip](#gossip) protocols and an automatic [failure detecto
 
 Akka cluster allows for building distributed applications, where one application or service span multiple nodes (in practice multiple `ActorSystem`s). 
 It is not intended as a general communication between different applications or services (for example different microservices). See the discussion on 
-@scala[[Internal and External Commmunication](https://www.lagomframework.com/documentation/latest/scala/InternalAndExternalCommunication.html)]
-@java[[Internal and External Communication](https://www.lagomframework.com/documentation/latest/java/InternalAndExternalCommunication.html)]
+@scala[[Internal and External Commmunication](https://www.lagomframework.com/documentation/current/scala/InternalAndExternalCommunication.html)]
+@java[[Internal and External Communication](https://www.lagomframework.com/documentation/current/java/InternalAndExternalCommunication.html)]
 in the docs of the [Lagom Framework](https://www.lagomframework.com) (where each microservice is an Akka Cluster) for some background on this.
 
 ## Terms

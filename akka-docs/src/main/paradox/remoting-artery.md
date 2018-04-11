@@ -1,5 +1,9 @@
 # Remoting (codename Artery)
 
+
+We recommend @ref:[Akka Cluster](cluster-usage.md) over using remoting directly. As remoting is the
+underlying module that allows for Cluster, it is still useful to understand details about it though.
+
 @@@ note
 
 This page describes the remoting subsystem, codenamed *Artery* that will eventually replace the

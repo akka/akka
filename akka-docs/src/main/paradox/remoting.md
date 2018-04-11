@@ -1,9 +1,9 @@
 # Remoting
 
-For an introduction of remoting capabilities of Akka please see @ref:[Location Transparency](general/remoting.md).
-
 We recommend @ref:[Akka Cluster](cluster-usage.md) over using remoting directly. As remoting is the
 underlying module that allows for Cluster, it is still useful to understand details about it though.
+
+For an introduction of remoting capabilities of Akka please see @ref:[Location Transparency](general/remoting.md).
 
 @@@ note
 
