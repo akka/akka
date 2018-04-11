@@ -513,6 +513,7 @@ object PatternsCS {
    * If the target actor isn't terminated within the timeout the [[java.util.concurrent.CompletionStage]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def gracefulStop(target: ActorRef, timeout: FiniteDuration): CompletionStage[java.lang.Boolean] =
     scalaGracefulStop(target, timeout).toJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
 
@@ -527,7 +528,7 @@ object PatternsCS {
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
   def gracefulStop(target: ActorRef, timeout: java.time.Duration): CompletionStage[java.lang.Boolean] =
-    gracefulStop(target, timeout.asScala)
+    scalaGracefulStop(target, timeout.asScala).toJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
 
   /**
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with success (value `true`) when
@@ -542,6 +543,7 @@ object PatternsCS {
    * If the target actor isn't terminated within the timeout the [[java.util.concurrent.CompletionStage]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def gracefulStop(target: ActorRef, timeout: FiniteDuration, stopMessage: Any): CompletionStage[java.lang.Boolean] =
     scalaGracefulStop(target, timeout, stopMessage).toJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
 
@@ -559,12 +561,13 @@ object PatternsCS {
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
   def gracefulStop(target: ActorRef, timeout: java.time.Duration, stopMessage: Any): CompletionStage[java.lang.Boolean] =
-    gracefulStop(target, timeout.asScala, stopMessage)
+    scalaGracefulStop(target, timeout.asScala, stopMessage).toJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
 
   /**
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided Callable
    * after the specified duration.
    */
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: Callable[CompletionStage[T]]): CompletionStage[T] =
     afterCompletionStage(duration, scheduler)(value.call())(context)
 
@@ -573,12 +576,13 @@ object PatternsCS {
    * after the specified duration.
    */
   def after[T](duration: java.time.Duration, scheduler: Scheduler, context: ExecutionContext, value: Callable[CompletionStage[T]]): CompletionStage[T] =
-    after(duration.asScala, scheduler, context, value)
+    afterCompletionStage(duration.asScala, scheduler)(value.call())(context)
 
   /**
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: CompletionStage[T]): CompletionStage[T] =
     afterCompletionStage(duration, scheduler)(value)(context)
 
@@ -587,8 +591,9 @@ object PatternsCS {
    * after the specified duration.
    */
   def after[T](duration: java.time.Duration, scheduler: Scheduler, context: ExecutionContext, value: CompletionStage[T]): CompletionStage[T] =
-    after(duration.asScala, scheduler, context, value)
+    afterCompletionStage(duration.asScala, scheduler)(value)(context)
 
+  /**
    * Returns an internally retrying [[java.util.concurrent.CompletionStage]]
    * The first attempt will be made immediately, and each subsequent attempt will be made after 'delay'.
    * A scheduler (eg context.system.scheduler) must be provided to delay each retry
@@ -596,6 +601,6 @@ object PatternsCS {
    * Note that the attempt function will be invoked on the given execution context for subsequent tries
    * and therefore must be thread safe (not touch unsafe mutable state).
    */
-  def retry[T](attempt: Callable[CompletionStage[T]], attempts: Int, delay: FiniteDuration, scheduler: Scheduler, ec: ExecutionContext): CompletionStage[T] =
-    scalaRetry(() ⇒ attempt.call().toScala, attempts, delay)(ec, scheduler).toJava
+  def retry[T](attempt: Callable[CompletionStage[T]], attempts: Int, delay: java.time.Duration, scheduler: Scheduler, ec: ExecutionContext): CompletionStage[T] =
+    scalaRetry(() ⇒ attempt.call().toScala, attempts, delay.asScala)(ec, scheduler).toJava
 }

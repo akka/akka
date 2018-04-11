@@ -58,6 +58,7 @@ object CircuitBreaker {
    * @param callTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to consider a call a failure
    * @param resetTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to attempt to close the circuit
    */
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def create(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration): CircuitBreaker =
     apply(scheduler, maxFailures, callTimeout, resetTimeout)
 
@@ -129,12 +130,13 @@ class CircuitBreaker(
 
   require(exponentialBackoffFactor >= 1.0, "factor must be >= 1.0")
 
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def this(executor: ExecutionContext, scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration) = {
     this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0)(executor)
   }
 
   def this(executor: ExecutionContext, scheduler: Scheduler, maxFailures: Int, callTimeout: java.time.Duration, resetTimeout: java.time.Duration) = {
-    this(executor, scheduler, maxFailures, callTimeout.asScala, resetTimeout.asScala)
+    this(scheduler, maxFailures, callTimeout.asScala, resetTimeout.asScala, 36500.days, 1.0)(executor)
   }
 
   // add the old constructor to make it binary compatible
