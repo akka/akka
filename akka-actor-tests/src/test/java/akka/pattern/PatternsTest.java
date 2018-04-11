@@ -14,7 +14,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.Await;
+import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.util.concurrent.CompletionStage;
 
@@ -71,18 +73,102 @@ public class PatternsTest extends JUnitSuite {
     }
 
     @Test
-    public void testExplicitAsk() throws Exception {
+    public void testCSAskWithReplyToTimeout() throws Exception {
         final String expected = "hello";
 
         final ActorRef echo = system.actorOf(Props.create(ExplicitAskTestActor.class));
         final CompletionStage<String> response = PatternsCS
-                .explicitAsk(
+                .askWithReplyTo(
                         echo,
                         replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
                         Timeout.apply(3, SECONDS))
                 .thenApply(o -> (String)o);
 
         final String actual = response.toCompletableFuture().get(3, SECONDS);
+        assertEquals(expected, actual);
+    }
+
+
+    @Test
+    public void testCSAskWithReplyToTimeoutMillis() throws Exception {
+        final String expected = "hello";
+
+        final ActorRef echo = system.actorOf(Props.create(ExplicitAskTestActor.class));
+        final CompletionStage<String> response = PatternsCS
+                .askWithReplyTo(
+                        echo,
+                        replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
+                        3000)
+                .thenApply(o -> (String)o);
+
+        final String actual = response.toCompletableFuture().get(3, SECONDS);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testCSAskSelectionWithReplyToTimeoutMillis() throws Exception {
+        final String expected = "hello";
+
+        final ActorRef echo = system.actorOf(Props.create(ExplicitAskTestActor.class));
+        final ActorSelection selection = system.actorSelection(echo.path());
+        final CompletionStage<String> response = PatternsCS
+                .askWithReplyTo(
+                        selection,
+                        replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
+                        3000)
+                .thenApply(o -> (String)o);
+
+        final String actual = response.toCompletableFuture().get(3, SECONDS);
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testAskWithReplyToTimeoutMillis() throws Exception {
+        final String expected = "hello";
+
+        final ActorRef echo = system.actorOf(Props.create(ExplicitAskTestActor.class));
+        final Future<Object> response = Patterns
+                .askWithReplyTo(
+                        echo,
+                        replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
+                        3000);
+
+
+        final Object actual = Await.result(response, FiniteDuration.apply(3, SECONDS));
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testAskSelectionWithReplyToTimeoutMillis() throws Exception {
+        final String expected = "hello";
+
+        final ActorRef echo = system.actorOf(Props.create(ExplicitAskTestActor.class));
+        final ActorSelection selection = system.actorSelection(echo.path());
+        final Future<Object> response = Patterns
+                .askWithReplyTo(
+                        selection,
+                        replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
+                        3000);
+
+
+        final Object actual = Await.result(response, FiniteDuration.apply(3, SECONDS));
+        assertEquals(expected, actual);
+    }
+
+
+    @Test
+    public void testAskWithReplyToTimeout() throws Exception {
+        final String expected = "hello";
+
+        final ActorRef echo = system.actorOf(Props.create(ExplicitAskTestActor.class));
+        final Future<Object> response = Patterns
+                .askWithReplyTo(
+                        echo,
+                        replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
+                        Timeout.apply(3, SECONDS));
+
+
+        final Object actual = Await.result(response, FiniteDuration.apply(3, SECONDS));
         assertEquals(expected, actual);
     }
 

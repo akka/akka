@@ -1,2 +1,0 @@
-# #24609 Fix broken explicit ask pattern for Java
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.PatternsCS.ask")
