@@ -57,7 +57,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
     public static final ReplenishTokens REPLENISH_TOKENS = new ReplenishTokens();
 
     private final int maxAvailableTokens;
-    private final FiniteDuration tokenRefreshPeriod;
+    private final Duration tokenRefreshPeriod;
     private final int tokenRefreshAmount;
 
     private final List<ActorRef> waitQueue = new ArrayList<>();
@@ -65,13 +65,13 @@ public class RecipeGlobalRateLimit extends RecipeTest {
 
     private int permitTokens;
 
-    public static Props props(int maxAvailableTokens, FiniteDuration tokenRefreshPeriod,
+    public static Props props(int maxAvailableTokens, Duration tokenRefreshPeriod,
         int tokenRefreshAmount) {
       return Props.create(Limiter.class, maxAvailableTokens, tokenRefreshPeriod,
         tokenRefreshAmount);
     }
 
-    private Limiter(int maxAvailableTokens, FiniteDuration tokenRefreshPeriod,
+    private Limiter(int maxAvailableTokens, Duration tokenRefreshPeriod,
         int tokenRefreshAmount) {
       this.maxAvailableTokens = maxAvailableTokens;
       this.tokenRefreshPeriod = tokenRefreshPeriod;
@@ -162,7 +162,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
 
       {
         // Use a large period and emulate the timer by hand instead
-        ActorRef limiter = system.actorOf(Limiter.props(2, new FiniteDuration(100, TimeUnit.DAYS), 1), "limiter");
+        ActorRef limiter = system.actorOf(Limiter.props(2, Duration.ofDays(100), 1), "limiter");
 
         final Iterator<String> e1 = new Iterator<String>() {
           @Override
