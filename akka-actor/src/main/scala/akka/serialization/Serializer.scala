@@ -78,6 +78,7 @@ trait Serializer {
 
 object Serializers {
 
+  // NOTE!!! Before making changes to this method please check DaemonMsgCreateSerializer.serialize method whether it will work correctly after them.
   def manifestFor(s: Serializer, message: AnyRef): String = s match {
     case s2: SerializerWithStringManifest ⇒ s2.manifest(message)
     case _                                ⇒ if (s.includeManifest) message.getClass.getName else ""
