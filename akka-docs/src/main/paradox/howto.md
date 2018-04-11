@@ -164,3 +164,14 @@ Finally we are able to execute an actor and receive the results or exceptions.
 @@snip [SupervisedAskSpec.java]($code$/java/jdocs/pattern/SupervisedAskSpec.java)
 
 @@@
+
+## Scalable Distributed Event Sourcing and CQRS
+
+The [Lagom Framework](https://www.lagomframework.com) encodes many best practices in combining @ref:[Akka Persistence](persistence.md) and @ref:[Akka Persistence Query](persistence-query.md) 
+with @ref:[Cluster Sharding](cluster-sharding.md) to build scalable and resilient systems with Event Sourcing and CQRS.
+
+See @java[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/java/ES_CQRS.html)]
+@scala[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/scala/ES_CQRS.html)] and 
+@java[[Persistent Entity](https://www.lagomframework.com/documentation/current/java/PersistentEntity.html)] 
+@scala[[Persistent Entity](https://www.lagomframework.com/documentation/current/scala/PersistentEntity.html)] in the Lagom documentation.
+
