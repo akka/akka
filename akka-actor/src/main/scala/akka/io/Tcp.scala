@@ -15,6 +15,7 @@ import scala.collection.immutable
 import scala.collection.JavaConverters._
 import akka.util.{ ByteString, Helpers }
 import akka.util.Helpers.Requiring
+import akka.util.JavaDurationConverters._
 import akka.actor._
 import java.lang.{ Iterable ⇒ JIterable }
 import java.nio.file.Path
@@ -668,6 +669,25 @@ object TcpMessage {
     options:       JIterable[SocketOption],
     timeout:       FiniteDuration,
     pullMode:      Boolean): Command = Connect(remoteAddress, Option(localAddress), options, Option(timeout), pullMode)
+
+  /**
+   * The Connect message is sent to the TCP manager actor, which is obtained via
+   * [[TcpExt#getManager]]. Either the manager replies with a [[Tcp.CommandFailed]]
+   * or the actor handling the new connection replies with a [[Tcp.Connected]]
+   * message.
+   *
+   * @param remoteAddress is the address to connect to
+   * @param localAddress optionally specifies a specific address to bind to
+   * @param options Please refer to [[TcpSO]] for a list of all supported options.
+   * @param timeout is the desired connection timeout, `null` means "no timeout"
+   * @param pullMode enables pull based reading from the connection
+   */
+  def connect(
+    remoteAddress: InetSocketAddress,
+    localAddress:  InetSocketAddress,
+    options:       JIterable[SocketOption],
+    timeout:       java.time.Duration,
+    pullMode:      Boolean): Command = connect(remoteAddress, localAddress, options, timeout.asScala, pullMode)
 
   /**
    * Connect to the given `remoteAddress` without binding to a local address and without

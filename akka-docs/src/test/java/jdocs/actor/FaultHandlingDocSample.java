@@ -26,7 +26,6 @@ import static akka.actor.SupervisorStrategy.restart;
 import static akka.actor.SupervisorStrategy.stop;
 import static akka.actor.SupervisorStrategy.escalate;
 
-import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
 
 import static jdocs.actor.FaultHandlingDocSample.WorkerApi.*;
@@ -141,7 +140,7 @@ public class FaultHandlingDocSample {
         matchEquals(Start, x -> progressListener == null, x -> {
           progressListener = getSender();
           getContext().getSystem().scheduler().schedule(
-            Duration.Zero(), Duration.create(1, "second"), getSelf(), Do,
+            java.time.Duration.ZERO,  java.time.Duration.ofSeconds(1L), getSelf(), Do,
             getContext().dispatcher(), null
           );
         }).
