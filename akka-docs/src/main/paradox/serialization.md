@@ -243,15 +243,91 @@ no other address is available.
 
 The recommended approach to do deep serialization of internal actor state is to use Akka @ref:[Persistence](persistence.md).
 
-## A Word About Java Serialization
+<a id="disable-java-serializer"></a>
+## Disabling the Java Serializer
 
-When using Java serialization without employing the `JavaSerializer` for
-the task, you must make sure to supply a valid `ExtendedActorSystem` in
-the dynamic variable `JavaSerializer.currentSystem`. This is used when
-reading in the representation of an `ActorRef` for turning the string
-representation into a real reference. `DynamicVariable` is a
-thread-local variable, so be sure to have it set while deserializing anything
-which might contain actor references.
+Since the `2.4.11` release of Akka it is possible to entirely disable the default Java Serialization mechanism.
+For compatibility reasons, the current (non-@ref:[Artery](remoting-artery.md)) remoting still uses Java
+serialization for some classes, however you can disable it in this remoting implementation as well by following
+the steps below.
+
+The first step is to enable some additional serializers that replace previous Java serialization of some internal
+messages. This is recommended also when you can't disable Java serialization completely. Those serializers are
+enabled with this configuration:
+
+```ruby
+akka.actor {
+  # Set this to on to enable serialization-bindings defined in
+  # additional-serialization-bindings. Those are by default not included
+  # for backwards compatibility reasons. They are enabled by default if
+  # akka.remote.artery.enabled=on.
+  enable-additional-serialization-bindings = on
+}
+```
+
+The reason these are not enabled by default is wire-level compatibility between any 2.4.x Actor Systems.
+If you roll out a new cluster, all on the same Akka version that can enable these serializers it is recommended to
+enable this setting. When using @ref:[Remoting (codename Artery)](remoting-artery.md) these serializers are enabled by default.
+
+@@@ warning
+
+Please note that when enabling the `additional-serialization-bindings` when using the old remoting,
+you must do so on all nodes participating in a cluster, otherwise the mis-aligned serialization
+configurations will cause deserialization errors on the receiving nodes.
+
+@@@
+
+Java serialization is known to be slow and [prone to attacks](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995)
+of various kinds - it never was designed for high throughput messaging after all. However, it is very
+convenient to use, thus it remained the default serialization mechanism that Akka used to
+serialize user messages as well as some of its internal messages in previous versions.
+Since the release of Artery, Akka internals do not rely on Java serialization anymore (one exception being `java.lang.Throwable`).
+
+@@@ warning
+
+Please note Akka 2.5 by default does not use any Java Serialization for its own internal messages, unlike 2.4 where
+by default it sill did for a few of the messages. If you want an 2.4.x system to communicate with a 2.5.x series, for
+example during a rolling deployment you should first enable `additional-serialization-bindings` on the old systems.
+You must do so on all nodes participating in a cluster, otherwise the mis-aligned serialization
+configurations will cause deserialization errors on the receiving nodes. These additional serialization bindings are
+enabled by default in Akka 2.5.x.
+
+@@@
+
+@@@ note
+
+When using the new remoting implementation (codename Artery), Akka does not use Java Serialization for any of its internal messages.
+It is highly encouraged to disable java serialization, so please plan to do so at the earliest possibility you have in your project.
+
+One may think that network bandwidth and latency limit the performance of remote messaging, but serialization is a more typical bottleneck.
+
+@@@
+
+For user messages, the default serializer, implemented using Java serialization, remains available and enabled.
+We do however recommend to disable it entirely and utilise a proper serialization library instead in order effectively utilise
+the improved performance and ability for rolling deployments using Artery. Libraries that we recommend to use include,
+but are not limited to, [Kryo](https://github.com/EsotericSoftware/kryo) by using the [akka-kryo-serialization](https://github.com/romix/akka-kryo-serialization) library or [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) if you want
+more control over the schema evolution of your messages.
+
+In order to completely disable Java Serialization in your Actor system you need to add the following configuration to
+your `application.conf`:
+
+```ruby
+akka.actor.allow-java-serialization = off
+```
+
+This will completely disable the use of `akka.serialization.JavaSerialization` by the
+Akka Serialization extension, instead `DisabledJavaSerializer` will
+be inserted which will fail explicitly if attempts to use java serialization are made.
+
+It will also enable the above mentioned `enable-additional-serialization-bindings`.
+
+The log messages emitted by such serializer SHOULD be treated as potential
+attacks which the serializer prevented, as they MAY indicate an external operator
+attempting to send malicious messages intending to use java serialization as attack vector.
+The attempts are logged with the SECURITY marker.
+
+Please note that this option does not stop you from manually invoking java serialization.
 
 ## Serialization compatibility
 

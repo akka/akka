@@ -12,7 +12,6 @@ import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, ThrottleMode 
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 
-import scala.concurrent.Await
 import akka.testkit.TimingTest
 import akka.util.ConstantFun
 

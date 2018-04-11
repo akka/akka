@@ -6,7 +6,6 @@ package akka.actor.typed.scaladsl
 
 import akka.actor.typed._
 import akka.annotation.{ ApiMayChange, DoNotInherit }
-import akka.event.LoggingAdapter
 import akka.util.Timeout
 
 import scala.concurrent.ExecutionContextExecutor
@@ -37,7 +36,7 @@ import akka.annotation.InternalApi
  */
 @DoNotInherit
 @ApiMayChange
-trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
+trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
 
   /**
    * Get the `javadsl` of this `ActorContext`.
@@ -162,7 +161,7 @@ trait ActorContext[T] { this: akka.actor.typed.javadsl.ActorContext[T] ⇒
   /**
    * Schedule the sending of a notification in case no other
    * message is received during the given period of time. The timeout starts anew
-   * with each received message. Provide `Duration.Undefined` to switch off this
+   * with each received message. Use `cancelReceiveTimeout` to switch off this
    * mechanism.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from threads other

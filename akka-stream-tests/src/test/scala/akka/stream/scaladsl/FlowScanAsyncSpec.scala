@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import akka.{ NotUsed, pattern }
+import akka.pattern
 import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit.TestSubscriber.Probe

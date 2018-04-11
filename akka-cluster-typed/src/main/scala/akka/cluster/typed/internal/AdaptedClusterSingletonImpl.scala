@@ -13,7 +13,6 @@ import akka.cluster.singleton.{ ClusterSingletonProxy, ClusterSingletonManager â
 import akka.actor.typed.Behavior.UntypedPropsBehavior
 import akka.cluster.typed.{ Cluster, ClusterSingleton, ClusterSingletonImpl, ClusterSingletonSettings }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
-import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 
 /**

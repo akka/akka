@@ -5,18 +5,16 @@
 package docs.akka.typed
 
 //#imports
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-
 import akka.NotUsed
-import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
-import akka.testkit.typed.scaladsl.ActorTestKit
-
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
 //#imports
+
+import akka.testkit.typed.scaladsl.ActorTestKit
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 import akka.actor.typed.TypedAkkaSpecWithShutdown
 
@@ -25,15 +23,50 @@ object IntroSpec {
   //#hello-world-actor
   object HelloWorld {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
-    final case class Greeted(whom: String)
+    final case class Greeted(whom: String, from: ActorRef[Greet])
 
-    val greeter = Behaviors.receive[Greet] { (_, msg) ⇒
-      println(s"Hello ${msg.whom}!")
-      msg.replyTo ! Greeted(msg.whom)
+    val greeter: Behavior[Greet] = Behaviors.receive { (ctx, msg) ⇒
+      ctx.log.info("Hello {}!", msg.whom)
+      msg.replyTo ! Greeted(msg.whom, ctx.self)
       Behaviors.same
     }
   }
   //#hello-world-actor
+
+  //#hello-world-bot
+  object HelloWorldBot {
+
+    def bot(greetingCounter: Int, max: Int): Behavior[HelloWorld.Greeted] =
+      Behaviors.receive { (ctx, msg) ⇒
+        val n = greetingCounter + 1
+        ctx.log.info("Greeting {} for {}", n, msg.whom)
+        if (n == max) {
+          Behaviors.stopped
+        } else {
+          msg.from ! HelloWorld.Greet(msg.whom, ctx.self)
+          bot(n, max)
+        }
+      }
+  }
+  //#hello-world-bot
+
+  //#hello-world-main
+  object HelloWorldMain {
+
+    final case class Start(name: String)
+
+    val main: Behavior[Start] =
+      Behaviors.setup { context ⇒
+        val greeter = context.spawn(HelloWorld.greeter, "greeter")
+
+        Behaviors.receiveMessage { msg ⇒
+          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name)
+          greeter ! HelloWorld.Greet(msg.name, replyTo)
+          Behaviors.same
+        }
+      }
+  }
+  //#hello-world-main
 
   //#chatroom-actor
   object ChatRoom {
@@ -63,7 +96,7 @@ object IntroSpec {
       chatRoom(List.empty)
 
     private def chatRoom(sessions: List[ActorRef[SessionCommand]]): Behavior[RoomCommand] =
-      Behaviors.receive[RoomCommand] { (ctx, msg) ⇒
+      Behaviors.receive { (ctx, msg) ⇒
         msg match {
           case GetSession(screenName, client) ⇒
             // create a child actor for further interaction with the client
@@ -107,46 +140,38 @@ class IntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
   "Hello world" must {
     "say hello" in {
-      // TODO Implicits.global is not something we would like to encourage in docs
       //#hello-world
-      import HelloWorld._
-      // using global pool since we want to run tasks after system.terminate
-      import scala.concurrent.ExecutionContext.Implicits.global
 
-      val system: ActorSystem[Greet] = ActorSystem(greeter, "hello")
+      val system: ActorSystem[HelloWorldMain.Start] =
+        ActorSystem(HelloWorldMain.main, "hello")
 
-      val future: Future[Greeted] = system ? (Greet("world", _))
+      system ! HelloWorldMain.Start("World")
+      system ! HelloWorldMain.Start("Akka")
 
-      for {
-        greeting ← future.recover { case ex ⇒ ex.getMessage }
-        done ← {
-          println(s"result: $greeting")
-          system.terminate()
-        }
-      } println("system terminated")
       //#hello-world
+
+      Thread.sleep(500) // it will not fail if too short
+      ActorTestKit.shutdown(system)
     }
 
     "chat" in {
       //#chatroom-gabbler
       import ChatRoom._
 
-      val gabbler =
-        Behaviors.receive[SessionEvent] { (_, msg) ⇒
-          msg match {
-            //#chatroom-gabbler
-            // We document that the compiler warns about the missing handler for `SessionDenied`
-            case SessionDenied(reason) ⇒
-              println(s"cannot start chat room session: $reason")
-              Behaviors.stopped
-            //#chatroom-gabbler
-            case SessionGranted(handle) ⇒
-              handle ! PostMessage("Hello World!")
-              Behaviors.same
-            case MessagePosted(screenName, message) ⇒
-              println(s"message has been posted by '$screenName': $message")
-              Behaviors.stopped
-          }
+      val gabbler: Behavior[SessionEvent] =
+        Behaviors.receiveMessage {
+          //#chatroom-gabbler
+          // We document that the compiler warns about the missing handler for `SessionDenied`
+          case SessionDenied(reason) ⇒
+            println(s"cannot start chat room session: $reason")
+            Behaviors.stopped
+          //#chatroom-gabbler
+          case SessionGranted(handle) ⇒
+            handle ! PostMessage("Hello World!")
+            Behaviors.same
+          case MessagePosted(screenName, message) ⇒
+            println(s"message has been posted by '$screenName': $message")
+            Behaviors.stopped
         }
       //#chatroom-gabbler
 

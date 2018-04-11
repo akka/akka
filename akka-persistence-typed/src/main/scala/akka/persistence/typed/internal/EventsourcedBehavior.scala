@@ -29,20 +29,19 @@ private[akka] object EventsourcedBehavior {
 
   object MDC {
     // format: OFF
-    val AwaitingPermit        = "get-permit"
-    val ReplayingSnapshot    = "replay-snap"
-    val ReplayingEvents      = "replay-evts"
-    val RunningCmds           = "running-cmnds"
-    val PersistingEvents      = "persist-evts"
+    val AwaitingPermit    = "get-permit"
+    val ReplayingSnapshot = "replay-snap"
+    val ReplayingEvents   = "replay-evts"
+    val RunningCmds       = "running-cmnds"
+    val PersistingEvents  = "persist-evts"
     // format: ON
-  }
 
-  def withMdc(setup: EventsourcedSetup[_, _, _], phaseName: String)(b: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
-    val mdc = Map(
-      "persistenceId" → setup.persistenceId,
-      "phase" → phaseName
-    )
-    Behaviors.withMdc(_ ⇒ mdc, b)
+    def create(persistenceId: String, phaseName: String): Map[String, Any] = {
+      Map(
+        "persistenceId" → persistenceId,
+        "phase" → phaseName
+      )
+    }
   }
 
   /** Protocol used internally by the eventsourced behaviors, never exposed to user-land */

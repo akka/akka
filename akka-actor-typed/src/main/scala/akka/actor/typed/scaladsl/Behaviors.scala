@@ -5,8 +5,8 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.actor.typed.internal.{ BehaviorImpl, LoggingBehaviorImpl, Supervisor, TimerSchedulerImpl }
 import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.actor.typed.internal._
 
 import scala.reflect.ClassTag
 
@@ -171,11 +171,11 @@ object Behaviors {
    * val dbConnector: Behavior[DbCommand] = ...
    *
    * val dbRestarts =
-   *    Actor.supervise(dbConnector)
+   *    Behaviors.supervise(dbConnector)
    *      .onFailure(SupervisorStrategy.restart) // handle all NonFatal exceptions
    *
    * val dbSpecificResumes =
-   *    Actor.supervise(dbConnector)
+   *    Behaviors.supervise(dbConnector)
    *      .onFailure[IndexOutOfBoundsException](SupervisorStrategy.resume) // resume for IndexOutOfBoundsException exceptions
    * }}}
    */
@@ -203,17 +203,49 @@ object Behaviors {
     TimerSchedulerImpl.withTimers(factory)
 
   /**
-   * Provide a MDC ("Mapped Diagnostic Context") for logging from the actor.
+   * Per message MDC (Mapped Diagnostic Context) logging.
    *
-   * @param mdcForMessage Is invoked before each message to setup MDC which is then attachd to each logging statement
-   *                      done for that message through the [[ActorContext.log]]. After the message has been processed
-   *                      the MDC is cleared.
-   * @param behavior The behavior that this should be applied to.
+   * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
+   *                 each message processing by the inner behavior is done.
+   * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
+   *                 `ActorContext.log`
+   *
+   * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T: ClassTag](
-    mdcForMessage: T ⇒ Map[String, Any],
-    behavior:      Behavior[T]): Behavior[T] =
-    LoggingBehaviorImpl.withMdc(mdcForMessage, behavior)
+  def withMdc[T](mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+    withMdc[T](Map.empty[String, Any], mdcForMessage)(behavior)
+
+  /**
+   * Static MDC (Mapped Diagnostic Context)
+   *
+   * @param staticMdc This MDC is setup in the logging context for every message
+   * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
+   *                 `ActorContext.log`
+   *
+   * See also [[akka.actor.typed.Logger.withMdc]]
+   */
+  def withMdc[T](staticMdc: Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+    withMdc[T](staticMdc, (_: T) ⇒ Map.empty[String, Any])(behavior)
+
+  /**
+   * Combination of static and per message MDC (Mapped Diagnostic Context).
+   *
+   * Each message will get the static MDC plus the MDC returned for the message. If the same key
+   * are in both the static and the per message MDC the per message one overwrites the static one
+   * in the resulting log entries.
+   *
+   * The `staticMdc` or `mdcForMessage` may be empty.
+   *
+   * @param staticMdc A static MDC applied for each message
+   * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
+   *                 each message processing by the inner behavior is done.
+   * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
+   *                 `ActorContext.log`
+   *
+   * See also [[akka.actor.typed.Logger.withMdc]]
+   */
+  def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+    WithMdcBehavior[T](staticMdc, mdcForMessage, behavior)
 
   // TODO
   // final case class Selective[T](timeout: FiniteDuration, selector: PartialFunction[T, Behavior[T]], onTimeout: () ⇒ Behavior[T])

@@ -7,13 +7,11 @@ package akka.actor.typed.scaladsl.adapter
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
-import akka.actor.{ InvalidMessageException, Props }
+import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.{ Done, NotUsed, actor ⇒ untyped }
 import akka.testkit._
 import akka.actor.typed.Behavior.UntypedPropsBehavior
-
-import scala.concurrent.Await
 
 object AdapterSpec {
   val untyped1: untyped.Props = untyped.Props(new Untyped1)

@@ -4,11 +4,11 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.{ Behavior, PostStop, PreRestart }
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.persistence._
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
+import akka.persistence.typed.internal.EventsourcedBehavior.MDC
 
 /**
  * INTERNAL API
@@ -24,7 +24,7 @@ import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
 private[akka] object EventsourcedRequestingRecoveryPermit {
 
   def apply[C, E, S](setup: EventsourcedSetup[C, E, S]): Behavior[InternalProtocol] =
-    new EventsourcedRequestingRecoveryPermit(setup).createBehavior()
+    new EventsourcedRequestingRecoveryPermit(setup.setMdc(MDC.AwaitingPermit)).createBehavior()
 
 }
 
@@ -36,25 +36,14 @@ private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](override val s
     // request a permit, as only once we obtain one we can start replaying
     requestRecoveryPermit()
 
-    withMdc {
-      Behaviors.receive[InternalProtocol] {
-        case (_, InternalProtocol.RecoveryPermitGranted) ⇒
-          becomeReplaying()
+    Behaviors.receiveMessage[InternalProtocol] {
+      case InternalProtocol.RecoveryPermitGranted ⇒
+        becomeReplaying()
 
-        case (_, other) ⇒
-          stash(other)
-          Behaviors.same
-      }
+      case other ⇒
+        stash(other)
+        Behaviors.same
     }
-  }
-
-  private def withMdc(wrapped: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
-    val mdc = Map(
-      "persistenceId" → setup.persistenceId,
-      "phase" → "awaiting-permit"
-    )
-
-    Behaviors.withMdc(_ ⇒ mdc, wrapped)
   }
 
   private def becomeReplaying(): Behavior[InternalProtocol] = {

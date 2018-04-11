@@ -8,8 +8,6 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 import akka.actor._
-import akka.event.Logging
-import akka.event.Logging.Warning
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
 import com.typesafe.config.ConfigFactory
 import akka.testkit.TestProbe

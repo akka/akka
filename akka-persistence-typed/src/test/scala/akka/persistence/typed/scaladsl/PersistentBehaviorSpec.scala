@@ -35,7 +35,8 @@ object PersistentBehaviorSpec {
     def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria) = ???
   }
 
-  val config = ConfigFactory.parseString(
+  // also used from PersistentActorTest
+  val conf: Config = ConfigFactory.parseString(
     s"""
     akka.loglevel = INFO
     # akka.persistence.typed.log-stashing = INFO
@@ -177,7 +178,7 @@ object PersistentBehaviorSpec {
 class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
   import PersistentBehaviorSpec._
 
-  override def config: Config = PersistentBehaviorSpec.config
+  override def config: Config = PersistentBehaviorSpec.conf
 
   implicit val testSettings = TestKitSettings(system)
 

@@ -50,6 +50,10 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
     effectQueue.offer(Watched(other))
     super.watch(other)
   }
+  override def watchWith[U](other: ActorRef[U], msg: T): Unit = {
+    effectQueue.offer(Watched(other))
+    super.watchWith(other, msg)
+  }
   override def unwatch[U](other: ActorRef[U]): Unit = {
     effectQueue.offer(Unwatched(other))
     super.unwatch(other)

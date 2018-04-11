@@ -13,7 +13,6 @@ import scala.util.control.NoStackTrace
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.testkit.TimingTest
-import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl.{ ActorTestKit, _ }
 import org.scalatest.WordSpecLike
 
@@ -224,6 +223,58 @@ class TimerSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShu
       val ref = spawn(behv)
       ref ! End
       probe.expectMessage(GotPostStop(false))
+    }
+
+    "allow for nested timers" in {
+      val probe = TestProbe[String]()
+      val ref = spawn(Behaviors.withTimers[String] { outerTimer ⇒
+        outerTimer.startPeriodicTimer("outer-key", "outer-msg", 50.millis)
+        Behaviors.withTimers { innerTimer ⇒
+          innerTimer.startPeriodicTimer("inner-key", "inner-msg", 50.millis)
+          Behaviors.receiveMessage { msg ⇒
+            if (msg == "stop") Behaviors.stopped
+            else {
+              probe.ref ! msg
+              Behaviors.same
+            }
+          }
+        }
+      })
+
+      var seen = Set.empty[String]
+      probe.fishForMessage(500.millis) {
+        case msg ⇒
+          seen += msg
+          if (seen.size == 2) FishingOutcomes.complete
+          else FishingOutcomes.continue
+      }
+
+      ref ! "stop"
+    }
+
+    "keep timers when behavior changes" in {
+      val probe = TestProbe[String]()
+      def newBehavior(n: Int): Behavior[String] = Behaviors.withTimers[String] { timers ⇒
+        timers.startPeriodicTimer(s"key${n}", s"msg${n}", 50.milli)
+        Behaviors.receiveMessage { msg ⇒
+          if (msg == "stop") Behaviors.stopped
+          else {
+            probe.ref ! msg
+            newBehavior(n + 1)
+          }
+        }
+      }
+
+      val ref = spawn(newBehavior(1))
+      var seen = Set.empty[String]
+      probe.fishForMessage(500.millis) {
+        case msg ⇒
+          seen += msg
+          if (seen.size == 2) FishingOutcomes.complete
+          else FishingOutcomes.continue
+      }
+
+      ref ! "stop"
     }
   }
 }

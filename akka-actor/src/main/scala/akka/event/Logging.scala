@@ -156,7 +156,7 @@ trait LoggingBus extends ActorEventBus {
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
       setUpStdoutLogger(system.settings)
-      publish(Debug(simpleName(this), this.getClass, "shutting down: StandardOutLogger started"))
+      publish(Debug(simpleName(this), this.getClass, "shutting down: StandardOutLogger"))
     }
     for {
       logger ← loggers
@@ -1441,6 +1441,8 @@ object LogMarker {
   /** Java API */
   def create(name: String): LogMarker = apply(name)
 
+  @Deprecated
+  @deprecated("use akka.event.LogEventWithMarker#marker instead", since = "2.5.12")
   def extractFromMDC(mdc: MDC): Option[String] =
     mdc.get(MDCKey) match {
       case Some(v) ⇒ Some(v.toString)
@@ -1453,7 +1455,6 @@ object LogMarker {
 
 /**
  * [[LoggingAdapter]] extension which adds Marker support.
- * Only recommended to be used within Actors as it isn't thread safe.
  */
 class MarkerLoggingAdapter(
   override val bus:       LoggingBus,

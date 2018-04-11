@@ -29,7 +29,10 @@ private[akka] trait EventsourcedSettings {
   def withSnapshotPluginId(id: String): EventsourcedSettings
 }
 
-object EventsourcedSettings {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object EventsourcedSettings {
 
   def apply(system: ActorSystem[_]): EventsourcedSettings =
     apply(system.settings.config)
@@ -77,10 +80,14 @@ private[persistence] final case class EventsourcedSettingsImpl(
   snapshotPluginId:                  String
 ) extends EventsourcedSettings {
 
-  def withJournalPluginId(id: String): EventsourcedSettings =
+  def withJournalPluginId(id: String): EventsourcedSettings = {
+    require(id != null, "journal plugin id must not be null; use empty string for 'default' journal")
     copy(journalPluginId = id)
-  def withSnapshotPluginId(id: String): EventsourcedSettings =
+  }
+  def withSnapshotPluginId(id: String): EventsourcedSettings = {
+    require(id != null, "snapshot plugin id must not be null; use empty string for 'default' snapshot store")
     copy(snapshotPluginId = id)
+  }
 
   private val journalConfig = EventsourcedSettings.journalConfigFor(config, journalPluginId)
   val recoveryEventTimeout = journalConfig.getDuration("recovery-event-timeout", TimeUnit.MILLISECONDS).millis

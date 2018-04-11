@@ -5,9 +5,7 @@
 package akka.actor.typed.scaladsl.adapter
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.EmptyProps
 import akka.actor.typed.Props
-import akka.actor.typed.internal.adapter.ActorAdapter
 
 /**
  * Wrap [[akka.actor.typed.Behavior]] in an untyped [[akka.actor.Props]], i.e. when

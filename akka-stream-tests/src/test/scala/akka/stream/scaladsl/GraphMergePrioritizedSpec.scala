@@ -5,7 +5,6 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.impl.Throttle
 import akka.stream.testkit.TestSubscriber.ManualProbe
 import akka.stream.{ ClosedShape, Inlet, Outlet }
 import akka.stream.testkit.{ TestSubscriber, TwoStreamsSetup }

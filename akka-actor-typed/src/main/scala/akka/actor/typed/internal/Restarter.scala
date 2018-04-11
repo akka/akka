@@ -11,7 +11,6 @@ import akka.actor.DeadLetterSuppression
 import akka.actor.typed.SupervisorStrategy._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.event.Logging
 import akka.util.OptionVal
 
 import scala.concurrent.duration.{ Deadline, FiniteDuration }
@@ -25,7 +24,6 @@ import scala.util.control.NonFatal
 @InternalApi private[akka] object Supervisor {
   def apply[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], strategy: SupervisorStrategy): Behavior[T] =
     Behaviors.setup[T] { ctx ⇒
-      val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
       val supervisor: Supervisor[T, Thr] = strategy match {
         case Restart(-1, _, loggingEnabled) ⇒
           new Restarter(initialBehavior, initialBehavior, loggingEnabled)
@@ -43,7 +41,7 @@ import scala.util.control.NonFatal
             .asInstanceOf[Supervisor[T, Thr]]
       }
 
-      supervisor.init(c)
+      supervisor.init(ctx)
     }
 
 }

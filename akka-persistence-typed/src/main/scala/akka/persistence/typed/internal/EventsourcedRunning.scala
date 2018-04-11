@@ -4,8 +4,7 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.{ Behavior, Signal }
-import akka.actor.typed.Behavior.StoppedBehavior
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.MutableBehavior
 import akka.annotation.InternalApi
@@ -56,7 +55,7 @@ private[akka] object EventsourcedRunning {
   }
 
   def apply[C, E, S](setup: EventsourcedSetup[C, E, S], state: EventsourcedState[S]): Behavior[InternalProtocol] =
-    new EventsourcedRunning(setup).handlingCommands(state)
+    new EventsourcedRunning(setup.setMdc(MDC.RunningCmds)).handlingCommands(state)
 }
 
 // ===============================================
@@ -67,10 +66,10 @@ private[akka] object EventsourcedRunning {
   extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
   import EventsourcedRunning.EventsourcedState
 
-  import EventsourcedBehavior.withMdc
-
-  private def log = setup.log
   private def commandContext = setup.commandContext
+
+  private val runningCmdsMdc = MDC.create(setup.persistenceId, MDC.RunningCmds)
+  private val persistingEventsMdc = MDC.create(setup.persistenceId, MDC.PersistingEvents)
 
   def handlingCommands(state: EventsourcedState[S]): Behavior[InternalProtocol] = {
 
@@ -85,8 +84,10 @@ private[akka] object EventsourcedRunning {
       effect:      EffectImpl[E, S],
       sideEffects: immutable.Seq[ChainableEffect[_, S]] = Nil
     ): Behavior[InternalProtocol] = {
-      if (log.isDebugEnabled)
-        log.debug(s"Handled command [{}], resulting effect: [{}], side effects: [{}]", msg.getClass.getName, effect, sideEffects.size)
+      if (setup.log.isDebugEnabled)
+        setup.log.debug(
+          s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
+          msg.getClass.getName, effect, sideEffects.size)
 
       effect match {
         case CompositeEffect(eff, currentSideEffects) ⇒
@@ -147,12 +148,12 @@ private[akka] object EventsourcedRunning {
       if (tags.isEmpty) event else Tagged(event, tags)
     }
 
-    withMdc(setup, MDC.RunningCmds) {
-      Behaviors.receiveMessage[EventsourcedBehavior.InternalProtocol] {
-        case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
-        case SnapshotterResponse(r)           ⇒ onSnapshotterResponse(r, Behaviors.same)
-        case _                                ⇒ Behaviors.unhandled
-      }
+    setup.setMdc(runningCmdsMdc)
+
+    Behaviors.receiveMessage[EventsourcedBehavior.InternalProtocol] {
+      case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
+      case SnapshotterResponse(r)           ⇒ onSnapshotterResponse(r, Behaviors.same)
+      case _                                ⇒ Behaviors.unhandled
     }
 
   }
@@ -165,9 +166,8 @@ private[akka] object EventsourcedRunning {
     shouldSnapshotAfterPersist: Boolean,
     sideEffects:                immutable.Seq[ChainableEffect[_, S]]
   ): Behavior[InternalProtocol] = {
-    withMdc(setup, MDC.PersistingEvents) {
-      new PersistingEvents(state, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
-    }
+    setup.setMdc(persistingEventsMdc)
+    new PersistingEvents(state, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
   }
 
   class PersistingEvents(

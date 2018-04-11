@@ -140,8 +140,6 @@ class BehaviorBuilder[T] private (
 object BehaviorBuilder {
   def create[T]: BehaviorBuilder[T] = new BehaviorBuilder[T](Nil, Nil)
 
-  import scala.language.existentials
-
   /** INTERNAL API */
   @InternalApi
   private[javadsl] final case class Case[BT, MT](`type`: Class[_ <: MT], test: Option[MT ⇒ Boolean], handler: (ActorContext[BT], MT) ⇒ Behavior[BT])

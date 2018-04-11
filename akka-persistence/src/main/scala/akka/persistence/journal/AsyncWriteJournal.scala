@@ -15,7 +15,6 @@ import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
 import akka.pattern.CircuitBreaker
-import java.util.Locale
 
 /**
  * Abstract journal, optimized for asynchronous, non-blocking writes.

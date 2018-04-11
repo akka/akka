@@ -7,7 +7,6 @@ package akka.cluster.ddata.typed.internal
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
-import scala.concurrent.Future
 
 import akka.annotation.InternalApi
 import akka.cluster.{ ddata ⇒ dd }
@@ -17,8 +16,8 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.util.Timeout
+import akka.util.JavaDurationConverters._
 import akka.cluster.ddata.ReplicatedData
-import akka.cluster.ddata.Key
 import akka.actor.typed.Terminated
 
 /**
@@ -69,8 +68,8 @@ import akka.actor.typed.Terminated
 
             case cmd: JReplicator.Get[d] ⇒
               implicit val timeout = Timeout(cmd.consistency.timeout match {
-                case Duration.Zero ⇒ localAskTimeout
-                case t             ⇒ t + additionalAskTimeout
+                case java.time.Duration.ZERO ⇒ localAskTimeout
+                case t                       ⇒ t.asScala + additionalAskTimeout
               })
               import ctx.executionContext
               val reply =
@@ -93,8 +92,8 @@ import akka.actor.typed.Terminated
 
             case cmd: JReplicator.Update[d] ⇒
               implicit val timeout = Timeout(cmd.writeConsistency.timeout match {
-                case Duration.Zero ⇒ localAskTimeout
-                case t             ⇒ t + additionalAskTimeout
+                case java.time.Duration.ZERO ⇒ localAskTimeout
+                case t                       ⇒ t.asScala + additionalAskTimeout
               })
               import ctx.executionContext
               val reply =
@@ -148,8 +147,8 @@ import akka.actor.typed.Terminated
 
             case cmd: JReplicator.Delete[d] ⇒
               implicit val timeout = Timeout(cmd.consistency.timeout match {
-                case Duration.Zero ⇒ localAskTimeout
-                case t             ⇒ t + additionalAskTimeout
+                case java.time.Duration.ZERO ⇒ localAskTimeout
+                case t                       ⇒ t.asScala + additionalAskTimeout
               })
               import ctx.executionContext
               val reply =

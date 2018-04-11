@@ -15,13 +15,13 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
-  val sslConfigVersion = "0.2.2"
+  val sslConfigVersion = "0.2.3"
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
   val aeronVersion = "1.7.0"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.12", "2.12.4"),
+    crossScalaVersions := Seq("2.11.12", "2.12.5"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
@@ -117,6 +117,7 @@ object Dependencies {
       val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
 
       val levelDB = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided" // ApacheV2
+      val levelDBmultiJVM = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided;multi-jvm" // ApacheV2
       val levelDBNative = "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % "optional;provided" // New BSD
 
       val junit = Compile.junit % "optional;provided;test"
@@ -145,7 +146,7 @@ object Dependencies {
 
   val clusterTools = l ++= Seq(Test.junit, Test.scalatest.value)
 
-  val clusterSharding = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Test.junit, Test.scalatest.value, Test.commonsIo)
+  val clusterSharding = l ++= Seq(Provided.levelDBmultiJVM, Provided.levelDBNative, Test.junit, Test.scalatest.value, Test.commonsIo)
 
   val clusterMetrics = l ++= Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
 
@@ -157,9 +158,9 @@ object Dependencies {
 
   val persistence = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Test.scalatest.value, Test.junit, Test.commonsIo, Test.commonsCodec, Test.scalaXml)
 
-  val persistenceQuery = l ++= Seq(Test.scalatest.value, Test.junit, Test.commonsIo)
+  val persistenceQuery = l ++= Seq(Test.scalatest.value, Test.junit, Test.commonsIo, Provided.levelDB, Provided.levelDBNative)
 
-  val persistenceTck = l ++= Seq(Test.scalatest.value.withConfigurations(Some("compile")), Test.junit.withConfigurations(Some("compile")))
+  val persistenceTck = l ++= Seq(Test.scalatest.value.withConfigurations(Some("compile")), Test.junit.withConfigurations(Some("compile")), Provided.levelDB, Provided.levelDBNative)
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
@@ -167,7 +168,7 @@ object Dependencies {
 
   val osgi = l ++= Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest.value, Test.junit)
 
-  val docs = l ++= Seq(Test.scalatest.value, Test.junit, Docs.sprayJson, Docs.gson)
+  val docs = l ++= Seq(Test.scalatest.value, Test.junit, Docs.sprayJson, Docs.gson, Provided.levelDB)
 
   val contrib = l ++= Seq(Test.commonsIo)
 
