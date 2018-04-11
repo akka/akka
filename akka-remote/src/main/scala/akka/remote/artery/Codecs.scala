@@ -139,8 +139,7 @@ private[remote] class Encoder(
           if (debugLogSendEnabled)
             log.debug(
               "sending remote message [{}] to [{}] from [{}]",
-              Logging.messageClassName(outboundEnvelope.message),
-              outboundEnvelope.recipient.getOrElse(""), outboundEnvelope.sender.getOrElse(""))
+              outboundEnvelope.message, outboundEnvelope.recipient.getOrElse(""), outboundEnvelope.sender.getOrElse(""))
 
           push(out, envelope)
 

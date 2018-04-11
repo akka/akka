@@ -37,45 +37,41 @@ private[persistence] object EventsourcedReplayingEvents {
   private[persistence] final case class ReplayingState[State](
     seqNr:               Long,
     state:               State,
-    eventSeenInInterval: Boolean = false
+    eventSeenInInterval: Boolean,
+    toSeqNr:             Long
   )
 
   def apply[C, E, S](
     setup: EventsourcedSetup[C, E, S],
     state: ReplayingState[S]
   ): Behavior[InternalProtocol] =
-    new EventsourcedReplayingEvents(setup).createBehavior(state)
+    new EventsourcedReplayingEvents(setup.setMdc(MDC.ReplayingEvents)).createBehavior(state)
 
 }
 
 @InternalApi
 private[persistence] class EventsourcedReplayingEvents[C, E, S](override val setup: EventsourcedSetup[C, E, S])
   extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
-  import setup.context.log
   import EventsourcedReplayingEvents.ReplayingState
 
   def createBehavior(state: ReplayingState[S]): Behavior[InternalProtocol] = {
     Behaviors.setup { _ ⇒
       startRecoveryTimer(setup.timers, setup.settings.recoveryEventTimeout)
 
-      replayEvents(state.seqNr + 1L, setup.recovery.toSequenceNr)
+      replayEvents(state.seqNr + 1L, state.toSeqNr)
 
-      withMdc(setup, MDC.ReplayingEvents) {
-        stay(state)
-      }
+      stay(state)
     }
   }
 
   private def stay(state: ReplayingState[S]): Behavior[InternalProtocol] =
-    withMdc(setup, MDC.ReplayingEvents) {
-      Behaviors.receiveMessage[InternalProtocol] {
-        case JournalResponse(r)      ⇒ onJournalResponse(state, r)
-        case SnapshotterResponse(r)  ⇒ onSnapshotterResponse(r)
-        case RecoveryTickEvent(snap) ⇒ onRecoveryTick(state, snap)
-        case cmd: IncomingCommand[C] ⇒ onCommand(cmd)
-        case RecoveryPermitGranted   ⇒ Behaviors.unhandled // should not happen, we already have the permit
-      }.receiveSignal(returnPermitOnStop)
-    }
+    Behaviors.receiveMessage[InternalProtocol] {
+      case JournalResponse(r)      ⇒ onJournalResponse(state, r)
+      case SnapshotterResponse(r)  ⇒ onSnapshotterResponse(r)
+      case RecoveryTickEvent(snap) ⇒ onRecoveryTick(state, snap)
+      case cmd: IncomingCommand[C] ⇒ onCommand(cmd)
+      case RecoveryPermitGranted   ⇒ Behaviors.unhandled // should not happen, we already have the permit
+    }.receiveSignal(returnPermitOnStop)
 
   private def onJournalResponse(
     state:    ReplayingState[S],
@@ -95,7 +91,7 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
             case NonFatal(ex) ⇒ onRecoveryFailure(ex, repr.sequenceNr, Some(event))
           }
         case RecoverySuccess(highestSeqNr) ⇒
-          log.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
+          setup.log.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
           cancelRecoveryTimer(setup.timers)
 
           onRecoveryCompleted(state)

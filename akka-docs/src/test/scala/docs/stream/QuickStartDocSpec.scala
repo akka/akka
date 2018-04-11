@@ -62,7 +62,7 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
     //#add-streams
     factorials
       .zipWith(Source(0 to 100))((num, idx) ⇒ s"$idx! = $num")
-      .throttle(1, 1.second, 1, ThrottleMode.shaping)
+      .throttle(1, 1.second)
       //#add-streams
       .take(3)
       //#add-streams

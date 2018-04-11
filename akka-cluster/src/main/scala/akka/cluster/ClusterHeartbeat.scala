@@ -4,8 +4,11 @@
 
 package akka.cluster
 
+import java.util.concurrent.TimeUnit
+
 import scala.annotation.tailrec
 import scala.collection.immutable
+
 import akka.actor.{ Actor, ActorLogging, ActorPath, ActorSelection, Address, DeadLetterSuppression, RootActorPath }
 import akka.cluster.ClusterEvent._
 import akka.remote.FailureDetectorRegistry
@@ -93,6 +96,9 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
     PeriodicTasksInitialDelay max HeartbeatInterval,
     HeartbeatInterval, self, HeartbeatTick)
 
+  // used for logging warning if actual tick interval is unexpected (e.g. due to starvation)
+  private var tickTimestamp = System.nanoTime() + (PeriodicTasksInitialDelay max HeartbeatInterval).toNanos
+
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent], classOf[ReachabilityEvent])
   }
@@ -116,6 +122,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
       init(s)
       context.become(active)
     case HeartbeatTick ⇒
+      tickTimestamp = System.nanoTime() // start checks when active
   }
 
   def active: Actor.Receive = {
@@ -171,6 +178,21 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
       }
       heartbeatReceiver(to.address) ! selfHeartbeat
     }
+
+    checkTickInterval()
+  }
+
+  private def checkTickInterval(): Unit = {
+    val now = System.nanoTime()
+    if ((now - tickTimestamp) >= (HeartbeatInterval.toNanos * 2))
+      log.warning(
+        "Cluster Node [{}] - Scheduled sending of heartbeat was delayed. " +
+          "Previous heartbeat was sent [{}] ms ago, expected interval is [{}] ms. This may cause failure detection " +
+          "to mark members as unreachable. The reason can be thread starvation, e.g. by running blocking tasks on the " +
+          "default dispatcher, CPU overload, or GC.",
+        selfAddress, TimeUnit.NANOSECONDS.toMillis(now - tickTimestamp), HeartbeatInterval.toMillis)
+    tickTimestamp = now
+
   }
 
   def heartbeatRsp(from: UniqueAddress): Unit = {

@@ -76,6 +76,16 @@ private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior
     }
   }
 
+  def expectEffectPF[R](f: PartialFunction[Effect, R]): R = {
+    ctx.effectQueue.poll() match {
+      case null ⇒ throw new AssertionError(s"expected matching effect but no effects were recorded")
+      case eff if f.isDefinedAt(eff) ⇒
+        f.apply(eff)
+      case other ⇒
+        throw new AssertionError(s"expected matching effect but got: $other")
+    }
+  }
+
   def expectEffectType[E <: Effect](implicit classTag: ClassTag[E]): E =
     expectEffectClass(classTag.runtimeClass.asInstanceOf[Class[E]])
 
@@ -114,4 +124,5 @@ private[akka] final class BehaviorTestKitImpl[T](_name: String, _initialBehavior
     } catch handleException
   }
 
+  override def hasEffects(): Boolean = !ctx.effectQueue.isEmpty
 }

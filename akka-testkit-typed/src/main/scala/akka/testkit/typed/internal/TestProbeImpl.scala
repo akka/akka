@@ -4,6 +4,7 @@
 
 package akka.testkit.typed.internal
 
+import java.time
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque }
 import java.util.function.Supplier
@@ -16,7 +17,7 @@ import akka.testkit.typed.scaladsl.{ TestDuration, TestProbe ⇒ ScalaTestProbe 
 import akka.testkit.typed.{ FishingOutcome, TestKitSettings }
 import akka.util.PrettyDuration._
 import akka.util.{ BoxedType, Timeout }
-
+import akka.util.JavaDurationConverters._
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -60,25 +61,32 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   private val testActor: ActorRef[M] = {
     // FIXME arbitrary timeout?
-    implicit val timeout = Timeout(3.seconds)
+    implicit val timeout: Timeout = Timeout(3.seconds)
     val futRef = system.systemActorOf(TestProbeImpl.testActor(queue, terminations), s"$name-${testActorId.incrementAndGet()}")
     Await.result(futRef, timeout.duration + 1.second)
   }
 
-  override def ref = testActor
+  override def ref: ActorRef[M] = testActor
 
-  override def remainingOrDefault = remainingOr(settings.SingleExpectDefaultTimeout.dilated)
+  override def remainingOrDefault: FiniteDuration = remainingOr(settings.SingleExpectDefaultTimeout.dilated)
+
+  override def getRemainingOrDefault: java.time.Duration = remainingOrDefault.asJava
 
   override def remaining: FiniteDuration = end match {
     case f: FiniteDuration ⇒ f - now
     case _                 ⇒ throw new AssertionError("`remaining` may not be called outside of `within`")
   }
 
+  override def getRemaining: java.time.Duration = remaining.asJava
+
   override def remainingOr(duration: FiniteDuration): FiniteDuration = end match {
     case x if x eq Duration.Undefined ⇒ duration
     case x if !x.isFinite             ⇒ throw new IllegalArgumentException("`end` cannot be infinite")
     case f: FiniteDuration            ⇒ f - now
   }
+
+  override def getRemainingOr(duration: java.time.Duration): java.time.Duration =
+    remainingOr(duration.asScala).asJava
 
   private def remainingOrDilated(max: Duration): FiniteDuration = max match {
     case x if x eq Duration.Undefined ⇒ remainingOrDefault
@@ -113,8 +121,14 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   override def expectMessage[T <: M](max: FiniteDuration, obj: T): T = expectMessage_internal(max.dilated, obj)
 
+  override def expectMessage[T <: M](max: java.time.Duration, obj: T): T =
+    expectMessage(max.asScala, obj)
+
   override def expectMessage[T <: M](max: FiniteDuration, hint: String, obj: T): T =
     expectMessage_internal(max.dilated, obj, Some(hint))
+
+  override def expectMessage[T <: M](max: java.time.Duration, hint: String, obj: T): T =
+    expectMessage(max.asScala, hint, obj)
 
   private def expectMessage_internal[T <: M](max: Duration, obj: T, hint: Option[String] = None): T = {
     val o = receiveOne(max)
@@ -144,9 +158,14 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     message
   }
 
-  override def expectNoMessage(max: FiniteDuration): Unit = { expectNoMessage_internal(max) }
+  override def expectNoMessage(max: FiniteDuration): Unit =
+    expectNoMessage_internal(max)
 
-  override def expectNoMessage(): Unit = { expectNoMessage_internal(settings.ExpectNoMessageDefaultTimeout.dilated) }
+  override def expectNoMessage(max: java.time.Duration): Unit =
+    expectNoMessage(max.asScala)
+
+  override def expectNoMessage(): Unit =
+    expectNoMessage_internal(settings.ExpectNoMessageDefaultTimeout.dilated)
 
   private def expectNoMessage_internal(max: FiniteDuration) {
     val o = receiveOne(max)
@@ -210,8 +229,11 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     assert(message.ref == actorRef, s"expected [${actorRef.path}] to stop, but saw [${message.ref.path}] stop")
   }
 
-  override def awaitAssert[A](max: Duration, interval: Duration, supplier: Supplier[A]): A =
-    awaitAssert(supplier.get(), max, interval)
+  override def expectTerminated[U](actorRef: ActorRef[U], max: java.time.Duration): Unit =
+    expectTerminated(actorRef, max.asScala)
+
+  override def awaitAssert[A](max: java.time.Duration, interval: java.time.Duration, supplier: Supplier[A]): A =
+    awaitAssert(supplier.get(), if (max == java.time.Duration.ZERO) Duration.Undefined else max.asScala, interval.asScala)
 
   override def awaitAssert[A](a: ⇒ A, max: Duration = Duration.Undefined, interval: Duration = 100.millis): A = {
     val _max = remainingOrDilated(max)

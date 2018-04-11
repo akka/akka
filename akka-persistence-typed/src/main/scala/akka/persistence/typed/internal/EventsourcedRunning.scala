@@ -55,7 +55,7 @@ private[akka] object EventsourcedRunning {
   }
 
   def apply[C, E, S](setup: EventsourcedSetup[C, E, S], state: EventsourcedState[S]): Behavior[InternalProtocol] =
-    new EventsourcedRunning(setup).handlingCommands(state)
+    new EventsourcedRunning(setup.setMdc(MDC.RunningCmds)).handlingCommands(state)
 }
 
 // ===============================================
@@ -66,10 +66,10 @@ private[akka] object EventsourcedRunning {
   extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
   import EventsourcedRunning.EventsourcedState
 
-  import EventsourcedBehavior.withMdc
-
-  private def log = setup.log
   private def commandContext = setup.commandContext
+
+  private val runningCmdsMdc = MDC.create(setup.persistenceId, MDC.RunningCmds)
+  private val persistingEventsMdc = MDC.create(setup.persistenceId, MDC.PersistingEvents)
 
   def handlingCommands(state: EventsourcedState[S]): Behavior[InternalProtocol] = {
 
@@ -84,8 +84,10 @@ private[akka] object EventsourcedRunning {
       effect:      EffectImpl[E, S],
       sideEffects: immutable.Seq[ChainableEffect[_, S]] = Nil
     ): Behavior[InternalProtocol] = {
-      if (log.isDebugEnabled)
-        log.debug(s"Handled command [{}], resulting effect: [{}], side effects: [{}]", msg.getClass.getName, effect, sideEffects.size)
+      if (setup.log.isDebugEnabled)
+        setup.log.debug(
+          s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
+          msg.getClass.getName, effect, sideEffects.size)
 
       effect match {
         case CompositeEffect(eff, currentSideEffects) ⇒
@@ -146,11 +148,12 @@ private[akka] object EventsourcedRunning {
       if (tags.isEmpty) event else Tagged(event, tags)
     }
 
-    withMdc(setup, MDC.RunningCmds) {
-      Behaviors.receiveMessage[EventsourcedBehavior.InternalProtocol] {
-        case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
-        case _                                ⇒ Behaviors.unhandled
-      }
+    setup.setMdc(runningCmdsMdc)
+
+    Behaviors.receiveMessage[EventsourcedBehavior.InternalProtocol] {
+      case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
+      case SnapshotterResponse(r)           ⇒ onSnapshotterResponse(r, Behaviors.same)
+      case _                                ⇒ Behaviors.unhandled
     }
 
   }
@@ -163,9 +166,8 @@ private[akka] object EventsourcedRunning {
     shouldSnapshotAfterPersist: Boolean,
     sideEffects:                immutable.Seq[ChainableEffect[_, S]]
   ): Behavior[InternalProtocol] = {
-    withMdc(setup, MDC.PersistingEvents) {
-      new PersistingEvents(state, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
-    }
+    setup.setMdc(persistingEventsMdc)
+    new PersistingEvents(state, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
   }
 
   class PersistingEvents(
@@ -179,7 +181,7 @@ private[akka] object EventsourcedRunning {
 
     override def onMessage(msg: EventsourcedBehavior.InternalProtocol): Behavior[EventsourcedBehavior.InternalProtocol] = {
       msg match {
-        case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r)
+        case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r, this)
         case JournalResponse(r)                ⇒ onJournalResponse(r)
         case in: IncomingCommand[C @unchecked] ⇒ onCommand(in)
         case RecoveryTickEvent(_)              ⇒ Behaviors.unhandled
@@ -256,27 +258,29 @@ private[akka] object EventsourcedRunning {
       Behaviors.stopped
     }
 
-    private def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
-      response match {
-        case SaveSnapshotSuccess(meta) ⇒
-          setup.context.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
-          this
-        case SaveSnapshotFailure(meta, ex) ⇒
-          setup.context.log.error(ex, "Save snapshot failed, snapshot metadata: [{}]", meta)
-          this // FIXME https://github.com/akka/akka/issues/24637 should we provide callback for this? to allow Stop
+  }
 
-        // FIXME not implemented
-        case DeleteSnapshotFailure(_, _)  ⇒ ???
-        case DeleteSnapshotSuccess(_)     ⇒ ???
-        case DeleteSnapshotsFailure(_, _) ⇒ ???
-        case DeleteSnapshotsSuccess(_)    ⇒ ???
+  private def onSnapshotterResponse(
+    response: SnapshotProtocol.Response,
+    outer:    Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+    response match {
+      case SaveSnapshotSuccess(meta) ⇒
+        setup.context.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
+        outer
+      case SaveSnapshotFailure(meta, ex) ⇒
+        setup.context.log.error(ex, "Save snapshot failed, snapshot metadata: [{}]", meta)
+        outer // FIXME https://github.com/akka/akka/issues/24637 should we provide callback for this? to allow Stop
 
-        // ignore LoadSnapshot messages
-        case _ ⇒
-          Behaviors.unhandled
-      }
+      // FIXME not implemented
+      case DeleteSnapshotFailure(_, _)  ⇒ ???
+      case DeleteSnapshotSuccess(_)     ⇒ ???
+      case DeleteSnapshotsFailure(_, _) ⇒ ???
+      case DeleteSnapshotsSuccess(_)    ⇒ ???
+
+      // ignore LoadSnapshot messages
+      case _ ⇒
+        Behaviors.unhandled
     }
-
   }
 
   // --------------------------

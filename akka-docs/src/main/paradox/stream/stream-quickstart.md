@@ -186,10 +186,7 @@ All operations so far have been time-independent and could have been performed
 in the same fashion on strict collections of elements. The next line
 demonstrates that we are in fact dealing with streams that can flow at a
 certain speed: we use the `throttle` combinator to slow down the stream to 1
-element per second (the second `1` in the argument list is the maximum size
-of a burst that we want to allow—passing `1` means that the first element
-gets through immediately and the second then has to wait for one second and so
-on).
+element per second.
 
 If you run this program you will see one line printed per second. One aspect
 that is not immediately visible deserves mention, though: if you try and set

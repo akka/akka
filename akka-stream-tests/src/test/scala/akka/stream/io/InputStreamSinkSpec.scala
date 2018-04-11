@@ -94,6 +94,17 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       inputStream.close()
     }
 
+    "ignore an empty ByteString" in assertAllStagesStopped {
+      val (probe, inputStream) = TestSource.probe[ByteString].toMat(StreamConverters.asInputStream())(Keep.both).run()
+      probe.sendNext(ByteString.empty)
+      val f = Future(inputStream.read())
+
+      the[Exception] thrownBy Await.result(f, timeout) shouldBe a[TimeoutException]
+      probe.sendComplete()
+      Await.result(f, remainingOrDefault) should ===(-1)
+      inputStream.close()
+    }
+
     "fill up buffer by default" in assertAllStagesStopped {
       val byteString2 = randomByteString(3)
       val inputStream = Source(byteString :: byteString2 :: Nil).runWith(StreamConverters.asInputStream())

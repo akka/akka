@@ -28,20 +28,21 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
 
   // format: OFF
   val `scala -> java types` =
-    (classOf[scala.collection.immutable.Iterable[_]],   classOf[java.lang.Iterable[_]]) ::
-      (classOf[scala.collection.Iterator[_]],           classOf[java.util.Iterator[_]]) ::
-      (classOf[scala.collection.Seq[_]],                classOf[java.util.List[_]]) ::
-      (classOf[scala.collection.immutable.Seq[_]],      classOf[java.util.List[_]]) ::
-      (classOf[scala.collection.immutable.Set[_]],      classOf[java.util.Set[_]]) ::
-      (classOf[Boolean],                                classOf[akka.stream.javadsl.AsPublisher]) ::
-      (classOf[scala.Function0[_]],                     classOf[akka.japi.function.Creator[_]]) ::
-      (classOf[scala.Function0[_]],                     classOf[java.util.concurrent.Callable[_]]) ::
-      (classOf[scala.Function1[_, Unit]],               classOf[akka.japi.function.Procedure[_]]) ::
-      (classOf[scala.Function1[_, _]],                  classOf[akka.japi.function.Function[_, _]]) ::
-      (classOf[akka.stream.scaladsl.Source[_, _]],      classOf[akka.stream.javadsl.Source[_, _]]) ::
-      (classOf[akka.stream.scaladsl.Sink[_, _]],        classOf[akka.stream.javadsl.Sink[_, _]]) ::
-      (classOf[akka.stream.scaladsl.Flow[_, _, _]],     classOf[akka.stream.javadsl.Flow[_, _, _]]) ::
-      (classOf[akka.stream.scaladsl.RunnableGraph[_]],  classOf[akka.stream.javadsl.RunnableGraph[_]]) ::
+    (classOf[scala.collection.immutable.Iterable[_]],      classOf[java.lang.Iterable[_]]) ::
+      (classOf[scala.collection.Iterator[_]],              classOf[java.util.Iterator[_]]) ::
+      (classOf[scala.collection.Seq[_]],                   classOf[java.util.List[_]]) ::
+      (classOf[scala.collection.immutable.Seq[_]],         classOf[java.util.List[_]]) ::
+      (classOf[scala.collection.immutable.Set[_]],         classOf[java.util.Set[_]]) ::
+      (classOf[Boolean],                                   classOf[akka.stream.javadsl.AsPublisher]) ::
+      (classOf[scala.Function0[_]],                        classOf[akka.japi.function.Creator[_]]) ::
+      (classOf[scala.Function0[_]],                        classOf[java.util.concurrent.Callable[_]]) ::
+      (classOf[scala.Function1[_, Unit]],                  classOf[akka.japi.function.Procedure[_]]) ::
+      (classOf[scala.Function1[_, _]],                     classOf[akka.japi.function.Function[_, _]]) ::
+      (classOf[scala.Function1[scala.Function1[_, _], _]], classOf[akka.japi.function.Function2[_, _, _]]) ::
+      (classOf[akka.stream.scaladsl.Source[_, _]],         classOf[akka.stream.javadsl.Source[_, _]]) ::
+      (classOf[akka.stream.scaladsl.Sink[_, _]],           classOf[akka.stream.javadsl.Sink[_, _]]) ::
+      (classOf[akka.stream.scaladsl.Flow[_, _, _]],        classOf[akka.stream.javadsl.Flow[_, _, _]]) ::
+      (classOf[akka.stream.scaladsl.RunnableGraph[_]],     classOf[akka.stream.javadsl.RunnableGraph[_]]) ::
       ((2 to 22) map { i => (Class.forName(s"scala.Function$i"), Class.forName(s"akka.japi.function.Function$i")) }).toList
   // format: ON
 

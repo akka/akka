@@ -5,15 +5,16 @@
 package akka.actor.typed
 package internal
 
-import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.actor.typed.ActorRef.ActorRefOps
-import akka.actor.typed.javadsl
-import akka.actor.typed.scaladsl
 import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
+import akka.util.JavaDurationConverters._
+
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 /**
@@ -27,11 +28,15 @@ import scala.reflect.ClassTag
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
-  def wrapWithTimers[T](factory: TimerSchedulerImpl[T] ⇒ Behavior[T])(ctx: ActorContext[T]): Behavior[T] = {
-    val timerScheduler = new TimerSchedulerImpl[T](ctx)
-    val behavior = factory(timerScheduler)
-    timerScheduler.intercept(behavior)
-  }
+  def wrapWithTimers[T](factory: TimerSchedulerImpl[T] ⇒ Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
+    ctx match {
+      case ctxImpl: ActorContextImpl[T] ⇒
+        val timerScheduler = ctxImpl.timer
+        val behavior = factory(timerScheduler)
+        timerScheduler.intercept(behavior)
+      case _ ⇒ throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
+    }
+
 }
 
 /**
@@ -47,8 +52,14 @@ import scala.reflect.ClassTag
   override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =
     startTimer(key, msg, interval, repeat = true)
 
+  override def startPeriodicTimer(key: Any, msg: T, interval: java.time.Duration): Unit =
+    startPeriodicTimer(key, msg, interval.asScala)
+
   override def startSingleTimer(key: Any, msg: T, timeout: FiniteDuration): Unit =
     startTimer(key, msg, timeout, repeat = false)
+
+  def startSingleTimer(key: Any, msg: T, timeout: java.time.Duration): Unit =
+    startSingleTimer(key, msg, timeout.asScala)
 
   private def startTimer(key: Any, msg: T, timeout: FiniteDuration, repeat: Boolean): Unit = {
     timers.get(key) match {

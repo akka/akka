@@ -389,7 +389,18 @@ Scala
 Java
 :  @@snip [FutureDocTest.java]($code$/java/jdocs/future/FutureDocTest.java) { #imports7 #after }
 
+## Retry
+
+`akka.pattern.retry` will retry a @scala[`Future` class]@java[`CompletionStage` class] some number of times with a delay between each attempt.
+
+Scala
+:   @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #retry }
+
+Java
+:   @@snip [FutureDocTest.java]($code$/java/jdocs/future/FutureDocTest.java) { #imports8 #retry }
+
 @@@ div { .group-java }
+
 
 ## Java 8, CompletionStage and CompletableFuture
 

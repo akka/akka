@@ -15,11 +15,13 @@ import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util
 import java.util.{ Comparator, Optional }
 import java.util.concurrent.CompletionStage
+import akka.util.JavaDurationConverters._
 
 import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts
 import akka.stream.impl.fusing.LazyFlow
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 import scala.reflect.ClassTag
 
@@ -1058,10 +1060,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  def groupedWithin(n: Int, d: java.time.Duration): javadsl.Flow[In, java.util.List[Out], Mat] = {
-    import akka.util.JavaDurationConverters._
+  def groupedWithin(n: Int, d: java.time.Duration): javadsl.Flow[In, java.util.List[Out], Mat] =
     groupedWithin(n, d.asScala)
-  }
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -1104,10 +1104,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, java.lang.Long], d: java.time.Duration): javadsl.Flow[In, java.util.List[Out], Mat] = {
-    import akka.util.JavaDurationConverters._
+  def groupedWeightedWithin(maxWeight: Long, costFn: function.Function[Out, java.lang.Long], d: java.time.Duration): javadsl.Flow[In, java.util.List[Out], Mat] =
     groupedWeightedWithin(maxWeight, costFn, d.asScala)
-  }
 
   /**
    * Shifts elements emission in time by a specified amount. It allows to store elements
@@ -1164,10 +1162,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @param of time to shift all messages
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def delay(of: java.time.Duration, strategy: DelayOverflowStrategy): Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
+  def delay(of: java.time.Duration, strategy: DelayOverflowStrategy): Flow[In, Out, Mat] =
     delay(of.asScala, strategy)
-  }
 
   /**
    * Discard the given number of elements at the beginning of the stream.
@@ -1211,10 +1207,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def dropWithin(d: java.time.Duration): javadsl.Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
+  def dropWithin(d: java.time.Duration): javadsl.Flow[In, Out, Mat] =
     dropWithin(d.asScala)
-  }
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
@@ -1433,10 +1427,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * See also [[Flow.limit]], [[Flow.limitWeighted]]
    */
-  def takeWithin(d: java.time.Duration): javadsl.Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
+  def takeWithin(d: java.time.Duration): javadsl.Flow[In, Out, Mat] =
     takeWithin(d.asScala)
-  }
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
@@ -1556,7 +1548,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     new Flow(delegate.batchWeighted(max, costFn.apply, seed.apply)(aggregate.apply))
 
   /**
-   * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older
+   * Allows a faster downstream to progress independently of a slower upstream by extrapolating elements from an older
    * element until new element comes from the upstream. For example an expand step might repeat the last element for
    * the subscriber until it receives an update from upstream.
    *
@@ -1565,7 +1557,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * subscriber.
    *
    * Expand does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
-   * Exceptions from the `seed` or `extrapolate` functions will complete the stream with failure.
+   * Exceptions from the `expander` function will complete the stream with failure.
+   *
+   * See also [[#extrapolate]] for a version that always preserves the original element and allows for an initial "startup" element.
    *
    * '''Emits when''' downstream stops backpressuring
    *
@@ -1575,12 +1569,67 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    *
-   * @param seed Provides the first state for extrapolation using the first unconsumed element
-   * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
-   *                    state.
+   * @param expander       Takes the current extrapolation state to produce an output element and the next extrapolation
+   *                       state.
+   * @see [[#extrapolate]]
    */
-  def expand[U](extrapolate: function.Function[Out, java.util.Iterator[U]]): javadsl.Flow[In, U, Mat] =
-    new Flow(delegate.expand(in ⇒ extrapolate(in).asScala))
+  def expand[U](expander: function.Function[Out, java.util.Iterator[U]]): javadsl.Flow[In, U, Mat] =
+    new Flow(delegate.expand(in ⇒ expander(in).asScala))
+
+  /**
+   * Allows a faster downstream to progress independent of a slower upstream.
+   *
+   * This is achieved by introducing "extrapolated" elements - based on those from upstream - whenever downstream
+   * signals demand.
+   *
+   * Extrapolate does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
+   * Exceptions from the `extrapolate` function will complete the stream with failure.
+   *
+   * See also [[#expand]] for a version that can overwrite the original element.
+   *
+   * '''Emits when''' downstream stops backpressuring, AND EITHER upstream emits OR initial element is present OR
+   * `extrapolate` is non-empty and applicable
+   *
+   * '''Backpressures when''' downstream backpressures or current `extrapolate` runs empty
+   *
+   * '''Completes when''' upstream completes and current `extrapolate` runs empty
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param extrapolator Takes the current upstream element and provides a sequence of "extrapolated" elements based
+   *                     on the original, to be emitted in case downstream signals demand.
+   * @see [[#expand]]
+   */
+  def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]]): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.extrapolate(in ⇒ extrapolator(in).asScala))
+
+  /**
+   * Allows a faster downstream to progress independent of a slower upstream.
+   *
+   * This is achieved by introducing "extrapolated" elements - based on those from upstream - whenever downstream
+   * signals demand.
+   *
+   * Extrapolate does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
+   * Exceptions from the `extrapolate` function will complete the stream with failure.
+   *
+   * See also [[#expand]] for a version that can overwrite the original element.
+   *
+   * '''Emits when''' downstream stops backpressuring, AND EITHER upstream emits OR initial element is present OR
+   * `extrapolate` is non-empty and applicable
+   *
+   * '''Backpressures when''' downstream backpressures or current `extrapolate` runs empty
+   *
+   * '''Completes when''' upstream completes and current `extrapolate` runs empty
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   * @param extrapolator Takes the current upstream element and provides a sequence of "extrapolated" elements based
+   *                     on the original, to be emitted in case downstream signals demand.
+   * @param initial      The initial element to be emitted, in case upstream is able to stall the entire stream.
+   * @see [[#expand]]
+   */
+  def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]], initial: Out @uncheckedVariance): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.extrapolate(in ⇒ extrapolator(in).asScala, Some(initial)))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
@@ -2331,10 +2380,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def initialTimeout(timeout: java.time.Duration): javadsl.Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
+  def initialTimeout(timeout: java.time.Duration): javadsl.Flow[In, Out, Mat] =
     initialTimeout(timeout.asScala)
-  }
 
   /**
    * If the completion of the stream does not happen until the provided timeout, the stream is failed
@@ -2365,10 +2412,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def completionTimeout(timeout: java.time.Duration): javadsl.Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
+  def completionTimeout(timeout: java.time.Duration): javadsl.Flow[In, Out, Mat] =
     completionTimeout(timeout.asScala)
-  }
 
   /**
    * If the time between two processed elements exceeds the provided timeout, the stream is failed
@@ -2401,10 +2446,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def idleTimeout(timeout: java.time.Duration): javadsl.Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
+  def idleTimeout(timeout: java.time.Duration): javadsl.Flow[In, Out, Mat] =
     idleTimeout(timeout.asScala)
-  }
 
   /**
    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
@@ -2437,10 +2480,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def backpressureTimeout(timeout: java.time.Duration): javadsl.Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
+  def backpressureTimeout(timeout: java.time.Duration): javadsl.Flow[In, Out, Mat] =
     backpressureTimeout(timeout.asScala)
-  }
 
   /**
    * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
@@ -2481,10 +2522,41 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): javadsl.Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
+  def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): javadsl.Flow[In, Out, Mat] =
     keepAlive(maxIdle.asScala, injectedElem)
-  }
+
+  /**
+   * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
+   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   *
+   * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
+   * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
+   * to allow some burstiness. Whenever stream wants to send an element, it takes as many
+   * tokens from the bucket as element costs. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and
+   * started.
+   *
+   * The burst size is calculated based on the given rate (`cost/per`) as 0.1 * rate, for example:
+   * - rate < 20/second => burst size 1
+   * - rate 20/second => burst size 2
+   * - rate 100/second => burst size 10
+   * - rate 200/second => burst size 20
+   *
+   * The throttle `mode` is [[akka.stream.ThrottleMode.Shaping]], which makes pauses before emitting messages to
+   * meet throttle rate.
+   *
+   * '''Emits when''' upstream emits an element and configured time per each element elapsed
+   *
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   */
+  def throttle(elements: Int, per: java.time.Duration): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.throttle(elements, per.asScala))
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
@@ -2507,10 +2579,11 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
    *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
-   *  case burst is 0 and speed is higher than 30 events per second. You need to consider another solution in case you are expecting
-   *  events being evenly spread with some small interval (30 milliseconds or less).
-   *  In other words the throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
-   *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
+   *  case burst is 0 and speed is higher than 30 events per second. You need to increase the `maximumBurst`  if
+   *  elements arrive with small interval (30 milliseconds or less). Use the overloaded `throttle` method without
+   *  `maximumBurst` parameter to automatically calculate the `maximumBurst` based on the given rate (`cost/per`).
+   *  In other words the throttler always enforces the rate limit when `maximumBurst` parameter is given, but in
+   *  certain cases (mostly due to limited scheduler resolution) it enforces a tighter bound than what was prescribed.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
@@ -2520,7 +2593,6 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    *
-   * @see [[#throttleEven]]
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
@@ -2549,10 +2621,11 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
    *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
-   *  case burst is 0 and speed is higher than 30 events per second. You need to consider another solution in case you are expecting
-   *  events being evenly spread with some small interval (30 milliseconds or less).
-   *  In other words the throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
-   *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
+   *  case burst is 0 and speed is higher than 30 events per second. You need to increase the `maximumBurst`  if
+   *  elements arrive with small interval (30 milliseconds or less). Use the overloaded `throttle` method without
+   *  `maximumBurst` parameter to automatically calculate the `maximumBurst` based on the given rate (`cost/per`).
+   *  In other words the throttler always enforces the rate limit when `maximumBurst` parameter is given, but in
+   *  certain cases (mostly due to limited scheduler resolution) it enforces a tighter bound than what was prescribed.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
@@ -2562,13 +2635,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    *
-   * @see [[#throttleEven]]
    */
   def throttle(elements: Int, per: java.time.Duration, maximumBurst: Int,
-               mode: ThrottleMode): javadsl.Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
-    throttle(elements, per.asScala, maximumBurst, mode)
-  }
+               mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.throttle(elements, per.asScala, maximumBurst, mode))
 
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
@@ -2594,10 +2664,11 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
    *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
-   *  case burst is 0 and speed is higher than 30 events per second. You need to consider another solution in case you are expecting
-   *  events being evenly spread with some small interval (30 milliseconds or less).
-   *  In other words the throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
-   *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
+   *  case burst is 0 and speed is higher than 30 events per second. You need to increase the `maximumBurst`  if
+   *  elements arrive with small interval (30 milliseconds or less). Use the overloaded `throttle` method without
+   *  `maximumBurst` parameter to automatically calculate the `maximumBurst` based on the given rate (`cost/per`).
+   *  In other words the throttler always enforces the rate limit when `maximumBurst` parameter is given, but in
+   *  certain cases (mostly due to limited scheduler resolution) it enforces a tighter bound than what was prescribed.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
@@ -2607,7 +2678,6 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    *
-   *  @see [[#throttleEven]]
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
@@ -2621,6 +2691,42 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * This combinator works for streams when elements have different cost(length).
    * Streams of `ByteString` for example.
    *
+   * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
+   * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
+   * to allow some burstiness. Whenever stream wants to send an element, it takes as many
+   * tokens from the bucket as element costs. If there isn't any, throttle waits until the
+   * bucket accumulates enough tokens. Elements that costs more than the allowed burst will be delayed proportionally
+   * to their cost minus available tokens, meeting the target rate. Bucket is full when stream just materialized and
+   * started.
+   *
+   * The burst size is calculated based on the given rate (`cost/per`) as 0.1 * rate, for example:
+   * - rate < 20/second => burst size 1
+   * - rate 20/second => burst size 2
+   * - rate 100/second => burst size 10
+   * - rate 200/second => burst size 20
+   *
+   * The throttle `mode` is [[akka.stream.ThrottleMode.Shaping]], which makes pauses before emitting messages to
+   * meet throttle rate.
+   *
+   * '''Emits when''' upstream emits an element and configured time per each element elapsed
+   *
+   * '''Backpressures when''' downstream backpressures or the incoming rate is higher than the speed limit
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   */
+  def throttle(cost: Int, per: java.time.Duration,
+               costCalculation: function.Function[Out, Integer]): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.throttle(cost, per.asScala, costCalculation.apply))
+
+  /**
+   * Sends elements downstream with speed limited to `cost/per`. Cost is
+   * calculating for each element individually by calling `calculateCost` function.
+   * This combinator works for streams when elements have different cost(length).
+   * Streams of `ByteString` for example.
+   *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
    * to allow some burstiness. Whenever stream wants to send an element, it takes as many
@@ -2639,10 +2745,11 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    *  WARNING: Be aware that throttle is using scheduler to slow down the stream. This scheduler has minimal time of triggering
    *  next push. Consequently it will slow down the stream as it has minimal pause for emitting. This can happen in
-   *  case burst is 0 and speed is higher than 30 events per second. You need to consider another solution in case you are expecting
-   *  events being evenly spread with some small interval (30 milliseconds or less).
-   *  In other words the throttler always enforces the rate limit, but in certain cases (mostly due to limited scheduler resolution) it
-   *  enforces a tighter bound than what was prescribed. This can be also mitigated by increasing the burst size.
+   *  case burst is 0 and speed is higher than 30 events per second. You need to increase the `maximumBurst`  if
+   *  elements arrive with small interval (30 milliseconds or less). Use the overloaded `throttle` method without
+   *  `maximumBurst` parameter to automatically calculate the `maximumBurst` based on the given rate (`cost/per`).
+   *  In other words the throttler always enforces the rate limit when `maximumBurst` parameter is given, but in
+   *  certain cases (mostly due to limited scheduler resolution) it enforces a tighter bound than what was prescribed.
    *
    * '''Emits when''' upstream emits an element and configured time per each element elapsed
    *
@@ -2652,13 +2759,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    *
-   *  @see [[#throttleEven]]
    */
   def throttle(cost: Int, per: java.time.Duration, maximumBurst: Int,
-               costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
-    throttle(cost, per.asScala, maximumBurst, costCalculation, mode)
-  }
+               costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.throttle(cost, per.asScala, maximumBurst, costCalculation.apply, mode))
 
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
@@ -2673,22 +2777,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def throttleEven(elements: Int, per: FiniteDuration, mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
-    new Flow(delegate.throttle(elements, per, Integer.MAX_VALUE, mode))
-
-  /**
-   * This is a simplified version of throttle that spreads events evenly across the given time interval.
-   *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
-   * of time between events.
-   *
-   * If you want to be sure that no time interval has no more than specified number of events you need to use
-   * [[throttle()]] with maximumBurst attribute.
-   * @see [[#throttle]]
-   */
-  def throttleEven(elements: Int, per: java.time.Duration, mode: ThrottleMode): javadsl.Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
-    throttleEven(elements, per.asScala, mode)
-  }
+    new Flow(delegate.throttleEven(elements, per, mode))
 
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
@@ -2701,10 +2790,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @see [[#throttle]]
    */
   @Deprecated
-  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def throttleEven(cost: Int, per: FiniteDuration,
-                   costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
-    new Flow(delegate.throttle(cost, per, Integer.MAX_VALUE, costCalculation.apply, mode))
+  @deprecated("Use throttle without `maximumBurst` parameter instead.", "2.5.12")
+  def throttleEven(elements: Int, per: java.time.Duration, mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
+    throttleEven(elements, per.asScala, mode)
 
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
@@ -2716,11 +2804,27 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * [[throttle()]] with maximumBurst attribute.
    * @see [[#throttle]]
    */
+  @Deprecated
+  @deprecated("Use throttle without `maximumBurst` parameter instead.", "2.5.12")
+  def throttleEven(cost: Int, per: FiniteDuration,
+                   costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.throttleEven(cost, per, costCalculation.apply, mode))
+
+  /**
+   * This is a simplified version of throttle that spreads events evenly across the given time interval.
+   *
+   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * of time between events.
+   *
+   * If you want to be sure that no time interval has no more than specified number of events you need to use
+   * [[throttle()]] with maximumBurst attribute.
+   * @see [[#throttle]]
+   */
+  @Deprecated
+  @deprecated("Use throttle without `maximumBurst` parameter instead.", "2.5.12")
   def throttleEven(cost: Int, per: java.time.Duration,
-                   costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
+                   costCalculation: function.Function[Out, Integer], mode: ThrottleMode): javadsl.Flow[In, Out, Mat] =
     throttleEven(cost, per.asScala, costCalculation, mode)
-  }
 
   /**
    * Detaches upstream demand from downstream demand without detaching the
@@ -2781,10 +2885,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def initialDelay(delay: java.time.Duration): javadsl.Flow[In, Out, Mat] = {
-    import akka.util.JavaDurationConverters._
+  def initialDelay(delay: java.time.Duration): javadsl.Flow[In, Out, Mat] =
     initialDelay(delay.asScala)
-  }
 
   /**
    * Replace the attributes of this [[Flow]] with the given ones. If this Flow is a composite

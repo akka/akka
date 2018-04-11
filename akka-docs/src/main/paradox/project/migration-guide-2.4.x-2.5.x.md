@@ -372,7 +372,7 @@ it is possible to disable the additional serializers and continue using Java ser
 
 ```ruby
 akka.actor {
-  # Set this to off to disable serialization-bindings define in
+  # Set this to off to disable serialization-bindings defined in
   # additional-serialization-bindings. That should only be needed
   # for backwards compatibility reasons.
   enable-additional-serialization-bindings = off
@@ -690,7 +690,7 @@ implicit val materializer = ActorMaterializer.create(system)
 
 val throttler: ActorRef =
   Source.actorRef(bufferSize = 1000, OverflowStrategy.dropNew)
-    .throttle(100, 1.second, 10, ThrottleMode.Shaping)
+    .throttle(100, 1.second)
     .to(Sink.actorRef(target, NotUsed))
     .run()
 ```
@@ -699,7 +699,7 @@ Example in Java:
 
 ```
 import java.util.concurrent.TimeUnit;
-import scala.concurrent.duration.FiniteDuration;
+import java.time.Duration;
 import akka.NotUsed;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -716,7 +716,7 @@ final Materializer materializer = ActorMaterializer.create(system);
 
 final ActorRef throttler =
   Source.actorRef(1000, OverflowStrategy.dropNew())
-    .throttle(100,  FiniteDuration.create(1, TimeUnit.SECONDS), 10, ThrottleMode.shaping())
+    .throttle(100,  Duration.ofSeconds(1))
     .to(Sink.actorRef(target, NotUsed.getInstance()))
     .run(materializer);
 ```

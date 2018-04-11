@@ -687,6 +687,20 @@ If failure messages are left unhandled by the actor, a default warning log messa
 No default action is performed on the success messages, however you're free to handle them e.g. in order to delete
 an in memory representation of the snapshot, or in the case of failure to attempt save the snapshot again.
 
+
+## Scaling out
+
+In a use case where the number of persistent actors needed are higher than what would fit in the memory of one node or
+where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can
+resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a 
+cluster and address them by id.
+
+The [Lagom framework](https://www.lagom-framework.com), which is built on top of Akka encodes many of the best practices 
+around this. For more details see @java[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/java/ES_CQRS.html)]
+@scala[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/scala/ES_CQRS.html)] and 
+@java[[Persistent Entity](https://www.lagomframework.com/documentation/current/java/PersistentEntity.html)] 
+@scala[[Persistent Entity](https://www.lagomframework.com/documentation/current/scala/PersistentEntity.html)] in the Lagom documentation.
+
 <a id="at-least-once-delivery"></a>
 ## At-Least-Once Delivery
 
@@ -1434,3 +1448,17 @@ Note that `journalPluginId` and `snapshotPluginId` must refer to properly config
 plugin entries with a standard `class` property as well as settings which are specific for those plugins, i.e.:
 
 @@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #override-config }
+
+## Give persistence plugin configurations at runtime
+
+By default, a persistent actor will use the configuration loaded at `ActorSystem` creation time to create journal and snapshot store plugins.
+
+When the persistent actor overrides the `journalPluginConfig` and `snapshotPluginConfig` methods,
+the actor will use the declared `Config` objects with a fallback on the default configuration.
+It allows a dynamic configuration of the journal and the snapshot store at runtime:
+
+Scala
+:  @@snip [PersistenceMultiDocSpec.scala]($code$/scala/docs/persistence/PersistenceMultiDocSpec.scala) { #runtime-config }
+
+Java
+:  @@snip [PersistenceMultiDocTest.java]($code$/java/jdocs/persistence/PersistenceMultiDocTest.java) { #runtime-config }
