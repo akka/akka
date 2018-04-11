@@ -37,7 +37,7 @@ import scala.concurrent.ExecutionContextExecutor
  */
 @DoNotInherit
 @ApiMayChange
-trait ActorContext[T] {
+trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
   // this must be a pure interface, i.e. only abstract methods
 
   /**

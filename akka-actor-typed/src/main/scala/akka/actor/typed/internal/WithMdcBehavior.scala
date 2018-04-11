@@ -25,8 +25,7 @@ import akka.annotation.InternalApi
     behavior match {
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[T] { ctx ⇒
-          val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
-          val started = Behavior.validateAsInitial(Behavior.start(d, c))
+          val started = Behavior.validateAsInitial(Behavior.start(d, ctx))
           chooseOutermostOrWrap(staticMdc, mdcForMessage, started)
         }
       case b ⇒
