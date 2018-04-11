@@ -93,7 +93,7 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
       persistence, persistenceTyped,
       distributedData,
       testkit
-    ).map(_ % "compile->compile;compile->test;provided->provided"): _*
+    ).map(_ % "compile->compile;compile->test"): _*
   )
   .settings(Dependencies.benchJmh)
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
@@ -139,7 +139,7 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
   .dependsOn(
     cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
     distributedData,
-    persistence % "compile->compile;test->provided",
+    persistence % "compile->compile",
     clusterTools
   )
   .settings(Dependencies.clusterSharding)
@@ -159,7 +159,7 @@ lazy val clusterTools = akkaModule("akka-cluster-tools")
   .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
 
 lazy val contrib = akkaModule("akka-contrib")
-  .dependsOn(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile->compile;test->provided")
+  .dependsOn(remote, remoteTests % "test->test", cluster, clusterTools, persistence % "compile->compile")
   .settings(Dependencies.contrib)
   .settings(AutomaticModuleName.settings("akka.contrib"))
   .settings(OSGi.contrib)
@@ -195,7 +195,7 @@ lazy val docs = akkaModule("akka-docs")
     clusterSharding % "compile->compile;test->test",
     testkit % "compile->compile;test->test",
     remote % "compile->compile;test->test",
-    persistence % "compile->compile;provided->provided;test->test",
+    persistence % "compile->compile;test->test",
     actorTyped % "compile->compile;test->test",
     persistenceTyped % "compile->compile;test->test",
     clusterTyped % "compile->compile;test->test",
@@ -266,7 +266,7 @@ lazy val persistence = akkaModule("akka-persistence")
 lazy val persistenceQuery = akkaModule("akka-persistence-query")
   .dependsOn(
     stream,
-    persistence % "compile->compile;provided->provided;test->test",
+    persistence % "compile->compile;test->test",
     streamTestkit % "test"
   )
   .settings(Dependencies.persistenceQuery)
@@ -288,7 +288,7 @@ lazy val persistenceShared = akkaModule("akka-persistence-shared")
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
 lazy val persistenceTck = akkaModule("akka-persistence-tck")
-  .dependsOn(persistence % "compile->compile;provided->provided;test->test", testkit % "compile->compile;test->test")
+  .dependsOn(persistence % "compile->compile;test->test", testkit % "compile->compile;test->test")
   .settings(Dependencies.persistenceTck)
   .settings(AutomaticModuleName.settings("akka.persistence.tck"))
 //.settings(OSGi.persistenceTck) TODO: we do need to export this as OSGi bundle too?
@@ -406,8 +406,8 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     cluster,
     clusterTools,
     distributedData,
-    persistence % "provided->test",
-    persistenceTyped % "provided->test",
+    persistence % "test->test",
+    persistenceTyped % "test->test",
     typedTestkit % "test->test",
     actorTypedTests % "test->test"
   )
@@ -451,7 +451,7 @@ lazy val typedTestkit = akkaModule("akka-testkit-typed")
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
   .dependsOn(
     actorTyped,
-    typedTestkit % "compile->compile;test->provided;test->test"
+    typedTestkit % "compile->compile;test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .disablePlugins(MimaPlugin)
