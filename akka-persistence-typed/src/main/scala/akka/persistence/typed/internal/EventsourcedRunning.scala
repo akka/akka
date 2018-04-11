@@ -152,6 +152,7 @@ private[akka] object EventsourcedRunning {
 
     Behaviors.receiveMessage[EventsourcedBehavior.InternalProtocol] {
       case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
+      case SnapshotterResponse(r)           ⇒ onSnapshotterResponse(r, Behaviors.same)
       case _                                ⇒ Behaviors.unhandled
     }
 
@@ -180,7 +181,7 @@ private[akka] object EventsourcedRunning {
 
     override def onMessage(msg: EventsourcedBehavior.InternalProtocol): Behavior[EventsourcedBehavior.InternalProtocol] = {
       msg match {
-        case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r)
+        case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r, this)
         case JournalResponse(r)                ⇒ onJournalResponse(r)
         case in: IncomingCommand[C @unchecked] ⇒ onCommand(in)
         case RecoveryTickEvent(_)              ⇒ Behaviors.unhandled
@@ -257,27 +258,29 @@ private[akka] object EventsourcedRunning {
       Behaviors.stopped
     }
 
-    private def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
-      response match {
-        case SaveSnapshotSuccess(meta) ⇒
-          setup.context.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
-          this
-        case SaveSnapshotFailure(meta, ex) ⇒
-          setup.context.log.error(ex, "Save snapshot failed, snapshot metadata: [{}]", meta)
-          this // FIXME https://github.com/akka/akka/issues/24637 should we provide callback for this? to allow Stop
+  }
 
-        // FIXME not implemented
-        case DeleteSnapshotFailure(_, _)  ⇒ ???
-        case DeleteSnapshotSuccess(_)     ⇒ ???
-        case DeleteSnapshotsFailure(_, _) ⇒ ???
-        case DeleteSnapshotsSuccess(_)    ⇒ ???
+  private def onSnapshotterResponse(
+    response: SnapshotProtocol.Response,
+    outer:    Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+    response match {
+      case SaveSnapshotSuccess(meta) ⇒
+        setup.context.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
+        outer
+      case SaveSnapshotFailure(meta, ex) ⇒
+        setup.context.log.error(ex, "Save snapshot failed, snapshot metadata: [{}]", meta)
+        outer // FIXME https://github.com/akka/akka/issues/24637 should we provide callback for this? to allow Stop
 
-        // ignore LoadSnapshot messages
-        case _ ⇒
-          Behaviors.unhandled
-      }
+      // FIXME not implemented
+      case DeleteSnapshotFailure(_, _)  ⇒ ???
+      case DeleteSnapshotSuccess(_)     ⇒ ???
+      case DeleteSnapshotsFailure(_, _) ⇒ ???
+      case DeleteSnapshotsSuccess(_)    ⇒ ???
+
+      // ignore LoadSnapshot messages
+      case _ ⇒
+        Behaviors.unhandled
     }
-
   }
 
   // --------------------------
