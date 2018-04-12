@@ -895,8 +895,6 @@ trait FlowOps[+Out, +Mat] {
    * still be in the mailbox, so defaulting to sending the second one a bit earlier than when first ask has replied maintains
    * a slightly healthier throughput.
    *
-   * The mapTo class parameter is used to cast the incoming responses to the expected response type.
-   *
    * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
    * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
    *
@@ -934,12 +932,8 @@ trait FlowOps[+Out, +Mat] {
    * Please note that the elements emitted by this stage are in-order with regards to the asks being issued
    * (i.e. same behaviour as mapAsync).
    *
-   * The mapTo class parameter is used to cast the incoming responses to the expected response type.
-   *
-   * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
-   * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
-   *
-   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated,
+   * or with an [[java.util.concurrent.TimeoutException]] in case the ask exceeds the timeout passed in.
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
