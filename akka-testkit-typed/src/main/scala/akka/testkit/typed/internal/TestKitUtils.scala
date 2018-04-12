@@ -54,7 +54,10 @@ private[akka] object TestKitUtils {
       }
 
     // sanitize for actor system name
-    filteredStack.next().replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
+    filteredStack.next()
+      .replaceFirst("""^.*\.""", "") // drop package name
+      .replaceAll("""\$\$?\w+""", "") // drop scala anonymous functions/classes
+      .replaceAll("[^a-zA-Z_0-9]", "_")
   }
 
   def shutdown(
