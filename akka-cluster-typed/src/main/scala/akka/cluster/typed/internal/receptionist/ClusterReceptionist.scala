@@ -271,11 +271,12 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
                 }
             }(collection.breakOut)
             val clusterAddresses = cluster.state.members.map(_.uniqueAddress)
-            val notInCluster = allAddressesInState -- clusterAddresses
+            val notInCluster = allAddressesInState diff clusterAddresses
 
             if (notInCluster.isEmpty) Behavior.same
             else {
-              ctx.log.debug("Leader node cleanup tick, removed nodes: [{}]", notInCluster.mkString(","))
+              if (ctx.log.isDebugEnabled)
+                ctx.log.debug("Leader node cleanup tick, removed nodes: [{}]", notInCluster.mkString(","))
               nodesRemoved(notInCluster)
             }
           } else
