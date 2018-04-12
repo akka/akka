@@ -68,6 +68,27 @@ If the target actor terminates the stream will be cancelled. When the stream is 
 given `onCompleteMessage` will be sent to the destination actor. When the stream is completed with 
 failure a `akka.actor.Status.Failure` message will be sent to the destination actor.
 
+Scala
+:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #actorRefWithAck }
+
+Java
+:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #actorRefWithAck }
+
+The receiving actor would then need to be implemented similar to the following:
+
+Scala
+:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #actorRefWithAck-actor }
+
+Java
+:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #actorRefWithAck-actor }
+
+Note that replying to the sender of the elements (the "stream") is required as lack of those ack signals would be interpreted
+as back-pressure (as intended), and no new elements will be sent into the actor until it acknowledges some elements.
+Handling the other signals while is not required, however is a good practice, to see the state of the streams lifecycle 
+in the connected actor as well. Technically it is also possible to use multiple sinks targeting the same actor,
+however it is not common practice to do so, and one should rather investigate using a `Merge` stage for this purpose.   
+
+
 @@@ note
 
 Using `Sink.actorRef` or ordinary `tell` from a `map` or `foreach` stage means that there is
