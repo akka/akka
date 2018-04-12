@@ -408,6 +408,7 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     distributedData,
     persistence % "test->test",
     persistenceTyped % "test->test",
+    protobuf,
     typedTestkit % "test->test",
     actorTypedTests % "test->test"
   )
