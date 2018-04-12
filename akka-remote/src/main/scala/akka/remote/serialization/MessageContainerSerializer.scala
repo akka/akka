@@ -13,9 +13,7 @@ import akka.actor.SelectChildPattern
 import akka.actor.SelectParent
 import akka.actor.SelectionPathElement
 import akka.remote.ContainerFormats
-import akka.serialization.SerializationExtension
-import akka.serialization.BaseSerializer
-import akka.serialization.SerializerWithStringManifest
+import akka.serialization.{ BaseSerializer, SerializationExtension, Serializers }
 
 class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
@@ -39,15 +37,8 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
       setSerializerId(serializer.identifier).
       setWildcardFanOut(sel.wildcardFanOut)
 
-    serializer match {
-      case ser2: SerializerWithStringManifest ⇒
-        val manifest = ser2.manifest(message)
-        if (manifest != "")
-          builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
-      case _ ⇒
-        if (serializer.includeManifest)
-          builder.setMessageManifest(ByteString.copyFromUtf8(message.getClass.getName))
-    }
+    val ms = Serializers.manifestFor(serializer, message)
+    if (ms.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(ms))
 
     sel.elements.foreach {
       case SelectChildName(name) ⇒

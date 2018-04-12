@@ -76,6 +76,16 @@ trait Serializer {
   final def fromBinary(bytes: Array[Byte], clazz: Class[_]): AnyRef = fromBinary(bytes, Option(clazz))
 }
 
+object Serializers {
+
+  // NOTE!!! If you change this method it is likely that DaemonMsgCreateSerializer.serialize needs the changes too.
+  def manifestFor(s: Serializer, message: AnyRef): String = s match {
+    case s2: SerializerWithStringManifest ⇒ s2.manifest(message)
+    case _                                ⇒ if (s.includeManifest) message.getClass.getName else ""
+  }
+
+}
+
 /**
  * A Serializer represents a bimap between an object and an array of bytes representing that object.
  *

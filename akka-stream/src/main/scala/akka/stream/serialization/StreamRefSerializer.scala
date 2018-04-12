@@ -7,7 +7,7 @@ package akka.stream.serialization
 import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
-import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
+import akka.serialization._
 import akka.stream.StreamRefMessages
 import akka.stream.impl.streamref._
 
@@ -105,15 +105,8 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
       .setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(p)))
       .setSerializerId(msgSerializer.identifier)
 
-    msgSerializer match {
-      case ser2: SerializerWithStringManifest ⇒
-        val manifest = ser2.manifest(p)
-        if (manifest != "")
-          payloadBuilder.setMessageManifest(ByteString.copyFromUtf8(manifest))
-      case _ ⇒
-        if (msgSerializer.includeManifest)
-          payloadBuilder.setMessageManifest(ByteString.copyFromUtf8(p.getClass.getName))
-    }
+    val ms = Serializers.manifestFor(msgSerializer, p)
+    if (ms.nonEmpty) payloadBuilder.setMessageManifest(ByteString.copyFromUtf8(ms))
 
     StreamRefMessages.SequencedOnNext.newBuilder()
       .setSeqNr(o.seqNr)
@@ -173,10 +166,12 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
     val d = StreamRefMessages.CumulativeDemand.parseFrom(bytes)
     StreamRefsProtocol.CumulativeDemand(d.getSeqNr)
   }
+
   private def deserializeRemoteStreamCompleted(bytes: Array[Byte]): StreamRefsProtocol.RemoteStreamCompleted = {
     val d = StreamRefMessages.RemoteStreamCompleted.parseFrom(bytes)
     StreamRefsProtocol.RemoteStreamCompleted(d.getSeqNr)
   }
+
   private def deserializeRemoteStreamFailure(bytes: Array[Byte]): AnyRef = {
     val d = StreamRefMessages.RemoteStreamFailure.parseFrom(bytes)
     StreamRefsProtocol.RemoteStreamFailure(d.getCause.toStringUtf8)
