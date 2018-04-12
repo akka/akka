@@ -17,12 +17,9 @@ import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages ⇒ dm }
-import akka.serialization.JSerializer
-import akka.serialization.Serialization
-import akka.serialization.SerializationExtension
+import akka.serialization._
 import akka.protobuf.ByteString
 import akka.protobuf.MessageLite
-import akka.serialization.SerializerWithStringManifest
 import akka.cluster.ddata.VersionVector
 
 /**
@@ -144,15 +141,8 @@ trait SerializationSupport {
         setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(m)))
         .setSerializerId(msgSerializer.identifier)
 
-      msgSerializer match {
-        case ser2: SerializerWithStringManifest ⇒
-          val manifest = ser2.manifest(m)
-          if (manifest != "")
-            builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
-        case _ ⇒
-          if (msgSerializer.includeManifest)
-            builder.setMessageManifest(ByteString.copyFromUtf8(m.getClass.getName))
-      }
+      val ms = Serializers.manifestFor(msgSerializer, m)
+      if (ms.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(ms))
 
       builder.build()
     }

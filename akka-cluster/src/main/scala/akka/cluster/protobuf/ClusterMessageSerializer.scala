@@ -10,14 +10,13 @@ import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster._
 import akka.cluster.protobuf.msg.{ ClusterMessages ⇒ cm }
-import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
+import akka.serialization._
 import akka.protobuf.{ ByteString, MessageLite }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Deadline
-
 import akka.annotation.InternalApi
 import akka.cluster.InternalClusterAction._
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
@@ -174,15 +173,8 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
     val serializer = serialization.findSerializerFor(pool)
     builder.setSerializerId(serializer.identifier)
       .setData(ByteString.copyFrom(serializer.toBinary(pool)))
-    serializer match {
-      case ser: SerializerWithStringManifest ⇒
-        builder.setManifest(ser.manifest(pool))
-      case _ ⇒
-        builder.setManifest(
-          if (serializer.includeManifest) pool.getClass.getName
-          else ""
-        )
-    }
+    val manifest = Serializers.manifestFor(serializer, pool)
+    builder.setManifest(manifest)
     builder.build()
   }
 
