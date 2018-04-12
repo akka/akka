@@ -72,17 +72,14 @@ object Patterns {
    * sender reference in message.
    *
    * {{{
-   * final Future<Object> f = Patterns.ask(
+   * final Future<Object> f = Patterns.askWithReplyTo(
    *   worker,
-   *   new akka.japi.Function<ActorRef, Object> {
-   *     Object apply(ActorRef askSender) {
-   *       return new Request(askSender);
-   *     }
-   *   },
+   *   replyTo -> new Request(replyTo),
    *   timeout);
    * }}}
    */
-  def ask(actor: ActorRef, messageFactory: japi.Function[ActorRef, Any], timeout: Timeout): Future[AnyRef] = scalaAsk(actor, messageFactory.apply _)(timeout).asInstanceOf[Future[AnyRef]]
+  def askWithReplyTo(actor: ActorRef, messageFactory: japi.Function[ActorRef, Any], timeout: Timeout): Future[AnyRef] =
+    extended.ask(actor, messageFactory.apply _)(timeout).asInstanceOf[Future[AnyRef]]
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -121,17 +118,14 @@ object Patterns {
    * sender reference in message.
    *
    * {{{
-   * final Future<Object> f = Patterns.ask(
+   * final Future<Object> f = Patterns.askWithReplyTo(
    *   worker,
-   *   new akka.japi.Function<ActorRef, Object> {
-   *     Object apply(ActorRef askSender) {
-   *       return new Request(askSender);
-   *     }
-   *   },
+   *   replyTo -> new Request(replyTo),
    *   timeout);
    * }}}
    */
-  def ask(actor: ActorRef, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): Future[AnyRef] = scalaAsk(actor, messageFactory.apply _)(Timeout(timeoutMillis.millis)).asInstanceOf[Future[AnyRef]]
+  def askWithReplyTo(actor: ActorRef, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): Future[AnyRef] =
+    extended.ask(actor, messageFactory.apply _)(Timeout(timeoutMillis.millis)).asInstanceOf[Future[AnyRef]]
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -202,17 +196,14 @@ object Patterns {
    * sender reference in message.
    *
    * {{{
-   * final Future<Object> f = Patterns.ask(
+   * final Future<Object> f = Patterns.askWithReplyTo(
    *   selection,
-   *   new akka.japi.Function<ActorRef, Object> {
-   *     Object apply(ActorRef askSender) {
-   *       return new Request(askSender);
-   *     }
-   *   },
+   *   replyTo -> new Request(replyTo),
    *   timeout);
    * }}}
    */
-  def ask(selection: ActorSelection, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): Future[AnyRef] = scalaAsk(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis)).asInstanceOf[Future[AnyRef]]
+  def askWithReplyTo(selection: ActorSelection, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): Future[AnyRef] =
+    extended.ask(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis)).asInstanceOf[Future[AnyRef]]
 
   /**
    * Register an onComplete callback on this [[scala.concurrent.Future]] to send
@@ -339,18 +330,18 @@ object PatternsCS {
    * sender reference in message.
    *
    * {{{
-   * final CompletionStage<Object> f = Patterns.ask(
+   * final CompletionStage<Object> f = PatternsCS.askWithReplyTo(
    *   worker,
-   *   new akka.japi.Function<ActorRef, Object> {
-   *     Object apply(ActorRef askSender) {
-   *       return new Request(askSender);
-   *     }
-   *   },
+   *   askSender -> new Request(askSender),
    *   timeout);
    * }}}
+   *
+   * @param actor          the actor to be asked
+   * @param messageFactory function taking an actor ref and returning the message to be sent
+   * @param timeout        the timeout for the response before failing the returned completion stage
    */
-  def ask(actor: ActorRef, messageFactory: japi.Function[ActorRef, Any], timeout: Timeout): CompletionStage[AnyRef] =
-    scalaAsk(actor, messageFactory.apply _)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
+  def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeout: Timeout): CompletionStage[AnyRef] =
+    extended.ask(actor, messageFactory.apply _)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -373,7 +364,7 @@ object PatternsCS {
    * <b>Recommended usage:</b>
    *
    * {{{
-   *   final CompletionStage<Object> f = Patterns.ask(worker, request, timeout);
+   *   final CompletionStage<Object> f = PatternsCS.ask(worker, request, timeout);
    *   f.onSuccess(new Procedure<Object>() {
    *     public void apply(Object o) {
    *       nextActor.tell(new EnrichedResult(request, o));
@@ -389,18 +380,18 @@ object PatternsCS {
    * sender reference in message.
    *
    * {{{
-   * final CompletionStage<Object> f = Patterns.ask(
+   * final CompletionStage<Object> f = PatternsCS.askWithReplyTo(
    *   worker,
-   *   new akka.japi.Function<ActorRef, Object> {
-   *     Object apply(ActorRef askSender) {
-   *       return new Request(askSender);
-   *     }
-   *   },
+   *   replyTo -> new Request(replyTo),
    *   timeout);
    * }}}
+   *
+   * @param actor          the actor to be asked
+   * @param messageFactory function taking an actor ref to reply to and returning the message to be sent
+   * @param timeoutMillis  the timeout for the response before failing the returned completion stage
    */
-  def ask(actor: ActorRef, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
-    scalaAsk(actor, messageFactory.apply _)(Timeout(timeoutMillis.millis)).toJava.asInstanceOf[CompletionStage[AnyRef]]
+  def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
+    askWithReplyTo(actor, messageFactory, Timeout(timeoutMillis.millis))
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -471,18 +462,14 @@ object PatternsCS {
    * sender reference in message.
    *
    * {{{
-   * final CompletionStage<Object> f = Patterns.ask(
+   * final CompletionStage<Object> f = Patterns.askWithReplyTo(
    *   selection,
-   *   new akka.japi.Function<ActorRef, Object> {
-   *     Object apply(ActorRef askSender) {
-   *       return new Request(askSender);
-   *     }
-   *   },
+   *   askSender -> new Request(askSender),
    *   timeout);
    * }}}
    */
-  def ask(selection: ActorSelection, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
-    scalaAsk(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis)).toJava.asInstanceOf[CompletionStage[AnyRef]]
+  def askWithReplyTo(selection: ActorSelection, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
+    extended.ask(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis)).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * Register an onComplete callback on this [[java.util.concurrent.CompletionStage]] to send
