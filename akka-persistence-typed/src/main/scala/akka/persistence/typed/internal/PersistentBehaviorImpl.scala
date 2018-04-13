@@ -30,34 +30,32 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
     Behaviors.setup[EventsourcedBehavior.InternalProtocol] { ctx ⇒
       Behaviors.withTimers { timers ⇒
-        {
-          val settings = EventsourcedSettings(ctx.system)
-          val internalStash = stashBuffer(settings)
-          Behaviors.tap(
-            onMessage = (_, _) ⇒ Unit,
-            onSignal = onSignalCleanup,
-            behavior = {
-              val setup = new EventsourcedSetup(
-                ctx,
-                timers,
-                persistenceId,
-                initialState,
-                commandHandler,
-                eventHandler,
-                WriterIdentity.newIdentity(),
-                recoveryCompleted,
-                tagger,
-                snapshotWhen,
-                recovery,
-                holdingRecoveryPermit = false,
-                settings = settings,
-                internalStash = internalStash
-              )
+        val settings = EventsourcedSettings(ctx.system)
+        val internalStash = stashBuffer(settings)
+        Behaviors.tap(
+          onMessage = (_, _) ⇒ Unit,
+          onSignal = onSignalCleanup,
+          behavior = {
+            val setup = new EventsourcedSetup(
+              ctx,
+              timers,
+              persistenceId,
+              initialState,
+              commandHandler,
+              eventHandler,
+              WriterIdentity.newIdentity(),
+              recoveryCompleted,
+              tagger,
+              snapshotWhen,
+              recovery,
+              holdingRecoveryPermit = false,
+              settings = settings,
+              internalStash = internalStash
+            )
 
-              EventsourcedRequestingRecoveryPermit(setup)
-            }
-          )
-        }
+            EventsourcedRequestingRecoveryPermit(setup)
+          }
+        )
       }
     }.widen[Any] {
       case res: JournalProtocol.Response           ⇒ InternalProtocol.JournalResponse(res)

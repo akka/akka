@@ -10,6 +10,10 @@ import akka.annotation.InternalApi
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
 import akka.util.OptionVal
 
+/**
+ * Main reason for introduction of this trait is stash buffer reference management
+ * in order to survive restart of internal behavior
+ */
 @InternalApi
 trait EventsourcedStashReferenceManagement {
 
