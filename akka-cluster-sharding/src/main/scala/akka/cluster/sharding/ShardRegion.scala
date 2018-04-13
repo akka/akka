@@ -676,10 +676,14 @@ private[akka] class ShardRegion(
 
   def register(): Unit = {
     coordinatorSelection.foreach(_ ! registrationMessage)
-    if (shardBuffers.nonEmpty && retryCount >= 5)
-      log.warning(
+    if (shardBuffers.nonEmpty && retryCount >= 5) coordinatorSelection match {
+      case Some(actorSelection) ⇒ log.warning(
         "Trying to register to coordinator at [{}], but no acknowledgement. Total [{}] buffered messages.",
-        coordinatorSelection, shardBuffers.totalSize)
+        actorSelection, shardBuffers.totalSize)
+      case None ⇒ log.warning(
+        "No coordinator found to register. Probably, no seed-nodes configured and manual cluster join not performed? Total [{}] buffered messages.",
+        shardBuffers.totalSize)
+    }
   }
 
   def registrationMessage: Any =
