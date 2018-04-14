@@ -10,57 +10,6 @@ import scala.collection.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
 import akka.annotation.InternalApi
 
-package impl {
-  /**
-   * An output port of a StreamLayout.Module. This is kept here due to how `sealed` works.
-   * It is also used in the Java DSL for “untyped Inlets” as a work-around
-   * for otherwise unreasonable existential types.
-   */
-  sealed abstract class InPort { self: Inlet[_] ⇒
-    final override def hashCode: Int = super.hashCode
-    final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
-
-    /**
-     * INTERNAL API
-     */
-    @volatile private[stream] var id: Int = -1
-
-    /**
-     * INTERNAL API
-     */
-    @volatile private[stream] var mappedTo: InPort = this
-
-    /**
-     * INTERNAL API
-     */
-    private[stream] def inlet: Inlet[_] = this
-  }
-  /**
-   * An output port of a StreamLayout.Module. This is kept here due to how `sealed` works.
-   * It is also used in the Java DSL for “untyped Outlets” as a work-around
-   * for otherwise unreasonable existential types.
-   */
-  sealed abstract class OutPort { self: Outlet[_] ⇒
-    final override def hashCode: Int = super.hashCode
-    final override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
-
-    /**
-     * INTERNAL API
-     */
-    @volatile private[stream] var id: Int = -1
-
-    /**
-     * INTERNAL API
-     */
-    @volatile private[stream] var mappedTo: OutPort = this
-
-    /**
-     * INTERNAL API
-     */
-    private[stream] def outlet: Outlet[_] = this
-  }
-}
-
 /**
  * An Inlet is a typed input to a Shape. Its partner in the Module view
  * is the InPort (which does not bear an element type because Modules only
