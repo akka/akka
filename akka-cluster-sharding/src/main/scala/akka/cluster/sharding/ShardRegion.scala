@@ -210,7 +210,7 @@ object ShardRegion {
    * Send this message to the `ShardRegion` actor to request for [[ClusterShardingStats]],
    * which contains statistics about the currently running sharded entities in the
    * entire cluster. If the `timeout` is reached without answers from all shard regions
-   * the reply will contain an emmpty map of regions.
+   * the reply will contain an empty map of regions.
    *
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
