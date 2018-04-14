@@ -10,8 +10,6 @@ materialized by `Source.actorRef`.
 
 ### ask
 
-### ask
-
 A nice way to delegate some processing of elements in a stream to an actor is to use `ask`. 
 The back-pressure of the stream is maintained by the @scala[`Future`]@java[`CompletionStage`] of 
 the `ask` and the mailbox of the actor will not be filled with more messages than the given 
