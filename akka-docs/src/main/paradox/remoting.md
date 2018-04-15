@@ -91,13 +91,13 @@ In the next sections the two alternatives are described in detail.
 Scala
 :   ```
 val selection =
-  context.actorSelection("akka.tcp://actorSystemName@10.0.0.1:2552/user/actorName")
+  context.actorSelection("akka.tcp://actorSystemName@127.0.0.1:2552/user/actorName")
 ```
 
 Java
 :   ```
 ActorSelection selection =
-  context.actorSelection("akka.tcp://app@10.0.0.1:2552/user/serviceA/worker");
+  context.actorSelection("akka.tcp://app@127.0.0.1:2552/user/serviceA/worker");
 ```
 
 As you can see from the example above the following pattern is used to find an actor on a remote node:
