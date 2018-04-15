@@ -69,7 +69,7 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
       case JournalResponse(r)      ⇒ onJournalResponse(state, r)
       case SnapshotterResponse(r)  ⇒ onSnapshotterResponse(r)
       case RecoveryTickEvent(snap) ⇒ onRecoveryTick(state, snap)
-      case cmd: IncomingCommand[C] ⇒ onCommand(cmd)
+      case cmd: IncomingCommand[C] ⇒ onCommand(cmd) // FIXME handle IncomingCommandWithAutoConfirmation
       case RecoveryPermitGranted   ⇒ Behaviors.unhandled // should not happen, we already have the permit
     }.receiveSignal(returnPermitOnStop)
 

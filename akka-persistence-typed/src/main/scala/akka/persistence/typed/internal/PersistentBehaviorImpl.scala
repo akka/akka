@@ -56,7 +56,10 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
       case res: JournalProtocol.Response           ⇒ InternalProtocol.JournalResponse(res)
       case res: SnapshotProtocol.Response          ⇒ InternalProtocol.SnapshotterResponse(res)
       case RecoveryPermitter.RecoveryPermitGranted ⇒ InternalProtocol.RecoveryPermitGranted
-      case cmd: Command @unchecked                 ⇒ InternalProtocol.IncomingCommand(cmd)
+      case req: CommandWithAutoConfirmation[Command] @unchecked ⇒
+        println(s"# IncomingCommandWithAutoConfirmation $req") // FIXME
+        InternalProtocol.IncomingCommandWithAutoConfirmation(req)
+      case cmd: Command @unchecked ⇒ InternalProtocol.IncomingCommand(cmd)
     }.narrow[Command]
   }
 

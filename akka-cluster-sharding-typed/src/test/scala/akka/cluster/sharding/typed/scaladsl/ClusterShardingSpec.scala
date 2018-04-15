@@ -7,6 +7,7 @@ package akka.cluster.sharding.typed.scaladsl
 import java.nio.charset.StandardCharsets
 
 import scala.concurrent.duration._
+
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorRefResolver
@@ -20,6 +21,7 @@ import akka.cluster.sharding.typed.{ ClusterShardingSettings, ShardingEnvelope, 
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.cluster.typed.Leave
+import akka.persistence.typed.scaladsl.CommandConfirmation
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.util.Timeout
@@ -288,6 +290,16 @@ class ClusterShardingSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       bobRef ! StopPlz()
     }
 
+    "EntityRef - auto confirmation" in {
+      val aliceRef = sharding.entityRefFor(typeKey, "alice")
+      val p = TestProbe[String]()
+
+      aliceRef.askWithConfirmation(WhoAreYou(p.ref)).futureValue should ===(CommandConfirmation.Success)
+      p.expectMessageType[String] should startWith("I'm alice")
+
+      aliceRef ! StopPlz()
+    }
+
     "handle untyped StartEntity message" in {
       // it is normally using envolopes, but the untyped StartEntity message can be sent internally,
       // e.g. for remember entities
@@ -341,5 +353,6 @@ class ClusterShardingSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       replies2.size should ===(10)
       replies2 should !==(replies1) // different addresses
     }
+
   }
 }

@@ -115,13 +115,13 @@ import scala.reflect.ClassTag
    *
    * The returned behavior from processing messages and signals can also be
    * intercepted, e.g. to return another `Behavior`. The passed message to
-   * `afterMessage` is the message returned from `beforeMessage` (possibly
-   * different than the incoming message).
+   * `afterMessage` is the original message (not the one returned from `beforeMessage`).
+   * Note that `afterMessage` is only called for incoming messages of type `U`.
    */
   def intercept[T, U <: Any: ClassTag](
     beforeMessage:  (SAC[U], U) ⇒ T,
     beforeSignal:   (SAC[T], Signal) ⇒ Boolean,
-    afterMessage:   (SAC[T], T, Behavior[T]) ⇒ Behavior[T],
+    afterMessage:   (SAC[U], U, Behavior[T]) ⇒ Behavior[T],
     afterSignal:    (SAC[T], Signal, Behavior[T]) ⇒ Behavior[T],
     behavior:       Behavior[T],
     toStringPrefix: String                                      = "Intercept"): Behavior[T] = {
@@ -139,7 +139,7 @@ import scala.reflect.ClassTag
   private final case class Intercept[T, U <: Any: ClassTag](
     beforeOnMessage: (SAC[U], U) ⇒ T,
     beforeOnSignal:  (SAC[T], Signal) ⇒ Boolean,
-    afterMessage:    (SAC[T], T, Behavior[T]) ⇒ Behavior[T],
+    afterMessage:    (SAC[U], U, Behavior[T]) ⇒ Behavior[T],
     afterSignal:     (SAC[T], Signal, Behavior[T]) ⇒ Behavior[T],
     behavior:        Behavior[T],
     toStringPrefix:  String                                      = "Intercept") extends ExtensibleBehavior[T] {
@@ -160,16 +160,16 @@ import scala.reflect.ClassTag
     override def receive(ctx: AC[T], msg: T): Behavior[T] = {
       msg match {
         case m: U ⇒
-          val msg2 = beforeOnMessage(ctx.asScala.asInstanceOf[SAC[U]], m)
+          val msg2 = beforeOnMessage(ctx.as[U].asScala, m)
           val next: Behavior[T] =
             if (msg2 == null)
               same
             else
               Behavior.interpretMessage(behavior, ctx, msg2)
-          intercept(afterMessage(ctx.asScala, msg2, next), ctx)
+          intercept(afterMessage(ctx.as[U].asScala, m, next), ctx)
         case _ ⇒
           val next: Behavior[T] = Behavior.interpretMessage(behavior, ctx, msg)
-          intercept(afterMessage(ctx.asScala, msg, next), ctx)
+          intercept(next, ctx)
       }
     }
 

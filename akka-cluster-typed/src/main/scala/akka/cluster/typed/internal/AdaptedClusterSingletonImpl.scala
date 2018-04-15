@@ -40,7 +40,7 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
       val managerName = managerNameFor(singletonName)
       // start singleton on this node
       val untypedProps = behavior match {
-        case u: UntypedPropsBehavior[_] ⇒ u.untypedProps(props) // PersistentBehavior
+        case u: UntypedPropsBehavior[_] ⇒ u.untypedProps(props)
         case _                          ⇒ PropsAdapter(behavior, props)
       }
       try {

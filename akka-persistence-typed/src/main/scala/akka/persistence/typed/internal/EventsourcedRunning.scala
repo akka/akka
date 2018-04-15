@@ -13,9 +13,12 @@ import akka.persistence._
 import akka.persistence.journal.Tagged
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, MDC }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
-
 import scala.annotation.tailrec
 import scala.collection.immutable
+
+import akka.persistence.typed.scaladsl
+
+import akka.Done
 
 /**
  * INTERNAL API
@@ -78,6 +81,37 @@ private[akka] object EventsourcedRunning {
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
     }
 
+    def onCommandWithConfirmation(req: CommandWithAutoConfirmation[C]): Behavior[InternalProtocol] = {
+
+      // FIXME scaladsl vs javadsl
+      @tailrec def addAutoConfirmationEffect(e: EffectImpl[E, S]): scaladsl.Effect[E, S] = {
+        e match {
+          case CompositeEffect(eff, _) ⇒ addAutoConfirmationEffect(eff)
+          case Persist(_) | PersistAll(_) | _: PersistNothing.type ⇒
+            e.andThen {
+              println(s"# AUTO reply from persistence Success") // FIXME
+              req.replyTo ! scaladsl.CommandConfirmation.Success
+            }
+          case inv: InvalidCommand ⇒
+            e.andThen {
+              println(s"# AUTO reply from persistence Invalid") // FIXME
+              req.replyTo ! scaladsl.CommandConfirmation.error(scaladsl.CommandConfirmation.Invalid(inv.message))
+            }
+          case _: Unhandled.type ⇒
+            e.andThen {
+              req.replyTo ! scaladsl.CommandConfirmation.error(scaladsl.CommandConfirmation.Invalid(
+                s"Unhandled command [${req.command.getClass.getName}]"))
+            }
+        }
+      }
+
+      // FIXME CommandConfirmation.PersistFailed
+
+      val effect1 = setup.commandHandler(commandContext, state.state, req.command)
+      val effect2 = addAutoConfirmationEffect(effect1.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
+      applyEffects(req.command, state, effect2.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
+    }
+
     @tailrec def applyEffects(
       msg:         Any,
       state:       EventsourcedState[S],
@@ -138,6 +172,9 @@ private[akka] object EventsourcedRunning {
           applySideEffects(sideEffects, state)
           Behavior.unhandled
 
+        case _: InvalidCommand @unchecked ⇒
+          tryUnstash(applySideEffects(sideEffects, state))
+
         case c: ChainableEffect[_, S] ⇒
           applySideEffect(c, state)
       }
@@ -152,8 +189,9 @@ private[akka] object EventsourcedRunning {
 
     Behaviors.receiveMessage[EventsourcedBehavior.InternalProtocol] {
       case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
-      case SnapshotterResponse(r)           ⇒ onSnapshotterResponse(r, Behaviors.same)
-      case _                                ⇒ Behaviors.unhandled
+      case IncomingCommandWithAutoConfirmation(req: CommandWithAutoConfirmation[C] @unchecked) ⇒ onCommandWithConfirmation(req)
+      case SnapshotterResponse(r) ⇒ onSnapshotterResponse(r, Behaviors.same)
+      case _ ⇒ Behaviors.unhandled
     }
 
   }
@@ -181,15 +219,21 @@ private[akka] object EventsourcedRunning {
 
     override def onMessage(msg: EventsourcedBehavior.InternalProtocol): Behavior[EventsourcedBehavior.InternalProtocol] = {
       msg match {
-        case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r, this)
-        case JournalResponse(r)                ⇒ onJournalResponse(r)
-        case in: IncomingCommand[C @unchecked] ⇒ onCommand(in)
-        case RecoveryTickEvent(_)              ⇒ Behaviors.unhandled
-        case RecoveryPermitGranted             ⇒ Behaviors.unhandled
+        case SnapshotterResponse(r)                                ⇒ onSnapshotterResponse(r, this)
+        case JournalResponse(r)                                    ⇒ onJournalResponse(r)
+        case in: IncomingCommand[C @unchecked]                     ⇒ onCommand(in)
+        case in: IncomingCommandWithAutoConfirmation[C @unchecked] ⇒ onCommandWithConfirmation(in)
+        case RecoveryTickEvent(_)                                  ⇒ Behaviors.unhandled
+        case RecoveryPermitGranted                                 ⇒ Behaviors.unhandled
       }
     }
 
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
+      stash(cmd)
+      this
+    }
+
+    def onCommandWithConfirmation(cmd: IncomingCommandWithAutoConfirmation[C]): Behavior[InternalProtocol] = {
       stash(cmd)
       this
     }

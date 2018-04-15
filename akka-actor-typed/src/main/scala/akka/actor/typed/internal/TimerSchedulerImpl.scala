@@ -13,9 +13,10 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.JavaDurationConverters._
-
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
+
+import akka.util.ConstantFun
 
 /**
  * INTERNAL API
@@ -147,8 +148,8 @@ import scala.reflect.ClassTag
         }
         true
       },
-      afterMessage = (ctx, msg, b) ⇒ b, // TODO optimize by using more ConstantFun
-      afterSignal = (ctx, sig, b) ⇒ b,
+      afterMessage = ConstantFun.scalaAnyThreeToThird,
+      afterSignal = ConstantFun.scalaAnyThreeToThird,
       behavior)(ClassTag(classOf[TimerSchedulerImpl.TimerMsg]))
   }
 

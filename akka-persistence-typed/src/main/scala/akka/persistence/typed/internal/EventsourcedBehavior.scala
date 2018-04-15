@@ -52,5 +52,6 @@ private[akka] object EventsourcedBehavior {
     final case class SnapshotterResponse(msg: akka.persistence.SnapshotProtocol.Response) extends InternalProtocol
     final case class RecoveryTickEvent(snapshot: Boolean) extends InternalProtocol
     final case class IncomingCommand[C](c: C) extends InternalProtocol
+    final case class IncomingCommandWithAutoConfirmation[C](req: CommandWithAutoConfirmation[C]) extends InternalProtocol
   }
 }

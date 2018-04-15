@@ -47,6 +47,10 @@ private[akka] case object PersistNothing extends EffectImpl[Nothing, Nothing]
 
 /** INTERNAL API */
 @InternalApi
+private[akka] case class InvalidCommand(message: String) extends EffectImpl[Nothing, Nothing]
+
+/** INTERNAL API */
+@InternalApi
 private[akka] case class Persist[Event, State](event: Event) extends EffectImpl[Event, State] {
   override def events = event :: Nil
 }

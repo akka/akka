@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
+import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
@@ -11,6 +12,8 @@ import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
+import akka.persistence.typed.internal.InvalidCommand
+import akka.persistence.typed.scaladsl.CommandConfirmation
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
 import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
@@ -47,7 +50,8 @@ object ClusterShardingPersistenceSpec {
       entityId,
       initialState = "",
       commandHandler = (_, state, cmd) ⇒ cmd match {
-        case Add(s) ⇒ Effect.persist(s)
+        case Add("") ⇒ Effect.invalidCommand("empty not allowed")
+        case Add(s)  ⇒ Effect.persist(s)
         case Get(replyTo) ⇒
           replyTo ! s"$entityId:$state"
           Effect.none
@@ -83,6 +87,23 @@ class ClusterShardingPersistenceSpec extends ActorTestKit
       ref ! Add("c")
       ref ! Get(p.ref)
       p.expectMessage("123:a|b|c")
+    }
+
+    "support auto confirmation" in {
+      ClusterSharding(system).spawn[Command](persistentActor, Props.empty, typeKey,
+        ClusterShardingSettings(system), maxNumberOfShards = 100, handOffStopMessage = StopPlz)
+
+      val p = TestProbe[String]()
+
+      val ref = ClusterSharding(system).entityRefFor(typeKey, "4")
+      ref ! Add("a")
+      ref.askWithConfirmation(Add("b")).futureValue should ===(CommandConfirmation.Success)
+      ref.askWithConfirmation(Add("c")).futureValue should ===(CommandConfirmation.Success)
+      ref.askWithConfirmation(Add("")).futureValue should ===(
+        CommandConfirmation.error(CommandConfirmation.Invalid("empty not allowed")))
+      ref ! Add("d")
+      ref ! Get(p.ref)
+      p.expectMessage("4:a|b|c|d")
     }
   }
 }

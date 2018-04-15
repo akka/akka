@@ -9,9 +9,9 @@ import scala.concurrent.Future
 
 import akka.actor.Scheduler
 import akka.util.Timeout
-
 import scala.reflect.ClassTag
 
+import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -24,6 +24,7 @@ import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.cluster.sharding.ShardRegion.{ StartEntity ⇒ UntypedStartEntity }
+import akka.persistence.typed.scaladsl.CommandConfirmation
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
 
@@ -273,6 +274,8 @@ object EntityTypeKey {
    * Please note that an implicit [[akka.util.Timeout]] and [[akka.actor.Scheduler]] must be available to use this pattern.
    */
   def ask[U](f: ActorRef[U] ⇒ A)(implicit timeout: Timeout, scheduler: Scheduler): Future[U]
+
+  def askWithConfirmation(req: A)(implicit timeout: Timeout, scheduler: Scheduler): Future[CommandConfirmation]
 
 }
 
