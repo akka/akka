@@ -1045,7 +1045,7 @@ Scala
 :  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop}
 
 Java
-:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop}
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-gracefulStop #gracefulStop}
 
 When `gracefulStop()` returns successfully, the actor’s `postStop()` hook
 will have been executed: there exists a happens-before edge between the end of
