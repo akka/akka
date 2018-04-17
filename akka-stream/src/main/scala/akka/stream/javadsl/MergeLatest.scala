@@ -4,12 +4,10 @@
 
 package akka.stream.javadsl
 
-import akka.stream.UniformFanInShape
-import akka.stream.scaladsl.MergeLatest
 import akka.stream.stage.GraphStage
+import akka.stream.{ UniformFanInShape, scaladsl }
 
 import scala.collection.JavaConverters._
-import scala.reflect.ClassTag
 
 /**
  * MergeLatest joins elements from N input streams into stream of lists of size N.
@@ -31,8 +29,14 @@ object MergeLatest {
    * @param inputPorts number of input ports
    * @param eagerComplete if true, the merge latest will complete as soon as one of its inputs completes.
    */
-  def apply[T: ClassTag](inputPorts: Int, eagerComplete: Boolean = false): GraphStage[UniformFanInShape[T, java.util.List[T]]] =
-    new MergeLatest[T, java.util.List[T]](inputPorts, eagerComplete)(x ⇒ x.toList.asJava)
+  def apply[T](inputPorts: Int, eagerComplete: Boolean): GraphStage[UniformFanInShape[T, java.util.List[T]]] =
+    new scaladsl.MergeLatest[T, java.util.List[T]](inputPorts, eagerComplete)(x ⇒ x.toList.asJava)
 
+  /**
+   * Create a new `MergeLatest` with the specified number of input ports.
+   *
+   * @param inputPorts number of input ports
+   */
+  def apply[T](inputPorts: Int): GraphStage[UniformFanInShape[T, java.util.List[T]]] = apply(inputPorts, false)
 }
 
