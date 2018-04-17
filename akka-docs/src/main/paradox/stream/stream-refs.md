@@ -89,12 +89,11 @@ The process of preparing and running a `SourceRef` powered distributed stream is
 
 @@@ warning
   A `SourceRef` is *by design* "single-shot". i.e. it may only be materialized once.
-  This is in order to not complicate the mental model what materializing such value would mean.
+  This is in order to not complicate the mental model of what materialization means.
   
-  While stream refs are designed to be single shot, you may use them to mimic multicast scenarios,
-  simply by starting a `Broadcast` stage once, and attaching multiple new streams to it, for each
-  emitting a new stream ref. This way each output of the broadcast is by itself an unique single-shot
-  reference, however they can all be powered using a single `Source` -- located before the `Broadcast` stage.
+  Multicast can be mimicked by starting a `BroadcastHub` stage once then attaching multiple new streams to it, each
+  emitting a new stream ref. This way materialization of the `BroadcastHub`s Source creates a unique single-shot
+  stream ref, however they can all be powered using a single `Source` -- located before the `BroadcastHub` stage.
 @@@
 
 ### Sink Refs - offering to receive streaming data from a remote system
@@ -135,8 +134,8 @@ The process of preparing and running a `SinkRef` powered distributed stream is s
   This is in order to not complicate the mental model what materializing such value would mean.
   
   If you have an use case for building a fan-in operation accepting writes from multiple remote nodes,
-  you can build your Sink and prepend it with a `Merge` stage, each time materializing a new `SinkRef`
-  targeting that Merge. This has the added benefit of giving you full control how to merge these streams 
+  you can build your Sink and prepend it with a `MergeHub` stage, each time materializing a new `SinkRef`
+  targeting that `MergeHub`. This has the added benefit of giving you full control how to merge these streams
   (i.e. by using "merge preferred" or any other variation of the fan-in stages).
 @@@
 
@@ -145,11 +144,11 @@ The process of preparing and running a `SinkRef` powered distributed stream is s
 Stream refs utilise normal actor messaging for their trainsport, and as such provide the same level of basic delivery guarantees. Stream refs do extend the semantics somewhat by demand re-delivery and sequence fault detection; in other words:
 
 - messages are sent over actor remoting
-  - which relies on TCP (classic remoting, or artery tcp) or Aeron UDP for basic redelivery mechanisms
+    - which relies on TCP (classic remoting, or artery tcp) or Aeron UDP for basic redelivery mechanisms
 - messages are guaranteed to to be in-order
 - messages can be lost, however:
-  - a *dropped demand signal* will be re-delivered automatically (similar to system messages)
-  - a *dropped element* signal* will cause the stream to *fail*
+    - a *dropped demand signal* will be re-delivered automatically (similar to system messages)
+    - a *dropped element* signal* will cause the stream to *fail*
   
 
 ## Bulk Stream References
