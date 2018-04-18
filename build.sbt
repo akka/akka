@@ -228,6 +228,7 @@ lazy val docs = akkaModule("akka-docs")
       "google.analytics.domain.name" -> "akka.io",
       "snip.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
       "snip.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
+      "signature.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
       "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath
     ),
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
