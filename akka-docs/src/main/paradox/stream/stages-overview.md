@@ -1983,3 +1983,8 @@ event, and may therefore affect performance.
 
 ---------------------------------------------------------------
 
+@@@ index
+
+* [fromIterator](reference/fromIterator.md)
+
+@@@
