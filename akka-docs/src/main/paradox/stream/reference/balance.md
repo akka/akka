@@ -2,8 +2,6 @@
 
 Fan-out the stream to several streams.
 
-## Signature
-
 ## Description
 
 Fan-out the stream to several streams. Each upstream element is emitted to the first available downstream consumer.

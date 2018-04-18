@@ -3,8 +3,6 @@
 Send the elements from the stream to an `ActorRef` which must then acknowledge reception after completing a message,
 to provide back pressure onto the sink.
 
-## Signature
-
 ## Description
 
 Send the elements from the stream to an `ActorRef` which must then acknowledge reception after completing a message,
