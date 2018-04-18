@@ -74,7 +74,7 @@ protocol is bundled together with the behavior that implements it in a nicely
 wrapped scope—the `HelloWorld` @scala[object]@java[class].
 
 As Carl Hewitt said, one Actor is no Actor—it would be quite lonely with
-nobody to talk to. We need another Actor that that interacts with the `greeter`.
+nobody to talk to. We need another Actor that interacts with the `greeter`.
 Let's make a `bot` that receives the reply from the `greeter` and sends a number
 of additional greeting messages and collect the replies until a given max number
 of messages have been reached.
