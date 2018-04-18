@@ -113,7 +113,7 @@ object ParadoxSupport {
         //println(s"Looking for signature regex '$Signature'")
         val text =
           Source.fromFile(file)(Codec.UTF8).getLines.collect {
-            case line@Signature(signature, kind, l, definition) if labels contains l.toLowerCase() =>
+            case line@Signature(signature, kind, l, definition) if labels contains l.replaceAll("Mat$", "").toLowerCase() =>
               //println(s"Found label '$l' with sig '$full' in line $line")
               if (kind == "type") signature + definition
               else signature

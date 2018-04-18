@@ -235,7 +235,10 @@ lazy val docs = akkaModule("akka-docs")
     resolvers += Resolver.jcenterRepo,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka/${version.value}")
   )
-  .enablePlugins(AkkaParadoxPlugin, DeployRsync, NoPublish, ParadoxBrowse, ScaladocNoVerificationOfDiagrams)
+  .enablePlugins(
+    AkkaParadoxPlugin, DeployRsync, NoPublish, ParadoxBrowse,
+    ScaladocNoVerificationOfDiagrams,
+    StreamOperatorsIndexGenerator)
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
