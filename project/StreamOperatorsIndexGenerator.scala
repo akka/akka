@@ -34,16 +34,15 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     println(s"defs = ${defs.mkString("\n")}")
 
     val content =
-      s"""
-        |# Operators Alphabetical
-        |
-        |@@toc { depth=2 }
-        |
-        |See also [Operators by topic](index-topic.md)
-        |
-        |@@@ index
-        |  $defs
-        |@@@
+      s"""|# Operators Alphabetical
+          |
+          |@@toc { depth=2 }
+          |
+          |See also [Operators by topic](index-topic.md)
+          |
+          |@@@ index
+          |${defs.mkString("\n")}
+          |@@@
       """.stripMargin
 
     if (!file.exists || IO.read(file) != content) IO.write(file, content)
