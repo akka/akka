@@ -5,11 +5,11 @@
 package akka.stream
 
 import java.io.File
-import java.lang.reflect.{Method, Modifier}
-import java.nio.file.{Path, Paths}
+import java.lang.reflect.{ Method, Modifier }
+import java.nio.file.{ Path, Paths }
 
 import akka.event.Logging
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 
 class DocsStageCoverageSpec extends WordSpec with Matchers {
 
