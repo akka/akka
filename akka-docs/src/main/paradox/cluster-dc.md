@@ -25,13 +25,13 @@ data centers but that may result in problems like:
 
 * Management of Cluster membership is stalled during network partitions as described in a 
   separate section below. This means that nodes would not be able to be added and removed 
-  during network partitions across data centers.
+  during network partitions between data centers.
 * More frequent false positive failure detection for network connections across data centers.
   It's not possible to have different settings for the failure detection within vs. across
   data centers.
 * Downing/removal of nodes in the case of network partitions should typically be treated
-  differently for failures within vs. across data centers. For network partitions across the 
-  system should typically not down the unreachable nodes, but instead wait until it heals or
+  differently for failures within vs. across data centers. For network partitions between
+  data centers the system should typically not down the unreachable nodes, but instead wait until it heals or
   a decision is made by a human or external monitoring system. For failures within same
   data center automatic, more aggressive, downing mechanisms can be employed for quick fail over.
 * Quick fail over of Cluster Singleton and Cluster Sharding from one data center to another
@@ -178,9 +178,8 @@ other data centers.
 Especially when used together with Akka Persistence that is based on the single-writer principle
 it is important to avoid running the same entity at multiple locations at the same time with a
 shared data store. That would result in corrupt data since the events stored by different instances
-may be interleaved and would be interpreted differently in a later replay. Lightbend's Akka Team 
-is working on a solution that will support multiple active entities that will work nicely together 
-with Cluster Sharding across multiple data centers.
+may be interleaved and would be interpreted differently in a later replay. For active active persistent
+entities see Lightbend's [Multi-DC Persistence](https://developer.lightbend.com/docs/akka-commercial-addons/current/persistence-dc/index.html)
 
 If you need global entities you have to pick one data center to host that entity type and only start
 `ClusterSharding` on nodes of that data center. If the data center is unreachable from another data center the
