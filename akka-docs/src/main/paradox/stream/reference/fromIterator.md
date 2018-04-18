@@ -4,6 +4,8 @@ Stream the values from an `Iterator`, requesting the next value when there is de
 
 ## Signature
 
+@@signature [BasicDirectives.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromIterator }
+
 ## Description
 
 Stream the values from an `Iterator`, requesting the next value when there is demand. The iterator will be created anew

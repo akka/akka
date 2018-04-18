@@ -3,7 +3,12 @@
 Allow for a slower downstream by passing incoming elements and a summary into an aggregate function as long as there
 is backpressure and a maximum weight batched elements is not yet reached.
 
+@@@ div { .group-scala }
 ## Signature
+
+@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #batchWeighted }
+@@@
+
 
 ## Description
 

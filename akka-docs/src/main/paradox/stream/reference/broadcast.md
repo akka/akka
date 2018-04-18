@@ -2,8 +2,6 @@
 
 Emit each incoming element each of `n` outputs.
 
-## Signature
-
 ## Description
 
 Emit each incoming element each of `n` outputs.

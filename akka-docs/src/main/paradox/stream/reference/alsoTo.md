@@ -2,7 +2,11 @@
 
 Attaches the given `Sink` to this `Flow`, meaning that elements that pass through this `Flow` will also be sent to the `Sink`.
 
+@@@ div { .group-scala }
 ## Signature
+
+@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #alsoTo }
+@@@
 
 ## Description
 

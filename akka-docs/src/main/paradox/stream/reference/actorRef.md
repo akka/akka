@@ -2,7 +2,11 @@
 
 Send the elements from the stream to an `ActorRef`.
 
+@@@ div { .group-scala }
 ## Signature
+
+@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #actorRef }
+@@@
 
 ## Description
 

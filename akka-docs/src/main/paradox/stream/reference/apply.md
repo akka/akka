@@ -2,7 +2,11 @@
 
 Stream the values of an `immutable.
 
+@@@ div { .group-scala }
 ## Signature
+
+@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #apply }
+@@@
 
 ## Description
 
