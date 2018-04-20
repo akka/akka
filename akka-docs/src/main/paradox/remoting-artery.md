@@ -887,7 +887,7 @@ your configuration file. This a limitation of the current version and will not b
 
 @@@
 
-Emitting event information (logs) from internals is always a tradeoff. The events that are usable for
+Emitting event information (logs) from internals is always a trade off. The events that are usable for
 the Akka developers are usually too low level to be of any use for users and usually need to be fine-grained enough
 to provide enough information to be able to debug issues in the internal implementation. This usually means that
 these logs are hidden behind special flags and emitted at low log levels to not clutter the log output of the user
@@ -908,7 +908,7 @@ crashes unexpectedly.
  * Very low overhead, specialized, binary logging that has no significant overhead and can be safely left enabled
 for production systems.
 
-The location of the file can be controlled via the *akka.remote.artery.advanced.flight-recoder.destination* setting (see
+The location of the file can be controlled via the *akka.remote.artery.advanced.flight-recorder.destination* setting (see
 @ref:[akka-remote (artery)](general/configuration.md#config-akka-remote-artery) for details). By default, a file with the *.afr* extension is produced in the temporary
 directory of the operating system. In cases where the flight recorder casuses issues, it can be disabled by adding the
 setting *akka.remote.artery.advanced.flight-recorder.enabled=off*, although this is not recommended.

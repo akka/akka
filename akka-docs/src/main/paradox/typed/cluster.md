@@ -34,11 +34,8 @@ Java
 
 And the minimum configuration required is to set a host/port for remoting and the `akka.actor.provider = "cluster"`.
 
-Scala
-:  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-imports }
+@@snip [BasicClusterExampleSpec.scala]($akka$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #config-seeds }
 
-Java
-:  @@snip [BasicClusterExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-imports }
 
 ## Cluster API extension
 
