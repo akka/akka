@@ -10,6 +10,8 @@ import scala.annotation.varargs
 import scala.compat.java8.OptionConverters._
 import scala.reflect.ClassTag
 
+import akka.annotation.InternalApi
+
 /**
  * Marker supertype for a setup part that can be put inside [[ActorSystemSetup]], if a specific concrete setup
  * is not specified in the actor system setup that means defaults are used (usually from the config file) - no concrete
@@ -49,7 +51,7 @@ object ActorSystemSetup {
  * Constructor is *Internal API*. Use the factory methods [[ActorSystemSetup#create]] and [[akka.actor.Actor#apply]] to create
  * instances.
  */
-final class ActorSystemSetup private[akka] (setups: Map[Class[_], AnyRef]) {
+final class ActorSystemSetup private[akka] (@InternalApi private[akka] val setups: Map[Class[_], AnyRef]) {
 
   /**
    * Java API: Extract a concrete [[Setup]] of type `T` if it is defined in the settings.
