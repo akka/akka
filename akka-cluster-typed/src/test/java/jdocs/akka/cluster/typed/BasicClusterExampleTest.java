@@ -5,7 +5,6 @@
 package jdocs.akka.cluster.typed;
 
 //#cluster-imports
-
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
 import akka.cluster.ClusterEvent;
