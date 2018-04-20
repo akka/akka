@@ -13,8 +13,9 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionI
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
 import scala.concurrent.duration._
-
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+
+import akka.actor.typed.ExtensionSetup
 
 object ClusterSingletonSettings {
   def apply(
@@ -236,3 +237,18 @@ final class ClusterSingletonManagerSettings(
     new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
 }
 
+object ClusterSingletonSetup {
+  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ ClusterSingleton): ClusterSingletonSetup =
+    new ClusterSingletonSetup(new java.util.function.Function[ActorSystem[_], ClusterSingleton] {
+      override def apply(sys: ActorSystem[_]): ClusterSingleton = createExtension(sys)
+    }) // TODO can be simplified when compiled only with Scala >= 2.12
+
+}
+
+/**
+ * Can be used in [[akka.actor.setup.ActorSystemSetup]] when starting the [[ActorSystem]]
+ * to replace the default implementation of the [[ClusterSingleton]] extension. Intended
+ * for tests that need to replace extension with stub/mock implementations.
+ */
+final class ClusterSingletonSetup(createExtension: java.util.function.Function[ActorSystem[_], ClusterSingleton])
+  extends ExtensionSetup[ClusterSingleton](ClusterSingleton, createExtension)
