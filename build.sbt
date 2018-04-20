@@ -410,11 +410,14 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     persistenceTyped % "test->test",
     protobuf,
     typedTestkit % "test->test",
-    actorTypedTests % "test->test"
+    actorTypedTests % "test->test",
+    remoteTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
   .disablePlugins(MimaPlugin)
+  .configs(MultiJvm)
+  .enablePlugins(MultiNodeScalaTest)
 
 lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .dependsOn(
