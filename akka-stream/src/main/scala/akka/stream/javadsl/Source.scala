@@ -3190,12 +3190,10 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.watchTermination()((left, right) ⇒ matF(left, right.toJava)))
 
   /**
-   * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
+   * Materializes to `FlowMonitor<Out>` that allows monitoring of the current flow. All events are propagated
    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
    * event, and may therefor affect performance.
    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
-   *
-   * @deprecated Use monitor() or monitorMat(combine) instead
    */
   @Deprecated
   @deprecated("2.5.12", "Use monitor() or monitorMat(combine) instead")
@@ -3212,13 +3210,17 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.monitorMat(combinerToScala(combine)))
 
   /**
-   * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
+   * Materializes to `Pair<Mat, FlowMonitor<<Out>>`, which is unlike most other operators (!),
+   * in which usually the default materialized value keeping semantics is to keep the left value
+   * (by passing `Keep.left()` to a `*Mat` version of a method). In this operator is an exception from
+   * that rule and keeps both values since dropping its sole purpose is to introduce that materialized value.
+   *
+   * The `FlowMonitor` allows monitoring of the current flow. All events are propagated
    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
    * event, and may therefor affect performance.
-   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
    */
-  def monitor(): javadsl.Source[Out, FlowMonitor[Out]] =
-    monitorMat(Keep.right)
+  def monitor(): Source[Out, Pair[Mat, FlowMonitor[Out]]] =
+    monitorMat(Keep.both)
 
   /**
    * Delays the initial element by the specified duration.

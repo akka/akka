@@ -72,8 +72,8 @@ class FlowMonitorSpec extends StreamSpec {
 
     "return Failed when stream is abruptly terminated" in {
       val mat = ActorMaterializer()
-      val (source, monitor) =
-        TestSource.probe[Any].monitorMat(Keep.both).to(Sink.ignore).run()(mat)
+      val (source, monitor) = // notice that `monitor` is like a Keep.both
+        TestSource.probe[Any].monitor.to(Sink.ignore).run()(mat)
       mat.shutdown()
 
       awaitAssert(

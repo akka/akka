@@ -2991,9 +2991,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
    * event, and may therefor affect performance.
-   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
    *
-   * @deprecated Use monitor() or monitorMat(combine) instead
+   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
    */
   @Deprecated
   @deprecated("2.5.12", "Use monitor() or monitorMat(combine) instead")
@@ -3004,18 +3003,21 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
    * event, and may therefor affect performance.
-   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
    *
-   * @deprecated Use monitor() or monitorMat(combine) instead
+   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
    */
   def monitorMat[M](combine: function.Function2[Mat, FlowMonitor[Out], M]): javadsl.Flow[In, Out, M] =
     new Flow(delegate.monitorMat(combinerToScala(combine)))
 
   /**
-   * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
+   * Materializes to `Pair<Mat, FlowMonitor<<Out>>`, which is unlike most other operators (!),
+   * in which usually the default materialized value keeping semantics is to keep the left value
+   * (by passing `Keep.left()` to a `*Mat` version of a method). In this operator is an exception from
+   * that rule and keeps both values since dropping its sole purpose is to introduce that materialized value.
+   *
+   * The `FlowMonitor[Out]` allows monitoring of the current flow. All events are propagated
    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
    * event, and may therefor affect performance.
-   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
    */
   def monitor(): Flow[In, Out, FlowMonitor[Out]] =
     monitorMat(Keep.right)
