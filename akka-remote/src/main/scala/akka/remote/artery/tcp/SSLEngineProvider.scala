@@ -16,6 +16,8 @@ import java.security.SecureRandom
 import scala.util.Try
 
 import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.actor.setup.Setup
 import akka.annotation.ApiMayChange
 import akka.event.LogMarker
 import akka.event.Logging
@@ -204,4 +206,33 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
     None
 
 }
+
+object SSLEngineProviderSetup {
+
+  /**
+   * Scala API: factory for defining a `SSLEngineProvider` that is passed in when ActorSystem
+   * is created rather than creating one from configured class name.
+   */
+  def apply(sslEngineProvider: ExtendedActorSystem ⇒ SSLEngineProvider): SSLEngineProviderSetup =
+    new SSLEngineProviderSetup(sslEngineProvider)
+
+  /**
+   * Java API: factory for defining a `SSLEngineProvider` that is passed in when ActorSystem
+   * is created rather than creating one from configured class name.
+   */
+  def create(sslEngineProvider: java.util.function.Function[ExtendedActorSystem, SSLEngineProvider]): SSLEngineProviderSetup =
+    apply(sys ⇒ sslEngineProvider(sys))
+
+}
+
+/**
+ * Setup for for defining a `SSLEngineProvider` that is passed in when ActorSystem
+ * is created rather than creating one from configured class name. That is useful
+ * when the SSLEngineProvider implementation require other external constructor parameters
+ * or is created before the ActorSystem is created.
+ *
+ * Constructor is *Internal API*, use factories in [[SSLEngineProviderSetup()]]
+ */
+@ApiMayChange class SSLEngineProviderSetup private (
+  val sslEngineProvider: ExtendedActorSystem ⇒ SSLEngineProvider) extends Setup
 
