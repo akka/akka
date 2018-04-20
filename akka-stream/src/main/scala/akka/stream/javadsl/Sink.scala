@@ -92,9 +92,9 @@ object Sink {
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
-   * into a [[java.util.concurrent.CompletionStage]] will be completed with `Success` when reaching the
-   * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
-   * the stream..
+   * into a [[java.util.concurrent.CompletionStage]] which will be completed with `Success` when reaching the
+   * normal end of the stream, or completed with `Failure` if there is a failure signaled in
+   * the stream.
    */
   def foreach[T](f: function.Procedure[T]): Sink[T, CompletionStage[Done]] =
     new Sink(scaladsl.Sink.foreach(f.apply).toCompletionStage())
