@@ -7,8 +7,9 @@ package akka.actor.typed
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.Future
+
+import akka.actor.BootstrapSetup
 
 class DummyExtension1 extends Extension
 object DummyExtension1 extends ExtensionId[DummyExtension1] {
@@ -94,10 +95,10 @@ class ExtensionsSpec extends TypedAkkaSpec {
 
     "handle extensions that fail to initialize" in {
       def create(): Unit = {
-        ActorSystem[Any](Behavior.EmptyBehavior, "ExtensionsSpec04", config = Some(ConfigFactory.parseString(
+        ActorSystem[Any](Behavior.EmptyBehavior, "ExtensionsSpec04", ConfigFactory.parseString(
           """
           akka.typed.extensions = ["akka.actor.typed.FailingToLoadExtension$"]
-        """)))
+        """))
       }
 
       intercept[RuntimeException] {
@@ -186,7 +187,11 @@ class ExtensionsSpec extends TypedAkkaSpec {
   }
 
   def withEmptyActorSystem[T](name: String, config: Option[Config] = None)(f: ActorSystem[_] ⇒ T): T = {
-    val system = ActorSystem[Any](Behavior.EmptyBehavior, name, config = config)
+    val system = config match {
+      case None    ⇒ ActorSystem[Any](Behavior.EmptyBehavior, name)
+      case Some(c) ⇒ ActorSystem[Any](Behavior.EmptyBehavior, name, c)
+    }
+
     try f(system) finally system.terminate().futureValue
   }
 }
