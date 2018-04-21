@@ -231,8 +231,13 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #tagging }
 
-## Current limitations
+## Wrapping Persistent Behaviors
+When creating/setting up `PersistentBehavior`, it is possible to wrap `PersistentBehaviors` in
+other behaviors such as `Behaviors.setup` in order to access `ActorContext` object. For instance
+to access actor logging upon taking snapshots for debug purpose.
 
-* The `PersistentBehavior` can't be wrapped in other behaviors, such as `Behaviors.setup`. See [#23694](https://github.com/akka/akka/issues/23694)
+Scala
+:  @@snip [BasicPersistentActorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #wrapPersistentBehavior }
 
-
+Java
+:  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #wrapPersistentBehavior }
