@@ -14,3 +14,7 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConne
 
 # #24891 add return type for FlowMonitorState.finished
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.FlowMonitorState.finished")
+
+# #24812 fix signature of monitor()
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.monitorMat")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.monitor")
