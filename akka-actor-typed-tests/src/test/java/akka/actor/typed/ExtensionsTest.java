@@ -5,6 +5,7 @@
 package akka.actor.typed;
 
 import akka.actor.*;
+import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
@@ -42,14 +43,12 @@ public class ExtensionsTest extends JUnitSuite {
 
   @Test
   public void loadJavaExtensionsFromConfig() {
+    Config cfg = ConfigFactory.parseString(
+        "akka.typed.extensions += \"akka.actor.typed.ExtensionsTest$MyExtension\"").resolve();
     final ActorSystem<Object> system = ActorSystem.create(
         Behavior.empty(),
         "loadJavaExtensionsFromConfig",
-        Optional.empty(),
-        Optional.of(ConfigFactory.parseString("akka.typed.extensions += \"akka.actor.typed.ExtensionsTest$MyExtension\"").resolve()),
-        Optional.empty(),
-        Optional.empty()
-    );
+        cfg);
 
     try {
       // note that this is not the intended end user way to access it
