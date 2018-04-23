@@ -608,6 +608,7 @@ class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
     (JBehaviors.tap(
+      classOf[Command],
       pc((_, msg) ⇒ inbox.ref ! Right(msg)),
       ps((_, sig) ⇒ inbox.ref ! Left(sig)),
       super.behavior(monitor)._1), inbox)
