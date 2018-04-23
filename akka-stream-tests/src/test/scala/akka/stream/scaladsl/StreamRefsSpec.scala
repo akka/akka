@@ -284,7 +284,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       val remoteSource: SourceRef[String] = expectMsgType[SourceRef[String]]
       // materialize directly and start consuming, timeout is 500ms
       val eventualStrings: Future[immutable.Seq[String]] = remoteSource.throttle(1, 100.millis, 1, ThrottleMode.Shaping)
-        .take(60) // 10 * 100 millis - way more than timeout for good measure
+        .take(60) // 60 * 100 millis - data flowing for 6 seconds - both 500ms and 5s timeouts should have pased
         .runWith(Sink.seq)
 
       Await.result(eventualStrings, 8.seconds)
