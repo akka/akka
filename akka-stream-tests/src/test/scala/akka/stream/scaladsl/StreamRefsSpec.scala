@@ -93,6 +93,14 @@ object StreamRefsSpec {
 
         sink pipeTo sender()
 
+      case "receive-ignore" ⇒
+        val sink =
+          StreamRefs.sinkRef[String]()
+            .to(Sink.ignore)
+            .run()
+
+        sink pipeTo sender()
+
       case "receive-subscribe-timeout" ⇒
         val sink = StreamRefs.sinkRef[String]()
           .withAttributes(StreamRefAttributes.subscriptionTimeout(500.millis))
@@ -164,7 +172,7 @@ object StreamRefsSpec {
       }
 
       stream.materializer.stream-ref {
-        subscription-timeout = 5 seconds
+        subscription-timeout = 3 seconds
       }
     }
   """).withFallback(ConfigFactory.load())
@@ -289,6 +297,19 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
 
       Await.result(eventualStrings, 8.seconds)
     }
+
+    // bug #24934
+    "not receive timeout while data is being sent" in {
+      remoteActor ! "give-infinite"
+      val remoteSource: SourceRef[String] = expectMsgType[SourceRef[String]]
+
+      val done =
+        remoteSource.throttle(1, 200.millis)
+          .takeWithin(5.seconds) // which is > than the subscription timeout (so we make sure the timeout was cancelled)
+          .runWith(Sink.ignore)
+
+      Await.result(done, 8.seconds)
+    }
   }
 
   "A SinkRef" must {
@@ -359,7 +380,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       remoteActor ! "receive-subscribe-timeout"
       val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
       Source.repeat("whatever")
-        .throttle(1, 100.millis, 1, ThrottleMode.Shaping)
+        .throttle(1, 100.millis)
         .take(10) // the timeout is 500ms, so this makes sure we run more time than that
         .runWith(remoteSink)
 
@@ -367,6 +388,22 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
         p.expectMsg("whatever")
       }
       p.expectMsg("<COMPLETE>")
+    }
+
+    // bug #24934
+    "not receive timeout while data is being sent" in {
+      remoteActor ! "receive-ignore"
+      val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
+
+      val done =
+        Source.repeat("hello-24934")
+          .throttle(1, 300.millis)
+          .takeWithin(5.seconds) // which is > than the subscription timeout (so we make sure the timeout was cancelled)
+          .alsoToMat(Sink.last)(Keep.right)
+          .to(remoteSink)
+          .run()
+
+      Await.result(done, 7.seconds)
     }
 
     "respect back -pressure from (implied by origin Sink)" in {

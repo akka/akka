@@ -91,12 +91,11 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
 
         partnerRef match {
           case OptionVal.Some(ref) ⇒
-            ref ! StreamRefsProtocol.OnSubscribeHandshake(self.ref)
             tryPull()
           case _ ⇒
             // only schedule timeout timer if partnerRef has not been resolved yet (i.e. if this instance of the Actor
-            // has not been provided with a valid initialPartnerRef
-            scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout) // nothing to do
+            // has not been provided with a valid initialPartnerRef)
+            scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
         }
       }
 
@@ -176,6 +175,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
       def observeAndValidateSender(partner: ActorRef, failureMsg: String): Unit = {
         if (partnerRef.isEmpty) {
           partnerRef = OptionVal(partner)
+          partner ! StreamRefsProtocol.OnSubscribeHandshake(self.ref)
           cancelTimer(SubscriptionTimeoutTimerKey)
           self.watch(partner)
 
