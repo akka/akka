@@ -6,18 +6,18 @@ package akka.stream.scaladsl
 
 import akka.NotUsed
 import akka.actor.Status.Failure
-import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, ActorSystemImpl, Identify, Props}
+import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, ActorSystemImpl, Identify, Props }
 import akka.pattern._
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.scaladsl._
 import akka.stream._
-import akka.testkit.{AkkaSpec, ImplicitSender, SocketUtil, TestKit, TestProbe}
+import akka.testkit.{ AkkaSpec, ImplicitSender, SocketUtil, TestKit, TestProbe }
 import akka.util.ByteString
 import com.typesafe.config._
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 import scala.util.control.NoStackTrace
 
 object StreamRefsSpec {
@@ -284,7 +284,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       val remoteSource: SourceRef[String] = expectMsgType[SourceRef[String]]
       // materialize directly and start consuming, timeout is 500ms
       val eventualStrings: Future[immutable.Seq[String]] = remoteSource.throttle(1, 100.millis, 1, ThrottleMode.Shaping)
-        .take(60) // 60 * 100 millis - data flowing for 6 seconds - both 500ms and 5s timeouts should have pased
+        .take(60) // 60 * 100 millis - data flowing for 6 seconds - both 500ms and 5s timeouts should have passed
         .runWith(Sink.seq)
 
       Await.result(eventualStrings, 8.seconds)
