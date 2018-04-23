@@ -89,11 +89,17 @@ private[stream] final class SourceRefStageImpl[Out](
         self = getStageActor(initialReceive)
         log.debug("[{}] Allocated receiver: {}", stageActorName, self.ref)
         if (initialPartnerRef.isDefined) // this will set the partnerRef
-          observeAndValidateSender(initialPartnerRef.get, "<no error case here, definitely valid>")
+          observeAndValidateSender(initialPartnerRef.get, "Illegal initialPartnerRef! This would be a bug in the SourceRef usage or impl.")
 
         promise.success(SinkRefImpl(self.ref))
 
-        scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
+        partnerRef match {
+          case OptionVal.None ⇒
+            // only schedule timeout timer if partnerRef has not been resolved yet (i.e. if this instance of an Actor
+            // has not been provided with a valid initial partnerRef
+            scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout) // nothing to do
+          case _ ⇒
+        }
       }
 
       override def onPull(): Unit = {
@@ -126,7 +132,7 @@ private[stream] final class SourceRefStageImpl[Out](
         case SubscriptionTimeoutTimerKey ⇒
           val ex = StreamRefSubscriptionTimeoutException(
             // we know the future has been competed by now, since it is in preStart
-            s"[$stageActorName] Remote side did not subscribe (materialize) handed out Sink reference [${promise.future.value}]," +
+            s"[$stageActorName] Remote side did not subscribe (materialize) handed out Source reference [${promise.future.value}]," +
               s"within subscription timeout: ${PrettyDuration.format(subscriptionTimeout.timeout)}!")
 
           throw ex // this will also log the exception, unlike failStage; this should fail rarely, but would be good to have it "loud"
