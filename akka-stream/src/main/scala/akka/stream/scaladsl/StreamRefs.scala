@@ -25,7 +25,7 @@ object StreamRefs {
    * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),
    * to consume data from this local stream, as if they were attached in the spot of the local Sink directly.
    *
-   * Adheres to [[StreamRefAttributes]].
+   * Adheres to [[akka.stream.StreamRefAttributes]].
    *
    * See more detailed documentation on [[SourceRef]].
    */
@@ -37,7 +37,7 @@ object StreamRefs {
    * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),
    * to consume data from this local stream, as if they were attached in the spot of the local Sink directly.
    *
-   * Adheres to [[StreamRefAttributes]].
+   * Adheres to [[akka.stream.StreamRefAttributes]].
    *
    * See more detailed documentation on [[SinkRef]].
    */
