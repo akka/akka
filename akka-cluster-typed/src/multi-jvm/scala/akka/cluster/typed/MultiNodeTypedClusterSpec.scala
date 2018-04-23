@@ -6,17 +6,18 @@ package akka.cluster.typed
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.actor.Address
+import akka.actor.{ Address, Scheduler }
 import akka.actor.typed.ActorSystem
 import akka.remote.testkit.{ FlightRecordingSupport, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.WatchedByCoroner
 import org.scalatest.{ Matchers, Suite }
 import akka.actor.typed.scaladsl.adapter._
-import akka.cluster.ClusterEvent
+import akka.cluster.{ ClusterEvent, MemberStatus }
 import akka.remote.testconductor.RoleName
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.duration._
+import scala.language.implicitConversions
 
 object MultiNodeTypedClusterSpec {
   def clusterConfig: Config = ConfigFactory.parseString(
@@ -59,6 +60,7 @@ trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedB
   override def initialParticipants: Int = roles.size
 
   implicit def typedSystem: ActorSystem[Nothing] = system.toTyped
+  implicit def scheduler: Scheduler = system.scheduler
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
 
@@ -86,6 +88,26 @@ trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedB
         address
       case address ⇒ address
     }
+  }
+
+  def formCluster(first: RoleName, rest: RoleName*): Unit = {
+    runOn(first) {
+      cluster.manager ! Join(cluster.selfMember.address)
+      awaitAssert(cluster.state.members.exists { m ⇒
+        m.uniqueAddress == cluster.selfMember.uniqueAddress && m.status == MemberStatus.Up
+      } should be(true))
+    }
+    enterBarrier(first.name + "-joined")
+
+    rest foreach { node ⇒
+      runOn(node) {
+        cluster.manager ! Join(address(first))
+        awaitAssert(cluster.state.members.exists { m ⇒
+          m.uniqueAddress == cluster.selfMember.uniqueAddress && m.status == MemberStatus.Up
+        } should be(true))
+      }
+    }
+    enterBarrier("all-joined")
   }
 
 }

@@ -3,18 +3,18 @@
  */
 package akka.cluster.typed
 
-import akka.actor.typed.{ ActorRef, Props }
-import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.MemberStatus
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import com.typesafe.config.ConfigFactory
+import akka.actor.typed.Props
 import akka.actor.typed.scaladsl.adapter._
+import akka.cluster.MemberStatus
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.testkit.typed.scaladsl.TestProbe
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 
-class MultiDcClusterSingletonSpecConfig extends MultiNodeConfig {
-  val first = role("first")
+object MultiDcClusterSingletonSpecConfig extends MultiNodeConfig {
+  val first: RoleName = role("first")
   val second = role("second")
   val third = role("third")
 
@@ -38,37 +38,15 @@ class MultiDcClusterSingletonSpecConfig extends MultiNodeConfig {
   testTransport(on = true)
 }
 
-object MultiDcNormalConfig$Singleton extends MultiDcClusterSingletonSpecConfig()
+class MultiDcClusterSingletonMultiJvmNode1 extends MultiDcClusterSingletonSpec
+class MultiDcClusterSingletonMultiJvmNode2 extends MultiDcClusterSingletonSpec
+class MultiDcClusterSingletonMultiJvmNode3 extends MultiDcClusterSingletonSpec
 
-class MultiDcClusterSingletonMultiJvmNode1 extends MultiDcClusterSingletonSpec(MultiDcNormalConfig$Singleton)
-class MultiDcClusterSingletonMultiJvmNode2 extends MultiDcClusterSingletonSpec(MultiDcNormalConfig$Singleton)
-class MultiDcClusterSingletonMultiJvmNode3 extends MultiDcClusterSingletonSpec(MultiDcNormalConfig$Singleton)
-
-object MultiDcClusterSingletonSpec {
-  case class Pong(dc: String)
-  sealed trait PingProtocol
-  case class Ping(ref: ActorRef[Pong]) extends PingProtocol
-  case object NoMore extends PingProtocol
-
-  val multiDcSingleton = Behaviors.setup[PingProtocol] { ctx ⇒
-    val cluster = Cluster(ctx.system)
-    Behaviors.receiveMessage[PingProtocol] {
-      case Ping(ref) ⇒
-        ref ! Pong(cluster.selfMember.dataCenter)
-        Behaviors.same
-      case NoMore ⇒
-        Behaviors.stopped
-    }
-  }
-}
-
-abstract class MultiDcClusterSingletonSpec(config: MultiDcClusterSingletonSpecConfig)
-  extends MultiNodeSpec(config)
+abstract class MultiDcClusterSingletonSpec extends MultiNodeSpec(MultiDcClusterSingletonSpecConfig)
   with MultiNodeTypedClusterSpec {
 
-  import MultiDcClusterSingletonSpec._
-
-  import config._
+  import MultiDcClusterActors._
+  import MultiDcClusterSingletonSpecConfig._
 
   "A typed cluster with multiple data centers" must {
     "be able to form" in {
@@ -91,7 +69,7 @@ abstract class MultiDcClusterSingletonSpec(config: MultiDcClusterSingletonSpecCo
       runOn(first) {
         val singleton = ClusterSingleton(typedSystem)
         val pinger = singleton.spawn(
-          MultiDcClusterSingletonSpec.multiDcSingleton,
+          multiDcPinger,
           "ping",
           Props.empty,
           ClusterSingletonSettings(typedSystem),
@@ -111,7 +89,7 @@ abstract class MultiDcClusterSingletonSpec(config: MultiDcClusterSingletonSpecCo
       runOn(second) {
         val singleton = ClusterSingleton(system.toTyped)
         val pinger = singleton.spawn(
-          MultiDcClusterSingletonSpec.multiDcSingleton,
+          multiDcPinger,
           "ping",
           Props.empty,
           ClusterSingletonSettings(typedSystem).withDataCenter("dc1"),
@@ -142,7 +120,7 @@ abstract class MultiDcClusterSingletonSpec(config: MultiDcClusterSingletonSpecCo
       runOn(second, third) {
         val singleton = ClusterSingleton(typedSystem)
         val pinger = singleton.spawn(
-          MultiDcClusterSingletonSpec.multiDcSingleton,
+          multiDcPinger,
           "ping",
           Props.empty,
           ClusterSingletonSettings(typedSystem),

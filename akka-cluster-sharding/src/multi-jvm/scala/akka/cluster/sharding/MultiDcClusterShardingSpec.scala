@@ -123,7 +123,7 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
     }, 10.seconds)
   }
 
-  s"Cluster sharding in multi data center cluster" must {
+  "Cluster sharding in multi data center cluster" must {
     "join cluster" in within(20.seconds) {
       join(first, first)
       join(second, first)
