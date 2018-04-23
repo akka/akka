@@ -6,6 +6,7 @@ package akka.persistence.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.Signal;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.Pair;
@@ -313,8 +314,8 @@ public class PersistentActorTest extends JUnitSuite {
   @Test
   public void workWhenWrappedInOtherBehavior() {
     Behavior<Command> behavior = Behaviors.supervise(counter("c6")).onFailure(
-        SupervisorStrategy.restartWithBackoff(Duration.ofSeconds(1),
-            Duration.ofSeconds(10), 0.1)
+      SupervisorStrategy.restartWithBackoff(Duration.ofSeconds(1),
+        Duration.ofSeconds(10), 0.1)
     );
     ActorRef<Command> c = testKit.spawn(behavior);
 
@@ -351,5 +352,19 @@ public class PersistentActorTest extends JUnitSuite {
     c.tell(new StopThenLog());
     probe.expectTerminated(c, Duration.ofSeconds(1));
   }
+
+  @Test
+  public void tapPersistentActor() {
+    TestProbe<Command> interceptProbe = testKit.createTestProbe();
+    TestProbe<Signal> signalProbe = testKit.createTestProbe();
+    ActorRef<Command> c = testKit.spawn(Behaviors.tap(Command.class,
+      (ctx,  cmd) -> interceptProbe.ref().tell(cmd),
+      (ctx, signal) -> signalProbe.ref().tell(signal),
+      counter("tap1")));
+    c.tell(Increment.instance);
+    interceptProbe.expectMessage(Increment.instance);
+    signalProbe.expectNoMessage();
+  }
+
   // FIXME test with by state command handler
 }

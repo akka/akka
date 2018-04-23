@@ -85,7 +85,7 @@ import scala.reflect.ClassTag
     override def toString = s"ReceiveMessage(${LineNumbers(onMessage)})"
   }
 
-  def tap[T](
+  def tap[T: ClassTag](
     onMessage: (SAC[T], T) ⇒ _,
     onSignal:  (SAC[T], Signal) ⇒ _,
     behavior:  Behavior[T]): Behavior[T] = {
@@ -100,7 +100,7 @@ import scala.reflect.ClassTag
       },
       afterMessage = ConstantFun.scalaAnyThreeToThird,
       afterSignal = ConstantFun.scalaAnyThreeToThird,
-      behavior)(ClassTag(classOf[Any]))
+      behavior)
   }
 
   /**
@@ -118,7 +118,7 @@ import scala.reflect.ClassTag
    * `afterMessage` is the message returned from `beforeMessage` (possibly
    * different than the incoming message).
    */
-  def intercept[T, U <: Any: ClassTag](
+  def intercept[T, U: ClassTag](
     beforeMessage:  (SAC[U], U) ⇒ T,
     beforeSignal:   (SAC[T], Signal) ⇒ Boolean,
     afterMessage:   (SAC[T], T, Behavior[T]) ⇒ Behavior[T],

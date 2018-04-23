@@ -172,13 +172,13 @@ object Behaviors {
    * for logging or tracing what a certain Actor does.
    */
   def tap[T](
+    clazz:     Class[T],
     onMessage: Procedure2[ActorContext[T], T],
     onSignal:  Procedure2[ActorContext[T], Signal],
     behavior:  Behavior[T]): Behavior[T] = {
-    BehaviorImpl.tap(
+    akka.actor.typed.scaladsl.Behaviors.tap[T](behavior)(
       (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
-      (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig),
-      behavior)
+      (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig))(ClassTag[T](clazz))
   }
 
   /**
@@ -187,11 +187,8 @@ object Behaviors {
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
    */
-  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] = {
-    BehaviorImpl.tap(
-      (ctx, msg) ⇒ monitor ! msg,
-      ConstantFun.scalaAnyTwoToUnit,
-      behavior)
+  def monitor[T](clazz: Class[T], monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] = {
+    akka.actor.typed.scaladsl.Behaviors.monitor(monitor, behavior)(reflect.ClassTag(clazz))
   }
 
   /**
