@@ -93,10 +93,11 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
           case OptionVal.Some(ref) ⇒
             ref ! StreamRefsProtocol.OnSubscribeHandshake(self.ref)
             tryPull()
-          case _ ⇒ // nothing to do
+          case _ ⇒
+            // only schedule timeout timer if partnerRef has not been resolved yet (i.e. if this instance of the Actor
+            // has not been provided with a valid initialPartnerRef
+            scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout) // nothing to do
         }
-
-        scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
       }
 
       lazy val initialReceive: ((ActorRef, Any)) ⇒ Unit = {

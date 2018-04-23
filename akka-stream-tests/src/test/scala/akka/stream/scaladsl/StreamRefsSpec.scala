@@ -15,8 +15,9 @@ import akka.testkit.{ AkkaSpec, ImplicitSender, SocketUtil, TestKit, TestProbe }
 import akka.util.ByteString
 import com.typesafe.config._
 
+import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.Future
+import scala.concurrent.{ Await, Future }
 import scala.util.control.NoStackTrace
 
 object StreamRefsSpec {
@@ -161,6 +162,10 @@ object StreamRefsSpec {
         port = ${address.getPort}
         hostname = "${address.getHostName}"
       }
+
+      stream.materializer.stream-ref {
+        subscription-timeout = 5 seconds
+      }
     }
   """).withFallback(ConfigFactory.load())
   }
@@ -278,10 +283,11 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       remoteActor ! "give-subscribe-timeout"
       val remoteSource: SourceRef[String] = expectMsgType[SourceRef[String]]
       // materialize directly and start consuming, timeout is 500ms
-      remoteSource.throttle(1, 100.millis, 1, ThrottleMode.Shaping)
-        .take(10) // 10 * 100 millis - way more than timeout for good measure
+      val eventualStrings: Future[immutable.Seq[String]] = remoteSource.throttle(1, 100.millis, 1, ThrottleMode.Shaping)
+        .take(60) // 60 * 100 millis - data flowing for 6 seconds - both 500ms and 5s timeouts should have passed
         .runWith(Sink.seq)
-        .futureValue // this would fail if it timed out
+
+      Await.result(eventualStrings, 8.seconds)
     }
   }
 
@@ -342,7 +348,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
         .run()
 
       val failure = p.expectMsgType[Failure]
-      failure.cause.getMessage should include("Remote side did not subscribe (materialize) handed out Sink reference")
+      failure.cause.getMessage should include("Remote side did not subscribe (materialize) handed out Source reference")
 
       // the local "remote sink" should cancel, since it should notice the origin target actor is dead
       probe.expectCancellation()
