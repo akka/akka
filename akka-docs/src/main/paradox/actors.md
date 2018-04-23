@@ -651,7 +651,7 @@ Messages are sent to an Actor through one of the following methods.
  * @scala[`!`] @java[`tell` ] means “fire-and-forget”, e.g. send a message asynchronously and return
 immediately. @scala[Also known as `tell`.]
  * @scala[`?`] @java[`ask`] sends a message asynchronously and returns a `Future`
-representing a possible reply. @scala[Also known as `ask`].
+representing a possible reply. @scala[Also known as `ask`.]
 
 Message ordering is guaranteed on a per-sender basis.
 
