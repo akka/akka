@@ -253,7 +253,7 @@ object Sink {
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
    * into a [[scala.concurrent.Future]] which will be completed with `Success` when reaching the
    * normal end of the stream, or completed with `Failure` if there is a failure signaled in
-   * the stream. 
+   * the stream.
    */
   def foreach[T](f: T ⇒ Unit): Sink[T, Future[Done]] =
     Flow[T].map(f).toMat(Sink.ignore)(Keep.right).named("foreachSink")
