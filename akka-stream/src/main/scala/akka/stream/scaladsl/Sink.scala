@@ -40,7 +40,7 @@ final class Sink[-In, +Mat](
    *
    * '''Backpressures when''' original [[Sink]] backpressures
    *
-   * '''Cancels when''' original [[Sink]] backpressures
+   * '''Cancels when''' original [[Sink]] cancels
    */
   def contramap[In2](f: In2 ⇒ In): Sink[In2, Mat] = Flow.fromFunction(f).toMat(this)(Keep.right)
 
