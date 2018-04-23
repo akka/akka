@@ -172,7 +172,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
           lines
             .map(_._2)
             .sortBy(_._2)
-            .map { case (element, method, md, description) => s"|$element|@ref[$method]($md)|$description|" }
+            .map { case (element, method, md, description) => s"""|$element|<a name="${method.toLowerCase}"></a>@ref[$method]($md)|$description|""" }
             .mkString("\n")
       )
 
