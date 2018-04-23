@@ -202,7 +202,7 @@ second the throttle combinator will assert *back-pressure* upstream.
 
 This is basically all there is to Akka Streams in a nutshell—glossing over the
 fact that there are dozens of sources and sinks and many more stream
-transformation combinators to choose from, see also @ref:[stages overview](stages-overview.md).
+transformation combinators to choose from, see also @ref:[operator index](operators/index.md).
 
 # Reactive Tweets
 

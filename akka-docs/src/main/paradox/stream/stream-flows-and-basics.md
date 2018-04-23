@@ -36,7 +36,7 @@ is running.
 Processing Stage
 : The common name for all building blocks that build up a Graph.
 Examples of a processing stage would be  operations like `map()`, `filter()`, custom `GraphStage` s and graph
-junctions like `Merge` or `Broadcast`. For the full list of built-in processing stages see @ref:[stages overview](stages-overview.md)
+junctions like `Merge` or `Broadcast`. For the full list of built-in processing stages see the @ref:[operator index](operators/index.md)
 
 
 When we talk about *asynchronous, non-blocking backpressure* we mean that the processing stages available in Akka

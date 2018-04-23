@@ -11,7 +11,7 @@ This part also serves as supplementary material for the main body of documentati
 open while reading the manual and look for examples demonstrating various streaming concepts
 as they appear in the main body of documentation.
 
-If you need a quick reference of the available processing stages used in the recipes see @ref:[stages overview](stages-overview.md).
+If you need a quick reference of the available processing stages used in the recipes see @ref:[operator index](operators/index.md).
 
 ## Working with Flows
 

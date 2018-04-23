@@ -6,7 +6,7 @@ into a stream of streams.
 SubFlows cannot contribute to the super-flow’s materialized value since they are materialized later,
 during the runtime of the flow graph processing.
 
-Stages that create substreams are listed on @ref:[Nesting and flattening stages](stages-overview.md#nesting-and-flattening-stages)
+Stages that create substreams are listed on @ref[Nesting and flattening stages](operators/index.md#nesting-and-flattening-stages)
 
 ## Nesting stages
 
