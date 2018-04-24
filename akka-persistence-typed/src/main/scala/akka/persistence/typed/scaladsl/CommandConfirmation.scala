@@ -13,6 +13,9 @@ object CommandConfirmation {
     CommandConfirmation(error = Some(err))
 
   val Success: CommandConfirmation = CommandConfirmation(error = None)
+
+  // FIXME naming: Accepted / Rejected, and use trait + impl classes instead
+
 }
 
 final case class CommandConfirmation(error: Option[CommandConfirmation.Error])

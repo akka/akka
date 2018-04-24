@@ -197,6 +197,9 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding â
    */
   def entityRefFor[A](typeKey: EntityTypeKey[A], entityId: String): EntityRef[A]
 
+  // FIXME document
+  def persistentEntityRefFor[A](typeKey: EntityTypeKey[A], entityId: String): PersistentEntityRef[A]
+
   /** The default ShardAllocationStrategy currently is [[LeastShardAllocationStrategy]] however could be changed in the future. */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy
 
@@ -275,8 +278,6 @@ object EntityTypeKey {
    */
   def ask[U](f: ActorRef[U] â‡’ A)(implicit timeout: Timeout, scheduler: Scheduler): Future[U]
 
-  def askWithConfirmation(req: A)(implicit timeout: Timeout, scheduler: Scheduler): Future[CommandConfirmation]
-
 }
 
 object EntityRef {
@@ -308,3 +309,7 @@ object EntityRef {
   }
 }
 
+// FIXME document
+@DoNotInherit trait PersistentEntityRef[A] extends EntityRef[A] {
+  def askWithConfirmation(req: A)(implicit timeout: Timeout, scheduler: Scheduler): Future[CommandConfirmation]
+}

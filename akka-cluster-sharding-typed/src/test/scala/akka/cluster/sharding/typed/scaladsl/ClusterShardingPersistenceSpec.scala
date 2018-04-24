@@ -95,7 +95,7 @@ class ClusterShardingPersistenceSpec extends ActorTestKit
 
       val p = TestProbe[String]()
 
-      val ref = ClusterSharding(system).entityRefFor(typeKey, "4")
+      val ref = ClusterSharding(system).persistentEntityRefFor(typeKey, "4")
       ref ! Add("a")
       ref.askWithConfirmation(Add("b")).futureValue should ===(CommandConfirmation.Success)
       ref.askWithConfirmation(Add("c")).futureValue should ===(CommandConfirmation.Success)

@@ -35,7 +35,6 @@ import akka.pattern.PromiseActorRef
 import akka.util.Timeout
 import akka.japi.function.{ Function ⇒ JFunction }
 import akka.persistence.typed.internal.CommandWithAutoConfirmation
-import akka.persistence.typed.javadsl.PersistentBehavior
 import akka.persistence.typed.scaladsl.CommandConfirmation
 
 /**
@@ -149,8 +148,7 @@ import akka.persistence.typed.scaladsl.CommandConfirmation
         val untypedEntityPropsFactory: String ⇒ akka.actor.Props = { entityId ⇒
           behavior(entityId) match {
             case u: UntypedPropsBehavior[_] ⇒ u.untypedProps(Props.empty)
-            case b ⇒
-              PropsAdapter(CommandWithAutoConfirmation.autoReplyAfter(b), entityProps)
+            case b                          ⇒ PropsAdapter(b, entityProps)
           }
         }
 
@@ -206,6 +204,12 @@ import akka.persistence.typed.scaladsl.CommandConfirmation
     new EntityRefImpl[A](untypedSharding.shardRegion(typeKey.name), entityId)
   }
 
+  def persistentEntityRefFor[A](typeKey: scaladsl.EntityTypeKey[A], entityId: String): scaladsl.PersistentEntityRef[A] = {
+    new PersistentEntityRefImpl[A](untypedSharding.shardRegion(typeKey.name), entityId)
+  }
+
+  // FIXME javadsl persistentEntityRefFor
+
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
     val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
     val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
@@ -217,7 +221,7 @@ import akka.persistence.typed.scaladsl.CommandConfirmation
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class EntityRefImpl[A](shardRegion: akka.actor.ActorRef, entityId: String)
+@InternalApi private[akka] class EntityRefImpl[A](shardRegion: akka.actor.ActorRef, entityId: String)
   extends javadsl.EntityRef[A] with scaladsl.EntityRef[A] {
 
   override def tell(msg: A): Unit =
@@ -234,17 +238,9 @@ import akka.persistence.typed.scaladsl.CommandConfirmation
   def ask[U](message: JFunction[ActorRef[U], A], timeout: Timeout, scheduler: Scheduler): CompletionStage[U] =
     ask[U](replyTo ⇒ message.apply(replyTo))(timeout, scheduler).toJava
 
-  override def askWithConfirmation(req: A)(implicit timeout: Timeout, scheduler: Scheduler): Future[CommandConfirmation] = {
-    val replyTo = new EntityPromiseRef[CommandConfirmation](shardRegion.asInstanceOf[InternalActorRef], timeout)
-    val m = CommandWithAutoConfirmation(req, replyTo.ref)
-    if (replyTo.promiseRef ne null) replyTo.promiseRef.messageClassName = m.getClass.getName
-    shardRegion ! ShardingEnvelope(entityId, m)
-    replyTo.future
-  }
-
   /** Similar to [[akka.actor.typed.scaladsl.AskPattern.PromiseRef]] but for an `EntityRef` target. */
   @InternalApi
-  private final class EntityPromiseRef[U](untyped: InternalActorRef, timeout: Timeout) {
+  final class EntityPromiseRef[U](untyped: InternalActorRef, timeout: Timeout) {
     import akka.actor.typed.internal.{ adapter ⇒ adapt }
 
     // Note: _promiseRef mustn't have a type pattern, since it can be null
@@ -271,4 +267,21 @@ import akka.persistence.typed.scaladsl.CommandConfirmation
     val promiseRef: PromiseActorRef = _promiseRef
   }
 
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class PersistentEntityRefImpl[A](shardRegion: akka.actor.ActorRef, entityId: String)
+  extends EntityRefImpl[A](shardRegion, entityId) with scaladsl.PersistentEntityRef[A] {
+
+  override def askWithConfirmation(req: A)(implicit timeout: Timeout, scheduler: Scheduler): Future[CommandConfirmation] = {
+    val replyTo = new EntityPromiseRef[CommandConfirmation](shardRegion.asInstanceOf[InternalActorRef], timeout)
+    val m = CommandWithAutoConfirmation(req, replyTo.ref)
+    if (replyTo.promiseRef ne null) replyTo.promiseRef.messageClassName = m.getClass.getName
+    shardRegion ! ShardingEnvelope(entityId, m)
+    replyTo.future
+  }
+
+  // FIXME javadsl askWithConfirmation
 }
