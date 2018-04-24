@@ -61,7 +61,6 @@ object TlsTcpSpec {
 
   lazy val config: Config = {
     ConfigFactory.parseString(s"""
-      akka.loglevel = DEBUG
       akka.remote.artery {
         transport = tls-tcp
         large-message-destinations = [ "/user/large" ]
