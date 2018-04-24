@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.typed
 
 import akka.actor.typed.Props
@@ -98,22 +99,9 @@ abstract class MultiDcClusterSingletonSpec extends MultiNodeSpec(MultiDcClusterS
         val probe = TestProbe[Pong]
         pinger ! Ping(probe.ref)
         probe.expectMessage(Pong("dc1"))
-        enterBarrier("singleton-pinged")
       }
 
-      runOn(third) {
-        val singleton = ClusterSingleton(system.toTyped)
-        val pinger = singleton.crossDcProxy("ping", ClusterSingletonSettings(typedSystem)
-          .withDataCenter("dc1"))
-        val probe = TestProbe[Pong]
-        pinger ! Ping(probe.ref)
-        probe.expectMessage(Pong("dc1"))
-        enterBarrier("singleton-pinged")
-      }
-
-      runOn(first) {
-        enterBarrier("singleton-pinged")
-      }
+      enterBarrier("singleton-pinged")
     }
 
     "be able to target singleton with the same name in own dc " in {
@@ -129,12 +117,9 @@ abstract class MultiDcClusterSingletonSpec extends MultiNodeSpec(MultiDcClusterS
         val probe = TestProbe[Pong]
         pinger ! Ping(probe.ref)
         probe.expectMessage(Pong("dc2"))
-        enterBarrier("singleton-pinged-own-dc")
       }
 
-      runOn(first) {
-        enterBarrier("singleton-pinged-own-dc")
-      }
+      enterBarrier("singleton-pinged-own-dc")
     }
   }
 }

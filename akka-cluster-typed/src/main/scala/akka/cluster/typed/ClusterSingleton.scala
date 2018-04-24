@@ -145,14 +145,6 @@ abstract class ClusterSingleton extends Extension {
     settings:           ClusterSingletonSettings,
     terminationMessage: A
   ): ActorRef[A]
-
-  /**
-   * Create, if needed, a proxy to a singleton in another data center. Will not attempt to create a Singleton Manager.
-   *
-   * @param singletonName Name of the singleton
-   * @return A proxy actor that can be used to communicate with the singleton in the cluster
-   */
-  def crossDcProxy[A](singletonName: String, settings: ClusterSingletonSettings): ActorRef[A]
 }
 
 object ClusterSingletonManagerSettings {

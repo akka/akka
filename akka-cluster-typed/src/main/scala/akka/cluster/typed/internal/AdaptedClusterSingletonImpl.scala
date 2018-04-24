@@ -58,15 +58,11 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
     getProxy(singletonName, settings)
   }
 
-  override def crossDcProxy[A](singletonName: String, settings: ClusterSingletonSettings): ActorRef[A] = {
-    getProxy(singletonName, settings)
-  }
-
   private def getProxy[T](name: String, settings: ClusterSingletonSettings): ActorRef[T] = {
     val proxyCreator = new JFunction[(String, Option[DataCenter]), ActorRef[_]] {
       def apply(singletonNameAndDc: (String, Option[DataCenter])): ActorRef[_] = {
         val (singletonName, _) = singletonNameAndDc
-        val proxyName = s"singletonProxy$singletonName-${settings.dataCenter.getOrElse("nodc")}"
+        val proxyName = s"singletonProxy$singletonName-${settings.dataCenter.getOrElse("no-dc")}"
         untypedSystem.systemActorOf(
           ClusterSingletonProxy.props(s"/system/${managerNameFor(singletonName)}", settings.toProxySettings(singletonName)),
           proxyName)
