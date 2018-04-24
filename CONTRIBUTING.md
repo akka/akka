@@ -386,12 +386,15 @@ tested it becomes an officially supported Akka feature.
 
 ## Continuous integration
 
-Each project should be configured to use a continuous integration (CI) tool (i.e. a build server à la Jenkins). 
+Akka currently uses a combination of Jenkins and Travis for Continuous Integration:
 
-Lightbend is sponsoring a [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster".
+* Jenkins [runs the tests for each PR](https://jenkins.akka.io:8498/job/pr-validator-per-commit-jenkins/)
+* Jenkins [runs a nightly test suite](https://jenkins.akka.io:8498/view/Nightly%20Jobs/job/akka-nightly/)
+* Travis [checks dependency licenses for all PR's](https://travis-ci.org/akka/akka)
+
+The [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster", is sponsored by Lightbend.
+
 The cluster is made out of real bare-metal boxes, and maintained by the Akka team (and other very helpful people at Lightbend).
-
-In addition to PR validation the cluster is also used for nightly and performance test runs. 
 
 ## Related links
 
