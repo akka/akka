@@ -767,8 +767,8 @@ trait FlowOps[+Out, +Mat] {
   def map[T](f: Out ⇒ T): Repr[T] = via(Map(f))
 
   /**
-   * Similar to [[map]], however does not modify the passed through element, the returned value is ignored.
-   * This is a simplified version of `wireTap(Sink)`, which you may use to wireTap a Sink onto this stream.
+   * This is a simplified version of `wireTap(Sink)` that takes only a simple function.
+   * Elements will be passed into this "side channel" function, and any of its results will be ignored.
    *
    * This operation is useful for inspecting the passed through element, usually by means of side-effecting
    * operations (such as `println`, or emitting metrics), for each element without having to modify it.
