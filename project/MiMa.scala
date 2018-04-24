@@ -45,7 +45,11 @@ object MiMa extends AutoPlugin {
           } ++ akka24StreamVersions ++ akka24WithScala212 ++ akka25Versions
 
         case "2.12" ⇒
-          akka24WithScala212 ++ akka25Versions
+          if (akka250NewArtifacts.contains(projectName))
+            akka25Versions
+          else
+            akka24WithScala212 ++ akka25Versions
+
 
         case v if v.startsWith("2.13") =>
           // no Akka released for 2.13 yet, no jars to check BC against
