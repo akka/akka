@@ -4,7 +4,6 @@
 
 package akka.stream.scaladsl
 
-import java.util.UUID
 import java.util.concurrent.CompletionStage
 
 import akka.actor.{ ActorRef, Cancellable, Props }
@@ -26,7 +25,6 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import akka.stream.stage.GraphStageWithMaterializedValue
 
-import scala.collection.generic.CanBuildFrom
 import scala.compat.java8.FutureConverters._
 
 /**
