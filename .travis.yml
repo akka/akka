@@ -31,15 +31,16 @@ script:
   # check policies, if on master also upload
   - if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" ]]; then if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi ; fi
 
-deploy:
-  provider: script
-  skip_cleanup: true
-  script:
-    - sbt -J-XX:ReservedCodeCacheSize=256m ++$TRAVIS_SCALA_VERSION publish
-#    - sbt -J-XX:ReservedCodeCacheSize=256m +publish akka-http/bintraySyncMavenCentral # enable if we want to sync to central automatically
-  on:
-    tags: true
-    repo: akka/akka-http
+# we are not yet in a position to deploy akka fully from travis, as we do some special stuff to support JDK9+
+#deploy:
+#  provider: script
+#  skip_cleanup: true
+#  script:
+#    - sbt -J-XX:ReservedCodeCacheSize=256m ++$TRAVIS_SCALA_VERSION publish
+##    - sbt -J-XX:ReservedCodeCacheSize=256m +publish akka-http/bintraySyncMavenCentral # enable if we want to sync to central automatically
+#  on:
+#    tags: true
+#    repo: akka/akka-http
 
 env:
   global:

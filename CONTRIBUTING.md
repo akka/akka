@@ -388,10 +388,9 @@ tested it becomes an officially supported Akka feature.
 
 Akka-http currently uses a combination of Jenkins and Travis for Continuous Integration:
 
-* Jenkins [runs the tests for each PR](https://jenkins.akka.io:8498/view/PR%20Validators/job/pr-validator-akka-http/)
-* Jenkins [runs a nightly performance test suite](https://jenkins.akka.io:8498/view/Akka-http/) against master
-* Travis [checks dependency licenses for all PR's](https://travis-ci.org/akka/akka-http)
-* Travis [is used for publishing releases](https://github.com/akka/akka-http/blob/master/.travis.yml#L33)
+* Jenkins [runs the tests for each PR](https://jenkins.akka.io:8498/job/pr-validator-per-commit-jenkins/)
+* Jenkins [runs a nightly test suite](https://jenkins.akka.io:8498/view/Nightly%20Jobs/job/akka-nightly/)
+* Travis [checks dependency licenses for all PR's](https://travis-ci.org/akka/akka)
 
 The [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster", is sponsored by Lightbend.
 
