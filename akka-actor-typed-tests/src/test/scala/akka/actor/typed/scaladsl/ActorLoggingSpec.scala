@@ -18,7 +18,7 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
 
   override def config = ConfigFactory.parseString(
     """
-    akka.loglevel = DEBUG
+    akka.loglevel = DEBUG # test verifies debug
     akka.loggers = ["akka.testkit.TestEventListener"]
   """)
 

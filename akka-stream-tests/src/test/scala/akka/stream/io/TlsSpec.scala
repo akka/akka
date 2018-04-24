@@ -88,7 +88,7 @@ object TlsSpec {
 
   val configOverrides =
     """
-      akka.loglevel = DEBUG
+      akka.loglevel = DEBUG # issue 21660
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.debug.receive=off
     """

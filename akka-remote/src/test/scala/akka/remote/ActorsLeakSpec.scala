@@ -22,7 +22,6 @@ object ActorsLeakSpec {
   val config = ConfigFactory.parseString(
     """
       | akka.actor.provider = remote
-      | #akka.loglevel = DEBUG
       | akka.remote.netty.tcp.applied-adapters = ["trttl"]
       | #akka.remote.log-lifecycle-events = on
       | akka.remote.transport-failure-detector.heartbeat-interval = 1 s

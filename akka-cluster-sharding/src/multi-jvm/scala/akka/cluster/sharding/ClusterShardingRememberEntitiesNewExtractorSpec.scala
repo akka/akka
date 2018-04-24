@@ -57,7 +57,6 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: S
   val third = role("third")
 
   commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.cluster.auto-down-unreachable-after = 0s
     akka.remote.log-remote-lifecycle-events = off
