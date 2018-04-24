@@ -843,6 +843,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Completes when''' upstream completes
    *
    * '''Cancels when''' downstream cancels
+   *
    */
   def wireTap(that: Graph[SinkShape[Out], _]): javadsl.Source[Out, Mat] =
     new Source(delegate.wireTap(that))
@@ -1070,6 +1071,26 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def map[T](f: function.Function[Out, T]): javadsl.Source[T, Mat] =
     new Source(delegate.map(f.apply))
+
+  /**
+   * Similar to [[map]], however does not modify the passed through element, the returned value is ignored.
+   *
+   * This operation is useful for inspecting the passed through element, usually by means of side-effecting
+   * operations (such as `println`, or emitting metrics), for each element without having to modify it.
+   *
+   * For logging signals (elements, completion, error) consider using the [[log]] stage instead,
+   * along with appropriate `ActorAttributes.createLogLevels`.
+   *
+   * '''Emits when''' upstream emits an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels; Note that failures of the `f` function will not cause cancellation
+   */
+  def wireTap(f: function.Procedure[Out]): javadsl.Source[Out, Mat] =
+    new Source(delegate.wireTap(f(_)))
 
   /**
    * Recover allows to send last element on failure and gracefully complete the stream

@@ -129,6 +129,29 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
     new SubSource(delegate.map(f.apply))
 
   /**
+   * Similar to [[map]], however does not modify the passed through element, the returned value is ignored.
+   * This is a simplified version of `wireTap(Sink)`, which you may use to wireTap a Sink onto this stream.
+   *
+   * This operation is useful for inspecting the passed through element, usually by means of side-effecting
+   * operations (such as `println`, or emitting metrics), for each element without having to modify it.
+   *
+   * For logging signals (elements, completion, error) consider using the [[log]] stage instead,
+   * along with appropriate `ActorAttributes.logLevels`.
+   *
+   * '''Emits when''' upstream emits an element; the same element will be passed to the attached function,
+   *                  as well as to the downstream stage
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   */
+  def wireTap(f: function.Procedure[Out]): SubSource[Out, Mat] =
+    new SubSource(delegate.wireTap(f(_)))
+
+  /**
    * Transform each input element into an `Iterable` of output elements that is
    * then flattened into the output stream.
    *
