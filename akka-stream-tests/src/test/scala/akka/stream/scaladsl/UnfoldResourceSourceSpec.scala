@@ -7,6 +7,7 @@ package akka.stream.scaladsl
 import java.io._
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
 import akka.stream.ActorAttributes._
@@ -195,6 +196,21 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         c.expectError(TE(""))
       }
     }
+
+    // issue #24924
+    "not close the resource twice when read fails" in {
+      val closedCounter = new AtomicInteger(0)
+      val probe = Source.unfoldResource[Int, Int](
+        () ⇒ 23, // the best resource there is
+        _ ⇒ throw TE("failing read"),
+        _ ⇒ closedCounter.incrementAndGet()
+      ).runWith(TestSink.probe[Int])
+
+      probe.request(1)
+      probe.expectError(TE("failing read"))
+      closedCounter.get() should ===(1)
+    }
+
   }
   override def afterTermination(): Unit = {
     fs.close()
