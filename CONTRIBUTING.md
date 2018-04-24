@@ -386,7 +386,7 @@ tested it becomes an officially supported Akka feature.
 
 ## Continuous integration
 
-Akka-http currently uses a combination of Jenkins and Travis for Continuous Integration:
+Akka currently uses a combination of Jenkins and Travis for Continuous Integration:
 
 * Jenkins [runs the tests for each PR](https://jenkins.akka.io:8498/job/pr-validator-per-commit-jenkins/)
 * Jenkins [runs a nightly test suite](https://jenkins.akka.io:8498/view/Nightly%20Jobs/job/akka-nightly/)
