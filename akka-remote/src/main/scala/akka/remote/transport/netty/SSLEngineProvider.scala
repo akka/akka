@@ -25,6 +25,7 @@ import akka.japi.Util.immutableSeq
 import akka.remote.RemoteTransport
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransportException
+import akka.remote.artery.tcp.SecureRandomFactory
 import akka.remote.security.provider.AkkaProvider
 import akka.remote.transport.AbstractTransportAdapter
 import akka.stream.IgnoreComplete
@@ -105,28 +106,8 @@ import javax.net.ssl.TrustManagerFactory
     trustManagerFactory.getTrustManagers
   }
 
-  def createSecureRandom(): SecureRandom = {
-    val rng = SSLRandomNumberGenerator match {
-      case r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG") ⇒
-        log.debug("SSL random number generator set to: {}", r)
-        SecureRandom.getInstance(r, AkkaProvider)
-      case s @ ("SHA1PRNG" | "NativePRNG") ⇒
-        log.debug("SSL random number generator set to: {}", s)
-        // SHA1PRNG needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
-        // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
-        SecureRandom.getInstance(s)
-
-      case "" ⇒
-        log.debug("SSLRandomNumberGenerator not specified, falling back to SecureRandom")
-        new SecureRandom
-
-      case unknown ⇒
-        log.warning(LogMarker.Security, "Unknown SSLRandomNumberGenerator [{}] falling back to SecureRandom", unknown)
-        new SecureRandom
-    }
-    rng.nextInt() // prevent stall on first access
-    rng
-  }
+  def createSecureRandom(): SecureRandom =
+    SecureRandomFactory.createSecureRandom(SSLRandomNumberGenerator, log)
 
   override def createServerSSLEngine(): SSLEngine =
     createSSLEngine(akka.stream.Server)

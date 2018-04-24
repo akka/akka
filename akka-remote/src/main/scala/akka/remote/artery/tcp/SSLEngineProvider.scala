@@ -19,6 +19,7 @@ import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.setup.Setup
 import akka.annotation.ApiMayChange
+import akka.annotation.InternalApi
 import akka.event.LogMarker
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
@@ -141,28 +142,8 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
     trustManagerFactory.getTrustManagers
   }
 
-  def createSecureRandom(): SecureRandom = {
-    val rng = SSLRandomNumberGenerator match {
-      case r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG") ⇒
-        log.debug("SSL random number generator set to: {}", r)
-        SecureRandom.getInstance(r, AkkaProvider)
-      case s @ ("SHA1PRNG" | "NativePRNG") ⇒
-        log.debug("SSL random number generator set to: {}", s)
-        // SHA1PRNG needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
-        // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
-        SecureRandom.getInstance(s)
-
-      case "" ⇒
-        log.debug("SSLRandomNumberGenerator not specified, falling back to SecureRandom")
-        new SecureRandom
-
-      case unknown ⇒
-        log.warning(LogMarker.Security, "Unknown SSLRandomNumberGenerator [{}] falling back to SecureRandom", unknown)
-        new SecureRandom
-    }
-    rng.nextInt() // prevent stall on first access
-    rng
-  }
+  def createSecureRandom(): SecureRandom =
+    SecureRandomFactory.createSecureRandom(SSLRandomNumberGenerator, log)
 
   override def createServerSSLEngine(hostname: String, port: Int): SSLEngine =
     createSSLEngine(akka.stream.Server, hostname, port)
@@ -236,3 +217,30 @@ object SSLEngineProviderSetup {
 @ApiMayChange class SSLEngineProviderSetup private (
   val sslEngineProvider: ExtendedActorSystem ⇒ SSLEngineProvider) extends Setup
 
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object SecureRandomFactory {
+  def createSecureRandom(randomNumberGenerator: String, log: MarkerLoggingAdapter): SecureRandom = {
+    val rng = randomNumberGenerator match {
+      case r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG") ⇒
+        log.debug("SSL random number generator set to: {}", r)
+        SecureRandom.getInstance(r, AkkaProvider)
+      case s @ ("SHA1PRNG" | "NativePRNG") ⇒
+        log.debug("SSL random number generator set to: {}", s)
+        // SHA1PRNG needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
+        // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
+        SecureRandom.getInstance(s)
+
+      case "" ⇒
+        log.debug("SSLRandomNumberGenerator not specified, falling back to SecureRandom")
+        new SecureRandom
+
+      case unknown ⇒
+        log.warning(LogMarker.Security, "Unknown SSLRandomNumberGenerator [{}] falling back to SecureRandom", unknown)
+        new SecureRandom
+    }
+    rng.nextInt() // prevent stall on first access
+    rng
+  }
+}

@@ -79,7 +79,6 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     if (tlsEnabled) {
       system.settings.setup.get[SSLEngineProviderSetup] match {
         case Some(p) ⇒
-          println(s"# using custom") // FIXME
           OptionVal.Some(p.sslEngineProvider(system))
         case None ⇒
           // load from config
