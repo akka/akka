@@ -11,12 +11,12 @@ import java.nio.file.Files
 import akka.actor.ActorSystem
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
-import akka.stream.{ ActorMaterializer, _ }
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
-import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.{ StreamSpec, TestSubscriber }
+import akka.stream.{ ActorMaterializer, _ }
 import akka.testkit.EventFilter
 import akka.util.ByteString
 import com.google.common.jimfs.{ Configuration, Jimfs }
@@ -164,16 +164,18 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "fail when create throws exception" in assertAllStagesStopped {
-      val p = Source.unfoldResource[String, BufferedReader](
-        () ⇒ throw TE(""),
-        reader ⇒ Option(reader.readLine()),
-        reader ⇒ reader.close())
-        .runWith(Sink.asPublisher(false))
-      val c = TestSubscriber.manualProbe[String]()
-      p.subscribe(c)
+      EventFilter[TE](occurrences = 1).intercept {
+        val p = Source.unfoldResource[String, BufferedReader](
+          () ⇒ throw TE(""),
+          reader ⇒ Option(reader.readLine()),
+          reader ⇒ reader.close())
+          .runWith(Sink.asPublisher(false))
+        val c = TestSubscriber.manualProbe[String]()
+        p.subscribe(c)
 
-      c.expectSubscription()
-      c.expectError(TE(""))
+        c.expectSubscription()
+        c.expectError(TE(""))
+      }
     }
 
     "fail when close throws exception" in assertAllStagesStopped {
@@ -187,8 +189,11 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       val sub = c.expectSubscription()
       sub.request(61)
-      c.expectNextN(60)
-      c.expectError(TE(""))
+
+      EventFilter[TE](occurrences = 1).intercept {
+        c.expectNextN(60)
+        c.expectError(TE(""))
+      }
     }
   }
   override def afterTermination(): Unit = {
