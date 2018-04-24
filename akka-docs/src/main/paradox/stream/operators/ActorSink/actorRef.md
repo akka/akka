@@ -1,14 +1,24 @@
 # ActorSink.actorRef
 
-Sends the elements of the stream to the given `ActorRef[T]`.
+Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`].
 
 @ref[Actor interop stages](../index.md#actor-interop-stages)
 
 @@@div { .group-scala }
 
+## Dependency
+
+This operator is included in:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream-typed_$scala.binary_version$"
+  version="$akka.version$"
+}
+
 ## Signature
 
-@@signature [FileIO.scala]($akka$/akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSink.scala) { #actorRef }
+@@signature []($akka$/akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSink.scala) { #actorRef }
 
 @@@
 
@@ -28,3 +38,7 @@ i.e. if the actor is not consuming the messages fast enough the mailbox
 of the actor will grow. For potentially slow consumer actors it is recommended
 to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
 limiting stage in front of this `Sink`.
+
+## Examples
+
+TODO (in progress)

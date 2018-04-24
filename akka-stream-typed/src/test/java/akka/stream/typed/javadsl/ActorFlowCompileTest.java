@@ -12,8 +12,6 @@ import akka.stream.javadsl.Source;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
-import java.util.concurrent.TimeUnit;
 
 public class ActorFlowCompileTest {
 
@@ -30,7 +28,9 @@ public class ActorFlowCompileTest {
     final ActorMaterializer mat = akka.stream.typed.ActorMaterializer.create(system);
   }
 
-  static class AskMe {
+  static
+  //#ask-actor
+  class AskMe {
     final String payload;
     final ActorRef<String> replyTo;
 
@@ -40,14 +40,13 @@ public class ActorFlowCompileTest {
     }
   }
 
+  //#ask-actor
+
   {
     final ActorRef<AskMe> ref = null;
 
+    //#ask
     Duration timeout = Duration.of(1, ChronoUnit.SECONDS);
-
-    Source.repeat("hello")
-      .via(ActorFlow.ask(ref, timeout, AskMe::new))
-      .to(Sink.ignore());
 
     Source.repeat("hello")
       .via(ActorFlow.ask(ref, timeout, AskMe::new))
@@ -56,6 +55,7 @@ public class ActorFlowCompileTest {
     Source.repeat("hello")
       .via(ActorFlow.<String, AskMe, String>ask(ref, timeout, (msg, replyTo) -> new AskMe(msg, replyTo)))
       .to(Sink.ignore());
+    //#ask
   }
 
 }

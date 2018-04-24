@@ -954,7 +954,7 @@ trait FlowOps[+Out, +Mat] {
       .mapAsync(parallelism) { el ⇒
         akka.pattern.ask(ref).?(el)(timeout).mapTo[S](tag)
       }
-      .recover[S] {
+      .mapError {
         // the purpose of this recovery is to change the name of the stage in that exception
         // we do so in order to help users find which stage caused the failure -- "the ask stage"
         case ex: WatchedActorTerminatedException ⇒

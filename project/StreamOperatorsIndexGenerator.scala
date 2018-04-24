@@ -5,6 +5,8 @@
 import sbt._
 import sbt.Keys._
 
+import scala.util.control.NonFatal
+
 /**
  * Generate the "index" pages of stream operators.
  */
@@ -222,8 +224,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     require(categoryLinkId  == categoryId(categoryName), s"category id $categoryLinkId in $file")
     (description, categoryName)
   } catch {
-    case ex: Throwable ⇒
-      throw new Exception(s"Unable to extract details from $file", ex)
+    case NonFatal(ex) ⇒
+      throw new RuntimeException(s"Unable to extract details from $file", ex)
   }
 
 }
