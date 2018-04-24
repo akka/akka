@@ -1,0 +1,2 @@
+# +str add in-line inspect operator for side effecting #24610
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.wireTap")

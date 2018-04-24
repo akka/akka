@@ -4,32 +4,29 @@
 
 package akka.stream.scaladsl
 
+import akka.Done
+
 import scala.util.control.NoStackTrace
 import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
-class FlowForeachSpec extends StreamSpec {
+class FlowWireTapSpec extends StreamSpec {
 
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
-  "A runForeach" must {
+  "A wireTap" must {
 
     "call the procedure for each element" in assertAllStagesStopped {
-      Source(1 to 3).runForeach(testActor ! _) foreach {
-        _ ⇒ testActor ! "done"
-      }
+      Source(1 to 3).wireTap(x ⇒ { testActor ! x }).runWith(Sink.ignore).futureValue
       expectMsg(1)
       expectMsg(2)
       expectMsg(3)
-      expectMsg("done")
     }
 
     "complete the future for an empty stream" in assertAllStagesStopped {
-      Source.empty[String].runForeach(testActor ! _) foreach {
+      Source.empty[String].wireTap(testActor ! _).runWith(Sink.ignore) foreach {
         _ ⇒ testActor ! "done"
       }
       expectMsg("done")
@@ -37,7 +34,7 @@ class FlowForeachSpec extends StreamSpec {
 
     "yield the first error" in assertAllStagesStopped {
       val p = TestPublisher.manualProbe[Int]()
-      Source.fromPublisher(p).runForeach(testActor ! _).failed foreach {
+      Source.fromPublisher(p).wireTap(testActor ! _).runWith(Sink.ignore).failed foreach {
         ex ⇒ testActor ! ex
       }
       val proc = p.expectSubscription()
@@ -47,12 +44,11 @@ class FlowForeachSpec extends StreamSpec {
       expectMsg(rte)
     }
 
-    "complete future with failure when function throws" in assertAllStagesStopped {
+    "not cause subsequent stages to be failed if throws (same as wireTap(Sink))" in assertAllStagesStopped {
       val error = TE("Boom!")
-      val future = Source.single(1).runForeach(_ ⇒ throw error)
-      the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
+      val future = Source.single(1).wireTap(_ ⇒ throw error).runWith(Sink.ignore)
+      future.futureValue shouldEqual Done
     }
-
   }
 
 }
