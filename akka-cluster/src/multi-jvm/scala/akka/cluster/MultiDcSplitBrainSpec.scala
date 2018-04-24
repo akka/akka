@@ -23,7 +23,7 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString(
     """
-      akka.loglevel = DEBUG
+      akka.loglevel = DEBUG # issue #24955
       akka.cluster.debug.verbose-heartbeat-logging = on
       akka.cluster.debug.verbose-gossip-logging = on
       akka.remote.netty.tcp.connection-timeout = 5 s # speedup in case of connection issue

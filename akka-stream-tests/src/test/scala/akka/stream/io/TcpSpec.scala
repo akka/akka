@@ -409,7 +409,7 @@ class TcpSpec extends StreamSpec("""
     "handle when connection actor terminates unexpectedly" in {
       val system2 = ActorSystem("TcpSpec-unexpected-system2", ConfigFactory.parseString(
         """
-          akka.loglevel = DEBUG
+          akka.loglevel = DEBUG # issue #21660
         """).withFallback(system.settings.config))
 
       try {

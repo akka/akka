@@ -15,7 +15,7 @@ object MultiDcLastNodeSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString(
     s"""
-      #akka.loglevel = DEBUG
+      akka.loglevel = INFO
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString(
