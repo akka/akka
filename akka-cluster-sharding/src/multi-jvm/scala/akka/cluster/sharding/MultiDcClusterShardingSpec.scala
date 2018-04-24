@@ -54,8 +54,7 @@ object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(ConfigFactory.parseString(s"""
-    # DEBUG because of failing test, issue #23741
-    akka.loglevel = DEBUG
+    akka.loglevel = DEBUG # issue #23741
     akka.cluster.debug.verbose-heartbeat-logging = on
     akka.cluster.debug.verbose-gossip-logging = on
     akka.actor.provider = "cluster"

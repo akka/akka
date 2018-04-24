@@ -25,7 +25,7 @@ import scala.concurrent.duration._
 object ClusterReceptionistSpec {
   val config = ConfigFactory.parseString(
     s"""
-      akka.loglevel = DEBUG
+      akka.loglevel = DEBUG # issue #24960
       akka.actor {
         provider = cluster
         serialize-messages = off

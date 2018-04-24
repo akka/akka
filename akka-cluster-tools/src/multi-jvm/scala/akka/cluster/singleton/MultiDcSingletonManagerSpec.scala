@@ -21,7 +21,6 @@ object MultiDcSingletonManagerSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.actor.serialize-creators = off
     akka.remote.log-remote-lifecycle-events = off"""))
