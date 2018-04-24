@@ -29,7 +29,7 @@ object MergeLatest {
    * @param inputPorts number of input ports
    * @param eagerComplete if true, the merge latest will complete as soon as one of its inputs completes.
    */
-  def apply[T](inputPorts: Int, eagerComplete: Boolean): GraphStage[UniformFanInShape[T, java.util.List[T]]] =
+  def create[T](inputPorts: Int, eagerComplete: Boolean): GraphStage[UniformFanInShape[T, java.util.List[T]]] =
     new scaladsl.MergeLatest[T, java.util.List[T]](inputPorts, eagerComplete)(x ⇒ x.toList.asJava)
 
   /**
@@ -37,6 +37,6 @@ object MergeLatest {
    *
    * @param inputPorts number of input ports
    */
-  def apply[T](inputPorts: Int): GraphStage[UniformFanInShape[T, java.util.List[T]]] = apply(inputPorts, false)
+  def create[T](inputPorts: Int): GraphStage[UniformFanInShape[T, java.util.List[T]]] = create(inputPorts, false)
 }
 
