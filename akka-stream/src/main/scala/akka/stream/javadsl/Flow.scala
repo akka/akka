@@ -1412,6 +1412,26 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     recoverWith {
       case elem if clazz.isInstance(elem) ⇒ supplier.get()
     }
+  /**
+   * RecoverWithComplete allows to transform a stream failure into a successful stream.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * Throwing an exception inside `recoverTermination` _will_ be logged on ERROR level automatically.
+   *
+   * '''Emits when''' element is available from the upstream
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or upstream failed
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def recoverWithComplete(ex: Class[_]): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.recoverWithComplete {
+      case t if ex == t.getClass ⇒ Done
+    })
 
   /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after

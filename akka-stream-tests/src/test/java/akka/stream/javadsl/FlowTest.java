@@ -766,6 +766,34 @@ public class FlowTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToRecoverWithComplete() throws Exception {
+    final TestPublisher.ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
+    final TestKit probe = new TestKit(system);
+
+    final Source<Integer, NotUsed> source = Source.fromPublisher(publisherProbe);
+    final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).map(
+      new Function<Integer, Integer>() {
+        public Integer apply(Integer elem) {
+          if (elem == 2) throw new RuntimeException("ex");
+          else return elem;
+        }
+      })
+      .recoverWithComplete(RuntimeException.class);
+
+    final CompletionStage<Done> future =
+      source.via(flow).runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+
+    final PublisherProbeSubscription<Integer> s = publisherProbe.expectSubscription();
+
+    s.sendNext(0);
+    probe.expectMsgEquals(0);
+    s.sendNext(1);
+    probe.expectMsgEquals(1);
+    s.sendNext(2);
+    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS); // no error thrown
+  }
+
+  @Test
   public void mustBeAbleToRecoverWithSource() throws Exception {
     final TestPublisher.ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
     final TestKit probe = new TestKit(system);

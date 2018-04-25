@@ -700,6 +700,25 @@ trait FlowOps[+Out, +Mat] {
     via(new RecoverWith(-1, pf))
 
   /**
+   * RecoverWithComplete allows to transform a stream failure into a successful stream.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * Throwing an exception inside `recoverTermination` _will_ be logged on ERROR level automatically.
+   *
+   * '''Emits when''' element is available from the upstream
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or upstream failed
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def recoverWithComplete(pf: PartialFunction[Throwable, Done]): Repr[Out] =
+    via(new RecoverWith(-1, pf.andThen(_ ⇒ Source.empty)))
+
+  /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
    * a failure has been recovered up to `attempts` number of times so that each time there is a failure
    * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
