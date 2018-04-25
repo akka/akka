@@ -1768,6 +1768,15 @@ trait FlowOps[+Out, +Mat] {
    * a new substream is opened and subsequently fed with all elements belonging to
    * that key.
    *
+   * WARNING: If `allowClosedSubstreamRecreation` is set to `false` (default behavior) the stage
+   * keeps track of all keys of streams that have already been closed. If you expect an infinite
+   * number of keys this can cause memory issues. Elements belonging to those keys are drained
+   * directly and not send to the substream.
+   *
+   * Note: If `allowClosedSubstreamRecreation` is set to `true` substream completion and incoming
+   * elements are subject to race-conditions. If elements arrive for a stream that is in the process
+   * of closing these elements might get lost.
+   *
    * The object returned from this method is not a normal [[Source]] or [[Flow]],
    * it is a [[SubFlow]]. This means that after this combinator all transformations
    * are applied to all encountered substreams in the same fashion. Substream mode
@@ -1803,19 +1812,37 @@ trait FlowOps[+Out, +Mat] {
    *
    * @param maxSubstreams configures the maximum number of substreams (keys)
    *        that are supported; if more distinct keys are encountered then the stream fails
+   * @param f computes the key for each element
+   * @param allowClosedSubstreamRecreation enables recreation of already closed substreams if elements with their
+   *        corresponding keys arrive after completion
    */
-  def groupBy[K](maxSubstreams: Int, f: Out ⇒ K): SubFlow[Out, Mat, Repr, Closed] = {
+  def groupBy[K](maxSubstreams: Int, f: Out ⇒ K, allowClosedSubstreamRecreation: Boolean): SubFlow[Out, Mat, Repr, Closed] = {
     val merge = new SubFlowImpl.MergeBack[Out, Repr] {
       override def apply[T](flow: Flow[Out, T, NotUsed], breadth: Int): Repr[T] =
-        via(new GroupBy(maxSubstreams, f))
+        via(new GroupBy(maxSubstreams, f, allowClosedSubstreamRecreation))
           .map(_.via(flow))
           .via(new FlattenMerge(breadth))
     }
     val finish: (Sink[Out, NotUsed]) ⇒ Closed = s ⇒
-      via(new GroupBy(maxSubstreams, f))
+      via(new GroupBy(maxSubstreams, f, allowClosedSubstreamRecreation))
         .to(Sink.foreach(_.runWith(s)(GraphInterpreter.currentInterpreter.materializer)))
     new SubFlowImpl(Flow[Out], merge, finish)
   }
+
+  /**
+   * This operation demultiplexes the incoming stream into separate output
+   * streams, one for each element key. The key is computed for each element
+   * using the given function. When a new key is encountered for the first time
+   * a new substream is opened and subsequently fed with all elements belonging to
+   * that key.
+   *
+   * WARNING: The stage keeps track of all keys of streams that have already been closed.
+   * If you expect an infinite number of keys this can cause memory issues. Elements belonging
+   * to those keys are drained directly and not send to the substream.
+   *
+   * @see [[#groupBy]]
+   */
+  def groupBy[K](maxSubstreams: Int, f: Out ⇒ K): SubFlow[Out, Mat, Repr, Closed] = groupBy(maxSubstreams, f, false)
 
   /**
    * This operation applies the given predicate to all incoming elements and

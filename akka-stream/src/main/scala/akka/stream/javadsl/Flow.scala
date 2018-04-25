@@ -1711,6 +1711,15 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * a new substream is opened and subsequently fed with all elements belonging to
    * that key.
    *
+   * WARNING: If `allowClosedSubstreamRecreation` is set to `false` (default behavior) the stage
+   * keeps track of all keys of streams that have already been closed. If you expect an infinite
+   * number of keys this can cause memory issues. Elements belonging to those keys are drained
+   * directly and not send to the substream.
+   *
+   * Note: If `allowClosedSubstreamRecreation` is set to `true` substream completion and incoming
+   * elements are subject to race-conditions. If elements arrive for a stream that is in the process
+   * of closing these elements might get lost.
+   *
    * The object returned from this method is not a normal [[Flow]],
    * it is a [[SubFlow]]. This means that after this combinator all transformations
    * are applied to all encountered substreams in the same fashion. Substream mode
@@ -1744,9 +1753,28 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @param maxSubstreams configures the maximum number of substreams (keys)
    *        that are supported; if more distinct keys are encountered then the stream fails
+   * @param f computes the key for each element
+   * @param allowClosedSubstreamRecreation enables recreation of already closed substreams if elements with their
+   *        corresponding keys arrive after completion
+   */
+  def groupBy[K](maxSubstreams: Int, f: function.Function[Out, K], allowClosedSubstreamRecreation: Boolean): SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.groupBy(maxSubstreams, f.apply, allowClosedSubstreamRecreation))
+
+  /**
+   * This operation demultiplexes the incoming stream into separate output
+   * streams, one for each element key. The key is computed for each element
+   * using the given function. When a new key is encountered for the first time
+   * a new substream is opened and subsequently fed with all elements belonging to
+   * that key.
+   *
+   * WARNING: The stage keeps track of all keys of streams that have already been closed.
+   * If you expect an infinite number of keys this can cause memory issues. Elements belonging
+   * to those keys are drained directly and not send to the substream.
+   *
+   * @see [[#groupBy]]
    */
   def groupBy[K](maxSubstreams: Int, f: function.Function[Out, K]): SubFlow[In, Out, Mat] =
-    new SubFlow(delegate.groupBy(maxSubstreams, f.apply))
+    new SubFlow(delegate.groupBy(maxSubstreams, f.apply, false))
 
   /**
    * This operation applies the given predicate to all incoming elements and
