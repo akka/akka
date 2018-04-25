@@ -7,17 +7,20 @@ package akka.remote
 import akka.actor._
 import akka.event.AddressTerminatedTopic
 import akka.pattern.ask
-import akka.remote.transport.AssociationHandle.{ HandleEventListener, HandleEvent }
+import akka.remote.transport.AssociationHandle.{ HandleEvent, HandleEventListener }
 import akka.remote.transport._
 import akka.remote.transport.Transport.InvalidAssociationException
 import akka.testkit._
 import akka.util.ByteString
 import com.typesafe.config._
 import java.io.NotSerializableException
+
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
+
+import akka.serialization.SerializerWithStringManifest
 import akka.testkit.SocketUtil.temporaryServerAddress
 
 object RemotingSpec {
