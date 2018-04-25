@@ -5,11 +5,12 @@
 package akka.stream.scaladsl
 
 import akka.Done
-
-import scala.util.control.NoStackTrace
 import akka.stream.ActorMaterializer
-import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit._
+
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 class FlowWireTapSpec extends StreamSpec {
 
@@ -19,7 +20,11 @@ class FlowWireTapSpec extends StreamSpec {
   "A wireTap" must {
 
     "call the procedure for each element" in assertAllStagesStopped {
-      Source(1 to 3).wireTap(x ⇒ { testActor ! x }).runWith(Sink.ignore).futureValue
+      Source(1 to 3).throttle(1, 100.millis)
+        .wireTap(x ⇒ {
+          testActor ! x
+        })
+        .runWith(Sink.ignore).futureValue
       expectMsg(1)
       expectMsg(2)
       expectMsg(3)
