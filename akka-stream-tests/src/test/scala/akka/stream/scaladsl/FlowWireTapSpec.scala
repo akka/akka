@@ -20,7 +20,7 @@ class FlowWireTapSpec extends StreamSpec("akka.stream.materializer.debug.fuzzing
 
     "call the procedure for each element" in assertAllStagesStopped {
       Source(1 to 100).wireTap(testActor ! _).runWith(Sink.ignore).futureValue
-      1 to 100 foreach { i => expectMsg(i) }
+      1 to 100 foreach { i ⇒ expectMsg(i) }
     }
 
     "complete the future for an empty stream" in assertAllStagesStopped {
