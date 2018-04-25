@@ -95,7 +95,7 @@ final case class QuarantinedEvent(address: Address, longUid: Long) extends Remot
   override def logLevel: Logging.LogLevel = Logging.WarningLevel
   override val toString: String =
     s"Association to [$address] having UID [$longUid] is irrecoverably failed. UID is now quarantined and all " +
-      "messages to this UID will be delivered to dead letters. Remote actorsystem must be restarted to recover " +
+      "messages to this UID will be delivered to dead letters. Remote ActorSystem must be restarted to recover " +
       "from this situation."
 
   // For binary compatibility
@@ -108,6 +108,17 @@ final case class QuarantinedEvent(address: Address, longUid: Long) extends Remot
 
   @deprecated("Use long uid copy method", "2.4.x")
   def copy(address: Address = address, uid: Int = uid) = new QuarantinedEvent(address, uid)
+}
+
+/**
+ * The `uniqueAddress` was quarantined but it was due to normal shutdown or cluster leaving/exiting.
+ */
+@SerialVersionUID(1L)
+final case class GracefulShutdownQuarantinedEvent(uniqueAddress: UniqueAddress, reason: String) extends RemotingLifecycleEvent {
+  override def logLevel: Logging.LogLevel = Logging.InfoLevel
+  override val toString: String =
+    s"Association to [${uniqueAddress.address}] having UID [${uniqueAddress.uid}] has been stopped. All " +
+      s"messages to this UID will be delivered to dead letters. Reason: $reason "
 }
 
 @SerialVersionUID(1L)

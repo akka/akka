@@ -9,9 +9,10 @@ import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.AddressTerminatedTopic
 import akka.remote.artery.ArteryMessage
-
 import scala.collection.mutable
 import scala.concurrent.duration._
+
+import akka.remote.artery.ArteryTransport
 
 /**
  * INTERNAL API
@@ -163,7 +164,7 @@ private[akka] class RemoteWatcher(
     watchingNodes foreach { a ⇒
       if (!unreachable(a) && !failureDetector.isAvailable(a)) {
         log.warning("Detected unreachable: [{}]", a)
-        quarantine(a, addressUids.get(a), "Deemed unreachable by remote failure detector")
+        quarantine(a, addressUids.get(a), "Deemed unreachable by remote failure detector", harmless = false)
         publishAddressTerminated(a)
         unreachable += a
       }
@@ -172,8 +173,12 @@ private[akka] class RemoteWatcher(
   def publishAddressTerminated(address: Address): Unit =
     AddressTerminatedTopic(context.system).publish(AddressTerminated(address))
 
-  def quarantine(address: Address, uid: Option[Long], reason: String): Unit =
-    remoteProvider.quarantine(address, uid, reason)
+  def quarantine(address: Address, uid: Option[Long], reason: String, harmless: Boolean): Unit = {
+    remoteProvider.transport match {
+      case t: ArteryTransport if harmless ⇒ t.quarantine(address, uid, reason, harmless)
+      case _                              ⇒ remoteProvider.quarantine(address, uid, reason)
+    }
+  }
 
   def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
     assert(watcher != self)
