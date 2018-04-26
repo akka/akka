@@ -223,6 +223,7 @@ import scala.collection.JavaConverters._
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with OutHandler with InHandler {
     parent ⇒
+
     lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
     private val activeSubstreamsMap = new java.util.HashMap[Any, SubstreamSource]()
     private val closedSubstreams = if (allowClosedSubstreamRecreation) Collections.unmodifiableSet(Collections.emptySet[Any]) else new java.util.HashSet[Any]()
@@ -233,6 +234,8 @@ import scala.collection.JavaConverters._
     private var _nextId = 0
     private val substreamsJustStared = new java.util.HashSet[Any]()
     private var firstPushCounter: Int = 0
+
+    private val tooManySubstreamsOpenException = new TooManySubstreamsOpenException
 
     private def nextId(): Long = { _nextId += 1; _nextId }
 
@@ -304,7 +307,7 @@ import scala.collection.JavaConverters._
         }
       } else {
         if (activeSubstreamsMap.size == maxSubstreams)
-          fail(new IllegalStateException(s"Cannot open substream for key '$key': too many substreams open"))
+          throw tooManySubstreamsOpenException
         else if (closedSubstreams.contains(key) && !hasBeenPulled(in))
           pull(in)
         else runSubstream(key, elem)
