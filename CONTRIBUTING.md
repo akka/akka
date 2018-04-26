@@ -178,6 +178,7 @@ PR_TARGET_BRANCH=origin/example sbt validatePullRequest
 ```
 
 ## Binary compatibility
+
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
 ](http://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the documentation.
 
