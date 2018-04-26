@@ -4,14 +4,13 @@
 
 package akka.actor;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.time.Duration;
 import org.junit.ClassRule;
 import org.junit.Test;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import org.scalatest.junit.JUnitSuite;
-import scala.concurrent.duration.FiniteDuration;
 
 public class InboxJavaAPITest extends JUnitSuite {
 
@@ -24,7 +23,7 @@ public class InboxJavaAPITest extends JUnitSuite {
   @Test(expected = TimeoutException.class)
   public void mustBeAbleToThrowTimeoutException() throws TimeoutException {
     Inbox inbox = Inbox.create(system);
-    inbox.receive(new FiniteDuration(10, TimeUnit.MILLISECONDS));
+    inbox.receive(Duration.ofMillis(10));
   }
 
 }

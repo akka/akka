@@ -552,7 +552,7 @@ public class FutureDocTest extends AbstractJavaTest {
     //#retry
     final ExecutionContext ec = system.dispatcher();
     Callable<CompletionStage<String>> attempt = () -> CompletableFuture.completedFuture("test");
-    CompletionStage<String> retriedFuture = retry(attempt, 3, Duration.create(200, "millis"), system.scheduler(), ec);
+    CompletionStage<String> retriedFuture = retry(attempt, 3, java.time.Duration.ofMillis(200), system.scheduler(), ec);
     //#retry
 
     retriedFuture.toCompletableFuture().get(2, SECONDS);

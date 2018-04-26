@@ -1,0 +1,13 @@
+/**
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+package akka.cluster.typed;
+
+option java_package = "akka.cluster.typed.internal.protobuf";
+option optimize_for = SPEED;
+
+
+message ReceptionistEntry {
+  required string actorRef = 1;
+  required uint64 systemUid = 2;
+}

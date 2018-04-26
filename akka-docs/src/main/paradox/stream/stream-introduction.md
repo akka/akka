@@ -69,7 +69,7 @@ look like and what they can do.
 point.
  * The bottom-up learners may feel more at home rummaging through the
 @ref:[Streams Cookbook](stream-cookbook.md).
- * For a complete overview of the built-in processing stages you can look at the
-table in @ref:[stages overview](stages-overview.md)
+ * For a complete overview of the built-in processing operators you can look at the
+@ref:[operator index](operators/index.md)
  * The other sections can be read sequentially or as needed during the previous
 steps, each digging deeper into specific topics.

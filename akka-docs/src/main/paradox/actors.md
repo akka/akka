@@ -651,7 +651,7 @@ Messages are sent to an Actor through one of the following methods.
  * @scala[`!`] @java[`tell` ] means “fire-and-forget”, e.g. send a message asynchronously and return
 immediately. @scala[Also known as `tell`.]
  * @scala[`?`] @java[`ask`] sends a message asynchronously and returns a `Future`
-representing a possible reply. @scala[Also known as `ask`].
+representing a possible reply. @scala[Also known as `ask`.]
 
 Message ordering is guaranteed on a per-sender basis.
 
@@ -1045,7 +1045,7 @@ Scala
 :  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #gracefulStop}
 
 Java
-:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #gracefulStop}
+:  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #import-gracefulStop #gracefulStop}
 
 When `gracefulStop()` returns successfully, the actor’s `postStop()` hook
 will have been executed: there exists a happens-before edge between the end of

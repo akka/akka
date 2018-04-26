@@ -6,7 +6,6 @@ package akka.testkit.typed.scaladsl
 
 //#manual-scheduling-simple
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.WordSpecLike
 
 import scala.concurrent.duration._
 
@@ -14,7 +13,7 @@ class ManualTimerExampleSpec extends AbstractActorSpec {
 
   override def config = ManualTime.config
 
-  val manualTime = ManualTime()
+  val manualTime: ManualTime = ManualTime()
 
   "A timer" must {
     "schedule non-repeated ticks" in {
@@ -24,7 +23,7 @@ class ManualTimerExampleSpec extends AbstractActorSpec {
       val probe = TestProbe[Tock.type]()
       val behavior = Behaviors.withTimers[Tick.type] { timer ⇒
         timer.startSingleTimer("T", Tick, 10.millis)
-        Behaviors.receive { (ctx, Tick) ⇒
+        Behaviors.receiveMessage { _ ⇒
           probe.ref ! Tock
           Behaviors.same
         }

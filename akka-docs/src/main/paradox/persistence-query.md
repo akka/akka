@@ -339,6 +339,21 @@ to support "infinite" event streams that include events stored after the initial
 has completed. It is recommended that the plugin use a configuration property named
 `refresh-interval` for defining such a refresh interval. 
 
+
+## Scaling out
+
+In a use case where the number of events are very high, the work needed for each event is high or where
+resilience is important so that if a node crashes the persistent queries are quickly started on a new node and can
+resume operations @ref:[Cluster Sharding](cluster-sharding.md) together with event tagging is an excellent fit to 
+shard events over a cluster.
+
+The [Lagom framework](https://www.lagom-framework.com), which is built on top of Akka encodes many of the best practices 
+around this. For more details see @java[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/java/ES_CQRS.html)]
+@scala[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/scala/ES_CQRS.html)] and 
+@java[[Persistent Entity](https://www.lagomframework.com/documentation/current/java/PersistentEntity.html)] 
+@scala[[Persistent Entity](https://www.lagomframework.com/documentation/current/scala/PersistentEntity.html)] in the Lagom documentation.
+
+
 ### Plugin TCK
 
 TODO, not available yet.

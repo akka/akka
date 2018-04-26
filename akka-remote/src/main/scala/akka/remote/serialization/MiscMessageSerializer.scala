@@ -311,7 +311,6 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val fromBinaryMap = Map[String, Array[Byte] ⇒ AnyRef](
     IdentifyManifest → deserializeIdentify,
     ActorIdentityManifest → deserializeActorIdentity,
-    OptionManifest → deserializeOption,
     StatusSuccessManifest → deserializeStatusSuccess,
     StatusFailureManifest → deserializeStatusFailure,
     ThrowableManifest → throwableSupport.deserializeThrowable,

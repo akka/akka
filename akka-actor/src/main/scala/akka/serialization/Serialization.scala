@@ -405,7 +405,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)
    */
   val serializerByIdentity: Map[Int, Serializer] =
-    Map(NullSerializer.identifier → NullSerializer) ++ serializers map { case (_, v) ⇒ (v.identifier, v) }
+    Map(NullSerializer.identifier → NullSerializer) ++ serializers.map { case (_, v) ⇒ (v.identifier, v) }
 
   /**
    * Serializers with id 0 - 1023 are stored in an array for quick allocation free access

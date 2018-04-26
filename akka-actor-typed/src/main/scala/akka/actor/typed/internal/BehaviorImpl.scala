@@ -27,10 +27,9 @@ import scala.reflect.ClassTag
 
   def widened[T, U](behavior: Behavior[T], matcher: PartialFunction[U, T]): Behavior[U] = {
     behavior match {
-      case d: DeferredBehavior[T] ⇒
+      case d: DeferredBehavior[t] ⇒
         DeferredBehavior[U] { ctx ⇒
-          val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
-          val b = Behavior.validateAsInitial(Behavior.start(d, c))
+          val b = Behavior.validateAsInitial(Behavior.start(d, ctx.as[t]))
           Widened(b, matcher)
         }
       case _ ⇒
@@ -86,7 +85,7 @@ import scala.reflect.ClassTag
     override def toString = s"ReceiveMessage(${LineNumbers(onMessage)})"
   }
 
-  def tap[T](
+  def tap[T: ClassTag](
     onMessage: (SAC[T], T) ⇒ _,
     onSignal:  (SAC[T], Signal) ⇒ _,
     behavior:  Behavior[T]): Behavior[T] = {
@@ -101,7 +100,7 @@ import scala.reflect.ClassTag
       },
       afterMessage = ConstantFun.scalaAnyThreeToThird,
       afterSignal = ConstantFun.scalaAnyThreeToThird,
-      behavior)(ClassTag(classOf[Any]))
+      behavior)
   }
 
   /**
@@ -119,7 +118,7 @@ import scala.reflect.ClassTag
    * `afterMessage` is the message returned from `beforeMessage` (possibly
    * different than the incoming message).
    */
-  def intercept[T, U <: Any: ClassTag](
+  def intercept[T, U: ClassTag](
     beforeMessage:  (SAC[U], U) ⇒ T,
     beforeSignal:   (SAC[T], Signal) ⇒ Boolean,
     afterMessage:   (SAC[T], T, Behavior[T]) ⇒ Behavior[T],
@@ -129,8 +128,7 @@ import scala.reflect.ClassTag
     behavior match {
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[T] { ctx ⇒
-          val c = ctx.asInstanceOf[akka.actor.typed.ActorContext[T]]
-          val b = Behavior.validateAsInitial(Behavior.start(d, c))
+          val b = Behavior.validateAsInitial(Behavior.start(d, ctx))
           Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, b, toStringPrefix)
         }
       case _ ⇒

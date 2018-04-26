@@ -4,22 +4,28 @@
 
 package akka.testkit.typed.javadsl
 
-import akka.actor.typed.{ Behavior, Signal }
+import akka.actor.typed.{ Behavior, Signal, ActorRef }
 import akka.annotation.DoNotInherit
 import akka.testkit.typed.Effect
 import akka.testkit.typed.internal.BehaviorTestKitImpl
 
+import java.util.concurrent.ThreadLocalRandom
+
 object BehaviorTestKit {
+  import akka.testkit.typed.scaladsl.TestInbox.address
+
   /**
    * JAVA API
    */
-  def create[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] =
-    new BehaviorTestKitImpl[T](name, initialBehavior)
+  def create[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
+    val uid = ThreadLocalRandom.current().nextInt()
+    new BehaviorTestKitImpl(address / name withUid (uid), initialBehavior)
+  }
   /**
    * JAVA API
    */
   def create[T](initialBehavior: Behavior[T]): BehaviorTestKit[T] =
-    new BehaviorTestKitImpl[T]("testkit", initialBehavior)
+    create(initialBehavior, "testkit")
 
 }
 
@@ -47,6 +53,11 @@ abstract class BehaviorTestKit[T] {
   def childInbox[U](name: String): TestInbox[U]
 
   /**
+   * Get the [[akka.actor.typed.Behavior]] testkit for the given child [[akka.actor.typed.ActorRef]].
+   */
+  def childTestKit[U](child: ActorRef[U]): BehaviorTestKit[U]
+
+  /**
    * The self inbox contains messages the behavior sent to `ctx.self`
    */
   def selfInbox(): TestInbox[T]
@@ -72,7 +83,7 @@ abstract class BehaviorTestKit[T] {
    * Asserts that the oldest effect is an instance of of class T. Consumes and returns the concrete effect for
    * further direct assertions.
    */
-  def expectEffectClass[T <: Effect](effectClass: Class[T]): T
+  def expectEffectClass[U <: Effect](effectClass: Class[U]): U
 
   /**
    * The current behavior, can change any time `run` is called

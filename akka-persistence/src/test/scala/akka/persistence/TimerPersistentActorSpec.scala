@@ -21,6 +21,8 @@ object TimerPersistentActorSpec {
 
   final case class Scheduled(msg: Any, replyTo: ActorRef)
 
+  final case class AutoReceivedMessageWrapper(msg: AutoReceivedMessage)
+
   class TestPersistentActor(name: String) extends Timers with PersistentActor {
 
     override def persistenceId = name
@@ -32,6 +34,8 @@ object TimerPersistentActorSpec {
     override def receiveCommand: Receive = {
       case Scheduled(msg, replyTo) ⇒
         replyTo ! msg
+      case AutoReceivedMessageWrapper(msg) ⇒
+        timers.startSingleTimer("PoisonPill", PoisonPill, Duration.Zero)
       case msg ⇒
         timers.startSingleTimer("key", Scheduled(msg, sender()), Duration.Zero)
         persist(msg)(_ ⇒ ())
@@ -102,6 +106,14 @@ class TimerPersistentActorSpec extends PersistenceSpec(ConfigFactory.parseString
       watch(pa)
       expectTerminated(pa)
     }
+
+    "handle AutoReceivedMessage's automatically" in {
+      val pa = system.actorOf(testProps("p3"))
+      watch(pa)
+      pa ! AutoReceivedMessageWrapper(PoisonPill)
+      expectTerminated(pa)
+    }
+
   }
 
 }

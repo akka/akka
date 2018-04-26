@@ -8,12 +8,22 @@ import akka.actor.typed.ActorRef
 import akka.annotation.DoNotInherit
 import akka.testkit.typed.internal.TestInboxImpl
 
+import java.util.concurrent.ThreadLocalRandom
+
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
 object TestInbox {
-  def create[T](name: String): TestInbox[T] = new TestInboxImpl(name)
-  def create[T](): TestInbox[T] = new TestInboxImpl[T]("inbox")
+  import akka.testkit.typed.scaladsl.TestInbox.address
+
+  def create[T](name: String): TestInbox[T] = {
+    val uid = ThreadLocalRandom.current().nextInt()
+    new TestInboxImpl(address / name withUid (uid))
+  }
+  def create[T](): TestInbox[T] = {
+    val uid = ThreadLocalRandom.current().nextInt()
+    new TestInboxImpl(address / "inbox" withUid (uid))
+  }
 }
 
 /**

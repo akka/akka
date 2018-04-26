@@ -9,6 +9,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
 
 object ActorSpecMessages {
 
@@ -62,13 +63,20 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
   import ActorSpecMessages._
 
-  def decoration[T]: Behavior[T] ⇒ Behavior[T]
+  def decoration[T: ClassTag]: Behavior[T] ⇒ Behavior[T]
 
-  implicit class BehaviorDecorator[T](behavior: Behavior[T]) {
-    def decorate: Behavior[T] = decoration(behavior)
+  implicit class BehaviorDecorator[T](behavior: Behavior[T])(implicit ev: ClassTag[T]) {
+    def decorate: Behavior[T] = decoration[T](ev)(behavior)
   }
 
   "An ActorContext" must {
+
+    "be usable from Behavior.interpretMessage" in {
+      // compilation only
+      lazy val b: Behavior[String] = Behaviors.receive { (ctx, msg) ⇒
+        Behavior.interpretMessage(b, ctx, msg)
+      }
+    }
 
     "canonicalize behaviors" in {
       val probe = TestProbe[Event]()
@@ -581,25 +589,25 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
 class NormalActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = x ⇒ x
+  override def decoration[T: ClassTag] = x ⇒ x
 }
 
 class WidenActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = b ⇒ b.widen { case x ⇒ x }
+  override def decoration[T: ClassTag] = b ⇒ b.widen { case x ⇒ x }
 }
 
 class DeferredActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = b ⇒ Behaviors.setup(_ ⇒ b)
+  override def decoration[T: ClassTag] = b ⇒ Behaviors.setup(_ ⇒ b)
 }
 
 class NestedDeferredActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = b ⇒ Behaviors.setup(_ ⇒ Behaviors.setup(_ ⇒ b))
+  override def decoration[T: ClassTag] = b ⇒ Behaviors.setup(_ ⇒ Behaviors.setup(_ ⇒ b))
 }
 
 class TapActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T] = b ⇒ Behaviors.tap((_, _) ⇒ (), (_, _) ⇒ (), b)
+  override def decoration[T: ClassTag]: Behavior[T] ⇒ Behavior[T] = b ⇒ Behaviors.tap[T](b)((_, _) ⇒ (), (_, _) ⇒ ())
 }

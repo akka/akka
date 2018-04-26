@@ -36,6 +36,7 @@ import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
 import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
 import static junit.framework.TestCase.assertTrue;
 
+@SuppressWarnings("ALL")
 public class IntegrationDocTest extends AbstractJavaTest {
 
   private static final SilenceSystemOut.System System = SilenceSystemOut.get();
@@ -309,6 +310,41 @@ public class IntegrationDocTest extends AbstractJavaTest {
   }
   //#ask-actor
 
+  //#actorRefWithAck-actor
+  static class Ack {}
+
+  static class StreamInitialized {}
+  static class StreamCompleted {}
+  static class StreamFailure {
+    private final Throwable cause;
+    public StreamFailure(Throwable cause) { this.cause = cause; }
+
+    public Throwable getCause() { return cause; }
+  }
+
+  static class AckingReceiver extends AbstractLoggingActor {
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(StreamInitialized.class, init -> {
+          log().info("Stream initialized");
+        })
+        .match(String.class, element -> {
+          log().info("Received element: {}", element);
+          sender().tell(new Ack(), self());
+        })
+        .match(StreamCompleted.class, completed -> {
+          log().info("Stream completed");
+        })
+        .match(StreamFailure.class, failed -> {
+          log().error(failed.getCause(),"Stream failed!");
+        })
+        .build();
+    }
+  }
+  //#actorRefWithAck-actor
+
   @SuppressWarnings("unchecked")
   @Test
   public void askStage() throws Exception {
@@ -323,6 +359,28 @@ public class IntegrationDocTest extends AbstractJavaTest {
       .map(elem -> elem.toLowerCase())
       .runWith(Sink.ignore(), mat);
     //#ask
+  }
+
+  @Test
+  public void actorRefWithAckExample() throws Exception {
+    //#actorRefWithAck
+    Source<String, NotUsed> words =
+      Source.from(Arrays.asList("hello", "hi"));
+
+    ActorRef receiver =
+        system.actorOf(Props.create(AckingReceiver.class));
+
+    Sink<String, NotUsed> sink = Sink.<String>actorRefWithAck(receiver,
+        new StreamInitialized(),
+        new Ack(),
+        new StreamCompleted(),
+        ex -> new StreamFailure(ex)
+    );
+
+    words
+        .map(el -> el.toLowerCase())
+        .runWith(sink, mat);
+    //#actorRefWithAck
   }
 
 

@@ -262,7 +262,7 @@ public class HubDocTest extends AbstractJavaTest {
     Source<Integer, NotUsed> fromProducer = runnableGraph.run(materializer);
 
     fromProducer.runForeach(msg -> System.out.println("consumer1: " + msg), materializer);
-    fromProducer.throttle(10, Duration.ofMillis(100), 10, ThrottleMode.shaping())
+    fromProducer.throttle(10, Duration.ofMillis(100))
       .runForeach(msg -> System.out.println("consumer2: " + msg), materializer);
     //#partition-hub-fastest
 

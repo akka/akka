@@ -5,7 +5,6 @@
 package akka.actor
 
 import akka.util.JavaDurationConverters
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -233,6 +232,7 @@ trait Scheduler {
     import JavaDurationConverters._
     scheduleOnce(delay.asScala, runnable)(executor)
   }
+
   /**
    * The maximum supported task frequency of this scheduler, i.e. the inverse
    * of the minimum time interval between executions of a recurring task, in Hz.

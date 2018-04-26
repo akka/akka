@@ -1,11 +1,14 @@
 # Remoting
 
+We recommend @ref:[Akka Cluster](cluster-usage.md) over using remoting directly. As remoting is the
+underlying module that allows for Cluster, it is still useful to understand details about it though.
+
 For an introduction of remoting capabilities of Akka please see @ref:[Location Transparency](general/remoting.md).
 
 @@@ note
 
 As explained in that chapter Akka remoting is designed for communication in a
-peer-to-peer fashion and it has limitations for client-server setups. In
+peer-to-peer fashion and it is not a good fit for client-server setups. In
 particular Akka Remoting does not work transparently with Network Address Translation,
 Load Balancers, or in Docker containers. For symmetric communication in these situations
 network and/or Akka configuration will have to be changed as described in

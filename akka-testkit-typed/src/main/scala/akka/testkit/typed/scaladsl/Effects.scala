@@ -18,19 +18,98 @@ object Effects {
   /**
    * The behavior spawned a named child with the given behavior (and optionally specific props)
    */
-  final case class Spawned[T](behavior: Behavior[T], childName: String, props: Props = Props.empty) extends Effect
+  final class Spawned[T](val behavior: Behavior[T], val childName: String, val props: Props, val ref: ActorRef[T])
+    extends Effect with Product3[Behavior[T], String, Props] with Serializable {
+
+    override def equals(other: Any) = other match {
+      case o: Spawned[_] ⇒
+        this.behavior == o.behavior &&
+          this.childName == o.childName &&
+          this.props == o.props
+      case _ ⇒ false
+    }
+    override def hashCode: Int = (behavior.## * 31 + childName.##) * 31 + props.##
+    override def toString: String = s"Spawned($behavior, $childName, $props)"
+
+    override def productPrefix = "Spawned"
+    override def _1: Behavior[T] = behavior
+    override def _2: String = childName
+    override def _3: Props = props
+    override def canEqual(o: Any) = o.isInstanceOf[Spawned[_]]
+  }
+  object Spawned {
+    def apply[T](behavior: Behavior[T], childName: String, props: Props = Props.empty): Spawned[T] = new Spawned(behavior, childName, props, null)
+    def unapply[T](s: Spawned[T]): Option[(Behavior[T], String, Props)] = Some((s.behavior, s.childName, s.props))
+  }
+
   /**
    * The behavior spawned an anonymous child with the given behavior (and optionally specific props)
    */
-  final case class SpawnedAnonymous[T](behavior: Behavior[T], props: Props = Props.empty) extends Effect
-  /**
-   * The behavior spawned an anonymous adapter, through `ctx.spawnMessageAdapter`
-   */
-  final case object SpawnedAdapter extends Effect
+  final class SpawnedAnonymous[T](val behavior: Behavior[T], val props: Props, val ref: ActorRef[T])
+    extends Effect with Product2[Behavior[T], Props] with Serializable {
+
+    override def equals(other: Any) = other match {
+      case o: SpawnedAnonymous[_] ⇒ this.behavior == o.behavior && this.props == o.props
+      case _                      ⇒ false
+    }
+    override def hashCode: Int = behavior.## * 31 + props.##
+    override def toString: String = s"SpawnedAnonymous($behavior, $props)"
+
+    override def productPrefix = "SpawnedAnonymous"
+    override def _1: Behavior[T] = behavior
+    override def _2: Props = props
+    override def canEqual(o: Any) = o.isInstanceOf[SpawnedAnonymous[_]]
+  }
+  object SpawnedAnonymous {
+    def apply[T](behavior: Behavior[T], props: Props = Props.empty): SpawnedAnonymous[T] = new SpawnedAnonymous(behavior, props, null)
+    def unapply[T](s: SpawnedAnonymous[T]): Option[(Behavior[T], Props)] = Some((s.behavior, s.props))
+  }
+
   /**
    * The behavior spawned a named adapter, through `ctx.spawnMessageAdapter`
    */
-  final case class SpawnedNamedAdapter(name: String) extends Effect
+  final class SpawnedAdapter[T](val name: String, val ref: ActorRef[T])
+    extends Effect with Product1[String] with Serializable {
+
+    override def equals(other: Any) = other match {
+      case o: SpawnedAdapter[_] ⇒ this.name == o.name
+      case _                    ⇒ false
+    }
+    override def hashCode: Int = name.##
+    override def toString: String = s"SpawnedAdapter($name)"
+
+    override def productPrefix = "SpawnedAdapter"
+    override def _1: String = name
+    override def canEqual(o: Any) = o.isInstanceOf[SpawnedAdapter[_]]
+  }
+  object SpawnedAdapter {
+    def apply[T](name: String): SpawnedAdapter[T] = new SpawnedAdapter(name, null)
+    def unapply[T](s: SpawnedAdapter[T]): Option[Tuple1[String]] = Some(Tuple1(s.name))
+  }
+
+  /**
+   * The behavior spawned an anonymous adapter, through `ctx.spawnMessageAdapter`
+   */
+  final class SpawnedAnonymousAdapter[T](val ref: ActorRef[T])
+    extends Effect with Product with Serializable {
+
+    override def equals(other: Any) = other match {
+      case o: SpawnedAnonymousAdapter[_] ⇒ true
+      case _                             ⇒ false
+    }
+    override def hashCode: Int = Nil.##
+    override def toString: String = "SpawnedAnonymousAdapter"
+
+    override def productPrefix = "SpawnedAnonymousAdapter"
+    override def productIterator = Iterator.empty
+    override def productArity = 0
+    override def productElement(n: Int) = throw new NoSuchElementException
+    override def canEqual(o: Any) = o.isInstanceOf[SpawnedAnonymousAdapter[_]]
+  }
+  object SpawnedAnonymousAdapter {
+    def apply[T]() = new SpawnedAnonymousAdapter[T](null)
+    def unapply[T](s: SpawnedAnonymousAdapter[T]): Boolean = true
+  }
   /**
    * The behavior stopped `childName`
    */

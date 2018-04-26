@@ -30,10 +30,10 @@ object ShardingCompileOnlySpec {
   final case class GetValue(replyTo: ActorRef[Int]) extends CounterCommand
   case object GoodByeCounter extends CounterCommand
 
-  def counter(entityId: String, value: Int): Behavior[CounterCommand] = Behaviors.receive[CounterCommand] {
-    case (ctx, Increment) ⇒
+  def counter(entityId: String, value: Int): Behavior[CounterCommand] = Behaviors.receiveMessage[CounterCommand] {
+    case Increment ⇒
       counter(entityId, value + 1)
-    case (ctx, GetValue(replyTo)) ⇒
+    case GetValue(replyTo) ⇒
       replyTo ! value
       Behaviors.same
   }

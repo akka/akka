@@ -4,8 +4,10 @@
 
 package akka.actor
 
+import akka.util.JavaDurationConverters._
 import scala.concurrent.duration.FiniteDuration
 import akka.annotation.DoNotInherit
+import akka.dispatch.Envelope
 import akka.util.OptionVal
 
 /**
@@ -39,12 +41,13 @@ trait Timers extends Actor {
     msg match {
       case timerMsg: TimerSchedulerImpl.TimerMsg ⇒
         _timers.interceptTimerMsg(timerMsg) match {
-          case OptionVal.Some(m) if this.isInstanceOf[Stash] ⇒
-            // this is important for stash interaction, as stash will look directly at currentMessage #24557
-            actorCell.currentMessage = actorCell.currentMessage.copy(message = m)
-            super.aroundReceive(receive, m)
+          case OptionVal.Some(m: AutoReceivedMessage) ⇒
+            context.asInstanceOf[ActorCell].autoReceiveMessage(Envelope(m, self))
           case OptionVal.Some(m) ⇒
-            // avoid the extra allocation if not using stash
+            if (this.isInstanceOf[Stash]) {
+              // this is important for stash interaction, as stash will look directly at currentMessage #24557
+              actorCell.currentMessage = actorCell.currentMessage.copy(message = m)
+            }
             super.aroundReceive(receive, m)
           case OptionVal.None ⇒ // discard
         }
@@ -93,6 +96,18 @@ abstract class AbstractActorWithTimers extends AbstractActor with Timers {
   def startPeriodicTimer(key: Any, msg: Any, interval: FiniteDuration): Unit
 
   /**
+   * Start a periodic timer that will send `msg` to the `self` actor at
+   * a fixed `interval`.
+   *
+   * Each timer has a key and if a new timer with same key is started
+   * the previous is cancelled and it's guaranteed that a message from the
+   * previous timer is not received, even though it might already be enqueued
+   * in the mailbox when the new timer is started.
+   */
+  def startPeriodicTimer(key: Any, msg: Any, interval: java.time.Duration): Unit =
+    startPeriodicTimer(key, msg, interval.asScala)
+
+  /**
    * Start a timer that will send `msg` once to the `self` actor after
    * the given `timeout`.
    *
@@ -102,6 +117,18 @@ abstract class AbstractActorWithTimers extends AbstractActor with Timers {
    * in the mailbox when the new timer is started.
    */
   def startSingleTimer(key: Any, msg: Any, timeout: FiniteDuration): Unit
+
+  /**
+   * Start a timer that will send `msg` once to the `self` actor after
+   * the given `timeout`.
+   *
+   * Each timer has a key and if a new timer with same key is started
+   * the previous is cancelled and it's guaranteed that a message from the
+   * previous timer is not received, even though it might already be enqueued
+   * in the mailbox when the new timer is started.
+   */
+  def startSingleTimer(key: Any, msg: Any, timeout: java.time.Duration): Unit =
+    startSingleTimer(key, msg, timeout.asScala)
 
   /**
    * Check if a timer with a given `key` is active.
