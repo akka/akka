@@ -21,7 +21,7 @@ import scala.util.Failure
  */
 @InternalApi
 private[akka] object Plugin {
-  private[persistence] case class PluginHolder[ScalaDsl, JavaDsl](
+  final private[persistence] case class PluginHolder[ScalaDsl, JavaDsl](
     scaladslPlugin: ScalaDsl, javadslPlugin: JavaDsl)
     extends Extension
 }

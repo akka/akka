@@ -10,6 +10,8 @@ import akka.persistence.query.scaladsl.ReadJournal
 import akka.persistence.{ Plugin, PluginProvider }
 import com.typesafe.config.{ Config, ConfigFactory }
 
+import scala.reflect.ClassTag
+
 /**
  * Persistence extension for queries.
  */
@@ -24,16 +26,17 @@ object PersistenceQuery extends ExtensionId[PersistenceQuery] with ExtensionIdPr
   def lookup(): PersistenceQuery.type = PersistenceQuery
 
   @InternalApi
-  private[akka] implicit val pluginProvider = new PluginProvider[ReadJournalProvider, scaladsl.ReadJournal, javadsl.ReadJournal] {
-    override def scalaDsl(t: ReadJournalProvider): ReadJournal = t.scaladslReadJournal()
-    override def javaDsl(t: ReadJournalProvider): javadsl.ReadJournal = t.javadslReadJournal()
-  }
+  private[akka] val pluginProvider: PluginProvider[ReadJournalProvider, ReadJournal, javadsl.ReadJournal] =
+    new PluginProvider[ReadJournalProvider, scaladsl.ReadJournal, javadsl.ReadJournal] {
+      override def scalaDsl(t: ReadJournalProvider): ReadJournal = t.scaladslReadJournal()
+      override def javaDsl(t: ReadJournalProvider): javadsl.ReadJournal = t.javadslReadJournal()
+    }
 
 }
 
-import PersistenceQuery.pluginProvider
-
-class PersistenceQuery(system: ExtendedActorSystem) extends Plugin[scaladsl.ReadJournal, javadsl.ReadJournal, ReadJournalProvider](system) with Extension {
+class PersistenceQuery(system: ExtendedActorSystem)
+  extends Plugin[scaladsl.ReadJournal, javadsl.ReadJournal, ReadJournalProvider](system)(ClassTag(classOf[ReadJournalProvider]), PersistenceQuery.pluginProvider)
+  with Extension {
   /**
    * Scala API: Returns the [[akka.persistence.query.scaladsl.ReadJournal]] specified by the given
    * read journal configuration entry.
