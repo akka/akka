@@ -139,6 +139,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * This is a simplified version of `wireTap(Sink)` that takes only a simple procedure.
    * Elements will be passed into this "side channel" function, and any of its results will be ignored.
    *
+   * If the wire-tap operation is slow (it backpressures), elements that would've been sent to it will be dropped instead.
+   *
    * This operation is useful for inspecting the passed through element, usually by means of side-effecting
    * operations (such as `println`, or emitting metrics), for each element without having to modify it.
    *
