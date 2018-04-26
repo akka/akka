@@ -7,7 +7,7 @@ package akka.persistence.query
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.persistence.query.scaladsl.ReadJournal
-import akka.persistence.{ Plugin, PluginProvider }
+import akka.persistence.{ PersistencePlugin, PluginProvider }
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.reflect.ClassTag
@@ -35,7 +35,7 @@ object PersistenceQuery extends ExtensionId[PersistenceQuery] with ExtensionIdPr
 }
 
 class PersistenceQuery(system: ExtendedActorSystem)
-  extends Plugin[scaladsl.ReadJournal, javadsl.ReadJournal, ReadJournalProvider](system)(ClassTag(classOf[ReadJournalProvider]), PersistenceQuery.pluginProvider)
+  extends PersistencePlugin[scaladsl.ReadJournal, javadsl.ReadJournal, ReadJournalProvider](system)(ClassTag(classOf[ReadJournalProvider]), PersistenceQuery.pluginProvider)
   with Extension {
   /**
    * Scala API: Returns the [[akka.persistence.query.scaladsl.ReadJournal]] specified by the given
