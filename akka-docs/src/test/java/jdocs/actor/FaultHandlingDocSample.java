@@ -67,7 +67,7 @@ public class FaultHandlingDocSample {
     public void preStart() {
       // If we don't get any progress within 15 seconds then the service
       // is unavailable
-      getContext().setReceiveTimeout(Duration.create("15 seconds"));
+      getContext().setReceiveTimeout(java.time.Duration.ofSeconds(15));
     }
 
     @Override

@@ -535,7 +535,7 @@ public class ActorDocTest extends AbstractJavaTest {
     //#receive-timeout
     public ReceiveTimeoutActor() {
       // To set an initial delay
-      getContext().setReceiveTimeout(Duration.create(10, TimeUnit.SECONDS));
+      getContext().setReceiveTimeout(java.time.Duration.ofSeconds(10));
     }
     
     @Override
@@ -543,7 +543,7 @@ public class ActorDocTest extends AbstractJavaTest {
       return receiveBuilder()
         .matchEquals("Hello", s -> {
           // To set in a response to a message
-          getContext().setReceiveTimeout(Duration.create(1, TimeUnit.SECONDS));
+          getContext().setReceiveTimeout(java.time.Duration.ofSeconds(1));
           //#receive-timeout
           target = getSender();
           target.tell("Hello world", getSelf());
@@ -551,7 +551,7 @@ public class ActorDocTest extends AbstractJavaTest {
         })
         .match(ReceiveTimeout.class, r -> {
           // To turn it off
-          getContext().setReceiveTimeout(Duration.Undefined());
+          getContext().cancelReceiveTimeout();
           //#receive-timeout
           target.tell("timeout", getSelf());
           //#receive-timeout
