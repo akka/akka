@@ -94,7 +94,7 @@ The source code of this sample can be found in the
   [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module.
 @@@
 
-### Manually joining to seed nodes
+### Joining configured seed nodes
 
 You may decide if joining to the cluster should be done manually or automatically
 to configured initial contact points, so-called seed nodes. After the joining process
