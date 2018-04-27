@@ -64,6 +64,7 @@ import scala.util.control.NonFatal
 
     private def restartState(): Unit = {
       close(blockingStream)
+      open = false
       blockingStream = create()
       open = true
     }
