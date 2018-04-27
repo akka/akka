@@ -8,7 +8,7 @@ import language.postfixOps
 import akka.testkit.AkkaSpec
 import scala.concurrent.duration._
 import akka.remote.transport.AkkaProtocolSettings
-import akka.util.{ Helpers }
+import akka.util.Helpers
 import akka.util.Helpers.ConfigOps
 import akka.remote.transport.netty.{ NettyTransportSettings, SSLSettings }
 
@@ -77,7 +77,7 @@ class RemoteConfigSpec extends AkkaSpec(
 
     "contain correct netty.tcp values in reference.conf" in {
       val c = RARP(system).provider.remoteSettings.config.getConfig("akka.remote.netty.tcp")
-      val s = new NettyTransportSettings(c)
+      val s = new NettyTransportSettings(c, system.settings.setup)
       import s._
 
       ConnectionTimeout should ===(15.seconds)
@@ -122,7 +122,7 @@ class RemoteConfigSpec extends AkkaSpec(
     }
 
     "contain correct ssl configuration values in reference.conf" in {
-      val sslSettings = new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security"))
+      val sslSettings = new SSLSettings(system.settings.config.getConfig("akka.remote.netty.ssl.security"), system.settings.setup)
       sslSettings.SSLKeyStore should ===("keystore")
       sslSettings.SSLKeyStorePassword should ===("changeme")
       sslSettings.SSLKeyPassword should ===("changeme")

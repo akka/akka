@@ -9,23 +9,26 @@ import akka.dispatch.ThreadPoolConfig
 import akka.event.Logging
 import akka.remote.transport.AssociationHandle.HandleEventListener
 import akka.remote.transport.Transport._
-import akka.remote.transport.netty.NettyTransportSettings.{ Udp, Tcp, Mode }
+import akka.remote.transport.netty.NettyTransportSettings.{ Mode, Tcp, Udp }
 import akka.remote.transport.{ AssociationHandle, Transport }
-import akka.{ OnlyCauseStackTrace, ConfigurationException }
+import akka.{ ConfigurationException, OnlyCauseStackTrace }
 import com.typesafe.config.Config
-import java.net.{ SocketAddress, InetAddress, InetSocketAddress }
+import java.net.{ InetAddress, InetSocketAddress, SocketAddress }
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{ ConcurrentHashMap, Executors, CancellationException }
-import org.jboss.netty.bootstrap.{ ConnectionlessBootstrap, Bootstrap, ClientBootstrap, ServerBootstrap }
-import org.jboss.netty.buffer.{ ChannelBuffers, ChannelBuffer }
+import java.util.concurrent.{ CancellationException, ConcurrentHashMap, Executors }
+
+import akka.actor.setup.ActorSystemSetup
+import org.jboss.netty.bootstrap.{ Bootstrap, ClientBootstrap, ConnectionlessBootstrap, ServerBootstrap }
+import org.jboss.netty.buffer.{ ChannelBuffer, ChannelBuffers }
 import org.jboss.netty.channel._
-import org.jboss.netty.channel.group.{ DefaultChannelGroup, ChannelGroup, ChannelGroupFuture, ChannelGroupFutureListener }
-import org.jboss.netty.channel.socket.nio.{ NioWorkerPool, NioDatagramChannelFactory, NioServerSocketChannelFactory, NioClientSocketChannelFactory }
+import org.jboss.netty.channel.group.{ ChannelGroup, ChannelGroupFuture, ChannelGroupFutureListener, DefaultChannelGroup }
+import org.jboss.netty.channel.socket.nio.{ NioClientSocketChannelFactory, NioDatagramChannelFactory, NioServerSocketChannelFactory, NioWorkerPool }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, LengthFieldPrepender }
 import org.jboss.netty.handler.ssl.SslHandler
-import scala.concurrent.duration.{ FiniteDuration }
-import scala.concurrent.{ ExecutionContext, Promise, Future, blocking }
-import scala.util.{ Try }
+
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ ExecutionContext, Future, Promise, blocking }
+import scala.util.Try
 import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.util.Helpers.Requiring
 import akka.util.Helpers
@@ -75,7 +78,7 @@ class NettyTransportExceptionNoStack(msg: String, cause: Throwable) extends Nett
   def this(msg: String) = this(msg, null)
 }
 
-class NettyTransportSettings(config: Config) {
+class NettyTransportSettings(config: Config, actorSystemSetup: ActorSystemSetup) {
 
   import akka.util.Helpers.ConfigOps
   import config._
@@ -144,7 +147,7 @@ class NettyTransportSettings(config: Config) {
     case value ⇒ value.toInt
   }
 
-  val SslSettings: Option[SSLSettings] = if (EnableSsl) Some(new SSLSettings(config.getConfig("security"))) else None
+  val SslSettings: Option[SSLSettings] = if (EnableSsl) Some(new SSLSettings(config.getConfig("security"), actorSystemSetup)) else None
 
   val ServerSocketWorkerPoolSize: Int = computeWPS(config.getConfig("server-socket-worker-pool"))
 
@@ -261,7 +264,7 @@ private[transport] object NettyTransport {
 // FIXME: Split into separate UDP and TCP classes
 class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedActorSystem) extends Transport {
 
-  def this(system: ExtendedActorSystem, conf: Config) = this(new NettyTransportSettings(conf), system)
+  def this(system: ExtendedActorSystem, conf: Config) = this(new NettyTransportSettings(conf, system.settings.setup), system)
 
   import NettyTransport._
   import settings._
