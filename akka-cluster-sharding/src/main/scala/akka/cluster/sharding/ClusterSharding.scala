@@ -168,7 +168,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   private val regions: ConcurrentHashMap[String, ActorRef] = new ConcurrentHashMap
   private val proxies: ConcurrentHashMap[String, ActorRef] = new ConcurrentHashMap
 
-  private lazy val guardian = {
+  private lazy val guardian: ActorRef = {
     val guardianName: String =
       system.settings.config.getString("akka.cluster.sharding.guardian-name")
     val dispatcher = system.settings.config
@@ -610,7 +610,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
       context.system.deadLetters
   }
 
-  def receive = {
+  def receive: Receive = {
     case Start(typeName,
       entityProps,
       settings,

@@ -88,17 +88,21 @@ final class ClusterSingletonSettings(
    * INTERNAL API:
    */
   @InternalApi
-  private[akka] def toProxySettings(singletonName: String): ClusterSingletonProxySettings =
+  private[akka] def toProxySettings(singletonName: String): ClusterSingletonProxySettings = {
     new ClusterSingletonProxySettings(singletonName, role, singletonIdentificationInterval, bufferSize)
+      .withDataCenter(dataCenter)
+  }
 
   /**
    * INTERNAL API:
    */
   @InternalApi
-  private[akka] def shouldRunManager(cluster: Cluster): Boolean =
+  private[akka] def shouldRunManager(cluster: Cluster): Boolean = {
     (role.isEmpty || cluster.selfMember.roles(role.get)) &&
       (dataCenter.isEmpty || dataCenter.contains(cluster.selfMember.dataCenter))
+  }
 
+  override def toString = s"ClusterSingletonSettings($role, $dataCenter, $singletonIdentificationInterval, $removalMargin, $handOverRetryInterval, $bufferSize)"
 }
 
 object ClusterSingleton extends ExtensionId[ClusterSingleton] {
@@ -141,7 +145,6 @@ abstract class ClusterSingleton extends Extension {
     settings:           ClusterSingletonSettings,
     terminationMessage: A
   ): ActorRef[A]
-
 }
 
 object ClusterSingletonManagerSettings {
