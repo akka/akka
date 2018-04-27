@@ -76,7 +76,7 @@ object MultiNodeClusterSpec {
 
   class EndActor(testActor: ActorRef, target: Option[Address]) extends Actor {
     import EndActor._
-    def receive = {
+    def receive: Receive = {
       case SendEnd ⇒
         target foreach { t ⇒
           context.actorSelection(RootActorPath(t) / self.path.elements) ! End
