@@ -14,9 +14,17 @@ import akka.util.OptionVal
  * INTERNAL API
  */
 @InternalApi private[akka] object TimerSchedulerImpl {
+  trait TimerMsg {
+    def key: Any
+    def generation: Int
+    def owner: TimerSchedulerImpl
+  }
+
   final case class Timer(key: Any, msg: Any, repeat: Boolean, generation: Int, task: Cancellable)
-  final case class TimerMsg(key: Any, generation: Int, owner: TimerSchedulerImpl)
-    extends NoSerializationVerificationNeeded
+  final case class InfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: TimerSchedulerImpl)
+    extends TimerMsg with NoSerializationVerificationNeeded
+  final case class NotInfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: TimerSchedulerImpl)
+    extends TimerMsg with NoSerializationVerificationNeeded with NotInfluenceReceiveTimeout
 }
 
 /**
@@ -46,7 +54,12 @@ import akka.util.OptionVal
     }
     val nextGen = nextTimerGen()
 
-    val timerMsg = TimerMsg(key, nextGen, this)
+    val timerMsg =
+      if (msg.isInstanceOf[NotInfluenceReceiveTimeout])
+        NotInfluenceReceiveTimeoutTimerMsg(key, nextGen, this)
+      else
+        InfluenceReceiveTimeoutTimerMsg(key, nextGen, this)
+
     val task =
       if (repeat)
         ctx.system.scheduler.schedule(timeout, timeout, ctx.self, timerMsg)(ctx.dispatcher)
