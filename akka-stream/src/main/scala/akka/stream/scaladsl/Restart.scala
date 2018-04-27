@@ -578,7 +578,7 @@ object RestartWithBackoffFlow {
   private def delayCancellation[T](duration: FiniteDuration): Flow[T, T, NotUsed] =
     Flow.fromGraph(new DelayCancellationStage(duration))
 
-  final class DelayCancellationStage[T](delay: FiniteDuration) extends SimpleLinearGraphStage[T] {
+  private final class DelayCancellationStage[T](delay: FiniteDuration) extends SimpleLinearGraphStage[T] {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
