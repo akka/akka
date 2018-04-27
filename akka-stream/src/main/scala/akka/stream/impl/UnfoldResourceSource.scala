@@ -63,8 +63,8 @@ import scala.util.control.NonFatal
     override def onDownstreamFinish(): Unit = closeStage()
 
     private def restartState(): Unit = {
-      close(blockingStream)
       open = false
+      close(blockingStream)
       blockingStream = create()
       open = true
     }
