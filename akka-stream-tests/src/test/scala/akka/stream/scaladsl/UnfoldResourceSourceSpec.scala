@@ -211,6 +211,25 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       closedCounter.get() should ===(1)
     }
 
+    // issue #24924
+    "not close the resource twice when read fails and then close fails" in {
+      val closedCounter = new AtomicInteger(0)
+      val probe = Source.unfoldResource[Int, Int](
+        () ⇒ 23, // the best resource there is
+        _ ⇒ throw TE("failing read"),
+        { _ ⇒
+          closedCounter.incrementAndGet()
+          if (closedCounter.get == 1) throw TE("boom")
+        }
+      ).runWith(TestSink.probe[Int])
+
+      EventFilter[TE](occurrences = 1).intercept {
+        probe.request(1)
+        probe.expectError(TE("boom"))
+      }
+      closedCounter.get() should ===(1)
+    }
+
   }
   override def afterTermination(): Unit = {
     fs.close()

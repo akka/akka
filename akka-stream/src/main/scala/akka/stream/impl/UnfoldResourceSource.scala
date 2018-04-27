@@ -44,17 +44,18 @@ import scala.util.control.NonFatal
           case None       ⇒ closeStage()
         }
       } catch {
-        case NonFatal(ex) ⇒ decider(ex) match {
-          case Supervision.Stop ⇒
-            close(blockingStream)
-            open = false
-            failStage(ex)
-          case Supervision.Restart ⇒
-            restartState()
-            resumingMode = true
-          case Supervision.Resume ⇒
-            resumingMode = true
-        }
+        case NonFatal(ex) ⇒
+          decider(ex) match {
+            case Supervision.Stop ⇒
+              open = false
+              close(blockingStream)
+              failStage(ex)
+            case Supervision.Restart ⇒
+              restartState()
+              resumingMode = true
+            case Supervision.Resume ⇒
+              resumingMode = true
+          }
       }
       if (resumingMode) onPull()
     }
