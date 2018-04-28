@@ -191,12 +191,18 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
   }
 
   def getDetails(file: File): (String, String) = {
-    val contents = IO.read(file).dropWhile(_ != '\n').drop(2)
+    val contents = IO.read(file)
+    val lines = contents.split("\\r?\\n")
+    require(
+      lines.size >= 5,
+      s"There must be at least 5 lines in $file, including the title, description, category link and an empty line between each two of them"
+    )
     // This forces the short description to be on a single line. We could make this smarter,
     // but 'forcing' the short description to be really short seems nice as well.
-    val description = contents.takeWhile(_ != '\n')
-    val categoryLink = contents.dropWhile(_ != '\n').drop(2).takeWhile(_ != '\n')
-    require(categoryLink.startsWith("@ref"), s"category link in $file, saw $categoryLink")
+    val description = lines(2) //line 3
+    require(!description.isEmpty, s"description in $file must be non-empty, single-line description at the 3rd line")
+    val categoryLink = lines(4) //line 5
+    require(categoryLink.startsWith("@ref"), s"""category link in $file should start with @ref, but saw \"$categoryLink\"""")
     val categoryName = categoryLink.drop(5).takeWhile(_ != ']')
     val categoryLinkId = categoryLink.dropWhile(_ != '#').drop(1).takeWhile(_ != ')')
     require(categories.contains(categoryName), s"category $categoryName in $file should be known")
