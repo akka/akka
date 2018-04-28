@@ -233,7 +233,7 @@ Java
 
 ## Wrapping Persistent Behaviors
 When creating a `PersistentBehavior`, it is possible to wrap `PersistentBehavior` in
-other behaviors such as `Behaviors.setup` in order to access `ActorContext` object. For instance
+other behaviors such as `Behaviors.setup` in order to access the `ActorContext` object. For instance
 to access the actor logging upon taking snapshots for debug purpose.
 
 Scala
