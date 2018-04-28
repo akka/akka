@@ -5,16 +5,17 @@
 package akka.testkit.typed.javadsl
 
 import java.util.concurrent.TimeUnit
+import java.util.function.Supplier
 
 import akka.actor.Scheduler
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.internal.TestKitUtils
+import akka.testkit.typed.internal.{ TestKitUtils, Within }
 import akka.testkit.typed.scaladsl.{ ActorTestKit ⇒ ScalaTestKit }
 import akka.util.Timeout
 import com.typesafe.config.Config
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 object ActorTestKit {
 
@@ -98,7 +99,7 @@ object ActorTestKit {
  *
  * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
-final class ActorTestKit protected (delegate: akka.testkit.typed.scaladsl.ActorTestKit) {
+final class ActorTestKit protected (delegate: akka.testkit.typed.scaladsl.ActorTestKit) extends Within {
 
   /**
    * The default timeout as specified with the config/[[akka.testkit.typed.TestKitSettings]]
@@ -162,5 +163,32 @@ final class ActorTestKit protected (delegate: akka.testkit.typed.scaladsl.ActorT
    * Terminate the actor system and the testkit
    */
   def shutdownTestKit(): Unit = delegate.shutdownTestKit()
+
+  override implicit def settings: TestKitSettings = delegate.settings
+
+  /**
+   * Execute code block while bounding its execution time between `min` and
+   * `max`. `within` blocks may be nested. All methods in this trait which
+   * take maximum wait times are available in a version which implicitly uses
+   * the remaining time governed by the innermost enclosing `within` block.
+   *
+   * Note that the timeout is scaled using Duration.dilated, which uses the
+   * configuration entry "akka.actor.typed.test.timefactor", while the min Duration is not.
+   *
+   * {{{
+   * val ret = within(50 millis) {
+   *   test ! Ping
+   *   expectMessageType[Pong]
+   * }
+   * }}}
+   */
+  def within[T](min: FiniteDuration, max: FiniteDuration, f: Supplier[T]): T =
+    within_internal(min, max, f.get())
+
+  /**
+   * Same as calling `within(0 seconds, max)(f)`.
+   */
+  def within[T](max: FiniteDuration, f: Supplier[T]): T =
+    within_internal(Duration.Zero, max, f.get())
 
 }

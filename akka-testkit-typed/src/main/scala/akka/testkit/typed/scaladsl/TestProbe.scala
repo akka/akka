@@ -6,7 +6,7 @@ package akka.testkit.typed.scaladsl
 
 import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.annotation.DoNotInherit
-import akka.testkit.typed.internal.TestProbeImpl
+import akka.testkit.typed.internal.{ TestProbeImpl, Within }
 import akka.testkit.typed.{ FishingOutcome, TestKitSettings }
 
 import scala.concurrent.duration._
@@ -49,34 +49,14 @@ object TestProbe {
  *
  * Not for user extension
  */
-@DoNotInherit trait TestProbe[M] {
+@DoNotInherit trait TestProbe[M] extends Within {
 
-  implicit protected def settings: TestKitSettings
+  implicit def settings: TestKitSettings
 
   /**
    * ActorRef for this TestProbe
    */
   def ref: ActorRef[M]
-
-  /**
-   * Obtain time remaining for execution of the innermost enclosing `within`
-   * block or missing that it returns the properly dilated default for this
-   * case from settings (key "akka.actor.typed.test.single-expect-default").
-   */
-  def remainingOrDefault: FiniteDuration
-
-  /**
-   * Obtain time remaining for execution of the innermost enclosing `within`
-   * block or throw an [[AssertionError]] if no `within` block surrounds this
-   * call.
-   */
-  def remaining: FiniteDuration
-
-  /**
-   * Obtain time remaining for execution of the innermost enclosing `within`
-   * block or missing that it returns the given duration.
-   */
-  def remainingOr(duration: FiniteDuration): FiniteDuration
 
   /**
    * Execute code block while bounding its execution time between `min` and
@@ -101,8 +81,6 @@ object TestProbe {
    */
   def within[T](max: FiniteDuration)(f: ⇒ T): T =
     within_internal(Duration.Zero, max, f)
-
-  protected def within_internal[T](min: FiniteDuration, max: FiniteDuration, f: ⇒ T): T
 
   /**
    * Same as `expectMessage(remainingOrDefault, obj)`, but correctly treating the timeFactor.

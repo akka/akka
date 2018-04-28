@@ -14,13 +14,12 @@ import akka.annotation.InternalApi
 import akka.testkit.typed.javadsl.{ TestProbe ⇒ JavaTestProbe }
 import akka.testkit.typed.scaladsl.{ TestDuration, TestProbe ⇒ ScalaTestProbe }
 import akka.testkit.typed.{ FishingOutcome, TestKitSettings }
-import akka.util.PrettyDuration._
 import akka.util.{ BoxedType, Timeout }
 
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.control.{ NoStackTrace, NonFatal }
+import scala.util.control.NonFatal
 
 @InternalApi
 private[akka] object TestProbeImpl {
@@ -41,20 +40,17 @@ private[akka] object TestProbeImpl {
 }
 
 @InternalApi
-private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_]) extends JavaTestProbe[M] with ScalaTestProbe[M] {
+private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_]) extends JavaTestProbe[M] with ScalaTestProbe[M] with Within {
 
   import TestProbeImpl._
-  protected implicit val settings = TestKitSettings(system)
+  implicit val settings = TestKitSettings(system)
   private val queue = new LinkedBlockingDeque[M]
   private val terminations = new LinkedBlockingDeque[Terminated]
-
-  private var end: Duration = Duration.Undefined
 
   /**
    * if last assertion was expectNoMessage, disable timing failure upon within()
    * block end.
    */
-  private var lastWasNoMessage = false
 
   private var lastMessage: Option[M] = None
 
@@ -66,48 +62,6 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   }
 
   override def ref = testActor
-
-  override def remainingOrDefault = remainingOr(settings.SingleExpectDefaultTimeout.dilated)
-
-  override def remaining: FiniteDuration = end match {
-    case f: FiniteDuration ⇒ f - now
-    case _                 ⇒ throw new AssertionError("`remaining` may not be called outside of `within`")
-  }
-
-  override def remainingOr(duration: FiniteDuration): FiniteDuration = end match {
-    case x if x eq Duration.Undefined ⇒ duration
-    case x if !x.isFinite             ⇒ throw new IllegalArgumentException("`end` cannot be infinite")
-    case f: FiniteDuration            ⇒ f - now
-  }
-
-  private def remainingOrDilated(max: Duration): FiniteDuration = max match {
-    case x if x eq Duration.Undefined ⇒ remainingOrDefault
-    case x if !x.isFinite             ⇒ throw new IllegalArgumentException("max duration cannot be infinite")
-    case f: FiniteDuration            ⇒ f.dilated
-  }
-
-  override protected def within_internal[T](min: FiniteDuration, max: FiniteDuration, f: ⇒ T): T = {
-    val _max = max.dilated
-    val start = now
-    val rem = if (end == Duration.Undefined) Duration.Inf else end - start
-    assert(rem >= min, s"required min time $min not possible, only ${rem.pretty} left")
-
-    lastWasNoMessage = false
-
-    val max_diff = _max min rem
-    val prev_end = end
-    end = start + max_diff
-
-    val ret = try f finally end = prev_end
-
-    val diff = now - start
-    assert(min <= diff, s"block took ${diff.pretty}, should at least have been $min")
-    if (!lastWasNoMessage) {
-      assert(diff <= max_diff, s"block took ${diff.pretty}, exceeding ${max_diff.pretty}")
-    }
-
-    ret
-  }
 
   override def expectMessage[T <: M](obj: T): T = expectMessage_internal(remainingOrDefault, obj)
 
@@ -139,7 +93,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
       } else {
         queue.takeFirst
       }
-    lastWasNoMessage = false
+    setFinished(false) // lastWasNoMessage = false
     lastMessage = if (message == null) None else Some(message)
     message
   }
@@ -151,7 +105,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   private def expectNoMessage_internal(max: FiniteDuration) {
     val o = receiveOne(max)
     assert(o == null, s"received unexpected message $o")
-    lastWasNoMessage = true
+    setFinished(true) // lastWasNoMessage = true
   }
 
   override protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C = {

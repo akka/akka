@@ -4,12 +4,16 @@
 
 package akka.testkit.typed.javadsl
 
+import java.util.function.Supplier
+
 import akka.actor.Scheduler
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.util.Timeout
 import com.typesafe.config.Config
 import org.junit.Rule
 import org.junit.rules.ExternalResource
+
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * A Junit external resource for the testkit, making it possible to have Junit manage the lifecycle of the testkit.
@@ -94,5 +98,32 @@ class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
   override def after(): Unit = {
     testKit.shutdownTestKit()
   }
+
+  /**
+   * Execute code block while bounding its execution time between `min` and
+   * `max`. `within` blocks may be nested. All methods in this trait which
+   * take maximum wait times are available in a version which implicitly uses
+   * the remaining time governed by the innermost enclosing `within` block.
+   *
+   * Note that the timeout is scaled using Duration.dilated, which uses the
+   * configuration entry "akka.actor.typed.test.timefactor", while the min Duration is not.
+   *
+   * {{{
+   * val ret = within(50 millis) {
+   *   test ! Ping
+   *   expectMessageType[Pong]
+   * }
+   * }}}
+   */
+  def within[T](min: FiniteDuration, max: FiniteDuration, f: Supplier[T]): T =
+    testKit.within(min, max, f)
+
+  /**
+   * Same as calling `within(0 seconds, max)(f)`.
+   */
+  def within[T](max: FiniteDuration, f: Supplier[T]): T =
+    testKit.within(Duration.Zero, max, f)
+
+  def setFinished(isFinished: Boolean): Unit = testKit.setFinished(isFinished)
 
 }

@@ -8,7 +8,7 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.internal.{ ActorTestKitGuardian, TestKitUtils }
+import akka.testkit.typed.internal.{ ActorTestKitGuardian, TestKitUtils, Within }
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.Await
@@ -58,7 +58,7 @@ object ActorTestKit {
  * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
 @ApiMayChange
-trait ActorTestKit {
+trait ActorTestKit extends Within {
   /**
    * Actor system name based on the test it is mixed into, override to customize, or pass to constructor
    * if using [[ActorTestKit]] rather than [[ActorTestKit]]
@@ -74,7 +74,9 @@ trait ActorTestKit {
   /**
    * TestKit settings used in the tests, override or provide custom config to customize
    */
-  protected implicit def testkitSettings = TestKitSettings(system)
+  implicit def testkitSettings = TestKitSettings(system)
+
+  override def settings: TestKitSettings = testkitSettings
 
   private val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
     if (config eq ActorTestKit.noConfigSet) ActorSystem(ActorTestKitGuardian.testKitGuardian, name)
@@ -122,6 +124,30 @@ trait ActorTestKit {
    */
   final def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
     Await.result(internalSystem ? (ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
+
+  /**
+   * Execute code block while bounding its execution time between `min` and
+   * `max`. `within` blocks may be nested. All methods in this trait which
+   * take maximum wait times are available in a version which implicitly uses
+   * the remaining time governed by the innermost enclosing `within` block.
+   *
+   * Note that the timeout is scaled using Duration.dilated, which uses the
+   * configuration entry "akka.actor.typed.test.timefactor", while the min Duration is not.
+   *
+   * {{{
+   * val ret = within(50 millis) {
+   *   test ! Ping
+   *   expectMessageType[Pong]
+   * }
+   * }}}
+   */
+  def within[T](min: FiniteDuration, max: FiniteDuration)(f: ⇒ T): T =
+    within_internal(min, max, f)
+  /**
+   * Same as calling `within(0 seconds, max)(f)`.
+   */
+  def within[T](max: FiniteDuration)(f: ⇒ T): T =
+    within_internal(Duration.Zero, max, f)
 
   // FIXME needed for Akka internal tests but, users shouldn't spawn system actors?
   @InternalApi

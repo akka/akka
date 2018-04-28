@@ -124,13 +124,13 @@ class ReplicatorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Ev
   import ReplicatorSpec._
 
   implicit val testSettings = TestKitSettings(system)
-  val settings = ReplicatorSettings(system)
+  val replicatorSettings = ReplicatorSettings(system)
   implicit val cluster = Cluster(system.toUntyped)
 
   "Replicator" must {
 
     "have API for Update and Get" in {
-      val replicator = spawn(Replicator.behavior(settings))
+      val replicator = spawn(Replicator.behavior(replicatorSettings))
       val c = spawn(client(replicator))
 
       val probe = TestProbe[Int]
@@ -140,7 +140,7 @@ class ReplicatorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Ev
     }
 
     "have API for Subscribe" in {
-      val replicator = spawn(Replicator.behavior(settings))
+      val replicator = spawn(Replicator.behavior(replicatorSettings))
       val c = spawn(client(replicator))
 
       val probe = TestProbe[Int]

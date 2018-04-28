@@ -4,12 +4,15 @@
 
 package akka.testkit.typed.scaladsl
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
 import scala.concurrent.Promise
+import scala.concurrent.duration.Duration
 
 // can be mixed into any spec style,
 class ActorTestKitSpec extends WordSpec with Matchers with ActorTestKit with ScalaFutures {
@@ -45,6 +48,29 @@ class ActorTestKitSpec extends WordSpec with Matchers with ActorTestKit with Sca
       shutdownTestKit()
       system.whenTerminated.futureValue shouldBe a[Terminated]
     }
+
+    "run a computation within a given time" in {
+
+      val result = within(Duration.create(500, TimeUnit.MILLISECONDS)) {
+        setFinished(true)
+        "Success"
+      }
+
+      result shouldBe "Success"
+
+    }
+
+    "Fail if the computation doesn't run within a given time" in {
+
+      assertThrows[java.lang.AssertionError] {
+        within(Duration.create(500, TimeUnit.MILLISECONDS)) {
+          Thread.sleep(1000L)
+          "Success"
+        }
+      }
+
+    }
+
   }
 
 }

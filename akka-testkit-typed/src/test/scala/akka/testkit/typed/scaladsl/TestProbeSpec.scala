@@ -5,11 +5,13 @@
 package akka.testkit.typed.scaladsl
 
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+import akka.testkit.typed.TestKitSettings
 
 import scala.concurrent.duration._
 
 class TestProbeSpec extends AbstractActorSpec {
+
+  override implicit def settings: TestKitSettings = testkitSettings
 
   def compileOnlyApiTest(): Unit = {
     val probe = TestProbe[AnyRef]()
