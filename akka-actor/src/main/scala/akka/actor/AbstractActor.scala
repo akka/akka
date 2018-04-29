@@ -10,6 +10,8 @@ import akka.japi.pf.ReceiveBuilder
 import scala.runtime.BoxedUnit
 import java.util.Optional
 
+import scala.concurrent.ExecutionContextExecutor
+
 /**
  * Java API: compatible with lambda expressions
  */
@@ -152,6 +154,17 @@ abstract class AbstractActor extends Actor {
    * AbstractActor.
    */
   def getContext(): AbstractActor.ActorContext = context.asInstanceOf[AbstractActor.ActorContext]
+
+  /**
+   * Returns this AbstractActor's Scheduler.
+   */
+  def getScheduler(): Scheduler = context.system.scheduler
+
+  /**
+   * Returns this AbstractActor's dispatcher, which could be the default dispatcher
+   * or a configured one.
+   */
+  def getDispatcher(): ExecutionContextExecutor = context.system.dispatcher
 
   /**
    * Returns the ActorRef for this actor.
