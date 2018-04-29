@@ -1,5 +1,17 @@
 # Dispatchers
 
+## Dependency
+
+To use Dispatchers, you must add the following dependency in your project.
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 An Akka `MessageDispatcher` is what makes Akka Actors "tick", it is the engine of the machine so to speak.
 All `MessageDispatcher` implementations are also an `ExecutionContext`, which means that they can be used
 to execute arbitrary code, for instance @ref:[Futures](futures.md).

@@ -1,5 +1,17 @@
 # Persistence - Schema Evolution
 
+## Dependency
+
+To use Akka Persistence - Schema Evolution, you must add the following dependency in your project.
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-persistence_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 When working on long running projects using @ref:[Persistence](persistence.md), or any kind of [Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html) architectures,
 schema evolution becomes one of the more important technical aspects of developing your application.
 The requirements as well as our own understanding of the business domain may (and will) change in time.

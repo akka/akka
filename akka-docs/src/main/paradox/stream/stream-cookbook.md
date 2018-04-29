@@ -1,5 +1,15 @@
 # Streams Cookbook
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
 ## Introduction
 
 This is a collection of patterns to demonstrate various usage of the Akka Streams API by solving small targeted

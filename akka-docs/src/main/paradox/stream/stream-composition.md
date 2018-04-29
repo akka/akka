@@ -1,5 +1,17 @@
 # Modularity, Composition and Hierarchy
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 Akka Streams provide a uniform model of stream processing graphs, which allows flexible composition of reusable
 components. In this chapter we show how these look like from the conceptual and API perspective, demonstrating
 the modularity aspects of the library.

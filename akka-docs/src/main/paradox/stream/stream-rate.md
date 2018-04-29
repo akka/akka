@@ -1,5 +1,17 @@
 # Buffers and working with rate
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 When upstream and downstream rates differ, especially when the throughput has spikes, it can be useful to introduce
 buffers in a stream. In this chapter we cover how buffers are used in Akka Streams.
 

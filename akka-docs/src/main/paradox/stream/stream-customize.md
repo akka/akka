@@ -1,5 +1,17 @@
 # Custom stream processing
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 While the processing vocabulary of Akka Streams is quite rich (see the @ref:[Streams Cookbook](stream-cookbook.md) for examples) it
 is sometimes necessary to define new transformation stages either because some functionality is missing from the
 stock operations, or for performance reasons. In this part we show how to build custom processing stages and graph

@@ -1,5 +1,17 @@
 # Fault Tolerance
 
+## Dependency
+
+To use Fault Tolerance, you must add the following dependency in your project.
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 As explained in @ref:[Actor Systems](general/actor-systems.md) each actor is the supervisor of its
 children, and as such each actor defines fault handling supervisor strategy.
 This strategy cannot be changed afterwards as it is an integral part of the

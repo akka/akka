@@ -1,5 +1,17 @@
 # Pipelining and Parallelism
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 Akka Streams processing stages (be it simple operators on Flows and Sources or graph junctions) are "fused" together
 and executed sequentially by default. This avoids the overhead of events crossing asynchronous boundaries but
 limits the flow to execute at most one stage at any given time.
