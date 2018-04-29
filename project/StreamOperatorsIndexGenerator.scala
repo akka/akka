@@ -199,9 +199,9 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     )
     // This forces the short description to be on a single line. We could make this smarter,
     // but 'forcing' the short description to be really short seems nice as well.
-    val description = lines(2) //line 3
+    val description = lines(2)
     require(!description.isEmpty, s"description in $file must be non-empty, single-line description at the 3rd line")
-    val categoryLink = lines(4) //line 5
+    val categoryLink = lines(4)
     require(categoryLink.startsWith("@ref"), s"""category link in $file should start with @ref, but saw \"$categoryLink\"""")
     val categoryName = categoryLink.drop(5).takeWhile(_ != ']')
     val categoryLinkId = categoryLink.dropWhile(_ != '#').drop(1).takeWhile(_ != ')')
