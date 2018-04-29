@@ -45,7 +45,6 @@ import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
 import akka.remote.artery.compress._
-import akka.remote.artery.aeron.AeronSource
 import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
 import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
 import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
@@ -906,7 +905,7 @@ private[remote] object ArteryTransport {
   object ShuttingDown extends RuntimeException with NoStackTrace
 
   final case class InboundStreamMatValues(
-    aeronSourceLifecycle: Option[AeronSource.ResourceLifecycle],
+    aeronSourceLifecycle: Option[aeron.AeronSource.ResourceLifecycle],
     completed:            Future[Done])
 
   def autoSelectPort(hostname: String, udp: Boolean): Int = {
