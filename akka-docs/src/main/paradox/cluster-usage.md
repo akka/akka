@@ -158,7 +158,7 @@ Scala
 :  @@snip [ClusterDocSpec.scala]($code$/scala/docs/cluster/ClusterDocSpec.scala) { #join-seed-nodes }
 
 Java
-:  @@snip [ClusterDocTest.java]($code$/java/jdocs/cluster/ClusterDocTest.java) { #join-seed-nodes }
+:  @@snip [ClusterDocTest.java]($code$/java/jdocs/cluster/ClusterDocTest.java) { #join-seed-nodes-imports #join-seed-nodes }
 
 Unsuccessful attempts to contact seed nodes are automatically retried after the time period defined in
 configuration property `seed-node-timeout`. Unsuccessful attempt to join a specific seed node is

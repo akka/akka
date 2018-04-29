@@ -4,7 +4,6 @@
 
 package jdocs.cluster;
 
-import akka.actor.Address;
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.ConfigFactory;
 
@@ -16,8 +15,12 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import akka.actor.ActorSystem;
+//#join-seed-nodes-imports
+import akka.actor.Address;
 import akka.cluster.Cluster;
+
+//#join-seed-nodes-imports
+import akka.actor.ActorSystem;
 import akka.cluster.Member;
 
 
