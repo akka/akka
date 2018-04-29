@@ -251,28 +251,28 @@ object EntityTypeKey {
 @DoNotInherit trait EntityRef[A] {
 
   /**
-    * Send a message to the entity referenced by this EntityRef using *at-most-once*
-    * messaging semantics.
-    *
-    * Example usage:
-    * {{{
-    * val target: EntityRef[String] = ...
-    * target tell "Hello"
-    * }}}
-    */
+   * Send a message to the entity referenced by this EntityRef using *at-most-once*
+   * messaging semantics.
+   *
+   * Example usage:
+   * {{{
+   * val target: EntityRef[String] = ...
+   * target tell "Hello"
+   * }}}
+   */
   def tell(msg: A): Unit
 
 
   /**
-    * Send a message to the entity referenced by this EntityRef using *at-most-once*
-    * messaging semantics.
-    *
-    * Example usage:
-    * {{{
-    * val target: EntityRef[String] = ...
-    * target ! "Hello"
-    * }}}
-    */
+   * Send a message to the entity referenced by this EntityRef using *at-most-once*
+   * messaging semantics.
+   *
+   * Example usage:
+   * {{{
+   * val target: EntityRef[String] = ...
+   * target ! "Hello"
+   * }}}
+   */
   def !(msg: A): Unit = this.tell(msg)
 
   /**
@@ -294,21 +294,21 @@ object EntityTypeKey {
   def ask[U](f: ActorRef[U] ⇒ A)(implicit timeout: Timeout, scheduler: Scheduler): Future[U]
 
   /**
-    * Allows to "ask" the [[EntityRef]] for a reply.
-    * See [[akka.actor.typed.scaladsl.AskPattern]] for a complete write-up of this pattern
-    *
-    * Example usage:
-    * {{{
-    * case class Request(msg: String, replyTo: ActorRef[Reply])
-    * case class Reply(msg: String)
-    *
-    * implicit val timeout = Timeout(3.seconds)
-    * val target: EntityRef[Request] = ...
-    * val f: Future[Reply] = target ? (Request("hello", _))
-    * }}}
-    *
-    * Please note that an implicit [[akka.util.Timeout]] and [[akka.actor.Scheduler]] must be available to use this pattern.
-    */
+   * Allows to "ask" the [[EntityRef]] for a reply.
+   * See [[akka.actor.typed.scaladsl.AskPattern]] for a complete write-up of this pattern
+   *
+   * Example usage:
+   * {{{
+   * case class Request(msg: String, replyTo: ActorRef[Reply])
+   * case class Reply(msg: String)
+   *
+   * implicit val timeout = Timeout(3.seconds)
+   * val target: EntityRef[Request] = ...
+   * val f: Future[Reply] = target ? (Request("hello", _))
+   * }}}
+   *
+   * Please note that an implicit [[akka.util.Timeout]] and [[akka.actor.Scheduler]] must be available to use this pattern.
+   */
   def ?[U](message: ActorRef[U] ⇒ A)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] =
     this.ask(message)(timeout, scheduler)
 
