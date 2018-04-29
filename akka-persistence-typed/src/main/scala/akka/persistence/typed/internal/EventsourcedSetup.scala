@@ -20,20 +20,21 @@ import akka.util.OptionVal
  */
 @InternalApi
 private[persistence] final class EventsourcedSetup[C, E, S](
-  val context:               ActorContext[InternalProtocol],
-  val timers:                TimerScheduler[InternalProtocol],
-  val persistenceId:         String,
-  val initialState:          S,
-  val commandHandler:        PersistentBehaviors.CommandHandler[C, E, S],
-  val eventHandler:          (S, E) ⇒ S,
-  val writerIdentity:        WriterIdentity,
-  val recoveryCompleted:     (ActorContext[C], S) ⇒ Unit,
-  val tagger:                E ⇒ Set[String],
-  val snapshotWhen:          (S, E, Long) ⇒ Boolean,
-  val recovery:              Recovery,
-  var holdingRecoveryPermit: Boolean,
-  val settings:              EventsourcedSettings,
-  val internalStash:         StashBuffer[InternalProtocol]
+  val context:                  ActorContext[InternalProtocol],
+  val timers:                   TimerScheduler[InternalProtocol],
+  val persistenceId:            String,
+  val commandHandlerOnCreation: PersistentBehaviors.CommandHandler[C, E, S],
+  val eventHandlerOnCreation:   PersistentBehaviors.EventHandler[E, S],
+  val commandHandlerOnUpdate:   S ⇒ PersistentBehaviors.CommandHandler[C, E, S],
+  val eventHandlerOnUpdate:     S ⇒ PersistentBehaviors.EventHandler[E, S],
+  val writerIdentity:           WriterIdentity,
+  val recoveryCompleted:        (ActorContext[C], Option[S]) ⇒ Unit,
+  val tagger:                   E ⇒ Set[String],
+  val snapshotWhen:             (S, E, Long) ⇒ Boolean,
+  val recovery:                 Recovery,
+  var holdingRecoveryPermit:    Boolean,
+  val settings:                 EventsourcedSettings,
+  val internalStash:            StashBuffer[InternalProtocol]
 ) {
   import akka.actor.typed.scaladsl.adapter._
 

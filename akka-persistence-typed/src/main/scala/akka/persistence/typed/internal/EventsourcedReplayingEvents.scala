@@ -12,6 +12,7 @@ import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
 import akka.persistence.typed.internal.EventsourcedBehavior._
+import akka.util.OptionVal
 
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
@@ -36,7 +37,7 @@ private[persistence] object EventsourcedReplayingEvents {
   @InternalApi
   private[persistence] final case class ReplayingState[State](
     seqNr:               Long,
-    state:               State,
+    stateOpt:            Option[State],
     eventSeenInInterval: Boolean,
     toSeqNr:             Long
   )
@@ -82,10 +83,18 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
           val event = repr.payload.asInstanceOf[E]
 
           try {
-            val newState = state.copy(
-              seqNr = repr.sequenceNr,
-              state = setup.eventHandler(state.state, event),
-              eventSeenInInterval = true)
+            val someState =
+              state.stateOpt
+                .map { s ⇒ setup.eventHandlerOnUpdate(s)(event) }
+                .orElse(Some(setup.eventHandlerOnCreation(event)))
+
+            val newState =
+              state.copy(
+                seqNr = repr.sequenceNr,
+                stateOpt = someState,
+                eventSeenInInterval = true
+              )
+
             stay(newState)
           } catch {
             case NonFatal(ex) ⇒ onRecoveryFailure(ex, repr.sequenceNr, Some(event))
@@ -157,11 +166,11 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
 
   protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] = try {
     tryReturnRecoveryPermit("replay completed successfully")
-    setup.recoveryCompleted(setup.commandContext, state.state)
+    setup.recoveryCompleted(setup.commandContext, state.stateOpt)
 
     val running = EventsourcedRunning[C, E, S](
       setup,
-      EventsourcedRunning.EventsourcedState[S](state.seqNr, state.state)
+      EventsourcedRunning.EventsourcedState[S](state.seqNr, state.stateOpt)
     )
 
     tryUnstash(running)

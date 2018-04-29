@@ -10,7 +10,7 @@ import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps
 import akka.actor.typed.{ ActorRef, Behavior, TypedAkkaSpecWithShutdown }
 import akka.persistence.Persistence
 import akka.persistence.RecoveryPermitter.{ RecoveryPermitGranted, RequestRecoveryPermit, ReturnRecoveryPermit }
-import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
+import akka.persistence.typed.scaladsl.PersistentBehaviors.{ CommandHandler, EventHandler }
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
 import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -41,20 +41,33 @@ object RecoveryPermitterSpec {
     name:            String,
     commandProbe:    TestProbe[Any],
     eventProbe:      TestProbe[Any],
-    throwOnRecovery: Boolean        = false): Behavior[Command] =
-    PersistentBehaviors.receive[Command, Event, State](
-      persistenceId = name,
-      initialState = EmptyState,
-      commandHandler = CommandHandler.command {
+    throwOnRecovery: Boolean        = false): Behavior[Command] = {
+
+    def commandHandler(): CommandHandler[Command, Event, State] =
+      CommandHandler.command {
         case StopActor ⇒ Effect.stop
         case command   ⇒ commandProbe.ref ! command; Effect.none
-      },
-      eventHandler = { (state, event) ⇒ eventProbe.ref ! event; state }
-    ).onRecoveryCompleted {
+      }
+
+    def eventHandler(state: State): EventHandler[Event, State] =
+      { event ⇒ eventProbe.ref ! event; state }
+
+    PersistentBehaviors[Command, Event, State]
+      .identifiedBy(name)
+      .onCreation(
+        commandHandler = commandHandler(),
+        eventHandler = eventHandler(EmptyState)
+      )
+      .onUpdate(
+        commandHandler = _ ⇒ commandHandler(),
+        eventHandler = eventHandler
+      )
+      .onRecoveryCompleted {
         case (_, _) ⇒
           eventProbe.ref ! Recovered
           if (throwOnRecovery) throw new TE
       }
+  }
 
   def forwardingBehavior(target: TestProbe[Any]): Behavior[Any] =
     Behaviors.receive[Any] {

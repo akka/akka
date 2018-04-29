@@ -62,23 +62,29 @@ public class PersistentActorCompileOnlyTest {
     //#behavior
     public static PersistentBehavior<SimpleCommand, SimpleEvent, SimpleState> pb = new PersistentBehavior<SimpleCommand, SimpleEvent, SimpleState>("p1") {
       @Override
-      public SimpleState initialState() {
-        return new SimpleState();
+      public CommandHandler<SimpleCommand, SimpleEvent, SimpleState> commandHandler() {
+        return (ctx, cmd) -> Effect().persist(new SimpleEvent(cmd.data));
       }
 
       //#command-handler
       @Override
-      public CommandHandler<SimpleCommand, SimpleEvent, SimpleState> commandHandler() {
-        return (ctx, state, cmd) -> Effect().persist(new SimpleEvent(cmd.data));
+      public CommandHandler<SimpleCommand, SimpleEvent, SimpleState> commandHandler(SimpleState simpleState) {
+        return commandHandler();
       }
       //#command-handler
 
-      //#event-handler
       @Override
       public EventHandler<SimpleEvent, SimpleState> eventHandler() {
-        return (state, event) -> state.addEvent(event);
+        return event -> new SimpleState().addEvent(event);
+      }
+
+      //#event-handler
+      @Override
+      public EventHandler<SimpleEvent, SimpleState> eventHandler(SimpleState simpleState) {
+        return simpleState::addEvent;
       }
       //#event-handler
+
     };
     //#behavior
   }
@@ -115,26 +121,31 @@ public class PersistentActorCompileOnlyTest {
 
     private PersistentBehavior<MyCommand, MyEvent, ExampleState> pa = new PersistentBehavior<MyCommand, MyEvent, ExampleState>("pa") {
       @Override
-      public ExampleState initialState() {
-        return new ExampleState();
+      public CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler() {
+        return commandHandlerBuilder()
+                .matchCommand(Cmd.class, (ctx, cmd) -> Effect().persist(new Evt(cmd.data))
+                        .andThen(() -> cmd.sender.tell(new Ack())))
+                .build();
       }
 
       @Override
-      public CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler() {
-        return commandHandlerBuilder()
-          .matchCommand(Cmd.class, (ctx, state, cmd) -> Effect().persist(new Evt(cmd.data))
-            .andThen(() -> cmd.sender.tell(new Ack())))
-          .build();
+      public CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler(ExampleState state) {
+        return commandHandler();
       }
 
       @Override
       public EventHandler<MyEvent, ExampleState> eventHandler() {
+        return eventHandler(new ExampleState());
+      }
+
+      @Override
+      public EventHandler<MyEvent, ExampleState> eventHandler(ExampleState state) {
         return eventHandlerBuilder()
-          .matchEvent(Evt.class, (state, event) -> {
-            state.events.add(event.data);
-            return state;
-          })
-          .build();
+                .matchEvent(Evt.class, event -> {
+                  state.events.add(event.data);
+                  return state;
+                })
+                .build();
       }
     };
   }
@@ -142,6 +153,11 @@ public class PersistentActorCompileOnlyTest {
   static abstract class RecoveryComplete {
     interface Command {
     }
+
+    static class CreateFlight implements Command{
+
+    }
+
     static class DoSideEffect implements Command {
       final String data;
 
@@ -159,6 +175,9 @@ public class PersistentActorCompileOnlyTest {
     }
 
     interface Event {
+    }
+
+    static class FlightCreated implements Event {
     }
 
     static class IntentRecord implements Event {
@@ -223,36 +242,48 @@ public class PersistentActorCompileOnlyTest {
         super(persistenceId);
       }
 
-      @Override
-      public EventsInFlight initialState() {
-        return new EventsInFlight(0, Collections.emptyMap());
-      }
 
       @Override
       public CommandHandler<Command, Event, EventsInFlight> commandHandler() {
         return commandHandlerBuilder()
-          .matchCommand(DoSideEffect.class,
-            (ctx, state, cmd) -> Effect().persist(new IntentRecord(state.nextCorrelationId, cmd.data))
-              .andThen(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data, ctx.getSystem().scheduler())))
-          .matchCommand(AcknowledgeSideEffect.class, (ctx, state, command) -> Effect().persist(new SideEffectAcknowledged(command.correlationId)))
-          .build();
+                .matchCommand(CreateFlight.class, (ctx, cmd) -> Effect().persist(new FlightCreated()))
+                .build();
+      }
+
+      @Override
+      public CommandHandler<Command, Event, EventsInFlight> commandHandler(EventsInFlight eventsInFlight) {
+        return commandHandlerBuilder()
+                .matchCommand(DoSideEffect.class, (ctx, cmd) ->
+                        Effect().persist(new IntentRecord(eventsInFlight.nextCorrelationId, cmd.data))
+                                .andThen(() ->
+                                        performSideEffect(ctx.getSelf().narrow(), eventsInFlight.nextCorrelationId, cmd.data, ctx.getSystem().scheduler()))
+                )
+                .matchCommand(AcknowledgeSideEffect.class, (ctx, command) -> Effect().persist(new SideEffectAcknowledged(command.correlationId)))
+                .build();
       }
 
       @Override
       public EventHandler<Event, EventsInFlight> eventHandler() {
         return eventHandlerBuilder()
-          .matchEvent(IntentRecord.class, (state, event) -> {
-            int nextCorrelationId = event.correlationId;
-            Map<Integer, String> newOutstanding = new HashMap<>(state.dataByCorrelationId);
-            newOutstanding.put(event.correlationId, event.data);
-            return new EventsInFlight(nextCorrelationId, newOutstanding);
-          })
-          .matchEvent(SideEffectAcknowledged.class, (state, event) -> {
-            Map<Integer, String> newOutstanding = new HashMap<>(state.dataByCorrelationId);
-            newOutstanding.remove(event.correlationId);
-            return new EventsInFlight(state.nextCorrelationId, newOutstanding);
-          })
-          .build();
+                .matchEvent(FlightCreated.class, event -> new EventsInFlight(0, Collections.emptyMap()))
+                .build();
+      }
+
+      @Override
+      public EventHandler<Event, EventsInFlight> eventHandler(EventsInFlight eventsInFlight) {
+        return eventHandlerBuilder()
+                .matchEvent(IntentRecord.class, event -> {
+                  int nextCorrelationId = event.correlationId;
+                  Map<Integer, String> newOutstanding = new HashMap<>(eventsInFlight.dataByCorrelationId);
+                  newOutstanding.put(event.correlationId, event.data);
+                  return new EventsInFlight(nextCorrelationId, newOutstanding);
+                })
+                .matchEvent(SideEffectAcknowledged.class, event -> {
+                  Map<Integer, String> newOutstanding = new HashMap<>(eventsInFlight.dataByCorrelationId);
+                  newOutstanding.remove(event.correlationId);
+                  return new EventsInFlight(eventsInFlight.nextCorrelationId, newOutstanding);
+                })
+                .build();
       }
     }
   }

@@ -13,6 +13,8 @@ import akka.persistence._
 import akka.persistence.journal.Tagged
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, MDC }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
+import akka.persistence.typed.scaladsl.Effect
+import akka.util.OptionVal
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -38,8 +40,8 @@ import scala.collection.immutable
 private[akka] object EventsourcedRunning {
 
   final case class EventsourcedState[State](
-    seqNr: Long,
-    state: State
+    seqNr:    Long,
+    stateOpt: Option[State]
   ) {
 
     def nextSequenceNr(): EventsourcedState[State] =
@@ -49,8 +51,11 @@ private[akka] object EventsourcedRunning {
       if (persistent.sequenceNr > seqNr) copy(seqNr = persistent.sequenceNr) else this
 
     def applyEvent[C, E](setup: EventsourcedSetup[C, E, State], event: E): EventsourcedState[State] = {
-      val updated = setup.eventHandler(state, event)
-      copy(state = updated)
+      val someSate = stateOpt
+        .map(s ⇒ setup.eventHandlerOnUpdate(s)(event))
+        .orElse(Some(setup.eventHandlerOnCreation(event)))
+
+      copy(stateOpt = someSate)
     }
   }
 
@@ -74,9 +79,17 @@ private[akka] object EventsourcedRunning {
   def handlingCommands(state: EventsourcedState[S]): Behavior[InternalProtocol] = {
 
     def onCommand(state: EventsourcedState[S], cmd: C): Behavior[InternalProtocol] = {
-      val effect = setup.commandHandler(commandContext, state.state, cmd)
+      val effect =
+        state.stateOpt
+          .map(s ⇒ setup.commandHandlerOnUpdate(s)(commandContext, cmd))
+          .getOrElse(setup.commandHandlerOnCreation(commandContext, cmd))
+
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
     }
+
+    // decide whether it's time to make a snapshot
+    def shouldMakeSnapshot(stateOpt: Option[S], event: E, seqNr: Long): Boolean =
+      stateOpt.exists(s ⇒ setup.snapshotWhen(s, event, seqNr))
 
     @tailrec def applyEffects(
       msg:         Any,
@@ -103,7 +116,7 @@ private[akka] object EventsourcedRunning {
 
           val newState2 = internalPersist(newState, eventToPersist)
 
-          val shouldSnapshotAfterPersist = setup.snapshotWhen(newState2.state, event, newState2.seqNr)
+          val shouldSnapshotAfterPersist = shouldMakeSnapshot(newState2.stateOpt, event, newState2.seqNr)
 
           persistingEvents(newState2, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects)
 
@@ -116,7 +129,7 @@ private[akka] object EventsourcedRunning {
             val (newState, shouldSnapshotAfterPersist) = events.foldLeft((state, false)) {
               case ((currentState, snapshot), event) ⇒
                 seqNr += 1
-                val shouldSnapshot = snapshot || setup.snapshotWhen(currentState.state, event, seqNr)
+                val shouldSnapshot = snapshot || shouldMakeSnapshot(currentState.stateOpt, event, seqNr)
                 (currentState.applyEvent(setup, event), shouldSnapshot)
             }
 
@@ -305,7 +318,8 @@ private[akka] object EventsourcedRunning {
       Behaviors.stopped
 
     case SideEffect(sideEffects) ⇒
-      sideEffects(state.state)
+      // no State, no side-effect
+      state.stateOpt.foreach(sideEffects)
       Behaviors.same
 
     case _ ⇒

@@ -96,16 +96,15 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
   def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
     response match {
       case LoadSnapshotResult(sso, toSnr) ⇒
-        var state: S = setup.initialState
 
-        val seqNr: Long = sso match {
-          case Some(SelectedSnapshot(metadata, snapshot)) ⇒
-            state = snapshot.asInstanceOf[S]
-            metadata.sequenceNr
-          case None ⇒ 0 // from the beginning please
-        }
+        val (stateOpt, seqNr) =
+          sso match {
+            case Some(SelectedSnapshot(metadata, snapshot)) ⇒
+              (Some(snapshot.asInstanceOf[S]), metadata.sequenceNr)
+            case None ⇒ (None, 0L) // from the beginning please
+          }
 
-        becomeReplayingEvents(state, seqNr, toSnr)
+        becomeReplayingEvents(stateOpt, seqNr, toSnr)
 
       case LoadSnapshotFailed(cause) ⇒
         cancelRecoveryTimer(setup.timers)
@@ -116,7 +115,7 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
     }
   }
 
-  private def becomeReplayingEvents(state: S, lastSequenceNr: Long, toSnr: Long): Behavior[InternalProtocol] = {
+  private def becomeReplayingEvents(state: Option[S], lastSequenceNr: Long, toSnr: Long): Behavior[InternalProtocol] = {
     cancelRecoveryTimer(setup.timers)
 
     EventsourcedReplayingEvents[C, E, S](

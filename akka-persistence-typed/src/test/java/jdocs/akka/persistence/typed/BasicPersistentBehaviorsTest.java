@@ -8,11 +8,11 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.javadsl.CommandHandler;
-import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.PersistentBehavior;
 
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 
 public class BasicPersistentBehaviorsTest {
@@ -29,23 +29,28 @@ public class BasicPersistentBehaviorsTest {
     }
 
     @Override
-    public State initialState() {
-      return new State();
+    public CommandHandler<Command, Event, State> commandHandler() {
+      return (ctx, command) -> Effect().none();
     }
 
     @Override
-    public CommandHandler<Command, Event, State> commandHandler() {
-      return (ctx, state, command) -> Effect().none();
+    public CommandHandler<Command, Event, State> commandHandler(State state) {
+      return commandHandler();
     }
 
     @Override
     public EventHandler<Event, State> eventHandler() {
-      return (state, event) -> state;
+      return eventHandler(new State());
+    }
+
+    @Override
+    public EventHandler<Event, State> eventHandler(State state) {
+      return event -> state;
     }
 
     //#recovery
     @Override
-    public void onRecoveryCompleted(ActorContext<Command> ctx, State state) {
+    public void onRecoveryCompleted(ActorContext<Command> ctx, Optional<State> stateOpt) {
       // called once recovery is completed
     }
     //#recovery

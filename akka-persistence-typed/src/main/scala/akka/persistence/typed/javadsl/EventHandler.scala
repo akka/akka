@@ -15,7 +15,7 @@ import akka.util.OptionVal
  */
 @FunctionalInterface
 trait EventHandler[Event, State] {
-  def apply(state: State, event: Event): State
+  def apply(event: Event): State
 }
 
 object EventHandlerBuilder {
@@ -25,19 +25,19 @@ object EventHandlerBuilder {
 
 final class EventHandlerBuilder[Event, State >: Null]() {
 
-  private final case class EventHandlerCase(predicate: Event ⇒ Boolean, handler: BiFunction[State, Event, State])
+  private final case class EventHandlerCase(predicate: Event ⇒ Boolean, handler: EventHandler[Event, State])
 
   private var cases: List[EventHandlerCase] = Nil
 
-  private def addCase(predicate: Event ⇒ Boolean, handler: BiFunction[State, Event, State]): Unit = {
+  private def addCase(predicate: Event ⇒ Boolean, handler: EventHandler[Event, State]): Unit = {
     cases = EventHandlerCase(predicate, handler) :: cases
   }
 
   /**
    * Match any event which is an instance of `E` or a subtype of `E`
    */
-  def matchEvent[E <: Event](eventClass: Class[E], biFunction: BiFunction[State, E, State]): EventHandlerBuilder[Event, State] = {
-    addCase(e ⇒ eventClass.isAssignableFrom(e.getClass), biFunction.asInstanceOf[BiFunction[State, Event, State]])
+  def matchEvent[E <: Event](eventClass: Class[E], handler: EventHandler[E, State]): EventHandlerBuilder[Event, State] = {
+    addCase(e ⇒ eventClass.isAssignableFrom(e.getClass), handler.asInstanceOf[EventHandler[Event, State]])
     this
   }
 
@@ -46,8 +46,8 @@ final class EventHandlerBuilder[Event, State >: Null]() {
    *
    * Builds and returns the handler since this will not let through any states to subsequent match statements
    */
-  def matchAny(biFunction: BiFunction[State, Event, State]): EventHandler[Event, State] = {
-    addCase(_ ⇒ true, biFunction.asInstanceOf[BiFunction[State, Event, State]])
+  def matchAny(handler: EventHandler[Event, State]): EventHandler[Event, State] = {
+    addCase(_ ⇒ true, handler)
     build()
   }
 
@@ -61,19 +61,19 @@ final class EventHandlerBuilder[Event, State >: Null]() {
     val builtCases = cases.reverse.toArray
 
     new EventHandler[Event, State] {
-      def apply(state: State, event: Event): State = {
+      def apply(event: Event): State = {
         var result: OptionVal[State] = OptionVal.None
         var idx = 0
         while (idx < builtCases.length && result.isEmpty) {
           val curr = builtCases(idx)
           if (curr.predicate(event)) {
-            result = OptionVal.Some[State](curr.handler.apply(state, event))
+            result = OptionVal.Some[State](curr.handler.apply(event))
           }
           idx += 1
         }
 
         result match {
-          case OptionVal.None    ⇒ throw new MatchError(s"No match found for event [${event.getClass}] and state [${state.getClass}]")
+          case OptionVal.None    ⇒ throw new MatchError(s"No match found for event [${event.getClass}]")
           case OptionVal.Some(s) ⇒ s
         }
       }

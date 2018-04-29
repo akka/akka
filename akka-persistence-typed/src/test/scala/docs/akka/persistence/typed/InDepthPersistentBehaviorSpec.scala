@@ -7,7 +7,7 @@ package docs.akka.persistence.typed
 import akka.Done
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.typed.scaladsl.PersistentBehaviors
-import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
+import akka.persistence.typed.scaladsl.PersistentBehaviors.{ CommandHandler, EventHandler }
 import akka.persistence.typed.scaladsl.Effect
 
 object InDepthPersistentBehaviorSpec {
@@ -53,7 +53,7 @@ object InDepthPersistentBehaviorSpec {
 
   //#initial-command-handler
   private def initial: CommandHandler[BlogCommand, BlogEvent, BlogState] =
-    (ctx, state, cmd) ⇒
+    (_, cmd) ⇒
       cmd match {
         case AddPost(content, replyTo) ⇒
           val evt = PostAdded(content.postId, content)
@@ -69,8 +69,8 @@ object InDepthPersistentBehaviorSpec {
   //#initial-command-handler
 
   //#post-added-command-handler
-  private def postAdded: CommandHandler[BlogCommand, BlogEvent, BlogState] = {
-    (ctx, state, cmd) ⇒
+  private def postAdded(state: BlogState): CommandHandler[BlogCommand, BlogEvent, BlogState] = {
+    (_, cmd) ⇒
       cmd match {
         case ChangeBody(newBody, replyTo) ⇒
           val evt = BodyChanged(state.postId, newBody)
@@ -94,36 +94,47 @@ object InDepthPersistentBehaviorSpec {
   //#post-added-command-handler
 
   //#by-state-command-handler
-  private def commandHandler: CommandHandler[BlogCommand, BlogEvent, BlogState] = CommandHandler.byState {
-    case state if state.isEmpty  ⇒ initial
-    case state if !state.isEmpty ⇒ postAdded
-  }
+  private def commandHandler(blogState: BlogState): CommandHandler[BlogCommand, BlogEvent, BlogState] =
+    blogState match {
+      case state if state.isEmpty  ⇒ initial
+      case state if !state.isEmpty ⇒ postAdded(state)
+    }
   //#by-state-command-handler
 
   //#event-handler
-  private def eventHandler(state: BlogState, event: BlogEvent): BlogState =
-    event match {
-      case PostAdded(postId, content) ⇒
-        state.withContent(content)
+  private def eventHandler(state: BlogState): EventHandler[BlogEvent, BlogState] = {
+    case PostAdded(postId, content) ⇒
+      state.withContent(content)
 
-      case BodyChanged(_, newBody) ⇒
-        state.content match {
-          case Some(c) ⇒ state.copy(content = Some(c.copy(body = newBody)))
-          case None    ⇒ state
-        }
+    case BodyChanged(_, newBody) ⇒
+      state.content match {
+        case Some(c) ⇒ state.copy(content = Some(c.copy(body = newBody)))
+        case None    ⇒ state
+      }
 
-      case Published(_) ⇒
-        state.copy(published = true)
-    }
+    case Published(_) ⇒
+      state.copy(published = true)
+  }
   //#event-handler
 
   //#behavior
   def behavior(entityId: String): Behavior[BlogCommand] =
-    PersistentBehaviors.receive[BlogCommand, BlogEvent, BlogState](
-      persistenceId = "Blog-" + entityId,
-      initialState = BlogState.empty,
-      commandHandler,
-      eventHandler)
+    PersistentBehaviors[BlogCommand, BlogEvent, BlogState]
+      .identifiedBy("Blog-" + entityId)
+      .onCreation(
+        commandHandler(BlogState.empty),
+        eventHandler(BlogState.empty)
+      )
+      .onUpdate(
+        commandHandler = {
+          case state if state.isEmpty  ⇒ initial
+          case state if !state.isEmpty ⇒ postAdded(state)
+        },
+        blog ⇒ eventHandler(blog)
+      )
+  //      initialState = BlogState.empty,
+  //      commandHandler,
+  //      eventHandler)
   //#behavior
 }
 

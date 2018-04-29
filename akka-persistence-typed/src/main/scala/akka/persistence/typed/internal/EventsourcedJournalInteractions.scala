@@ -107,8 +107,8 @@ private[akka] trait EventsourcedJournalInteractions[C, E, S] {
     setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId, criteria, toSequenceNr), setup.selfUntyped)
   }
 
-  protected def internalSaveSnapshot(state: EventsourcedRunning.EventsourcedState[S]): Unit = {
-    setup.snapshotStore.tell(SnapshotProtocol.SaveSnapshot(SnapshotMetadata(setup.persistenceId, state.seqNr), state.state), setup.selfUntyped)
-  }
-
+  protected def internalSaveSnapshot(state: EventsourcedRunning.EventsourcedState[S]): Unit =
+    state.stateOpt.foreach { currentState ⇒
+      setup.snapshotStore.tell(SnapshotProtocol.SaveSnapshot(SnapshotMetadata(setup.persistenceId, state.seqNr), currentState), setup.selfUntyped)
+    }
 }
