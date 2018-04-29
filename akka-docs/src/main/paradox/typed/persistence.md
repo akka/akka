@@ -1,5 +1,17 @@
 # Persistence
 
+## Dependency
+
+To use Akka Persistence Typed, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-persistence-typed_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
 Akka Persistence is a library for building event sourced actors. For background about how it works
 see the @ref:[untyped Akka Persistence section](../persistence.md). This documentation shows how the typed API for persistence
 works and assumes you know what is meant by `Command`, `Event` and `State`.
@@ -12,16 +24,6 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
   this module in production just yet—you have been warned.
 
 @@@
-
-## Dependency
-
-To use Akka Persistence Typed, add the module to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group=com.typesafe.akka
-  artifact=akka-persistence-typed_2.12
-  version=$akka.version$
-}
 
 ## Example
 

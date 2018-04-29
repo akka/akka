@@ -1,5 +1,18 @@
 # Testing streams
 
+## Dependency
+
+To use Akka Stream TestKit, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream-testkit_$scala.binary_version$"
+  version="$akka.version$"
+  scope="test"
+}
+
+## Introduction
+
 Verifying behavior of Akka Stream sources, flows and sinks can be done using
 various code patterns and libraries. Here we will discuss testing these
 elements using:
@@ -92,17 +105,6 @@ pipelines. Akka Stream has a separate `akka-stream-testkit` module that
 provides tools specifically for writing stream tests. This module comes with
 two main components that are `TestSource` and `TestSink` which
 provide sources and sinks that materialize to probes that allow fluent API.
-
-### Dependency
-
-To use Akka Stream TestKit, add the module to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-stream-testkit_$scala.binary_version$"
-  version="$akka.version$"
-  scope="test"
-}
 
 ### Using the TestKit
 
