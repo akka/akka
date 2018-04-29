@@ -262,7 +262,6 @@ object EntityTypeKey {
    */
   def tell(msg: A): Unit
 
-
   /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*
    * messaging semantics.
