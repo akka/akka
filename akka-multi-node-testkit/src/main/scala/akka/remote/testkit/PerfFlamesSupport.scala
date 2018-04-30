@@ -4,17 +4,12 @@
 
 package akka.remote.testkit
 
-import PerfFlamesSupport._
+import java.io.File
+
 import akka.remote.testconductor.RoleName
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
-import scala.language.postfixOps
-
-object PerfFlamesSupport {
-  val Command = "perf-java-flames"
-}
 
 /**
  * INTERNAL API: Support trait allowing trivially recording perf metrics from [[MultiNodeSpec]]s
@@ -37,7 +32,7 @@ private[akka] trait PerfFlamesSupport { _: MultiNodeSpec ⇒
         val name = ManagementFactory.getRuntimeMXBean.getName
         val pid = name.substring(0, name.indexOf('@')).toInt
 
-        val perfCommand = s"$Command $pid"
+        val perfCommand = s"$perfJavaFlamesPath $pid"
         println(s"[perf @ $myself($pid)][OUT]: " + perfCommand)
 
         import scala.sys.process._
@@ -50,10 +45,13 @@ private[akka] trait PerfFlamesSupport { _: MultiNodeSpec ⇒
     }
   }
 
+  def perfJavaFlamesPath: String =
+    "/home/ubuntu/perf-java-flames"
+
   def isPerfJavaFlamesAvailable: Boolean = {
-    import scala.sys.process._
-    val isIt = (s"type $Command" !) == 0
-    if (!isIt) println(s"WARN: perf-java-flames not on the path! Skipping perf profiling.")
+    val isIt = new File(perfJavaFlamesPath).exists()
+    if (!isIt) println(s"WARN: perf-java-flames not available under [$perfJavaFlamesPath]! Skipping perf profiling.")
     isIt
   }
+
 }
