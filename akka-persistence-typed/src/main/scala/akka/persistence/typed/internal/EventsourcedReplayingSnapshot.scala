@@ -49,7 +49,7 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
       case SnapshotterResponse(r)      ⇒ onSnapshotterResponse(r)
       case JournalResponse(r)          ⇒ onJournalResponse(r)
       case RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot)
-      case cmd: IncomingCommand[C]     ⇒ onCommand(cmd)
+      case cmd: IncomingCommand[C]     ⇒ onCommand(cmd) // FIXME handle IncomingCommandWithAutoConfirmation
       case RecoveryPermitGranted       ⇒ Behaviors.unhandled // should not happen, we already have the permit
     }.receiveSignal(returnPermitOnStop)
   }

@@ -9,9 +9,9 @@ import scala.concurrent.Future
 
 import akka.actor.Scheduler
 import akka.util.Timeout
-
 import scala.reflect.ClassTag
 
+import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -24,6 +24,7 @@ import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.cluster.sharding.ShardRegion.{ StartEntity â‡’ UntypedStartEntity }
+import akka.persistence.typed.scaladsl.CommandConfirmation
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
 
@@ -196,6 +197,9 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding â
    */
   def entityRefFor[A](typeKey: EntityTypeKey[A], entityId: String): EntityRef[A]
 
+  // FIXME document
+  def persistentEntityRefFor[A](typeKey: EntityTypeKey[A], entityId: String): PersistentEntityRef[A]
+
   /** The default ShardAllocationStrategy currently is [[LeastShardAllocationStrategy]] however could be changed in the future. */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy
 
@@ -305,3 +309,7 @@ object EntityRef {
   }
 }
 
+// FIXME document
+@DoNotInherit trait PersistentEntityRef[A] extends EntityRef[A] {
+  def askWithConfirmation(req: A)(implicit timeout: Timeout, scheduler: Scheduler): Future[CommandConfirmation]
+}
