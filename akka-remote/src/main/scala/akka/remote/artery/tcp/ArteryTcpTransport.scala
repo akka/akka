@@ -69,6 +69,8 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
   import ArteryTcpTransport._
   import FlightRecorderEvents._
 
+  override type LifeCycle = NotUsed
+
   // may change when inbound streams are restarted
   @volatile private var inboundKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundKillSwitch")
   // may change when inbound streams are restarted
@@ -408,8 +410,8 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
   private def updateStreamMatValues(streamId: Int, completed: Future[Done]): Unit = {
     implicit val ec: ExecutionContext = materializer.executionContext
-    updateStreamMatValues(ControlStreamId, InboundStreamMatValues(
-      None,
+    updateStreamMatValues(ControlStreamId, InboundStreamMatValues[NotUsed](
+      NotUsed,
       completed.recover { case _ ⇒ Done }))
   }
 
