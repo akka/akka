@@ -257,7 +257,7 @@ object EntityTypeKey {
    * Example usage:
    * {{{
    * val target: EntityRef[String] = ...
-   * target tell "Hello"
+   * target.tell("Hello")
    * }}}
    */
   def tell(msg: A): Unit
@@ -285,7 +285,7 @@ object EntityTypeKey {
    *
    * implicit val timeout = Timeout(3.seconds)
    * val target: EntityRef[Request] = ...
-   * val f: Future[Reply] = target ask (Request("hello", _))
+   * val f: Future[Reply] = target.ask.(Request("hello", _))
    * }}}
    *
    * Please note that an implicit [[akka.util.Timeout]] and [[akka.actor.Scheduler]] must be available to use this pattern.
