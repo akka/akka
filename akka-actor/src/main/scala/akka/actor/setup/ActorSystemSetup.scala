@@ -75,7 +75,7 @@ final class ActorSystemSetup private[akka] (setups: Map[Class[_], AnyRef]) {
   }
 
   /**
-   * alias for `withSetting` allowing for fluent combination of settings: `a and b and c`, where `a`, `b` and `c` are
+   * alias for `withSetup` allowing for fluent combination of settings: `a and b and c`, where `a`, `b` and `c` are
    * concrete [[Setup]] instances. If a setting of the same concrete [[Setup]] already is
    * present it will be replaced.
    */
