@@ -758,7 +758,7 @@ trait QueueSetupHelper {
         } catch {
           case e: InterruptedException ⇒
         }
-        0
+        waitTime
       }
     }
 
