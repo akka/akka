@@ -77,12 +77,18 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
   private val sslEngineProvider: OptionVal[SSLEngineProvider] =
     if (tlsEnabled) {
-      OptionVal.Some(system.dynamicAccess.createInstanceFor[SSLEngineProvider](
-        settings.SSLEngineProviderClassName,
-        List((classOf[ActorSystem], system))).recover {
-          case e ⇒ throw new ConfigurationException(
-            s"Could not create SSLEngineProvider [${settings.SSLEngineProviderClassName}]", e)
-        }.get)
+      system.settings.setup.get[SSLEngineProviderSetup] match {
+        case Some(p) ⇒
+          OptionVal.Some(p.sslEngineProvider(system))
+        case None ⇒
+          // load from config
+          OptionVal.Some(system.dynamicAccess.createInstanceFor[SSLEngineProvider](
+            settings.SSLEngineProviderClassName,
+            List((classOf[ActorSystem], system))).recover {
+              case e ⇒ throw new ConfigurationException(
+                s"Could not create SSLEngineProvider [${settings.SSLEngineProviderClassName}]", e)
+            }.get)
+      }
     } else OptionVal.None
 
   override protected def startTransport(): Unit = {
