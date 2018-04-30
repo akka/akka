@@ -94,6 +94,8 @@ The source code of this sample can be found in the
   [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module.
 @@@
 
+### Joining configured seed nodes
+
 You may decide if joining to the cluster should be done manually or automatically
 to configured initial contact points, so-called seed nodes. After the joining process
 the seed nodes are not special and they participate in the cluster in exactly the same
@@ -118,12 +120,6 @@ This can also be defined as Java system properties when starting the JVM using t
 -Dakka.cluster.seed-nodes.1=akka.tcp://ClusterSystem@host2:2552
 ```
 
-Instead of manually configuring seed nodes, which is useful in development or statically assigned node IPs, you may want 
-to automate the discovery of seed nodes using your cloud providers or cluster orchestrator, or some other form of service 
-discovery (such as managed DNS). The open source Akka Management library includes the 
-[Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module which handles 
-just that. Please refer to its documentation for more details. 
-
 The seed nodes can be started in any order and it is not necessary to have all
 seed nodes running, but the node configured as the **first element** in the `seed-nodes`
 configuration list must be started when initially starting a cluster, otherwise the
@@ -142,11 +138,27 @@ form a new cluster instead of joining remaining nodes of the existing cluster. T
 likely not desired and should be avoided by listing several nodes as seed nodes for redundancy
 and don't stop all of them at the same time.
 
+### Automatically joining to seed nodes with Cluster Bootstrap
+
+Instead of manually configuring seed nodes, which is useful in development or statically assigned node IPs, you may want
+to automate the discovery of seed nodes using your cloud providers or cluster orchestrator, or some other form of service
+discovery (such as managed DNS). The open source Akka Management library includes the
+[Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module which handles
+just that. Please refer to its documentation for more details.
+
+### Programatically joining to seed nodes with `joinSeedNodes`
+
 You may also use @scala[`Cluster(system).joinSeedNodes`]@java[`Cluster.get(system).joinSeedNodes`] to join programmatically,
 which is attractive when dynamically discovering other nodes at startup by using some external tool or API.
 When using `joinSeedNodes` you should not include the node itself except for the node that is
 supposed to be the first seed node, and that should be placed first in the parameter to
 `joinSeedNodes`.
+
+Scala
+:  @@snip [ClusterDocSpec.scala]($code$/scala/docs/cluster/ClusterDocSpec.scala) { #join-seed-nodes }
+
+Java
+:  @@snip [ClusterDocTest.java]($code$/java/jdocs/cluster/ClusterDocTest.java) { #join-seed-nodes-imports #join-seed-nodes }
 
 Unsuccessful attempts to contact seed nodes are automatically retried after the time period defined in
 configuration property `seed-node-timeout`. Unsuccessful attempt to join a specific seed node is
