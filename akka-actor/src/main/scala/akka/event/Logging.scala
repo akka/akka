@@ -1104,7 +1104,6 @@ object Logging {
  * More than four arguments can be defined by using an `Array` with the method with
  * one argument parameter.
  */
-@DoNotInherit
 trait LoggingAdapter {
 
   type MDC = Logging.MDC
@@ -1126,7 +1125,8 @@ trait LoggingAdapter {
   protected def notifyError(message: String): Unit
   protected def notifyError(cause: Throwable, message: String): Unit
   protected def notifyWarning(message: String): Unit
-  protected def notifyWarning(cause: Throwable, message: String): Unit
+  // Default implementation for backwards compatibility
+  protected def notifyWarning(cause: Throwable, message: String): Unit = notifyWarning(message)
   protected def notifyInfo(message: String): Unit
   protected def notifyDebug(message: String): Unit
 
@@ -1768,17 +1768,17 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
   def isInfoEnabled = loggingFilter.isInfoEnabled(logClass, logSource)
   def isDebugEnabled = loggingFilter.isDebugEnabled(logClass, logSource)
 
-  protected def notifyError(message: String): Unit =
+  override protected def notifyError(message: String): Unit =
     bus.publish(Error(logSource, logClass, message, mdc))
-  protected def notifyError(cause: Throwable, message: String): Unit =
+  override protected def notifyError(cause: Throwable, message: String): Unit =
     bus.publish(Error(cause, logSource, logClass, message, mdc))
-  protected def notifyWarning(message: String): Unit =
+  override protected def notifyWarning(message: String): Unit =
     bus.publish(Warning(logSource, logClass, message, mdc))
-  protected def notifyWarning(cause: Throwable, message: String): Unit =
+  override protected def notifyWarning(cause: Throwable, message: String): Unit =
     bus.publish(Warning(cause, logSource, logClass, message, mdc))
-  protected def notifyInfo(message: String): Unit =
+  override protected def notifyInfo(message: String): Unit =
     bus.publish(Info(logSource, logClass, message, mdc))
-  protected def notifyDebug(message: String): Unit =
+  override protected def notifyDebug(message: String): Unit =
     bus.publish(Debug(logSource, logClass, message, mdc))
 }
 

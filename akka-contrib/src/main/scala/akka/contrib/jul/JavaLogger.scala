@@ -74,19 +74,22 @@ trait JavaLoggingAdapter extends LoggingAdapter {
 
   def isDebugEnabled = logger.isLoggable(logging.Level.CONFIG)
 
-  protected def notifyError(message: String): Unit =
+  override protected def notifyError(message: String): Unit =
     log(logging.Level.SEVERE, null, message)
 
-  protected def notifyError(cause: Throwable, message: String): Unit =
+  override protected def notifyError(cause: Throwable, message: String): Unit =
     log(logging.Level.SEVERE, cause, message)
 
-  protected def notifyWarning(message: String): Unit =
+  override protected def notifyWarning(message: String): Unit =
     log(logging.Level.WARNING, null, message)
 
-  protected def notifyInfo(message: String): Unit =
+  override protected def notifyWarning(cause: Throwable, message: String): Unit =
+    log(logging.Level.WARNING, cause, message)
+
+  override protected def notifyInfo(message: String): Unit =
     log(logging.Level.INFO, null, message)
 
-  protected def notifyDebug(message: String): Unit =
+  override protected def notifyDebug(message: String): Unit =
     log(logging.Level.CONFIG, null, message)
 
   @inline
