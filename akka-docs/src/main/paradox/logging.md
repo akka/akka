@@ -339,20 +339,11 @@ stdout logger is `WARNING` and it can be silenced completely by setting
 Akka provides a logger for [SLF4J](http://www.slf4j.org/). This module is available in the 'akka-slf4j.jar'.
 It has a single dependency: the slf4j-api jar. In your runtime, you also need a SLF4J backend. We recommend [Logback](http://logback.qos.ch/):
 
-sbt
-:   ```scala
-libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
-```
-
-Maven
-:   ```xml
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>1.2.3</version>
-    </dependency>
-    ```
-
+@@dependency[sbt,Maven,Gradle] {
+  group="ch.qos.logback"
+  artifact="logback-classic"
+  version="1.2.3"
+}
 
 You need to enable the Slf4jLogger in the `loggers` element in
 the @ref:[configuration](general/configuration.md). Here you can also define the log level of the event bus.

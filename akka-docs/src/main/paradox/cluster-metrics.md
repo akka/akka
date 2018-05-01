@@ -12,25 +12,12 @@ such as "Node Let-it-crash" when CPU steal time becomes excessive.
 Cluster Metrics Extension is a separate Akka module delivered in `akka-cluster-metrics` jar.
 
 To enable usage of the extension you need to add the following dependency to your project:
-:
 
-Scala
-:  @@@ vars
-```
-"com.typesafe.akka" % "akka-cluster-metrics_$scala.binary_version$" % "$akka.version$"
-```
-@@@
-
-Java
-:  @@@ vars
-```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-cluster-metrics_$scala.binary_version$</artifactId>
-  <version>$akka.version$</version>
-</dependency>
-```
-@@@
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-cluster-metrics_$scala.binary_version$"
+  version="$akka.version$"
+}
 
 and add the following configuration stanza to your `application.conf`
 :
@@ -115,25 +102,12 @@ unique per instance directory. You can control the extract directory with the
 @@@
 
 To enable usage of Sigar you can add the following dependency to the user project
-:
 
-Scala
-:  @@@vars
-```
-"io.kamon" % "sigar-loader" % "$sigar_loader.version$"
-```
-@@@
-
-Java
-:  @@@vars
-```
-<dependency>
-  <groupId>io.kamon</groupId>
-  <artifactId>sigar-loader</artifactId>
-  <version>$sigar_loader.version$</version>
-</dependency>
-```
-@@@
+@@dependency[sbt,Maven,Gradle] {
+  group="io.kamon"
+  artifact="sigar-loader"
+  version="$sigar_loader.version$"
+}
 
 You can download Kamon sigar-loader from [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Csigar-loader)
 

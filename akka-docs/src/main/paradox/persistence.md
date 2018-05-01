@@ -1128,31 +1128,11 @@ In order to help developers build correct and high quality storage plugins, we p
 
 The TCK is usable from Java as well as Scala projects. To test your implementation (independently of language) you need to include the akka-persistence-tck dependency:
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-persistence-tck" % "$akka.version$" % "test"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    testCompile group: 'com.typesafe.akka', name: 'akka-persistence-tck_$scala.binary_version$', version: '$akka.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-persistence-tck_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-      <scope>test</scope>
-    </dependency>
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-persistence-tck_$scala.binary_version$"
+  version="$akka.version$"
+}
 
 To include the Journal TCK tests in your test suite simply extend the provided @scala[`JournalSpec`]@java[`JavaJournalSpec`]:
 
@@ -1204,30 +1184,11 @@ instance. Enable this plugin by defining config property:
 
 LevelDB based plugins will also require the following additional dependency declaration:
 
-sbt
-:   @@@vars
-    ```
-    "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>org.fusesource.leveldbjni</groupId>
-      <artifactId>leveldbjni-all</artifactId>
-      <version>1.8</version>
-    </dependency>
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="org.fusesource.leveldbjni"
+  artifact="leveldbjni-all"
+  version="1.8"
+}
 
 The default location of LevelDB files is a directory named `journal` in the current working
 directory. This location can be changed by configuration where the specified path can be relative or absolute:
@@ -1378,31 +1339,11 @@ in your Akka configuration. The LevelDB Java port is for testing purposes only.
 
 Also note that for the LevelDB Java port, you will need the following dependencies:
 
-sbt
-:   @@@vars
-    ```
-    "org.iq80.leveldb"            % "leveldb"          % "0.9"          % "test"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    testCompile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.9'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>org.iq80.leveldb</groupId>
-      <artifactId>leveldb</artifactId>
-      <version>0.9</version>
-      <scope>test</scope>
-    </dependency>
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="org.iq80.leveldb"
+  artifact="leveldb"
+  version="0.9"
+}
 
 @@@ warning
 
