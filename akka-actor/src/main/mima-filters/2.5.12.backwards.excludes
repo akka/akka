@@ -1,0 +1,2 @@
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.event.LoggingAdapter.warning")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.event.LoggingAdapter.notifyWarning")

@@ -898,7 +898,7 @@ object Logging {
 
     def error(event: Error): Unit = event match {
       case e: Error3 ⇒ // has marker
-        val f = if (event.cause == Error.NoCause) ErrorWithoutCauseWithMarkerFormat else ErrorFormatWithMarker
+        val f = if (event.cause == Error.NoCause) ErrorWithoutCauseWithMarkerFormat else ErrorWithMarkerFormat
         println(f.format(
           e.marker.name,
           timestamp(event),
@@ -920,15 +920,32 @@ object Logging {
 
     def warning(event: Warning): Unit = event match {
       case e: Warning3 ⇒ // has marker
-        println(WarningWithMarkerFormat.format(
+        println(WarningWithoutCauseWithMarkerFormat.format(
           e.marker.name,
           timestamp(event),
           event.thread.getName,
           event.logSource,
           formatMDC(event.mdc),
           event.message))
-      case _ ⇒
+      case e: Warning4 if e.marker != null ⇒ // has marker and exception
+        println(WarningWithMarkerFormat.format(
+          e.marker.name,
+          timestamp(event),
+          event.thread.getName,
+          event.logSource,
+          formatMDC(event.mdc),
+          event.message,
+          stackTraceFor(e.cause)))
+      case e: Warning4 ⇒ // has exception
         println(WarningFormat.format(
+          timestamp(event),
+          event.thread.getName,
+          event.logSource,
+          formatMDC(event.mdc),
+          event.message,
+          stackTraceFor(e.cause)))
+      case _ ⇒
+        println(WarningFormatWithoutCause.format(
           timestamp(event),
           event.thread.getName,
           event.logSource,
@@ -981,14 +998,17 @@ object Logging {
   }
   object StdOutLogger {
     // format: OFF
-    private final  val ErrorFormat          = "[ERROR] [%s] [%s] [%s]%s %s%s"
-    private final val ErrorFormatWithMarker = "[ERROR] [%s][%s] [%s] [%s]%s %s%s"
+    private final val ErrorFormat          = "[ERROR] [%s] [%s] [%s]%s %s%s"
+    private final val ErrorWithMarkerFormat = "[ERROR] [%s][%s] [%s] [%s]%s %s%s"
 
     private final val ErrorFormatWithoutCause           = "[ERROR] [%s] [%s] [%s]%s %s"
     private final val ErrorWithoutCauseWithMarkerFormat = "[ERROR] [%s][%s] [%s] [%s]%s %s"
 
-    private final val WarningFormat           = "[WARN] [%s] [%s] [%s]%s %s"
-    private final val WarningWithMarkerFormat = "[WARN] [%s][%s] [%s] [%s]%s %s"
+    private final val WarningFormat           = "[WARN] [%s] [%s] [%s]%s %s%s"
+    private final val WarningWithMarkerFormat = "[WARN] [%s][%s] [%s] [%s]%s %s%s"
+
+    private final val WarningFormatWithoutCause           = "[WARN] [%s] [%s] [%s]%s %s"
+    private final val WarningWithoutCauseWithMarkerFormat = "[WARN] [%s][%s] [%s] [%s]%s %s"
 
     private final val InfoFormat           = "[INFO] [%s] [%s] [%s]%s %s"
     private final val InfoWithMarkerFormat = "[INFO] [%s][%s] [%s] [%s]%s %s"
@@ -1084,6 +1104,7 @@ object Logging {
  * More than four arguments can be defined by using an `Array` with the method with
  * one argument parameter.
  */
+@DoNotInherit
 trait LoggingAdapter {
 
   type MDC = Logging.MDC
@@ -1105,6 +1126,7 @@ trait LoggingAdapter {
   protected def notifyError(message: String): Unit
   protected def notifyError(cause: Throwable, message: String): Unit
   protected def notifyWarning(message: String): Unit
+  protected def notifyWarning(cause: Throwable, message: String): Unit
   protected def notifyInfo(message: String): Unit
   protected def notifyDebug(message: String): Unit
 
@@ -1169,6 +1191,35 @@ trait LoggingAdapter {
    * @see [[LoggingAdapter]]
    */
   def error(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3, arg4)) }
+
+  /**
+   * Log message at warning level, including the exception that caused the warning.
+   * @see [[LoggingAdapter]]
+   */
+  def warning(cause: Throwable, message: String): Unit = { if (isWarningEnabled) notifyWarning(cause, message) }
+  /**
+   * Message template with 1 replacement argument.
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
+   * @see [[LoggingAdapter]]
+   */
+  def warning(cause: Throwable, template: String, arg1: Any): Unit = { if (isWarningEnabled) notifyWarning(cause, format1(template, arg1)) }
+  /**
+   * Message template with 2 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
+  def warning(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = { if (isWarningEnabled) notifyWarning(cause, format(template, arg1, arg2)) }
+  /**
+   * Message template with 3 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
+  def warning(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = { if (isWarningEnabled) notifyWarning(cause, format(template, arg1, arg2, arg3)) }
+  /**
+   * Message template with 4 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
+  def warning(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = { if (isWarningEnabled) notifyWarning(cause, format(template, arg1, arg2, arg3, arg4)) }
 
   /**
    * Log message at warning level.
@@ -1723,6 +1774,8 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
     bus.publish(Error(cause, logSource, logClass, message, mdc))
   protected def notifyWarning(message: String): Unit =
     bus.publish(Warning(logSource, logClass, message, mdc))
+  protected def notifyWarning(cause: Throwable, message: String): Unit =
+    bus.publish(Warning(cause, logSource, logClass, message, mdc))
   protected def notifyInfo(message: String): Unit =
     bus.publish(Info(logSource, logClass, message, mdc))
   protected def notifyDebug(message: String): Unit =
@@ -1748,6 +1801,7 @@ object NoLogging extends LoggingAdapter {
   final protected override def notifyError(message: String): Unit = ()
   final protected override def notifyError(cause: Throwable, message: String): Unit = ()
   final protected override def notifyWarning(message: String): Unit = ()
+  final protected override def notifyWarning(cause: Throwable, message: String): Unit = ()
   final protected override def notifyInfo(message: String): Unit = ()
   final protected override def notifyDebug(message: String): Unit = ()
 }
@@ -1770,6 +1824,7 @@ object NoMarkerLogging extends MarkerLoggingAdapter(null, "source", classOf[Stri
   final protected override def notifyError(message: String): Unit = ()
   final protected override def notifyError(cause: Throwable, message: String): Unit = ()
   final protected override def notifyWarning(message: String): Unit = ()
+  final protected override def notifyWarning(cause: Throwable, message: String): Unit = ()
   final protected override def notifyInfo(message: String): Unit = ()
   final protected override def notifyDebug(message: String): Unit = ()
   final override def error(marker: LogMarker, cause: Throwable, message: String): Unit = ()
