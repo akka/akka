@@ -158,7 +158,7 @@ public class HubDocTest extends AbstractJavaTest {
     RunnableGraph<Source<String, NotUsed>> runnableGraph =
       producer.toMat(PartitionHub.of(
           String.class, 
-          (size, elem) -> Math.abs(elem.hashCode()) % size,
+          (size, elem) -> Math.abs(elem.hashCode() % size),
           2, 256), Keep.right());
 
     // By running/materializing the producer, we get back a Source, which
