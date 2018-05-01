@@ -12,25 +12,12 @@ such as "Node Let-it-crash" when CPU steal time becomes excessive.
 Cluster Metrics Extension is a separate Akka module delivered in `akka-cluster-metrics` jar.
 
 To enable usage of the extension you need to add the following dependency to your project:
-:
 
-Scala
-:  @@@ vars
-```
-"com.typesafe.akka" % "akka-cluster-metrics_$scala.binary_version$" % "$akka.version$"
-```
-@@@
-
-Java
-:  @@@ vars
-```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-cluster-metrics_$scala.binary_version$</artifactId>
-  <version>$akka.version$</version>
-</dependency>
-```
-@@@
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-cluster-metrics_$scala.binary_version$"
+  version="$akka.version$"
+}
 
 and add the following configuration stanza to your `application.conf`
 :
