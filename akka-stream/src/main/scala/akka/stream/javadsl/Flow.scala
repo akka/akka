@@ -4,21 +4,21 @@
 
 package akka.stream.javadsl
 
-import akka.util.{ ConstantFun, Timeout }
-import akka.{ Done, NotUsed }
+import akka.util.{ConstantFun, Timeout}
+import akka.{Done, NotUsed}
 import akka.event.LoggingAdapter
-import akka.japi.{ Pair, function }
+import akka.japi.{JavaPartialFunction, Pair, Util, function}
 import akka.stream._
 import org.reactivestreams.Processor
 
 import scala.concurrent.duration.FiniteDuration
-import akka.japi.Util
-import java.util.{ Comparator, Optional }
+import java.util.{Comparator, Optional}
 import java.util.concurrent.CompletionStage
-import akka.util.JavaDurationConverters._
 
+import akka.util.JavaDurationConverters._
 import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts
+import akka.japi.pf.{FI, PFBuilder}
 import akka.stream.impl.fusing.LazyFlow
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -1314,6 +1314,33 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     new Flow(delegate.recover(pf))
 
   /**
+    * Recover allows to send last element on failure and gracefully complete the stream
+    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+    *
+    * Throwing an exception inside `recover` _will_ be logged on ERROR level automatically.
+    *
+    * '''Emits when''' element is available from the upstream or upstream is failed and pf returns an element
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+    *
+    * '''Cancels when''' downstream cancels
+    */
+  def recover(clazz: Class[_ <: Throwable], out: Out): javadsl.Flow[In, Out, Mat] = {
+    import JavaPartialFunction._
+
+    val pf = new JavaPartialFunction[Throwable, Out] {
+      override def apply(x: Throwable, isCheck: Boolean): Out =
+        if (x.getClass == clazz) out
+        else throw noMatch()
+    }
+
+    recover(pf)
+  }
+
+  /**
    * While similar to [[recover]] this stage can be used to transform an error signal to a different one *without* logging
    * it as an error in the process. So in that sense it is NOT exactly equivalent to `recover(t => throw t2)` since recover
    * would log the `t2` error.
@@ -1360,6 +1387,42 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     new Flow(delegate.recoverWith(pf))
 
   /**
+    * RecoverWith allows to switch to alternative Source on flow failure. It will stay in effect after
+    * a failure has been recovered so that each time there is a failure it is fed into the `pf` and a new
+    * Source may be materialized.
+    *
+    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+    *
+    * Throwing an exception inside `recoverWith` _will_ be logged on ERROR level automatically.
+    *
+    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
+    * from alternative Source
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+    *
+    * '''Cancels when''' downstream cancels
+    *
+    */
+  @deprecated("Use recoverWithRetries instead.", "2.4.4")
+  def recoverWith(clazz: Class[_ <: Throwable], graph: Graph[SourceShape[Out], NotUsed]): javadsl.Flow[In, Out, Mat] = {
+    import JavaPartialFunction._
+
+    val pf = new JavaPartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]] {
+      override def apply(x: Throwable, isCheck: Boolean): Graph[SourceShape[Out], NotUsed] =
+        if (x.getClass == clazz) {
+          if (isCheck) null
+          else graph
+        }
+        else throw noMatch()
+    }
+
+    recoverWith(pf)
+  }
+
+  /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
    * a failure has been recovered up to `attempts` number of times so that each time there is a failure
    * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
@@ -1386,6 +1449,47 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    */
   def recoverWithRetries(attempts: Int, pf: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.recoverWithRetries(attempts, pf))
+
+  /**
+    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
+    * a failure has been recovered up to `attempts` number of times so that each time there is a failure
+    * it is fed into the `pf` and a new Source may be materialized. Note that if you pass in 0, this won't
+    * attempt to recover at all.
+    *
+    * A negative `attempts` number is interpreted as "infinite", which results in the exact same behavior as `recoverWith`.
+    *
+    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+    * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+    *
+    * Throwing an exception inside `recoverWithRetries` _will_ be logged on ERROR level automatically.
+    *
+    * '''Emits when''' element is available from the upstream or upstream is failed and element is available
+    * from alternative Source
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+    *
+    * '''Cancels when''' downstream cancels
+    *
+    * @param attempts Maximum number of retries or -1 to retry indefinitely
+    * @param clazz the class object of the failure cause
+    * @param graph the new Source to be materialized
+    */
+  def recoverWithRetries(attempts: Int, clazz: Class[_ <: Throwable], graph: Graph[SourceShape[Out], NotUsed]): javadsl.Flow[In, Out, Mat] = {
+    import JavaPartialFunction._
+
+    val pf = new JavaPartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]] {
+      override def apply(x: Throwable, isCheck: Boolean): Graph[SourceShape[Out], NotUsed] =
+        if (x.getClass == clazz) {
+          if (isCheck) null
+          else graph
+        }
+        else throw noMatch()
+    }
+
+    recoverWithRetries(attempts, pf)
+  }
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
