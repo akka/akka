@@ -63,4 +63,9 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
     remoteSystems = Vector.empty
     super.afterTermination()
   }
+
+  def arteryTcpTlsEnabled(system: ActorSystem = system): Boolean = {
+    val arterySettings = ArterySettings(system.settings.config.getConfig("akka.remote.artery"))
+    arterySettings.Enabled && arterySettings.Transport == ArterySettings.TlsTcp
+  }
 }
