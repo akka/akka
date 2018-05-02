@@ -163,8 +163,7 @@ class TlsTcpWithHostnameVerificationSpec extends ArteryMultiNodeSpec(
   "Artery with TLS/TCP and hostname-verification=on" must {
     "reject invalid" in {
       // this test only makes sense with tls-tcp transport
-      val arterySettings = ArterySettings(system.settings.config.getConfig("akka.remote.artery"))
-      if (!arterySettings.Enabled || arterySettings.Transport != ArterySettings.TlsTcp)
+      if (!arteryTcpTlsEnabled())
         pending
 
       systemB.actorOf(TestActors.echoActorProps, "echo")
@@ -179,6 +178,7 @@ class TlsTcpWithActorSystemSetupSpec
 
   val sslProviderServerProbe = TestProbe()
   val sslProviderClientProbe = TestProbe()
+
   val sslProviderSetup = SSLEngineProviderSetup(sys ⇒ new ConfigSSLEngineProvider(sys) {
     override def createServerSSLEngine(hostname: String, port: Int): SSLEngine = {
       sslProviderServerProbe.ref ! "createServerSSLEngine"
@@ -198,6 +198,9 @@ class TlsTcpWithActorSystemSetupSpec
 
   "Artery with TLS/TCP with SSLEngineProvider defined via Setup" must {
     "use the right SSLEngineProvider" in {
+      if (!arteryTcpTlsEnabled())
+        pending
+
       systemB.actorOf(TestActors.echoActorProps, "echo")
       val path = rootB / "user" / "echo"
       system.actorSelection(path) ! Identify(path.name)
