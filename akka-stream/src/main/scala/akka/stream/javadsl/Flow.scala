@@ -4,21 +4,20 @@
 
 package akka.stream.javadsl
 
-import akka.util.{ConstantFun, Timeout}
+import akka.util.{ ConstantFun, Timeout }
 import akka.{Done, NotUsed}
 import akka.event.LoggingAdapter
-import akka.japi.{JavaPartialFunction, Pair, Util, function}
+import akka.japi.{ Pair, Util, function }
 import akka.stream._
 import org.reactivestreams.Processor
 
 import scala.concurrent.duration.FiniteDuration
-import java.util.{Comparator, Optional}
+import java.util.{ Comparator, Optional }
 import java.util.concurrent.CompletionStage
 
 import akka.util.JavaDurationConverters._
 import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts
-import akka.japi.pf.{FI, PFBuilder}
 import akka.stream.impl.fusing.LazyFlow
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -1328,17 +1327,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     *
     * '''Cancels when''' downstream cancels
     */
-  def recover(clazz: Class[_ <: Throwable], out: Out): javadsl.Flow[In, Out, Mat] = {
-    import JavaPartialFunction._
-
-    val pf = new JavaPartialFunction[Throwable, Out] {
-      override def apply(x: Throwable, isCheck: Boolean): Out =
-        if (x.getClass == clazz) out
-        else throw noMatch()
+  def recover(clazz: Class[_ <: Throwable], out: Out): javadsl.Flow[In, Out, Mat] =
+    recover {
+      case elem if clazz.isInstance(elem) ⇒ out
     }
-
-    recover(pf)
-  }
 
   /**
    * While similar to [[recover]] this stage can be used to transform an error signal to a different one *without* logging
@@ -1407,20 +1399,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     *
     */
   @deprecated("Use recoverWithRetries instead.", "2.4.4")
-  def recoverWith(clazz: Class[_ <: Throwable], graph: Graph[SourceShape[Out], NotUsed]): javadsl.Flow[In, Out, Mat] = {
-    import JavaPartialFunction._
-
-    val pf = new JavaPartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]] {
-      override def apply(x: Throwable, isCheck: Boolean): Graph[SourceShape[Out], NotUsed] =
-        if (x.getClass == clazz) {
-          if (isCheck) null
-          else graph
-        }
-        else throw noMatch()
+  def recoverWith(clazz: Class[_ <: Throwable], graph: Graph[SourceShape[Out], NotUsed]): javadsl.Flow[In, Out, Mat] =
+    recoverWith {
+      case elem if clazz.isInstance(elem) ⇒ graph
     }
-
-    recoverWith(pf)
-  }
 
   /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
@@ -1476,20 +1458,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     * @param clazz the class object of the failure cause
     * @param graph the new Source to be materialized
     */
-  def recoverWithRetries(attempts: Int, clazz: Class[_ <: Throwable], graph: Graph[SourceShape[Out], NotUsed]): javadsl.Flow[In, Out, Mat] = {
-    import JavaPartialFunction._
-
-    val pf = new JavaPartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]] {
-      override def apply(x: Throwable, isCheck: Boolean): Graph[SourceShape[Out], NotUsed] =
-        if (x.getClass == clazz) {
-          if (isCheck) null
-          else graph
-        }
-        else throw noMatch()
-    }
-
-    recoverWithRetries(attempts, pf)
-  }
+  def recoverWithRetries(attempts: Int, clazz: Class[_ <: Throwable], graph: Graph[SourceShape[Out], NotUsed]): javadsl.Flow[In, Out, Mat] =
+    recoverWithRetries(attempts, {
+      case elem if clazz.isInstance(elem) ⇒ graph
+    })
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
