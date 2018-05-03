@@ -400,6 +400,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
     typedTestkit % "test->test",
     actorTypedTests % "test->test"
   )
+  .settings(Dependencies.persistenceShared)
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
   .disablePlugins(MimaPlugin)
