@@ -27,7 +27,6 @@ import akka.stream._
     val filterNot = name("filterNot")
     val collect = name("collect")
     val recover = name("recover")
-    val recoverTermination = name("recoverTermination")
     val mapAsync = name("mapAsync")
     val mapAsyncUnordered = name("mapAsyncUnordered")
     val ask = name("ask")

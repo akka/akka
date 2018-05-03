@@ -6,7 +6,6 @@ package akka.stream.impl.fusing
 
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
-import akka.Done
 import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.ExecutionContexts
