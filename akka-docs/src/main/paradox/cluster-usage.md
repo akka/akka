@@ -211,6 +211,10 @@ can be performed automatically or manually. By default it must be done manually,
 
 It can also be performed programmatically with @scala[`Cluster(system).down(address)`]@java[`Cluster.get(system).down(address)`].
 
+If a node is still running and sees its self as Down it will shutdown. @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown) will automatically
+run if `run-coordinated-shutdown-when-down` is set to `on` (the default) however the node will not try
+and leave the cluster gracefully so sharding and singleton migration will not occur.
+
 A pre-packaged solution for the downing problem is provided by
 [Split Brain Resolver](http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html),
 which is part of the [Lightbend Reactive Platform](http://www.lightbend.com/platform).
