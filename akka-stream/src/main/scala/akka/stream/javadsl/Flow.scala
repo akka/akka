@@ -1428,7 +1428,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def recoverWithComplete(ex: Class[_]): javadsl.Flow[In, Out, Mat] =
+  def recoverWithComplete(ex: Class[Throwable]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.recoverWithComplete {
       case t if ex == t.getClass ⇒ Done
     })
