@@ -58,6 +58,8 @@ object Dependencies {
 
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
+    val jctools = "org.jctools" % "jctools-core" % "2.1.1" // ApacheV2
+
     // reactive streams
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % "1.0.2" // CC0
 
@@ -172,7 +174,7 @@ object Dependencies {
 
   val contrib = l ++= Seq(Test.commonsIo)
 
-  val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
+  val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Compile.jctools)
 
   // akka stream
 
