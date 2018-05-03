@@ -459,6 +459,34 @@ class FlowGroupBySpec extends StreamSpec {
       upstream.sendComplete()
     }
 
+    "allow to recreate an already closed substream (#24758)" in assertAllStagesStopped {
+      val (up, down) = Flow[Int]
+        .groupBy(2, identity, true)
+        .take(1) // close the substream after 1 element
+        .mergeSubstreams
+        .runWith(TestSource.probe[Int], TestSink.probe)
+
+      down.request(4)
+
+      // Creates and closes substream "1"
+      up.sendNext(1)
+      down.expectNext(1)
+
+      // Creates and closes substream "2"
+      up.sendNext(2)
+      down.expectNext(2)
+
+      // Recreates and closes substream "1" twice
+      up.sendNext(1)
+      down.expectNext(1)
+      up.sendNext(1)
+      down.expectNext(1)
+
+      // Cleanup, not part of the actual test
+      up.sendComplete()
+      down.expectComplete()
+    }
+
     "cancel if downstream has cancelled & all substreams cancel" in assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstreamMaster = TestSubscriber.probe[Source[Int, NotUsed]]()
