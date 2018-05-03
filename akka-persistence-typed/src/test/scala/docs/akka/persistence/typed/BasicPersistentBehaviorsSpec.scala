@@ -5,6 +5,7 @@
 package docs.akka.persistence.typed
 
 import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.scaladsl.PersistentBehaviors
 
 object BasicPersistentBehaviorsSpec {
@@ -44,4 +45,25 @@ object BasicPersistentBehaviorsSpec {
     ).withTagger(_ ⇒ Set("tag1", "tag2"))
 
   //#tagging
+
+  //#wrapPersistentBehavior
+  val samplePersistentBehavior = PersistentBehaviors.receive[Command, Event, State](
+    persistenceId = "abc",
+    initialState = State(),
+    commandHandler = (ctx, state, cmd) ⇒ ???,
+    eventHandler = (state, evt) ⇒ ???)
+    .onRecoveryCompleted { (ctx, state) ⇒
+      ???
+    }
+
+  val debugAlwaysSnapshot: Behavior[Command] = Behaviors.setup {
+    context ⇒
+      samplePersistentBehavior.snapshotWhen((state, _, _) ⇒ {
+        context.log.info(
+          "Snapshot actor {} => state: {}",
+          context.self.path.name, state)
+        true
+      })
+  }
+  //#wrapPersistentBehavior
 }
