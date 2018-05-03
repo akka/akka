@@ -8,10 +8,11 @@ import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch }
 
 import akka.annotation.InternalApi
 import akka.actor.typed.{ ActorSystem, Extension, ExtensionId, Extensions }
-
 import scala.annotation.tailrec
 import scala.util.{ Failure, Success, Try }
 import scala.collection.JavaConverters._
+
+import akka.actor.typed.ExtensionSetup
 
 /**
  * Actor system extensions registry
@@ -29,6 +30,7 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
    * Hook for ActorSystem to load extensions on startup
    */
   @InternalApi private[akka] def loadExtensions(): Unit = {
+
     /**
      * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
      */
@@ -81,10 +83,13 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
     val inProcessOfRegistration = new CountDownLatch(1)
     extensions.putIfAbsent(ext, inProcessOfRegistration) match { // Signal that registration is in process
       case null ⇒ try { // Signal was successfully sent
-        // Create and initialize the extension
-        ext.createExtension(self) match {
+        // Create and initialize the extension, first look for ExtensionSetup
+        val instance = self.settings.setup.setups.collectFirst {
+          case (_, extSetup: ExtensionSetup[_]) if extSetup.extId == ext ⇒ extSetup.createExtension(self)
+        }.getOrElse(ext.createExtension(self))
+        instance match {
           case null ⇒ throw new IllegalStateException("Extension instance created as 'null' for extension [" + ext + "]")
-          case instance ⇒
+          case instance: T @unchecked ⇒
             // Replace our in process signal with the initialized extension
             extensions.replace(ext, inProcessOfRegistration, instance)
             instance
