@@ -118,7 +118,7 @@ class BoundedBlockingQueueSpec
         queue.take()
       }
 
-      Await.result(f, 100 milliseconds)
+      Await.result(f, 3 seconds)
       events should contain inOrder (offer("a"), poll, offer("b"))
     }
 
@@ -177,7 +177,7 @@ class BoundedBlockingQueueSpec
         queue.put("a")
       }
 
-      Await.ready(f, 100 milliseconds)
+      Await.ready(f, 3 seconds)
       events should contain inOrder (awaitNotEmpty, offer("a"), poll)
     }
 
@@ -277,7 +277,7 @@ class BoundedBlockingQueueSpec
         f.isCompleted should be(false)
         queue.take()
       }
-      Await.result(f, 100 milliseconds) should equal(true)
+      Await.result(f, 3 seconds) should equal(true)
       events should contain inOrder (awaitNotFull, signalNotFull, offer("World"))
     }
 
@@ -384,7 +384,7 @@ class BoundedBlockingQueueSpec
         f.isCompleted should be(false)
         queue.put("Hello")
       }
-      Await.result(f, 100 milliseconds) should equal("Hello")
+      Await.result(f, 3 seconds) should equal("Hello")
       events should contain inOrder (awaitNotEmpty, signalNotEmpty, poll)
     }
   }
