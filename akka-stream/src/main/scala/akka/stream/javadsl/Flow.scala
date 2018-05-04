@@ -5,7 +5,7 @@
 package akka.stream.javadsl
 
 import akka.util.{ ConstantFun, Timeout }
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, Util, function }
 import akka.stream._
