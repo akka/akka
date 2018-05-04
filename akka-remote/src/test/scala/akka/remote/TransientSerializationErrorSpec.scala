@@ -8,10 +8,8 @@ import java.io.NotSerializableException
 
 import akka.actor.{ Actor, ActorSystem, ExtendedActorSystem, Props, RootActorPath }
 import akka.serialization.SerializerWithStringManifest
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, TestKit }
 import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.concurrent.duration._
 
 object TransientSerializationErrorSpec {
   object ManifestNotSerializable
@@ -93,12 +91,8 @@ abstract class AbstractTransientSerializationErrorSpec(config: Config) extends A
 
       val selection = system.actorSelection(RootActorPath(system2Address) / "user" / "echo")
 
-      awaitAssert(
-        {
-          selection.tell("ping", this.testActor)
-          expectMsg("ping")
-        },
-        5.seconds)
+      selection.tell("ping", this.testActor)
+      expectMsg("ping")
 
       // none of these should tear down the connection
       List(
@@ -113,14 +107,14 @@ abstract class AbstractTransientSerializationErrorSpec(config: Config) extends A
       )
 
       // make sure we still have a connection
-      awaitAssert(
-        {
-          selection.tell("ping", this.testActor)
-          expectMsg("ping")
-        },
-        5.seconds)
+      selection.tell("ping", this.testActor)
+      expectMsg("ping")
 
     }
+  }
+
+  override def afterTermination(): Unit = {
+    TestKit.shutdownActorSystem(system2)
   }
 }
 
