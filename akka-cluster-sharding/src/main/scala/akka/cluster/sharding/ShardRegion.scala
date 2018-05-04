@@ -323,9 +323,6 @@ object ShardRegion {
    */
   final case class StartEntityAck(entityId: EntityId, shardId: ShardRegion.ShardId) extends ClusterShardingSerializable
 
-  private def roleOption(role: String): Option[String] =
-    if (role == "") None else Option(role)
-
   /**
    * INTERNAL API. Sends stopMessage (e.g. `PoisonPill`) to the entities and when all of
    * them have terminated it replies with `ShardStopped`.
@@ -461,7 +458,7 @@ private[akka] class ShardRegion(
     }
   }
 
-  def receive = {
+  def receive: Receive = {
     case Terminated(ref)                         ⇒ receiveTerminated(ref)
     case ShardInitialized(shardId)               ⇒ initializeShard(shardId, sender())
     case evt: ClusterDomainEvent                 ⇒ receiveClusterEvent(evt)
@@ -759,7 +756,7 @@ private[akka] class ShardRegion(
               getShard(shardId)
           case None ⇒
             if (!shardBuffers.contains(shardId)) {
-              log.debug("Request shard [{}] home", shardId)
+              log.debug("Request shard [{}] home. Coordinator [{}]", shardId, coordinator)
               coordinator.foreach(_ ! GetShardHome(shardId))
             }
             val buf = shardBuffers.getOrEmpty(shardId)
@@ -788,7 +785,7 @@ private[akka] class ShardRegion(
             context.system.deadLetters ! msg
           case None ⇒
             if (!shardBuffers.contains(shardId)) {
-              log.debug("Request shard [{}] home", shardId)
+              log.debug("Request shard [{}] home. Coordinator [{}]", shardId, coordinator)
               coordinator.foreach(_ ! GetShardHome(shardId))
             }
             bufferMessage(shardId, msg, snd)

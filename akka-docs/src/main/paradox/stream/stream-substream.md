@@ -26,6 +26,8 @@ This operation splits the incoming stream into separate output
 streams, one for each element key. The key is computed for each element
 using the given function, which is `f` in the above diagram. When a new key is encountered for the first time
 a new substream is opened and subsequently fed with all elements belonging to that key.
+If `allowClosedSubstreamRecreation` is set to `true` a substream belonging to a specific key
+will be recreated if it was closed before, otherwise elements belonging to that key will be dropped.
 
 If you add a `Sink` or `Flow` right after the `groupBy` stage,
 all transformations are applied to all encountered substreams in the same fashion.

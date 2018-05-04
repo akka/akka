@@ -92,7 +92,7 @@ nodes have been downed.
 
 The failure detector is responsible for trying to detect if a node is
 `unreachable` from the rest of the cluster. For this we are using an
-implementation of [The Phi Accrual Failure Detector](http://fubica.lsd.ufcg.edu.br/hp/cursos/cfsc/papers/hayashibara04theaccrual.pdf) by Hayashibara et al.
+implementation of [The Phi Accrual Failure Detector](https://pdfs.semanticscholar.org/11ae/4c0c0d0c36dc177c1fff5eb84fa49aa3e1a8.pdf) by Hayashibara et al.
 
 An accrual failure detector decouples monitoring and interpretation. That makes
 them applicable to a wider area of scenarios and more adequate to build generic

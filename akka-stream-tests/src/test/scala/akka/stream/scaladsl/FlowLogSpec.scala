@@ -18,7 +18,7 @@ import scala.concurrent.Await
 import scala.util.control.NoStackTrace
 
 class FlowLogSpec extends StreamSpec("""
-     akka.loglevel = DEBUG
+     akka.loglevel = DEBUG # test verifies logging
      akka.actor.serialize-messages = off
      """) with ScriptedTest {
 

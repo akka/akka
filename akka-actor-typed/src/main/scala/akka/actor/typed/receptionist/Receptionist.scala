@@ -7,10 +7,11 @@ package akka.actor.typed.receptionist
 import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
 import akka.actor.typed.internal.receptionist._
 import akka.annotation.DoNotInherit
-
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+
+import akka.actor.typed.ExtensionSetup
 
 class Receptionist(system: ActorSystem[_]) extends Extension {
 
@@ -274,3 +275,19 @@ object Receptionist extends ExtensionId[Receptionist] {
     Listing(key, Set[ActorRef[T]](serviceInstances.asScala.toSeq: _*))
 
 }
+
+object ReceptionistSetup {
+  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ Receptionist): ReceptionistSetup =
+    new ReceptionistSetup(new java.util.function.Function[ActorSystem[_], Receptionist] {
+      override def apply(sys: ActorSystem[_]): Receptionist = createExtension(sys)
+    }) // TODO can be simplified when compiled only with Scala >= 2.12
+
+}
+
+/**
+ * Can be used in [[akka.actor.setup.ActorSystemSetup]] when starting the [[ActorSystem]]
+ * to replace the default implementation of the [[Receptionist]] extension. Intended
+ * for tests that need to replace extension with stub/mock implementations.
+ */
+final class ReceptionistSetup(createExtension: java.util.function.Function[ActorSystem[_], Receptionist])
+  extends ExtensionSetup[Receptionist](Receptionist, createExtension)

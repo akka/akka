@@ -400,6 +400,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
     typedTestkit % "test->test",
     actorTypedTests % "test->test"
   )
+  .settings(Dependencies.persistenceShared)
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
   .disablePlugins(MimaPlugin)
@@ -414,26 +415,32 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     persistenceTyped % "test->test",
     protobuf,
     typedTestkit % "test->test",
-    actorTypedTests % "test->test"
+    actorTypedTests % "test->test",
+    remoteTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
   .disablePlugins(MimaPlugin)
+  .configs(MultiJvm)
+  .enablePlugins(MultiNodeScalaTest)
 
 lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .dependsOn(
-    clusterTyped,
+    clusterTyped % "compile->compile;test->test;multi-jvm->multi-jvm",
     persistenceTyped,
     clusterSharding,
     typedTestkit % "test->test",
     actorTypedTests % "test->test",
-    persistenceTyped % "test->test"
+    persistenceTyped % "test->test",
+    remoteTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
   // To be able to import ContainerFormats.proto
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf" ))
   .disablePlugins(MimaPlugin)
+  .configs(MultiJvm)
+  .enablePlugins(MultiNodeScalaTest)
 
 lazy val streamTyped = akkaModule("akka-stream-typed")
   .dependsOn(

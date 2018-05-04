@@ -45,8 +45,7 @@ object MergeHub {
    * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
    * [[Sink]] for feeding that materialization.
    *
-   * If one of the inputs fails the [[Sink]], the [[Source]] is failed in turn (possibly jumping over already buffered
-   * elements). Completed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
+   * Completed or failed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
    * and any new producers using the [[Sink]] will be cancelled.
    *
    * @param perProducerBufferSize Buffer space used per producer. Default value is 16.
@@ -62,8 +61,7 @@ object MergeHub {
    * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
    * [[Sink]] for feeding that materialization.
    *
-   * If one of the inputs fails the [[Sink]], the [[Source]] is failed in turn (possibly jumping over already buffered
-   * elements). Completed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
+   * Completed or failed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
    * and any new producers using the [[Sink]] will be cancelled.
    */
   def source[T]: Source[T, Sink[T, NotUsed]] = source(perProducerBufferSize = 16)

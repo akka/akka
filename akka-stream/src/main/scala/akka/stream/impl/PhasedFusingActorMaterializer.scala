@@ -743,7 +743,11 @@ private final case class SavedIslandData(islandGlobalOffset: Int, lastVisitedOff
           case OptionVal.Some(n) ⇒ n
           case OptionVal.None    ⇒ islandName
         }
-        materializer.actorOf(props, actorName)
+
+        val ref = materializer.actorOf(props, actorName)
+        if (PhasedFusingActorMaterializer.Debug) {
+          println(s"Spawned actor [$ref] with shell: $shell")
+        }
     }
   }
 

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import scala.concurrent.duration._
@@ -54,8 +55,7 @@ object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(ConfigFactory.parseString(s"""
-    # DEBUG because of failing test, issue #23741
-    akka.loglevel = DEBUG
+    akka.loglevel = DEBUG # issue #23741
     akka.cluster.debug.verbose-heartbeat-logging = on
     akka.cluster.debug.verbose-gossip-logging = on
     akka.actor.provider = "cluster"
@@ -123,7 +123,7 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
     }, 10.seconds)
   }
 
-  s"Cluster sharding in multi data center cluster" must {
+  "Cluster sharding in multi data center cluster" must {
     "join cluster" in within(20.seconds) {
       join(first, first)
       join(second, first)

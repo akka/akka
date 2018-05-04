@@ -9,7 +9,6 @@ import scala.concurrent.Future
 
 import akka.actor.Scheduler
 import akka.util.Timeout
-
 import scala.reflect.ClassTag
 
 import akka.actor.typed.ActorRef
@@ -17,6 +16,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
+import akka.actor.typed.ExtensionSetup
 import akka.actor.typed.Props
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -312,3 +312,19 @@ object EntityTypeKey {
     this.ask(message)(timeout, scheduler)
 
 }
+
+object ClusterShardingSetup {
+  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ ClusterSharding): ClusterShardingSetup =
+    new ClusterShardingSetup(new java.util.function.Function[ActorSystem[_], ClusterSharding] {
+      override def apply(sys: ActorSystem[_]): ClusterSharding = createExtension(sys)
+    }) // TODO can be simplified when compiled only with Scala >= 2.12
+
+}
+
+/**
+ * Can be used in [[akka.actor.setup.ActorSystemSetup]] when starting the [[ActorSystem]]
+ * to replace the default implementation of the [[ClusterSharding]] extension. Intended
+ * for tests that need to replace extension with stub/mock implementations.
+ */
+final class ClusterShardingSetup(createExtension: java.util.function.Function[ActorSystem[_], ClusterSharding])
+  extends ExtensionSetup[ClusterSharding](ClusterSharding, createExtension)
