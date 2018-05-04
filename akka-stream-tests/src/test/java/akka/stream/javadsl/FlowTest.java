@@ -107,7 +107,7 @@ public class FlowTest extends StreamTest {
 
     probe.expectMsgEquals(2);
     probe.expectMsgEquals(3);
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -150,7 +150,7 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals(",");
     probe.expectMsgEquals("3");
     probe.expectMsgEquals("]");
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -170,7 +170,7 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals("2");
     probe.expectMsgEquals(",");
     probe.expectMsgEquals("3");
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -193,7 +193,7 @@ public class FlowTest extends StreamTest {
     FiniteDuration duration = Duration.apply(200, TimeUnit.MILLISECONDS);
 
     probe.expectNoMsg(duration);
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
 
@@ -387,7 +387,7 @@ public class FlowTest extends StreamTest {
     final Publisher<String> pub = source.runWith(publisher, materializer);
     final CompletionStage<List<String>> all = Source.fromPublisher(pub).limit(100).runWith(Sink.<String>seq(), materializer);
 
-    final List<String> result = all.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    final List<String> result = all.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
   }
 
@@ -436,7 +436,7 @@ public class FlowTest extends StreamTest {
     final Publisher<String> pub = source.runWith(publisher, materializer);
     final CompletionStage<List<String>> all = Source.fromPublisher(pub).limit(100).runWith(Sink.<String>seq(), materializer);
 
-    final List<String> result = all.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    final List<String> result = all.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
   }
 
@@ -735,7 +735,7 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals(1);
     s.sendNext(2);
     probe.expectMsgEquals(0);
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -765,7 +765,7 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals(1);
     s.sendNext(2);
     probe.expectMsgEquals(0);
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -799,7 +799,7 @@ public class FlowTest extends StreamTest {
     s.sendNext(2);
     probe.expectMsgEquals(55);
     probe.expectMsgEquals(0);
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -830,7 +830,7 @@ public class FlowTest extends StreamTest {
     s.sendNext(2);
     probe.expectMsgEquals(55);
     probe.expectMsgEquals(0);
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -863,7 +863,7 @@ public class FlowTest extends StreamTest {
     s.sendNext(2);
     probe.expectMsgEquals(55);
     probe.expectMsgEquals(0);
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
     @Test
@@ -895,7 +895,7 @@ public class FlowTest extends StreamTest {
       s.sendNext(2);
       probe.expectMsgEquals(55);
       probe.expectMsgEquals(0);
-      future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+      future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     }
 
   @Test
