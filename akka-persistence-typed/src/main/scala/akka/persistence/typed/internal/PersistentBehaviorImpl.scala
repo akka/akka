@@ -9,8 +9,9 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.journal.Tagged
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
-import akka.persistence.typed.scaladsl.{ PersistentBehavior, PersistentBehaviors }
+import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
 
 @InternalApi
@@ -23,6 +24,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   snapshotPluginId:  Option[String]                                            = None,
   recoveryCompleted: (ActorContext[Command], State) ⇒ Unit                     = ConstantFun.scalaAnyTwoToUnit,
   tagger:            Event ⇒ Set[String]                                       = (_: Event) ⇒ Set.empty[String],
+  eventAdapter:      EventWrapper[Event]                                       = new NoOpEventWrapper[Event](),
   snapshotWhen:      (State, Event, Long) ⇒ Boolean                            = ConstantFun.scalaAnyThreeToFalse,
   recovery:          Recovery                                                  = Recovery()
 ) extends PersistentBehavior[Command, Event, State] with EventsourcedStashReferenceManagement {
@@ -46,6 +48,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
               WriterIdentity.newIdentity(),
               recoveryCompleted,
               tagger,
+              eventAdapter,
               snapshotWhen,
               recovery,
               holdingRecoveryPermit = false,
@@ -122,8 +125,20 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query
+   *
+   * This is a convenience function that uses withWrapper to wrap the event in Tags.
    */
   def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State] =
-    copy(tagger = tagger)
+    eventWrapper(new TaggingEventWrapper[Event](tagger))
+
+  /**
+   * Wrap the event in another type before giving to the journal. This can be used to work
+   * with event adapters and journals that expect types to be wrapped in classes like [Tagged]
+   *
+   * TODO: Do we need a manifest here?
+   *       Should we support EventSeq?
+   */
+  def eventWrapper[A](adapter: EventWrapper[Event]): PersistentBehavior[Command, Event, State] =
+    copy(eventAdapter = adapter)
 
 }

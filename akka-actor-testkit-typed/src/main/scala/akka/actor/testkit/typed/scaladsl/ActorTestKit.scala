@@ -11,7 +11,7 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.{ ActorTestKitGuardian, TestKitUtils }
 import com.typesafe.config.{ Config, ConfigFactory }
 
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
 object ActorTestKit {
@@ -115,6 +115,11 @@ trait ActorTestKit {
    */
   final def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] =
     spawn(behavior, name, Props.empty)
+
+  final def stop[T](actorRef: ActorRef[T]): Unit = {
+    val x: Future[ActorTestKitGuardian.Ack.type] = internalSystem ? (ActorTestKitGuardian.StopActor(actorRef, _))
+    Await.result(x, timeout.duration)
+  }
 
   /**
    * Spawn the given behavior. This is created as a child of the test kit

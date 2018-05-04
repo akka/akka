@@ -8,6 +8,7 @@ import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.journal.Tagged
 import akka.persistence.typed.internal._
 
 object PersistentBehaviors {
@@ -108,4 +109,30 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * The `tagger` function should give event tags, which will be used in persistence query
    */
   def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State]
+
+  /**
+   * Adapt the event in another type before giving to the journal. This can be used to work
+   * with event adapters and journals that expect types to be wrapped in classes like [Tagged] or to
+   * separate domain types from persistent types.
+   */
+  def eventWrapper[A](adapter: EventWrapper[Event]): PersistentBehavior[Command, Event, State]
 }
+
+trait EventWrapper[E] {
+  type P
+  def toJournal(e: E): P
+  def fromJournal(p: P): E
+}
+
+class NoOpEventWrapper[E] extends EventWrapper[E] {
+  type P = E
+  override def toJournal(e: E): E = e
+  override def fromJournal(p: E): E = p
+}
+
+class TaggingEventWrapper[E](tagger: E ⇒ Set[String]) extends EventWrapper[E] {
+  override type P = Tagged
+  def toJournal(e: E): Tagged = Tagged(e, tagger(e))
+  def fromJournal(p: Tagged): E = p.payload.asInstanceOf[E]
+}
+

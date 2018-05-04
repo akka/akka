@@ -99,7 +99,8 @@ private[akka] object EventsourcedRunning {
           // the invalid event, in case such validation is implemented in the event handler.
           // also, ensure that there is an event handler for each single event
           val newState = state.applyEvent(setup, event)
-          val eventToPersist = tagEvent(event)
+
+          val eventToPersist = setup.wrapper.toJournal(event)
 
           val newState2 = internalPersist(newState, eventToPersist)
 
