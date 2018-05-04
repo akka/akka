@@ -75,7 +75,7 @@ abstract class AbstractTransientSerializationErrorSpec(config: Config) extends A
     if (RARP(system).provider.remoteSettings.Artery.Enabled) "akka"
     else "akka.tcp"
 
-  val system2 = ActorSystem(system.name, system.settings.config) // TODO port?
+  val system2 = ActorSystem(system.name, system.settings.config)
   val system2Address = RARP(system2).provider.getDefaultAddress
 
   class EchoActor extends Actor {
