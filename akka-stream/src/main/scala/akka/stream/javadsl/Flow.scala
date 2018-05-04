@@ -5,7 +5,6 @@
 package akka.stream.javadsl
 
 import akka.util.{ ConstantFun, Timeout }
-import akka.{ Done, NotUsed }
 import akka.event.LoggingAdapter
 import akka.japi.{ Pair, function }
 import akka.stream._
@@ -17,6 +16,7 @@ import java.util.{ Comparator, Optional }
 import java.util.concurrent.CompletionStage
 import akka.util.JavaDurationConverters._
 
+import akka.{ Done, NotUsed }
 import akka.actor.ActorRef
 import akka.dispatch.ExecutionContexts
 import akka.stream.impl.fusing.LazyFlow
