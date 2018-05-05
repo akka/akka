@@ -11,7 +11,6 @@ import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.{ Done, NotUsed, actor ⇒ untyped }
 import akka.testkit._
-import akka.actor.typed.Behavior.UntypedPropsBehavior
 
 object AdapterSpec {
   val untyped1: untyped.Props = untyped.Props(new Untyped1)
@@ -296,28 +295,6 @@ class AdapterSpec extends AkkaSpec {
       val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
       typedRef ! "stop-child"
       probe.expectMsg("terminated")
-    }
-
-    "spawn untyped behavior anonymously" in {
-      val probe = TestProbe()
-      val untypedBehavior: Behavior[String] = new UntypedPropsBehavior[String] {
-        override def untypedProps(props: akka.actor.typed.Props): akka.actor.Props =
-          untypedForwarder(probe.ref)
-      }
-      val ref = system.spawnAnonymous(untypedBehavior)
-      ref ! "hello"
-      probe.expectMsg("hello")
-    }
-
-    "spawn untyped behavior" in {
-      val probe = TestProbe()
-      val untypedBehavior: Behavior[String] = new UntypedPropsBehavior[String] {
-        override def untypedProps(props: akka.actor.typed.Props): akka.actor.Props =
-          untypedForwarder(probe.ref)
-      }
-      val ref = system.spawn(untypedBehavior, "test")
-      ref ! "hello"
-      probe.expectMsg("hello")
     }
   }
 }
