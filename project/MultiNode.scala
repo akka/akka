@@ -9,8 +9,9 @@ import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.multiJvmCreateLogger
 import com.typesafe.sbt.{SbtMultiJvm, SbtScalariform}
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
-import sbt._
+import sbt.{ Def, _ }
 import sbt.Keys._
+import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 
 object MultiNode extends AutoPlugin {
 
@@ -34,7 +35,7 @@ object MultiNode extends AutoPlugin {
   override def trigger = noTrigger
   override def requires = plugins.JvmPlugin
 
-  override lazy val projectSettings = multiJvmSettings
+  override lazy val projectSettings: Seq[Def.Setting[_]] = multiJvmSettings
 
   private val defaultMultiJvmOptions: Seq[String] = {
     import scala.collection.JavaConverters._
@@ -95,7 +96,12 @@ object MultiNode extends AutoPlugin {
               testResults.events ++ multiNodeResults.events,
               testResults.summaries ++ multiNodeResults.summaries)
           }
-        } else Nil)
+        } else Nil) ++
+     Def.settings((compile in MultiJvm) := {
+      (headerCreate in MultiJvm).value
+      (compile in MultiJvm).value
+    }) ++ headerSettings(MultiJvm)
+
 
   implicit class TestResultOps(val self: TestResult) extends AnyVal {
     def id: Int = self match {

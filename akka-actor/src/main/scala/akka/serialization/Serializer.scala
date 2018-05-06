@@ -4,10 +4,6 @@
 
 package akka.serialization
 
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- */
-
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, NotSerializableException, ObjectOutputStream }
 import java.nio.ByteBuffer
 import java.util.concurrent.Callable

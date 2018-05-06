@@ -9,7 +9,6 @@ import scala.concurrent.Future
 
 import akka.actor.Scheduler
 import akka.util.Timeout
-
 import scala.reflect.ClassTag
 
 import akka.actor.typed.ActorRef
@@ -17,6 +16,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
+import akka.actor.typed.ExtensionSetup
 import akka.actor.typed.Props
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -253,8 +253,44 @@ object EntityTypeKey {
   /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*
    * messaging semantics.
+   *
+   * Example usage:
+   * {{{
+   * val target: EntityRef[String] = ...
+   * target.tell("Hello")
+   * }}}
    */
   def tell(msg: A): Unit
+
+  /**
+   * Send a message to the entity referenced by this EntityRef using *at-most-once*
+   * messaging semantics.
+   *
+   * Example usage:
+   * {{{
+   * val target: EntityRef[String] = ...
+   * target ! "Hello"
+   * }}}
+   */
+  def !(msg: A): Unit = this.tell(msg)
+
+  /**
+   * Allows to "ask" the [[EntityRef]] for a reply.
+   * See [[akka.actor.typed.scaladsl.AskPattern]] for a complete write-up of this pattern
+   *
+   * Example usage:
+   * {{{
+   * case class Request(msg: String, replyTo: ActorRef[Reply])
+   * case class Reply(msg: String)
+   *
+   * implicit val timeout = Timeout(3.seconds)
+   * val target: EntityRef[Request] = ...
+   * val f: Future[Reply] = target.ask(Request("hello", _))
+   * }}}
+   *
+   * Please note that an implicit [[akka.util.Timeout]] and [[akka.actor.Scheduler]] must be available to use this pattern.
+   */
+  def ask[U](f: ActorRef[U] ⇒ A)(implicit timeout: Timeout, scheduler: Scheduler): Future[U]
 
   /**
    * Allows to "ask" the [[EntityRef]] for a reply.
@@ -272,36 +308,23 @@ object EntityTypeKey {
    *
    * Please note that an implicit [[akka.util.Timeout]] and [[akka.actor.Scheduler]] must be available to use this pattern.
    */
-  def ask[U](f: ActorRef[U] ⇒ A)(implicit timeout: Timeout, scheduler: Scheduler): Future[U]
+  def ?[U](message: ActorRef[U] ⇒ A)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] =
+    this.ask(message)(timeout, scheduler)
 
 }
 
-object EntityRef {
-  implicit final class EntityRefOps[A](val ref: EntityRef[A]) extends AnyVal {
-    /**
-     * Send a message to the Actor referenced by this ActorRef using *at-most-once*
-     * messaging semantics.
-     */
-    def !(msg: A): Unit = ref.tell(msg)
+object ClusterShardingSetup {
+  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ ClusterSharding): ClusterShardingSetup =
+    new ClusterShardingSetup(new java.util.function.Function[ActorSystem[_], ClusterSharding] {
+      override def apply(sys: ActorSystem[_]): ClusterSharding = createExtension(sys)
+    }) // TODO can be simplified when compiled only with Scala >= 2.12
 
-    /**
-     * Allows to "ask" the [[EntityRef]] for a reply.
-     * See [[akka.actor.typed.scaladsl.AskPattern]] for a complete write-up of this pattern
-     *
-     * Example usage:
-     * {{{
-     * case class Request(msg: String, replyTo: ActorRef[Reply])
-     * case class Reply(msg: String)
-     *
-     * implicit val timeout = Timeout(3.seconds)
-     * val target: EntityRef[Request] = ...
-     * val f: Future[Reply] = target ? (Request("hello", _))
-     * }}}
-     *
-     * Please note that an implicit [[akka.util.Timeout]] and [[akka.actor.Scheduler]] must be available to use this pattern.
-     */
-    def ?[U](message: ActorRef[U] ⇒ A)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] =
-      ref.ask(message)(timeout, scheduler)
-  }
 }
 
+/**
+ * Can be used in [[akka.actor.setup.ActorSystemSetup]] when starting the [[ActorSystem]]
+ * to replace the default implementation of the [[ClusterSharding]] extension. Intended
+ * for tests that need to replace extension with stub/mock implementations.
+ */
+final class ClusterShardingSetup(createExtension: java.util.function.Function[ActorSystem[_], ClusterSharding])
+  extends ExtensionSetup[ClusterSharding](ClusterSharding, createExtension)

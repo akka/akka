@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.client
 
-import akka.actor.ActorRef
-import akka.cluster.{ Cluster, ClusterReadView, MemberStatus }
+import akka.actor.{ ActorPath, ActorRef }
+import akka.cluster.{ Cluster, MultiNodeClusterSpec }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.{ ImplicitSender, TestActors }
@@ -28,16 +29,14 @@ object ClusterClientHandoverSpec extends MultiNodeConfig {
 
     }
     akka.test.filter-leeway = 10s
-  """))
+  """).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
-class ClusterClientHandoverMultiJvmNode1 extends ClusterClientHandoverSpec
+class ClusterClientHandoverSpecMultiJvmNode1 extends ClusterClientHandoverSpec
+class ClusterClientHandoverSpecMultiJvmNode2 extends ClusterClientHandoverSpec
+class ClusterClientHandoverSpecMultiJvmNode3 extends ClusterClientHandoverSpec
 
-class ClusterClientHandoverMultiJvmNode2 extends ClusterClientHandoverSpec
-
-class ClusterClientHandoverMultiJvmNode3 extends ClusterClientHandoverSpec
-
-class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec) with STMultiNodeSpec with ImplicitSender {
+class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec) with STMultiNodeSpec with ImplicitSender with MultiNodeClusterSpec {
 
   import ClusterClientHandoverSpec._
 
@@ -51,29 +50,19 @@ class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec)
     enterBarrier(from.name + "-joined")
   }
 
-  def clusterView: ClusterReadView = Cluster(system).readView
-
-  def awaitUp(expected: Int): Unit = {
-    awaitAssert {
-      awaitAssert(clusterView.members.size should ===(expected))
-      awaitAssert(clusterView.members.map(_.status) should ===(Set(MemberStatus.Up)))
-    }
-  }
-
-  def initialContacts = Set(first, second).map { r ⇒
+  def initialContacts: Set[ActorPath] = Set(first, second).map { r ⇒
     node(r) / "system" / "receptionist"
   }
 
-  "A Cluster Client" should {
+  "A Cluster Client" must {
 
     "startup cluster with a single node" in within(30.seconds) {
       join(first, first)
       runOn(first) {
         val service = system.actorOf(TestActors.echoActorProps, "testService")
         ClusterClientReceptionist(system).registerService(service)
-        awaitUp(1)
+        awaitMembersUp(1)
       }
-
       enterBarrier("cluster-started")
     }
 
@@ -86,7 +75,6 @@ class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec)
         clusterClient ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
         expectMsgType[String](3.seconds) should be("hello")
       }
-
       enterBarrier("established")
     }
 
@@ -95,9 +83,8 @@ class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec)
       runOn(second) {
         val service = system.actorOf(TestActors.echoActorProps, "testService")
         ClusterClientReceptionist(system).registerService(service)
-        awaitUp(2)
+        awaitMembersUp(2)
       }
-
       enterBarrier("second-up")
     }
 
@@ -107,9 +94,8 @@ class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec)
       }
 
       runOn(second) {
-        awaitUp(1)
+        awaitMembersUp(1)
       }
-
       enterBarrier("handover-done")
     }
 
@@ -118,10 +104,7 @@ class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec)
         clusterClient ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
         expectMsgType[String](3.seconds) should be("hello")
       }
-
       enterBarrier("handover-successful")
     }
-
   }
-
 }

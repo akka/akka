@@ -16,7 +16,7 @@ class FlowForeachSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
-  "A Foreach" must {
+  "A runForeach" must {
 
     "call the procedure for each element" in assertAllStagesStopped {
       Source(1 to 3).runForeach(testActor ! _) foreach {
@@ -48,7 +48,7 @@ class FlowForeachSpec extends StreamSpec {
     }
 
     "complete future with failure when function throws" in assertAllStagesStopped {
-      val error = new Exception with NoStackTrace
+      val error = TE("Boom!")
       val future = Source.single(1).runForeach(_ ⇒ throw error)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }

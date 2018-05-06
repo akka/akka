@@ -82,21 +82,21 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
       override def preStart(): Unit = {
         self = getStageActor(initialReceive)
 
-        if (initialPartnerRef.isDefined) // this will set the `partnerRef`
-          observeAndValidateSender(initialPartnerRef.get, "Illegal initialPartnerRef! This would be a bug in the SinkRef usage or impl.")
+        initialPartnerRef match {
+          case OptionVal.Some(ref) ⇒
+            // this will set the `partnerRef`
+            observeAndValidateSender(ref, "Illegal initialPartnerRef! This may be a bug, please report your " +
+              "usage and complete stack trace on the issue tracker: https://github.com/akka/akka")
+            tryPull()
+          case OptionVal.None ⇒
+            // only schedule timeout timer if partnerRef has not been resolved yet (i.e. if this instance of the Actor
+            // has not been provided with a valid initialPartnerRef)
+            scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
+        }
 
         log.debug("Created SinkRef, pointing to remote Sink receiver: {}, local worker: {}", initialPartnerRef, self.ref)
 
         promise.success(SourceRefImpl(self.ref))
-
-        partnerRef match {
-          case OptionVal.Some(ref) ⇒
-            ref ! StreamRefsProtocol.OnSubscribeHandshake(self.ref)
-            tryPull()
-          case _ ⇒ // nothing to do
-        }
-
-        scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
       }
 
       lazy val initialReceive: ((ActorRef, Any)) ⇒ Unit = {
@@ -133,7 +133,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
         case SubscriptionTimeoutTimerKey ⇒
           val ex = StreamRefSubscriptionTimeoutException(
             // we know the future has been competed by now, since it is in preStart
-            s"[$stageActorName] Remote side did not subscribe (materialize) handed out Sink reference [${promise.future.value}], " +
+            s"[$stageActorName] Remote side did not subscribe (materialize) handed out Source reference [${promise.future.value}], " +
               s"within subscription timeout: ${PrettyDuration.format(subscriptionTimeout.timeout)}!")
 
           throw ex // this will also log the exception, unlike failStage; this should fail rarely, but would be good to have it "loud"
@@ -175,6 +175,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
       def observeAndValidateSender(partner: ActorRef, failureMsg: String): Unit = {
         if (partnerRef.isEmpty) {
           partnerRef = OptionVal(partner)
+          partner ! StreamRefsProtocol.OnSubscribeHandshake(self.ref)
           cancelTimer(SubscriptionTimeoutTimerKey)
           self.watch(partner)
 

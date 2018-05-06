@@ -114,6 +114,9 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *     |  +------+        +------+  |
    *     +----------------------------+
    * }}}
+   *
+   * Note that attributes set on the returned graph, including async boundaries are now for the entire graph and not
+   * the `SubFlow`. for example `async` will not have any effect as the returned graph is the entire, closed graph.
    */
   def to(sink: Graph[SinkShape[Out], _]): Sink[In, Mat] =
     new Sink(delegate.to(sink))
@@ -134,6 +137,31 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    */
   def map[T](f: function.Function[Out, T]): SubFlow[In, T, Mat] =
     new SubFlow(delegate.map(f.apply))
+
+  /**
+   * This is a simplified version of `wireTap(Sink)` that takes only a simple procedure.
+   * Elements will be passed into this "side channel" function, and any of its results will be ignored.
+   *
+   * If the wire-tap operation is slow (it backpressures), elements that would've been sent to it will be dropped instead.
+   *
+   * This operation is useful for inspecting the passed through element, usually by means of side-effecting
+   * operations (such as `println`, or emitting metrics), for each element without having to modify it.
+   *
+   * For logging signals (elements, completion, error) consider using the [[log]] stage instead,
+   * along with appropriate `ActorAttributes.logLevels`.
+   *
+   * '''Emits when''' upstream emits an element; the same element will be passed to the attached function,
+   *                  as well as to the downstream stage
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   */
+  def wireTap(f: function.Procedure[Out]): SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.wireTap(f(_)))
 
   /**
    * Transform each input element into an `Iterable` of output elements that is

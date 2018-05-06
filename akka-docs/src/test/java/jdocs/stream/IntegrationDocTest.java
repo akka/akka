@@ -329,6 +329,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
       return receiveBuilder()
         .match(StreamInitialized.class, init -> {
           log().info("Stream initialized");
+          sender().tell(new Ack(), self());
         })
         .match(String.class, element -> {
           log().info("Received element: {}", element);

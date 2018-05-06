@@ -89,10 +89,13 @@ private[stream] final class SourceRefStageImpl[Out](
         self = getStageActor(initialReceive)
         log.debug("[{}] Allocated receiver: {}", stageActorName, self.ref)
         if (initialPartnerRef.isDefined) // this will set the partnerRef
-          observeAndValidateSender(initialPartnerRef.get, "<no error case here, definitely valid>")
+          observeAndValidateSender(initialPartnerRef.get, "Illegal initialPartnerRef! This would be a bug in the SourceRef usage or impl.")
 
         promise.success(SinkRefImpl(self.ref))
 
+        //this timer will be cancelled if we receive the handshake from the remote SinkRef
+        // either created in this method and provided as self.ref as initialPartnerRef
+        // or as the response to first CumulativeDemand request sent to remote SinkRef
         scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
       }
 

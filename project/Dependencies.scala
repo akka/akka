@@ -21,7 +21,7 @@ object Dependencies {
   val aeronVersion = "1.7.0"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.12", "2.12.5"),
+    crossScalaVersions := Seq("2.11.12", "2.12.6"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
@@ -57,6 +57,8 @@ object Dependencies {
     val osgiCompendium = "org.osgi" % "org.osgi.compendium" % "4.3.1" // ApacheV2
 
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
+
+    val jctools = "org.jctools" % "jctools-core" % "2.1.1" // ApacheV2
 
     // reactive streams
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % "1.0.2" // CC0
@@ -172,7 +174,7 @@ object Dependencies {
 
   val contrib = l ++= Seq(Test.commonsIo)
 
-  val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
+  val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Compile.jctools)
 
   // akka stream
 

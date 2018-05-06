@@ -5,14 +5,17 @@
 package akka.actor.typed;
 
 import akka.actor.*;
+import akka.actor.setup.ActorSystemSetup;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
 import java.util.Optional;
+import java.util.function.Function;
 
 import static junit.framework.TestCase.assertSame;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ExtensionsTest extends JUnitSuite {
@@ -37,6 +40,15 @@ public class ExtensionsTest extends JUnitSuite {
 
     public static MyExtImpl get(ActorSystem<?> system) {
       return instance.apply(system);
+    }
+  }
+
+  public static class MyExtImplViaSetup extends MyExtImpl {
+  }
+
+  public static class MyExtensionSetup extends ExtensionSetup<MyExtImpl> {
+    public MyExtensionSetup(Function<ActorSystem<?>, MyExtImpl> createExtension) {
+      super(MyExtension.getInstance(), createExtension);
     }
   }
 
@@ -71,6 +83,25 @@ public class ExtensionsTest extends JUnitSuite {
       DummyExtension1 instance2 = DummyExtension1.get(system);
 
       assertSame(instance1, instance2);
+    } finally {
+      system.terminate();
+    }
+  }
+
+  @Test
+  public void overrideExtensionsViaActorSystemSetup() {
+        final ActorSystem<Object> system = ActorSystem.create(
+        Behavior.empty(),
+        "overrideExtensionsViaActorSystemSetup",
+        ActorSystemSetup.create(new MyExtensionSetup(sys -> new MyExtImplViaSetup())));
+
+    try {
+      MyExtImpl instance1 = MyExtension.get(system);
+      assertEquals(MyExtImplViaSetup.class, instance1.getClass());
+
+      MyExtImpl instance2 = MyExtension.get(system);
+      assertSame(instance1, instance2);
+
     } finally {
       system.terminate();
     }

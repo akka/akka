@@ -58,13 +58,13 @@ class FlowFoldAsyncSpec extends StreamSpec {
     }
 
     "propagate an error" in assertAllStagesStopped {
-      val error = new Exception with NoStackTrace
+      val error = TE("Boom!")
       val future = inputSource.map(x ⇒ if (x > 50) throw error else x).runFoldAsync[NotUsed](NotUsed)(noneAsync)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
     "complete future with failure when folding function throws" in assertAllStagesStopped {
-      val error = new Exception with NoStackTrace
+      val error = TE("Boom!")
       val future = inputSource.runFoldAsync(0) { (x, y) ⇒
         if (x > 50) Future.failed(error) else Future(x + y)
       }

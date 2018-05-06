@@ -634,7 +634,6 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         akka.remote.enabled-transports = ["akka.remote.test"]
         akka.remote.retry-gate-closed-for = 5s
         akka.remote.log-remote-lifecycle-events = on
-        #akka.loglevel = DEBUG
 
         akka.remote.test {
           registry-key = TRKAzR
