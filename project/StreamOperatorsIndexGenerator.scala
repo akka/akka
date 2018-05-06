@@ -211,7 +211,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     Seq(file)
   }
 
-  def getDetails(file: File): (String, String) = {
+  def getDetails(file: File): (String, String) = try {
     val contents = IO.read(file)
     val lines = contents.split("\\r?\\n")
     require(
