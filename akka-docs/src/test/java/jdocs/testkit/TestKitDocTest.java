@@ -162,7 +162,7 @@ public class TestKitDocTest extends AbstractJavaTest {
       getRef().tell(43, ActorRef.noSender());
       getRef().tell("hello", ActorRef.noSender());
 
-      final List<String> out = receiveWhile(duration("1 second"), in -> {
+      final List<String> out = receiveWhile(java.time.Duration.ofSeconds(1), in -> {
         if (in instanceof Integer) {
           return in.toString();
         } else {
@@ -176,7 +176,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-receivewhile
     new TestKit(system) {{
       //#test-receivewhile-full
-      receiveWhile(duration("100 millis"), duration("50 millis"), 12, in -> {
+      receiveWhile(java.time.Duration.ofMillis(100), java.time.Duration.ofMillis(50), 12, in -> {
         //#match-elided
         throw JavaPartialFunction.noMatch();
         //#match-elided
@@ -200,7 +200,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-awaitAssert
     new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
-      awaitAssert(duration("1 second"), duration("100 millis"), () -> {
+      awaitAssert(java.time.Duration.ofSeconds(1), java.time.Duration.ofMillis(100), () -> {
         assertEquals(msgAvailable(), true);
         return null;
       });
