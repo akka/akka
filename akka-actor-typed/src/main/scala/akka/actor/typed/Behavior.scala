@@ -180,16 +180,6 @@ object Behavior {
 
   /**
    * INTERNAL API
-   * Used to create untyped props from behaviours, or directly returning an untyped props that implements this behavior.
-   */
-  @InternalApi
-  private[akka] abstract class UntypedPropsBehavior[T] extends Behavior[T] {
-    /** INTERNAL API */
-    @InternalApi private[akka] def untypedProps(props: Props): akka.actor.Props
-  }
-
-  /**
-   * INTERNAL API
    */
   @InternalApi private[akka] val unhandledSignal: PartialFunction[(ActorContext[Nothing], Signal), Behavior[Nothing]] = {
     case (_, _) ⇒ UnhandledBehavior
@@ -328,9 +318,6 @@ object Behavior {
       case null ⇒ throw new InvalidMessageException("[null] is not an allowed behavior")
       case SameBehavior | UnhandledBehavior ⇒
         throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
-      case _: UntypedPropsBehavior[_] ⇒
-        throw new IllegalArgumentException(s"cannot wrap behavior [$behavior] in " +
-          "Behaviors.setup, Behaviors.supervise or similar")
       case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
       case IgnoreBehavior         ⇒ SameBehavior.asInstanceOf[Behavior[T]]
       case s: StoppedBehavior[T]  ⇒ s
