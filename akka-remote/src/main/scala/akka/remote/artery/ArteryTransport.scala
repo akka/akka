@@ -45,7 +45,6 @@ import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
 import akka.remote.artery.compress._
-import akka.remote.artery.aeron.AeronSource
 import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
 import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
 import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
@@ -302,6 +301,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   import ArteryTransport._
   import FlightRecorderEvents._
 
+  type LifeCycle
+
   // these vars are initialized once in the start method
   @volatile private[this] var _localAddress: UniqueAddress = _
   @volatile private[this] var _bindAddress: UniqueAddress = _
@@ -346,7 +347,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   protected val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
 
   // keyed by the streamId
-  protected val streamMatValues = new AtomicReference(Map.empty[Int, InboundStreamMatValues])
+  protected val streamMatValues = new AtomicReference(Map.empty[Int, InboundStreamMatValues[LifeCycle]])
   private[this] val hasBeenShutdown = new AtomicBoolean(false)
 
   private val testState = new SharedTestState
@@ -656,7 +657,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   protected def shutdownTransport(): Future[Done]
 
-  @tailrec final protected def updateStreamMatValues(streamId: Int, values: InboundStreamMatValues): Unit = {
+  @tailrec final protected def updateStreamMatValues(streamId: Int, values: InboundStreamMatValues[LifeCycle]): Unit = {
     val prev = streamMatValues.get()
     if (!streamMatValues.compareAndSet(prev, prev + (streamId → values))) {
       updateStreamMatValues(streamId, values)
@@ -905,9 +906,9 @@ private[remote] object ArteryTransport {
   // thrown when the transport is shutting down and something triggers a new association
   object ShuttingDown extends RuntimeException with NoStackTrace
 
-  final case class InboundStreamMatValues(
-    aeronSourceLifecycle: Option[AeronSource.ResourceLifecycle],
-    completed:            Future[Done])
+  final case class InboundStreamMatValues[LifeCycle](
+    lifeCycle: LifeCycle,
+    completed: Future[Done])
 
   def autoSelectPort(hostname: String, udp: Boolean): Int = {
     if (udp) {
