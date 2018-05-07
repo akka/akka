@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.fsm
@@ -296,11 +296,15 @@ object PersistentFSM {
     private val scheduler = context.system.scheduler
     private implicit val executionContext = context.dispatcher
 
-    def schedule(actor: ActorRef, timeout: FiniteDuration): Unit =
+    def schedule(actor: ActorRef, timeout: FiniteDuration): Unit = {
+      val timerMsg = msg match {
+        case m: AutoReceivedMessage ⇒ m
+        case _                      ⇒ this
+      }
       ref = Some(
-        if (repeat) scheduler.schedule(timeout, timeout, actor, this)
-        else scheduler.scheduleOnce(timeout, actor, this))
-
+        if (repeat) scheduler.schedule(timeout, timeout, actor, timerMsg)
+        else scheduler.scheduleOnce(timeout, actor, timerMsg))
+    }
     def cancel(): Unit =
       if (ref.isDefined) {
         ref.get.cancel()
@@ -453,6 +457,6 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E] extends AbstractPersis
  *
  */
 abstract class AbstractPersistentLoggingFSM[S <: FSMState, D, E]
-  extends AbstractPersistentFSMBase[S, D, E]
+  extends AbstractPersistentFSM[S, D, E]
   with LoggingPersistentFSM[S, D, E]
   with PersistentFSM[S, D, E]

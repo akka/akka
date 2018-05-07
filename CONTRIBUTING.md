@@ -1,6 +1,14 @@
-# Contributing to Akka
+# Welcome! Thank you for contributing to Akka!
+
+We follow the standard GitHub [fork & pull](https://help.github.com/articles/using-pull-requests/#fork--pull) approach to pull requests. Just fork the official repo, develop in a branch, and submit a PR!
+
+You're always welcome to submit your PR straight away and start the discussion (without reading the rest of this wonderful doc, or the README.md). The goal of these notes is to make your experience contributing to Akka as smooth and pleasant as possible. We're happy to guide you through the process once you've submitted your PR.
+
+# The Akka Community
 
 In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
+
+You may also check out these [other resources](https://akka.io/get-involved/).
 
 # Navigating around the project & codebase
 
@@ -25,7 +33,8 @@ Most notably many tags start with a `t:` prefix (as in `topic:`), which categori
 In general *all issues are open for anyone working on them*, however if you're new to the project and looking for an issue
 that will be accepted and likely is a nice one to get started you should check out the following tags:
 
-- [community](https://github.com/akka/akka/labels/community) - which identifies issues that the core team will likely not have time to work on, or the issue is a nice entry level ticket. If you're not sure how to solve a ticket but would like to work on it feel free to ask in the issue about clarification or tips.
+- [good first issue](https://github.com/akka/akka/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) - which identifies simple entry level tickets, such as improvements of documentation or tests. If you're not sure how to solve a ticket but would like to work on it feel free to ask in the issue about clarification or tips.
+- [help wanted](https://github.com/akka/akka/labels/help%20wanted) - which identifies issues that the core team will likely not have time to work on, or the issue is a nice entry level ticket. If you're not sure how to solve a ticket but would like to work on it feel free to ask in the issue about clarification or tips.
 - [nice-to-have (low-priority)](https://github.com/akka/akka/labels/nice-to-have%20%28low-prio%29) - are tasks which make sense, however are not very high priority (in face of other very high priority issues). If you see something interesting in this list, a contribution would be really wonderful!
 
 Another group of tickets are those which start from a number. They're used to signal in what phase of development an issue is:
@@ -57,15 +66,16 @@ We encourage changes that make it easier to achieve our goals in an efficient wa
 The steps below describe how to get a patch into a main development branch (e.g. `master`). 
 The steps are exactly the same for everyone involved in the project (be it core team, or first time contributor).
 
-1. Make sure an issue exists in the [issue tracker](https://github.com/akka/akka/issues) for the work you want to contribute. 
-   - If there is no ticket for it, [create one](https://github.com/akka/akka/issues/new) first.
+1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/akka/akka/issues) and [existing pull requests](https://github.com/akka/akka/pulls) for existing work.
+   - If there is no ticket yet, feel free to [create one](https://github.com/akka/akka/issues/new) to discuss the problem and the approach you want to take to solve it.
 1. [Fork the project](https://github.com/akka/akka#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a pull request against the mainline Akka.
 1. Create a branch on your fork and work on the feature. For example: `git checkout -b wip-custom-headers-akka-http`
    - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
    - Please write additional tests covering your feature and adjust existing ones if needed before submitting your pull request. The `validatePullRequest` sbt task ([explained below](#the-validatepullrequest-task)) may come in handy to verify your changes are correct.
 1. Once your feature is complete, prepare the commit following our [Creating Commits And Writing Commit Messages](#creating-commits-and-writing-commit-messages). For example, a good commit message would be: `Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
-1. If it's a new feature, or a change of behaviour, document it on the [akka-docs](https://github.com/akka/akka/tree/master/akka-docs), remember, an undocumented feature is not a feature. If the feature was touching Scala or Java DSL, make sure to document it in both the Java and Scala documentation (usually in a file of the same name, but under `/scala/` instead of `/java/` etc).
+1. If it's a new feature, or a change of behavior, document it on the [akka-docs](https://github.com/akka/akka/tree/master/akka-docs), remember, an undocumented feature is not a feature. If the feature was touching Scala or Java DSL, make sure to document both the Scala and Java APIs.
 1. Now it's finally time to [submit the pull request](https://help.github.com/articles/using-pull-requests)!
+    - Please make sure to include a reference to the issue you're solving *in the comment* for the Pull Request, this will cause the PR to be linked properly with the Issue. Examples of good phrases for this are: "Resolves #1234" or "Refs #1234".
 1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](http://www.lightbend.com/contribute/cla) online. CLA stands for Contributor License Agreement and is a way of protecting intellectual property disputes from harming the project.
 1. If you're not already on the contributors white-list, the @akka-ci bot will ask `Can one of the repo owners verify this patch?`, to which a core member will reply by commenting `OK TO TEST`. This is just a sanity check to prevent malicious code from being run on the Jenkins cluster.
 1. Now both committers and interested people will review your code. This process is to ensure the code we merge is of the best possible quality, and that no silly mistakes slip through. You're expected to follow-up these comments by adding new commits to the same branch. The commit messages of those commits can be more loose, for example: `Removed debugging using printline`, as they all will be squashed into one commit before merging into the main branch.
@@ -168,6 +178,7 @@ PR_TARGET_BRANCH=origin/example sbt validatePullRequest
 ```
 
 ## Binary compatibility
+
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
 ](http://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the documentation.
 
@@ -209,7 +220,7 @@ For a pull request to be considered at all it has to meet these requirements:
 
 Some additional guidelines regarding source code are:
 
-- Files should start with a ``Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>`` copyright header.
+- Files should start with a ``Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>`` copyright header.
 - Keep the code [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself).
 - Apply the [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) whenever you have the chance to.
 - Never delete or change existing copyright notices, just add additional info.
@@ -233,51 +244,15 @@ akka-docs/paradox
 
 The generated html documentation is in `akka-docs/target/paradox/site/main/index.html`.
 
-### Java- or Scala-specific documentation
-
-For new documentation chapters, we recommend adding a page to the `scala` tree documenting both Java and Scala, using [tabs](http://developer.lightbend.com/docs/paradox/latest/features/snippet-inclusion.html) for code snippets and [groups]( http://developer.lightbend.com/docs/paradox/latest/features/groups.html) for other Java- or Scala-specific segments or sections.
-An example of such a 'merged' page is `akka-docs/src/main/paradox/scala/actors.md`.
-
-Add a symlink to the `java` tree to make the page available there as well.
-
-Consolidation of existing pages is tracked in [issue #23052](https://github.com/akka/akka/issues/23052)
-
-### Note for paradox on Windows
-
-On Windows, you need special care to generate html documentation with paradox.
-
-Currently `akka-docs/src/main/paradox/java` has symbolic links which point to directories under `akka-docs/src/main/paradox/scala`.
- 
-- java/additional -> scala/additional
-- java/common -> scala/common
-- java/general -> scala/general
-- java/guide -> scala/project
-- java/security -> scala/security
-
-So, if you just do `git clone <URL>`, then run `sbt akka-docs/paradox`, you will run into an an error like below,
-because symlinks are checked out in a Linux style which doesn't work on Windows.
-
-```
-sbt akka-docs/paradox
-[trace] Stack trace suppressed: run last akka-docs/compile:paradoxMarkdownToHtml for the full output.
-[error] (akka-docs/compile:paradoxMarkdownToHtml) com.lightbend.paradox.markdown.Index$LinkException: Unknown page [common/cluster.md] linked from [java/index-network.md]
-```
-
-As described in http://stackoverflow.com/a/42137273, recent versions of git scm can convert Linux-style symlinks to the Windows style,
-with `git clone`:
-
-- Launch git scm whose version is on or later than 2.11.1
-- **with administrator rights**
-- `git clone -c core.symlinks=true <URL>`
-
-Then the symlinks are checked out in the Windows style, and the paradox command works fine.
-
-In a future version of akka, this trick for Windows should not be needed -  we will use [paradox groups](http://developer.lightbend.com/docs/paradox/latest/features/groups.html) 
-to get rid of duplicate documentation in Java and Scala. At that point we don't need the symlinks anymore. 
-
 ### Scaladoc
 
-Akka generates class diagrams for the API documentation using ScalaDoc. This needs the `dot` command from the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by adding the flag `-Dakka.scaladoc.diagrams=false`. After installing Graphviz, make sure you add the toolset to the PATH (definitely on Windows).
+Akka generates class diagrams for the API documentation using ScalaDoc. 
+
+Links to methods in ScalaDoc comments should be formatted
+`[[Like#this]]`, because `[[this]]` does not work with genjavadoc, and
+IntelliJ warns about `[[#this]]`.
+
+The Scaladoc tool needs the `dot` command from the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by adding the flag `-Dakka.scaladoc.diagrams=false`. After installing Graphviz, make sure you add the toolset to the PATH (definitely on Windows).
 
 ### JavaDoc
 
@@ -366,6 +341,9 @@ Note, that `OK TO TEST` will only be picked up when the user asking for it is co
 
 ## Source style
 
+Sometimes it is convenient to place 'internal' classes in their own package.
+In such situations we prefer 'internal' over 'impl' as a package name.
+
 ### Scala style 
 
 Akka uses [Scalariform](https://github.com/daniel-trinh/scalariform) to enforce some of the code style rules.
@@ -405,16 +383,45 @@ tested it becomes an officially supported Akka feature.
 
 [List of Akka features marked as may change](http://doc.akka.io/docs/akka/current/common/may-change.html)
 
+## Contributing new Akka Streams stages/operators
+
+Documentation of Akka Streams operators and stages is automatically enforced.
+If a method exists on Source / Sink / Flow, or any other class listed in `project/StreamOperatorsIndexGenerator.scala`,
+it must also have a corresponding documentation page under `akka-docs/src/main/paradox/streams/operators/...`.
+
+The pages structure is well-defined, and must be the same on all documentation pages, please refer to any neighbouring
+docs pages in there to see the pattern in action. In general though the page must consist of:
+
+- the title, including where the operator is defined (e.g. `ActorFlow.ask` or `Source.map`)
+- a short explanation of what this stage does, 1 sentence is optimal
+- an image explaining the stage more visually (whenever possible)
+- a link to the stages' "category" (these are listed in `akka-docs/src/main/paradox/categories`)
+- the method signature snippet (use the built in directives to generate it)
+- a longer explanation about the stage and it's exact semantics (when it pulls, cancels, signals elements)
+- at least one usage example
+
+Using this structure, the surrounding infrastructure will **generate the index pages**, so you do not need to maintain
+the index or category pages manually.
+
+### Adding new top-level objects/classes containing operators
+
+In case you are adding not only a new operator, but also a new class/object, you need to add it to the 
+`project/StreamOperatorsIndexGenerator.scala` so it can be included in the automatic docs generation and enforcing the 
+existence of those docs.
+
 # Supporting infrastructure
 
 ## Continuous integration
 
-Each project should be configured to use a continuous integration (CI) tool (i.e. a build server à la Jenkins). 
+Akka currently uses a combination of Jenkins and Travis for Continuous Integration:
 
-Lightbend is sponsoring a [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster".
+* Jenkins [runs the tests for each PR](https://jenkins.akka.io:8498/job/pr-validator-per-commit-jenkins/)
+* Jenkins [runs a nightly test suite](https://jenkins.akka.io:8498/view/Nightly%20Jobs/job/akka-nightly/)
+* Travis [checks dependency licenses for all PR's](https://travis-ci.org/akka/akka)
+
+The [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster", is sponsored by Lightbend.
+
 The cluster is made out of real bare-metal boxes, and maintained by the Akka team (and other very helpful people at Lightbend).
-
-In addition to PR validation the cluster is also used for nightly and performance test runs. 
 
 ## Related links
 

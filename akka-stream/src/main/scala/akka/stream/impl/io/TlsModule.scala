@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.impl.io
 
 import javax.net.ssl.{ SSLEngine, SSLSession }
@@ -9,7 +13,7 @@ import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.TLSProtocol._
 import akka.stream.impl.{ TlsModuleIslandTag, TraversalBuilder }
-import akka.util.{ ByteString, OptionVal }
+import akka.util.ByteString
 
 import scala.util.Try
 

@@ -1,15 +1,16 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl
 
 import java.util.Optional
 
-import akka.{ Done, NotUsed }
+import akka.{ Done, NotUsed, japi }
 import akka.actor.{ ActorRef, Props }
 import akka.dispatch.ExecutionContexts
 import akka.japi.function
-import akka.stream.impl.{ LinearTraversalBuilder, SinkQueueAdapter, StreamLayout }
+import akka.stream.impl.{ LinearTraversalBuilder, SinkQueueAdapter }
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
@@ -18,6 +19,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 import java.util.concurrent.CompletionStage
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 
 /** Java API */
@@ -90,9 +92,9 @@ object Sink {
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
-   * into a [[java.util.concurrent.CompletionStage]] will be completed with `Success` when reaching the
-   * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
-   * the stream..
+   * into a [[java.util.concurrent.CompletionStage]] which will be completed with `Success` when reaching the
+   * normal end of the stream, or completed with `Failure` if there is a failure signaled in
+   * the stream.
    */
   def foreach[T](f: function.Procedure[T]): Sink[T, CompletionStage[Done]] =
     new Sink(scaladsl.Sink.foreach(f.apply).toCompletionStage())
@@ -210,7 +212,7 @@ object Sink {
    */
   def actorRefWithAck[In](ref: ActorRef, onInitMessage: Any, ackMessage: Any, onCompleteMessage: Any,
                           onFailureMessage: function.Function[Throwable, Any]): Sink[In, NotUsed] =
-    new Sink(scaladsl.Sink.actorRefWithAck[In](ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage.apply))
+    new Sink(scaladsl.Sink.actorRefWithAck[In](ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage.apply _))
 
   /**
    * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
@@ -266,18 +268,33 @@ object Sink {
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
    * because of completion or error.
    *
-   * If `sinkFactory` throws an exception and the supervision decision is
-   * [[akka.stream.Supervision.Stop]] the `Future` will be completed with failure. For all other supervision options it will
-   * try to create sink with next element
-   *
-   * `fallback` will be executed when there was no elements and completed is received from upstream.
-   *
-   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   * If upstream completes before an element was received then the `Future` is completed with the value created by fallback.
+   * If upstream fails before an element was received, `sinkFactory` throws an exception, or materialization of the internal
+   * sink fails then the `Future` is completed with the exception.
+   * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
+  @Deprecated
+  @deprecated("Use lazyInitAsync instead. (lazyInitAsync no more needs a fallback function and the materialized value more clearly indicates if the internal sink was materialized or not.)", "2.5.11")
   def lazyInit[T, M](sinkFactory: function.Function[T, CompletionStage[Sink[T, M]]], fallback: function.Creator[M]): Sink[T, CompletionStage[M]] =
     new Sink(scaladsl.Sink.lazyInit[T, M](
       t ⇒ sinkFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext),
       () ⇒ fallback.create()).mapMaterializedValue(_.toJava))
+
+  /**
+   * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
+   * because of completion or error.
+   *
+   * If upstream completes before an element was received then the `Future` is completed with `None`.
+   * If upstream fails before an element was received, `sinkFactory` throws an exception, or materialization of the internal
+   * sink fails then the `Future` is completed with the exception.
+   * Otherwise the `Future` is completed with the materialized value of the internal sink.
+   */
+  def lazyInitAsync[T, M](sinkFactory: function.Creator[CompletionStage[Sink[T, M]]]): Sink[T, CompletionStage[Optional[M]]] = {
+    val sSink = scaladsl.Sink.lazyInitAsync[T, M](
+      () ⇒ sinkFactory.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)
+    ).mapMaterializedValue(fut ⇒ fut.map(_.fold(Optional.empty[M]())(m ⇒ Optional.ofNullable(m)))(ExecutionContexts.sameThreadExecutionContext).toJava)
+    new Sink(sSink)
+  }
 }
 
 /**
@@ -286,7 +303,7 @@ object Sink {
  * A `Sink` is a set of stream processing steps that has one open input.
  * Can be used as a `Subscriber`
  */
-final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
+final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
 
   override def shape: SinkShape[In] = delegate.shape
   override def traversalBuilder: LinearTraversalBuilder = delegate.traversalBuilder
@@ -322,20 +339,29 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
     new Sink(delegate.mapMaterializedValue(f.apply _))
 
   /**
-   * Change the attributes of this [[Sink]] to the given ones and seal the list
-   * of attributes. This means that further calls will not be able to remove these
-   * attributes, but instead add new ones. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Materializes this Sink, immediately returning (1) its materialized value, and (2) a new Sink
+   * that can be consume elements 'into' the pre-materialized one.
+   *
+   * Useful for when you need a materialized value of a Sink when handing it out to someone to materialize it for you.
+   */
+  def preMaterialize(materializer: Materializer): japi.Pair[Mat @uncheckedVariance, Sink[In @uncheckedVariance, NotUsed]] = {
+    val (mat, sink) = delegate.preMaterialize()(materializer)
+    akka.japi.Pair(mat, sink.asJava)
+  }
+
+  /**
+   * Replace the attributes of this [[Sink]] with the given ones. If this Sink is a composite
+   * of multiple graphs, new attributes on the composite will be less specific than attributes
+   * set directly on the individual graphs of the composite.
    */
   override def withAttributes(attr: Attributes): javadsl.Sink[In, Mat] =
     new Sink(delegate.withAttributes(attr))
 
   /**
-   * Add the given attributes to this Sink. Further calls to `withAttributes`
-   * will not remove these attributes. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Add the given attributes to this [[Sink]]. If the specific attribute was already present
+   * on this graph this means the added attribute will be more specific than the existing one.
+   * If this Sink is a composite of multiple graphs, new attributes on the composite will be
+   * less specific than attributes set directly on the individual graphs of the composite.
    */
   override def addAttributes(attr: Attributes): javadsl.Sink[In, Mat] =
     new Sink(delegate.addAttributes(attr))
@@ -351,5 +377,22 @@ final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[Sink
    */
   override def async: javadsl.Sink[In, Mat] =
     new Sink(delegate.async)
+
+  /**
+   * Put an asynchronous boundary around this `Sink`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): javadsl.Sink[In, Mat] =
+    new Sink(delegate.async(dispatcher))
+
+  /**
+   * Put an asynchronous boundary around this `Sink`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): javadsl.Sink[In, Mat] =
+    new Sink(delegate.async(dispatcher, inputBufferSize))
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.io;
@@ -16,6 +16,7 @@ import akka.io.Tcp;
 import akka.io.TcpMessage;
 import akka.io.TcpSO;
 import akka.util.ByteString;
+import java.time.Duration;
 //#imports
 
 public class IODocTest {
@@ -41,7 +42,8 @@ public class IODocTest {
               1234);
           final List<Inet.SocketOption> options = new ArrayList<Inet.SocketOption>();
           options.add(TcpSO.keepAlive(true));
-          tcp.tell(TcpMessage.connect(remoteAddr, localAddr, options, null, false), getSelf());
+          Duration timeout = null;
+          tcp.tell(TcpMessage.connect(remoteAddr, localAddr, options, timeout, false), getSelf());
           //#connect-with-options
         })
         //#connected

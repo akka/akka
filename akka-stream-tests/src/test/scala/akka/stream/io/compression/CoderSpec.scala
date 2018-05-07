@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io.compression
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream }
-import java.util
 import java.util.concurrent.ThreadLocalRandom
 import java.util.zip.DataFormatException
 
@@ -158,7 +157,7 @@ abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSuppo
 
   lazy val corruptContent = {
     val content = encode(largeText).toArray
-    content(14) = 26.toByte
+    content(14) = 36.toByte
     ByteString(content)
   }
 

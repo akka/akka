@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl;
 
 import akka.Done;
@@ -11,6 +12,7 @@ import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
 import akka.stream.*;
+import akka.stream.scaladsl.FlowSpec;
 import akka.util.ConstantFun;
 import akka.stream.stage.*;
 import akka.testkit.AkkaSpec;
@@ -18,11 +20,11 @@ import akka.stream.testkit.TestPublisher;
 import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
-import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.util.Try;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -45,6 +47,20 @@ public class SourceTest extends StreamTest {
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("SourceTest",
     AkkaSpec.testConf());
 
+
+  interface Fruit {}
+  static class Apple implements Fruit {};
+  static class Orange implements Fruit {};
+
+  public void compileOnlyUpcast() {
+    Source<Apple, NotUsed> apples = null;
+    Source<Orange, NotUsed> oranges = null;
+    Source<Fruit, NotUsed> appleFruits = Source.upcast(apples);
+    Source<Fruit, NotUsed> orangeFruits = Source.upcast(oranges);
+
+    Source<Fruit, NotUsed> fruits = appleFruits.merge(orangeFruits);
+  }
+
   @Test
   public void mustBeAbleToUseSimpleOperators() {
     final TestKit probe = new TestKit(system);
@@ -55,12 +71,12 @@ public class SourceTest extends StreamTest {
     ints
       .drop(2)
       .take(3)
-      .takeWithin(FiniteDuration.create(10, TimeUnit.SECONDS))
+      .takeWithin(Duration.ofSeconds(10))
       .map(elem -> lookup[elem])
       .filter(elem -> !elem.equals("c"))
       .grouped(2)
       .mapConcat(elem -> elem)
-      .groupedWithin(100, FiniteDuration.create(50, TimeUnit.MILLISECONDS))
+      .groupedWithin(100, Duration.ofMillis(50))
       .mapConcat(elem -> elem)
       .runFold("", (acc, elem) -> acc + elem, materializer)
       .thenAccept(elem -> probe.getRef().tell(elem, ActorRef.noSender()));
@@ -416,8 +432,8 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustProduceTicks() throws Exception {
     final TestKit probe = new TestKit(system);
-    Source<String, Cancellable> tickSource = Source.tick(FiniteDuration.create(1, TimeUnit.SECONDS),
-        FiniteDuration.create(500, TimeUnit.MILLISECONDS), "tick");
+    Source<String, Cancellable> tickSource = Source.tick(Duration.ofSeconds(1),
+            Duration.ofMillis(500), "tick");
     @SuppressWarnings("unused")
     Cancellable cancellable = tickSource.to(Sink.foreach(new Procedure<String>() {
       public void apply(String elem) {
@@ -429,7 +445,13 @@ public class SourceTest extends StreamTest {
     probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
     probe.expectMsgEquals("tick");
     probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
+  }
 
+  @Test
+  @SuppressWarnings("unused")
+  public void mustCompileMethodsWithJavaDuration() {
+    Source<NotUsed, Cancellable> tickSource = Source.tick(Duration.ofSeconds(1),
+            Duration.ofMillis(500), NotUsed.getInstance());
   }
 
   @Test
@@ -442,6 +464,19 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals("A");
     probe.expectMsgEquals("B");
     probe.expectMsgEquals("C");
+  }
+
+  @Test
+  public void mustBeAbleToUseCollectType() throws Exception{
+    final TestKit probe = new TestKit(system);
+    final Iterable<FlowSpec.Apple> input = Collections.singletonList(new FlowSpec.Apple());
+    final Source<FlowSpec.Apple,?> appleSource = Source.from(input);
+    final Source<FlowSpec.Fruit,?> fruitSource = appleSource.collectType(FlowSpec.Fruit.class);
+    fruitSource.collectType(FlowSpec.Apple.class).collectType(FlowSpec.Apple.class)
+            .runForeach((elem) -> {
+              probe.getRef().tell(elem,ActorRef.noSender());
+            },materializer);
+    probe.expectMsgAnyClassOf(FlowSpec.Apple.class);
   }
 
   @Test
@@ -607,7 +642,7 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals(0);
     probe.expectMsgEquals(1);
 
-    FiniteDuration duration = Duration.apply(200, TimeUnit.MILLISECONDS);
+    FiniteDuration duration = FiniteDuration.apply(200, TimeUnit.MILLISECONDS);
 
     probe.expectNoMsg(duration);
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -653,6 +688,28 @@ public class SourceTest extends StreamTest {
     probe.expectMsgAllOf(0, 1, 2, 3);
 
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void mustBeAbleToCombineMat() throws Exception {
+    final TestKit probe = new TestKit(system);
+    final Source<Integer, SourceQueueWithComplete<Integer>> source1 = Source.queue(1, OverflowStrategy.dropNew());
+    final Source<Integer, NotUsed> source2 = Source.from(Arrays.asList(2, 3));
+
+    // compiler to check the correct materialized value of type = SourceQueueWithComplete<Integer> available
+    final Source<Integer, SourceQueueWithComplete<Integer>> combined = Source.combineMat(
+      source1, source2, width -> Concat.<Integer> create(width), Keep.left()); //Keep.left() (i.e. preserve queueSource's materialized value)
+
+    SourceQueueWithComplete<Integer> queue = combined
+        .toMat(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), Keep.left())
+        .run(materializer);
+
+    queue.offer(0);
+    queue.offer(1);
+    queue.complete(); //complete queueSource so that combined with `Concat` pulls elements from queueSource
+
+    // elements from source1 (i.e. first of combined source) come first, then source2 elements, due to `Concat`
+    probe.expectMsgAllOf(0, 1, 2, 3);
   }
 
   @Test
@@ -762,7 +819,7 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseInitialTimeout() throws Throwable {
     try {
       try {
-        Source.maybe().initialTimeout(Duration.create(1, "second")).runWith(Sink.head(), materializer)
+        Source.maybe().initialTimeout(Duration.ofSeconds(1)).runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
@@ -777,7 +834,7 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseCompletionTimeout() throws Throwable {
     try {
       try {
-        Source.maybe().completionTimeout(Duration.create(1, "second")).runWith(Sink.head(), materializer)
+        Source.maybe().completionTimeout(Duration.ofSeconds(1)).runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
@@ -792,7 +849,7 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseIdleTimeout() throws Throwable {
     try {
       try {
-        Source.maybe().idleTimeout(Duration.create(1, "second")).runWith(Sink.head(), materializer)
+        Source.maybe().idleTimeout(Duration.ofSeconds(1)).runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
@@ -806,14 +863,10 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustBeAbleToUseIdleInject() throws Exception {
     Integer result =
-        Source.maybe()
-            .keepAlive(Duration.create(1, "second"), new Creator<Integer>() {
-              public Integer create() {
-                return 0;
-              }
-            })
-            .takeWithin(Duration.create(1500, "milliseconds"))
-            .runWith(Sink.<Integer>head(), materializer)
+        Source.<Integer>maybe()
+            .keepAlive(Duration.ofSeconds(1), () -> 0)
+            .takeWithin(Duration.ofMillis(1500))
+            .runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     assertEquals((Object) 0, result);
@@ -829,11 +882,28 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseThrottle() throws Exception {
     Integer result =
         Source.from(Arrays.asList(0, 1, 2))
-            .throttle(10, FiniteDuration.create(1, TimeUnit.SECONDS), 10, ThrottleMode.shaping())
-            .throttle(10, FiniteDuration.create(1, TimeUnit.SECONDS), 10, ThrottleMode.enforcing())
+            .throttle(10, Duration.ofSeconds(1), 10, ThrottleMode.shaping())
+            .throttle(10, Duration.ofSeconds(1), 10, ThrottleMode.enforcing())
             .runWith(Sink.head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
 
     assertEquals((Object) 0, result);
+  }
+
+  @Test
+  public void mustBeAbleToUseAlsoTo() {
+    final Source<Integer, NotUsed> f = Source.<Integer>empty().alsoTo(Sink.ignore());
+    final Source<Integer, String> f2 = Source.<Integer>empty().alsoToMat(Sink.ignore(), (i, n) -> "foo");
+  }
+
+  @Test
+  public void mustBeAbleToUseDivertTo() {
+    final Source<Integer, NotUsed> f = Source.<Integer>empty().divertTo(Sink.ignore(), e -> true);
+    final Source<Integer, String> f2 = Source.<Integer>empty().divertToMat(Sink.ignore(), e -> true, (i, n) -> "foo");
+  }
+
+  @Test
+  public void mustBeAbleToUsePreMaterialize() {
+    final Pair<NotUsed, Source<Integer, NotUsed>> p = Source.<Integer>empty().preMaterialize(materializer);
   }
 }

@@ -1,13 +1,20 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream
 
-import akka.actor.{ ActorSystem, Props }
+import akka.Done
+import akka.actor.{ Actor, ActorSystem, PoisonPill, Props }
+import akka.stream.ActorMaterializerSpec.ActorWithMaterializer
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.testkit.{ ImplicitSender, TestActor }
+import akka.testkit.{ ImplicitSender, TestActor, TestProbe }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.{ Failure, Try }
 
 class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
@@ -34,8 +41,21 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
     "refuse materialization after shutdown" in {
       val m = ActorMaterializer.create(system)
       m.shutdown()
-      an[IllegalStateException] should be thrownBy
-        Source(1 to 5).runForeach(println)(m)
+      the[IllegalStateException] thrownBy {
+        Source(1 to 5).runWith(Sink.ignore)(m)
+      } should have message "Trying to materialize stream after materializer has been shutdown"
+    }
+
+    "refuse materialization when shutdown while materializing" in {
+      val m = ActorMaterializer.create(system)
+
+      the[IllegalStateException] thrownBy {
+        Source(1 to 5).mapMaterializedValue { _ ⇒
+          // shutdown while materializing
+          m.shutdown()
+          Thread.sleep(100)
+        }.runWith(Sink.ignore)(m)
+      } should have message "Materializer shutdown while materializing stream"
     }
 
     "shut down the supervisor actor it encapsulates" in {
@@ -47,7 +67,17 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
       m.shutdown()
 
       m.supervisor ! StreamSupervisor.GetChildren
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
+    }
+
+    "terminate if ActorContext it was created from terminates" in {
+      val p = TestProbe()
+
+      val a = system.actorOf(Props(new ActorWithMaterializer(p)).withDispatcher("akka.test.stream-dispatcher"))
+
+      p.expectMsg("hello")
+      a ! PoisonPill
+      val Failure(ex) = p.expectMsgType[Try[Done]]
     }
 
     "handle properly broken Props" in {
@@ -66,4 +96,21 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
     }
   }
 
+}
+
+object ActorMaterializerSpec {
+  class ActorWithMaterializer(p: TestProbe) extends Actor {
+    private val settings: ActorMaterializerSettings = ActorMaterializerSettings(context.system).withDispatcher("akka.test.stream-dispatcher")
+    implicit val mat = ActorMaterializer(settings)(context)
+
+    Source.repeat("hello")
+      .take(1)
+      .concat(Source.maybe)
+      .map(p.ref ! _)
+      .runWith(Sink.onComplete(signal ⇒ {
+        p.ref ! signal
+      }))
+
+    def receive = Actor.emptyBehavior
+  }
 }

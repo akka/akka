@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.pattern
 
 import language.implicitConversions
@@ -72,6 +73,7 @@ trait PipeToSupport {
    *
    * {{{
    * import akka.pattern.pipe
+   * // requires implicit ExecutionContext, e.g. by importing `context.dispatcher` inside an Actor
    *
    * Future { doExpensiveCalc() } pipeTo nextActor
    *
@@ -91,6 +93,7 @@ trait PipeToSupport {
    *
    * {{{
    * import akka.pattern.pipe
+   * // requires implicit ExecutionContext, e.g. by importing `context.dispatcher` inside an Actor
    *
    * Future { doExpensiveCalc() } pipeTo nextActor
    *

@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.event
 
 import java.util.concurrent.TimeoutException
@@ -155,7 +156,7 @@ trait LoggingBus extends ActorEventBus {
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
       setUpStdoutLogger(system.settings)
-      publish(Debug(simpleName(this), this.getClass, "shutting down: StandardOutLogger started"))
+      publish(Debug(simpleName(this), this.getClass, "shutting down: StandardOutLogger"))
     }
     for {
       logger ← loggers
@@ -444,12 +445,13 @@ object Logging {
   final val DebugLevel = LogLevel(4)
 
   /**
-   * Internal Akka use only
+   * INTERNAL API: Internal Akka use only
    *
    * Don't include the OffLevel in the AllLogLevels since we should never subscribe
    * to some kind of OffEvent.
    */
-  private final val OffLevel = LogLevel(Int.MinValue)
+  @InternalApi
+  private[akka] final val OffLevel = LogLevel(Int.MinValue)
 
   /**
    * Returns the LogLevel associated with the given string,
@@ -739,17 +741,21 @@ object Logging {
 
   }
 
+  trait LogEventWithCause {
+    def cause: Throwable
+  }
+
   /**
    * For ERROR Logging
    */
-  case class Error(cause: Throwable, logSource: String, logClass: Class[_], message: Any = "") extends LogEvent {
+  case class Error(override val cause: Throwable, logSource: String, logClass: Class[_], message: Any = "") extends LogEvent with LogEventWithCause {
     def this(logSource: String, logClass: Class[_], message: Any) = this(Error.NoCause, logSource, logClass, message)
     override def level = ErrorLevel
   }
-  class Error2(cause: Throwable, logSource: String, logClass: Class[_], message: Any = "", override val mdc: MDC) extends Error(cause, logSource, logClass, message) {
+  class Error2(override val cause: Throwable, logSource: String, logClass: Class[_], message: Any = "", override val mdc: MDC) extends Error(cause, logSource, logClass, message) {
     def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = this(Error.NoCause, logSource, logClass, message, mdc)
   }
-  class Error3(cause: Throwable, logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
+  class Error3(override val cause: Throwable, logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
     extends Error2(cause, logSource, logClass, message, mdc) with LogEventWithMarker {
     def this(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = this(Error.NoCause, logSource, logClass, message, mdc, marker)
   }
@@ -784,9 +790,14 @@ object Logging {
   class Warning2(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC) extends Warning(logSource, logClass, message)
   class Warning3(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker)
     extends Warning2(logSource, logClass, message, mdc) with LogEventWithMarker
+  class Warning4(logSource: String, logClass: Class[_], message: Any, override val mdc: MDC, override val marker: LogMarker, override val cause: Throwable)
+    extends Warning2(logSource, logClass, message, mdc) with LogEventWithMarker with LogEventWithCause
   object Warning {
     def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Warning2(logSource, logClass, message, mdc)
     def apply(logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = new Warning3(logSource, logClass, message, mdc, marker)
+
+    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC) = new Warning4(logSource, logClass, message, mdc, null, cause)
+    def apply(cause: Throwable, logSource: String, logClass: Class[_], message: Any, mdc: MDC, marker: LogMarker) = new Warning4(logSource, logClass, message, mdc, marker, cause)
   }
 
   /**
@@ -893,6 +904,7 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message,
           stackTraceFor(event.cause)))
       case _ ⇒
@@ -901,6 +913,7 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message,
           stackTraceFor(event.cause)))
     }
@@ -912,12 +925,14 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message))
       case _ ⇒
         println(WarningFormat.format(
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message))
     }
 
@@ -928,12 +943,14 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message))
       case _ ⇒
         println(InfoFormat.format(
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message))
     }
 
@@ -944,31 +961,40 @@ object Logging {
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message))
       case _ ⇒
         println(DebugFormat.format(
           timestamp(event),
           event.thread.getName,
           event.logSource,
+          formatMDC(event.mdc),
           event.message))
+    }
+
+    private def formatMDC(mdc: Map[String, Any]): String = {
+      val size = mdc.size
+      if (size == 0) ""
+      else if (size == 1) s"[${mdc.head._1}:${mdc.head._2}]"
+      else mdc.map({ case (k, v) ⇒ s"$k:$v" }).mkString("[", "][", "]")
     }
   }
   object StdOutLogger {
     // format: OFF
-    private final  val ErrorFormat          = "[ERROR] [%s] [%s] [%s] %s%s"
-    private final val ErrorFormatWithMarker = "[ERROR] [%s][%s] [%s] [%s] %s%s"
+    private final  val ErrorFormat          = "[ERROR] [%s] [%s] [%s]%s %s%s"
+    private final val ErrorFormatWithMarker = "[ERROR] [%s][%s] [%s] [%s]%s %s%s"
 
-    private final val ErrorFormatWithoutCause           = "[ERROR] [%s] [%s] [%s] %s"
-    private final val ErrorWithoutCauseWithMarkerFormat = "[ERROR] [%s][%s] [%s] [%s] %s"
+    private final val ErrorFormatWithoutCause           = "[ERROR] [%s] [%s] [%s]%s %s"
+    private final val ErrorWithoutCauseWithMarkerFormat = "[ERROR] [%s][%s] [%s] [%s]%s %s"
 
-    private final val WarningFormat           = "[WARN] [%s] [%s] [%s] %s"
-    private final val WarningWithMarkerFormat = "[WARN] [%s][%s] [%s] [%s] %s"
+    private final val WarningFormat           = "[WARN] [%s] [%s] [%s]%s %s"
+    private final val WarningWithMarkerFormat = "[WARN] [%s][%s] [%s] [%s]%s %s"
 
-    private final val InfoFormat           = "[INFO] [%s] [%s] [%s] %s"
-    private final val InfoWithMarkerFormat = "[INFO] [%s][%s] [%s] [%s] %s"
+    private final val InfoFormat           = "[INFO] [%s] [%s] [%s]%s %s"
+    private final val InfoWithMarkerFormat = "[INFO] [%s][%s] [%s] [%s]%s %s"
 
-    private final val DebugFormat           = "[DEBUG] [%s] [%s] [%s] %s"
-    private final val DebugWithMarkerFormat = "[DEBUG] [%s][%s] [%s] [%s] %s"
+    private final val DebugFormat           = "[DEBUG] [%s] [%s] [%s]%s %s"
+    private final val DebugWithMarkerFormat = "[DEBUG] [%s][%s] [%s] [%s]%s %s"
 
     // format: ON
   }
@@ -1415,6 +1441,8 @@ object LogMarker {
   /** Java API */
   def create(name: String): LogMarker = apply(name)
 
+  @Deprecated
+  @deprecated("use akka.event.LogEventWithMarker#marker instead", since = "2.5.12")
   def extractFromMDC(mdc: MDC): Option[String] =
     mdc.get(MDCKey) match {
       case Some(v) ⇒ Some(v.toString)
@@ -1427,7 +1455,6 @@ object LogMarker {
 
 /**
  * [[LoggingAdapter]] extension which adds Marker support.
- * Only recommended to be used within Actors as it isn't thread safe.
  */
 class MarkerLoggingAdapter(
   override val bus:       LoggingBus,

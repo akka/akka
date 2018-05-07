@@ -1,15 +1,17 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka
 
-import akka.TestExtras.Filter
 import akka.TestExtras.Filter.Keys._
-import com.typesafe.sbt.{ SbtScalariform, SbtMultiJvm }
+import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.multiJvmCreateLogger
+import com.typesafe.sbt.{SbtMultiJvm, SbtScalariform}
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys._
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
-import sbt._
+import sbt.{ Def, _ }
 import sbt.Keys._
+import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport._
 
 object MultiNode extends AutoPlugin {
 
@@ -33,7 +35,7 @@ object MultiNode extends AutoPlugin {
   override def trigger = noTrigger
   override def requires = plugins.JvmPlugin
 
-  override lazy val projectSettings = multiJvmSettings
+  override lazy val projectSettings: Seq[Def.Setting[_]] = multiJvmSettings
 
   private val defaultMultiJvmOptions: Seq[String] = {
     import scala.collection.JavaConverters._
@@ -43,7 +45,7 @@ object MultiNode extends AutoPlugin {
     // -DMultiJvm.akka.cluster.Stress.nrOfNodes=15
     val MultinodeJvmArgs = "multinode\\.(D|X)(.*)".r
     val knownPrefix = Set("multnode.", "akka.", "MultiJvm.")
-    val akkaProperties = System.getProperties.propertyNames.asScala.toList.collect {
+    val akkaProperties = System.getProperties.stringPropertyNames.asScala.toList.collect {
       case MultinodeJvmArgs(a, b) ⇒
         val value = System.getProperty("multinode." + a + b)
         "-" + a + b + (if (value == "") "" else "=" + value)
@@ -60,7 +62,20 @@ object MultiNode extends AutoPlugin {
         jvmOptions in MultiJvm := defaultMultiJvmOptions,
         compileInputs in (MultiJvm, compile) := ((compileInputs in (MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm)).value,
         scalacOptions in MultiJvm := (scalacOptions in Test).value,
-        compile in MultiJvm := ((compile in MultiJvm) triggeredBy (compile in Test)).value) ++
+        compile in MultiJvm := ((compile in MultiJvm) triggeredBy (compile in Test)).value,
+        logLevel in multiJvmCreateLogger := Level.Debug, //  to see ssh establishment
+        multiJvmCreateLogger in MultiJvm := { // to use normal sbt logging infra instead of custom sbt-multijvm-one
+          val previous = (multiJvmCreateLogger in MultiJvm).value
+          val logger = streams.value.log
+          (name: String) =>
+            new Logger {
+              def trace(t: => Throwable) { logger.trace(t) }
+              def success(message: => String) { success(message) }
+              def log(level: Level.Value, message: => String): Unit =
+                logger.log(level, s"[${scala.Console.BLUE}$name${scala.Console.RESET}] $message")
+            }
+        }
+      ) ++
         CliOptions.hostsFileName.map(multiNodeHostsFileName in MultiJvm := _) ++
         CliOptions.javaName.map(multiNodeJavaName in MultiJvm := _) ++
         CliOptions.targetDirName.map(multiNodeTargetDirName in MultiJvm := _) ++
@@ -75,12 +90,26 @@ object MultiNode extends AutoPlugin {
                 multiNodeResults.overall
               else
                 testResults.overall
+
             Tests.Output(
               overall,
               testResults.events ++ multiNodeResults.events,
               testResults.summaries ++ multiNodeResults.summaries)
           }
-        } else Nil)
+        } else Nil) ++
+     Def.settings((compile in MultiJvm) := {
+      (headerCreate in MultiJvm).value
+      (compile in MultiJvm).value
+    }) ++ headerSettings(MultiJvm)
+
+
+  implicit class TestResultOps(val self: TestResult) extends AnyVal {
+    def id: Int = self match {
+      case TestResult.Passed ⇒ 0
+      case TestResult.Failed ⇒ 1
+      case TestResult.Error  ⇒ 2
+    }
+  }
 }
 
 /**

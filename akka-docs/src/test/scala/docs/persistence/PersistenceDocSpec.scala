@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.persistence
@@ -295,7 +295,7 @@ object PersistenceDocSpec {
           sender() ! c
           persist(s"evt-$c-1") { e ⇒ sender() ! e }
           persist(s"evt-$c-2") { e ⇒ sender() ! e }
-          deferAsync(s"evt-$c-3") { e ⇒ sender() ! e }
+          defer(s"evt-$c-3") { e ⇒ sender() ! e }
         }
       }
     }

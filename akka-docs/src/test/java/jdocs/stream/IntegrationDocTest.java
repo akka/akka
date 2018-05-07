@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream;
@@ -36,6 +36,7 @@ import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
 import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
 import static junit.framework.TestCase.assertTrue;
 
+@SuppressWarnings("ALL")
 public class IntegrationDocTest extends AbstractJavaTest {
 
   private static final SilenceSystemOut.System System = SilenceSystemOut.get();
@@ -257,7 +258,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
     public DatabaseService(ActorRef probe) {
       this.probe = probe;
     }
-    
+
     @Override
     public Receive createReceive() {
       return receiveBuilder()
@@ -272,11 +273,11 @@ public class IntegrationDocTest extends AbstractJavaTest {
   //#sometimes-slow-service
   static class SometimesSlowService {
     private final Executor ec;
-    
+
     public SometimesSlowService(Executor ec) {
       this.ec = ec;
     }
-    
+
     private final AtomicInteger runningCount = new AtomicInteger();
 
     public CompletionStage<String> convert(String s) {
@@ -292,7 +293,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
     }
   }
   //#sometimes-slow-service
-  
+
   //#ask-actor
   static class Translator extends AbstractActor {
     @Override
@@ -308,22 +309,79 @@ public class IntegrationDocTest extends AbstractJavaTest {
     }
   }
   //#ask-actor
-  
+
+  //#actorRefWithAck-actor
+  static class Ack {}
+
+  static class StreamInitialized {}
+  static class StreamCompleted {}
+  static class StreamFailure {
+    private final Throwable cause;
+    public StreamFailure(Throwable cause) { this.cause = cause; }
+
+    public Throwable getCause() { return cause; }
+  }
+
+  static class AckingReceiver extends AbstractLoggingActor {
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(StreamInitialized.class, init -> {
+          log().info("Stream initialized");
+          sender().tell(new Ack(), self());
+        })
+        .match(String.class, element -> {
+          log().info("Received element: {}", element);
+          sender().tell(new Ack(), self());
+        })
+        .match(StreamCompleted.class, completed -> {
+          log().info("Stream completed");
+        })
+        .match(StreamFailure.class, failed -> {
+          log().error(failed.getCause(),"Stream failed!");
+        })
+        .build();
+    }
+  }
+  //#actorRefWithAck-actor
+
   @SuppressWarnings("unchecked")
   @Test
-  public void mapAsyncPlusAsk() throws Exception {
-    //#mapAsync-ask
+  public void askStage() throws Exception {
+    //#ask
     Source<String, NotUsed> words =
       Source.from(Arrays.asList("hello", "hi"));
     Timeout askTimeout = Timeout.apply(5, TimeUnit.SECONDS);
-    
+
     words
-      .mapAsync(5, elem -> ask(ref, elem, askTimeout))
-      .map(elem -> (String) elem)
+      .ask(5, ref, String.class, askTimeout)
       // continue processing of the replies from the actor
       .map(elem -> elem.toLowerCase())
       .runWith(Sink.ignore(), mat);
-    //#mapAsync-ask
+    //#ask
+  }
+
+  @Test
+  public void actorRefWithAckExample() throws Exception {
+    //#actorRefWithAck
+    Source<String, NotUsed> words =
+      Source.from(Arrays.asList("hello", "hi"));
+
+    ActorRef receiver =
+        system.actorOf(Props.create(AckingReceiver.class));
+
+    Sink<String, NotUsed> sink = Sink.<String>actorRefWithAck(receiver,
+        new StreamInitialized(),
+        new Ack(),
+        new StreamCompleted(),
+        ex -> new StreamFailure(ex)
+    );
+
+    words
+        .map(el -> el.toLowerCase())
+        .runWith(sink, mat);
+    //#actorRefWithAck
   }
 
 

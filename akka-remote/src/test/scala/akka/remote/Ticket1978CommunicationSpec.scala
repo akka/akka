@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote
 
 import java.security.NoSuchAlgorithmException
@@ -13,10 +14,12 @@ import akka.remote.transport.netty.{ NettySSLSupport, SSLSettings }
 import akka.testkit._
 import akka.util.Timeout
 import com.typesafe.config._
-
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.reflect.classTag
+
+import akka.event.Logging
+import akka.remote.transport.netty.ConfigSSLEngineProvider
 
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
@@ -62,13 +65,15 @@ object Configuration {
       val fullConfig = config.withFallback(AkkaSpec.testConf).withFallback(ConfigFactory.load).getConfig("akka.remote.netty.ssl.security")
       val settings = new SSLSettings(fullConfig)
 
-      val rng = settings.createSecureRandom(NoMarkerLogging)
+      val sslEngineProvider = new ConfigSSLEngineProvider(NoMarkerLogging, settings)
+      val rng = sslEngineProvider.createSecureRandom()
 
       rng.nextInt() // Has to work
       val sRng = settings.SSLRandomNumberGenerator
-      rng.getAlgorithm == sRng || (throw new NoSuchAlgorithmException(sRng))
+      if (rng.getAlgorithm != sRng && sRng != "")
+        throw new NoSuchAlgorithmException(sRng)
 
-      val engine = NettySSLSupport(settings, NoMarkerLogging, isClient = true).getEngine
+      val engine = sslEngineProvider.createClientSSLEngine()
       val gotAllSupported = enabled.toSet diff engine.getSupportedCipherSuites.toSet
       val gotAllEnabled = enabled.toSet diff engine.getEnabledCipherSuites.toSet
       gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))

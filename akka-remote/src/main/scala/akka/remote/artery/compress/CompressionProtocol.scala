@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -8,11 +8,7 @@ import akka.actor.ActorRef
 import akka.remote.UniqueAddress
 import akka.remote.artery.ControlMessage
 
-// FIXME serialization
 /** INTERNAL API */
-/**
- * INTERNAL API
- */
 private[remote] object CompressionProtocol {
 
   /** INTERNAL API */

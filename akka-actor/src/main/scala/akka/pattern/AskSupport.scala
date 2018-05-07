@@ -1,11 +1,13 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.pattern
 
 import java.util.concurrent.TimeoutException
 
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.dispatch.sysmsg._
 import akka.util.{ Timeout, Unsafe }
 
@@ -584,21 +586,24 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] object PromiseActorRef {
   private case object Registering
   private case object Stopped
   private final case class StoppedWithPath(path: ActorPath)
 
   private val ActorStopResult = Failure(ActorKilledException("Stopped"))
+  private val defaultOnTimeout: String ⇒ Throwable = str ⇒ new AskTimeoutException(str)
 
-  def apply(provider: ActorRefProvider, timeout: Timeout, targetName: Any, messageClassName: String, sender: ActorRef = Actor.noSender): PromiseActorRef = {
+  def apply(provider: ActorRefProvider, timeout: Timeout, targetName: Any, messageClassName: String,
+            sender: ActorRef = Actor.noSender, onTimeout: String ⇒ Throwable = defaultOnTimeout): PromiseActorRef = {
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result, messageClassName)
     implicit val ec = a.internalCallingThreadExecutionContext
     val f = scheduler.scheduleOnce(timeout.duration) {
       result tryComplete Failure(
-        new AskTimeoutException(s"""Ask timed out on [$targetName] after [${timeout.duration.toMillis} ms]. Sender[$sender] sent message of type "${a.messageClassName}"."""))
+        onTimeout(s"""Ask timed out on [$targetName] after [${timeout.duration.toMillis} ms]. Sender[$sender] sent message of type "${a.messageClassName}"."""))
     }
     result.future onComplete { _ ⇒ try a.stop() finally f.cancel() }
     a

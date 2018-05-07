@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import scala.concurrent.Await
@@ -28,7 +29,7 @@ class FlowExpandSpec extends StreamSpec {
       val subscriber = TestSubscriber.probe[Int]()
 
       // Simply repeat the last element as an extrapolation step
-      Source.fromPublisher(publisher).expand(Iterator.continually(_)).to(Sink.fromSubscriber(subscriber)).run()
+      Source.fromPublisher(publisher).expand(Iterator.single).to(Sink.fromSubscriber(subscriber)).run()
 
       for (i ← 1 to 100) {
         // Order is important here: If the request comes first it will be extrapolated!
@@ -48,7 +49,7 @@ class FlowExpandSpec extends StreamSpec {
 
       publisher.sendNext(42)
 
-      for (i ← 1 to 100) {
+      for (_ ← 1 to 100) {
         subscriber.requestNext(42)
       }
 

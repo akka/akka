@@ -1,6 +1,7 @@
 /**
- *  Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ *  Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote
 
 import java.util.concurrent.TimeoutException
@@ -21,7 +22,6 @@ object ActorsLeakSpec {
   val config = ConfigFactory.parseString(
     """
       | akka.actor.provider = remote
-      | #akka.loglevel = DEBUG
       | akka.remote.netty.tcp.applied-adapters = ["trttl"]
       | #akka.remote.log-lifecycle-events = on
       | akka.remote.transport-failure-detector.heartbeat-interval = 1 s

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -43,6 +43,12 @@ abstract class PersistenceSpec(config: Config) extends AkkaSpec(config) with Bef
    */
   def namedPersistentActor[T <: NamedPersistentActor: ClassTag] =
     system.actorOf(Props(implicitly[ClassTag[T]].runtimeClass, name))
+
+  /**
+   * Creates a persistent actor with current name as constructor argument, plus a custom [[Config]]
+   */
+  def namedPersistentActorWithProvidedConfig[T <: NamedPersistentActor: ClassTag](providedConfig: Config) =
+    system.actorOf(Props(implicitly[ClassTag[T]].runtimeClass, name, providedConfig))
 
   override protected def beforeEach() {
     _name = s"${namePrefix}-${counter.incrementAndGet()}"

@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.event.slf4j
 
 import akka.testkit.AkkaSpec
@@ -23,7 +24,7 @@ object Slf4jLoggingFilterSpec {
 
   val config = """
     akka {
-      loglevel = DEBUG
+      loglevel = DEBUG # test verifies debug
       loggers = ["akka.event.slf4j.Slf4jLoggingFilterSpec$TestLogger"]
       logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
     }

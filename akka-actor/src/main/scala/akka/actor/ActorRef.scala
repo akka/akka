@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -10,7 +10,7 @@ import akka.dispatch.sysmsg._
 import java.lang.{ IllegalStateException, UnsupportedOperationException }
 
 import akka.serialization.{ JavaSerializer, Serialization }
-import akka.event.{ EventStream, Logging, LoggingAdapter, MarkerLoggingAdapter }
+import akka.event.{ EventStream, Logging, MarkerLoggingAdapter }
 
 import scala.annotation.tailrec
 import java.util.concurrent.ConcurrentHashMap
@@ -720,7 +720,7 @@ private[akka] final class FunctionRef(
       case w: Watch   ⇒ addWatcher(w.watchee, w.watcher)
       case u: Unwatch ⇒ remWatcher(u.watchee, u.watcher)
       case DeathWatchNotification(actorRef, _, _) ⇒
-        this.!(Terminated(actorRef)(existenceConfirmed = true, addressTerminated = false))
+        this.!(Terminated(actorRef)(existenceConfirmed = true, addressTerminated = false))(actorRef)
       case _ ⇒ //ignore all other messages
     }
   }

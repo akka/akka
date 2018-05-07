@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.persistence;
@@ -20,6 +20,7 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.Timeout;
 
+import com.typesafe.config.ConfigFactory;
 import docs.persistence.query.MyEventsByTagPublisher;
 import org.reactivestreams.Subscriber;
 import scala.concurrent.duration.FiniteDuration;

@@ -1,5 +1,8 @@
-package jdocs.cluster;
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
 
+package jdocs.cluster;
 
 import java.util.concurrent.TimeUnit;
 import scala.concurrent.Await;
@@ -55,7 +58,7 @@ public class FactorialFrontendMain {
         new Thread() {
           @Override public void run(){
             try {
-              Await.ready(system.whenTerminated(), Duration.create(10, TimeUnit.SECONDS));
+              system.getWhenTerminated().toCompletableFuture().get(10, TimeUnit.SECONDS);
             } catch (Exception e) {
               System.exit(-1);
             }

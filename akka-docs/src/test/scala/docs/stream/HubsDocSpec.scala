@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.stream
 
 import akka.NotUsed
@@ -180,7 +181,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       val fromProducer: Source[Int, NotUsed] = runnableGraph.run()
 
       fromProducer.runForeach(msg ⇒ println("consumer1: " + msg))
-      fromProducer.throttle(10, 100.millis, 10, ThrottleMode.Shaping)
+      fromProducer.throttle(10, 100.millis)
         .runForeach(msg ⇒ println("consumer2: " + msg))
       //#partition-hub-fastest
     }

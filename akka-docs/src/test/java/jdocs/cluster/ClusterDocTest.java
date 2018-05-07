@@ -1,18 +1,26 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.cluster;
 
 import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.ConfigFactory;
+
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import jdocs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import akka.actor.ActorSystem;
+//#join-seed-nodes-imports
+import akka.actor.Address;
 import akka.cluster.Cluster;
+
+//#join-seed-nodes-imports
+import akka.actor.ActorSystem;
 import akka.cluster.Member;
 
 
@@ -56,4 +64,13 @@ public class ClusterDocTest extends AbstractJavaTest {
     //#dcAccess
   }
 
+  // compile only
+  @SuppressWarnings("unused")
+  public void demonstrateJoinSeedNodes() {
+    //#join-seed-nodes
+    final Cluster cluster = Cluster.get(system);
+    List<Address> list = new LinkedList<>(); //replace this with your method to dynamically get seed nodes
+    cluster.joinSeedNodes(list);
+    //#join-seed-nodes
+  }
 }

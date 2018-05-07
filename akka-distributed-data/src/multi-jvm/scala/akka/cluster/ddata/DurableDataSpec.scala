@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.ddata
 
 import scala.concurrent.Await
@@ -23,7 +24,6 @@ final case class DurableDataSpecConfig(writeBehind: Boolean) extends MultiNodeCo
   val second = role("second")
 
   commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = DEBUG
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.log-dead-letters-during-shutdown = off
     akka.cluster.distributed-data.durable.keys = ["durable*"]

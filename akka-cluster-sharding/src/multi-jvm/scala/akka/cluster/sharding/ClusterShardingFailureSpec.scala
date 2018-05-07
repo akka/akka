@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import java.io.File
@@ -11,7 +12,6 @@ import org.apache.commons.io.FileUtils
 import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.SharedLeveldbJournal
 import akka.persistence.journal.leveldb.SharedLeveldbStore
@@ -32,8 +32,8 @@ object ClusterShardingFailureSpec {
     var n = 0
 
     def receive = {
-      case Get(id)    ⇒ sender() ! Value(id, n)
-      case Add(id, i) ⇒ n += i
+      case Get(id)   ⇒ sender() ! Value(id, n)
+      case Add(_, i) ⇒ n += i
     }
   }
 
@@ -155,7 +155,7 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
         runOn(controller) {
           system.actorOf(Props[SharedLeveldbStore], "store")
         }
-        enterBarrier("peristence-started")
+        enterBarrier("persistence-started")
 
         runOn(first, second) {
           system.actorSelection(node(controller) / "user" / "store") ! Identify(None)
@@ -202,7 +202,7 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
         region ! Add("40", 4)
         val probe = TestProbe()
         region.tell(Get("40"), probe.ref)
-        probe.expectNoMsg(1.second)
+        probe.expectNoMessage(1.second)
       }
 
       enterBarrier("first-delayed")
@@ -231,6 +231,12 @@ abstract class ClusterShardingFailureSpec(config: ClusterShardingFailureSpecConf
 
         //Test the Shard passivate works after a journal failure
         shard2.tell(Passivate(PoisonPill), entity21)
+
+        awaitCond({
+          region ! Get("21")
+          expectMsgType[Value] == Value("21", 0)
+        }, message = "Passivating did not reset Value down to 0")
+
         region ! Add("21", 1)
 
         region ! Get("21")

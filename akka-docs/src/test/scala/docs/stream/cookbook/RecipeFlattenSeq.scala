@@ -1,9 +1,12 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.stream.cookbook
 
 import akka.NotUsed
 import akka.stream.scaladsl.{ Sink, Source }
 
-import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

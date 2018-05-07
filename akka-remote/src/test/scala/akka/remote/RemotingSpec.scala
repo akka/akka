@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote
 
 import akka.actor._
@@ -187,7 +188,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
   }
 
   override def atStartup() = {
-    muteSystem(system);
+    muteSystem(system)
     remoteSystem.eventStream.publish(TestEvent.Mute(
       EventFilter[EndpointException](),
       EventFilter.error(start = "AssociationError"),
@@ -633,7 +634,6 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         akka.remote.enabled-transports = ["akka.remote.test"]
         akka.remote.retry-gate-closed-for = 5s
         akka.remote.log-remote-lifecycle-events = on
-        #akka.loglevel = DEBUG
 
         akka.remote.test {
           registry-key = TRKAzR

@@ -1,0 +1,115 @@
+/**
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package akka.actor.typed
+
+import akka.annotation.InternalApi
+import akka.{ actor ⇒ a }
+
+import scala.annotation.unchecked.uncheckedVariance
+import scala.concurrent.Future
+import scala.util.Success
+
+/**
+ * An ActorRef is the identity or address of an Actor instance. It is valid
+ * only during the Actor’s lifetime and allows messages to be sent to that
+ * Actor instance. Sending a message to an Actor that has terminated before
+ * receiving the message will lead to that message being discarded; such
+ * messages are delivered to the [[DeadLetter]] channel of the
+ * [[akka.event.EventStream]] on a best effort basis
+ * (i.e. this delivery is not reliable).
+ */
+trait ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] with java.io.Serializable {
+  /**
+   * Send a message to the Actor referenced by this ActorRef using *at-most-once*
+   * messaging semantics.
+   */
+  def tell(msg: T): Unit
+
+  /**
+   * Narrow the type of this `ActorRef`, which is always a safe operation.
+   */
+  def narrow[U <: T]: ActorRef[U]
+
+  /**
+   * Unsafe utility method for widening the type accepted by this ActorRef;
+   * provided to avoid having to use `asInstanceOf` on the full reference type,
+   * which would unfortunately also work on non-ActorRefs.
+   */
+  def upcast[U >: T @uncheckedVariance]: ActorRef[U]
+
+  /**
+   * The hierarchical path name of the referenced Actor. The lifecycle of the
+   * ActorRef is fully contained within the lifecycle of the [[akka.actor.ActorPath]]
+   * and more than one Actor instance can exist with the same path at different
+   * points in time, but not concurrently.
+   */
+  def path: a.ActorPath
+
+  @throws(classOf[java.io.ObjectStreamException])
+  private def writeReplace(): AnyRef = SerializedActorRef[T](this)
+}
+
+object ActorRef {
+
+  implicit final class ActorRefOps[-T](val ref: ActorRef[T]) extends AnyVal {
+    /**
+     * Send a message to the Actor referenced by this ActorRef using *at-most-once*
+     * messaging semantics.
+     */
+    def !(msg: T): Unit = ref.tell(msg)
+  }
+
+  /**
+   * INTERNAL API
+   *
+   * FIXME, this isn't really used since we removed the native actor system
+   */
+  @InternalApi private[akka] def apply[T](f: Future[ActorRef[T]], bufferSize: Int = 1000): ActorRef[T] =
+    f.value match {
+      // an AdaptedActorSystem will always create refs eagerly, so it will take this path
+      case Some(Success(ref)) ⇒ ref
+      case _                  ⇒ throw new IllegalStateException("Only expecting completed futures until the native actor system is implemented")
+    }
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object SerializedActorRef {
+  def apply[T](actorRef: ActorRef[T]): SerializedActorRef[T] = {
+    new SerializedActorRef(actorRef)
+  }
+
+  def toAddress[T](actorRef: ActorRef[T]) = {
+    import akka.serialization.JavaSerializer.currentSystem
+    import akka.actor.typed.scaladsl.adapter._
+    val resolver = ActorRefResolver(currentSystem.value.toTyped)
+    resolver.toSerializationFormat(actorRef)
+  }
+}
+
+/**
+ * Memento pattern for serializing ActorRefs transparently
+ * INTERNAL API
+ */
+@SerialVersionUID(1L)
+private[akka] final case class SerializedActorRef[T] private (address: String) {
+  import akka.serialization.JavaSerializer.currentSystem
+  import akka.actor.typed.scaladsl.adapter._
+
+  def this(actorRef: ActorRef[T]) =
+    this(SerializedActorRef.toAddress(actorRef))
+
+  @throws(classOf[java.io.ObjectStreamException])
+  def readResolve(): AnyRef = currentSystem.value match {
+    case null ⇒
+      throw new IllegalStateException(
+        "Trying to deserialize a serialized typed ActorRef without an ActorSystem in scope." +
+          " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
+    case someSystem ⇒
+      val resolver = ActorRefResolver(someSystem.toTyped)
+      resolver.resolveActorRef(address)
+  }
+}

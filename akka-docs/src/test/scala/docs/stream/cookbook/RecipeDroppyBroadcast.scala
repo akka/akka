@@ -1,11 +1,12 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.stream.cookbook
 
 import akka.stream.{ ClosedShape, OverflowStrategy }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
-
-import scala.collection.immutable
-import scala.concurrent.Await
 
 class RecipeDroppyBroadcast extends RecipeSpec {
 

@@ -1,14 +1,12 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.util
 
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
+import org.scalatest.{ Matchers, WordSpec }
 
-class PrettyDurationSpec extends FlatSpec with Matchers {
-
-  behavior of "PrettyDuration"
+class PrettyDurationSpec extends WordSpec with Matchers {
 
   import akka.util.PrettyDuration._
 
@@ -27,22 +25,25 @@ class PrettyDurationSpec extends FlatSpec with Matchers {
       95.hours → "3.958 d" ::
       Nil
 
-  cases foreach {
-    case (d, expectedValue) ⇒
-      it should s"print $d nanos as $expectedValue" in {
-        d.pretty should ===(expectedValue)
-      }
-  }
+  "PrettyDuration" should {
 
-  it should "work with infinity" in {
-    Duration.Inf.pretty should include("infinity")
-  }
+    cases foreach {
+      case (d, expectedValue) ⇒
+        s"print $d nanos as $expectedValue" in {
+          d.pretty should ===(expectedValue)
+        }
+    }
 
-  it should "work with -infinity" in {
-    Duration.MinusInf.pretty should include("minus infinity")
-  }
+    "work with infinity" in {
+      Duration.Inf.pretty should include("infinity")
+    }
 
-  it should "work with undefined" in {
-    Duration.Undefined.pretty should include("undefined")
+    "work with -infinity" in {
+      Duration.MinusInf.pretty should include("minus infinity")
+    }
+
+    "work with undefined" in {
+      Duration.Undefined.pretty should include("undefined")
+    }
   }
 }

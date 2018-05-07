@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.scaladsl
 
 import java.util.Collections
@@ -76,11 +80,14 @@ object TLS {
       sslConfig.getOrElse(AkkaSSLConfig(system))
 
     val createSSLEngine = { system: ActorSystem ⇒
-      val engine = hostInfo match {
-        case Some((hostname, port)) ⇒ sslContext.createSSLEngine(hostname, port)
-        case None                   ⇒ sslContext.createSSLEngine()
-      }
       val config = theSslConfig(system)
+
+      val engine = hostInfo match {
+        case Some((hostname, port)) if !config.config.loose.disableSNI ⇒
+          sslContext.createSSLEngine(hostname, port)
+        case _ ⇒ sslContext.createSSLEngine()
+      }
+
       config.sslEngineConfigurator.configure(engine, sslContext)
       engine.setUseClientMode(role == Client)
 

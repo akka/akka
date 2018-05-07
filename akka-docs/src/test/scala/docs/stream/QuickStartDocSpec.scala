@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.stream
 
 //#stream-imports
@@ -61,7 +62,7 @@ class QuickStartDocSpec extends WordSpec with BeforeAndAfterAll with ScalaFuture
     //#add-streams
     factorials
       .zipWith(Source(0 to 100))((num, idx) ⇒ s"$idx! = $num")
-      .throttle(1, 1.second, 1, ThrottleMode.shaping)
+      .throttle(1, 1.second)
       //#add-streams
       .take(3)
       //#add-streams

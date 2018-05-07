@@ -1,10 +1,11 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.io
 
 import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file.Files
+import java.nio.file.{ Files, NoSuchFileException }
 import java.util.Random
 
 import akka.actor.ActorSystem
@@ -92,7 +93,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       c.expectNext().utf8String should ===(nextChunk().toString)
       sub.request(1)
       c.expectNext().utf8String should ===(nextChunk().toString)
-      c.expectNoMsg(300.millis)
+      c.expectNoMessage(300.millis)
 
       sub.request(200)
       var expectedChunk = nextChunk().toString
@@ -177,11 +178,11 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       sub.request(demandAllButOneChunks)
       for (i ← 1 to demandAllButOneChunks) c.expectNext().utf8String should ===(nextChunk())
-      c.expectNoMsg(300.millis)
+      c.expectNoMessage(300.millis)
 
       sub.request(1)
       c.expectNext().utf8String should ===(nextChunk())
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
 
       sub.request(1)
       c.expectNext().utf8String should ===(nextChunk())
@@ -194,7 +195,10 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       p.subscribe(c)
 
       c.expectSubscription()
-      c.expectError()
+
+      val error = c.expectError()
+      error shouldBe a[NoSuchFileException]
+
       Await.result(r, 3.seconds.dilated).status.isFailure shouldBe true
     }
 
@@ -248,7 +252,7 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .runWith(TestSink.probe)
         .requestNext(ByteString(TestText, UTF_8.name))
         .expectComplete()
-        .expectNoMsg(1.second)
+        .expectNoMessage(1.second)
     }
   }
 

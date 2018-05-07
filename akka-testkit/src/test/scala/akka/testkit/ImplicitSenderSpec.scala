@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2013-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2013-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit
 
 import org.scalatest.{ WordSpec, BeforeAndAfterAll }

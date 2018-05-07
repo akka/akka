@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.actor;
@@ -412,7 +412,7 @@ public class ActorDocTest extends AbstractJavaTest {
     //#gracefulStop
     try {
       CompletionStage<Boolean> stopped =
-        gracefulStop(actorRef, Duration.create(5, TimeUnit.SECONDS), Manager.SHUTDOWN);
+        gracefulStop(actorRef, java.time.Duration.ofSeconds(5), Manager.SHUTDOWN);
       stopped.toCompletableFuture().get(6, TimeUnit.SECONDS);
       // the actor has been stopped
     } catch (AskTimeoutException e) {
@@ -741,7 +741,7 @@ public class ActorDocTest extends AbstractJavaTest {
       {
         watch(b);
         system.stop(a);
-        assertEquals(expectMsgClass(Duration.create(2, TimeUnit.SECONDS), Terminated.class).actor(), b);
+        assertEquals(expectMsgClass(java.time.Duration.ofSeconds(2), Terminated.class).actor(), b);
       }
     };
   }
@@ -832,7 +832,8 @@ public class ActorDocTest extends AbstractJavaTest {
     // don't run this
     if (false) {
       //#coordinated-shutdown-run
-      CompletionStage<Done> done = CoordinatedShutdown.get(system).runAll();
+      CompletionStage<Done> done = CoordinatedShutdown.get(system).runAll(
+          CoordinatedShutdown.unknownReason());
       //#coordinated-shutdown-run
     }
   }

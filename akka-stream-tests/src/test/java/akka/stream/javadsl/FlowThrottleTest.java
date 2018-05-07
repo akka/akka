@@ -1,21 +1,21 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.javadsl;
 
-import akka.Done;
 import akka.NotUsed;
-import akka.actor.ActorRef;
-import akka.japi.Pair;
-import akka.japi.function.Function;
-import akka.stream.*;
+import akka.stream.StreamTest;
+import akka.stream.ThrottleMode;
+import akka.testkit.AkkaJUnitActorSystemResource;
+import akka.testkit.AkkaSpec;
 import org.junit.ClassRule;
 import org.junit.Test;
-import scala.concurrent.duration.FiniteDuration;
 
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import akka.testkit.AkkaSpec;
-import akka.testkit.AkkaJUnitActorSystemResource;
 
 import static org.junit.Assert.assertEquals;
 
@@ -32,7 +32,7 @@ public class FlowThrottleTest extends StreamTest {
     public void mustWorksForTwoStreams() throws Exception {
         final Flow<Integer, Integer, NotUsed> sharedThrottle =
             Flow.of(Integer.class)
-              .throttle(1, FiniteDuration.create(1, TimeUnit.DAYS), 1, ThrottleMode.enforcing());
+              .throttle(1,java.time.Duration.ofDays(1), 1, ThrottleMode.enforcing());
 
         CompletionStage<List<Integer>> result1 =
           Source.single(1).via(sharedThrottle).via(sharedThrottle).runWith(Sink.seq(), materializer);

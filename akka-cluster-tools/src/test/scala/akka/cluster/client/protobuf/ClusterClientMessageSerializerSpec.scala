@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.client.protobuf
 
 import akka.actor.ExtendedActorSystem
@@ -28,6 +29,7 @@ class ClusterClientMessageSerializerSpec extends AkkaSpec {
       checkSerialization(GetContacts)
       checkSerialization(Heartbeat)
       checkSerialization(HeartbeatRsp)
+      checkSerialization(ReceptionistShutdown)
     }
   }
 }

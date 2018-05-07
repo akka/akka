@@ -1,1 +1,0 @@
-../scala/distributed-pub-sub.md

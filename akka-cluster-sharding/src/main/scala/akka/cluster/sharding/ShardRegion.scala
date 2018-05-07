@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import java.net.URLEncoder
@@ -27,14 +28,13 @@ import akka.cluster.ClusterSettings.DataCenter
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 object ShardRegion {
-
   /**
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardRegion]] actor.
    */
   private[akka] def props(
     typeName:           String,
-    entityProps:        Props,
+    entityProps:        String ⇒ Props,
     settings:           ClusterShardingSettings,
     coordinatorPath:    String,
     extractEntityId:    ShardRegion.ExtractEntityId,
@@ -112,7 +112,7 @@ object ShardRegion {
      */
     def entityMessage(message: Any): Any
     /**
-     * Extract the entity id from an incoming `message`. Only messages that passed the [[#entityId]]
+     * Extract the shard id from an incoming `message`. Only messages that passed the [[#entityId]]
      * function will be used as input to this function.
      */
     def shardId(message: Any): String
@@ -210,7 +210,7 @@ object ShardRegion {
    * Send this message to the `ShardRegion` actor to request for [[ClusterShardingStats]],
    * which contains statistics about the currently running sharded entities in the
    * entire cluster. If the `timeout` is reached without answers from all shard regions
-   * the reply will contain an emmpty map of regions.
+   * the reply will contain an empty map of regions.
    *
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
@@ -323,9 +323,6 @@ object ShardRegion {
    */
   final case class StartEntityAck(entityId: EntityId, shardId: ShardRegion.ShardId) extends ClusterShardingSerializable
 
-  private def roleOption(role: String): Option[String] =
-    if (role == "") None else Option(role)
-
   /**
    * INTERNAL API. Sends stopMessage (e.g. `PoisonPill`) to the entities and when all of
    * them have terminated it replies with `ShardStopped`.
@@ -367,7 +364,7 @@ object ShardRegion {
  */
 private[akka] class ShardRegion(
   typeName:           String,
-  entityProps:        Option[Props],
+  entityProps:        Option[String ⇒ Props],
   dataCenter:         Option[DataCenter],
   settings:           ClusterShardingSettings,
   coordinatorPath:    String,
@@ -407,8 +404,12 @@ private[akka] class ShardRegion(
   CoordinatedShutdown(context.system).addTask(
     CoordinatedShutdown.PhaseClusterShardingShutdownRegion,
     "region-shutdown") { () ⇒
-      self ! GracefulShutdown
-      gracefulShutdownProgress.future
+      if (cluster.isTerminated || cluster.selfMember.status == MemberStatus.Down) {
+        Future.successful(Done)
+      } else {
+        self ! GracefulShutdown
+        gracefulShutdownProgress.future
+      }
     }
 
   // subscribe to MemberEvent, re-subscribe when restart
@@ -457,7 +458,7 @@ private[akka] class ShardRegion(
     }
   }
 
-  def receive = {
+  def receive: Receive = {
     case Terminated(ref)                         ⇒ receiveTerminated(ref)
     case ShardInitialized(shardId)               ⇒ initializeShard(shardId, sender())
     case evt: ClusterDomainEvent                 ⇒ receiveClusterEvent(evt)
@@ -755,7 +756,7 @@ private[akka] class ShardRegion(
               getShard(shardId)
           case None ⇒
             if (!shardBuffers.contains(shardId)) {
-              log.debug("Request shard [{}] home", shardId)
+              log.debug("Request shard [{}] home. Coordinator [{}]", shardId, coordinator)
               coordinator.foreach(_ ! GetShardHome(shardId))
             }
             val buf = shardBuffers.getOrEmpty(shardId)
@@ -784,7 +785,7 @@ private[akka] class ShardRegion(
             context.system.deadLetters ! msg
           case None ⇒
             if (!shardBuffers.contains(shardId)) {
-              log.debug("Request shard [{}] home", shardId)
+              log.debug("Request shard [{}] home. Coordinator [{}]", shardId, coordinator)
               coordinator.foreach(_ ! GetShardHome(shardId))
             }
             bufferMessage(shardId, msg, snd)

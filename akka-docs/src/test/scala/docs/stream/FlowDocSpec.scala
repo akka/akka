@@ -1,17 +1,20 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.stream
 
-import akka.NotUsed
-import akka.actor.Cancellable
-import akka.stream.{ ClosedShape, FlowShape }
+import akka.{ Done, NotUsed }
+import akka.actor.{ Actor, ActorSystem, Cancellable }
+import akka.stream.{ ActorMaterializer, ClosedShape, FlowShape, Materializer, OverflowStrategy }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
+import docs.CompileOnlySpec
 
-import scala.concurrent.{ Promise, Future }
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success }
 
-class FlowDocSpec extends AkkaSpec {
+class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 
   implicit val ec = system.dispatcher
 
@@ -228,4 +231,63 @@ class FlowDocSpec extends AkkaSpec {
       .to(Sink.ignore)
     //#flow-async
   }
+
+  "source pre-materialization" in {
+    //#source-prematerialization
+    val matValuePoweredSource =
+      Source.actorRef[String](bufferSize = 100, overflowStrategy = OverflowStrategy.fail)
+
+    val (actorRef, source) = matValuePoweredSource.preMaterialize()
+
+    actorRef ! "Hello!"
+
+    // pass source around for materialization
+    source.runWith(Sink.foreach(println))
+    //#source-prematerialization
+  }
+}
+
+object FlowDocSpec {
+
+  {
+    //#materializer-from-system
+    implicit val system = ActorSystem("ExampleSystem")
+
+    implicit val mat = ActorMaterializer() // created from `system`
+    //#materializer-from-system
+  }
+
+  //#materializer-from-actor-context
+  final class RunWithMyself extends Actor {
+    implicit val mat = ActorMaterializer()
+
+    Source.maybe
+      .runWith(Sink.onComplete {
+        case Success(done) ⇒ println(s"Completed: $done")
+        case Failure(ex)   ⇒ println(s"Failed: ${ex.getMessage}")
+      })
+
+    def receive = {
+      case "boom" ⇒
+        context.stop(self) // will also terminate the stream
+    }
+  }
+  //#materializer-from-actor-context
+
+  //#materializer-from-system-in-actor
+  final class RunForever(implicit val mat: Materializer) extends Actor {
+
+    Source.maybe
+      .runWith(Sink.onComplete {
+        case Success(done) ⇒ println(s"Completed: $done")
+        case Failure(ex)   ⇒ println(s"Failed: ${ex.getMessage}")
+      })
+
+    def receive = {
+      case "boom" ⇒
+        context.stop(self) // will NOT terminate the stream (it's bound to the system!)
+    }
+  }
+  //#materializer-from-system-in-actor
+
 }

@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor
 
 import java.util.concurrent.atomic.AtomicInteger
@@ -21,6 +22,7 @@ object TimerSpec {
   case object Cancel extends Command
   case class SlowThenThrow(latch: TestLatch, e: Throwable) extends Command
     with NoSerializationVerificationNeeded
+  case object AutoReceive extends Command
 
   sealed trait Event
   case class Tock(n: Int) extends Event
@@ -54,6 +56,10 @@ object TimerSpec {
       timers.startPeriodicTimer("T", Tick(bumpCount), interval)
     }
 
+    def autoReceive(): Unit = {
+      timers.startSingleTimer("A", PoisonPill, interval)
+    }
+
     override def receive = {
       case Tick(n) ⇒
         monitor ! Tock(n)
@@ -71,6 +77,7 @@ object TimerSpec {
       case SlowThenThrow(latch, e) ⇒
         Await.ready(latch, 10.seconds)
         throw e
+      case AutoReceive ⇒ autoReceive()
     }
   }
 
@@ -100,6 +107,11 @@ object TimerSpec {
       stay using (bumpCount + 1)
     }
 
+    def autoReceive(): State = {
+      setTimer("A", PoisonPill, interval, repeat)
+      stay
+    }
+
     {
       val i = initial()
       startWith(TheState, i)
@@ -125,6 +137,8 @@ object TimerSpec {
       case Event(SlowThenThrow(latch, e), _) ⇒
         Await.ready(latch, 10.seconds)
         throw e
+      case Event(AutoReceive, _) ⇒
+        autoReceive()
     }
 
     initialize()
@@ -262,5 +276,52 @@ abstract class AbstractTimerSpec extends AkkaSpec {
       ref ! End
       probe.expectMsg(GotPostStop(false))
     }
+
+    "handle AutoReceivedMessages automatically" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(target(probe.ref, 10.millis, repeat = false))
+      watch(ref)
+      ref ! AutoReceive
+      expectTerminated(ref)
+    }
+
   }
+}
+
+object TimersAndStashSpec {
+
+  case object StopStashing
+
+}
+class TimersAndStashSpec extends AkkaSpec {
+  import TimersAndStashSpec._
+
+  class ActorWithTimerAndStash(probe: ActorRef) extends Actor with Timers with Stash {
+    timers.startSingleTimer("key", "scheduled", 50.millis)
+    def receive: Receive = stashing
+    def notStashing: Receive = {
+      case msg ⇒ probe ! msg
+    }
+
+    def stashing: Receive = {
+      case StopStashing ⇒
+        context.become(notStashing)
+        unstashAll()
+      case "scheduled" ⇒
+        probe ! "saw-scheduled"
+        stash()
+    }
+  }
+
+  "Timers combined with stashing" should {
+
+    "work" in {
+      val probe = TestProbe()
+      val actor = system.actorOf(Props(new ActorWithTimerAndStash(probe.ref)))
+      probe.expectMsg("saw-scheduled")
+      actor ! StopStashing
+      probe.expectMsg("scheduled")
+    }
+  }
+
 }

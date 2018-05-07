@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl
 
 import akka.actor._
 import akka.annotation.InternalApi
-import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings }
+import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings, Attributes }
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnComplete, OnError, OnNext }
 import org.reactivestreams.{ Processor, Subscriber, Subscription }
@@ -248,13 +249,16 @@ import akka.event.Logging
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] abstract class ActorProcessorImpl(val settings: ActorMaterializerSettings)
+@InternalApi private[akka] abstract class ActorProcessorImpl(attributes: Attributes, val settings: ActorMaterializerSettings)
   extends Actor
   with ActorLogging
   with Pump {
 
-  protected val primaryInputs: Inputs = new BatchingInputBuffer(settings.initialInputBufferSize, this) {
-    override def inputOnError(e: Throwable): Unit = ActorProcessorImpl.this.onError(e)
+  protected val primaryInputs: Inputs = {
+    val initialInputBufferSize = attributes.mandatoryAttribute[Attributes.InputBuffer].initial
+    new BatchingInputBuffer(initialInputBufferSize, this) {
+      override def inputOnError(e: Throwable): Unit = ActorProcessorImpl.this.onError(e)
+    }
   }
 
   protected val primaryOutputs: Outputs = new SimpleOutputs(self, this)

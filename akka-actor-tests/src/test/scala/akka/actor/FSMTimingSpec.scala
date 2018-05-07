@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -24,12 +24,12 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
   "A Finite State Machine" must {
 
     "receive StateTimeout" taggedAs TimingTest in {
-      within(1 second) {
-        within(500 millis, 1 second) {
+      within(2 seconds) {
+        within(500 millis, 2 seconds) {
           fsm ! TestStateTimeout
           expectMsg(Transition(fsm, TestStateTimeout, Initial))
         }
-        expectNoMsg
+        expectNoMessage(remainingOrDefault)
       }
     }
 
@@ -39,7 +39,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
         fsm ! Cancel
         expectMsg(Cancel)
         expectMsg(Transition(fsm, TestStateTimeout, Initial))
-        expectNoMsg
+        expectNoMessage(remainingOrDefault)
       }
     }
 
@@ -48,7 +48,7 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       system.eventStream.subscribe(testActor, classOf[DeadLetter])
       stoppingActor ! TestStoppingActorStateTimeout
       within(400 millis) {
-        expectNoMsg
+        expectNoMessage(remainingOrDefault)
       }
     }
 

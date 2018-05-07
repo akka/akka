@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.io
 
 import java.nio.ByteBuffer
@@ -29,12 +30,12 @@ import scala.util.{ Failure, Success, Try }
 @InternalApi private[stream] object TLSActor {
 
   def props(
-    settings:        ActorMaterializerSettings,
-    createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-    verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-    closing:         TLSClosing,
-    tracing:         Boolean                               = false): Props =
-    Props(new TLSActor(settings, createSSLEngine, verifySession, closing, tracing)).withDeploy(Deploy.local)
+    maxInputBufferSize: Int,
+    createSSLEngine:    ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+    verifySession:      (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+    closing:            TLSClosing,
+    tracing:            Boolean                               = false): Props =
+    Props(new TLSActor(maxInputBufferSize, createSSLEngine, verifySession, closing, tracing)).withDeploy(Deploy.local)
 
   final val TransportIn = 0
   final val TransportOut = 0
@@ -47,11 +48,11 @@ import scala.util.{ Failure, Success, Try }
  * INTERNAL API.
  */
 @InternalApi private[stream] class TLSActor(
-  settings:        ActorMaterializerSettings,
-  createSSLEngine: ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-  verifySession:   (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
-  closing:         TLSClosing,
-  tracing:         Boolean)
+  maxInputBufferSize: Int,
+  createSSLEngine:    ActorSystem ⇒ SSLEngine, // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+  verifySession:      (ActorSystem, SSLSession) ⇒ Try[Unit], // ActorSystem is only needed to support the AkkaSSLConfig legacy, see #21753
+  closing:            TLSClosing,
+  tracing:            Boolean)
   extends Actor with ActorLogging with Pump {
 
   import TLSActor._
@@ -59,7 +60,7 @@ import scala.util.{ Failure, Success, Try }
   protected val outputBunch = new OutputBunch(outputCount = 2, self, this)
   outputBunch.markAllOutputs()
 
-  protected val inputBunch = new InputBunch(inputCount = 2, settings.maxInputBufferSize, this) {
+  protected val inputBunch = new InputBunch(inputCount = 2, maxInputBufferSize, this) {
     override def onError(input: Int, e: Throwable): Unit = fail(e)
   }
 
@@ -456,7 +457,7 @@ import scala.util.{ Failure, Success, Try }
 /**
  * INTERNAL API
  */
-@InternalApi private[stream] object TlsUtils {
+@InternalApi private[akka] object TlsUtils {
   def applySessionParameters(engine: SSLEngine, sessionParameters: NegotiateNewSession): Unit = {
     sessionParameters.enabledCipherSuites foreach (cs ⇒ engine.setEnabledCipherSuites(cs.toArray))
     sessionParameters.enabledProtocols foreach (p ⇒ engine.setEnabledProtocols(p.toArray))

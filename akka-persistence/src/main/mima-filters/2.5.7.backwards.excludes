@@ -1,0 +1,6 @@
+# #18470 Calls to stash() inside of persist callbacks should throw exception
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.akka$persistence$Eventsourced$$super$stash")
+
+# #24076 PersistentActor with Timers
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.AbstractPersistentActor.createReceiveRecover")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.AbstractPersistentActorWithAtLeastOnceDelivery.createReceiveRecover")

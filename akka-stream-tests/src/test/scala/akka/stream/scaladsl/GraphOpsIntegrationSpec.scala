@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.stream.scaladsl
 
 import akka.NotUsed
@@ -182,6 +186,56 @@ class GraphOpsIntegrationSpec extends StreamSpec {
       val result = Await.result(f, 3.seconds)
 
       result.toSet should ===(Set(4, 5, 6, 13, 14, 15))
+    }
+
+    "be possible to use with generated components" in {
+      implicit val ex = materializer.system.dispatcher
+
+      //#graph-from-list
+      val sinks = immutable.Seq("a", "b", "c").map(prefix ⇒
+        Flow[String].filter(str ⇒ str.startsWith(prefix)).toMat(Sink.head[String])(Keep.right)
+      )
+
+      val g: RunnableGraph[Seq[Future[String]]] = RunnableGraph.fromGraph(GraphDSL.create(sinks) { implicit b ⇒ sinkList ⇒
+        val broadcast = b.add(Broadcast[String](sinkList.size))
+
+        Source(List("ax", "bx", "cx")) ~> broadcast
+        sinkList.foreach(sink ⇒ broadcast ~> sink)
+
+        ClosedShape
+      })
+
+      val matList: Seq[Future[String]] = g.run()
+      //#graph-from-list
+
+      val result: Seq[String] = Await.result(Future.sequence(matList), 3.seconds)
+
+      result.size shouldBe 3
+      result.head shouldBe "ax"
+      result(1) shouldBe "bx"
+      result(2) shouldBe "cx"
+    }
+
+    "be possible to use with generated components if list has no tail" in {
+      implicit val ex = materializer.system.dispatcher
+
+      val sinks = immutable.Seq(Sink.seq[Int])
+
+      val g: RunnableGraph[Seq[Future[immutable.Seq[Int]]]] = RunnableGraph.fromGraph(GraphDSL.create(sinks) { implicit b ⇒ sinkList ⇒
+        val broadcast = b.add(Broadcast[Int](sinkList.size))
+
+        Source(List(1, 2, 3)) ~> broadcast
+        sinkList.foreach(sink ⇒ broadcast ~> sink)
+
+        ClosedShape
+      })
+
+      val matList: Seq[Future[immutable.Seq[Int]]] = g.run()
+
+      val result: Seq[immutable.Seq[Int]] = Await.result(Future.sequence(matList), 3.seconds)
+
+      result.size shouldBe 1
+      result.foreach(_ shouldBe List(1, 2, 3))
     }
 
   }

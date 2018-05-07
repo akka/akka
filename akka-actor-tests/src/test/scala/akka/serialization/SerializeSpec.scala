@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
@@ -14,10 +14,10 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 import com.typesafe.config._
 import akka.pattern.ask
-import org.apache.commons.codec.binary.Hex.encodeHex
+import org.apache.commons.codec.binary.Hex.decodeHex
 import java.nio.ByteOrder
 import java.nio.ByteBuffer
-import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.dungeon.SerializationCheckFailedException
 import test.akka.serialization.NoVerification
 
 object SerializationTests {
@@ -28,6 +28,7 @@ object SerializationTests {
         serialize-messages = off
         serializers {
           test = "akka.serialization.NoopSerializer"
+          test2 = "akka.serialization.NoopSerializer2"
         }
 
         serialization-bindings {
@@ -38,6 +39,7 @@ object SerializationTests {
           "akka.serialization.SerializationTests$$A" = java
           "akka.serialization.SerializationTests$$B" = test
           "akka.serialization.SerializationTests$$D" = test
+          "akka.serialization.TestSerializable2" = test2
         }
       }
     }
@@ -63,7 +65,9 @@ object SerializationTests {
 
   class ExtendedPlainMessage extends PlainMessage
 
-  class Both(s: String) extends SimpleMessage(s) with Serializable
+  class BothTestSerializableAndJavaSerializable(s: String) extends SimpleMessage(s) with Serializable
+
+  class BothTestSerializableAndTestSerializable2(s: String) extends TestSerializable with TestSerializable2
 
   trait A
   trait B
@@ -217,18 +221,22 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
       ser.serializerFor(classOf[ExtendedPlainMessage]).getClass should ===(classOf[NoopSerializer])
     }
 
+    "give JavaSerializer lower priority for message with several bindings" in {
+      ser.serializerFor(classOf[BothTestSerializableAndJavaSerializable]).getClass should ===(classOf[NoopSerializer])
+    }
+
     "give warning for message with several bindings" in {
       EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
-        ser.serializerFor(classOf[Both]).getClass should (be(classOf[NoopSerializer]) or be(classOf[JavaSerializer]))
+        ser.serializerFor(classOf[BothTestSerializableAndTestSerializable2]).getClass should (
+          be(classOf[NoopSerializer]) or be(classOf[NoopSerializer2]))
       }
     }
 
     "resolve serializer in the order of the bindings" in {
       ser.serializerFor(classOf[A]).getClass should ===(classOf[JavaSerializer])
       ser.serializerFor(classOf[B]).getClass should ===(classOf[NoopSerializer])
-      EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
-        ser.serializerFor(classOf[C]).getClass should (be(classOf[NoopSerializer]) or be(classOf[JavaSerializer]))
-      }
+      // JavaSerializer lower prio when multiple found
+      ser.serializerFor(classOf[C]).getClass should ===(classOf[NoopSerializer])
     }
 
     "resolve serializer in the order of most specific binding first" in {
@@ -301,7 +309,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
     val a = system.actorOf(Props[FooActor])
     Await.result(a ? "pigdog", timeout.duration) should ===("pigdog")
 
-    EventFilter[NotSerializableException](occurrences = 1) intercept {
+    EventFilter[SerializationCheckFailedException](start = "Failed to serialize and deserialize message of type java.lang.Object", occurrences = 1) intercept {
       a ! (new AnyRef)
     }
     system stop a
@@ -351,7 +359,7 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
 
   "Cross-version serialization compatibility" must {
     def verify(obj: SystemMessage, asExpected: String): Unit = {
-      val bytes = javax.xml.bind.DatatypeConverter.parseHexBinary(asExpected)
+      val bytes = decodeHex(asExpected.toCharArray)
       val stream = new ObjectInputStream(new ByteArrayInputStream(bytes))
       val read = stream.readObject()
       read should ===(obj)
@@ -361,17 +369,10 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
       // Using null as the cause to avoid a large serialized message and JDK differences
       verify(
         Create(Some(null)),
-        if (scala.util.Properties.versionNumberString.startsWith("2.10.")) {
-          "aced00057372001b616b6b612e64697370617463682e7379736d73672e4372656174650000000000" +
-            "0000010200014c00076661696c75726574000e4c7363616c612f4f7074696f6e3b78707372000a73" +
-            "63616c612e536f6d65e2a09f87fc0836ae0200014c0001787400124c6a6176612f6c616e672f4f62" +
-            "6a6563743b7872000c7363616c612e4f7074696f6ee36024a8328a45e9020000787070"
-        } else {
-          "aced00057372001b616b6b612e64697370617463682e7379736d73672e4372656174650000000000" +
-            "0000010200014c00076661696c75726574000e4c7363616c612f4f7074696f6e3b78707372000a73" +
-            "63616c612e536f6d651122f2695ea18b740200014c0001787400124c6a6176612f6c616e672f4f62" +
-            "6a6563743b7872000c7363616c612e4f7074696f6efe6937fddb0e6674020000787070"
-        })
+        "aced00057372001b616b6b612e64697370617463682e7379736d73672e4372656174650000000000" +
+          "0000010200014c00076661696c75726574000e4c7363616c612f4f7074696f6e3b78707372000a73" +
+          "63616c612e536f6d651122f2695ea18b740200014c0001787400124c6a6176612f6c616e672f4f62" +
+          "6a6563743b7872000c7363616c612e4f7074696f6efe6937fddb0e6674020000787070")
     }
     "be preserved for the Recreate SystemMessage" in {
       verify(
@@ -530,11 +531,24 @@ class NoVerificationWarningOffSpec extends AkkaSpec(
 }
 
 protected[akka] trait TestSerializable
+protected[akka] trait TestSerializable2
 
 protected[akka] class NoopSerializer extends Serializer {
   def includeManifest: Boolean = false
 
   def identifier = 9999
+
+  def toBinary(o: AnyRef): Array[Byte] = {
+    Array.empty[Byte]
+  }
+
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null
+}
+
+protected[akka] class NoopSerializer2 extends Serializer {
+  def includeManifest: Boolean = false
+
+  def identifier = 10000
 
   def toBinary(o: AnyRef): Array[Byte] = {
     Array.empty[Byte]

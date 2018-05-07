@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import java.net.URLEncoder
@@ -22,7 +23,6 @@ import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.ORSetKey
 import akka.cluster.ddata.Replicator._
 import akka.actor.Stash
-import akka.cluster.ddata.DistributedData
 import akka.persistence.PersistentActor
 import akka.persistence.SnapshotOffer
 import akka.persistence.SaveSnapshotSuccess
@@ -107,7 +107,7 @@ private[akka] object Shard {
   def props(
     typeName:           String,
     shardId:            ShardRegion.ShardId,
-    entityProps:        Props,
+    entityProps:        String ⇒ Props,
     settings:           ClusterShardingSettings,
     extractEntityId:    ShardRegion.ExtractEntityId,
     extractShardId:     ShardRegion.ExtractShardId,
@@ -137,7 +137,7 @@ private[akka] object Shard {
 private[akka] class Shard(
   typeName:           String,
   shardId:            ShardRegion.ShardId,
-  entityProps:        Props,
+  entityProps:        String ⇒ Props,
   settings:           ClusterShardingSettings,
   extractEntityId:    ShardRegion.ExtractEntityId,
   extractShardId:     ShardRegion.ExtractShardId,
@@ -304,6 +304,9 @@ private[akka] class Shard(
     if (id == null || id == "") {
       log.warning("Id must not be empty, dropping message [{}]", msg.getClass.getName)
       context.system.deadLetters ! msg
+    } else if (payload.isInstanceOf[ShardRegion.StartEntity]) {
+      // in case it was wrapped, used in Typed
+      receiveStartEntity(payload.asInstanceOf[ShardRegion.StartEntity])
     } else {
       messageBuffers.contains(id) match {
         case false ⇒ deliverTo(id, msg, payload, snd)
@@ -332,7 +335,7 @@ private[akka] class Shard(
     context.child(name).getOrElse {
       log.debug("Starting entity [{}] in shard [{}]", id, shardId)
 
-      val a = context.watch(context.actorOf(entityProps, name))
+      val a = context.watch(context.actorOf(entityProps(id), name))
       idByRef = idByRef.updated(a, id)
       refById = refById.updated(id, a)
       state = state.copy(state.entities + id)
@@ -366,7 +369,6 @@ private[akka] class RememberEntityStarter(
   requestor: ActorRef) extends Actor with ActorLogging {
 
   import context.dispatcher
-  import scala.concurrent.duration._
   import RememberEntityStarter.Tick
 
   var waitingForAck = ids
@@ -475,7 +477,7 @@ private[akka] trait RememberingShard { selfType: Shard ⇒
 private[akka] class PersistentShard(
   typeName:              String,
   shardId:               ShardRegion.ShardId,
-  entityProps:           Props,
+  entityProps:           String ⇒ Props,
   override val settings: ClusterShardingSettings,
   extractEntityId:       ShardRegion.ExtractEntityId,
   extractShardId:        ShardRegion.ExtractShardId,
@@ -483,7 +485,6 @@ private[akka] class PersistentShard(
   typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage)
   with RememberingShard with PersistentActor with ActorLogging {
 
-  import ShardRegion.{ EntityId, Msg }
   import Shard._
   import settings.tuningParameters._
 
@@ -569,7 +570,7 @@ private[akka] class PersistentShard(
 private[akka] class DDataShard(
   typeName:              String,
   shardId:               ShardRegion.ShardId,
-  entityProps:           Props,
+  entityProps:           String ⇒ Props,
   override val settings: ClusterShardingSettings,
   extractEntityId:       ShardRegion.ExtractEntityId,
   extractShardId:        ShardRegion.ExtractShardId,
@@ -579,7 +580,7 @@ private[akka] class DDataShard(
   typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage)
   with RememberingShard with Stash with ActorLogging {
 
-  import ShardRegion.{ EntityId, Msg }
+  import ShardRegion.EntityId
   import Shard._
   import settings.tuningParameters._
 

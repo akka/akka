@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.remote.transport.netty
 
 import java.net.{ InetAddress, InetSocketAddress }
@@ -33,7 +37,7 @@ object NettyTransportSpec {
   }
 }
 
-class NettyTransportSpec extends WordSpec with Matchers with BindBehaviour {
+class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
   import akka.remote.transport.netty.NettyTransportSpec._
 
   "NettyTransport" should {
@@ -119,7 +123,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehaviour {
   }
 }
 
-trait BindBehaviour { this: WordSpec with Matchers ⇒
+trait BindBehavior { this: WordSpec with Matchers ⇒
   import akka.remote.transport.netty.NettyTransportSpec._
 
   def theOneWhoKnowsTheDifferenceBetweenBoundAndRemotingAddress(proto: String) = {

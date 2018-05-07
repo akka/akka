@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.io
 
 import java.io.{ IOException, InputStream }
@@ -90,6 +91,17 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       probe.sendComplete()
       inputStream.read() should ===(-1)
+      inputStream.close()
+    }
+
+    "ignore an empty ByteString" in assertAllStagesStopped {
+      val (probe, inputStream) = TestSource.probe[ByteString].toMat(StreamConverters.asInputStream())(Keep.both).run()
+      probe.sendNext(ByteString.empty)
+      val f = Future(inputStream.read())
+
+      the[Exception] thrownBy Await.result(f, timeout) shouldBe a[TimeoutException]
+      probe.sendComplete()
+      Await.result(f, remainingOrDefault) should ===(-1)
       inputStream.close()
     }
 

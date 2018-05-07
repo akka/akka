@@ -1,0 +1,5 @@
+# #23732 SSLEngineProvider, changes to internal classes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.SSLSettings.getOrCreateContext")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.SSLSettings.createSecureRandom")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.NettySSLSupport.apply")
+

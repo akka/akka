@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl
 
 import akka.annotation.InternalApi
@@ -13,9 +14,11 @@ import akka.stream._
 @InternalApi private[akka] object Stages {
 
   object DefaultAttributes {
+    // reusable common attributes
     val IODispatcher = ActorAttributes.IODispatcher
     val inputBufferOne = inputBuffer(initial = 1, max = 1)
 
+    // stage specific default attributes
     val fused = name("fused")
     val materializedValueSource = name("matValueSource")
     val map = name("map")
@@ -26,6 +29,7 @@ import akka.stream._
     val recover = name("recover")
     val mapAsync = name("mapAsync")
     val mapAsyncUnordered = name("mapAsyncUnordered")
+    val ask = name("ask")
     val grouped = name("grouped")
     val groupedWithin = name("groupedWithin")
     val groupedWeightedWithin = name("groupedWeightedWithin")
@@ -72,6 +76,7 @@ import akka.stream._
     val flattenMerge = name("flattenMerge")
     val recoverWith = name("recoverWith")
     val broadcast = name("broadcast")
+    val wireTap = name("wireTap")
     val balance = name("balance")
     val zip = name("zip")
     val zipN = name("zipN")
@@ -86,6 +91,7 @@ import akka.stream._
     val delay = name("delay")
 
     val terminationWatcher = name("terminationWatcher")
+    val watch = name("watch")
 
     val publisherSource = name("publisherSource")
     val iterableSource = name("iterableSource")
@@ -127,6 +133,7 @@ import akka.stream._
     val actorSubscriberSink = name("actorSubscriberSink")
     val queueSink = name("queueSink")
     val lazySink = name("lazySink")
+    val lazyFlow = name("lazyFlow")
     val lazySource = name("lazySource")
     val outputStreamSink = name("outputStreamSink") and IODispatcher
     val inputStreamSink = name("inputStreamSink") and IODispatcher

@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.util
 
 /*
@@ -19,5 +20,10 @@ object LineNumberSpecCodeForScala {
   val partial: PartialFunction[String, Unit] = {
     case "a" ⇒
     case "b" ⇒
+  }
+
+  def method(s: String) = () ⇒ {
+    println(s)
+    Integer.parseInt(s)
   }
 }

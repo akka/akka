@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.ddata.protobuf
 
 import java.{ util, lang ⇒ jl }
@@ -22,12 +23,9 @@ import akka.serialization.BaseSerializer
 import akka.protobuf.{ ByteString, GeneratedMessage }
 import akka.util.ByteString.UTF_8
 
-import scala.collection.immutable.TreeMap
-import akka.cluster.UniqueAddress
 import java.io.NotSerializableException
 
 import akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage
-import akka.cluster.ddata.ORSet.DeltaOp
 
 private object ReplicatedDataSerializer {
   /*
@@ -484,7 +482,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     flagFromProto(rd.Flag.parseFrom(bytes))
 
   def flagFromProto(flag: rd.Flag): Flag =
-    Flag(flag.getEnabled)
+    if (flag.getEnabled) Flag.Enabled else Flag.Disabled
 
   def lwwRegisterToProto(lwwRegister: LWWRegister[_]): rd.LWWRegister =
     rd.LWWRegister.newBuilder().

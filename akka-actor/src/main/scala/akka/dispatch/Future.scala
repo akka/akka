@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -13,7 +13,6 @@ import java.util.concurrent.{ Executor, ExecutorService, Callable }
 import scala.util.{ Try, Success, Failure }
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
-import scala.collection.immutable
 import akka.compat
 
 /**

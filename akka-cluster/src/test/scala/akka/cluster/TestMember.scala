@@ -1,17 +1,21 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster
 
 import akka.actor.Address
 
 object TestMember {
   def apply(address: Address, status: MemberStatus): Member =
-    apply(address, status, Set.empty)
+    apply(address, status, Set.empty[String])
 
-  def apply(address: Address, status: MemberStatus, roles: Set[String], dataCenter: ClusterSettings.DataCenter = ClusterSettings.DefaultDataCenter): Member =
-    withUniqueAddress(UniqueAddress(address, 0L), status, roles, dataCenter)
+  def apply(address: Address, status: MemberStatus, upNumber: Int, dc: ClusterSettings.DataCenter): Member =
+    apply(address, status, Set.empty, dc, upNumber)
 
-  def withUniqueAddress(uniqueAddress: UniqueAddress, status: MemberStatus, roles: Set[String], dataCenter: ClusterSettings.DataCenter): Member =
-    new Member(uniqueAddress, Int.MaxValue, status, roles + (ClusterSettings.DcRolePrefix + dataCenter))
+  def apply(address: Address, status: MemberStatus, roles: Set[String], dataCenter: ClusterSettings.DataCenter = ClusterSettings.DefaultDataCenter, upNumber: Int = Int.MaxValue): Member =
+    withUniqueAddress(UniqueAddress(address, 0L), status, roles, dataCenter, upNumber)
+
+  def withUniqueAddress(uniqueAddress: UniqueAddress, status: MemberStatus, roles: Set[String], dataCenter: ClusterSettings.DataCenter, upNumber: Int = Int.MaxValue): Member =
+    new Member(uniqueAddress, upNumber, status, roles + (ClusterSettings.DcRolePrefix + dataCenter))
 }

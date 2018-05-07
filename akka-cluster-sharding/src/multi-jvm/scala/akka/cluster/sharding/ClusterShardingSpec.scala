@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import akka.cluster.ddata.{ ReplicatorSettings, Replicator }
@@ -329,7 +330,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
     system.actorOf(
       ShardRegion.props(
         typeName = typeName,
-        entityProps = qualifiedCounterProps(typeName),
+        entityProps = _ ⇒ qualifiedCounterProps(typeName),
         settings = settings,
         coordinatorPath = "/user/" + typeName + "Coordinator/singleton/coordinator",
         extractEntityId = extractEntityId,

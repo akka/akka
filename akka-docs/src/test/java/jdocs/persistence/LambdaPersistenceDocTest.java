@@ -1,17 +1,17 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.persistence;
 
 import akka.actor.*;
 import akka.japi.Procedure;
 import akka.pattern.BackoffSupervisor;
 import akka.persistence.*;
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 
 import java.io.Serializable;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 public class LambdaPersistenceDocTest {
 
@@ -121,8 +121,8 @@ public class LambdaPersistenceDocTest {
         final Props props = BackoffSupervisor.props(
           childProps,
           "myActor",
-          Duration.create(3, TimeUnit.SECONDS),
-          Duration.create(30, TimeUnit.SECONDS),
+          Duration.ofSeconds(3),
+          Duration.ofSeconds(30),
           0.2);
         getContext().actorOf(props, "mySupervisor");
         super.preStart();
@@ -438,7 +438,7 @@ public class LambdaPersistenceDocTest {
           sender().tell(e, self());
         });
 
-        deferAsync(String.format("evt-%s-3", c), e -> {
+        defer(String.format("evt-%s-3", c), e -> {
           sender().tell(e, self());
         });
       }

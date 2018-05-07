@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.NotUsed
@@ -10,14 +11,14 @@ import akka.stream.Attributes.LogLevels
 import akka.stream.Supervision._
 import akka.stream.testkit.{ StreamSpec, ScriptedTest }
 import akka.stream._
-import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.testkit.TestProbe
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.control.NoStackTrace
 
 class FlowLogSpec extends StreamSpec("""
-     akka.loglevel = DEBUG
+     akka.loglevel = DEBUG # test verifies logging
      akka.actor.serialize-messages = off
      """) with ScriptedTest {
 

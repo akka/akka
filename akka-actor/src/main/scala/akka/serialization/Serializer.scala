@@ -1,8 +1,8 @@
-package akka.serialization
-
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
+package akka.serialization
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, NotSerializableException, ObjectOutputStream }
 import java.nio.ByteBuffer
@@ -70,6 +70,16 @@ trait Serializer {
    */
   @throws(classOf[NotSerializableException])
   final def fromBinary(bytes: Array[Byte], clazz: Class[_]): AnyRef = fromBinary(bytes, Option(clazz))
+}
+
+object Serializers {
+
+  // NOTE!!! If you change this method it is likely that DaemonMsgCreateSerializer.serialize needs the changes too.
+  def manifestFor(s: Serializer, message: AnyRef): String = s match {
+    case s2: SerializerWithStringManifest ⇒ s2.manifest(message)
+    case _                                ⇒ if (s.includeManifest) message.getClass.getName else ""
+  }
+
 }
 
 /**

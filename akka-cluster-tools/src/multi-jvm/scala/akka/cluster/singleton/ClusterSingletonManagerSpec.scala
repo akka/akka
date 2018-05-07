@@ -1,33 +1,28 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
 
 import language.postfixOps
-import scala.collection.immutable
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
-import akka.actor.Address
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
-import akka.cluster.Member
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.testkit.TestEvent._
-import akka.actor.Terminated
 import akka.actor.Identify
 import akka.actor.ActorIdentity
 import akka.actor.ActorSelection
-import akka.cluster.MemberStatus
 
 object ClusterSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -67,7 +62,7 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
   /**
    * This channel is extremely strict with regards to
    * registration and unregistration of consumer to
-   * be able to detect misbehaviour (e.g. two active
+   * be able to detect misbehavior (e.g. two active
    * singleton instances).
    */
   class PointToPointChannel extends Actor with ActorLogging {
@@ -334,7 +329,7 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       memberProbe.expectMsgClass(classOf[CurrentClusterState])
 
       runOn(controller) {
-        // watch that it is not terminated, which would indicate misbehaviour
+        // watch that it is not terminated, which would indicate misbehavior
         watch(system.actorOf(Props[PointToPointChannel], "queue"))
       }
       enterBarrier("queue-started")

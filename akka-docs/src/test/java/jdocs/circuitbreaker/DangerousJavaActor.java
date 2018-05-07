@@ -1,13 +1,14 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.circuitbreaker;
 
 //#imports1
 
 import akka.actor.AbstractActor;
 import akka.event.LoggingAdapter;
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 import akka.pattern.CircuitBreaker;
 import akka.event.Logging;
 
@@ -26,8 +27,8 @@ public class DangerousJavaActor extends AbstractActor {
   public DangerousJavaActor() {
     this.breaker = new CircuitBreaker(
       getContext().dispatcher(), getContext().system().scheduler(),
-      5, Duration.create(10, "s"), Duration.create(1, "m"))
-      .onOpen(this::notifyMeOnOpen);
+      5, Duration.ofSeconds(10), Duration.ofMinutes(1))
+      .addOnOpenListener(this::notifyMeOnOpen);
   }
 
   public void notifyMeOnOpen() {

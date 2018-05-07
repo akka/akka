@@ -1,20 +1,20 @@
 /**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
-package docs.actor
 
-import akka.actor.Actor
-import scala.concurrent.duration._
+package docs.actor
 
 object TimerDocSpec {
   //#timers
+  import scala.concurrent.duration._
+
+  import akka.actor.Actor
   import akka.actor.Timers
 
   object MyActor {
     private case object TickKey
     private case object FirstTick
     private case object Tick
-    private case object LaterTick
   }
 
   class MyActor extends Actor with Timers {

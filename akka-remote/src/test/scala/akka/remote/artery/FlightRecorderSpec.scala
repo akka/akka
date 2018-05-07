@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -19,9 +19,13 @@ class FlightRecorderSpec extends AkkaSpec {
 
   "Flight Recorder" must {
 
-    "properly initialize AFR file when created" in withFlightRecorder { (recorder, reader, channel) ⇒
+    "properly initialize AFR file when created" in withFlightRecorder { (_, reader, channel) ⇒
       channel.force(false)
+
+      // otherwise isAfter assertion below can randomly fail
+      Thread.sleep(1)
       val currentTime = Instant.now()
+
       reader.rereadStructure()
 
       currentTime.isAfter(reader.structure.startTime) should be(true)
@@ -358,10 +362,10 @@ class FlightRecorderSpec extends AkkaSpec {
       channel.force(false)
       reader.rereadStructure()
 
-      reader.structure.loFreqLog.logs(0).richEntries.size should ===(FlightRecorder.LoFreqWindow)
+      reader.structure.loFreqLog.logs.head.richEntries.size should ===(FlightRecorder.LoFreqWindow)
 
       for (i ← 1 to Threads) {
-        val entries = reader.structure.loFreqLog.logs(0).richEntries.filter(_.code == i).toSeq
+        val entries = reader.structure.loFreqLog.logs.head.richEntries.filter(_.code == i).toSeq
 
         entries.exists(_.dirty) should be(false)
         // Entries are consecutive for any given writer

@@ -1,1 +1,0 @@
-../scala/cluster-sharding.md

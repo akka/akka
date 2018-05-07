@@ -1,21 +1,26 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream
 
 import OverflowStrategies._
+import akka.annotation.DoNotInherit
 
 /**
  * Represents a strategy that decides how to deal with a buffer of time based stage
  * that is full but is about to receive a new element.
  */
+@DoNotInherit
 sealed abstract class DelayOverflowStrategy extends Serializable
 
 final case class BufferOverflowException(msg: String) extends RuntimeException(msg)
+
 /**
  * Represents a strategy that decides how to deal with a buffer that is full but is
  * about to receive a new element.
  */
+@DoNotInherit
 sealed abstract class OverflowStrategy extends DelayOverflowStrategy
 
 private[akka] object OverflowStrategies {

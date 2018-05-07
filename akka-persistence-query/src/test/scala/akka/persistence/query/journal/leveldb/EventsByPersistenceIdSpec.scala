@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.persistence.query.journal.leveldb
 
 import scala.concurrent.duration._
@@ -59,7 +60,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
       src.map(_.event).runWith(TestSink.probe[Any])
         .request(2)
         .expectNext("a-1", "a-2")
-        .expectNoMsg(500.millis)
+        .expectNoMessage(500.millis)
         .request(2)
         .expectNext("a-3")
         .expectComplete()
@@ -80,13 +81,13 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
       val probe = src.map(_.event).runWith(TestSink.probe[Any])
         .request(2)
         .expectNext("f-1", "f-2")
-        .expectNoMsg(100.millis)
+        .expectNoMessage(100.millis)
 
       ref ! "f-4"
       expectMsg("f-4-done")
 
       probe
-        .expectNoMsg(100.millis)
+        .expectNoMessage(100.millis)
         .request(5)
         .expectNext("f-3")
         .expectComplete() // f-4 not seen
@@ -185,13 +186,13 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
       val probe = src.map(_.event).runWith(TestSink.probe[Any])
         .request(2)
         .expectNext("e-1", "e-2")
-        .expectNoMsg(100.millis)
+        .expectNoMessage(100.millis)
 
       ref ! "e-4"
       expectMsg("e-4-done")
 
       probe
-        .expectNoMsg(100.millis)
+        .expectNoMessage(100.millis)
         .request(5)
         .expectNext("e-3")
         .expectNext("e-4")

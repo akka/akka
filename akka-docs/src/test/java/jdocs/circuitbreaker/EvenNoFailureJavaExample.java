@@ -1,8 +1,12 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package jdocs.circuitbreaker;
 
 import akka.actor.AbstractActor;
 import akka.pattern.CircuitBreaker;
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -14,7 +18,7 @@ public class EvenNoFailureJavaExample extends AbstractActor {
     public EvenNoFailureJavaExample() {
         this.breaker = new CircuitBreaker(
                 getContext().dispatcher(), getContext().system().scheduler(),
-                5, Duration.create(10, "s"), Duration.create(1, "m"));
+                5, Duration.ofSeconds(10), Duration.ofMinutes(1));
     }
 
     public int luckyNumber() {

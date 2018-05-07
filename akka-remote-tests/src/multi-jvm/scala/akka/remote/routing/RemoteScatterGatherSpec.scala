@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.routing
 
 import scala.concurrent.duration._
@@ -81,6 +82,9 @@ class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig) extend
         val connectionCount = 3
         val iterationCount = 10
 
+        // let them start
+        Thread.sleep(2000)
+
         for (i ← 0 until iterationCount; k ← 0 until connectionCount) {
           actor ! "hit"
         }
@@ -104,7 +108,7 @@ class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig) extend
         enterBarrier("done")
       }
 
-      enterBarrier("done")
+      enterBarrier("all-done")
     }
   }
 }

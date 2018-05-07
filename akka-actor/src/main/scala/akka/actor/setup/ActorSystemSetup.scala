@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor.setup
 
 import java.util.Optional
@@ -8,6 +9,8 @@ import java.util.Optional
 import scala.annotation.varargs
 import scala.compat.java8.OptionConverters._
 import scala.reflect.ClassTag
+
+import akka.annotation.InternalApi
 
 /**
  * Marker supertype for a setup part that can be put inside [[ActorSystemSetup]], if a specific concrete setup
@@ -48,7 +51,7 @@ object ActorSystemSetup {
  * Constructor is *Internal API*. Use the factory methods [[ActorSystemSetup#create]] and [[akka.actor.Actor#apply]] to create
  * instances.
  */
-final class ActorSystemSetup private[akka] (setups: Map[Class[_], AnyRef]) {
+final class ActorSystemSetup private[akka] (@InternalApi private[akka] val setups: Map[Class[_], AnyRef]) {
 
   /**
    * Java API: Extract a concrete [[Setup]] of type `T` if it is defined in the settings.
@@ -74,7 +77,7 @@ final class ActorSystemSetup private[akka] (setups: Map[Class[_], AnyRef]) {
   }
 
   /**
-   * alias for `withSetting` allowing for fluent combination of settings: `a and b and c`, where `a`, `b` and `c` are
+   * alias for `withSetup` allowing for fluent combination of settings: `a and b and c`, where `a`, `b` and `c` are
    * concrete [[Setup]] instances. If a setting of the same concrete [[Setup]] already is
    * present it will be replaced.
    */

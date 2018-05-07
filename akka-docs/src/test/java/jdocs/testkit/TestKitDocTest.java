@@ -1,12 +1,12 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.testkit;
 
 import static org.junit.Assert.*;
 
 import akka.pattern.PatternsCS;
-import akka.testkit.*;
 import jdocs.AbstractJavaTest;
 import org.junit.Assert;
 import akka.japi.JavaPartialFunction;
@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import com.typesafe.config.ConfigFactory;
 
+import akka.actor.AbstractActorWithTimers;
 import akka.actor.ActorKilledException;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -30,6 +31,7 @@ import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.AbstractActor;
+import akka.actor.AbstractActor.Receive;
 import akka.testkit.TestActor.AutoPilot;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
@@ -38,6 +40,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class TestKitDocTest extends AbstractJavaTest {
 
@@ -73,6 +76,29 @@ public class TestKitDocTest extends AbstractJavaTest {
   }
   //#test-actor-ref
 
+  //#timer
+  static class TestTimerActor extends AbstractActorWithTimers {
+    private static Object SCHED_KEY = "SchedKey";
+    static final class TriggerScheduling {
+    }
+    static final class ScheduledMessage {
+    }
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(TriggerScheduling.class, msg -> triggerScheduling())
+        .build();
+    }
+    void triggerScheduling() {
+      getTimers().startSingleTimer(
+        SCHED_KEY,
+        new ScheduledMessage(),
+        Duration.create(500, TimeUnit.MILLISECONDS)
+      );
+    }
+  }
+  //#timer
+
   @Test
   public void demonstrateAsk() throws Exception {
     //#test-behavior
@@ -103,7 +129,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-within
     new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
-      within(Duration.Zero(), Duration.create(1, "second"), () -> {
+      within(java.time.Duration.ZERO, java.time.Duration.ofSeconds(1), () -> {
         assertEquals((Integer) 42, expectMsgClass(Integer.class));
         return null;
       });
@@ -164,7 +190,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-awaitCond
     new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
-      awaitCond(duration("1 second"), duration("100 millis"), this::msgAvailable);
+      awaitCond(java.time.Duration.ofSeconds(1), java.time.Duration.ofMillis(100), this::msgAvailable);
     }};
     //#test-awaitCond
   }
@@ -198,7 +224,7 @@ public class TestKitDocTest extends AbstractJavaTest {
       final List<String> all = expectMsgAllOf("hello", "world");
       final int i        = expectMsgClass(Integer.class);
       final Number j     = expectMsgAnyClassOf(Integer.class, Long.class);
-      expectNoMsg();
+      expectNoMessage();
       //#test-expect
       getRef().tell("receveN-1", ActorRef.noSender());
       getRef().tell("receveN-2", ActorRef.noSender());
@@ -234,9 +260,9 @@ public class TestKitDocTest extends AbstractJavaTest {
   public void demonstrateDilated() {
     //#duration-dilation
     new TestKit(system) {{
-      final FiniteDuration original = duration("1 second");
-      final Duration stretched = dilated(original);
-      assertTrue("dilated", stretched.gteq(original));
+      final java.time.Duration original = java.time.Duration.ofSeconds(1);
+      final java.time.Duration stretched = dilated(original);
+      assertTrue("dilated", stretched.compareTo(original)  >= 0);
     }};
     //#duration-dilation
   }
@@ -259,7 +285,7 @@ public class TestKitDocTest extends AbstractJavaTest {
             .build();
         }
       }
-      
+
       // create a test probe
       final TestKit probe = new TestKit(system);
 
@@ -351,12 +377,29 @@ public class TestKitDocTest extends AbstractJavaTest {
   }
 
   @Test
+  public void demonstrateUsingInheritenceToTestTimers() {
+    //#timer-test
+    new TestKit(system) {{
+      final TestKit probe = new TestKit(system);
+      final ActorRef target = system.actorOf(Props.create(TestTimerActor.class, () -> new TestTimerActor() {
+        @Override
+        void triggerScheduling() {
+          probe.getRef().tell(new ScheduledMessage(), getSelf());
+        }
+      }));
+      target.tell(new TestTimerActor.TriggerScheduling(), ActorRef.noSender());
+      probe.expectMsgClass(TestTimerActor.ScheduledMessage.class);
+    }};
+    //#timer-test
+  }
+
+  @Test
   public void demonstrateWithinProbe() {
     try {
     //#test-within-probe
     new TestKit(system) {{
       final TestKit probe = new TestKit(system);
-      within(duration("1 second"), () -> probe.expectMsgEquals("hello"));
+      within(java.time.Duration.ofSeconds(1), () -> probe.expectMsgEquals("hello"));
     }};
     //#test-within-probe
     } catch (AssertionError e) {
@@ -381,7 +424,7 @@ public class TestKitDocTest extends AbstractJavaTest {
       expectMsgEquals("hello");
       // ... but then the auto-pilot switched itself off
       probe.getRef().tell("world", getRef());
-      expectNoMsg();
+      expectNoMessage();
     }};
     //#test-auto-pilot
   }

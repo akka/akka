@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.client.protobuf
 
 import scala.collection.JavaConverters._
@@ -25,6 +26,7 @@ private[akka] class ClusterClientMessageSerializer(val system: ExtendedActorSyst
   private val GetContactsManifest = "B"
   private val HeartbeatManifest = "C"
   private val HeartbeatRspManifest = "D"
+  private val ReceptionistShutdownManifest = "E"
 
   private val emptyByteArray = Array.empty[Byte]
 
@@ -32,22 +34,25 @@ private[akka] class ClusterClientMessageSerializer(val system: ExtendedActorSyst
     ContactsManifest → contactsFromBinary,
     GetContactsManifest → { _ ⇒ GetContacts },
     HeartbeatManifest → { _ ⇒ Heartbeat },
-    HeartbeatRspManifest → { _ ⇒ HeartbeatRsp })
+    HeartbeatRspManifest → { _ ⇒ HeartbeatRsp },
+    ReceptionistShutdownManifest → { _ ⇒ ReceptionistShutdown })
 
   override def manifest(obj: AnyRef): String = obj match {
-    case _: Contacts  ⇒ ContactsManifest
-    case GetContacts  ⇒ GetContactsManifest
-    case Heartbeat    ⇒ HeartbeatManifest
-    case HeartbeatRsp ⇒ HeartbeatRspManifest
+    case _: Contacts          ⇒ ContactsManifest
+    case GetContacts          ⇒ GetContactsManifest
+    case Heartbeat            ⇒ HeartbeatManifest
+    case HeartbeatRsp         ⇒ HeartbeatRspManifest
+    case ReceptionistShutdown ⇒ ReceptionistShutdownManifest
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: Contacts  ⇒ contactsToProto(m).toByteArray
-    case GetContacts  ⇒ emptyByteArray
-    case Heartbeat    ⇒ emptyByteArray
-    case HeartbeatRsp ⇒ emptyByteArray
+    case m: Contacts          ⇒ contactsToProto(m).toByteArray
+    case GetContacts          ⇒ emptyByteArray
+    case Heartbeat            ⇒ emptyByteArray
+    case HeartbeatRsp         ⇒ emptyByteArray
+    case ReceptionistShutdown ⇒ emptyByteArray
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }

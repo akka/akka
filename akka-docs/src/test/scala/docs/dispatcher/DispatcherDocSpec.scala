@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.dispatcher
 
 import language.postfixOps
@@ -179,9 +180,8 @@ object DispatcherDocSpec {
 
     //#bounded-mailbox-config
     bounded-mailbox {
-      mailbox-type = "akka.dispatch.BoundedMailbox"
-      mailbox-capacity = 1000
-      mailbox-push-timeout-time = 10s
+      mailbox-type = "akka.dispatch.NonBlockingBoundedMailbox"
+      mailbox-capacity = 1000 
     }
     //#bounded-mailbox-config
 

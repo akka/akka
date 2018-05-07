@@ -1,14 +1,13 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import scala.concurrent.duration._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.{ Actor, ActorPath, ActorPathExtractor, ActorRef, ActorSystemImpl, AddressTerminated, Deploy, InternalActorRef, Nobody, Props, VirtualPathContainer }
-import akka.event.{ AddressTerminatedTopic, LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import akka.event.{ AddressTerminatedTopic, LogMarker, MarkerLoggingAdapter }
 import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Watch }
 import akka.actor.ActorRefWithCell
 import akka.actor.ActorRefScope
@@ -24,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.immutable
 import akka.dispatch.sysmsg.Unwatch
-import akka.NotUsed
 
 /**
  * INTERNAL API
@@ -60,7 +58,6 @@ private[akka] class RemoteSystemDaemon(
   AddressTerminatedTopic(system).subscribe(this)
 
   private val parent2children = new ConcurrentHashMap[ActorRef, Set[ActorRef]]
-  private val dedupDaemonMsgCreateMessages = new ConcurrentHashMap[String, NotUsed]
 
   private val whitelistEnabled = system.settings.config.getBoolean("akka.remote.deployment.enable-whitelist")
   private val remoteDeploymentWhitelist: immutable.Set[String] = {
@@ -214,38 +211,30 @@ private[akka] class RemoteSystemDaemon(
   }
 
   private def doCreateActor(message: DaemonMsg, props: Props, deploy: Deploy, path: String, supervisor: ActorRef) = {
-    // Artery sends multiple DaemonMsgCreate over several streams to preserve ordering assumptions,
-    // DaemonMsgCreate for this unique path is already handled and therefore deduplicated
-    if (dedupDaemonMsgCreateMessages.putIfAbsent(path, NotUsed) == null) {
-      // we only need to keep the dedup info for a short period
-      // this is not a real actor, so no point in scheduling message
-      system.scheduler.scheduleOnce(5.seconds)(dedupDaemonMsgCreateMessages.remove(path))(system.dispatcher)
-
-      path match {
-        case ActorPathExtractor(address, elems) if elems.nonEmpty && elems.head == "remote" ⇒
-          // TODO RK currently the extracted “address” is just ignored, is that okay?
-          // TODO RK canonicalize path so as not to duplicate it always #1446
-          val subpath = elems.drop(1)
-          val p = this.path / subpath
-          val childName = {
-            val s = subpath.mkString("/")
-            val i = s.indexOf('#')
-            if (i < 0) s
-            else s.substring(0, i)
-          }
-          val isTerminating = !terminating.whileOff {
-            val parent = supervisor.asInstanceOf[InternalActorRef]
-            val actor = system.provider.actorOf(system, props, parent,
-              p, systemService = false, Some(deploy), lookupDeploy = true, async = false)
-            addChild(childName, actor)
-            actor.sendSystemMessage(Watch(actor, this))
-            actor.start()
-            if (addChildParentNeedsWatch(parent, actor)) parent.sendSystemMessage(Watch(parent, this))
-          }
-          if (isTerminating) log.error("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, p.address)
-        case _ ⇒
-          log.debug("remote path does not match path from message [{}]", message)
-      }
+    path match {
+      case ActorPathExtractor(address, elems) if elems.nonEmpty && elems.head == "remote" ⇒
+        // TODO RK currently the extracted “address” is just ignored, is that okay?
+        // TODO RK canonicalize path so as not to duplicate it always #1446
+        val subpath = elems.drop(1)
+        val p = this.path / subpath
+        val childName = {
+          val s = subpath.mkString("/")
+          val i = s.indexOf('#')
+          if (i < 0) s
+          else s.substring(0, i)
+        }
+        val isTerminating = !terminating.whileOff {
+          val parent = supervisor.asInstanceOf[InternalActorRef]
+          val actor = system.provider.actorOf(system, props, parent,
+            p, systemService = false, Some(deploy), lookupDeploy = true, async = false)
+          addChild(childName, actor)
+          actor.sendSystemMessage(Watch(actor, this))
+          actor.start()
+          if (addChildParentNeedsWatch(parent, actor)) parent.sendSystemMessage(Watch(parent, this))
+        }
+        if (isTerminating) log.error("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, p.address)
+      case _ ⇒
+        log.debug("remote path does not match path from message [{}]", message)
     }
   }
 

@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.io
 
 import java.io.IOException
@@ -13,7 +14,7 @@ import akka.stream._
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.OutputStreamSourceStage
-import akka.stream.scaladsl.{ Keep, Sink, Source, StreamConverters }
+import akka.stream.scaladsl.{ Keep, Sink, StreamConverters }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
@@ -160,7 +161,10 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       s.cancel()
       sourceProbe.expectMsg(GraphStageMessages.DownstreamFinish)
-      the[Exception] thrownBy outputStream.write(bytesArray) shouldBe a[IOException]
+
+      awaitAssert {
+        the[Exception] thrownBy outputStream.write(bytesArray) shouldBe a[IOException]
+      }
     }
 
     "fail to materialize with zero sized input buffer" in {

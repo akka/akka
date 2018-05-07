@@ -1,11 +1,14 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka
 
 import sbt._
-import sbtunidoc.Plugin.UnidocKeys._
-import sbtunidoc.Plugin.{ ScalaUnidoc, JavaUnidoc, Genjavadoc, scalaJavaUnidocSettings, genjavadocExtraSettings, scalaUnidocSettings }
+import sbtunidoc.BaseUnidocPlugin.autoImport.{ unidoc, unidocProjectFilter }
+import sbtunidoc.JavaUnidocPlugin.autoImport.JavaUnidoc
+import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
+import sbtunidoc.GenJavadocPlugin.autoImport._
 import sbt.Keys._
 import sbt.File
 import scala.annotation.tailrec
@@ -100,15 +103,14 @@ object UnidocRoot extends AutoPlugin {
   import autoImport._
 
   override def trigger = noTrigger
+  override def requires =
+    UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(sbtunidoc.ScalaUnidocPlugin && sbtunidoc.JavaUnidocPlugin && sbtunidoc.GenJavadocPlugin)
+      .getOrElse(sbtunidoc.ScalaUnidocPlugin)
 
-  val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(Seq(
-    javacOptions in (JavaUnidoc, unidoc) ++= Seq("-Xdoclint:none"),
-    // genjavadoc needs to generate synthetic methods since the java code uses them
-    scalacOptions += "-P:genjavadoc:suppressSynthetic=false",
-    // FIXME: see #18056
-    sources in (JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin"))))).getOrElse(Nil)
+  val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
+    Seq(javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none"))).getOrElse(Nil)
 
-  val settings = {
+  override lazy val projectSettings = {
     def unidocRootProjectFilter(ignoreProjects: Seq[Project]) =
       ignoreProjects.foldLeft(inAnyProject) { _ -- inProjects(_) }
 
@@ -117,23 +119,21 @@ object UnidocRoot extends AutoPlugin {
       unidocProjectFilter in JavaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
       apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value))
   }
-
-  override lazy val projectSettings =
-    CliOptions.genjavadocEnabled.ifTrue(scalaJavaUnidocSettings).getOrElse(scalaUnidocSettings) ++ settings
 }
 
 /**
  * Unidoc settings for every multi-project. Adds genjavadoc specific settings.
  */
-object Unidoc extends AutoPlugin {
+object BootstrapGenjavadoc extends AutoPlugin {
 
   override def trigger = allRequirements
-  override def requires = plugins.JvmPlugin
+  override def requires = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(sbtunidoc.GenJavadocPlugin)
+    .getOrElse(plugins.JvmPlugin)
 
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
-    genjavadocExtraSettings ++ Seq(
-      scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
-      unidocGenjavadocVersion in Global := "0.10",
-      // FIXME: see #18056
-      sources in (Genjavadoc, doc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin"))))).getOrElse(Seq.empty)
+    Seq(
+      unidocGenjavadocVersion := "0.11",
+      scalacOptions in Compile ++= Seq("-P:genjavadoc:fabricateParams=true", "-P:genjavadoc:suppressSynthetic=false")
+    )
+  ).getOrElse(Nil)
 }

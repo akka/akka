@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.serialization
@@ -15,7 +15,6 @@ import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration
 import akka.actor.Actor
 import scala.concurrent.duration.Duration
-import scala.language.existentials
 import java.io.NotSerializableException
 
 /**
@@ -168,15 +167,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       val serializer = serialization.findSerializerFor(payload)
       val builder = mf.PersistentPayload.newBuilder()
 
-      serializer match {
-        case ser2: SerializerWithStringManifest ⇒
-          val manifest = ser2.manifest(payload)
-          if (manifest != PersistentRepr.Undefined)
-            builder.setPayloadManifest(ByteString.copyFromUtf8(manifest))
-        case _ ⇒
-          if (serializer.includeManifest)
-            builder.setPayloadManifest(ByteString.copyFromUtf8(payload.getClass.getName))
-      }
+      val ms = Serializers.manifestFor(serializer, payload)
+      if (ms.nonEmpty) builder.setPayloadManifest(ByteString.copyFromUtf8(ms))
 
       builder.setPayload(ByteString.copyFrom(serializer.toBinary(payload)))
       builder.setSerializerId(serializer.identifier)

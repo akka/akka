@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import java.util.concurrent.Executors
@@ -46,6 +47,8 @@ object LatencySpec extends MultiNodeConfig {
          remote.artery {
            enabled = on
            advanced.idle-cpu-level = 7
+
+           advanced.inbound-lanes = 1
 
            # for serious measurements when running this test on only one machine
            # it is recommended to use external media driver
@@ -131,7 +134,7 @@ object LatencySpec extends MultiNodeConfig {
       def percentile(p: Double): Double = histogram.getValueAtPercentile(p) / 1000.0
       val throughput = 1000.0 * histogram.getTotalCount / math.max(1, totalDurationNanos.nanos.toMillis)
 
-      reporter.reportResults(s"=== Latency $testName: RTT " +
+      reporter.reportResults(s"=== ${reporter.testName} $testName: RTT " +
         f"50%%ile: ${percentile(50.0)}%.0f µs, " +
         f"90%%ile: ${percentile(90.0)}%.0f µs, " +
         f"99%%ile: ${percentile(99.0)}%.0f µs, " +

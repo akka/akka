@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.stream.{ ActorMaterializer, KillSwitches, ThrottleMode }
@@ -313,6 +314,10 @@ class HubSpec extends StreamSpec {
       downstream1.request(4)
       downstream2.request(8)
 
+      // sending the first element is in a race with downstream subscribing
+      // give a bit of time for the downstream to complete subscriptions
+      Thread.sleep(100)
+
       (1 to 8) foreach (upstream.sendNext(_))
 
       downstream1.expectNext(1, 2, 3, 4)
@@ -363,6 +368,34 @@ class HubSpec extends StreamSpec {
       a[TE] shouldBe thrownBy {
         Await.result(source.runWith(Sink.seq), 3.seconds)
       }
+    }
+
+    "handle cancelled Sink" in assertAllStagesStopped {
+      val in = TestPublisher.probe[Int]()
+      val hubSource = Source.fromPublisher(in).runWith(BroadcastHub.sink(4))
+
+      val out = TestSubscriber.probe[Int]()
+
+      hubSource.runWith(Sink.cancelled)
+      hubSource.runWith(Sink.fromSubscriber(out))
+
+      out.ensureSubscription()
+
+      out.request(10)
+      in.expectRequest()
+      in.sendNext(1)
+      out.expectNext(1)
+      in.sendNext(2)
+      out.expectNext(2)
+      in.sendNext(3)
+      out.expectNext(3)
+      in.sendNext(4)
+      out.expectNext(4)
+      in.sendNext(5)
+      out.expectNext(5)
+
+      in.sendComplete()
+      out.expectComplete()
     }
 
   }
@@ -548,6 +581,10 @@ class HubSpec extends StreamSpec {
       downstream1.request(4)
       downstream2.request(8)
 
+      // to make sure downstream subscriptions are done before
+      // starting to send elements
+      Thread.sleep(100)
+
       (0 until 16) foreach (upstream.sendNext(_))
 
       downstream1.expectNext(0, 2, 4, 6)
@@ -600,6 +637,15 @@ class HubSpec extends StreamSpec {
       a[TE] shouldBe thrownBy {
         Await.result(source.runWith(Sink.seq), 3.seconds)
       }
+    }
+
+    "drop elements with negative index" in assertAllStagesStopped {
+      val source = Source(0 until 10).runWith(PartitionHub.sink(
+        (size, elem) ⇒ if (elem == 3 || elem == 4) -1 else elem % size, startAfterNrOfConsumers = 2, bufferSize = 8))
+      val result1 = source.runWith(Sink.seq)
+      val result2 = source.runWith(Sink.seq)
+      result1.futureValue should ===((0 to 8 by 2).filterNot(_ == 4))
+      result2.futureValue should ===((1 to 9 by 2).filterNot(_ == 3))
     }
 
   }

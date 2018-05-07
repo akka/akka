@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.NotUsed
@@ -10,7 +11,6 @@ import akka.stream.Supervision.{ restartingDecider, resumingDecider }
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import akka.testkit.TestLatch
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.duration._
@@ -58,13 +58,13 @@ class FlowFoldAsyncSpec extends StreamSpec {
     }
 
     "propagate an error" in assertAllStagesStopped {
-      val error = new Exception with NoStackTrace
+      val error = TE("Boom!")
       val future = inputSource.map(x ⇒ if (x > 50) throw error else x).runFoldAsync[NotUsed](NotUsed)(noneAsync)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
     "complete future with failure when folding function throws" in assertAllStagesStopped {
-      val error = new Exception with NoStackTrace
+      val error = TE("Boom!")
       val future = inputSource.runFoldAsync(0) { (x, y) ⇒
         if (x > 50) Future.failed(error) else Future(x + y)
       }

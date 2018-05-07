@@ -1,8 +1,10 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.fusing
 
+import java.util.Collections
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.NotUsed
@@ -15,12 +17,10 @@ import akka.stream.stage._
 import akka.stream.scaladsl._
 import akka.stream.actor.ActorSubscriberMessage
 
-import scala.collection.{ immutable, mutable }
+import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.annotation.tailrec
-import akka.stream.impl.PublisherSource
-import akka.stream.impl.CancellingSubscriber
 import akka.stream.impl.{ Buffer ⇒ BufferImpl }
 
 import scala.collection.JavaConverters._
@@ -87,7 +87,7 @@ import scala.collection.JavaConverters._
       sinkIn.pull()
       sources += sinkIn
       val graph = Source.fromGraph(source).to(sinkIn.sink)
-      interpreter.subFusingMaterializer.materialize(graph, initialAttributes = enclosingAttributes)
+      interpreter.subFusingMaterializer.materialize(graph, defaultAttributes = enclosingAttributes)
     }
 
     def removeSource(src: SubSinkInlet[T]): Unit = {
@@ -215,7 +215,7 @@ import scala.collection.JavaConverters._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class GroupBy[T, K](val maxSubstreams: Int, val keyFor: T ⇒ K) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
+@InternalApi private[akka] final class GroupBy[T, K](val maxSubstreams: Int, val keyFor: T ⇒ K, val allowClosedSubstreamRecreation: Boolean = false) extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
   val in: Inlet[T] = Inlet("GroupBy.in")
   val out: Outlet[Source[T, NotUsed]] = Outlet("GroupBy.out")
   override val shape: FlowShape[T, Source[T, NotUsed]] = FlowShape(in, out)
@@ -223,9 +223,9 @@ import scala.collection.JavaConverters._
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with OutHandler with InHandler {
     parent ⇒
-    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(Supervision.stoppingDecider)
+    lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
     private val activeSubstreamsMap = new java.util.HashMap[Any, SubstreamSource]()
-    private val closedSubstreams = new java.util.HashSet[Any]()
+    private val closedSubstreams = if (allowClosedSubstreamRecreation) Collections.unmodifiableSet(Collections.emptySet[Any]) else new java.util.HashSet[Any]()
     private var timeout: FiniteDuration = _
     private var substreamWaitingToBePushed: Option[SubstreamSource] = None
     private var nextElementKey: K = null.asInstanceOf[K]
@@ -250,12 +250,20 @@ import scala.collection.JavaConverters._
         true
       } else false
 
+    private def tryCancel(): Boolean =
+      // if there's no active substreams or there's only one but it's not been pushed yet
+      if (activeSubstreamsMap.isEmpty || (activeSubstreamsMap.size == substreamWaitingToBePushed.size)) {
+        completeStage()
+        true
+      } else false
+
     private def fail(ex: Throwable): Unit = {
       for (value ← activeSubstreamsMap.values().asScala) value.fail(ex)
       failStage(ex)
     }
 
-    private def needToPull: Boolean = !(hasBeenPulled(in) || isClosed(in) || hasNextElement)
+    private def needToPull: Boolean =
+      !(hasBeenPulled(in) || isClosed(in) || hasNextElement || substreamWaitingToBePushed.nonEmpty)
 
     override def preStart(): Unit =
       timeout = ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
@@ -279,8 +287,9 @@ import scala.collection.JavaConverters._
 
     override def onUpstreamFailure(ex: Throwable): Unit = fail(ex)
 
-    override def onDownstreamFinish(): Unit =
-      if (activeSubstreamsMap.isEmpty) completeStage() else setKeepGoing(true)
+    override def onUpstreamFinish(): Unit = if (!tryCompleteAll()) setKeepGoing(true)
+
+    override def onDownstreamFinish(): Unit = if (!tryCancel()) setKeepGoing(true)
 
     override def onPush(): Unit = try {
       val elem = grab(in)
@@ -308,10 +317,6 @@ import scala.collection.JavaConverters._
         }
     }
 
-    override def onUpstreamFinish(): Unit = {
-      if (!tryCompleteAll()) setKeepGoing(true)
-    }
-
     private def runSubstream(key: K, value: T): Unit = {
       val substreamSource = new SubstreamSource("GroupBySource " + nextId, key, value)
       activeSubstreamsMap.put(key, substreamSource)
@@ -330,8 +335,9 @@ import scala.collection.JavaConverters._
     override protected def onTimer(timerKey: Any): Unit = {
       val substreamSource = activeSubstreamsMap.get(timerKey)
       if (substreamSource != null) {
-        substreamSource.timeout(timeout)
-        closedSubstreams.add(timerKey)
+        if (!allowClosedSubstreamRecreation) {
+          closedSubstreams.add(timerKey)
+        }
         activeSubstreamsMap.remove(timerKey)
         if (isClosed(in)) tryCompleteAll()
       }
@@ -345,7 +351,9 @@ import scala.collection.JavaConverters._
       private def completeSubStream(): Unit = {
         complete()
         activeSubstreamsMap.remove(key)
-        closedSubstreams.add(key)
+        if (!allowClosedSubstreamRecreation) {
+          closedSubstreams.add(key)
+        }
       }
 
       private def tryCompleteHandler(): Unit = {
@@ -375,6 +383,7 @@ import scala.collection.JavaConverters._
         if (hasNextElement && nextElementKey == key) clearNextElement()
         if (firstPush()) firstPushCounter -= 1
         completeSubStream()
+        if (parent.isClosed(out)) tryCancel()
         if (parent.isClosed(in)) tryCompleteAll() else if (needToPull) pull(in)
       }
 
@@ -606,7 +615,7 @@ import scala.collection.JavaConverters._
   extends GraphStage[SinkShape[T]] {
   import SubSink._
 
-  private val in = Inlet[T]("SubSink.in")
+  private val in = Inlet[T](s"SubSink($name).in")
 
   override def initialAttributes = Attributes.name(s"SubSink($name)")
   override val shape = SinkShape(in)
@@ -676,7 +685,7 @@ import scala.collection.JavaConverters._
   extends GraphStage[SourceShape[T]] {
   import SubSink._
 
-  val out: Outlet[T] = Outlet("SubSource.out")
+  val out: Outlet[T] = Outlet(s"SubSource($name).out")
   override def initialAttributes = Attributes.name(s"SubSource($name)")
   override val shape: SourceShape[T] = SourceShape(out)
 

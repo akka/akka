@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import akka.util.Timeout
@@ -158,8 +159,9 @@ object ShardCoordinator {
         val mostShards = currentShardAllocations.collect {
           case (_, v) ⇒ v.filterNot(s ⇒ rebalanceInProgress(s))
         }.maxBy(_.size)
-        if (mostShards.size - leastShards.size >= rebalanceThreshold)
-          Future.successful(mostShards.take(maxSimultaneousRebalance - rebalanceInProgress.size).toSet)
+        val difference = mostShards.size - leastShards.size
+        if (difference >= rebalanceThreshold)
+          Future.successful(mostShards.take(math.min(difference, maxSimultaneousRebalance - rebalanceInProgress.size)).toSet)
         else
           emptyRebalanceResult
       } else emptyRebalanceResult
@@ -419,7 +421,8 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
   var allRegionsRegistered = false
 
   var state = State.empty.withRememberEntities(settings.rememberEntities)
-  var rebalanceInProgress = Set.empty[ShardId]
+  // rebalanceInProgress for the ShardId keys, pending GetShardHome requests by the ActorRef values
+  var rebalanceInProgress = Map.empty[ShardId, Set[ActorRef]]
   var unAckedHostShards = Map.empty[ShardId, Cancellable]
   // regions that have requested handoff, for graceful shutdown
   var gracefulShutdownInProgress = Set.empty[ActorRef]
@@ -477,34 +480,23 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
       }
 
     case GetShardHome(shard) ⇒
-      if (rebalanceInProgress.contains(shard)) {
-        log.debug("GetShardHome [{}] request ignored, because rebalance is in progress for this shard.", shard)
-      } else if (!hasAllRegionsRegistered()) {
-        log.debug("GetShardHome [{}] request ignored, because not all regions have registered yet.", shard)
-      } else {
-        state.shards.get(shard) match {
-          case Some(ref) ⇒
-            if (regionTerminationInProgress(ref))
-              log.debug("GetShardHome [{}] request ignored, due to region [{}] termination in progress.", shard, ref)
-            else
-              sender() ! ShardHome(shard, ref)
-          case None ⇒
-            val activeRegions = state.regions -- gracefulShutdownInProgress
-            if (activeRegions.nonEmpty) {
-              val getShardHomeSender = sender()
-              val regionFuture = allocationStrategy.allocateShard(getShardHomeSender, shard, activeRegions)
-              regionFuture.value match {
-                case Some(Success(region)) ⇒
-                  continueGetShardHome(shard, region, getShardHomeSender)
-                case _ ⇒
-                  // continue when future is completed
-                  regionFuture.map { region ⇒
-                    AllocateShardResult(shard, Some(region), getShardHomeSender)
-                  }.recover {
-                    case _ ⇒ AllocateShardResult(shard, None, getShardHomeSender)
-                  }.pipeTo(self)
-              }
-            }
+      if (!handleGetShardHome(shard)) {
+        // location not know, yet
+        val activeRegions = state.regions -- gracefulShutdownInProgress
+        if (activeRegions.nonEmpty) {
+          val getShardHomeSender = sender()
+          val regionFuture = allocationStrategy.allocateShard(getShardHomeSender, shard, activeRegions)
+          regionFuture.value match {
+            case Some(Success(region)) ⇒
+              continueGetShardHome(shard, region, getShardHomeSender)
+            case _ ⇒
+              // continue when future is completed
+              regionFuture.map { region ⇒
+                AllocateShardResult(shard, Some(region), getShardHomeSender)
+              }.recover {
+                case _ ⇒ AllocateShardResult(shard, None, getShardHomeSender)
+              }.pipeTo(self)
+          }
         }
       }
 
@@ -530,7 +522,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
 
     case RebalanceTick ⇒
       if (state.regions.nonEmpty) {
-        val shardsFuture = allocationStrategy.rebalance(state.regions, rebalanceInProgress)
+        val shardsFuture = allocationStrategy.rebalance(state.regions, rebalanceInProgress.keySet)
         shardsFuture.value match {
           case Some(Success(shards)) ⇒
             continueRebalance(shards)
@@ -547,18 +539,24 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
       continueRebalance(shards)
 
     case RebalanceDone(shard, ok) ⇒
-      rebalanceInProgress -= shard
       log.debug("Rebalance shard [{}] done [{}]", shard, ok)
       // The shard could have been removed by ShardRegionTerminated
-      if (state.shards.contains(shard))
+      if (state.shards.contains(shard)) {
         if (ok) {
           update(ShardHomeDeallocated(shard)) { evt ⇒
+            log.debug("Shard [{}] deallocated after rebalance", shard)
             state = state.updated(evt)
-            log.debug("Shard [{}] deallocated", evt.shard)
+            clearRebalanceInProgress(shard)
             allocateShardHomesForRememberEntities()
           }
-        } else // rebalance not completed, graceful shutdown will be retried
+        } else {
+          // rebalance not completed, graceful shutdown will be retried
           gracefulShutdownInProgress -= state.shards(shard)
+          clearRebalanceInProgress(shard)
+        }
+      } else {
+        clearRebalanceInProgress(shard)
+      }
 
     case GracefulShutdownReq(region) ⇒
       if (!gracefulShutdownInProgress(region))
@@ -608,6 +606,49 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
       sender() ! reply
 
   }: Receive).orElse[Any, Unit](receiveTerminated)
+
+  private def clearRebalanceInProgress(shard: String): Unit = {
+    rebalanceInProgress.get(shard) match {
+      case Some(pendingGetShardHome) ⇒
+        val msg = GetShardHome(shard)
+        pendingGetShardHome.foreach { getShardHomeSender ⇒
+          self.tell(msg, getShardHomeSender)
+        }
+        rebalanceInProgress -= shard
+      case None ⇒
+    }
+  }
+
+  private def deferGetShardHomeRequest(shard: ShardId, from: ActorRef): Unit = {
+    log.debug("GetShardHome [{}] request from [{}] deferred, because rebalance is in progress for this shard. " +
+      "It will be handled when rebalance is done.", shard, from)
+    rebalanceInProgress = rebalanceInProgress.updated(shard, rebalanceInProgress(shard) + from)
+  }
+
+  /**
+   * @return `true` if the message could be handled without state update, i.e.
+   *         the shard location was known or the request was deferred or ignored
+   */
+  def handleGetShardHome(shard: ShardId): Boolean = {
+    if (rebalanceInProgress.contains(shard)) {
+      deferGetShardHomeRequest(shard, sender())
+      true
+    } else if (!hasAllRegionsRegistered()) {
+      log.debug("GetShardHome [{}] request ignored, because not all regions have registered yet.", shard)
+      true
+    } else {
+      state.shards.get(shard) match {
+        case Some(ref) ⇒
+          if (regionTerminationInProgress(ref))
+            log.debug("GetShardHome [{}] request ignored, due to region [{}] termination in progress.", shard, ref)
+          else
+            sender() ! ShardHome(shard, ref)
+          true
+        case None ⇒
+          false // location not known, yet, caller will handle allocation
+      }
+    }
+  }
 
   def receiveTerminated: Receive = {
     case t @ Terminated(ref) ⇒
@@ -674,6 +715,7 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
   def regionTerminated(ref: ActorRef): Unit =
     if (state.regions.contains(ref)) {
       log.debug("ShardRegion terminated: [{}]", ref)
+      regionTerminationInProgress += ref
       state.regions(ref).foreach { s ⇒ self ! GetShardHome(s) }
 
       update(ShardRegionTerminated(ref)) { evt ⇒
@@ -709,7 +751,9 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
   }
 
   def continueGetShardHome(shard: ShardId, region: ActorRef, getShardHomeSender: ActorRef): Unit =
-    if (!rebalanceInProgress.contains(shard)) {
+    if (rebalanceInProgress.contains(shard)) {
+      deferGetShardHomeRequest(shard, getShardHomeSender)
+    } else {
       state.shards.get(shard) match {
         case Some(ref) ⇒ getShardHomeSender ! ShardHome(shard, ref)
         case None ⇒
@@ -730,10 +774,10 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
 
   def continueRebalance(shards: Set[ShardId]): Unit =
     shards.foreach { shard ⇒
-      if (!rebalanceInProgress(shard)) {
+      if (!rebalanceInProgress.contains(shard)) {
         state.shards.get(shard) match {
           case Some(rebalanceFromRegion) ⇒
-            rebalanceInProgress += shard
+            rebalanceInProgress = rebalanceInProgress.updated(shard, Set.empty)
             log.debug("Rebalance shard [{}] from [{}]", shard, rebalanceFromRegion)
             context.actorOf(rebalanceWorkerProps(shard, rebalanceFromRegion, handOffTimeout,
               state.regions.keySet union state.regionProxies)
@@ -1008,6 +1052,10 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
         "The ShardCoordinator was unable to update a distributed state {} with error {} and event {}.Coordinator will be restarted",
         key, error, evt)
       throw cause
+
+    case GetShardHome(shard) ⇒
+      if (!handleGetShardHome(shard))
+        stash() // must wait for update that is in progress
 
     case _ ⇒ stash()
   }

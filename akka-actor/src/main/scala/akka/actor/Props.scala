@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -9,7 +9,6 @@ import akka.dispatch._
 import akka.routing._
 
 import scala.collection.immutable
-import scala.language.existentials
 import scala.reflect.ClassTag
 
 /**

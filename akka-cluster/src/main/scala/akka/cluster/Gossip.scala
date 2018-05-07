@@ -1,10 +1,10 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import scala.collection.{ SortedSet, immutable }
+import scala.collection.immutable
 import ClusterSettings.DataCenter
 import MemberStatus._
 import akka.annotation.InternalApi

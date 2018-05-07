@@ -1,17 +1,19 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package jdocs.cluster;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import jdocs.cluster.StatsMessages.JobFailed;
 import jdocs.cluster.StatsMessages.StatsJob;
 import jdocs.cluster.StatsMessages.StatsResult;
 import java.util.concurrent.ThreadLocalRandom;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
+import java.time.Duration;
 import akka.actor.ActorSelection;
 import akka.actor.Address;
 import akka.actor.Cancellable;
@@ -36,7 +38,7 @@ public class StatsSampleClient extends AbstractActor {
 
   public StatsSampleClient(String servicePath) {
     this.servicePath = servicePath;
-    FiniteDuration interval = Duration.create(2, TimeUnit.SECONDS);
+    Duration interval = Duration.ofMillis(2);
     tickTask = getContext()
         .getSystem()
         .scheduler()

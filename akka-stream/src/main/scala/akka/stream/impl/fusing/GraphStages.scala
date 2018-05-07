@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.fusing
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
@@ -19,7 +20,7 @@ import akka.stream.stage._
 import akka.stream.{ Shape, _ }
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.util.{ Failure, Success, Try }
+import scala.util.Try
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 
@@ -319,15 +320,11 @@ import scala.concurrent.{ Future, Promise }
 
           override def onDownstreamFinish(): Unit = {
             if (!materialized.isCompleted) {
-              // make sure we always yield the matval if possible, even if downstream cancelled
-              // before the source was materialized
-              val matValFuture = futureSource.map { gr ⇒
-                // downstream finish means it cancelled, so we push that signal through into the future materialized source
-                Source.fromGraph(gr).to(Sink.cancelled)
-                  .withAttributes(attr)
-                  .run()(subFusingMaterializer)
-              }(ExecutionContexts.sameThreadExecutionContext)
-              materialized.completeWith(matValFuture)
+              // we used to try to materialize the "inner" source here just to get
+              // the materialized value, but that is not safe and may cause the graph shell
+              // to leak/stay alive after the stage completes
+
+              materialized.tryFailure(new StreamDetachedException("Stream cancelled before Source Future completed"))
             }
 
             super.onDownstreamFinish()
@@ -349,7 +346,7 @@ import scala.concurrent.{ Future, Promise }
         def onFutureSourceCompleted(result: Try[Graph[SourceShape[T], M]]): Unit = {
           result.map { graph ⇒
             val runnable = Source.fromGraph(graph).toMat(sinkIn.sink)(Keep.left)
-            val matVal = interpreter.subFusingMaterializer.materialize(runnable, initialAttributes = attr)
+            val matVal = interpreter.subFusingMaterializer.materialize(runnable, defaultAttributes = attr)
             materialized.success(matVal)
 
             setHandler(out, this)
@@ -469,3 +466,4 @@ import scala.concurrent.{ Future, Promise }
     }
 
 }
+

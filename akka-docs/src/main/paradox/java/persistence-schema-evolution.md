@@ -1,1 +1,0 @@
-../scala/persistence-schema-evolution.md

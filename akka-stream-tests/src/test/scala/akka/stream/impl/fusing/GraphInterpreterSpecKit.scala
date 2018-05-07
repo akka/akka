@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
@@ -13,7 +13,6 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
 
 import scala.collection.{ Map ⇒ SMap }
-import scala.language.existentials
 
 object GraphInterpreterSpecKit {
 
@@ -252,7 +251,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
         logger,
         logics,
         connections,
-        onAsyncInput = (_, _, _) ⇒ (),
+        onAsyncInput = (_, _, _, _) ⇒ (),
         fuzzingMode = false,
         context = null)
       _interpreter.init(null)

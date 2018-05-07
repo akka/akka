@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.event
 
 import language.postfixOps
@@ -26,7 +27,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
 
   import LoggingReceiveSpec._
   val config = ConfigFactory.parseString("""
-    akka.loglevel=DEBUG
+    akka.loglevel=DEBUG # test verifies debug
     akka.actor.serialize-messages = off # debug noise from serialization
     """).withFallback(AkkaSpec.testConf)
   val appLogging = ActorSystem("logging", ConfigFactory.parseMap(Map("akka.actor.debug.receive" → true).asJava).withFallback(config))

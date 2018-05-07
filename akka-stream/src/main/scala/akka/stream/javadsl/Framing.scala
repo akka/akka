@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl
 
 import java.nio.ByteOrder
@@ -20,7 +21,7 @@ object Framing {
    * If there are buffered bytes (an incomplete frame) when the input stream finishes and ''allowTruncation'' is set to
    * false then this Flow will fail the stream reporting a truncated frame.
    *
-   * Default truncation behaviour is: when the last frame being decoded contains no valid delimiter this Flow
+   * Default truncation behavior is: when the last frame being decoded contains no valid delimiter this Flow
    * fails the stream instead of returning a truncated frame.
    *
    * @param delimiter The byte sequence to be treated as the end of the frame.

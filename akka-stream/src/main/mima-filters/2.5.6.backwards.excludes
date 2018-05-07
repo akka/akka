@@ -1,0 +1,42 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.compression.GzipCompressor.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.compression.DeflateCompressor.this")
+
+# #23808 adding simplified throttle API
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.throttleEven")
+
+# #23111 AsyncCallbacks to just-finishing stages can be lost
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.QueueSource$Offer")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.QueueSource$Completion$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.QueueSink$Pull")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.QueueSink$Cancel$")
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.impl.QueueSink$Output")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.QueueSource$Failure")
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.impl.QueueSource$Input")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.stage.AsyncCallback.invokeWithFeedback")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.CallbackWrapper$Stopped")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.CallbackWrapper$NotInitialized")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.CallbackWrapper$Stopped$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.CallbackWrapper$Initialized")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.CallbackWrapper$Initialized$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.CallbackWrapper$NotInitialized$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.CallbackWrapper$CallbackState")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.CallbackWrapper")
+
+# Optimize TCP stream writes
+ProblemFilters.exclude[Problem]("akka.stream.impl.io.*")
+
+# #23953 fixes to async callback with feedback
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.fusing.GraphInterpreterShell$AsyncInput$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell#AsyncInput.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.fusing.GraphInterpreter.onAsyncInput")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.fusing.GraphInterpreter.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell#AsyncInput.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.fusing.GraphInterpreterShell#AsyncInput.copy$default$4")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell#AsyncInput.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreter.runAsyncInput")
+
+# 23798 observable unbind on stream Tcp server
+ProblemFilters.exclude[FinalClassProblem]("akka.stream.javadsl.Tcp$ServerBinding")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp#ServerBinding.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp#ServerBinding.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp#ServerBinding.apply")

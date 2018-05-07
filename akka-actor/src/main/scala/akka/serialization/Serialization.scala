@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
@@ -41,14 +41,22 @@ object Serialization {
     val Serializers: Map[String, String] = configToMap(config.getConfig("akka.actor.serializers"))
     val SerializationBindings: Map[String, String] = {
       val defaultBindings = config.getConfig("akka.actor.serialization-bindings")
-      val bindings =
+      val bindings = {
         if (config.getBoolean("akka.actor.enable-additional-serialization-bindings") ||
           !config.getBoolean("akka.actor.allow-java-serialization") ||
           config.hasPath("akka.remote.artery.enabled") && config.getBoolean("akka.remote.artery.enabled")) {
-          defaultBindings.withFallback(config.getConfig("akka.actor.additional-serialization-bindings"))
+
+          val bs = defaultBindings.withFallback(config.getConfig("akka.actor.additional-serialization-bindings"))
+
+          // in addition to the additional settings, we also enable even more bindings if java serialization is disabled:
+          val additionalWhenJavaOffKey = "akka.actor.java-serialization-disabled-additional-serialization-bindings"
+          if (!config.getBoolean("akka.actor.allow-java-serialization")) {
+            bs.withFallback(config.getConfig(additionalWhenJavaOffKey))
+          } else bs
         } else {
           defaultBindings
         }
+      }
       configToMap(bindings)
     }
 
@@ -91,6 +99,25 @@ object Serialization {
         }
     }
   }
+
+  /**
+   * Use the specified @param system to determine transport information that will be used when serializing actorRefs
+   * in @param f code: if there is no external address available for the requested address then the systems default
+   * address will be used.
+   *
+   * @return value returned by @param f
+   */
+  def withTransportInformation[T](system: ExtendedActorSystem)(f: () ⇒ T): T = {
+    val address = system.provider.getDefaultAddress
+    if (address.hasLocalScope) {
+      f()
+    } else {
+      Serialization.currentTransportInformation.withValue(Serialization.Information(address, system)) {
+        f()
+      }
+    }
+  }
+
 }
 
 /**
@@ -235,11 +262,31 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
             case (c, _) ⇒ c isAssignableFrom clazz
           } match {
             case immutable.Seq() ⇒
-              throw new NotSerializableException("No configured serialization-bindings for class [%s]" format clazz.getName)
+              throw new NotSerializableException(s"No configured serialization-bindings for class [${clazz.getName}]")
             case possibilities ⇒
-              if (!unique(possibilities))
-                _log.warning(LogMarker.Security, "Multiple serializers found for " + clazz + ", choosing first: " + possibilities)
-              possibilities(0)._2
+              if (unique(possibilities))
+                possibilities.head._2
+              else {
+                // give JavaSerializer lower priority if multiple serializers found
+                val possibilitiesWithoutJavaSerializer = possibilities.filter {
+                  case (_, _: JavaSerializer)         ⇒ false
+                  case (_, _: DisabledJavaSerializer) ⇒ false
+                  case _                              ⇒ true
+                }
+                if (possibilitiesWithoutJavaSerializer.isEmpty) {
+                  // shouldn't happen
+                  throw new NotSerializableException(s"More than one JavaSerializer configured for class [${clazz.getName}]")
+                }
+
+                if (!unique(possibilitiesWithoutJavaSerializer)) {
+                  _log.warning(LogMarker.Security, "Multiple serializers found for [{}], choosing first of: [{}]",
+                    clazz.getName,
+                    possibilitiesWithoutJavaSerializer.map { case (_, s) ⇒ s.getClass.getName }.mkString(", "))
+                }
+                possibilitiesWithoutJavaSerializer.head._2
+
+              }
+
           }
         }
 
@@ -358,7 +405,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)
    */
   val serializerByIdentity: Map[Int, Serializer] =
-    Map(NullSerializer.identifier → NullSerializer) ++ serializers map { case (_, v) ⇒ (v.identifier, v) }
+    Map(NullSerializer.identifier → NullSerializer) ++ serializers.map { case (_, v) ⇒ (v.identifier, v) }
 
   /**
    * Serializers with id 0 - 1023 are stored in an array for quick allocation free access

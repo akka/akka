@@ -1,12 +1,12 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.pubsub.protobuf
 
-import akka.serialization.BaseSerializer
+import akka.serialization._
 import scala.collection.breakOut
-import akka.actor.{ ExtendedActorSystem, Address }
-import scala.Some
+import akka.actor.{ Address, ExtendedActorSystem }
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import akka.protobuf.{ ByteString, MessageLite }
 import java.util.zip.GZIPOutputStream
@@ -16,11 +16,8 @@ import akka.cluster.pubsub.protobuf.msg.{ DistributedPubSubMessages ⇒ dm }
 import scala.collection.JavaConverters._
 import akka.cluster.pubsub.DistributedPubSubMediator._
 import akka.cluster.pubsub.DistributedPubSubMediator.Internal._
-import akka.serialization.Serialization
 import akka.actor.ActorRef
-import akka.serialization.SerializationExtension
 import scala.collection.immutable.TreeMap
-import akka.serialization.SerializerWithStringManifest
 import java.io.NotSerializableException
 
 /**
@@ -227,15 +224,8 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
       setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(m)))
       .setSerializerId(msgSerializer.identifier)
 
-    msgSerializer match {
-      case ser2: SerializerWithStringManifest ⇒
-        val manifest = ser2.manifest(m)
-        if (manifest != "")
-          builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
-      case _ ⇒
-        if (msgSerializer.includeManifest)
-          builder.setMessageManifest(ByteString.copyFromUtf8(m.getClass.getName))
-    }
+    val ms = Serializers.manifestFor(msgSerializer, m)
+    if (ms.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(ms))
 
     builder.build()
   }

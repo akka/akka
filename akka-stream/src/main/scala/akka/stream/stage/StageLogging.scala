@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.stage
 
 import akka.event.{ LoggingAdapter, NoLogging }
-import akka.stream.{ ActorMaterializer, MaterializerLoggingProvider }
+import akka.stream.MaterializerLoggingProvider
 
 /**
  * Simple way to obtain a [[LoggingAdapter]] when used together with an [[ActorMaterializer]].

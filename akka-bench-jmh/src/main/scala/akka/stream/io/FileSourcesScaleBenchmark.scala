@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
@@ -9,13 +9,12 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ ActorMaterializer, Attributes, IOResult }
+import akka.stream.{ ActorMaterializer, IOResult }
 import akka.util.ByteString
-import akka.{ Done, NotUsed }
-import org.openjdk.jmh.annotations.{ BenchmarkMode, OutputTimeUnit, Scope, State, _ }
+import org.openjdk.jmh.annotations.{ BenchmarkMode, Scope, State, _ }
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, Future }
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))

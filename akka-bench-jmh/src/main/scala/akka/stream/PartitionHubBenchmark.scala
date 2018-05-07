@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -10,10 +10,6 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
-import java.util.concurrent.Semaphore
-import scala.util.Success
-import akka.stream.impl.fusing.GraphStages
-import org.reactivestreams._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.remote.artery.BenchTestSource

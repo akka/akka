@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.persistence.query.journal.leveldb.scaladsl
 
 import java.net.URLEncoder
@@ -41,7 +42,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
   private val maxBufSize: Int = config.getInt("max-buffer-size")
 
   /**
-   * `allPersistenceIds` is used for retrieving all `persistenceIds` of all
+   * `persistenceIds` is used for retrieving all `persistenceIds` of all
    * persistent actors.
    *
    * The returned event stream is unordered and you can expect different order for multiple
@@ -66,7 +67,7 @@ class LeveldbReadJournal(system: ExtendedActorSystem, config: Config) extends Re
   }
 
   /**
-   * Same type of query as [[#allPersistenceIds]] but the stream
+   * Same type of query as [[#persistenceIds]] but the stream
    * is completed immediately when it reaches the end of the "result set". Persistent
    * actors that are created after the query is completed are not included in the stream.
    */

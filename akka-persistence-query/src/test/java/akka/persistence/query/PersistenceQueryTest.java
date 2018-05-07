@@ -1,5 +1,5 @@
 /*
-   * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+   * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
    */
 
 package akka.persistence.query;
@@ -7,6 +7,7 @@ package akka.persistence.query;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.testkit.AkkaJUnitActorSystemResource;
+import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 
 

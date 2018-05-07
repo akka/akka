@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import scala.concurrent.duration._
@@ -10,7 +11,6 @@ import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.Props
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardRegion.CurrentRegions
 import akka.cluster.sharding.ShardRegion.GetCurrentRegions
@@ -55,11 +55,11 @@ object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(ConfigFactory.parseString(s"""
-    # DEBUG because of failing test, issue #23582
-    akka.loglevel = DEBUG
+    akka.loglevel = DEBUG # issue #23741
     akka.cluster.debug.verbose-heartbeat-logging = on
+    akka.cluster.debug.verbose-gossip-logging = on
     akka.actor.provider = "cluster"
-    akka.remote.log-remote-lifecycle-events = off
+    akka.remote.log-remote-lifecycle-events = on
     akka.cluster.auto-down-unreachable-after = 0s
     """))
 
@@ -90,10 +90,12 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
     runOn(from) {
       cluster join node(to).address
       startSharding()
-      within(15.seconds) {
-        awaitAssert(cluster.state.members.exists { m ⇒
-          m.uniqueAddress == cluster.selfUniqueAddress && m.status == MemberStatus.Up
-        } should be(true))
+      withClue(s"Failed waiting for ${cluster.selfUniqueAddress} to be up. Current state: ${cluster.state}" + cluster.state) {
+        within(15.seconds) {
+          awaitAssert(cluster.state.members.exists { m ⇒
+            m.uniqueAddress == cluster.selfUniqueAddress && m.status == MemberStatus.Up
+          } should be(true))
+        }
       }
     }
     enterBarrier(from.name + "-joined")
@@ -102,7 +104,7 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
   def startSharding(): Unit = {
     ClusterSharding(system).start(
       typeName = "Entity",
-      entityProps = Props[Entity],
+      entityProps = Props[Entity](),
       settings = ClusterShardingSettings(system),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId)
@@ -121,7 +123,7 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
     }, 10.seconds)
   }
 
-  s"Cluster sharding in multi data center cluster" must {
+  "Cluster sharding in multi data center cluster" must {
     "join cluster" in within(20.seconds) {
       join(first, first)
       join(second, first)
@@ -193,7 +195,6 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
           dataCenter = None, // by default use own DC
           extractEntityId = extractEntityId,
           extractShardId = extractShardId)
-
         proxy ! GetCount("5")
         expectMsg(1)
       }

@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl
 
 import akka.annotation.InternalApi
@@ -15,6 +16,13 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
 /**
  * INTERNAL API
  */
+@InternalApi private[akka] object Throttle {
+  final val AutomaticMaximumBurst = -1
+}
+
+/**
+ * INTERNAL API
+ */
 @InternalApi private[akka] class Throttle[T](
   val cost:            Int,
   val per:             FiniteDuration,
@@ -24,17 +32,23 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
   extends SimpleLinearGraphStage[T] {
   require(cost > 0, "cost must be > 0")
   require(per.toNanos > 0, "per time must be > 0")
-  require(!(mode == ThrottleMode.Enforcing && maximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")
   require(per.toNanos >= cost, "Rates larger than 1 unit / nanosecond are not supported")
 
   // There is some loss of precision here because of rounding, but this only happens if nanosBetweenTokens is very
   // small which is usually at rates where that precision is highly unlikely anyway as the overhead of this stage
   // is likely higher than the required accuracy interval.
   private val nanosBetweenTokens = per.toNanos / cost
+  // 100 ms is a realistic minimum between tokens, otherwise the maximumBurst is adjusted
+  // to be able to support higher rates
+  val effectiveMaximumBurst =
+    if (maximumBurst == Throttle.AutomaticMaximumBurst) math.max(1, ((100 * 1000 * 1000) / nanosBetweenTokens))
+    else maximumBurst
+  require(!(mode == ThrottleMode.Enforcing && effectiveMaximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")
+
   private val timerName: String = "ThrottleTimer"
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
-    private val tokenBucket = new NanoTimeTokenBucket(maximumBurst, nanosBetweenTokens)
+    private val tokenBucket = new NanoTimeTokenBucket(effectiveMaximumBurst, nanosBetweenTokens)
 
     var willStop = false
     var currentElement: T = _
@@ -71,8 +85,7 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
         override def onPull(): Unit = pull(in)
       }
 
-      setHandler(in, handler)
-      setHandler(out, handler)
+      setHandlers(in, out, handler)
       // After this point, we no longer need the `handler` so it can just fall out of scope.
     }
 

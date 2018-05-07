@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -8,7 +8,6 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.impl.fusing.GraphStages
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import org.openjdk.jmh.annotations.{ OperationsPerInvocation, _ }

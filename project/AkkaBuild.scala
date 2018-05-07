@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -7,11 +7,9 @@ package akka
 import java.io.{ FileInputStream, InputStreamReader }
 import java.util.Properties
 
-import akka.TestExtras.JUnitFileReporting
 import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
 import sbt._
-import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
 import scala.collection.breakOut
 
 object AkkaBuild {
@@ -22,25 +20,16 @@ object AkkaBuild {
 
   lazy val buildSettings = Dependencies.Versions ++ Seq(
     organization := "com.typesafe.akka",
-    version := "2.5-SNAPSHOT")
+    // use the same value as in the build scope, so it can be overriden by stampVersion
+    version := (version in ThisBuild).value)
 
-  lazy val rootSettings = parentSettings ++ Release.settings ++
+  lazy val rootSettings = Release.settings ++
     UnidocRoot.akkaSettings ++
     Formatting.formatSettings ++
     Protobuf.settings ++ Seq(
-      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean)
-
-  val dontPublishSettings = Seq(
-    publishSigned := (),
-    publish := (),
-    publishArtifact in Compile := false,
-    whitesourceIgnore := true)
-
-  val dontPublishDocsSettings = Seq(
-    sources in doc in Compile := List())
-
-  lazy val parentSettings = Seq(
-    publishArtifact := false) ++ dontPublishSettings
+      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
+      version in ThisBuild := "2.5-SNAPSHOT"
+    )
 
   lazy val mayChangeSettings = Seq(
     description := """|This module of Akka is marked as
@@ -60,10 +49,22 @@ object AkkaBuild {
       case null ⇒ (Resolver.mavenLocal, Seq.empty)
       case path ⇒
         // Maven resolver settings
+        def deliverPattern(outputPath: File): String =
+          (outputPath / "[artifact]-[revision](-[classifier]).[ext]").absolutePath
+
         val resolver = Resolver.file("user-publish-m2-local", new File(path))
         (resolver, Seq(
           otherResolvers := resolver :: publishTo.value.toList,
-          publishM2Configuration := Classpaths.publishConfig(packagedArtifacts.value, None, resolverName = resolver.name, checksums = checksums.in(publishM2).value, logging = ivyLoggingLevel.value, overwrite = true)))
+          publishM2Configuration := Classpaths.publishConfig(
+            publishMavenStyle.value,
+            deliverPattern(crossTarget.value),
+            if (isSnapshot.value) "integration" else "release",
+            ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
+            artifacts = packagedArtifacts.value.toVector,
+            resolverName = resolver.name,
+            checksums = checksums.in(publishM2).value.toVector,
+            logging = ivyLoggingLevel.value,
+            overwrite = true)))
     }
 
   lazy val resolverSettings = {
@@ -84,7 +85,7 @@ object AkkaBuild {
 
   lazy val defaultSettings = resolverSettings ++
     TestExtras.Filter.settings ++
-    Protobuf.settings ++ Seq(
+    Protobuf.settings ++ Seq[Setting[_]](
       // compile options
       scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
@@ -94,7 +95,6 @@ object AkkaBuild {
       javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
-      incOptions := incOptions.value.withNameHashing(true),
 
       crossVersion := CrossVersion.binary,
 
@@ -174,7 +174,7 @@ object AkkaBuild {
         original.map { group ⇒
           group.runPolicy match {
             case Tests.SubProcess(forkOptions) ⇒
-              group.copy(runPolicy = Tests.SubProcess(forkOptions.copy(
+              group.copy(runPolicy = Tests.SubProcess(forkOptions.withWorkingDirectory(
                 workingDirectory = Some(new File(System.getProperty("user.dir"))))))
             case _ ⇒ group
           }
@@ -185,13 +185,8 @@ object AkkaBuild {
       logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
       // show full stack traces and test case durations
-      testOptions in Test += Tests.Argument("-oDF"),
-
-      // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
-      // -a Show stack traces and exception class name for AssertionErrors.
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")) ++
+      testOptions in Test += Tests.Argument("-oDF")) ++
       mavenLocalResolverSettings ++
-      JUnitFileReporting.settings ++
       docLintingSettings
 
   lazy val docLintingSettings = Seq(

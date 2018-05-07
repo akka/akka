@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.ddata
 
-import akka.cluster.{ Cluster, UniqueAddress }
 import akka.annotation.InternalApi
 import akka.cluster.ddata.ORMap._
+import akka.cluster.{ Cluster, UniqueAddress }
 
 object ORMultiMap {
   /**
@@ -69,9 +70,12 @@ final class ORMultiMap[A, B] private[akka] (
 
   override def merge(that: T): T =
     if (withValueDeltas == that.withValueDeltas) {
-      if (withValueDeltas)
-        new ORMultiMap(underlying.mergeRetainingDeletedValues(that.underlying), withValueDeltas)
-      else
+      if (withValueDeltas) {
+        val newUnderlying = underlying.mergeRetainingDeletedValues(that.underlying)
+        // Garbage collect the tombstones we no longer need, i.e. those that have Set() as a value.
+        val newValues = newUnderlying.values.filterNot { case (key, value) ⇒ !newUnderlying.keys.contains(key) && value.isEmpty }
+        new ORMultiMap[A, B](new ORMap(newUnderlying.keys, newValues, newUnderlying.zeroTag, newUnderlying.delta), withValueDeltas)
+      } else
         new ORMultiMap(underlying.merge(that.underlying), withValueDeltas)
     } else throw new IllegalArgumentException("Trying to merge two ORMultiMaps of different map sub-type")
 
@@ -253,9 +257,12 @@ final class ORMultiMap[A, B] private[akka] (
   override def delta: Option[D] = underlying.delta
 
   override def mergeDelta(thatDelta: D): ORMultiMap[A, B] =
-    if (withValueDeltas)
-      new ORMultiMap(underlying.mergeDeltaRetainingDeletedValues(thatDelta), withValueDeltas)
-    else
+    if (withValueDeltas) {
+      val newUnderlying = underlying.mergeDeltaRetainingDeletedValues(thatDelta)
+      // Garbage collect the tombstones we no longer need, i.e. those that have Set() as a value.
+      val newValues = newUnderlying.values.filterNot { case (key, value) ⇒ !newUnderlying.keys.contains(key) && value.isEmpty }
+      new ORMultiMap[A, B](new ORMap(newUnderlying.keys, newValues, newUnderlying.zeroTag, newUnderlying.delta), withValueDeltas)
+    } else
       new ORMultiMap(underlying.mergeDelta(thatDelta), withValueDeltas)
 
   override def modifiedByNodes: Set[UniqueAddress] =

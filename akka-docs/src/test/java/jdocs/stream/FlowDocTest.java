@@ -1,30 +1,34 @@
 /**
- *  Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com/>
+ *  Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.stream;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-
 import akka.NotUsed;
+import akka.actor.AbstractActor;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Cancellable;
+import akka.dispatch.Futures;
 import akka.japi.Pair;
-import jdocs.AbstractJavaTest;
+import akka.stream.*;
+import akka.stream.javadsl.*;
 import akka.testkit.javadsl.TestKit;
+import jdocs.AbstractJavaTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
-import akka.actor.ActorSystem;
-import akka.actor.Cancellable;
-import akka.dispatch.Futures;
-import akka.stream.*;
-import akka.stream.javadsl.*;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
 
 public class FlowDocTest extends AbstractJavaTest {
 
@@ -128,7 +132,7 @@ public class FlowDocTest extends AbstractJavaTest {
         //#compound-source-is-not-keyed-runWith
         final Object tick = new Object();
 
-        final FiniteDuration oneSecond = Duration.create(1, TimeUnit.SECONDS);
+        final Duration oneSecond = Duration.ofSeconds(1);
         //akka.actor.Cancellable
         final Source<Object, Cancellable> timer =
             Source.tick(oneSecond, oneSecond, tick);
@@ -205,7 +209,7 @@ public class FlowDocTest extends AbstractJavaTest {
   @Test
   public void transformingMaterialized() throws Exception {
 
-    FiniteDuration oneSecond = FiniteDuration.apply(1, TimeUnit.SECONDS);
+    Duration oneSecond = Duration.ofSeconds(1);
     Flow<Integer, Integer, Cancellable> throttler =
       Flow.fromGraph(GraphDSL.create(
         Source.tick(oneSecond, oneSecond, ""),
@@ -270,6 +274,22 @@ public class FlowDocTest extends AbstractJavaTest {
     //#flow-mat-combine
   }
 
+  @Test
+  public void sourcePreMaterialization() {
+    //#source-prematerialization
+    Source<String, ActorRef> matValuePoweredSource =
+        Source.actorRef(100, OverflowStrategy.fail());
+
+    Pair<ActorRef, Source<String, NotUsed>> actorRefSourcePair =
+        matValuePoweredSource.preMaterialize(mat);
+
+    actorRefSourcePair.first().tell("Hello!", ActorRef.noSender());
+
+    // pass source around for materialization
+    actorRefSourcePair.second().runWith(Sink.foreach(System.out::println), mat);
+    //#source-prematerialization
+  }
+
   public void fusingAndAsync() {
     //#flow-async
     Source.range(1, 3)
@@ -279,4 +299,64 @@ public class FlowDocTest extends AbstractJavaTest {
     //#flow-async
   }
 
+    static {
+        //#materializer-from-system
+        ActorSystem system = ActorSystem.create("ExampleSystem");
+
+        // created from `system`:
+        ActorMaterializer mat = ActorMaterializer.create(system);
+        //#materializer-from-system
+    }
+
+    //#materializer-from-actor-context
+    final class RunWithMyself extends AbstractActor {
+
+        ActorMaterializer mat = ActorMaterializer.create(context());
+
+        @Override
+        public void preStart() throws Exception {
+            Source
+                    .repeat("hello")
+                    .runWith(Sink.onComplete(tryDone -> {
+                        System.out.println("Terminated stream: " + tryDone);
+                    }), mat);
+        }
+
+        @Override
+        public Receive createReceive() {
+            return receiveBuilder().match(String.class, p -> {
+                // this WILL terminate the above stream as well
+                context().stop(self());
+            }).build();
+        }
+    }
+    //#materializer-from-actor-context
+
+    //#materializer-from-system-in-actor
+    final class RunForever extends AbstractActor {
+        final ActorMaterializer mat;
+
+        RunForever(ActorMaterializer mat) {
+            this.mat = mat;
+        }
+
+        @Override
+        public void preStart() throws Exception {
+            Source
+                    .repeat("hello")
+                    .runWith(Sink.onComplete(tryDone -> {
+                        System.out.println("Terminated stream: " + tryDone);
+                    }), mat);
+        }
+
+        @Override
+        public Receive createReceive() {
+            return receiveBuilder().match(String.class, p -> {
+                // will NOT terminate the stream (it's bound to the system!)
+                context().stop(self());
+            }).build();
+        }
+        //#materializer-from-system-in-actor
+
+    }
 }

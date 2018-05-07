@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka
 
 import com.typesafe.sbt.osgi.OsgiKeys
@@ -20,7 +21,11 @@ object OSGi {
     // Each package contained in a project MUST be known to be private or exported, if it's undecided we MUST resolve this
     OsgiKeys.failOnUndecidedPackage := true,
     // By default an entry is generated from module group-id, but our modules do not adhere to such package naming
-    OsgiKeys.privatePackage := Seq())
+    OsgiKeys.privatePackage := Seq(),
+    // Explicitly specify the version of JavaSE required #23795 (rather depend on
+    // figuring that out from the JDK it was built with)
+    OsgiKeys.requireCapability := "osgi.ee;filter:=\"(&(osgi.ee=JavaSE)(version>=1.8))\""
+  )
 
   val actor = osgiSettings ++ Seq(
     OsgiKeys.exportPackage := Seq("akka*"),

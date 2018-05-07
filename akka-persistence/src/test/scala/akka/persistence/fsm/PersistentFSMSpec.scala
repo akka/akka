@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.fsm
@@ -9,7 +9,6 @@ import java.io.File
 import akka.actor.{ ActorSystem, _ }
 import akka.persistence._
 import akka.persistence.fsm.PersistentFSM._
-import akka.persistence.fsm.PersistentFSMSpec.IntAdded
 import akka.testkit._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.apache.commons.io.FileUtils

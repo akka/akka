@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -12,7 +12,7 @@ import scala.annotation.{ tailrec, varargs }
 import scala.collection.IndexedSeqOptimized
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.immutable
-import scala.collection.immutable.{ IndexedSeq, VectorBuilder, VectorIterator }
+import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
 import java.nio.charset.{ Charset, StandardCharsets }
@@ -68,7 +68,7 @@ object ByteString {
    * methods defined on ByteString. This method of creating a ByteString saves one array
    * copy and allocation and therefore can lead to better performance, however it also means
    * that one MUST NOT modify the passed in array, or unexpected immutable data structure
-   * contract-breaking behaviour will manifest itself.
+   * contract-breaking behavior will manifest itself.
    *
    * This API is intended for users who have obtained an byte array from some other API, and
    * want wrap it into an ByteArray, and from there on only use that reference (the ByteString)
@@ -93,7 +93,7 @@ object ByteString {
    * methods defined on ByteString. This method of creating a ByteString saves one array
    * copy and allocation and therefore can lead to better performance, however it also means
    * that one MUST NOT modify the passed in array, or unexpected immutable data structure
-   * contract-breaking behaviour will manifest itself.
+   * contract-breaking behavior will manifest itself.
    *
    * This API is intended for users who have obtained an byte array from some other API, and
    * want wrap it into an ByteArray, and from there on only use that reference (the ByteString)

@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.stream
 
 import akka.stream._
@@ -16,15 +17,12 @@ import akka.testkit.{ AkkaSpec, TestLatch }
 
 class RateTransformationDocSpec extends AkkaSpec {
 
-  type Seq[+A] = immutable.Seq[A]
-  val Seq = immutable.Seq
-
   implicit val materializer = ActorMaterializer()
 
   "conflate should summarize" in {
     //#conflate-summarize
     val statsFlow = Flow[Double]
-      .conflateWithSeed(Seq(_))(_ :+ _)
+      .conflateWithSeed(immutable.Seq(_))(_ :+ _)
       .map { s ⇒
         val μ = s.sum / s.size
         val se = s.map(x ⇒ pow(x - μ, 2))
@@ -38,14 +36,14 @@ class RateTransformationDocSpec extends AkkaSpec {
       .grouped(10)
       .runWith(Sink.head)
 
-    Await.result(fut, 100.millis)
+    fut.futureValue
   }
 
   "conflate should sample" in {
     //#conflate-sample
     val p = 0.01
     val sampleFlow = Flow[Double]
-      .conflateWithSeed(Seq(_)) {
+      .conflateWithSeed(immutable.Seq(_)) {
         case (acc, elem) if Random.nextDouble < p ⇒ acc :+ elem
         case (acc, _)                             ⇒ acc
       }
@@ -57,14 +55,14 @@ class RateTransformationDocSpec extends AkkaSpec {
       .via(sampleFlow)
       .runWith(Sink.fold(Seq.empty[Double])(_ :+ _))
 
-    val count = Await.result(fut, 1000.millis).size
+    fut.futureValue
   }
 
-  "expand should repeat last" in {
-    //#expand-last
+  "extrapolate should repeat last" in {
+    //#extrapolate-last
     val lastFlow = Flow[Double]
-      .expand(Iterator.continually(_))
-    //#expand-last
+      .extrapolate(Iterator.continually(_))
+    //#extrapolate-last
 
     val (probe, fut) = TestSource.probe[Double]
       .via(lastFlow)
@@ -73,9 +71,52 @@ class RateTransformationDocSpec extends AkkaSpec {
       .run()
 
     probe.sendNext(1.0)
-    val expanded = Await.result(fut, 100.millis)
-    expanded.size shouldBe 10
-    expanded.sum shouldBe 10
+    val extrapolated = fut.futureValue
+    extrapolated.size shouldBe 10
+    extrapolated.sum shouldBe 10
+  }
+
+  "extrapolate should send seed first" in {
+    //#extrapolate-seed
+    val initial = 2.0
+    val seedFlow = Flow[Double]
+      .extrapolate(Iterator.continually(_), Some(initial))
+    //#extrapolate-seed
+
+    val fut = TestSource.probe[Double]
+      .via(seedFlow)
+      .grouped(10)
+      .runWith(Sink.head)
+
+    val extrapolated = Await.result(fut, 100.millis)
+    extrapolated.size shouldBe 10
+    extrapolated.sum shouldBe 10 * initial
+  }
+
+  "extrapolate should track drift" in {
+    //#extrapolate-drift
+    val driftFlow = Flow[Double].map(_ -> 0)
+      .extrapolate[(Double, Int)] { case (i, _) ⇒ Iterator.from(1).map(i -> _) }
+    //#extrapolate-drift
+    val latch = TestLatch(2)
+    val realDriftFlow = Flow[Double].map(d ⇒ { latch.countDown(); d -> 0; })
+      .extrapolate[(Double, Int)] { case (d, _) ⇒ latch.countDown(); Iterator.from(1).map(d -> _) }
+
+    val (pub, sub) = TestSource.probe[Double]
+      .via(realDriftFlow)
+      .toMat(TestSink.probe[(Double, Int)])(Keep.both)
+      .run()
+
+    sub.request(1)
+    pub.sendNext(1.0)
+    sub.expectNext((1.0, 0))
+
+    sub.requestNext((1.0, 1))
+    sub.requestNext((1.0, 2))
+
+    pub.sendNext(2.0)
+    Await.ready(latch, 1.second)
+    sub.requestNext((2.0, 0))
   }
 
   "expand should track drift" in {

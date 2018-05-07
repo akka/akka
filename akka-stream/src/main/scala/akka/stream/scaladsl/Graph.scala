@@ -1,21 +1,23 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import java.util.SplittableRandom
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.ConstantFun
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.Promise
 import scala.util.control.{ NoStackTrace, NonFatal }
@@ -627,17 +629,102 @@ final class Broadcast[T](val outputPorts: Int, val eagerCancel: Boolean) extends
 
 }
 
-object Partition {
+object WireTap {
+  private val singleton = new WireTap[Nothing]
 
+  /**
+   * @see [[WireTap]]
+   */
+  def apply[T](): WireTap[T] = singleton.asInstanceOf[WireTap[T]]
+}
+
+/**
+ * Fan-out the stream to two output streams - a 'main' and a 'tap' one. Each incoming element is emitted
+ * to the 'main' output; elements are also emitted to the 'tap' output if there is demand;
+ * otherwise they are dropped.
+ *
+ * '''Emits when''' element is available and demand exists from the 'main' output; the element will
+ * also be sent to the 'tap' output if there is demand.
+ *
+ * '''Backpressures when''' the 'main' output backpressures
+ *
+ * '''Completes when''' upstream completes
+ *
+ * '''Cancels when''' the 'main' output cancels
+ *
+ */
+@InternalApi
+private[stream] final class WireTap[T] extends GraphStage[FanOutShape2[T, T, T]] {
+  val in: Inlet[T] = Inlet[T]("WireTap.in")
+  val outMain: Outlet[T] = Outlet[T]("WireTap.outMain")
+  val outTap: Outlet[T] = Outlet[T]("WireTap.outTap")
+  override def initialAttributes = DefaultAttributes.wireTap
+  override val shape: FanOutShape2[T, T, T] = new FanOutShape2(in, outMain, outTap)
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+    private var pendingTap: Option[T] = None
+
+    setHandler(in, new InHandler {
+      override def onPush() = {
+        val elem = grab(in)
+        push(outMain, elem)
+        if (isAvailable(outTap)) {
+          push(outTap, elem)
+        } else {
+          pendingTap = Some(elem)
+        }
+      }
+    })
+
+    setHandler(outMain, new OutHandler {
+      override def onPull() = {
+        pull(in)
+      }
+
+      override def onDownstreamFinish(): Unit = {
+        completeStage()
+      }
+    })
+
+    // The 'tap' output can neither backpressure, nor cancel, the stage.
+    setHandler(outTap, new OutHandler {
+      override def onPull() = {
+        pendingTap match {
+          case Some(elem) ⇒
+            push(outTap, elem)
+            pendingTap = None
+          case None ⇒ // no pending element to emit
+        }
+      }
+
+      override def onDownstreamFinish(): Unit = {
+        setHandler(in, new InHandler {
+          override def onPush() = {
+            push(outMain, grab(in))
+          }
+        })
+        // Allow any outstanding element to be garbage-collected
+        pendingTap = None
+      }
+    })
+  }
+  override def toString = "WireTap"
+}
+
+object Partition {
+  // FIXME make `PartitionOutOfBoundsException` a `final` class when possible
   case class PartitionOutOfBoundsException(msg: String) extends IndexOutOfBoundsException(msg) with NoStackTrace
 
   /**
-   * Create a new `Partition` stage with the specified input type.
+   * Create a new `Partition` stage with the specified input type. This method sets `eagerCancel` to `false`.
+   * To specify a different value for the `eagerCancel` parameter, then instantiate Partition using the constructor.
+   *
+   * If `eagerCancel` is true, partition cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
    *
    * @param outputPorts number of output ports
    * @param partitioner function deciding which output each element will be targeted
-   */
-  def apply[T](outputPorts: Int, partitioner: T ⇒ Int): Partition[T] = new Partition(outputPorts, partitioner)
+   */ // FIXME BC add `eagerCancel: Boolean = false` parameter
+  def apply[T](outputPorts: Int, partitioner: T ⇒ Int): Partition[T] = new Partition(outputPorts, partitioner, false)
 }
 
 /**
@@ -650,14 +737,19 @@ object Partition {
  *
  * '''Completes when''' upstream completes and no output is pending
  *
- * '''Cancels when'''
- *   when all downstreams cancel
+ * '''Cancels when''' all downstreams have cancelled (eagerCancel=false) or one downstream cancels (eagerCancel=true)
  */
 
-final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int) extends GraphStage[UniformFanOutShape[T, T]] {
+final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int, val eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
+
+  /**
+   * Sets `eagerCancel` to `false`.
+   */
+  @deprecated("Use the constructor which also specifies the `eagerCancel` parameter")
+  def this(outputPorts: Int, partitioner: T ⇒ Int) = this(outputPorts, partitioner, false)
 
   val in: Inlet[T] = Inlet[T]("Partition.in")
-  val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i))
+  val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i)) // FIXME BC make this immutable.IndexedSeq as type + Vector as concret impl
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler {
@@ -690,11 +782,10 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int) exten
 
     setHandler(in, this)
 
-    out.zipWithIndex.foreach {
+    out.iterator.zipWithIndex.foreach {
       case (o, idx) ⇒
         setHandler(o, new OutHandler {
           override def onPull() = {
-
             if (outPendingElem != null) {
               val elem = outPendingElem.asInstanceOf[T]
               if (idx == outPendingIdx) {
@@ -711,29 +802,33 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int) exten
               pull(in)
           }
 
-          override def onDownstreamFinish(): Unit = {
-            downstreamRunning -= 1
-            if (downstreamRunning == 0)
-              completeStage()
-            else if (outPendingElem != null) {
-              if (idx == outPendingIdx) {
-                outPendingElem = null
-                if (!hasBeenPulled(in))
-                  pull(in)
+          override def onDownstreamFinish(): Unit =
+            if (eagerCancel) completeStage()
+            else {
+              downstreamRunning -= 1
+              if (downstreamRunning == 0)
+                completeStage()
+              else if (outPendingElem != null) {
+                if (idx == outPendingIdx) {
+                  outPendingElem = null
+                  if (!hasBeenPulled(in))
+                    pull(in)
+                }
               }
             }
-          }
         })
     }
   }
 
   override def toString = s"Partition($outputPorts)"
-
 }
 
 object Balance {
   /**
-   * Create a new `Balance` with the specified number of output ports.
+   * Create a new `Balance` with the specified number of output ports. This method sets `eagerCancel` to `false`.
+   * To specify a different value for the `eagerCancel` parameter, then instantiate Balance using the constructor.
+   *
+   * If `eagerCancel` is true, balance cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
    *
    * @param outputPorts number of output ports
    * @param waitForAllDownstreams if you use `waitForAllDownstreams = true` it will not start emitting
@@ -741,7 +836,7 @@ object Balance {
    *   default value is `false`
    */
   def apply[T](outputPorts: Int, waitForAllDownstreams: Boolean = false): Balance[T] =
-    new Balance(outputPorts, waitForAllDownstreams)
+    new Balance(outputPorts, waitForAllDownstreams, false)
 }
 
 /**
@@ -757,11 +852,16 @@ object Balance {
  *
  * '''Completes when''' upstream completes
  *
- * '''Cancels when''' all downstreams cancel
+ * '''Cancels when''' If eagerCancel is enabled: when any downstream cancels; otherwise: when all downstreams cancel
  */
-final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
+final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean, val eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
   // one output might seem counter intuitive but saves us from special handling in other places
   require(outputPorts >= 1, "A Balance must have one or more output ports")
+
+  @Deprecated
+  @deprecated("Use the constructor which also specifies the `eagerCancel` parameter", since = "2.5.12")
+  def this(outputPorts: Int, waitForAllDownstreams: Boolean) = this(outputPorts, waitForAllDownstreams, false)
+
   val in: Inlet[T] = Inlet[T]("Balance.in")
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Balance.out" + i))
   override def initialAttributes = DefaultAttributes.balance
@@ -816,11 +916,14 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean)
         }
 
         override def onDownstreamFinish() = {
-          downstreamsRunning -= 1
-          if (downstreamsRunning == 0) completeStage()
-          else if (!hasPulled && needDownstreamPulls > 0) {
-            needDownstreamPulls -= 1
-            if (needDownstreamPulls == 0 && !hasBeenPulled(in)) pull(in)
+          if (eagerCancel) completeStage()
+          else {
+            downstreamsRunning -= 1
+            if (downstreamsRunning == 0) completeStage()
+            else if (!hasPulled && needDownstreamPulls > 0) {
+              needDownstreamPulls -= 1
+              if (needDownstreamPulls == 0 && !hasBeenPulled(in)) pull(in)
+            }
           }
         }
       })
@@ -1082,6 +1185,10 @@ final class Concat[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[
 
 object OrElse {
   private val singleton = new OrElse[Nothing]
+
+  /**
+   * @see [[OrElse]]
+   */
   def apply[T]() = singleton.asInstanceOf[OrElse[T]]
 }
 
@@ -1103,6 +1210,7 @@ object OrElse {
  *
  * '''Cancels when''' downstream cancels
  */
+@InternalApi
 private[stream] final class OrElse[T] extends GraphStage[UniformFanInShape[T, T]] {
   val primary = Inlet[T]("OrElse.primary")
   val secondary = Inlet[T]("OrElse.secondary")
@@ -1159,6 +1267,22 @@ private[stream] final class OrElse[T] extends GraphStage[UniformFanInShape[T, T]
 }
 
 object GraphDSL extends GraphApply {
+
+  /**
+   * Creates a new [[Graph]] by importing the given graph list `graphs` and passing their [[Shape]]s
+   * along with the [[GraphDSL.Builder]] to the given create function.
+   */
+  def create[S <: Shape, IS <: Shape, Mat](graphs: immutable.Seq[Graph[IS, Mat]])(buildBlock: GraphDSL.Builder[immutable.Seq[Mat]] ⇒ immutable.Seq[IS] ⇒ S): Graph[S, immutable.Seq[Mat]] = {
+    require(graphs.nonEmpty, "The input list must have one or more Graph elements")
+    val builder = new GraphDSL.Builder
+    val toList = (m1: Mat) ⇒ Seq(m1)
+    val combine = (s: Seq[Mat], m2: Mat) ⇒ s :+ m2
+    val sListH = builder.add(graphs.head, toList)
+    val sListT = graphs.tail.map(g ⇒ builder.add(g, combine))
+    val s = buildBlock(builder)(immutable.Seq(sListH) ++ sListT)
+
+    new GenericGraph(s, builder.result(s))
+  }
 
   class Builder[+M] private[stream] () {
     private val unwiredIns = new mutable.HashSet[Inlet[_]]()

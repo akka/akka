@@ -1,11 +1,13 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka
 
 import sbt._
 import sbt.Keys._
 import java.io.File
+import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
 
 object Publish extends AutoPlugin {
 
@@ -25,12 +27,6 @@ object Publish extends AutoPlugin {
     defaultPublishTo := crossTarget.value / "repository")
 
   def akkaPomExtra = {
-    /* The scm info is automatic from the sbt-git plugin
-    <scm>
-      <url>git://github.com/akka/akka.git</url>
-      <connection>scm:git:git@github.com:akka/akka.git</connection>
-    </scm>
-    */
     <inceptionYear>2009</inceptionYear>
     <developers>
       <developer>
@@ -58,5 +54,41 @@ object Publish extends AutoPlugin {
 
   private def akkaCredentials: Seq[Credentials] =
     Option(System.getProperty("akka.publish.credentials", null)).map(f ⇒ Credentials(new File(f))).toSeq
+}
 
+/**
+  * For projects that are not to be published.
+  */
+object NoPublish extends AutoPlugin {
+  override def requires = plugins.JvmPlugin
+
+  override def projectSettings = Seq(
+    skip in publish := true,
+    sources in (Compile, doc) := Seq.empty,
+    whitesourceIgnore := true
+  )
+}
+
+object DeployRsync extends AutoPlugin {
+  import scala.sys.process._
+  import sbt.complete.DefaultParsers._
+
+  override def requires = plugins.JvmPlugin
+
+  trait Keys {
+    val deployRsyncArtifact = taskKey[Seq[(File, String)]]("File or directory and a path to deploy to")
+    val deployRsync = inputKey[Unit]("Deploy using SCP")
+  }
+
+  object autoImport extends Keys
+  import autoImport._
+
+  override def projectSettings = Seq(
+    deployRsync := {
+      val (_, host) = (Space ~ StringBasic).parsed
+      deployRsyncArtifact.value.foreach {
+        case (from, to) ⇒ s"rsync -rvz $from/ $host:$to"!
+      }
+    }
+  )
 }

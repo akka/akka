@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.stream
 
 import akka.NotUsed
@@ -9,21 +10,23 @@ import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
 import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
+
 import scala.concurrent.Future
 import akka.testkit.TestProbe
-import akka.actor.ActorRef
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Status }
 import com.typesafe.config.ConfigFactory
-import akka.actor.Actor
-import akka.actor.Props
 import akka.util.Timeout
 import akka.stream.Attributes
 import akka.stream.ActorAttributes
+
 import scala.concurrent.ExecutionContext
 import akka.stream.ActorMaterializerSettings
 import java.util.concurrent.atomic.AtomicInteger
+
 import akka.stream.Supervision
 import akka.stream.scaladsl.Flow
 import akka.Done
+import akka.actor.Status.Status
 
 object IntegrationDocSpec {
   import TwitterStreamQuickstartDocSpec._
@@ -140,19 +143,18 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   implicit val materializer = ActorMaterializer()
   val ref: ActorRef = system.actorOf(Props[Translator])
 
-  "mapAsync + ask" in {
-    //#mapAsync-ask
-    import akka.pattern.ask
+  "ask" in {
+    //#ask
     implicit val askTimeout = Timeout(5.seconds)
     val words: Source[String, NotUsed] =
       Source(List("hello", "hi"))
 
     words
-      .mapAsync(parallelism = 5)(elem ⇒ (ref ? elem).mapTo[String])
+      .ask[String](parallelism = 5)(ref)
       // continue processing of the replies from the actor
       .map(_.toLowerCase)
       .runWith(Sink.ignore)
-    //#mapAsync-ask
+    //#ask
   }
 
   "calling external service with mapAsync" in {
@@ -194,6 +196,72 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     probe.expectMsg("mmartynas@somewhere.com")
     probe.expectMsg("akkateam@somewhere.com")
   }
+
+  "actorRefWithAck" in {
+    //#actorRefWithAck
+    val words: Source[String, NotUsed] =
+      Source(List("hello", "hi"))
+
+    // sent from actor to stream to "ack" processing of given element
+    val AckMessage = AckingReceiver.Ack
+
+    // sent from stream to actor to indicate start, end or failure of stream:
+    val InitMessage = AckingReceiver.StreamInitialized
+    val OnCompleteMessage = AckingReceiver.StreamCompleted
+    val onErrorMessage = (ex: Throwable) ⇒ AckingReceiver.StreamFailure(ex)
+
+    val probe = TestProbe()
+    val receiver = system.actorOf(
+      Props(new AckingReceiver(probe.ref, ackWith = AckMessage)))
+    val sink = Sink.actorRefWithAck(
+      receiver,
+      onInitMessage = InitMessage,
+      ackMessage = AckMessage,
+      onCompleteMessage = OnCompleteMessage,
+      onFailureMessage = onErrorMessage
+    )
+
+    words
+      .map(_.toLowerCase)
+      .runWith(sink)
+    //#actorRefWithAck
+    probe.expectMsg("Stream initialized!")
+    probe.expectMsg("hello")
+    probe.expectMsg("hi")
+    probe.expectMsg("Stream completed!")
+  }
+
+  //#actorRefWithAck-actor
+  object AckingReceiver {
+    case object Ack
+
+    case object StreamInitialized
+    case object StreamCompleted
+    final case class StreamFailure(ex: Throwable)
+  }
+
+  class AckingReceiver(probe: ActorRef, ackWith: Any) extends Actor with ActorLogging {
+    import AckingReceiver._
+
+    def receive: Receive = {
+      case StreamInitialized ⇒
+        log.info("Stream initialized!")
+        probe ! "Stream initialized!"
+        sender() ! Ack // ack to allow the stream to proceed sending more elements
+
+      case el: String ⇒
+        log.info("Received element: {}", el)
+        probe ! el
+        sender() ! Ack // ack to allow the stream to proceed sending more elements
+
+      case StreamCompleted ⇒
+        log.info("Stream completed!")
+        probe ! "Stream completed!"
+      case StreamFailure(ex) ⇒
+        log.error(ex, "Stream failed!")
+    }
+  }
+  //#actorRefWithAck-actor
 
   "lookup email with mapAsync and supervision" in {
     val addressSystem = new AddressSystem2

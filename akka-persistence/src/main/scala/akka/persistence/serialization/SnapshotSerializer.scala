@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  * Copyright (C) 2012-2016 Eligotech BV.
  */
 
@@ -54,15 +54,8 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
     val out = new ByteArrayOutputStream
     writeInt(out, snapshotSerializer.identifier)
 
-    snapshotSerializer match {
-      case ser2: SerializerWithStringManifest ⇒
-        val manifest = ser2.manifest(snapshot)
-        if (manifest != "")
-          out.write(manifest.getBytes(UTF_8))
-      case _ ⇒
-        if (snapshotSerializer.includeManifest)
-          out.write(snapshot.getClass.getName.getBytes(UTF_8))
-    }
+    val ms = Serializers.manifestFor(snapshotSerializer, snapshot)
+    if (ms.nonEmpty) out.write(ms.getBytes(UTF_8))
 
     out.toByteArray
   }

@@ -1,9 +1,11 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package scala.docs.cluster
 
 import akka.cluster.Cluster
+
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
 
@@ -38,6 +40,17 @@ class ClusterDocSpec extends AkkaSpec(ClusterDocSpec.config) with CompileOnlySpe
       val aDc = aMember.dataCenter
       //#dcAccess
     }
+  }
+
+  "demonstrate programatic joining to seed nodes" in compileOnlySpec {
+    //#join-seed-nodes
+    import akka.actor.Address
+    import akka.cluster.Cluster
+
+    val cluster = Cluster(system)
+    val list: List[Address] = ??? //your method to dynamically get seed nodes
+    cluster.joinSeedNodes(list)
+    //#join-seed-nodes
   }
 
 }

@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.stream.ActorMaterializer
@@ -21,6 +22,7 @@ class JsonFramingSpec extends AkkaSpec {
 
   "collecting multiple json" should {
     "parse json array" in {
+      // #using-json-framing
       val input =
         """
           |[
@@ -35,6 +37,7 @@ class JsonFramingSpec extends AkkaSpec {
         .runFold(Seq.empty[String]) {
           case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
         }
+      // #using-json-framing
 
       result.futureValue shouldBe Seq(
         """{ "name" : "john" }""",

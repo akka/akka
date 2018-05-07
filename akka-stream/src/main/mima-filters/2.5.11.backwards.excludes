@@ -1,0 +1,18 @@
+# #24604 Deduplicate logic for IODispatcher
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.ActorAttributes$Dispatcher$")
+
+# #24670 materialized value of Flow.lazyInit must be a future
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.LazyFlow.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.LazySink.this")
+
+# #24581 RS violation
+ProblemFilters.exclude[FinalClassProblem]("akka.stream.impl.VirtualProcessor$Both")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.VirtualProcessor#Both.create")
+
+# #23804 Added extrapolate stage
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.extrapolate")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.extrapolate$default$2")
+
+# #24699 throttle overload
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.throttle")
+

@@ -1,44 +1,34 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl
 
+import java.util.Optional
+import java.util.concurrent.CompletionStage
+
+import akka.NotUsed
+import akka.actor.{ ActorRef, Props }
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.dispatch.ExecutionContexts
-import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream.Supervision.{ Stop, stoppingDecider }
-import akka.stream.impl.QueueSink.{ Output, Pull }
-import akka.stream.impl.fusing.GraphInterpreter
-import akka.{ Done, NotUsed, annotation }
-import akka.actor.{ Actor, ActorRef, Props }
+import akka.event.Logging
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
+import akka.stream.impl.QueueSink.{ Output, Pull }
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
-import java.util.concurrent.atomic.AtomicReference
-import java.util.function.BiConsumer
-
-import akka.actor.{ ActorRef, Props }
-import akka.stream.Attributes.InputBuffer
-import akka.stream._
+import akka.stream.scaladsl.{ Sink, SinkQueueWithCancel, Source }
 import akka.stream.stage._
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.generic.CanBuildFrom
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future, Promise }
-import scala.language.postfixOps
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
-import akka.stream.scaladsl.{ Sink, SinkQueue, SinkQueueWithCancel, Source }
-import java.util.concurrent.CompletionStage
-
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
-import java.util.Optional
-
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.event.Logging
-import akka.util.OptionVal
+import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
+import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API
@@ -111,7 +101,7 @@ import akka.util.OptionVal
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
     val impl = actorMaterializer.actorOf(
       context,
-      FanoutProcessorImpl.props(actorMaterializer.effectiveSettings(context.effectiveAttributes)))
+      FanoutProcessorImpl.props(context.effectiveAttributes, actorMaterializer.settings))
     val fanoutProcessor = new ActorProcessor[In, In](impl)
     impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
     // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
@@ -166,23 +156,23 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any,
+@InternalApi private[akka] final class ActorRefSink[In](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any,
                                                         val attributes: Attributes,
                                                         shape:          SinkShape[In]) extends SinkModule[In, NotUsed](shape) {
 
   override def create(context: MaterializationContext) = {
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
-    val effectiveSettings = actorMaterializer.effectiveSettings(context.effectiveAttributes)
+    val maxInputBufferSize = context.effectiveAttributes.mandatoryAttribute[Attributes.InputBuffer].max
     val subscriberRef = actorMaterializer.actorOf(
       context,
-      ActorRefSinkActor.props(ref, effectiveSettings.maxInputBufferSize, onCompleteMessage))
+      ActorRefSinkActor.props(ref, maxInputBufferSize, onCompleteMessage, onFailureMessage))
     (akka.stream.actor.ActorSubscriber[In](subscriberRef), NotUsed)
   }
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] =
-    new ActorRefSink[In](ref, onCompleteMessage, attributes, shape)
+    new ActorRefSink[In](ref, onCompleteMessage, onFailureMessage, attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[In, NotUsed] =
-    new ActorRefSink[In](ref, onCompleteMessage, attr, amendShape(attr))
+    new ActorRefSink[In](ref, onCompleteMessage, onFailureMessage, attr, amendShape(attr))
 }
 
 /**
@@ -269,7 +259,7 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class SeqStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
+@InternalApi private[akka] final class SeqStage[T, That](implicit cbf: CanBuildFrom[Nothing, T, That with immutable.Traversable[_]]) extends GraphStageWithMaterializedValue[SinkShape[T], Future[That]] {
   val in = Inlet[T]("seq.in")
 
   override def toString: String = "SeqStage"
@@ -279,9 +269,9 @@ import akka.util.OptionVal
   override protected def initialAttributes: Attributes = DefaultAttributes.seqSink
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val p: Promise[immutable.Seq[T]] = Promise()
+    val p: Promise[That] = Promise()
     val logic = new GraphStageLogic(shape) with InHandler {
-      val buf = Vector.newBuilder[T]
+      val buf = cbf()
 
       override def preStart(): Unit = pull(in)
 
@@ -334,7 +324,7 @@ import akka.util.OptionVal
   override def toString: String = "QueueSink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val stageLogic = new GraphStageLogic(shape) with CallbackWrapper[Output[T]] with InHandler {
+    val stageLogic = new GraphStageLogic(shape) with InHandler with SinkQueueWithCancel[T] {
       type Received[E] = Try[Option[E]]
 
       val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
@@ -348,29 +338,22 @@ import akka.util.OptionVal
         // closed/failure indicators
         buffer = Buffer(maxBuffer + 1, materializer)
         setKeepGoing(true)
-        initCallback(callback.invoke)
         pull(in)
       }
 
-      override def postStop(): Unit = stopCallback {
-        case Pull(promise) ⇒ promise.failure(new StreamDetachedException())
-        case _             ⇒ //do nothing
-      }
-
-      private val callback: AsyncCallback[Output[T]] =
-        getAsyncCallback {
-          case QueueSink.Pull(pullPromise) ⇒ currentRequest match {
-            case Some(_) ⇒
-              pullPromise.failure(new IllegalStateException("You have to wait for previous future to be resolved to send another request"))
-            case None ⇒
-              if (buffer.isEmpty) currentRequest = Some(pullPromise)
-              else {
-                if (buffer.used == maxBuffer) tryPull(in)
-                sendDownstream(pullPromise)
-              }
-          }
-          case QueueSink.Cancel ⇒ completeStage()
+      private val callback = getAsyncCallback[Output[T]] {
+        case QueueSink.Pull(pullPromise) ⇒ currentRequest match {
+          case Some(_) ⇒
+            pullPromise.failure(new IllegalStateException("You have to wait for previous future to be resolved to send another request"))
+          case None ⇒
+            if (buffer.isEmpty) currentRequest = Some(pullPromise)
+            else {
+              if (buffer.used == maxBuffer) tryPull(in)
+              sendDownstream(pullPromise)
+            }
         }
+        case QueueSink.Cancel ⇒ completeStage()
+      }
 
       def sendDownstream(promise: Requested[T]): Unit = {
         val e = buffer.dequeue()
@@ -401,18 +384,20 @@ import akka.util.OptionVal
       override def onUpstreamFailure(ex: Throwable): Unit = enqueueAndNotify(Failure(ex))
 
       setHandler(in, this)
-    }
 
-    (stageLogic, new SinkQueueWithCancel[T] {
+      // SinkQueueWithCancel impl
       override def pull(): Future[Option[T]] = {
         val p = Promise[Option[T]]
-        stageLogic.invoke(Pull(p))
+        callback.invokeWithFeedback(Pull(p))
+          .onFailure { case NonFatal(e) ⇒ p.tryFailure(e) }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         p.future
       }
       override def cancel(): Unit = {
-        stageLogic.invoke(QueueSink.Cancel)
+        callback.invoke(QueueSink.Cancel)
       }
-    })
+    }
+
+    (stageLogic, stageLogic)
   }
 }
 
@@ -464,7 +449,7 @@ import akka.util.OptionVal
 /**
  * INTERNAL API
  */
-@InternalApi final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]], zeroMat: () ⇒ M) extends GraphStageWithMaterializedValue[SinkShape[T], Future[M]] {
+@InternalApi final private[stream] class LazySink[T, M](sinkFactory: T ⇒ Future[Sink[T, M]]) extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[M]]] {
   val in = Inlet[T]("lazySink.in")
   override def initialAttributes = DefaultAttributes.lazySink
   override val shape: SinkShape[T] = SinkShape.of(in)
@@ -472,102 +457,122 @@ import akka.util.OptionVal
   override def toString: String = "LazySink"
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    lazy val decider = inheritedAttributes.get[SupervisionStrategy].map(_.decider).getOrElse(stoppingDecider)
 
-    var completed = false
-    val promise = Promise[M]()
+    val promise = Promise[Option[M]]()
     val stageLogic = new GraphStageLogic(shape) with InHandler {
+      var switching = false
       override def preStart(): Unit = pull(in)
 
       override def onPush(): Unit = {
-        try {
-          val element = grab(in)
-          val cb: AsyncCallback[Try[Sink[T, M]]] =
-            getAsyncCallback {
-              case Success(sink) ⇒ initInternalSource(sink, element)
-              case Failure(e)    ⇒ failure(e)
-            }
-          sinkFactory(element).onComplete { cb.invoke }(ExecutionContexts.sameThreadExecutionContext)
-          setHandler(in, new InHandler {
-            override def onPush(): Unit = ()
-            override def onUpstreamFinish(): Unit = gotCompletionEvent()
-            override def onUpstreamFailure(ex: Throwable): Unit = failure(ex)
-          })
-        } catch {
-          case NonFatal(e) ⇒ decider(e) match {
-            case Supervision.Stop ⇒ failure(e)
-            case _                ⇒ pull(in)
+        val element = grab(in)
+        switching = true
+        val cb: AsyncCallback[Try[Sink[T, M]]] =
+          getAsyncCallback {
+            case Success(sink) ⇒
+              // check if the stage is still in need for the lazy sink
+              // (there could have been an onUpstreamFailure in the meantime that has completed the promise)
+              if (!promise.isCompleted) {
+                try {
+                  val mat = switchTo(sink, element)
+                  promise.success(Some(mat))
+                  setKeepGoing(true)
+                } catch {
+                  case NonFatal(e) ⇒
+                    promise.failure(e)
+                    failStage(e)
+                }
+              }
+            case Failure(e) ⇒
+              promise.failure(e)
+              failStage(e)
           }
+        try {
+          sinkFactory(element).onComplete(cb.invoke)(ExecutionContexts.sameThreadExecutionContext)
+        } catch {
+          case NonFatal(e) ⇒
+            promise.failure(e)
+            failStage(e)
         }
-      }
-
-      private def failure(ex: Throwable): Unit = {
-        failStage(ex)
-        promise.failure(ex)
       }
 
       override def onUpstreamFinish(): Unit = {
-        completeStage()
-        promise.tryComplete(Try(zeroMat()))
+        // ignore onUpstreamFinish while the stage is switching but setKeepGoing
+        //
+        if (switching) {
+          // there is a cached element -> the stage must not be shut down automatically because isClosed(in) is satisfied
+          setKeepGoing(true)
+        } else {
+          promise.success(None)
+          super.onUpstreamFinish()
+        }
       }
-      override def onUpstreamFailure(ex: Throwable): Unit = failure(ex)
+
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        promise.failure(ex)
+        super.onUpstreamFailure(ex)
+      }
+
       setHandler(in, this)
 
-      private def gotCompletionEvent(): Unit = {
+      private def switchTo(sink: Sink[T, M], firstElement: T): M = {
+
+        var firstElementPushed = false
+
+        val subOutlet = new SubSourceOutlet[T]("LazySink")
+
+        val matVal = Source.fromGraph(subOutlet.source).runWith(sink)(interpreter.subFusingMaterializer)
+
+        def maybeCompleteStage(): Unit = {
+          if (isClosed(in) && subOutlet.isClosed) {
+            completeStage()
+          }
+        }
+
+        // The stage must not be shut down automatically; it is completed when maybeCompleteStage decides
         setKeepGoing(true)
-        completed = true
-      }
 
-      private def initInternalSource(sink: Sink[T, M], firstElement: T): Unit = {
-        val sourceOut = new SubSourceOutlet[T]("LazySink")
-
-        def switchToFirstElementHandlers(): Unit = {
-          sourceOut.setHandler(new OutHandler {
-            override def onPull(): Unit = {
-              sourceOut.push(firstElement)
-              if (completed) internalSourceComplete() else switchToFinalHandlers()
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = {
+            subOutlet.push(grab(in))
+          }
+          override def onUpstreamFinish(): Unit = {
+            if (firstElementPushed) {
+              subOutlet.complete()
+              maybeCompleteStage()
             }
-            override def onDownstreamFinish(): Unit = internalSourceComplete()
-          })
+          }
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            // propagate exception irrespective if the cached element has been pushed or not
+            subOutlet.fail(ex)
+            maybeCompleteStage()
+          }
+        })
 
-          setHandler(in, new InHandler {
-            override def onPush(): Unit = sourceOut.push(grab(in))
-            override def onUpstreamFinish(): Unit = gotCompletionEvent()
-            override def onUpstreamFailure(ex: Throwable): Unit = internalSourceFailure(ex)
-          })
-        }
+        subOutlet.setHandler(new OutHandler {
+          override def onPull(): Unit = {
+            if (firstElementPushed) {
+              pull(in)
+            } else {
+              // the demand can be satisfied right away by the cached element
+              firstElementPushed = true
+              subOutlet.push(firstElement)
+              // in.onUpstreamFinished was not propagated if it arrived before the cached element was pushed
+              // -> check if the completion must be propagated now
+              if (isClosed(in)) {
+                subOutlet.complete()
+                maybeCompleteStage()
+              }
+            }
+          }
+          override def onDownstreamFinish(): Unit = {
+            if (!isClosed(in)) {
+              cancel(in)
+            }
+            maybeCompleteStage()
+          }
+        })
 
-        def switchToFinalHandlers(): Unit = {
-          sourceOut.setHandler(new OutHandler {
-            override def onPull(): Unit = pull(in)
-            override def onDownstreamFinish(): Unit = internalSourceComplete()
-          })
-          setHandler(in, new InHandler {
-            override def onPush(): Unit = sourceOut.push(grab(in))
-            override def onUpstreamFinish(): Unit = internalSourceComplete()
-            override def onUpstreamFailure(ex: Throwable): Unit = internalSourceFailure(ex)
-          })
-        }
-
-        def internalSourceComplete(): Unit = {
-          sourceOut.complete()
-          completeStage()
-        }
-
-        def internalSourceFailure(ex: Throwable): Unit = {
-          sourceOut.fail(ex)
-          failStage(ex)
-        }
-
-        switchToFirstElementHandlers()
-        try {
-          val matVal = Source.fromGraph(sourceOut.source).runWith(sink)(interpreter.subFusingMaterializer)
-          promise.trySuccess(matVal)
-        } catch {
-          case NonFatal(ex) ⇒
-            promise.tryFailure(ex)
-            failStage(ex)
-        }
+        matVal
       }
 
     }

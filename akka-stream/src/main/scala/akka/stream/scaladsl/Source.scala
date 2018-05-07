@@ -1,17 +1,21 @@
 /**
- * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.util.ConstantFun
-import akka.{ Done, NotUsed }
+import java.util.concurrent.CompletionStage
+
 import akka.actor.{ ActorRef, Cancellable, Props }
+import akka.annotation.InternalApi
 import akka.stream.actor.ActorPublisher
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages._
-import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, PublisherSource, _ }
+import akka.stream.impl.{ PublisherSource, _ }
 import akka.stream.{ Outlet, SourceShape, _ }
+import akka.util.ConstantFun
+import akka.{ Done, NotUsed }
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.tailrec
@@ -19,7 +23,7 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
-import java.util.concurrent.CompletionStage
+import akka.stream.stage.GraphStageWithMaterializedValue
 
 import scala.compat.java8.FutureConverters._
 
@@ -45,15 +49,23 @@ final class Source[+Out, +Mat](
   override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] = viaMat(flow)(Keep.left)
 
   override def viaMat[T, Mat2, Mat3](flow: Graph[FlowShape[Out, T], Mat2])(combine: (Mat, Mat2) ⇒ Mat3): Source[T, Mat3] = {
-    val toAppend =
-      if (flow.traversalBuilder eq Flow.identityTraversalBuilder)
-        LinearTraversalBuilder.empty()
+    if (flow.traversalBuilder eq Flow.identityTraversalBuilder)
+      if (combine == Keep.left)
+        //optimization by returning this
+        this.asInstanceOf[Source[T, Mat3]] //Mat == Mat3, due to Keep.left
+      else if (combine == Keep.right || combine == Keep.none) // Mat3 = NotUsed
+        //optimization with LinearTraversalBuilder.empty()
+        new Source[T, Mat3](
+          traversalBuilder.append(LinearTraversalBuilder.empty(), flow.shape, combine),
+          SourceShape(shape.out).asInstanceOf[SourceShape[T]])
       else
-        flow.traversalBuilder
-
-    new Source[T, Mat3](
-      traversalBuilder.append(toAppend, flow.shape, combine),
-      SourceShape(flow.shape.out))
+        new Source[T, Mat3](
+          traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
+          SourceShape(flow.shape.out))
+    else
+      new Source[T, Mat3](
+        traversalBuilder.append(flow.traversalBuilder, flow.shape, combine),
+        SourceShape(flow.shape.out))
   }
 
   /**
@@ -75,6 +87,15 @@ final class Source[+Out, +Mat](
    */
   override def mapMaterializedValue[Mat2](f: Mat ⇒ Mat2): ReprMat[Out, Mat2] =
     new Source[Out, Mat2](traversalBuilder.transformMat(f.asInstanceOf[Any ⇒ Any]), shape)
+
+  /**
+   * Materializes this Source, immediately returning (1) its materialized value, and (2) a new Source
+   * that can be used to consume elements from the newly materialized Source.
+   */
+  def preMaterialize()(implicit materializer: Materializer): (Mat, ReprMat[Out, NotUsed]) = {
+    val (mat, pub) = toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
+    (mat, Source.fromPublisher(pub))
+  }
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
@@ -129,20 +150,18 @@ final class Source[+Out, +Mat](
   def runForeach(f: Out ⇒ Unit)(implicit materializer: Materializer): Future[Done] = runWith(Sink.foreach(f))
 
   /**
-   * Change the attributes of this [[Source]] to the given ones and seal the list
-   * of attributes. This means that further calls will not be able to remove these
-   * attributes, but instead add new ones. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Replace the attributes of this [[Source]] with the given ones. If this Source is a composite
+   * of multiple graphs, new attributes on the composite will be less specific than attributes
+   * set directly on the individual graphs of the composite.
    */
   override def withAttributes(attr: Attributes): Repr[Out] =
     new Source(traversalBuilder.setAttributes(attr), shape)
 
   /**
-   * Add the given attributes to this Source. Further calls to `withAttributes`
-   * will not remove these attributes. Note that this
-   * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * Add the given attributes to this Source. If the specific attribute was already on this source
+   * it will replace the previous value. If this Source is a composite
+   * of multiple graphs, the added attributes will be on the composite and therefore less specific than attributes
+   * set directly on the individual graphs of the composite.
    */
   override def addAttributes(attr: Attributes): Repr[Out] = withAttributes(traversalBuilder.attributes and attr)
 
@@ -154,12 +173,29 @@ final class Source[+Out, +Mat](
   /**
    * Put an asynchronous boundary around this `Source`
    */
-  override def async: Repr[Out] = addAttributes(Attributes.asyncBoundary)
+  override def async: Repr[Out] = super.async.asInstanceOf[Repr[Out]]
+
+  /**
+   * Put an asynchronous boundary around this `Graph`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): Repr[Out] =
+    super.async(dispatcher).asInstanceOf[Repr[Out]]
+
+  /**
+   * Put an asynchronous boundary around this `Graph`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): Repr[Out] =
+    super.async(dispatcher, inputBufferSize).asInstanceOf[Repr[Out]]
 
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.
    */
-  def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)
+  def asJava[JOut >: Out, JMat >: Mat]: javadsl.Source[JOut, JMat] = new javadsl.Source(this)
 
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
@@ -231,9 +267,20 @@ object Source {
   def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
     case s: Source[T, M]         ⇒ s
     case s: javadsl.Source[T, M] ⇒ s.asScala
-    case other ⇒ new Source(
-      LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
-      other.shape)
+    case g: GraphStageWithMaterializedValue[SourceShape[T], M] ⇒
+      // move these from the stage itself to make the returned source
+      // behave as it is the stage with regards to attributes
+      val attrs = g.traversalBuilder.attributes
+      val noAttrStage = g.withAttributes(Attributes.none)
+      new Source(
+        LinearTraversalBuilder.fromBuilder(noAttrStage.traversalBuilder, noAttrStage.shape, Keep.right),
+        noAttrStage.shape
+      ).withAttributes(attrs)
+    case other ⇒
+      // composite source shaped graph
+      new Source(
+        LinearTraversalBuilder.fromBuilder(other.traversalBuilder, other.shape, Keep.right),
+        other.shape)
   }
 
   /**
@@ -268,13 +315,16 @@ object Source {
 
   /**
    * Streams the elements of the given future source once it successfully completes.
-   * If the future fails the stream is failed.
+   * If the [[Future]] fails the stream is failed with the exception from the future. If downstream cancels before the
+   * stream completes the materialized `Future` will be failed with a [[StreamDetachedException]]
    */
   def fromFutureSource[T, M](future: Future[Graph[SourceShape[T], M]]): Source[T, Future[M]] = fromGraph(new FutureFlattenSource(future))
 
   /**
    * Streams the elements of an asynchronous source once its given `completion` stage completes.
-   * If the `completion` fails the stream is failed with that exception.
+   * If the [[CompletionStage]] fails the stream is failed with the exception from the future.
+   * If downstream cancels before the stream completes the materialized `Future` will be failed
+   * with a [[StreamDetachedException]]
    */
   def fromSourceCompletionStage[T, M](completion: CompletionStage[_ <: Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] = fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
 
@@ -373,6 +423,16 @@ object Source {
     Source.fromGraph(new LazySource[T, M](create))
 
   /**
+   * Creates a `Source` from supplied future factory that is not called until downstream demand. When source gets
+   * materialized the materialized future is completed with the value from the factory. If downstream cancels or fails
+   * without any demand the create factory is never called and the materialized `Future` is failed.
+   *
+   * @see [[Source.lazily]]
+   */
+  def lazilyAsync[T](create: () ⇒ Future[T]): Source[T, Future[NotUsed]] =
+    lazily(() ⇒ fromFuture(create()))
+
+  /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
   def asSubscriber[T]: Source[T, Subscriber[T]] =
@@ -389,6 +449,49 @@ object Source {
   def actorPublisher[T](props: Props): Source[T, ActorRef] = {
     require(classOf[ActorPublisher[_]].isAssignableFrom(props.actorClass()), "Actor must be ActorPublisher")
     fromGraph(new ActorPublisherSource(props, DefaultAttributes.actorPublisherSource, shape("ActorPublisherSource")))
+  }
+
+  /**
+   * INTERNAL API
+   *
+   * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
+   * Messages sent to this actor will be emitted to the stream if there is demand from downstream,
+   * otherwise they will be buffered until request for demand is received.
+   *
+   * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
+   * there is no space available in the buffer.
+   *
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] is not supported, and an
+   * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
+   *
+   * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped if there is no demand
+   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
+   * this Source; as such, it is never safe to assume the downstream will always generate demand.
+   *
+   * The stream can be completed successfully by sending the actor reference a message that is matched by
+   * `completionMatcher` in which case already buffered elements will be signaled before signaling
+   * completion, or by sending [[akka.actor.PoisonPill]] in which case completion will be signaled immediately.
+   *
+   * The stream can be completed with failure by sending a message that is matched by `failureMatcher`. The extracted
+   * [[Throwable]] will be used to fail the stream. In case the Actor is still draining its internal buffer (after having received
+   * a message matched by `completionMatcher`) before signaling completion and it receives a message matched by `failureMatcher`,
+   * the failure will be signaled downstream immediately (instead of the completion signal).
+   *
+   * The actor will be stopped when the stream is completed, failed or canceled from downstream,
+   * i.e. you can watch it to get notified when that happens.
+   *
+   * See also [[akka.stream.scaladsl.Source.queue]].
+   *
+   * @param bufferSize The size of the buffer in element count
+   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
+   */
+  @InternalApi private[akka] def actorRef[T](
+    completionMatcher: PartialFunction[Any, Unit],
+    failureMatcher:    PartialFunction[Any, Throwable],
+    bufferSize:        Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
+    require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
+    require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
+    fromGraph(new ActorRefSource(completionMatcher, failureMatcher, bufferSize, overflowStrategy, DefaultAttributes.actorRefSource, shape("ActorRefSource")))
   }
 
   /**
@@ -420,14 +523,18 @@ object Source {
    *
    * See also [[akka.stream.scaladsl.Source.queue]].
    *
+   *
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
-    require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
-    require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
-    fromGraph(new ActorRefSource(bufferSize, overflowStrategy, DefaultAttributes.actorRefSource, shape("ActorRefSource")))
-  }
+  def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
+    actorRef(
+      {
+        case akka.actor.Status.Success    ⇒
+        case akka.actor.Status.Success(_) ⇒
+      },
+      { case akka.actor.Status.Failure(cause) ⇒ cause },
+      bufferSize, overflowStrategy)
 
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
@@ -447,6 +554,19 @@ object Source {
 
       combineRest(2, rest.iterator)
     })
+
+  /**
+   * Combines two sources with fan-in strategy like `Merge` or `Concat` and returns `Source` with a materialized value.
+   */
+  def combineMat[T, U, M1, M2, M](first: Source[T, M1], second: Source[T, M2])(strategy: Int ⇒ Graph[UniformFanInShape[T, U], NotUsed])(matF: (M1, M2) ⇒ M): Source[U, M] = {
+    val secondPartiallyCombined = GraphDSL.create(second) { implicit b ⇒ secondShape ⇒
+      import GraphDSL.Implicits._
+      val c = b.add(strategy(2))
+      secondShape ~> c.in(1)
+      FlowShape(c.in(0), c.out)
+    }
+    first.viaMat(secondPartiallyCombined)(matF)
+  }
 
   /**
    * Combine the elements of multiple streams into a stream of sequences.
@@ -515,7 +635,7 @@ object Source {
    * `Restart` supervision strategy will close and create blocking IO again. Default strategy is `Stop` which means
    * that stream will be terminated on error in `read` function by default.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
@@ -538,7 +658,7 @@ object Source {
    * `Restart` supervision strategy will close and create resource. Default strategy is `Stop` which means
    * that stream will be terminated on error in `read` function (or future) by default.
    *
-   * You can configure the default dispatcher for this Source by changing the `akka.stream.blocking-io-dispatcher` or
+   * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
    * set it for a given Source by using [[ActorAttributes]].
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
@@ -550,4 +670,5 @@ object Source {
    */
   def unfoldResourceAsync[T, S](create: () ⇒ Future[S], read: (S) ⇒ Future[Option[T]], close: (S) ⇒ Future[Done]): Source[T, NotUsed] =
     Source.fromGraph(new UnfoldResourceSourceAsync(create, read, close))
+
 }

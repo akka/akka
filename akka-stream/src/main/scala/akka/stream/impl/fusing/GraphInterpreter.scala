@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.fusing
 
 import akka.actor.ActorRef
@@ -9,9 +10,13 @@ import akka.stream.stage._
 import akka.stream._
 import java.util.concurrent.ThreadLocalRandom
 
+import akka.Done
 import akka.annotation.InternalApi
 
+import scala.concurrent.Promise
 import scala.util.control.NonFatal
+
+import akka.stream.Attributes.LogLevels
 
 /**
  * INTERNAL API
@@ -191,7 +196,7 @@ import scala.util.control.NonFatal
   val log:          LoggingAdapter,
   val logics:       Array[GraphStageLogic], // Array of stage logics
   val connections:  Array[GraphInterpreter.Connection],
-  val onAsyncInput: (GraphStageLogic, Any, (Any) ⇒ Unit) ⇒ Unit,
+  val onAsyncInput: (GraphStageLogic, Any, Promise[Done], (Any) ⇒ Unit) ⇒ Unit,
   val fuzzingMode:  Boolean,
   val context:      ActorRef) {
 
@@ -344,7 +349,12 @@ import scala.util.control.NonFatal
         def reportStageError(e: Throwable): Unit = {
           if (activeStage == null) throw e
           else {
-            log.error(e, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), e.getMessage)
+            val loggingEnabled = activeStage.attributes.get[LogLevels] match {
+              case Some(levels) ⇒ levels.onFailure != LogLevels.Off
+              case None         ⇒ true
+            }
+            if (loggingEnabled)
+              log.error(e, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), e.getMessage)
             activeStage.failStage(e)
 
             // Abort chasing
@@ -432,7 +442,7 @@ import scala.util.control.NonFatal
     eventsRemaining
   }
 
-  def runAsyncInput(logic: GraphStageLogic, evt: Any, handler: (Any) ⇒ Unit): Unit =
+  def runAsyncInput(logic: GraphStageLogic, evt: Any, promise: Promise[Done], handler: (Any) ⇒ Unit): Unit =
     if (!isStageCompleted(logic)) {
       if (GraphInterpreter.Debug) println(s"$Name ASYNC $evt ($handler) [$logic]")
       val currentInterpreterHolder = _currentInterpreter.get()
@@ -440,9 +450,19 @@ import scala.util.control.NonFatal
       currentInterpreterHolder(0) = this
       try {
         activeStage = logic
-        try handler(evt)
-        catch {
-          case NonFatal(ex) ⇒ logic.failStage(ex)
+        try {
+          handler(evt)
+          if (promise ne GraphStageLogic.NoPromise) {
+            promise.success(Done)
+            logic.onFeedbackDispatched()
+          }
+        } catch {
+          case NonFatal(ex) ⇒
+            if (promise ne GraphStageLogic.NoPromise) {
+              promise.failure(ex)
+              logic.onFeedbackDispatched()
+            }
+            logic.failStage(ex)
         }
         afterStageHasRun(logic)
       } finally currentInterpreterHolder(0) = previousInterpreter

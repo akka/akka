@@ -1,12 +1,12 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.pattern
 
 import akka.actor._
 import akka.testkit.{ TestProbe, AkkaSpec }
 import akka.util.Timeout
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -31,7 +31,7 @@ class AskSpec extends AkkaSpec {
       f.isCompleted should ===(true)
       f.value.get match {
         case Failure(_: AskTimeoutException) ⇒
-        case v                               ⇒ fail(v + " was not Left(AskTimeoutException)")
+        case v                               ⇒ fail(v + " was not Failure(AskTimeoutException)")
       }
     }
 
@@ -42,7 +42,7 @@ class AskSpec extends AkkaSpec {
       f.isCompleted should ===(true)
       f.value.get match {
         case Failure(_: AskTimeoutException) ⇒
-        case v                               ⇒ fail(v + " was not Left(AskTimeoutException)")
+        case v                               ⇒ fail(v + " was not Failure(AskTimeoutException)")
       }
     }
 

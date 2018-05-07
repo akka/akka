@@ -1,9 +1,13 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
-import akka.stream.ThrottleMode.{ Shaping, Enforcing }
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
+
+import akka.stream.ThrottleMode.{ Enforcing, Shaping }
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
@@ -13,6 +17,9 @@ import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
 
+import akka.Done
+import akka.testkit.TimingTest
+
 class FlowThrottleSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(1, 1))
 
@@ -21,7 +28,8 @@ class FlowThrottleSpec extends StreamSpec {
 
   "Throttle for single cost elements" must {
     "work for the happy case" in Utils.assertAllStagesStopped {
-      Source(1 to 5).throttle(1, 100.millis, 0, Shaping)
+      //Source(1 to 5).throttle(1, 100.millis, 0, Shaping)
+      Source(1 to 5).throttle(19, 1000.millis, -1, Shaping)
         .runWith(TestSink.probe[Int])
         .request(5)
         .expectNext(1, 2, 3, 4, 5)
@@ -29,7 +37,7 @@ class FlowThrottleSpec extends StreamSpec {
     }
 
     "accept very high rates" in Utils.assertAllStagesStopped {
-      Source(1 to 5).throttle(1, 1.nanos, 0, ThrottleMode.Shaping)
+      Source(1 to 5).throttle(1, 1.nanos, 0, Shaping)
         .runWith(TestSink.probe[Int])
         .request(5)
         .expectNext(1, 2, 3, 4, 5)
@@ -37,7 +45,7 @@ class FlowThrottleSpec extends StreamSpec {
     }
 
     "accept very low rates" in Utils.assertAllStagesStopped {
-      Source(1 to 5).throttle(1, 100.days, 1, ThrottleMode.Shaping)
+      Source(1 to 5).throttle(1, 100.days, 1, Shaping)
         .runWith(TestSink.probe[Int])
         .request(5)
         .expectNext(1)
@@ -124,10 +132,6 @@ class FlowThrottleSpec extends StreamSpec {
       (1 to 5) foreach upstream.sendNext
       downstream.receiveWithin(300.millis, 5) should be(1 to 5)
 
-      downstream.request(1)
-      upstream.sendNext(6)
-      downstream.expectNoMsg(100.millis)
-      downstream.expectNext(6)
       downstream.request(5)
       downstream.expectNoMsg(1200.millis)
       for (i ← 7 to 11) upstream.sendNext(i)
@@ -306,5 +310,67 @@ class FlowThrottleSpec extends StreamSpec {
         .request(5)
         .expectError(ex)
     }
+
+    "work for real scenario with automatic burst size" taggedAs TimingTest in Utils.assertAllStagesStopped {
+      val startTime = System.nanoTime()
+      val counter1 = new AtomicInteger
+      val timestamp1 = new AtomicLong(System.nanoTime())
+      val expectedMinRate = new AtomicInteger
+      val expectedMaxRate = new AtomicInteger
+      val (ref, done) = Source.actorRef[Int](bufferSize = 100000, OverflowStrategy.fail)
+        .throttle(300, 1000.millis)
+        .toMat(Sink.foreach { elem ⇒
+          val now = System.nanoTime()
+          val n1 = counter1.incrementAndGet()
+          val duration1Millis = (now - timestamp1.get) / 1000 / 1000
+          if (duration1Millis >= 500) {
+            val rate = n1 * 1000.0 / duration1Millis
+            info(f"burst rate after ${(now - startTime).nanos.toMillis} ms at element $elem: $rate%2.2f elements/s ($n1)")
+            timestamp1.set(now)
+            counter1.set(0)
+            if (rate < expectedMinRate.get)
+              throw new RuntimeException(s"Too low rate, got $rate, expected min ${expectedMinRate.get}, " +
+                s"after ${(now - startTime).nanos.toMillis} ms at element $elem")
+            if (rate > expectedMaxRate.get)
+              throw new RuntimeException(s"Too high rate, got $rate, expected max ${expectedMaxRate.get}, " +
+                s"after ${(now - startTime).nanos.toMillis} ms at element $elem")
+          }
+        })(Keep.both)
+        .run()
+
+      expectedMaxRate.set(200) // sleep (at least) 5 ms between each element
+      (1 to 2700).foreach { n ⇒
+        if (!done.isCompleted) {
+          ref ! n
+          val now = System.nanoTime()
+          val elapsed = (now - startTime).nanos
+          val elapsedMs = elapsed.toMillis
+          if (elapsedMs >= 500 && elapsedMs <= 3000) {
+            expectedMinRate.set(100)
+          } else if (elapsedMs >= 3000 && elapsedMs <= 5000) {
+            expectedMaxRate.set(350) // could be up to 600 / s, but should be limited by the throttle
+            if (elapsedMs > 4000) expectedMinRate.set(250)
+          } else if (elapsedMs > 5000 && elapsedMs <= 8500) {
+            expectedMinRate.set(100)
+          } else if (elapsedMs > 10000) {
+            expectedMaxRate.set(200)
+          }
+
+          // higher rate for a few seconds
+          if (elapsedMs >= 3000 && elapsedMs <= 5000) {
+            // could be up to 600 / s, but should be limited by the throttle
+            if (n % 3 == 0)
+              Thread.sleep(5)
+          } else {
+            // around 200 / s
+            Thread.sleep(5)
+          }
+        }
+      }
+      ref ! akka.actor.Status.Success("done")
+
+      Await.result(done, 20.seconds) should ===(Done)
+    }
+
   }
 }

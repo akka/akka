@@ -1,15 +1,22 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.testkit
 
 import language.postfixOps
-
 import akka.actor._
-import scala.concurrent.{ Await }
+
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.pattern.ask
+
 import scala.util.Try
 import java.util.concurrent.atomic.AtomicInteger
 
-class TestProbeSpec extends AkkaSpec with DefaultTimeout {
+import org.scalatest.concurrent.Eventually
+
+class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
 
   "A TestProbe" must {
 
@@ -200,6 +207,18 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
     "have reasonable default name" in {
       val probe = new TestProbe(system)
       probe.ref.path.name should startWith("testProbe")
+    }
+
+    "expectNoMessage should pull the thingy" in {
+      val p = new TestProbe(system)
+
+      p.ref ! "nein" // no
+      p.ref ! "nie" // no
+
+      eventually(p.expectNoMessage(100.millis))
+
+      p.ref ! "tak" // yes
+      p.expectMsg("tak")
     }
   }
 

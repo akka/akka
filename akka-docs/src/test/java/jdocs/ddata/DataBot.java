@@ -1,12 +1,11 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.ddata;
 
 //#data-bot
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 
 import akka.actor.AbstractActor;
@@ -36,7 +35,7 @@ public class DataBot extends AbstractActor {
   private final Cluster node = Cluster.get(getContext().getSystem());
 
   private final Cancellable tickTask = getContext().getSystem().scheduler().schedule(
-      Duration.create(5, SECONDS), Duration.create(5, SECONDS), getSelf(), TICK,
+     Duration.ofSeconds(5), Duration.ofSeconds(5), getSelf(), TICK,
       getContext().dispatcher(), getSelf());
 
   private final Key<ORSet<String>> dataKey = ORSetKey.create("key");
@@ -47,7 +46,7 @@ public class DataBot extends AbstractActor {
     return receiveBuilder()
       .match(String.class, a -> a.equals(TICK), a -> receiveTick())
       .match(Changed.class, c -> c.key().equals(dataKey), c -> receiveChanged((Changed<ORSet<String>>) c))
-      .match(UpdateResponse.class, r -> receiveUpdateResoponse())
+      .match(UpdateResponse.class, r -> receiveUpdateResponse())
       .build();
   }
 
@@ -81,7 +80,7 @@ public class DataBot extends AbstractActor {
     log.info("Current elements: {}", data.getElements());
   }
   
-  private void receiveUpdateResoponse() {
+  private void receiveUpdateResponse() {
     // ignore
   }
 

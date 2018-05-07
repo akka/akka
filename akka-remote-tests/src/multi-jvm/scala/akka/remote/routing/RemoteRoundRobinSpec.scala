@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.routing
 
 import akka.actor.{ Actor, ActorRef, Address, PoisonPill, Props }
@@ -25,7 +26,6 @@ class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString(s"""
-      akka.loglevel = DEBUG
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 

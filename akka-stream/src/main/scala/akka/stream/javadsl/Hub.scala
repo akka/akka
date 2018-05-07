@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl
 
 import akka.NotUsed
@@ -26,8 +27,7 @@ object MergeHub {
    * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
    * [[Sink]] for feeding that materialization.
    *
-   * If one of the inputs fails the [[Sink]], the [[Source]] is failed in turn (possibly jumping over already buffered
-   * elements). Completed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
+   * Completed or failed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
    * and any new producers using the [[Sink]] will be cancelled.
    *
    * @param clazz Type of elements this hub emits and consumes
@@ -35,7 +35,7 @@ object MergeHub {
    */
   def of[T](clazz: Class[T], perProducerBufferSize: Int): Source[T, Sink[T, NotUsed]] = {
     akka.stream.scaladsl.MergeHub.source[T](perProducerBufferSize)
-      .mapMaterializedValue(_.asJava)
+      .mapMaterializedValue(_.asJava[T, NotUsed])
       .asJava
   }
 
@@ -47,8 +47,7 @@ object MergeHub {
    * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
    * [[Sink]] for feeding that materialization.
    *
-   * If one of the inputs fails the [[Sink]], the [[Source]] is failed in turn (possibly jumping over already buffered
-   * elements). Completed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
+   * Completed or failed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
    * and any new producers using the [[Sink]] will be cancelled.
    *
    * @param clazz Type of elements this hub emits and consumes
@@ -173,7 +172,8 @@ object PartitionHub {
    * @param partitioner Function that decides where to route an element. The function takes two parameters;
    *   the first is the number of active consumers and the second is the stream element. The function should
    *   return the index of the selected consumer for the given element, i.e. int greater than or equal to 0
-   *   and less than number of consumers. E.g. `(size, elem) -> Math.abs(elem.hashCode()) % size`.
+   *   and less than number of consumers. E.g. `(size, elem) -> Math.abs(elem.hashCode()) % size`. It's also
+   *   possible to use `-1` to drop the element.
    * @param startAfterNrOfConsumers Elements are buffered until this number of consumers have been connected.
    *   This is only used initially when the stage is starting up, i.e. it is not honored when consumers have
    *   been removed (canceled).

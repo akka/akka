@@ -1,0 +1,11 @@
+# Internal API changes
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.util.JavaDurationConverters#JavaDurationOps.asScala")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.util.JavaDurationConverters#JavaDurationOps.asScala$extension")
+
+# For Scheduler
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.Scheduler.schedule")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.Scheduler.scheduleOnce")
+
+# #24609 Fix broken explicit ask pattern for Java
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.PatternsCS.ask")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.Patterns.ask")

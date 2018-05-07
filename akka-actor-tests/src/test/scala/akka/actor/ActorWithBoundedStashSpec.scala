@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.actor
 
 import language.postfixOps
@@ -23,12 +24,12 @@ object ActorWithBoundedStashSpec {
         sender() ! "ok"
 
       case "world" ⇒
-        context.become(afterWorldBehaviour)
+        context.become(afterWorldBehavior)
         unstashAll()
 
     }
 
-    def afterWorldBehaviour: Receive = {
+    def afterWorldBehavior: Receive = {
       case _ ⇒ stash()
     }
   }

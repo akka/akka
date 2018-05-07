@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.persistence.query
 
-import java.util.concurrent.atomic.AtomicReference
 import akka.actor._
-import akka.event.Logging
-import scala.annotation.tailrec
-import scala.util.Failure
-import com.typesafe.config.Config
+import akka.annotation.InternalApi
+import akka.persistence.query.scaladsl.ReadJournal
+import akka.persistence.{ PersistencePlugin, PluginProvider }
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.reflect.ClassTag
 
 /**
  * Persistence extension for queries.
@@ -21,83 +23,45 @@ object PersistenceQuery extends ExtensionId[PersistenceQuery] with ExtensionIdPr
 
   def createExtension(system: ExtendedActorSystem): PersistenceQuery = new PersistenceQuery(system)
 
-  def lookup() = PersistenceQuery
+  def lookup(): PersistenceQuery.type = PersistenceQuery
 
-  /** INTERNAL API. */
-  private[persistence] case class PluginHolder(
-    scaladslPlugin: scaladsl.ReadJournal, javadslPlugin: akka.persistence.query.javadsl.ReadJournal)
-    extends Extension
+  @InternalApi
+  private[akka] val pluginProvider: PluginProvider[ReadJournalProvider, ReadJournal, javadsl.ReadJournal] =
+    new PluginProvider[ReadJournalProvider, scaladsl.ReadJournal, javadsl.ReadJournal] {
+      override def scalaDsl(t: ReadJournalProvider): ReadJournal = t.scaladslReadJournal()
+      override def javaDsl(t: ReadJournalProvider): javadsl.ReadJournal = t.javadslReadJournal()
+    }
 
 }
 
-class PersistenceQuery(system: ExtendedActorSystem) extends Extension {
-  import PersistenceQuery._
-
-  private val log = Logging(system, getClass)
-
-  /** Discovered query plugins. */
-  private val readJournalPluginExtensionIds = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
+class PersistenceQuery(system: ExtendedActorSystem)
+  extends PersistencePlugin[scaladsl.ReadJournal, javadsl.ReadJournal, ReadJournalProvider](system)(ClassTag(classOf[ReadJournalProvider]), PersistenceQuery.pluginProvider)
+  with Extension {
+  /**
+   * Scala API: Returns the [[akka.persistence.query.scaladsl.ReadJournal]] specified by the given
+   * read journal configuration entry.
+   *
+   * The provided readJournalPluginConfig will be used to configure the journal plugin instead of the actor system
+   * config.
+   */
+  final def readJournalFor[T <: scaladsl.ReadJournal](readJournalPluginId: String, readJournalPluginConfig: Config): T =
+    pluginFor(readJournalPluginId, readJournalPluginConfig).scaladslPlugin.asInstanceOf[T]
 
   /**
    * Scala API: Returns the [[akka.persistence.query.scaladsl.ReadJournal]] specified by the given
    * read journal configuration entry.
    */
   final def readJournalFor[T <: scaladsl.ReadJournal](readJournalPluginId: String): T =
-    readJournalPluginFor(readJournalPluginId).scaladslPlugin.asInstanceOf[T]
+    readJournalFor(readJournalPluginId, ConfigFactory.empty)
 
   /**
    * Java API: Returns the [[akka.persistence.query.javadsl.ReadJournal]] specified by the given
    * read journal configuration entry.
    */
-  final def getReadJournalFor[T <: javadsl.ReadJournal](clazz: Class[T], readJournalPluginId: String): T =
-    readJournalPluginFor(readJournalPluginId).javadslPlugin.asInstanceOf[T]
+  final def getReadJournalFor[T <: javadsl.ReadJournal](clazz: Class[T], readJournalPluginId: String, readJournalPluginConfig: Config): T =
+    pluginFor(readJournalPluginId, readJournalPluginConfig).javadslPlugin.asInstanceOf[T]
 
-  @tailrec private def readJournalPluginFor(readJournalPluginId: String): PluginHolder = {
-    val configPath = readJournalPluginId
-    val extensionIdMap = readJournalPluginExtensionIds.get
-    extensionIdMap.get(configPath) match {
-      case Some(extensionId) ⇒
-        extensionId(system)
-      case None ⇒
-        val extensionId = new ExtensionId[PluginHolder] {
-          override def createExtension(system: ExtendedActorSystem): PluginHolder = {
-            val provider = createPlugin(configPath)
-            PluginHolder(provider.scaladslReadJournal(), provider.javadslReadJournal())
-          }
-        }
-        readJournalPluginExtensionIds.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
-        readJournalPluginFor(readJournalPluginId) // Recursive invocation.
-    }
-  }
+  final def getReadJournalFor[T <: javadsl.ReadJournal](clazz: Class[T], readJournalPluginId: String): T = getReadJournalFor[T](clazz, readJournalPluginId, ConfigFactory.empty())
 
-  private def createPlugin(configPath: String): ReadJournalProvider = {
-    require(
-      !isEmpty(configPath) && system.settings.config.hasPath(configPath),
-      s"'reference.conf' is missing persistence read journal plugin config path: '${configPath}'")
-    val pluginConfig = system.settings.config.getConfig(configPath)
-    val pluginClassName = pluginConfig.getString("class")
-    log.debug(s"Create plugin: ${configPath} ${pluginClassName}")
-    val pluginClass = system.dynamicAccess.getClassFor[AnyRef](pluginClassName).get
-
-    def instantiate(args: collection.immutable.Seq[(Class[_], AnyRef)]) =
-      system.dynamicAccess.createInstanceFor[ReadJournalProvider](pluginClass, args)
-
-    instantiate((classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) ::
-      (classOf[String], configPath) :: Nil)
-      .recoverWith {
-        case x: NoSuchMethodException ⇒ instantiate(
-          (classOf[ExtendedActorSystem], system) :: (classOf[Config], pluginConfig) :: Nil)
-      }
-      .recoverWith { case x: NoSuchMethodException ⇒ instantiate((classOf[ExtendedActorSystem], system) :: Nil) }
-      .recoverWith { case x: NoSuchMethodException ⇒ instantiate(Nil) }
-      .recoverWith {
-        case ex: Exception ⇒ Failure.apply(
-          new IllegalArgumentException("Unable to create read journal plugin instance for path " +
-            s"[$configPath], class [$pluginClassName]!", ex))
-      }.get
-  }
-
-  /** Check for default or missing identity. */
-  private def isEmpty(text: String) = text == null || text.length == 0
 }
 

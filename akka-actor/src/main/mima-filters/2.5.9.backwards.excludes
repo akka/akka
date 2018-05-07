@@ -1,0 +1,14 @@
+# #24330 ActorSystem.getWhenTerminated
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorSystem.getWhenTerminated")
+
+# #23770 typed actor context ask
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.apply")
+
+# Disable phases in Coordinated Shutdown
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.CoordinatedShutdown#Phase.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.CoordinatedShutdown#Phase.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.actor.CoordinatedShutdown$Phase$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.CoordinatedShutdown#Phase.apply")
+
+# Path based WriteFile command #23902
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.TcpConnection.PendingWriteFile")

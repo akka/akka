@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.camel
@@ -9,8 +9,6 @@ import akka.camel.internal.CamelExchangeAdapter
 import org.apache.camel.impl.DefaultExchange
 import org.apache.camel.{ Exchange, ExchangePattern }
 import org.scalatest.FunSuite
-
-import scala.language.implicitConversions
 
 class CamelExchangeAdapterTest extends FunSuite with SharedCamelSystem {
 

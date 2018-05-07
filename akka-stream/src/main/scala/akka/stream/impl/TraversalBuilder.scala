@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -594,7 +594,7 @@ import scala.collection.immutable.Map.Map1
    */
   def fromModule(module: AtomicModule[Shape, Any], attributes: Attributes): LinearTraversalBuilder = {
     if (module.shape.inlets.size > 1) throw new IllegalStateException("Modules with more than one input port cannot be linear.")
-    if (module.shape.outlets.size > 1) throw new IllegalStateException("Modules with more than one input port cannot be linear.")
+    if (module.shape.outlets.size > 1) throw new IllegalStateException("Modules with more than one output port cannot be linear.")
     TraversalBuilder.initShape(module.shape)
 
     val inPortOpt = OptionVal(module.shape.inlets.headOption.orNull)
@@ -801,7 +801,6 @@ import scala.collection.immutable.Map.Map1
             pendingBuilder = OptionVal.None,
             beforeBuilder = EmptyTraversal)
         case OptionVal.None ⇒
-          copy(outPort = OptionVal.None, traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))
           copy(
             outPort = OptionVal.None,
             traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))

@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.testkit
 
 import org.scalactic.Constraint
@@ -46,7 +47,7 @@ object AkkaSpec {
 
   def getCallerName(clazz: Class[_]): String = {
     val s = (Thread.currentThread.getStackTrace map (_.getClassName) drop 1)
-      .dropWhile(_ matches "(java.lang.Thread|.*AkkaSpec.?$|.*StreamSpec.?$)")
+      .dropWhile(_ matches "(java.lang.Thread|.*AkkaSpec.*|.*\\.StreamSpec.*|.*MultiNodeSpec.*|.*\\.Abstract.*)")
     val reduced = s.lastIndexWhere(_ == clazz.getName) match {
       case -1 ⇒ s
       case z  ⇒ s drop (z + 1)

@@ -1,10 +1,12 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import java.util.Queue
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -13,26 +15,23 @@ import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.concurrent.duration.FiniteDuration
+
 import akka.{ Done, NotUsed }
 import akka.actor.ActorRef
 import akka.actor.ActorSelectionMessage
 import akka.actor.Address
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.Logging
-import akka.pattern.after
 import akka.remote._
 import akka.remote.DaemonMsgCreate
 import akka.remote.QuarantinedEvent
-import akka.remote.artery.AeronSink.GaveUpMessageException
+import akka.remote.artery.aeron.AeronSink.GaveUpMessageException
 import akka.remote.artery.ArteryTransport.{ AeronTerminated, ShuttingDown }
 import akka.remote.artery.Encoder.OutboundCompressionAccess
-import akka.remote.artery.Encoder.AccessOutboundCompressionFailed
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.OutboundHandshake.HandshakeTimeoutException
 import akka.remote.artery.SystemMessageDelivery.ClearSystemMessageDelivery
-import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.artery.compress.CompressionTable
 import akka.stream.AbruptTerminationException
 import akka.stream.KillSwitches
@@ -44,9 +43,10 @@ import akka.util.{ Unsafe, WildcardIndex }
 import akka.util.OptionVal
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import akka.stream.SharedKillSwitch
-
 import scala.util.control.NoStackTrace
+
 import akka.actor.Cancellable
+import akka.stream.StreamTcpException
 
 /**
  * INTERNAL API
@@ -72,6 +72,15 @@ private[remote] object Association {
     override def isEnabled: Boolean = false
   }
 
+  object RemovedQueueWrapper extends QueueWrapper {
+    override def queue: java.util.Queue[OutboundEnvelope] =
+      throw new UnsupportedOperationException("The Queue is removed")
+
+    override def offer(message: OutboundEnvelope): Boolean = false
+
+    override def isEnabled: Boolean = false
+  }
+
   final case class LazyQueueWrapper(queue: Queue[OutboundEnvelope], materialize: () ⇒ Unit) extends QueueWrapper {
     private val onlyOnce = new AtomicBoolean
 
@@ -92,9 +101,14 @@ private[remote] object Association {
   final val LargeQueueIndex = 1
   final val OrdinaryQueueIndex = 2
 
-  private object OutboundStreamStopSignal extends RuntimeException with NoStackTrace
+  sealed trait StopSignal
+  case object OutboundStreamStopIdleSignal extends RuntimeException("") with StopSignal with NoStackTrace
+  case object OutboundStreamStopQuarantinedSignal extends RuntimeException("") with StopSignal with NoStackTrace
 
-  final case class OutboundStreamMatValues(streamKillSwitch: SharedKillSwitch, completed: Future[Done])
+  final case class OutboundStreamMatValues(
+    streamKillSwitch: OptionVal[SharedKillSwitch],
+    completed:        Future[Done],
+    stopping:         OptionVal[StopSignal])
 }
 
 /**
@@ -117,7 +131,7 @@ private[remote] class Association(
   import FlightRecorderEvents._
 
   private val log = Logging(transport.system, getClass.getName)
-  private val flightRecorder = transport.createFlightRecorderEventSink(synchr = true)
+  private def flightRecorder = transport.topLevelFlightRecorder
 
   override def settings = transport.settings
   private def advancedSettings = transport.settings.Advanced
@@ -128,8 +142,13 @@ private[remote] class Association(
   // the `SendQueue` after materialization. Using same underlying queue. This makes it possible to
   // start sending (enqueuing) to the Association immediate after construction.
 
-  def createQueue(capacity: Int): Queue[OutboundEnvelope] =
-    new ManyToOneConcurrentArrayQueue[OutboundEnvelope](capacity)
+  def createQueue(capacity: Int, queueIndex: Int): Queue[OutboundEnvelope] = {
+    val linked = queueIndex == ControlQueueIndex || queueIndex == LargeQueueIndex
+    if (linked)
+      new LinkedBlockingQueue[OutboundEnvelope](capacity) // less memory than ManyToOneConcurrentArrayQueue
+    else
+      new ManyToOneConcurrentArrayQueue[OutboundEnvelope](capacity)
+  }
 
   private val outboundLanes = advancedSettings.OutboundLanes
   private val controlQueueSize = advancedSettings.OutboundControlQueueSize
@@ -137,15 +156,15 @@ private[remote] class Association(
   private val largeQueueSize = advancedSettings.OutboundLargeMessageQueueSize
 
   private[this] val queues: Array[SendQueue.ProducerApi[OutboundEnvelope]] = new Array(2 + outboundLanes)
-  queues(ControlQueueIndex) = QueueWrapperImpl(createQueue(controlQueueSize)) // control stream
+  queues(ControlQueueIndex) = QueueWrapperImpl(createQueue(controlQueueSize, ControlQueueIndex)) // control stream
   queues(LargeQueueIndex) =
     if (transport.largeMessageChannelEnabled) // large messages stream
-      QueueWrapperImpl(createQueue(largeQueueSize))
+      QueueWrapperImpl(createQueue(largeQueueSize, LargeQueueIndex))
     else
       DisabledQueueWrapper
 
   (0 until outboundLanes).foreach { i ⇒
-    queues(OrdinaryQueueIndex + i) = QueueWrapperImpl(createQueue(queueSize)) // ordinary messages stream
+    queues(OrdinaryQueueIndex + i) = QueueWrapperImpl(createQueue(queueSize, OrdinaryQueueIndex + i)) // ordinary messages stream
   }
   @volatile private[this] var queuesVisibility = false
 
@@ -158,37 +177,27 @@ private[remote] class Association(
   // in case there is a restart at the same time as a compression table update
   private val changeCompressionTimeout = 5.seconds
 
-  private[remote] def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] = {
-    import transport.system.dispatcher
-    val c = outboundCompressionAccess
-    val result =
-      if (c.isEmpty) Future.successful(Done)
-      else if (c.size == 1) c.head.changeActorRefCompression(table)
-      else Future.sequence(c.map(_.changeActorRefCompression(table))).map(_ ⇒ Done)
-    timeoutAfter(result, changeCompressionTimeout, new AccessOutboundCompressionFailed)
-  }
   // keyed by stream queue index
   private[this] val streamMatValues = new AtomicReference(Map.empty[Int, OutboundStreamMatValues])
-  private[this] val idle = new AtomicReference[Option[Cancellable]](None)
 
-  private[remote] def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] = {
+  private[this] val idleTask = new AtomicReference[Option[Cancellable]](None)
+  private[this] val quarantinedIdleTask = new AtomicReference[Option[Cancellable]](None)
+
+  private[remote] def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] =
+    updateOutboundCompression(c ⇒ c.changeActorRefCompression(table))
+
+  private[remote] def changeClassManifestCompression(table: CompressionTable[String]): Future[Done] =
+    updateOutboundCompression(c ⇒ c.changeClassManifestCompression(table))
+
+  private def clearOutboundCompression(): Future[Done] =
+    updateOutboundCompression(c ⇒ c.clearCompression())
+
+  private def updateOutboundCompression(action: OutboundCompressionAccess ⇒ Future[Done]): Future[Done] = {
     import transport.system.dispatcher
     val c = outboundCompressionAccess
-    val result =
-      if (c.isEmpty) Future.successful(Done)
-      else if (c.size == 1) c.head.changeClassManifestCompression(table)
-      else Future.sequence(c.map(_.changeClassManifestCompression(table))).map(_ ⇒ Done)
-    timeoutAfter(result, changeCompressionTimeout, new AccessOutboundCompressionFailed)
-  }
-
-  private def clearOutboundCompression(): Future[Done] = {
-    import transport.system.dispatcher
-    val c = outboundCompressionAccess
-    val result =
-      if (c.isEmpty) Future.successful(Done)
-      else if (c.size == 1) c.head.clearCompression()
-      else Future.sequence(c.map(_.clearCompression())).map(_ ⇒ Done)
-    timeoutAfter(result, changeCompressionTimeout, new AccessOutboundCompressionFailed)
+    if (c.isEmpty) Future.successful(Done)
+    else if (c.size == 1) action(c.head)
+    else Future.sequence(c.map(action(_))).map(_ ⇒ Done)
   }
 
   private def clearInboundCompression(originUid: Long): Unit =
@@ -196,12 +205,6 @@ private[remote] class Association(
       case OptionVal.Some(access) ⇒ access.closeCompressionFor(originUid)
       case _                      ⇒ // do nothing
     }
-
-  private def timeoutAfter[T](f: Future[T], timeout: FiniteDuration, e: ⇒ Throwable): Future[T] = {
-    import transport.system.dispatcher
-    val f2 = after(timeout, transport.system.scheduler)(Future.failed(e))
-    Future.firstCompletedOf(List(f, f2))
-  }
 
   private def deadletters = transport.system.deadLetters
 
@@ -241,7 +244,7 @@ private[remote] class Association(
    * @return Whether the previous state matched correctly
    */
   @inline
-  private[this] def swapState(oldState: AssociationState, newState: AssociationState): Boolean =
+  private[artery] def swapState(oldState: AssociationState, newState: AssociationState): Boolean =
     Unsafe.instance.compareAndSwapObject(this, AbstractAssociation.sharedStateOffset, oldState, newState)
 
   /**
@@ -249,6 +252,13 @@ private[remote] class Association(
    */
   def associationState: AssociationState =
     Unsafe.instance.getObjectVolatile(this, AbstractAssociation.sharedStateOffset).asInstanceOf[AssociationState]
+
+  def setControlIdleKillSwitch(killSwitch: OptionVal[SharedKillSwitch]): Unit = {
+    val current = associationState
+    swapState(current, current.withControlIdleKillSwitch(killSwitch))
+    if (killSwitch.isDefined)
+      startIdleTimer()
+  }
 
   def completeHandshake(peer: UniqueAddress): Future[Done] = {
     require(
@@ -275,7 +285,7 @@ private[remote] class Association(
               if (swapState(current, newState)) {
                 current.uniqueRemoteAddressValue() match {
                   case Some(old) ⇒
-                    cancelIdleTimer()
+                    cancelQuarantinedIdleTimer()
                     log.debug(
                       "Incarnation {} of association to [{}] with new UID [{}] (old UID [{}])",
                       newState.incarnation, peer.address, peer.uid, old.uid)
@@ -294,11 +304,11 @@ private[remote] class Association(
   // OutboundContext
   override def sendControl(message: ControlMessage): Unit = {
     try {
-      if (!transport.isShutdown) {
+      if (!transport.isShutdown && !isRemovedAfterQuarantined()) {
         if (associationState.isQuarantined()) {
           log.debug("Send control message [{}] to quarantined [{}]", Logging.messageClassName(message),
             remoteAddress)
-          startIdleTimer()
+          startQuarantinedIdleTimer()
         }
         outboundControlIngress.sendControlMessage(message)
       }
@@ -316,50 +326,54 @@ private[remote] class Association(
     val unused = queuesVisibility
 
     def dropped(queueIndex: Int, qSize: Int, env: OutboundEnvelope): Unit = {
-      log.debug(
-        "Dropping message [{}] from [{}] to [{}] due to overflow of send queue, size [{}]",
-        Logging.messageClassName(message), sender.getOrElse(deadletters), recipient.getOrElse(recipient), qSize)
+      val removed = isRemovedAfterQuarantined()
+      if (removed) recipient match {
+        case OptionVal.Some(ref) ⇒ ref.cachedAssociation = null // don't use this Association instance any more
+        case OptionVal.None      ⇒
+      }
+      if (log.isDebugEnabled) {
+        val reason =
+          if (removed) "removed unused quarantined association"
+          else s"overflow of send queue, size [$queueSize]"
+        log.debug(
+          "Dropping message [{}] from [{}] to [{}] due to {}",
+          Logging.messageClassName(message), sender.getOrElse(deadletters), recipient.getOrElse(recipient), reason)
+      }
       flightRecorder.hiFreq(Transport_SendQueueOverflow, queueIndex)
       deadletters ! env
     }
 
-    val quarantined = associationState.isQuarantined()
+    val state = associationState
+    val quarantined = state.isQuarantined()
+    val messageIsClearSystemMessageDelivery = message.isInstanceOf[ClearSystemMessageDelivery]
 
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
-    if (message.isInstanceOf[ActorSelectionMessage] || !quarantined || message == ClearSystemMessageDelivery) {
-      if (quarantined && message != ClearSystemMessageDelivery) {
+    if (message.isInstanceOf[ActorSelectionMessage] || !quarantined || messageIsClearSystemMessageDelivery) {
+      if (quarantined && !messageIsClearSystemMessageDelivery) {
         log.debug("Quarantine piercing attempt with message [{}] to [{}]", Logging.messageClassName(message), recipient.getOrElse(""))
-        startIdleTimer()
+        startQuarantinedIdleTimer()
       }
       try {
+        val outboundEnvelope = createOutboundEnvelope()
         message match {
           case _: SystemMessage ⇒
-            val outboundEnvelope = createOutboundEnvelope()
-            if (!controlQueue.offer(createOutboundEnvelope())) {
+            if (!controlQueue.offer(outboundEnvelope)) {
               quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
               dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
             }
-          case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | ClearSystemMessageDelivery ⇒
+          case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | _: ClearSystemMessageDelivery ⇒
             // ActorSelectionMessage with PriorityMessage is used by cluster and remote failure detector heartbeating
-            val outboundEnvelope = createOutboundEnvelope()
-            if (!controlQueue.offer(createOutboundEnvelope())) {
+            if (!controlQueue.offer(outboundEnvelope)) {
               dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
             }
           case _: DaemonMsgCreate ⇒
             // DaemonMsgCreate is not a SystemMessage, but must be sent over the control stream because
             // remote deployment process depends on message ordering for DaemonMsgCreate and Watch messages.
-            // It must also be sent over the ordinary message stream so that it arrives (and creates the
-            // destination) before the first ordinary message arrives.
-            val outboundEnvelope1 = createOutboundEnvelope()
-            if (!controlQueue.offer(outboundEnvelope1))
-              dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope1)
-            (0 until outboundLanes).foreach { i ⇒
-              val outboundEnvelope2 = createOutboundEnvelope()
-              if (!queues(OrdinaryQueueIndex + i).offer(outboundEnvelope2))
-                dropped(OrdinaryQueueIndex + i, queueSize, outboundEnvelope2)
-            }
+            // First ordinary message may arrive earlier but then the resolve in the Decoder is retried
+            // so that the first message can be delivered after the remote actor has been created.
+            if (!controlQueue.offer(outboundEnvelope))
+              dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
           case _ ⇒
-            val outboundEnvelope = createOutboundEnvelope()
             val queueIndex = selectQueue(recipient)
             val queue = queues(queueIndex)
             val offerOk = queue.offer(outboundEnvelope)
@@ -406,11 +420,23 @@ private[remote] class Association(
     }
   }
 
+  override def isOrdinaryMessageStreamActive(): Boolean =
+    isStreamActive(OrdinaryQueueIndex)
+
+  def isStreamActive(queueIndex: Int): Boolean = {
+    queues(queueIndex) match {
+      case _: LazyQueueWrapper  ⇒ false
+      case DisabledQueueWrapper ⇒ false
+      case RemovedQueueWrapper  ⇒ false
+      case _                    ⇒ true
+    }
+  }
+
   def sendTerminationHint(replyTo: ActorRef): Int = {
     if (!associationState.isQuarantined()) {
       val msg = ActorSystemTerminating(localAddress)
       var sent = 0
-      queues.iterator.filter(_.isEnabled).foreach { queue ⇒
+      queues.iterator.filter(q ⇒ q.isEnabled && !q.isInstanceOf[LazyQueueWrapper]).foreach { queue ⇒
         try {
           val envelope = outboundEnvelopePool.acquire()
             .init(OptionVal.None, msg, OptionVal.Some(replyTo))
@@ -447,22 +473,24 @@ private[remote] class Association(
                     "Remote actorsystem must be restarted to recover from this situation. {}",
                   remoteAddress, u, reason)
                 transport.system.eventStream.publish(QuarantinedEvent(remoteAddress, u))
+                flightRecorder.loFreq(Transport_Quarantined, s"$remoteAddress - $u")
                 clearOutboundCompression()
                 clearInboundCompression(u)
                 // end delivery of system messages to that incarnation after this point
-                send(ClearSystemMessageDelivery, OptionVal.None, OptionVal.None)
+                send(ClearSystemMessageDelivery(current.incarnation), OptionVal.None, OptionVal.None)
                 // try to tell the other system that we have quarantined it
                 sendControl(Quarantined(localAddress, peer))
-                startIdleTimer()
+                startQuarantinedIdleTimer()
               } else
                 quarantine(reason, uid) // recursive
             }
           case Some(peer) ⇒
-            log.debug(
+            log.info(
               "Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. {}",
               remoteAddress, u, peer.uid, reason)
+            send(ClearSystemMessageDelivery(current.incarnation - 1), OptionVal.None, OptionVal.None)
           case None ⇒
-            log.debug(
+            log.info(
               "Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. {}",
               remoteAddress, reason)
         }
@@ -472,20 +500,123 @@ private[remote] class Association(
 
   }
 
-  private def cancelIdleTimer(): Unit = {
-    val current = idle.get
+  /**
+   * After calling this no messages can be sent with this Association instance
+   */
+  def removedAfterQuarantined(): Unit = {
+    if (!isRemovedAfterQuarantined()) {
+      flightRecorder.loFreq(Transport_RemovedQuarantined, remoteAddress.toString)
+      queues(ControlQueueIndex) = RemovedQueueWrapper
+
+      if (transport.largeMessageChannelEnabled)
+        queues(LargeQueueIndex) = RemovedQueueWrapper
+
+      (0 until outboundLanes).foreach { i ⇒
+        queues(OrdinaryQueueIndex + i) = RemovedQueueWrapper
+      }
+      queuesVisibility = true // volatile write for visibility of the queues array
+
+      // cleanup
+      _outboundControlIngress = OptionVal.None
+      outboundCompressionAccess = Vector.empty
+      cancelIdleTimer()
+      cancelQuarantinedIdleTimer()
+      abortQuarantined()
+
+      log.info("Unused association to [{}] removed after quarantine", remoteAddress)
+    }
+  }
+
+  def isRemovedAfterQuarantined(): Boolean =
+    queues(ControlQueueIndex) == RemovedQueueWrapper
+
+  private def cancelQuarantinedIdleTimer(): Unit = {
+    val current = quarantinedIdleTask.get
     current.foreach(_.cancel())
-    idle.compareAndSet(current, None)
+    quarantinedIdleTask.compareAndSet(current, None)
+  }
+
+  private def startQuarantinedIdleTimer(): Unit = {
+    cancelQuarantinedIdleTimer()
+    quarantinedIdleTask.set(Some(transport.system.scheduler.scheduleOnce(advancedSettings.StopQuarantinedAfterIdle) {
+      if (associationState.isQuarantined())
+        abortQuarantined()
+    }(transport.system.dispatcher)))
+  }
+
+  private def abortQuarantined(): Unit = {
+    streamMatValues.get.foreach {
+      case (queueIndex, OutboundStreamMatValues(killSwitch, _, _)) ⇒
+        killSwitch match {
+          case OptionVal.Some(k) ⇒
+            setStopReason(queueIndex, OutboundStreamStopQuarantinedSignal)
+            clearStreamKillSwitch(queueIndex, k)
+            k.abort(OutboundStreamStopQuarantinedSignal)
+          case OptionVal.None ⇒ // already aborted
+        }
+    }
+  }
+
+  private def cancelIdleTimer(): Unit = {
+    val current = idleTask.get
+    current.foreach(_.cancel())
+    idleTask.compareAndSet(current, None)
   }
 
   private def startIdleTimer(): Unit = {
     cancelIdleTimer()
-    idle.set(Some(transport.system.scheduler.scheduleOnce(advancedSettings.StopQuarantinedAfterIdle) {
-      if (associationState.isQuarantined())
-        streamMatValues.get.valuesIterator.foreach {
-          case OutboundStreamMatValues(killSwitch, _) ⇒ killSwitch.abort(OutboundStreamStopSignal)
+    val StopIdleOutboundAfter = settings.Advanced.StopIdleOutboundAfter
+    val interval = StopIdleOutboundAfter / 2
+    val stopIdleOutboundAfterNanos = StopIdleOutboundAfter.toNanos
+    val initialDelay = settings.Advanced.ConnectionTimeout.max(StopIdleOutboundAfter) + 1.second
+    val task: Cancellable = transport.system.scheduler.schedule(initialDelay, interval) {
+      if (System.nanoTime() - associationState.lastUsedTimestamp.get >= stopIdleOutboundAfterNanos) {
+        streamMatValues.get.foreach {
+          case (queueIndex, OutboundStreamMatValues(streamKillSwitch, _, stopping)) ⇒
+            if (isStreamActive(queueIndex) && stopping.isEmpty) {
+              if (queueIndex != ControlQueueIndex) {
+                streamKillSwitch match {
+                  case OptionVal.Some(k) ⇒
+                    // for non-control streams we can stop the entire stream
+                    log.info("Stopping idle outbound stream [{}] to [{}]", queueIndex, remoteAddress)
+                    flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
+                    setStopReason(queueIndex, OutboundStreamStopIdleSignal)
+                    clearStreamKillSwitch(queueIndex, k)
+                    k.abort(OutboundStreamStopIdleSignal)
+                  case OptionVal.None ⇒ // already aborted
+                }
+
+              } else {
+                // only stop the transport parts of the stream because SystemMessageDelivery stage has
+                // state (seqno) and system messages might be sent at the same time
+                associationState.controlIdleKillSwitch match {
+                  case OptionVal.Some(killSwitch) ⇒
+                    log.info("Stopping idle outbound control stream to [{}]", remoteAddress)
+                    flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
+                    setControlIdleKillSwitch(OptionVal.None)
+                    killSwitch.abort(OutboundStreamStopIdleSignal)
+                  case OptionVal.None ⇒
+                    log.debug(
+                      "Couldn't stop idle outbound control stream to [{}] due to missing KillSwitch.",
+                      remoteAddress)
+                }
+              }
+            }
         }
-    }(transport.system.dispatcher)))
+
+        cancelIdleTimer()
+      }
+    }(transport.system.dispatcher)
+
+    if (!idleTask.compareAndSet(None, Some(task))) {
+      // another thread did same thing and won
+      task.cancel()
+    }
+
+  }
+
+  private def sendToDeadLetters[T](pending: Vector[OutboundEnvelope]): Unit = {
+    pending.foreach(transport.system.deadLetters ! _)
   }
 
   /**
@@ -500,6 +631,7 @@ private[remote] class Association(
     if (!controlQueue.isInstanceOf[QueueWrapper])
       throw new IllegalStateException("associate() must only be called once")
     runOutboundStreams()
+    startIdleTimer()
   }
 
   private def runOutboundStreams(): Unit = {
@@ -523,8 +655,15 @@ private[remote] class Association(
 
     val streamKillSwitch = KillSwitches.shared("outboundControlStreamKillSwitch")
 
+    def sendQueuePostStop[T](pending: Vector[OutboundEnvelope]): Unit = {
+      sendToDeadLetters(pending)
+      val systemMessagesCount = pending.count(env ⇒ env.message.isInstanceOf[SystemMessage])
+      if (systemMessagesCount > 0)
+        quarantine(s"SendQueue stopped with [$systemMessagesCount] pending system messages.")
+    }
+
     val (queueValue, (control, completed)) =
-      Source.fromGraph(new SendQueue[OutboundEnvelope])
+      Source.fromGraph(new SendQueue[OutboundEnvelope](sendQueuePostStop))
         .via(streamKillSwitch.flow)
         .toMat(transport.outboundControl(this))(Keep.both)
         .run()(materializer)
@@ -537,7 +676,7 @@ private[remote] class Association(
     materializing.countDown()
 
     updateStreamMatValues(ControlQueueIndex, streamKillSwitch, completed)
-    attachStreamRestart("Outbound control stream", ControlQueueIndex, controlQueueSize,
+    attachOutboundStreamRestart("Outbound control stream", ControlQueueIndex, controlQueueSize,
       completed, () ⇒ runOutboundControlStream())
   }
 
@@ -547,12 +686,15 @@ private[remote] class Association(
       case existing: QueueWrapper ⇒ existing
       case _ ⇒
         // use new queue for restarts
-        QueueWrapperImpl(createQueue(capacity))
+        QueueWrapperImpl(createQueue(capacity, queueIndex))
     }
   }
 
   private def runOutboundOrdinaryMessagesStream(): Unit = {
     if (transport.isShutdown) throw ShuttingDown
+
+    val streamKillSwitch = KillSwitches.shared("outboundMessagesKillSwitch")
+
     if (outboundLanes == 1) {
       log.debug("Starting outbound message stream to [{}]", remoteAddress)
       val queueIndex = OrdinaryQueueIndex
@@ -560,10 +702,8 @@ private[remote] class Association(
       queues(queueIndex) = wrapper // use new underlying queue immediately for restarts
       queuesVisibility = true // volatile write for visibility of the queues array
 
-      val streamKillSwitch = KillSwitches.shared("outboundMessagesKillSwitch")
-
       val (queueValue, testMgmt, changeCompression, completed) =
-        Source.fromGraph(new SendQueue[OutboundEnvelope])
+        Source.fromGraph(new SendQueue[OutboundEnvelope](sendToDeadLetters))
           .via(streamKillSwitch.flow)
           .viaMat(transport.outboundTestFlow(this))(Keep.both)
           .toMat(transport.outbound(this))({ case ((a, b), (c, d)) ⇒ (a, b, c, d) }) // "keep all, exploded"
@@ -576,7 +716,7 @@ private[remote] class Association(
       outboundCompressionAccess = Vector(changeCompression)
 
       updateStreamMatValues(OrdinaryQueueIndex, streamKillSwitch, completed)
-      attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
+      attachOutboundStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
         completed, () ⇒ runOutboundOrdinaryMessagesStream())
 
     } else {
@@ -588,9 +728,7 @@ private[remote] class Association(
         wrapper
       }.toVector
 
-      val streamKillSwitch = KillSwitches.shared("outboundMessagesKillSwitch")
-
-      val lane = Source.fromGraph(new SendQueue[OutboundEnvelope])
+      val lane = Source.fromGraph(new SendQueue[OutboundEnvelope](sendToDeadLetters))
         .via(streamKillSwitch.flow)
         .via(transport.outboundTestFlow(this))
         .viaMat(transport.outboundLane(this))(Keep.both)
@@ -601,9 +739,9 @@ private[remote] class Association(
           case ((q, c), w) ⇒ (q, c, w)
         }
 
-      val (mergeHub, aeronSinkCompleted) = MergeHub.source[EnvelopeBuffer]
+      val (mergeHub, transportSinkCompleted) = MergeHub.source[EnvelopeBuffer]
         .via(streamKillSwitch.flow)
-        .toMat(transport.aeronSink(this))(Keep.both).run()(materializer)
+        .toMat(transport.outboundTransportSink(this))(Keep.both).run()(materializer)
 
       val values: Vector[(SendQueue.QueueValue[OutboundEnvelope], Encoder.OutboundCompressionAccess, Future[Done])] =
         (0 until outboundLanes).map { _ ⇒
@@ -613,13 +751,14 @@ private[remote] class Association(
       val (queueValues, compressionAccessValues, laneCompletedValues) = values.unzip3
 
       import transport.system.dispatcher
-      val completed = Future.sequence(laneCompletedValues).flatMap(_ ⇒ aeronSinkCompleted)
 
       // tear down all parts if one part fails or completes
-      completed.failed.foreach {
-        reason ⇒ streamKillSwitch.abort(reason)
+      Future.firstCompletedOf(laneCompletedValues).failed.foreach { reason ⇒
+        streamKillSwitch.abort(reason)
       }
-      (laneCompletedValues :+ aeronSinkCompleted).foreach(_.foreach { _ ⇒ streamKillSwitch.shutdown() })
+      (laneCompletedValues :+ transportSinkCompleted).foreach(_.foreach { _ ⇒ streamKillSwitch.shutdown() })
+
+      val allCompleted = Future.sequence(laneCompletedValues).flatMap(_ ⇒ transportSinkCompleted)
 
       queueValues.zip(wrappers).zipWithIndex.foreach {
         case ((q, w), i) ⇒
@@ -630,8 +769,8 @@ private[remote] class Association(
 
       outboundCompressionAccess = compressionAccessValues
 
-      attachStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
-        completed, () ⇒ runOutboundOrdinaryMessagesStream())
+      attachOutboundStreamRestart("Outbound message stream", OrdinaryQueueIndex, queueSize,
+        allCompleted, () ⇒ runOutboundOrdinaryMessagesStream())
     }
   }
 
@@ -644,7 +783,7 @@ private[remote] class Association(
 
     val streamKillSwitch = KillSwitches.shared("outboundLargeMessagesKillSwitch")
 
-    val (queueValue, completed) = Source.fromGraph(new SendQueue[OutboundEnvelope])
+    val (queueValue, completed) = Source.fromGraph(new SendQueue[OutboundEnvelope](sendToDeadLetters))
       .via(streamKillSwitch.flow)
       .via(transport.outboundTestFlow(this))
       .toMat(transport.outboundLarge(this))(Keep.both)
@@ -656,73 +795,145 @@ private[remote] class Association(
     queuesVisibility = true // volatile write for visibility of the queues array
 
     updateStreamMatValues(LargeQueueIndex, streamKillSwitch, completed)
-    attachStreamRestart("Outbound large message stream", LargeQueueIndex, largeQueueSize,
+    attachOutboundStreamRestart("Outbound large message stream", LargeQueueIndex, largeQueueSize,
       completed, () ⇒ runOutboundLargeMessagesStream())
   }
 
-  private def attachStreamRestart(streamName: String, queueIndex: Int, queueCapacity: Int,
-                                  streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
+  private def attachOutboundStreamRestart(streamName: String, queueIndex: Int, queueCapacity: Int,
+                                          streamCompleted: Future[Done], restart: () ⇒ Unit): Unit = {
 
     def lazyRestart(): Unit = {
+      flightRecorder.loFreq(Transport_RestartOutbound, s"$remoteAddress - $streamName")
       outboundCompressionAccess = Vector.empty
       if (queueIndex == ControlQueueIndex) {
         materializing = new CountDownLatch(1)
         _outboundControlIngress = OptionVal.None
       }
       // LazyQueueWrapper will invoke the `restart` function when first message is offered
-      queues(queueIndex) = LazyQueueWrapper(createQueue(queueCapacity), restart)
+      val restartAndStartIdleTimer: () ⇒ Unit = () ⇒ {
+        restart()
+        startIdleTimer()
+      }
+
+      if (!isRemovedAfterQuarantined())
+        queues(queueIndex) = LazyQueueWrapper(createQueue(queueCapacity, queueIndex), restartAndStartIdleTimer)
+
       queuesVisibility = true // volatile write for visibility of the queues array
     }
 
     implicit val ec = materializer.executionContext
+    streamCompleted.foreach { _ ⇒
+      // shutdown as expected
+      // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
+      materializing.countDown()
+    }
     streamCompleted.failed.foreach {
       case ArteryTransport.ShutdownSignal ⇒
         // shutdown as expected
+        cancelIdleTimer()
         // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
         materializing.countDown()
-      case _: AeronTerminated ⇒ // shutdown already in progress
-      case cause if transport.isShutdown ⇒
+      case cause if transport.isShutdown || isRemovedAfterQuarantined() ⇒
         // don't restart after shutdown, but log some details so we notice
-        log.error(cause, s"{} to [{}] failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
+        // for the TCP transport the ShutdownSignal is "converted" to StreamTcpException
+        if (!cause.isInstanceOf[StreamTcpException])
+          log.error(cause, s"{} to [{}] failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
+        cancelIdleTimer()
         // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
         materializing.countDown()
-      case _: AbruptTerminationException ⇒ // ActorSystem shutdown
-      case OutboundStreamStopSignal ⇒
-        // stop as expected due to quarantine
-        log.debug("{} to [{}] stopped. It will be restarted if used again.", streamName, remoteAddress)
-        lazyRestart()
-      case cause: GaveUpMessageException ⇒
-        log.debug("{} to [{}] failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
-        // restart unconditionally, without counting restarts
-        lazyRestart()
+      case _: AeronTerminated ⇒
+        // shutdown already in progress
+        cancelIdleTimer()
+      case _: AbruptTerminationException ⇒
+        // ActorSystem shutdown
+        cancelIdleTimer()
       case cause ⇒
-        if (queueIndex == ControlQueueIndex) {
+
+        // it might have been stopped as expected due to idle or quarantine
+        // for the TCP transport the exception is "converted" to StreamTcpException
+        val stoppedIdle = cause == OutboundStreamStopIdleSignal ||
+          getStopReason(queueIndex).contains(OutboundStreamStopIdleSignal)
+        val stoppedQuarantined = cause == OutboundStreamStopQuarantinedSignal ||
+          getStopReason(queueIndex).contains(OutboundStreamStopQuarantinedSignal)
+
+        // for some cases restart unconditionally, without counting restarts
+        val bypassRestartCounter = cause match {
+          case _: GaveUpMessageException ⇒ true
+          case _                         ⇒ stoppedIdle || stoppedQuarantined
+        }
+
+        if (queueIndex == ControlQueueIndex && !stoppedQuarantined) {
           cause match {
             case _: HandshakeTimeoutException ⇒ // ok, quarantine not possible without UID
-            case _                            ⇒ quarantine("Outbound control stream restarted")
+            case _ ⇒
+              // Must quarantine in case all system messages haven't been delivered.
+              // See also comment in the stoppedIdle case below
+              quarantine(s"Outbound control stream restarted. $cause")
           }
         }
 
-        if (restartCounter.restart()) {
+        if (stoppedIdle) {
+          log.debug("{} to [{}] was idle and stopped. It will be restarted if used again.", streamName, remoteAddress)
+          lazyRestart()
+        } else if (stoppedQuarantined) {
+          log.debug("{} to [{}] was quarantined and stopped. It will be restarted if used again.", streamName, remoteAddress)
+          lazyRestart()
+        } else if (bypassRestartCounter || restartCounter.restart()) {
           log.error(cause, "{} to [{}] failed. Restarting it. {}", streamName, remoteAddress, cause.getMessage)
           lazyRestart()
         } else {
           log.error(cause, s"{} to [{}] failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
             streamName, remoteAddress, advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout.toSeconds)
+          cancelIdleTimer()
           transport.system.terminate()
         }
     }
   }
 
-  private def updateStreamMatValues(streamId: Int, streamKillSwitch: SharedKillSwitch, completed: Future[Done]): Unit = {
+  private def updateStreamMatValues(streamId: Int, streamKillSwitch: SharedKillSwitch,
+                                    completed: Future[Done]): Unit = {
     implicit val ec = materializer.executionContext
-    updateStreamMatValues(streamId, OutboundStreamMatValues(streamKillSwitch, completed.recover { case _ ⇒ Done }))
+    updateStreamMatValues(
+      streamId,
+      OutboundStreamMatValues(OptionVal.Some(streamKillSwitch), completed.recover { case _ ⇒ Done },
+        stopping = OptionVal.None))
   }
 
   @tailrec private def updateStreamMatValues(streamId: Int, values: OutboundStreamMatValues): Unit = {
     val prev = streamMatValues.get()
     if (!streamMatValues.compareAndSet(prev, prev + (streamId → values))) {
       updateStreamMatValues(streamId, values)
+    }
+  }
+
+  @tailrec private def setStopReason(streamId: Int, stopSignal: StopSignal): Unit = {
+    val prev = streamMatValues.get()
+    prev.get(streamId) match {
+      case Some(v) ⇒
+        if (!streamMatValues.compareAndSet(prev, prev.updated(streamId, v.copy(stopping = OptionVal.Some(stopSignal)))))
+          setStopReason(streamId, stopSignal)
+      case None ⇒ throw new IllegalStateException(s"Expected streamMatValues for [$streamId]")
+    }
+  }
+
+  private def getStopReason(streamId: Int): OptionVal[StopSignal] = {
+    streamMatValues.get().get(streamId) match {
+      case Some(OutboundStreamMatValues(_, _, stopping)) ⇒ stopping
+      case None ⇒ OptionVal.None
+    }
+  }
+
+  // after it has been used we remove the kill switch to cleanup some memory,
+  // not a "leak" but a KillSwitch is rather heavy
+  @tailrec private def clearStreamKillSwitch(streamId: Int, old: SharedKillSwitch): Unit = {
+    val prev = streamMatValues.get()
+    prev.get(streamId) match {
+      case Some(v) ⇒
+        if (v.streamKillSwitch.isDefined && (v.streamKillSwitch.get eq old)) {
+          if (!streamMatValues.compareAndSet(prev, prev.updated(streamId, v.copy(streamKillSwitch = OptionVal.None))))
+            clearStreamKillSwitch(streamId, old)
+        }
+      case None ⇒ throw new IllegalStateException(s"Expected streamMatValues for [$streamId]")
     }
   }
 
@@ -733,7 +944,7 @@ private[remote] class Association(
   def streamsCompleted: Future[Done] = {
     implicit val ec = materializer.executionContext
     Future.sequence(streamMatValues.get().values.map {
-      case OutboundStreamMatValues(_, done) ⇒ done
+      case OutboundStreamMatValues(_, done, _) ⇒ done
     }).map(_ ⇒ Done)
   }
 
@@ -774,9 +985,10 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
    * @throws ShuttingDown if called while the transport is shutting down
    */
   @tailrec final def setUID(peer: UniqueAddress): Association = {
-    val currentMap = associationsByUid.get
+    // Don't create a new association via this method. It's supposed to exist unless it was removed after quarantined.
     val a = association(peer.address)
 
+    val currentMap = associationsByUid.get
     currentMap.get(peer.uid) match {
       case OptionVal.Some(previous) ⇒
         if (previous eq a)
@@ -797,4 +1009,50 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
 
   def allAssociations: Set[Association] =
     associationsByAddress.get.values.toSet
+
+  def removeUnusedQuarantined(after: FiniteDuration): Unit = {
+    removeUnusedQuarantinedByAddress(after)
+    removeUnusedQuarantinedByUid(after)
+  }
+
+  @tailrec private def removeUnusedQuarantinedByAddress(after: FiniteDuration): Unit = {
+    val now = System.nanoTime()
+    val afterNanos = after.toNanos
+    val currentMap = associationsByAddress.get
+    val remove = currentMap.foldLeft(Map.empty[Address, Association]) {
+      case (acc, (address, association)) ⇒
+        val state = association.associationState
+        if (state.isQuarantined() && ((now - state.lastUsedTimestamp.get) >= afterNanos))
+          acc.updated(address, association)
+        else
+          acc
+    }
+    if (remove.nonEmpty) {
+      val newMap = currentMap -- remove.keysIterator
+      if (associationsByAddress.compareAndSet(currentMap, newMap))
+        remove.valuesIterator.foreach(_.removedAfterQuarantined())
+      else
+        removeUnusedQuarantinedByAddress(after) // CAS fail, recursive
+    }
+  }
+
+  @tailrec private def removeUnusedQuarantinedByUid(after: FiniteDuration): Unit = {
+    val now = System.nanoTime()
+    val afterNanos = after.toNanos
+    val currentMap = associationsByUid.get
+    var remove = Map.empty[Long, Association]
+    currentMap.keysIterator.foreach { uid ⇒
+      val association = currentMap.get(uid).get
+      val state = association.associationState
+      if (state.isQuarantined() && ((now - state.lastUsedTimestamp.get) >= afterNanos))
+        remove = remove.updated(uid, association)
+    }
+    if (remove.nonEmpty) {
+      val newMap = remove.keysIterator.foldLeft(currentMap)((acc, uid) ⇒ acc.remove(uid))
+      if (associationsByUid.compareAndSet(currentMap, newMap))
+        remove.valuesIterator.foreach(_.removedAfterQuarantined())
+      else
+        removeUnusedQuarantinedByUid(after) // CAS fail, recursive
+    }
+  }
 }

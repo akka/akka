@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.Done
@@ -8,14 +9,14 @@ import akka.actor.Status
 import akka.pattern.pipe
 import akka.stream._
 import akka.stream.impl.QueueSource
-import akka.stream.testkit.{ GraphStageMessages, StreamSpec, TestSourceStage, TestSubscriber }
-import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.{ GraphStageMessages, StreamSpec, TestSourceStage, TestSubscriber }
 import akka.testkit.TestProbe
-
-import scala.concurrent.duration._
-import scala.concurrent._
 import org.scalatest.time.Span
+
+import scala.concurrent._
+import scala.concurrent.duration._
 
 class QueueSourceSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
@@ -44,7 +45,7 @@ class QueueSourceSpec extends StreamSpec {
       }
 
       queue.watchCompletion().pipeTo(testActor)
-      expectNoMsg(pause)
+      expectNoMessage(pause)
 
       sub.cancel()
       expectMsg(Done)
@@ -101,7 +102,7 @@ class QueueSourceSpec extends StreamSpec {
       val queue = Source.queue(0, OverflowStrategy.dropHead).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
       queue.offer(1).pipeTo(testActor)
-      expectNoMsg(pause)
+      expectNoMessage(pause)
       sub.request(1)
       expectMsg(QueueOfferResult.Enqueued)
       s.expectNext(1)
@@ -115,11 +116,17 @@ class QueueSourceSpec extends StreamSpec {
 
       queue.watchCompletion.pipeTo(testActor)
       queue.offer(1) pipeTo testActor
-      expectNoMsg(pause)
+      expectNoMessage(pause)
 
       sub.cancel()
 
       expectMsgAllOf(QueueOfferResult.QueueClosed, Done)
+    }
+
+    "fail future immediately when stream is already cancelled" in assertAllStagesStopped {
+      val queue = Source.queue[Int](0, OverflowStrategy.dropHead).to(Sink.cancelled).run()
+      queue.watchCompletion.futureValue
+      queue.offer(1).failed.futureValue shouldBe a[StreamDetachedException]
     }
 
     "fail stream on buffer overflow in fail mode" in assertAllStagesStopped {
@@ -184,7 +191,7 @@ class QueueSourceSpec extends StreamSpec {
       expectMsgClass(classOf[Status.Failure])
     }
 
-    "return false when elemen was not added to buffer" in assertAllStagesStopped {
+    "return false when element was not added to buffer" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(1, OverflowStrategy.dropNew).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
@@ -205,7 +212,7 @@ class QueueSourceSpec extends StreamSpec {
       assertSuccess(queue.offer(1))
 
       queue.offer(2) pipeTo testActor
-      expectNoMsg(pause)
+      expectNoMessage(pause)
 
       sub.request(1)
       s.expectNext(1)
@@ -299,6 +306,15 @@ class QueueSourceSpec extends StreamSpec {
           .requestNext(1)
           .expectComplete()
         source.watchCompletion().futureValue should ===(Done)
+      }
+
+      "some elements not yet delivered to stage" in {
+        val (queue, probe) =
+          Source.queue[Unit](10, OverflowStrategy.fail).toMat(TestSink.probe)(Keep.both).run()
+        intercept[StreamDetachedException] {
+          Await.result(
+            (1 to 15).map(_ ⇒ queue.offer(())).last, 3.seconds)
+        }
       }
     }
 

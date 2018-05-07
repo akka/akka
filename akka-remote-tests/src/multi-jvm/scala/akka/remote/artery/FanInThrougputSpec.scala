@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import java.nio.ByteBuffer
@@ -43,7 +44,7 @@ object FanInThroughputSpec extends MultiNodeConfig {
        akka.test.FanInThroughputSpec.real-message = off
        akka.test.FanInThroughputSpec.actor-selection = off
        akka.remote.artery.advanced {
-         inbound-lanes = 4
+         # inbound-lanes = 4
        }
        """))
     .withFallback(MaxThroughputSpec.cfg)

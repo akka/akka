@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.routing;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
@@ -277,7 +278,7 @@ public class RouterDocTest extends AbstractJavaTest {
     //#scatter-gather-pool-1
 
     //#scatter-gather-pool-2
-    FiniteDuration within = FiniteDuration.create(10, TimeUnit.SECONDS); 
+    java.time.Duration within = java.time.Duration.ofSeconds(10);
     ActorRef router18 =
       getContext().actorOf(new ScatterGatherFirstCompletedPool(5, within).props(
         Props.create(Worker.class)), "router18");

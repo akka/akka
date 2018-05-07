@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.event
 
 import akka.testkit._
@@ -26,7 +27,7 @@ object LoggerSpec {
   val defaultConfig = ConfigFactory.parseString("""
       akka {
         stdout-loglevel = "WARNING"
-        loglevel = "DEBUG"
+        loglevel = "DEBUG" # test verifies debug
         loggers = ["akka.event.LoggerSpec$TestLogger1"]
       }
     """).withFallback(AkkaSpec.testConf)
@@ -58,7 +59,7 @@ object LoggerSpec {
   val ticket3165Config = ConfigFactory.parseString(s"""
       akka {
         stdout-loglevel = "WARNING"
-        loglevel = "DEBUG"
+        loglevel = "DEBUG" # test verifies debug
         loggers = ["akka.event.LoggerSpec$$TestLogger1"]
         actor {
           serialize-messages = on

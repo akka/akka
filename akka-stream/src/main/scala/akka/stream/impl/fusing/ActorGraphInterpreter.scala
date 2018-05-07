@@ -1,12 +1,14 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.impl.fusing
 
 import java.util
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.Done
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.event.Logging
@@ -20,6 +22,7 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.Promise
 import scala.util.control.NonFatal
 
 /**
@@ -201,6 +204,8 @@ import scala.util.control.NonFatal
         tryCancel(subscription)
       } else if (downstreamCanceled) {
         upstreamCompleted = true
+        tryCancel(subscription)
+      } else if (upstream != null) { // reactive streams spec 2.5
         tryCancel(subscription)
       } else {
         upstream = subscription
@@ -440,6 +445,7 @@ import scala.util.control.NonFatal
   var connections: Array[Connection],
   var logics:      Array[GraphStageLogic],
   settings:        ActorMaterializerSettings,
+  attributes:      Attributes,
   val mat:         ExtendedActorMaterializer) {
 
   import ActorGraphInterpreter._
@@ -447,15 +453,26 @@ import scala.util.control.NonFatal
   private var self: ActorRef = _
   lazy val log = Logging(mat.system.eventStream, self)
 
-  final case class AsyncInput(shell: GraphInterpreterShell, logic: GraphStageLogic, evt: Any, handler: (Any) ⇒ Unit) extends BoundaryEvent {
+  /**
+   * @param promise Will be completed upon processing the event, or failed if processing the event throws
+   *                if the event isn't ever processed the promise (the stage stops) is failed elsewhere
+   */
+  final case class AsyncInput(
+    shell:   GraphInterpreterShell,
+    logic:   GraphStageLogic,
+    evt:     Any,
+    promise: Promise[Done],
+    handler: (Any) ⇒ Unit) extends BoundaryEvent {
     override def execute(eventLimit: Int): Int = {
       if (!waitingForShutdown) {
-        interpreter.runAsyncInput(logic, evt, handler)
+        interpreter.runAsyncInput(logic, evt, promise, handler)
         if (eventLimit == 1 && interpreter.isSuspended) {
           sendResume(true)
           0
         } else runBatch(eventLimit - 1)
-      } else eventLimit
+      } else {
+        eventLimit
+      }
     }
   }
 
@@ -481,8 +498,8 @@ import scala.util.control.NonFatal
   private var enqueueToShortCircuit: (Any) ⇒ Unit = _
 
   lazy val interpreter: GraphInterpreter = new GraphInterpreter(mat, log, logics, connections,
-    (logic, event, handler) ⇒ {
-      val asyncInput = AsyncInput(this, logic, event, handler)
+    (logic, event, promise, handler) ⇒ {
+      val asyncInput = AsyncInput(this, logic, event, promise, handler)
       val currentInterpreter = GraphInterpreter.currentInterpreterOrNull
       if (currentInterpreter == null || (currentInterpreter.context ne self))
         self ! asyncInput
@@ -511,7 +528,7 @@ import scala.util.control.NonFatal
    *  because no data can enter “fast enough” from the outside
    */
   // TODO: Fix event limit heuristic
-  val shellEventLimit = settings.maxInputBufferSize * 16
+  val shellEventLimit = attributes.mandatoryAttribute[Attributes.InputBuffer].max * 16
   // Limits the number of events processed by the interpreter on an abort event.
   // TODO: Better heuristic here
   private val abortLimit = shellEventLimit * 2

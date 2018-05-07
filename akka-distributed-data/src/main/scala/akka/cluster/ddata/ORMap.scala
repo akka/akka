@@ -1,13 +1,14 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.ddata
 
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.util.HashCode
 import akka.annotation.InternalApi
-import akka.cluster.ddata.ORMap.{ AtomicDeltaOp, ZeroTag }
+import akka.cluster.ddata.ORMap.ZeroTag
 
 import scala.collection.immutable
 
@@ -331,9 +332,13 @@ final class ORMap[A, B <: ReplicatedData] private[akka] (
           val mergedValue = thisValue.merge(thatValue.asInstanceOf[thisValue.T]).asInstanceOf[B]
           mergedValues = mergedValues.updated(key, mergedValue)
         case (Some(thisValue), None) ⇒
-          mergedValues = mergedValues.updated(key, thisValue)
+          if (mergedKeys.contains(key))
+            mergedValues = mergedValues.updated(key, thisValue)
+        // else thisValue is a tombstone, but we don't want to carry it forward, as the other side does not have the element at all
         case (None, Some(thatValue)) ⇒
-          mergedValues = mergedValues.updated(key, thatValue)
+          if (mergedKeys.contains(key))
+            mergedValues = mergedValues.updated(key, thatValue)
+        // else thatValue is a tombstone, but we don't want to carry it forward, as the other side does not have the element at all
         case (None, None) ⇒ throw new IllegalStateException(s"missing value for $key")
       }
     }

@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.stream.testkit.StreamSpec
@@ -44,26 +45,26 @@ class FlowReduceSpec extends StreamSpec {
     }
 
     "propagate an error" in assertAllStagesStopped {
-      val error = new Exception with NoStackTrace
+      val error = TE("Boom!")
       val future = inputSource.map(x ⇒ if (x > 50) throw error else x).runReduce(Keep.none)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
     "complete future with failure when reducing function throws and the supervisor strategy decides to stop" in assertAllStagesStopped {
-      val error = new Exception with NoStackTrace
+      val error = TE("Boom!")
       val future = inputSource.runReduce[Int]((x, y) ⇒ if (x > 50) throw error else x + y)
       the[Exception] thrownBy Await.result(future, 3.seconds) should be(error)
     }
 
     "resume with the accumulated state when the folding function throws and the supervisor strategy decides to resume" in assertAllStagesStopped {
-      val error = new Exception with NoStackTrace
+      val error = TE("Boom!")
       val reduce = Sink.reduce[Int]((x, y) ⇒ if (y == 50) throw error else x + y)
       val future = inputSource.runWith(reduce.withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider)))
       Await.result(future, 3.seconds) should be(expected - 50)
     }
 
     "resume and reset the state when the folding function throws when the supervisor strategy decides to restart" in assertAllStagesStopped {
-      val error = new Exception with NoStackTrace
+      val error = TE("Boom!")
       val reduce = Sink.reduce[Int]((x, y) ⇒ if (y == 50) throw error else x + y)
       val future = inputSource.runWith(reduce.withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider)))
       Await.result(future, 3.seconds) should be((51 to 100).sum)

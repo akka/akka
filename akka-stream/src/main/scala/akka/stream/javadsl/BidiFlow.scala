@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.javadsl
 
 import akka.NotUsed
@@ -91,11 +92,27 @@ object BidiFlow {
    * every second in one direction, but no elements are flowing in the other direction. I.e. this stage considers
    * the *joint* frequencies of the elements in both directions.
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def bidirectionalIdleTimeout[I, O](timeout: FiniteDuration): BidiFlow[I, I, O, O, NotUsed] =
     new BidiFlow(scaladsl.BidiFlow.bidirectionalIdleTimeout(timeout))
+
+  /**
+   * If the time between two processed elements *in any direction* exceed the provided timeout, the stream is failed
+   * with a [[java.util.concurrent.TimeoutException]].
+   *
+   * There is a difference between this stage and having two idleTimeout Flows assembled into a BidiStage.
+   * If the timeout is configured to be 1 seconds, then this stage will not fail even though there are elements flowing
+   * every second in one direction, but no elements are flowing in the other direction. I.e. this stage considers
+   * the *joint* frequencies of the elements in both directions.
+   */
+  def bidirectionalIdleTimeout[I, O](timeout: java.time.Duration): BidiFlow[I, I, O, O, NotUsed] = {
+    import akka.util.JavaDurationConverters._
+    bidirectionalIdleTimeout(timeout.asScala)
+  }
 }
 
-final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](delegate: scaladsl.BidiFlow[I1, O1, I2, O2, Mat]) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
+final class BidiFlow[I1, O1, I2, O2, Mat](delegate: scaladsl.BidiFlow[I1, O1, I2, O2, Mat]) extends Graph[BidiShape[I1, O1, I2, O2], Mat] {
   override def traversalBuilder = delegate.traversalBuilder
   override def shape = delegate.shape
 
@@ -223,4 +240,27 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](delegate: scaladsl.BidiFlow[I1, O
    */
   override def named(name: String): BidiFlow[I1, O1, I2, O2, Mat] =
     new BidiFlow(delegate.named(name))
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   */
+  override def async: BidiFlow[I1, O1, I2, O2, Mat] =
+    new BidiFlow(delegate.async)
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   *
+   * @param dispatcher Run the graph on this dispatcher
+   */
+  override def async(dispatcher: String): BidiFlow[I1, O1, I2, O2, Mat] =
+    new BidiFlow(delegate.async(dispatcher))
+
+  /**
+   * Put an asynchronous boundary around this `Flow`
+   *
+   * @param dispatcher      Run the graph on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the graph
+   */
+  override def async(dispatcher: String, inputBufferSize: Int): BidiFlow[I1, O1, I2, O2, Mat] =
+    new BidiFlow(delegate.async(dispatcher, inputBufferSize))
 }

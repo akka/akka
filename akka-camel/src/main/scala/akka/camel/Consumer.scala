@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.camel
@@ -9,8 +9,6 @@ import org.apache.camel.model.{ RouteDefinition, ProcessorDefinition }
 import akka.actor._
 import scala.concurrent.duration._
 import akka.dispatch.Mapper
-
-import scala.language.existentials
 
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.

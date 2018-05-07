@@ -1,19 +1,13 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka
 
 import sbt.Keys._
 import sbt._
 
 object TestExtras {
-
-  object JUnitFileReporting {
-    val settings = Seq(
-      // we can enable junit-style reports everywhere with this
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a", "-u", (target.value / "test-reports").getAbsolutePath),
-      testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-u", (target.value / "test-reports").getAbsolutePath))
-  }
 
   object Filter {
     object Keys {

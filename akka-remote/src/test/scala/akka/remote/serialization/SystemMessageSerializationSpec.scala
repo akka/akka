@@ -1,10 +1,13 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.remote.serialization
 
-import akka.actor.{ ActorInitializationException, ActorRef, ExtendedActorSystem, InternalActorRef }
+import akka.actor.{ ActorInitializationException, ExtendedActorSystem, InternalActorRef }
 import akka.dispatch.sysmsg._
 import akka.serialization.SerializationExtension
 import akka.testkit.{ AkkaSpec, TestProbe }
-import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 
 object SystemMessageSerializationSpec {

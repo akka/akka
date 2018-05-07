@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.stream;
 
 //#stream-imports
@@ -16,12 +17,11 @@ import akka.util.ByteString;
 
 import java.nio.file.Paths;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import jdocs.AbstractJavaTest;
-import scala.concurrent.duration.Duration;
 //#other-imports
 
 import org.junit.*;
@@ -65,7 +65,7 @@ public class QuickStartDocTest extends AbstractJavaTest {
     //#add-streams
     factorials
       .zipWith(Source.range(0, 99), (num, idx) -> String.format("%d! = %s", idx, num))
-      .throttle(1, Duration.create(1, TimeUnit.SECONDS), 1, ThrottleMode.shaping())
+      .throttle(1, Duration.ofSeconds(1))
       //#add-streams
       .take(2)
       //#add-streams

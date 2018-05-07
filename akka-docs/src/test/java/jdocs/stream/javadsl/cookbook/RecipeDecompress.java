@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.stream.javadsl.cookbook;
 
 import akka.NotUsed;
@@ -8,19 +9,15 @@ import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Compression;
-import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.GZIPOutputStream;
 
 public class RecipeDecompress extends RecipeTest {
 
@@ -40,28 +37,26 @@ public class RecipeDecompress extends RecipeTest {
         mat = null;
     }
 
-    private ByteString gzip(final String s) throws IOException {
-        final ByteArrayOutputStream buf = new ByteArrayOutputStream();
-        final GZIPOutputStream out = new GZIPOutputStream(buf);
-        try {
-            out.write(s.getBytes(StandardCharsets.UTF_8));
-        } finally {
-            out.close();
-        }
-        return ByteString.fromArray(buf.toByteArray());
-    }
-
     @Test
     public void parseLines() throws Exception {
-        final Source<ByteString, NotUsed> compressed = Source.single(gzip("Hello World"));
+        final Source<ByteString, NotUsed> dataStream =
+            Source.single(ByteString.fromString("Hello World"));
+
+        final Source<ByteString, NotUsed> compressedStream =
+            dataStream.via(Compression.gzip());
 
         //#decompress-gzip
-        final Source<String, NotUsed> uncompressed = compressed
-                .via(Compression.gunzip(100))
-                .map(b -> b.utf8String());
+        final Source<ByteString, NotUsed> decompressedStream =
+            compressedStream.via(Compression.gunzip(100));
         //#decompress-gzip
 
-        uncompressed.runWith(Sink.head(), mat).toCompletableFuture().get(1, TimeUnit.SECONDS);
+        ByteString decompressedData =
+            decompressedStream
+                .runFold(ByteString.empty(), ByteString::concat, mat)
+                .toCompletableFuture()
+                .get(1, TimeUnit.SECONDS);
+        String decompressedString = decompressedData.utf8String();
+        Assert.assertEquals("Hello World", decompressedString);
     }
 
 }

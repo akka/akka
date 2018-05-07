@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import java.io.RandomAccessFile
@@ -20,7 +21,9 @@ import scala.annotation.tailrec
  */
 private[remote] trait EventSink {
   def alert(code: Int, metadata: Array[Byte]): Unit
+  def alert(code: Int, metadata: String): Unit
   def loFreq(code: Int, metadata: Array[Byte]): Unit
+  def loFreq(code: Int, metadata: String): Unit
   def hiFreq(code: Long, param: Long): Unit
 
   def flushHiFreqBatch(): Unit
@@ -31,7 +34,9 @@ private[remote] trait EventSink {
  */
 private[remote] object IgnoreEventSink extends EventSink {
   override def alert(code: Int, metadata: Array[Byte]): Unit = ()
+  override def alert(code: Int, metadata: String): Unit = ()
   override def loFreq(code: Int, metadata: Array[Byte]): Unit = ()
+  override def loFreq(code: Int, metadata: String): Unit = ()
   override def flushHiFreqBatch(): Unit = ()
   override def hiFreq(code: Long, param: Long): Unit = ()
 }
@@ -44,8 +49,16 @@ private[remote] class SynchronizedEventSink(delegate: EventSink) extends EventSi
     delegate.alert(code, metadata)
   }
 
+  override def alert(code: Int, metadata: String): Unit = {
+    alert(code, metadata.getBytes("US-ASCII"))
+  }
+
   override def loFreq(code: Int, metadata: Array[Byte]): Unit = synchronized {
     delegate.loFreq(code, metadata)
+  }
+
+  override def loFreq(code: Int, metadata: String): Unit = {
+    loFreq(code, metadata.getBytes("US-ASCII"))
   }
 
   override def flushHiFreqBatch(): Unit = synchronized {
@@ -152,7 +165,7 @@ private[remote] class RollingEventLogSection(
    * sane way to use the same code here and in the test, too.
    */
   def write(logId: Int, recordBuffer: ByteBuffer): Unit = {
-    val logBuffer = buffers(logId)
+    val logBuffer: MappedResizeableBuffer = buffers(logId)
 
     @tailrec def writeRecord(): Unit = {
       // Advance the head
@@ -162,7 +175,8 @@ private[remote] class RollingEventLogSection(
       // if the head *wraps over* and points again to this location. Without this we would end up with partial or corrupted
       // writes to the slot.
       if (logBuffer.compareAndSetInt(recordOffset, Committed, Dirty)) {
-        logBuffer.putBytes(payloadOffset, recordBuffer, recordSize)
+        // 128 bytes total, 4 bytes used for Commit/Dirty flag
+        logBuffer.putBytes(payloadOffset, recordBuffer, recordSize - 4)
         //println(logBuffer.getLong(recordOffset + 4))
 
         // Now this is free to be overwritten
@@ -370,6 +384,10 @@ private[remote] class FlightRecorder(val fileChannel: FileChannel) extends Atomi
       }
     }
 
+    override def alert(code: Int, metadata: String): Unit = {
+      alert(code, metadata.getBytes("US-ASCII"))
+    }
+
     override def loFreq(code: Int, metadata: Array[Byte]): Unit = {
       val status = FlightRecorder.this.get
       if (status eq Running) {
@@ -377,6 +395,10 @@ private[remote] class FlightRecorder(val fileChannel: FileChannel) extends Atomi
         prepareRichRecord(loFreqRecordBuffer, code, metadata)
         loFreqLogs.write(currentLog, loFreqRecordBuffer)
       }
+    }
+
+    override def loFreq(code: Int, metadata: String): Unit = {
+      loFreq(code, metadata.getBytes("US-ASCII"))
     }
 
     private def prepareRichRecord(recordBuffer: ByteBuffer, code: Int, metadata: Array[Byte]): Unit = {

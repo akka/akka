@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -8,7 +8,6 @@ import java.lang.reflect.{ Modifier, ParameterizedType, TypeVariable }
 import akka.japi.Creator
 import akka.util.Reflect
 import scala.annotation.varargs
-import scala.language.existentials
 import scala.annotation.tailrec
 import java.lang.reflect.Constructor
 

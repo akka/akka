@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.tutorial_5;
 
 import akka.actor.AbstractActor;
@@ -139,8 +140,14 @@ public class DeviceGroup extends AbstractActor {
   //#query-added
 
   private void onAllTemperatures(RequestAllTemperatures r) {
+    // since Java collections are mutable, we want to avoid sharing them between actors (since multiple Actors (threads)
+    // modifying the same mutable data-structure is not safe), and perform a defensive copy of the mutable map:
+    //
+    // Feel free to use your favourite immutable data-structures library with Akka in Java applications!
+    Map<ActorRef, String> actorToDeviceIdCopy = new HashMap<>(this.actorToDeviceId);
+
     getContext().actorOf(DeviceGroupQuery.props(
-            actorToDeviceId, r.requestId, getSender(), new FiniteDuration(3, TimeUnit.SECONDS)));
+        actorToDeviceIdCopy, r.requestId, getSender(), new FiniteDuration(3, TimeUnit.SECONDS)));
   }
 
   @Override

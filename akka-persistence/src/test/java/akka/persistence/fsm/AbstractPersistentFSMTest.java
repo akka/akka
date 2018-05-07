@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.fsm;
@@ -24,6 +24,8 @@ import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
 
+import static akka.persistence.fsm.PersistentFSM.FSMState;
+
 import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.UserState;
 import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.ShoppingCart;
 import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.Item;
@@ -36,10 +38,11 @@ import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM
 import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.PurchaseWasMade;
 import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.ShoppingCardDiscarded;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.matchers.JUnitMatchers.hasItems;
 
 public class AbstractPersistentFSMTest extends JUnitSuite {
     private static Option<String> none = Option.none();
@@ -63,8 +66,8 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             watch(fsmRef);
             fsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
-            Item shirt = new Item("1", "Shirt", 59.99F);
-            Item shoes = new Item("2", "Shoes", 89.99F);
+            Item shirt = new Item("1", "Shirt", 19.99F);
+            Item shoes = new Item("2", "Shoes", 18.99F);
             Item coat = new Item("3", "Coat", 119.99F);
 
             fsmRef.tell(GetCurrentCart.INSTANCE, getRef());
@@ -116,7 +119,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             watch(fsmRef);
             fsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
-            Item shirt = new Item("1", "Shirt", 59.99F);
+            Item shirt = new Item("1", "Shirt", 29.99F);
 
             fsmRef.tell(new AddItem(shirt), getRef());
 
@@ -145,9 +148,9 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             watch(fsmRef);
             fsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
-            Item shirt = new Item("1", "Shirt", 59.99F);
-            Item shoes = new Item("2", "Shoes", 89.99F);
-            Item coat = new Item("3", "Coat", 119.99F);
+            Item shirt = new Item("1", "Shirt", 38.99F);
+            Item shoes = new Item("2", "Shoes", 39.99F);
+            Item coat = new Item("3", "Coat", 139.99F);
 
             fsmRef.tell(GetCurrentCart.INSTANCE, getRef());
             fsmRef.tell(new AddItem(shirt), getRef());
@@ -159,7 +162,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
             ShoppingCart shoppingCart = expectMsgClass(ShoppingCart.class);
-            assertTrue(shoppingCart.getItems().isEmpty());
+            assertThat(shoppingCart.getItems(), equalTo(Collections.emptyList()));
 
             PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
@@ -216,9 +219,9 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             watch(fsmRef);
             fsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
-            Item shirt = new Item("1", "Shirt", 59.99F);
-            Item shoes = new Item("2", "Shoes", 89.99F);
-            Item coat = new Item("3", "Coat", 119.99F);
+            Item shirt = new Item("1", "Shirt", 49.99F);
+            Item shoes = new Item("2", "Shoes", 49.99F);
+            Item coat = new Item("3", "Coat", 149.99F);
 
             fsmRef.tell(new AddItem(shirt), getRef());
             fsmRef.tell(new AddItem(shoes), getRef());
@@ -254,8 +257,8 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             fsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
             Item shirt = new Item("1", "Shirt", 59.99F);
-            Item shoes = new Item("2", "Shoes", 89.99F);
-            Item coat = new Item("3", "Coat", 119.99F);
+            Item shoes = new Item("2", "Shoes", 58.99F);
+            Item coat = new Item("3", "Coat", 159.99F);
 
             fsmRef.tell(new AddItem(shirt), getRef());
             fsmRef.tell(new AddItem(shoes), getRef());
@@ -283,7 +286,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             watch(fsmRef);
             fsmRef.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
-            Item shirt = new Item("1", "Shirt", 59.99F);
+            Item shirt = new Item("1", "Shirt", 69.99F);
 
             fsmRef.tell(new AddItem(shirt), getRef());
 
@@ -587,5 +590,58 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             throw new RuntimeException("Unhandled");
         }
         //#customer-apply-event
+    }
+
+    enum PFSMState implements FSMState {
+
+        STARTED;
+
+        @Override
+        public String identifier() {
+            return this.name();
+        }
+    }
+
+    public static class PFSMwithLog extends AbstractPersistentFSM<PFSMState, Integer, Integer> {
+        {
+            startWith(PFSMState.STARTED, 0);
+
+            when(PFSMState.STARTED,
+                    matchEvent(String.class, (command, currentData) -> {
+                        sender().tell("started", getSelf());
+                        return stay();
+                    })
+            );
+
+            onTransition(this::transitionLogger); // this is tested command
+        }
+
+        private void transitionLogger(PFSMState from, PFSMState to) {
+            System.out.println("transition from " + from + " to " + to);
+        }
+
+        @Override
+        public Class<Integer> domainEventClass() {
+            return Integer.class;
+        }
+
+        @Override
+        public Integer applyEvent(final Integer domainEvent, final Integer currentData) {
+            return 0;
+        }
+
+        @Override
+        public String persistenceId() {
+            return "id";
+        }
+    }
+
+    @Test
+    public void testCreationOfActorCallingOnTransitionWithVoidFunction() {
+        new TestKit(system) {{
+            ActorRef persistentActor = system.actorOf(Props.create(PFSMwithLog.class));
+            persistentActor.tell("check", getRef());
+            expectMsg(duration("1000 millis"), "started");
+        }};
     }
 }

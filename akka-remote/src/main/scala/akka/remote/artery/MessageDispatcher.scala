@@ -1,19 +1,18 @@
 /**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery
 
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.actor.ActorSelectionMessage
-import akka.actor.Address
 import akka.actor.ExtendedActorSystem
-import akka.actor.InternalActorRef
 import akka.actor.LocalRef
 import akka.actor.PossiblyHarmful
 import akka.actor.RepointableRef
 import akka.dispatch.sysmsg.SystemMessage
-import akka.event.{ LogMarker, Logging, LoggingReceive }
+import akka.event.{ LogMarker, Logging }
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteRef
 import akka.util.OptionVal
@@ -55,14 +54,14 @@ private[remote] class MessageDispatcher(
         } else {
           if (LogReceive && debugLogEnabled) log.debug(
             "received daemon message [{}] from [{}]",
-            messageClassName(message), senderOption.getOrElse(originAddress.getOrElse("")))
+            message, senderOption.getOrElse(originAddress.getOrElse("")))
           remoteDaemon ! message
         }
 
       case l @ (_: LocalRef | _: RepointableRef) if l.isLocal ⇒
         if (LogReceive && debugLogEnabled) log.debug(
           "received message [{}] to [{}] from [{}]",
-          messageClassName(message), recipient, senderOption.getOrElse(""))
+          message, recipient, senderOption.getOrElse(""))
         message match {
           case sel: ActorSelectionMessage ⇒
             if (UntrustedMode && (!TrustedSelectionPaths.contains(sel.elements.mkString("/", "/", "")) ||
@@ -87,7 +86,7 @@ private[remote] class MessageDispatcher(
       case r @ (_: RemoteRef | _: RepointableRef) if !r.isLocal && !UntrustedMode ⇒
         if (LogReceive && debugLogEnabled) log.debug(
           "received remote-destined message [{}] to [{}] from [{}]",
-          messageClassName(message), recipient, senderOption.getOrElse(originAddress.getOrElse("")))
+          message, recipient, senderOption.getOrElse(originAddress.getOrElse("")))
         // if it was originally addressed to us but is in fact remote from our point of view (i.e. remote-deployed)
         r.!(message)(sender)
 

@@ -1,12 +1,11 @@
 /**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
 import akka.NotUsed
 import akka.stream._
-import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.TraversalTestUtils._
 import akka.stream.scaladsl.Keep
 import akka.testkit.AkkaSpec

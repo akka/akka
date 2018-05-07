@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.contrib.pattern
@@ -19,7 +19,6 @@ import akka.actor.ActorRef
 import akka.testkit.TestKitExtension
 import akka.actor.ActorIdentity
 import akka.actor.Identify
-import com.typesafe.config.ConfigValueFactory
 
 object ReliableProxySpec extends MultiNodeConfig {
   val local = role("local")

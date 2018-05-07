@@ -1,6 +1,7 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster
 
 import language.postfixOps
@@ -596,9 +597,6 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   }
 
   def publishDiff(oldState: MembershipState, newState: MembershipState, pub: AnyRef ⇒ Unit): Unit = {
-    def inSameDc(reachabilityEvent: ReachabilityEvent): Boolean =
-      reachabilityEvent.member.dataCenter == selfDc
-
     diffMemberEvents(oldState, newState) foreach pub
     diffUnreachable(oldState, newState) foreach pub
     diffReachable(oldState, newState) foreach pub

@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.stream.scaladsl
 
 import akka.actor.{ Kill, PoisonPill, NoSerializationVerificationNeeded, ActorRef }
@@ -73,7 +74,8 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
       val stageRef = expectMsgType[ActorRef]
       watch(stageRef)
 
-      stageRef ! Add(1)
+      stageRef ! AddAndTell(1)
+      expectMsg(1)
       source.success(None)
 
       res.futureValue should ===(1)
@@ -103,7 +105,8 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
       val stageRef = expectMsgType[ActorRef]
       watch(stageRef)
 
-      stageRef ! Add(1)
+      stageRef ! AddAndTell(1)
+      expectMsg(1)
       source.success(None)
 
       res.futureValue should ===(1)
@@ -121,11 +124,12 @@ class StageActorRefSpec extends StreamSpec with ImplicitSender {
       watch(stageRef)
       unwatch(stageRef)
 
-      stageRef ! Add(1)
+      stageRef ! AddAndTell(1)
+      expectMsg(1)
       source.success(None)
 
       res.futureValue should ===(1)
-      expectNoMsg(100.millis)
+      expectNoMessage(100.millis)
     }
 
     "ignore and log warnings for PoisonPill and Kill messages" in {
@@ -188,14 +192,14 @@ object StageActorRefSpec {
 
         override def preStart(): Unit = {
           pull(in)
-          probe ! getStageActor(behaviour).ref
+          probe ! getStageActor(behavior).ref
         }
 
-        def behaviour(m: (ActorRef, Any)): Unit = {
+        def behavior(m: (ActorRef, Any)): Unit = {
           m match {
             case (sender, Add(n))                ⇒ sum += n
             case (sender, PullNow)               ⇒ pull(in)
-            case (sender, CallInitStageActorRef) ⇒ sender ! getStageActor(behaviour).ref
+            case (sender, CallInitStageActorRef) ⇒ sender ! getStageActor(behavior).ref
             case (sender, BecomeStringEcho) ⇒
               getStageActor {
                 case (theSender, msg) ⇒ theSender ! msg.toString

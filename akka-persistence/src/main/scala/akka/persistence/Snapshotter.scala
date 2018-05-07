@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -29,7 +29,7 @@ trait Snapshotter extends Actor {
    * Instructs the snapshot store to load the specified snapshot and send it via an [[SnapshotOffer]]
    * to the running [[PersistentActor]].
    */
-  def loadSnapshot(persistenceId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long) =
+  def loadSnapshot(persistenceId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long): Unit =
     snapshotStore ! LoadSnapshot(persistenceId, criteria, toSequenceNr)
 
   /**
