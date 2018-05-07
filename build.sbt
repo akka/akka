@@ -446,6 +446,7 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
   .dependsOn(
     actorTyped,
     stream,
+    streamTestkit % "test->test",
     typedTestkit % "test->test",
     actorTypedTests % "test->test"
   )
