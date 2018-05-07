@@ -20,21 +20,11 @@ network and/or Akka configuration will have to be changed as described in
 
 The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project:
 
-@@@vars
-sbt
-:   ```
-"com.typesafe.akka" %% "akka-remote" % "$akka.version$"
-```
-
-Maven
-:   ```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-remote_$scala.binary_version$</artifactId>
-  <version>$akka.version$</version>
-</dependency>
-```
-@@@
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-remote_$scala.binary_version$"
+  version="$akka.version$"
+}
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
 to your `application.conf` file:

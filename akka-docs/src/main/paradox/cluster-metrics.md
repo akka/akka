@@ -102,25 +102,12 @@ unique per instance directory. You can control the extract directory with the
 @@@
 
 To enable usage of Sigar you can add the following dependency to the user project
-:
 
-Scala
-:  @@@vars
-```
-"io.kamon" % "sigar-loader" % "$sigar_loader.version$"
-```
-@@@
-
-Java
-:  @@@vars
-```
-<dependency>
-  <groupId>io.kamon</groupId>
-  <artifactId>sigar-loader</artifactId>
-  <version>$sigar_loader.version$</version>
-</dependency>
-```
-@@@
+@@dependency[sbt,Maven,Gradle] {
+  group="io.kamon"
+  artifact="sigar-loader"
+  version="$sigar_loader.version$"
+}
 
 You can download Kamon sigar-loader from [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Csigar-loader)
 
