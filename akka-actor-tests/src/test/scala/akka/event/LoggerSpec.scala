@@ -192,6 +192,22 @@ class LoggerSpec extends WordSpec with Matchers {
       logMessages.size should ===(3)
     }
 
+    "log an exception along with a warning" in {
+      val out = new java.io.ByteArrayOutputStream()
+      Console.withOut(out) {
+        val sys = ActorSystem("defaultLogger", defaultConfig)
+        sys.log.warning(new NullPointerException(), "msg1")
+        TestKit.shutdownActorSystem(sys, verifySystemShutdown = true)
+        out.flush()
+        out.close()
+      }
+
+      val logMessages = new String(out.toByteArray)
+      logMessages should include("msg1")
+      logMessages should include("NullPointerException")
+      logMessages should include("at akka.event.LoggerSpec")
+    }
+
   }
 
   "An actor system configured with the logging turned off" must {
