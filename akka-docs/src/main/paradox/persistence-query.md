@@ -14,30 +14,11 @@ recommend (in the spirit of CQRS) of splitting up the write/read sides into sepa
 
 Akka persistence query is a separate jar file. Make sure that you have the following dependency in your project:
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-persistence-query" % "$akka.version$"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-persistence-query_$scala.binary_version$', version: '$akka.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-persistence-query_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-persistence-query_$scala.binary_version$"
+  version="$akka.version$"
+}
 
 ## Design overview
 
