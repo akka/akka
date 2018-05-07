@@ -31,7 +31,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   docs,
   multiNodeTestkit,
   osgi,
-  persistence, persistenceQuery, persistenceShared, persistenceTck,
+  persistence, persistenceQuery, persistenceShared, persistenceTck, persistenceTestKit,
   protobuf,
   remote, remoteTests,
   slf4j,
@@ -300,6 +300,9 @@ lazy val persistenceTck = akkaModule("akka-persistence-tck")
     fork in Test := true
   )
   .disablePlugins(MimaPlugin)
+
+lazy val persistenceTestKit = akkaModule("akka-persistence-testkit")
+  .dependsOn(persistence % "compile->compile;provided->provided;test->test", testkit % "compile->compile;test->test", persistenceTck % "test")
 
 lazy val protobuf = akkaModule("akka-protobuf")
   .settings(OSGi.protobuf)
