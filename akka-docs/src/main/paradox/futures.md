@@ -391,7 +391,7 @@ Java
 
 ## Retry
 
-`akka.pattern.retry` will retry a @scala[`Future` class]@java[`CompletionStage` class] some number of times with a delay between each attempt.
+@scala[`akka.pattern.retry`]@java[`akka.pattern.PatternsCS.retry`] will retry a @scala[`Future` class]@java[`CompletionStage` class] some number of times with a delay between each attempt.
 
 Scala
 :   @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #retry }
