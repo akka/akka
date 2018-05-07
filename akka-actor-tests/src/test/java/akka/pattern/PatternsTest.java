@@ -55,20 +55,10 @@ public class PatternsTest extends JUnitSuite {
 
     public static final class StopActor extends AbstractActor {
 
-        public static final class StopMessage implements NoSerializationVerificationNeeded {
-            public final TestLatch latch;
-            public final FiniteDuration duration;
-
-            public StopMessage(TestLatch latch, FiniteDuration duration) {
-                this.latch = latch;
-                this.duration = duration;
-            }
-        }
-
         @Override
         public Receive createReceive() {
             return receiveBuilder()
-                    .match(StopMessage.class, message -> Await.ready(message.latch, message.duration))
+                    .match(String.class, message -> sender().tell("Pong", getSelf()))
                     .build();
         }
     }
