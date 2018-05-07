@@ -327,9 +327,6 @@ object Behavior {
       case IgnoreBehavior        ⇒ SameBehavior.asInstanceOf[Behavior[T]]
       case SameBehavior | UnhandledBehavior ⇒
         throw new IllegalArgumentException(s"cannot interpretMessage with [$behavior] as behavior")
-      case _: UntypedPropsBehavior[_] ⇒
-        throw new IllegalArgumentException(s"cannot wrap behavior [$behavior] in " +
-          "Behaviors.setup, Behaviors.supervise or similar")
       case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
     }
   }
@@ -351,8 +348,6 @@ object Behavior {
       case SameBehavior | UnhandledBehavior ⇒
         throw new IllegalArgumentException(s"cannot interpretSignal with [$behavior] as behavior")
       case d: DeferredBehavior[_] ⇒ throw new IllegalArgumentException(s"deferred [$d] should not be passed to interpreter")
-      case SameBehavior | UnhandledBehavior ⇒
-        throw new IllegalArgumentException(s"cannot execute with [$behavior] as behavior")
     }
   }
 
