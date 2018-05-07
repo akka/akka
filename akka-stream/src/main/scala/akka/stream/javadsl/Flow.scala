@@ -14,6 +14,7 @@ import org.reactivestreams.Processor
 import scala.concurrent.duration.FiniteDuration
 import java.util.{ Comparator, Optional }
 import java.util.concurrent.CompletionStage
+import java.util.function.Supplier
 
 import akka.util.JavaDurationConverters._
 import akka.actor.ActorRef
@@ -1327,9 +1328,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def recover(clazz: Class[_ <: Throwable], out: Out): javadsl.Flow[In, Out, Mat] =
+  def recover(clazz: Class[_ <: Throwable], supplier: Supplier[Out]): javadsl.Flow[In, Out, Mat] =
     recover {
-      case elem if clazz.isInstance(elem) ⇒ out
+      case elem if clazz.isInstance(elem) ⇒ supplier.get()
     }
 
   /**
@@ -1374,7 +1375,6 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels
    *
    */
-  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recoverWith(pf: PartialFunction[Throwable, _ <: Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.recoverWith(pf))
 
@@ -1398,10 +1398,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels
    *
    */
-  @deprecated("Use recoverWithRetries instead.", "2.4.4")
-  def recoverWith(clazz: Class[_ <: Throwable], graph: Graph[SourceShape[Out], NotUsed]): javadsl.Flow[In, Out, Mat] =
+  def recoverWith(clazz: Class[_ <: Throwable], supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
     recoverWith {
-      case elem if clazz.isInstance(elem) ⇒ graph
+      case elem if clazz.isInstance(elem) ⇒ supplier.get()
     }
 
   /**
@@ -1456,11 +1455,11 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @param attempts Maximum number of retries or -1 to retry indefinitely
    * @param clazz the class object of the failure cause
-   * @param graph the new Source to be materialized
+   * @param supplier supply the new Source to be materialized
    */
-  def recoverWithRetries(attempts: Int, clazz: Class[_ <: Throwable], graph: Graph[SourceShape[Out], NotUsed]): javadsl.Flow[In, Out, Mat] =
+  def recoverWithRetries(attempts: Int, clazz: Class[_ <: Throwable], supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
     recoverWithRetries(attempts, {
-      case elem if clazz.isInstance(elem) ⇒ graph
+      case elem if clazz.isInstance(elem) ⇒ supplier.get()
     })
 
   /**

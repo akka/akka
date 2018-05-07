@@ -751,7 +751,7 @@ public class FlowTest extends StreamTest {
         })
         .recover(
             RuntimeException.class,
-            0
+            () -> 0
         );
 
     final CompletionStage<Done> future =
@@ -816,7 +816,7 @@ public class FlowTest extends StreamTest {
         })
         .recoverWith(
           RuntimeException.class,
-          Source.from(recover));
+          () -> Source.from(recover));
 
     final CompletionStage<Done> future =
         source.via(flow).runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
@@ -881,7 +881,7 @@ public class FlowTest extends StreamTest {
           .recoverWithRetries(
               3,
               RuntimeException.class,
-              Source.from(recover));
+              () -> Source.from(recover));
 
       final CompletionStage<Done> future =
           source.via(flow).runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
