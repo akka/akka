@@ -50,6 +50,15 @@ object InstanceCountingExtension extends ExtensionId[DummyExtension1] {
   }
 }
 
+object ExtensionsSpec {
+  val config = ConfigFactory.parseString(
+    """
+akka.typed {
+  library-extensions += "akka.actor.typed.InstanceCountingExtension"
+}
+   """).resolve()
+}
+
 class ExtensionsSpec extends TypedAkkaSpec {
 
   "The extensions subsystem" must {
@@ -161,7 +170,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
     "load registered typed extensions eagerly even for untyped system" in {
       import akka.actor.typed.scaladsl.adapter._
       val beforeCreation = InstanceCountingExtension.createCount.get()
-      val untypedSystem = akka.actor.ActorSystem()
+      val untypedSystem = akka.actor.ActorSystem("as", ExtensionsSpec.config)
       try {
         val before = InstanceCountingExtension.createCount.get()
         InstanceCountingExtension(untypedSystem.toTyped)
@@ -212,7 +221,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
 
     val bootstrap = config match {
       case Some(c) ⇒ BootstrapSetup(c)
-      case None    ⇒ BootstrapSetup()
+      case None    ⇒ BootstrapSetup(ExtensionsSpec.config)
     }
     val system = setup match {
       case None    ⇒ ActorSystem[Any](Behavior.EmptyBehavior, name, bootstrap)
