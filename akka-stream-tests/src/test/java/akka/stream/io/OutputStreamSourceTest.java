@@ -34,7 +34,7 @@ public class OutputStreamSourceTest extends StreamTest {
     @Test
     public void mustSendEventsViaOutputStream() throws Exception {
         final TestKit probe = new TestKit(system);
-        final Duration timeout = java.time.Duration.ofSeconds(3);
+        final Duration timeout = Duration.ofSeconds(3);
 
         final Source<ByteString, OutputStream> source = StreamConverters.asOutputStream(timeout);
         final OutputStream s = source.to(Sink.foreach(new Procedure<ByteString>() {
