@@ -130,6 +130,8 @@ private[remote] class Association(
   import Association._
   import FlightRecorderEvents._
 
+  require(remoteAddress.port.nonEmpty)
+
   private val log = Logging(transport.system, getClass.getName)
   private def flightRecorder = transport.topLevelFlightRecorder
 

@@ -5,23 +5,30 @@
 package akka.actor
 
 import akka.dispatch.sysmsg._
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.routing._
 import akka.event._
-import akka.util.{ Helpers }
+import akka.util.Helpers
 import akka.japi.Util.immutableSeq
 import akka.util.Collections.EmptyImmutableSeq
 import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.annotation.implicitNotFound
+
 import akka.ConfigurationException
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.dispatch.Mailboxes
+import akka.serialization.Serialization
+import akka.util.OptionVal
 
 /**
  * Interface for all ActorRef providers to implement.
+ * Not intended for extension outside of Akka.
  */
-trait ActorRefProvider {
+@DoNotInherit trait ActorRefProvider {
 
   /**
    * Reference to the supervisor of guardian and systemGuardian; this is
@@ -179,6 +186,9 @@ trait ActorRefProvider {
    * Obtain the external address of the default transport.
    */
   def getDefaultAddress: Address
+
+  /** INTERNAL API */
+  @InternalApi private[akka] def serializationInformation: Serialization.Information
 }
 
 /**
@@ -795,4 +805,21 @@ private[akka] class LocalActorRefProvider private[akka] (
   def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
 
   def getDefaultAddress: Address = rootPath.address
+
+  // no need for volatile, only intended as cached value, not necessarily a singleton value
+  private var serializationInformationCache: OptionVal[Serialization.Information] = OptionVal.None
+  @InternalApi override private[akka] def serializationInformation: Serialization.Information = {
+    Serialization.Information(getDefaultAddress, system)
+    serializationInformationCache match {
+      case OptionVal.Some(info) ⇒ info
+      case OptionVal.None ⇒
+        if (system eq null)
+          throw new IllegalStateException("Too early access of serializationInformation")
+        else {
+          val info = Serialization.Information(rootPath.address, system)
+          serializationInformationCache = OptionVal.Some(info)
+          info
+        }
+    }
+  }
 }

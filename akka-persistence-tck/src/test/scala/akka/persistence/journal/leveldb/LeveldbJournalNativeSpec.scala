@@ -16,4 +16,6 @@ class LeveldbJournalNativeSpec extends JournalSpec(
 
   override def supportsRejectingNonSerializableObjects = true
 
+  override def supportsSerialization = true
+
 }

@@ -198,7 +198,7 @@ private[remote] sealed trait HeaderBuilder {
 private[remote] final class SerializationFormatCache
   extends LruBoundedCache[ActorRef, String](capacity = 1024, evictAgeThreshold = 600) {
 
-  override protected def compute(ref: ActorRef): String = ref.path.toSerializationFormat
+  override protected def compute(ref: ActorRef): String = Serialization.serializedActorPath(ref)
 
   // Not calling ref.hashCode since it does a path.hashCode if ActorCell.undefinedUid is encountered.
   // Refs with ActorCell.undefinedUid will now collide all the time, but this is not a usual scenario anyway.
@@ -285,8 +285,11 @@ private[remote] final class HeaderBuilderImpl(
   }
   def outboundClassManifestCompression: CompressionTable[String] = _outboundClassManifestCompression
 
+  /**
+   * Note that Serialization.currentTransportInformation must be set when calling this method,
+   * because it's using `Serialization.serializedActorPath`
+   */
   override def setSenderActorRef(ref: ActorRef): Unit = {
-    // serializedActorPath includes local address from `currentTransportInformation`
     if (_useOutboundCompression) {
       _senderActorRefIdx = outboundActorRefCompression.compress(ref)
       if (_senderActorRefIdx == -1) _senderActorRef = Serialization.serializedActorPath(ref)
@@ -316,6 +319,10 @@ private[remote] final class HeaderBuilderImpl(
   def isNoRecipient: Boolean =
     (_recipientActorRef eq null) && _recipientActorRefIdx == DeadLettersCode
 
+  /**
+   * Note that Serialization.currentTransportInformation must be set when calling this method,
+   * because it's using `Serialization.serializedActorPath`
+   */
   def setRecipientActorRef(ref: ActorRef): Unit = {
     if (_useOutboundCompression) {
       _recipientActorRefIdx = outboundActorRefCompression.compress(ref)
