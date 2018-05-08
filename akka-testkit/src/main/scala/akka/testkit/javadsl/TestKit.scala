@@ -388,8 +388,22 @@ class TestKit(system: ActorSystem) {
    * which uses the configuration entry "akka.test.timefactor".
    */
   @Deprecated
-  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.13")
   def awaitAssert[A](max: Duration, a: Supplier[A]): A = tp.awaitAssert(a.get, max)
+
+  /**
+   * Evaluate the given assert every `interval` until it does not throw an exception and return the
+   * result.
+   *
+   * If the `max` timeout expires the last exception is thrown.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
+   */
+  def awaitAssert[A](max: java.time.Duration, a: Supplier[A]): A = tp.awaitAssert(a.get, max.asScala)
 
   /**
    * Evaluate the given assert every `interval` until it does not throw an exception.
@@ -400,7 +414,20 @@ class TestKit(system: ActorSystem) {
    *
    * @return an arbitrary value that would be returned from awaitAssert if successful, if not interested in such value you can return null.
    */
+  @Deprecated
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.13")
   def awaitAssert[A](max: Duration, interval: Duration, a: Supplier[A]): A = tp.awaitAssert(a.get, max, interval)
+
+  /**
+   * Evaluate the given assert every `interval` until it does not throw an exception.
+   * If the `max` timeout expires the last exception is thrown.
+   *
+   * Note that the timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
+   *
+   * @return an arbitrary value that would be returned from awaitAssert if successful, if not interested in such value you can return null.
+   */
+  def awaitAssert[A](max: java.time.Duration, interval: java.time.Duration, a: Supplier[A]): A = tp.awaitAssert(a.get, max.asScala, interval.asScala)
 
   /**
    * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
