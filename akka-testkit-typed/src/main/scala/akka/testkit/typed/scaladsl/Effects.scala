@@ -137,5 +137,10 @@ object Effects {
   /**
    * Used to represent an empty list of effects - in other words, the behavior didn't do anything observable
    */
-  case object NoEffects extends Effect
+  case object NoEffects extends NoEffects
+
+  /**
+   * Used for NoEffects expectations by type
+   */
+  sealed trait NoEffects extends Effect
 }

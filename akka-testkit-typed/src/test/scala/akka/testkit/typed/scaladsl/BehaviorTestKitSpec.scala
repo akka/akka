@@ -116,7 +116,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
 
     "allow expecting NoEffects by type" in {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
-      testkit.expectEffectType[NoEffects.type]
+      testkit.expectEffectType[NoEffects]
     }
 
     "allow expecting NoEffects" in {
