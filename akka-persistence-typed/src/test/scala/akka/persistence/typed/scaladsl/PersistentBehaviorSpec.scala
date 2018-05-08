@@ -30,7 +30,7 @@ object PersistentBehaviorSpec {
 
   case class Wrapper[T](t: T)
 
-  class WrapperEventWrapper[T] extends EventWrapper[T] {
+  class WrapperEventTransformer[T] extends EventTransformer[T] {
     override type P = Wrapper[T]
     override def toJournal(e: T): Wrapper[T] = Wrapper(e)
     override def fromJournal(p: Wrapper[T]): T = p.t
@@ -487,7 +487,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
     "adapt events" in {
       val pid = nextPid
-      val c = spawn(counter(pid).eventWrapper(new WrapperEventWrapper[Event]))
+      val c = spawn(counter(pid).eventTransformer(new WrapperEventTransformer[Event]))
       val replyProbe = TestProbe[State]()
 
       c ! Increment
@@ -497,7 +497,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
       events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
 
-      val c2 = spawn(counter(pid).eventWrapper(new WrapperEventWrapper[Event]))
+      val c2 = spawn(counter(pid).eventTransformer(new WrapperEventTransformer[Event]))
       c2 ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
 
@@ -507,7 +507,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val pid = nextPid
       val c = spawn(counter(pid)
         .withTagger(_ ⇒ Set("tag99"))
-        .eventWrapper(new WrapperEventWrapper[Event]))
+        .eventTransformer(new WrapperEventTransformer[Event]))
       val replyProbe = TestProbe[State]()
 
       c ! Increment
@@ -517,7 +517,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
       events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
 
-      val c2 = spawn(counter(pid).eventWrapper(new WrapperEventWrapper[Event]))
+      val c2 = spawn(counter(pid).eventTransformer(new WrapperEventTransformer[Event]))
       c2 ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
 

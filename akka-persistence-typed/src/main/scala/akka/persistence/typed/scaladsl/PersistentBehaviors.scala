@@ -73,7 +73,7 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    */
   def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
-   /**
+  /**
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    *
@@ -121,39 +121,36 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
   def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State]
 
   /**
-   * Adapt the event in another type before giving to the journal. This can be used to work
-   * with event adapters and journals that expect types to be wrapped in classes like [Tagged] or to
-   * separate domain types from persistent types.
+   * Transform the event in another type before giving to the journal. Can be used to wrap events
+   * in types Journals and Adapters understand as well as simple event migrations.
    */
-  def eventWrapper[A](adapter: EventWrapper[Event]): PersistentBehavior[Command, Event, State]
+  def eventTransformer(adapter: EventTransformer[Event]): PersistentBehavior[Command, Event, State]
 }
 
-trait EventWrapper[E] {
+trait EventTransformer[E] {
   /**
-    * Type of the event to persist
-    */
+   * Type of the event to persist
+   */
   type P
   /**
-    * Wrap event on the way to the journal
-    */
+   * Transform event on the way to the journal
+   */
   def toJournal(e: E): P
 
   /**
-    * Unwrap the event on recovery from the journal.
-    * Note that this is not called in any read side so will need to be applied
-    * manually when using Query.
-    */
+   * Transform the event on recovery from the journal.
+   * Note that this is not called in any read side so will need to be applied
+   * manually when using Query.
+   */
   def fromJournal(p: P): E
 }
 
-
 /**
-  * INTERNAL API
-  */
-@InternalApi private[akka] class NoOpEventWrapper[E] extends EventWrapper[E] {
+ * INTERNAL API
+ */
+@InternalApi private[akka] class NoOpEventTransformer[E] extends EventTransformer[E] {
   type P = E
   override def toJournal(e: E): E = e
   override def fromJournal(p: E): E = p
 }
-
 

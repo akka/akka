@@ -12,12 +12,12 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
-import akka.persistence.typed.internal.EventsourcedBehavior.{InternalProtocol, MDC}
+import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, MDC }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 /**
  * INTERNAL API

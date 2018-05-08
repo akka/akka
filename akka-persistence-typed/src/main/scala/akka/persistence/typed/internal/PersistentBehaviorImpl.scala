@@ -22,14 +22,14 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   initialState:      State,
   commandHandler:    PersistentBehaviors.CommandHandler[Command, Event, State],
   eventHandler:      (State, Event) ⇒ State,
-  journalPluginId:   Option[String]                                            = None,
-  snapshotPluginId:  Option[String]                                            = None,
-  recoveryCompleted: (ActorContext[Command], State) ⇒ Unit                     = ConstantFun.scalaAnyTwoToUnit,
-  tagger:            Event ⇒ Set[String]                                       = (_: Event) ⇒ Set.empty[String],
-  eventAdapter:      EventWrapper[Event]                                       = new NoOpEventWrapper[Event](),
-  snapshotWhen:      (State, Event, Long) ⇒ Boolean                            = ConstantFun.scalaAnyThreeToFalse,
-  recovery:          Recovery                                                  = Recovery(),
-  onSnapshot: (ActorContext[Command], SnapshotMetadata, Try[Done]) => Unit     = ConstantFun.scalaAnyThreeToUnit
+  journalPluginId:   Option[String]                                              = None,
+  snapshotPluginId:  Option[String]                                              = None,
+  recoveryCompleted: (ActorContext[Command], State) ⇒ Unit                       = ConstantFun.scalaAnyTwoToUnit,
+  tagger:            Event ⇒ Set[String]                                         = (_: Event) ⇒ Set.empty[String],
+  eventAdapter:      EventTransformer[Event]                                     = new NoOpEventTransformer[Event](),
+  snapshotWhen:      (State, Event, Long) ⇒ Boolean                              = ConstantFun.scalaAnyThreeToFalse,
+  recovery:          Recovery                                                    = Recovery(),
+  onSnapshot:        (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit = ConstantFun.scalaAnyThreeToUnit
 ) extends PersistentBehavior[Command, Event, State] with EventsourcedStashReferenceManagement {
 
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
@@ -140,12 +140,12 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
    * with event adapters and journals that expect types to be wrapped in classes like [Tagged]
    *
    */
-  def eventWrapper[A](adapter: EventWrapper[Event]): PersistentBehavior[Command, Event, State] =
+  def eventTransformer(adapter: EventTransformer[Event]): PersistentBehavior[Command, Event, State] =
     copy(eventAdapter = adapter)
 
   /**
-    * The `callback` function is called to notify the actor that a snapshot has finished
-    */
-  def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) => Unit): PersistentBehavior[Command, Event, State] =
+   * The `callback` function is called to notify the actor that a snapshot has finished
+   */
+  def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State] =
     copy(onSnapshot = callback)
 }
