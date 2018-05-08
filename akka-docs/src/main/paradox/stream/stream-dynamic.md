@@ -17,8 +17,8 @@ Scala
 After the first call to either `shutdown` or `abort`, all subsequent calls to any of these methods will be ignored.
 Graph completion is performed by both
 
- * completing its downstream
- * cancelling (in case of `shutdown`) or failing (in case of `abort`) its upstream.
+ * cancelling its upstream.
+ * completing (in case of `shutdown`) or failing (in case of `abort`) its downstream
 
 A `KillSwitch` can control the completion of one or multiple streams, and therefore comes in two different flavours.
 
