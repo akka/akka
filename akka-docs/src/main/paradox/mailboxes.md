@@ -63,7 +63,7 @@ then that names a configuration section describing the mailbox type to be
 used.
  2. If the actor’s `Props` contains a mailbox selection—i.e. `withMailbox`
 was called on it—then that names a configuration section describing the
-mailbox type to be used.
+mailbox type to be used (note that this needs to be a top-level section).
  3. If the dispatcher’s configuration section contains a `mailbox-type` key
 the same section will be used to configure the mailbox type.
  4. If the actor requires a mailbox type as described above then the mapping for
@@ -203,7 +203,7 @@ Scala
 Java
 :   @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #prio-dispatcher }
 
-It is also possible to configure a mailbox type directly like this:
+It is also possible to configure a mailbox type directly like this (this is a top-level configuration entry):
 
 Scala
 :   @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-mailbox-config #mailbox-deployment-config }
