@@ -18,6 +18,7 @@ import akka.Done;
 
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 import akka.testkit.TestActors;
 import scala.concurrent.Await;
 
@@ -47,7 +48,6 @@ import java.util.concurrent.CompletableFuture;
 //#import-gracefulStop
 import static akka.pattern.PatternsCS.gracefulStop;
 import akka.pattern.AskTimeoutException;
-import scala.concurrent.duration.Duration;
 import java.util.concurrent.CompletionStage;
 
 //#import-gracefulStop
@@ -74,7 +74,7 @@ public class ActorDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    Await.ready(system.terminate(), Duration.create(5, TimeUnit.SECONDS));
+    Await.ready(system.terminate(), scala.concurrent.duration.Duration.create(5, TimeUnit.SECONDS));
   }
 
   static
@@ -412,7 +412,7 @@ public class ActorDocTest extends AbstractJavaTest {
     //#gracefulStop
     try {
       CompletionStage<Boolean> stopped =
-        gracefulStop(actorRef, java.time.Duration.ofSeconds(5), Manager.SHUTDOWN);
+        gracefulStop(actorRef, Duration.ofSeconds(5), Manager.SHUTDOWN);
       stopped.toCompletableFuture().get(6, TimeUnit.SECONDS);
       // the actor has been stopped
     } catch (AskTimeoutException e) {
@@ -535,7 +535,7 @@ public class ActorDocTest extends AbstractJavaTest {
     //#receive-timeout
     public ReceiveTimeoutActor() {
       // To set an initial delay
-      getContext().setReceiveTimeout(java.time.Duration.ofSeconds(10));
+      getContext().setReceiveTimeout(Duration.ofSeconds(10));
     }
     
     @Override
@@ -543,7 +543,7 @@ public class ActorDocTest extends AbstractJavaTest {
       return receiveBuilder()
         .matchEquals("Hello", s -> {
           // To set in a response to a message
-          getContext().setReceiveTimeout(java.time.Duration.ofSeconds(1));
+          getContext().setReceiveTimeout(Duration.ofSeconds(1));
           //#receive-timeout
           target = getSender();
           target.tell("Hello world", getSelf());
@@ -628,7 +628,7 @@ public class ActorDocTest extends AbstractJavaTest {
         actor.tell("foo", getRef());
         actor.tell("foo", getRef());
         expectMsgEquals("I am already angry?");
-        expectNoMsg(Duration.create(1, TimeUnit.SECONDS));
+        expectNoMsg(scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS));
       }
     };
   }
@@ -741,7 +741,7 @@ public class ActorDocTest extends AbstractJavaTest {
       {
         watch(b);
         system.stop(a);
-        assertEquals(expectMsgClass(java.time.Duration.ofSeconds(2), Terminated.class).actor(), b);
+        assertEquals(expectMsgClass(Duration.ofSeconds(2), Terminated.class).actor(), b);
       }
     };
   }
@@ -755,7 +755,7 @@ public class ActorDocTest extends AbstractJavaTest {
         ActorRef actorC = getRef();
 
         //#ask-pipe
-        Timeout t = new Timeout(Duration.create(5, TimeUnit.SECONDS));
+        Timeout t = new Timeout(scala.concurrent.duration.Duration.create(5, TimeUnit.SECONDS));
 
         // using 1000ms timeout
         CompletableFuture<Object> future1 =
@@ -791,7 +791,7 @@ public class ActorDocTest extends AbstractJavaTest {
         victim.tell(akka.actor.Kill.getInstance(), ActorRef.noSender());
         
         // expecting the actor to indeed terminate:
-        expectTerminated(Duration.create(3, TimeUnit.SECONDS), victim);
+        expectTerminated(scala.concurrent.duration.Duration.create(3, TimeUnit.SECONDS), victim);
         //#kill
       }
     };
@@ -806,7 +806,7 @@ public class ActorDocTest extends AbstractJavaTest {
         //#poison-pill
         victim.tell(akka.actor.PoisonPill.getInstance(), ActorRef.noSender());
         //#poison-pill
-        expectTerminated(Duration.create(3, TimeUnit.SECONDS), victim);
+        expectTerminated(scala.concurrent.duration.Duration.create(3, TimeUnit.SECONDS), victim);
       }
     };
   }
