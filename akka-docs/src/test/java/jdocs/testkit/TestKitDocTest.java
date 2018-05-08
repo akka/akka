@@ -31,12 +31,9 @@ import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.AbstractActor;
-import akka.actor.AbstractActor.Receive;
 import akka.testkit.TestActor.AutoPilot;
 import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 
-import java.util.Arrays;
 import java.util.List;
 
 import java.util.concurrent.CompletableFuture;
