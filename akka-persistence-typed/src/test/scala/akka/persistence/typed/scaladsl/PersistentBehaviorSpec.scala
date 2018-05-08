@@ -7,6 +7,7 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
@@ -23,6 +24,7 @@ import org.scalatest.concurrent.Eventually
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.{ Success, Try }
 
 object PersistentBehaviorSpec {
 
@@ -89,18 +91,22 @@ object PersistentBehaviorSpec {
   val secondLogging = "second logging"
 
   def counter(persistenceId: String)(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
-    counter(persistenceId, loggingActor = TestProbe[String].ref, probe = TestProbe[(State, Event)].ref)
+    counter(persistenceId, loggingActor = TestProbe[String].ref, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
 
   def counter(persistenceId: String, logging: ActorRef[String])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
-    counter(persistenceId, loggingActor = logging, probe = TestProbe[(State, Event)].ref)
+    counter(persistenceId, loggingActor = logging, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
 
   def counterWithProbe(persistenceId: String, probe: ActorRef[(State, Event)])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
-    counter(persistenceId, TestProbe[String].ref, probe)
+    counter(persistenceId, TestProbe[String].ref, probe, TestProbe[Try[Done]].ref)
+
+  def counterWithSnapshotProbe(persistenceId: String, probe: ActorRef[Try[Done]])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+    counter(persistenceId, TestProbe[String].ref, TestProbe[(State, Event)].ref, snapshotProbe = probe)
 
   def counter(
     persistenceId: String,
     loggingActor:  ActorRef[String],
-    probe:         ActorRef[(State, Event)]): PersistentBehavior[Command, Event, State] = {
+    probe:         ActorRef[(State, Event)],
+    snapshotProbe: ActorRef[Try[Done]]): PersistentBehavior[Command, Event, State] = {
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
       initialState = State(0, Vector.empty),
@@ -186,12 +192,19 @@ object PersistentBehaviorSpec {
         case Incremented(delta) ⇒
           probe ! ((state, evt))
           State(state.value + delta, state.history :+ state.value)
-      })
+      }).onRecoveryCompleted {
+        case (_, _) ⇒
+      }
+      .onSnapshot {
+        case (_, _, result) ⇒
+          snapshotProbe ! result
+      }
   }
 
 }
 
 class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
+
   import PersistentBehaviorSpec._
 
   override lazy val config: Config = PersistentBehaviorSpec.conf
@@ -199,6 +212,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
   implicit val testSettings = TestKitSettings(system)
 
   import akka.actor.typed.scaladsl.adapter._
+
   implicit val materializer = ActorMaterializer()(system.toUntyped)
   val queries = PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](
     LeveldbReadJournal.Identifier)
@@ -345,16 +359,17 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
     "snapshot via predicate" in {
       val pid = nextPid
+      val snapshotProbe = TestProbe[Try[Done]]
       val alwaysSnapshot: Behavior[Command] =
         Behaviors.setup { _ ⇒
-          counter(pid).snapshotWhen { (_, _, _) ⇒ true }
+          counterWithSnapshotProbe(pid, snapshotProbe.ref).snapshotWhen { (_, _, _) ⇒ true }
         }
-
       val c = spawn(alwaysSnapshot)
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()
 
       c ! Increment
+      snapshotProbe.expectMessage(Success(Done))
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
       c ! LogThenStop
@@ -372,14 +387,17 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
     "check all events for snapshot in PersistAll" in {
       val pid = nextPid
-      val snapshotAtTwo = counter(pid).snapshotWhen { (s, _, _) ⇒ s.value == 2 }
+      val snapshotProbe = TestProbe[Try[Done]]
+      val snapshotAtTwo = counterWithSnapshotProbe(pid, snapshotProbe.ref).snapshotWhen { (s, _, _) ⇒ s.value == 2 }
       val c: ActorRef[Command] = spawn(snapshotAtTwo)
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()
 
       c ! IncrementWithPersistAll(3)
+
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
+      snapshotProbe.expectMessage(Success(Done))
       c ! LogThenStop
       watchProbe.expectMessage("Terminated")
 
@@ -483,6 +501,28 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       c2 ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
 
+    }
+
+    "adapt and tag events" in {
+      val pid = nextPid
+      val c = spawn(counter(pid)
+        .withTagger(_ ⇒ Set("tag99"))
+        .eventWrapper(new WrapperEventWrapper[Event]))
+      val replyProbe = TestProbe[State]()
+
+      c ! Increment
+      c ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(1, Vector(0)))
+
+      val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
+      events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
+
+      val c2 = spawn(counter(pid).eventWrapper(new WrapperEventWrapper[Event]))
+      c2 ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(1, Vector(0)))
+
+      val taggedEvents = queries.currentEventsByTag("tag99").runWith(Sink.seq).futureValue
+      taggedEvents shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
     }
 
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {

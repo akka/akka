@@ -4,12 +4,15 @@
 
 package akka.persistence.typed.scaladsl
 
+import akka.Done
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.journal.Tagged
 import akka.persistence.typed.internal._
+
+import scala.util.Try
 
 object PersistentBehaviors {
 
@@ -70,6 +73,13 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    */
   def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
+   /**
+   * The `callback` function is called to notify the actor that the recovery process
+   * is finished.
+   *
+   */
+  def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
+
   /**
    * Initiates a snapshot if the given function returns true.
    * When persisting multiple events at once the snapshot is triggered after all the events have
@@ -119,20 +129,31 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
 }
 
 trait EventWrapper[E] {
+  /**
+    * Type of the event to persist
+    */
   type P
+  /**
+    * Wrap event on the way to the journal
+    */
   def toJournal(e: E): P
+
+  /**
+    * Unwrap the event on recovery from the journal.
+    * Note that this is not called in any read side so will need to be applied
+    * manually when using Query.
+    */
   def fromJournal(p: P): E
 }
 
-class NoOpEventWrapper[E] extends EventWrapper[E] {
+
+/**
+  * INTERNAL API
+  */
+@InternalApi private[akka] class NoOpEventWrapper[E] extends EventWrapper[E] {
   type P = E
   override def toJournal(e: E): E = e
   override def fromJournal(p: E): E = p
 }
 
-class TaggingEventWrapper[E](tagger: E ⇒ Set[String]) extends EventWrapper[E] {
-  override type P = Tagged
-  def toJournal(e: E): Tagged = Tagged(e, tagger(e))
-  def fromJournal(p: Tagged): E = p.payload.asInstanceOf[E]
-}
 

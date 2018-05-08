@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.internal
 
+import akka.Done
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.MutableBehavior
@@ -11,11 +12,12 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
-import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, MDC }
+import akka.persistence.typed.internal.EventsourcedBehavior.{InternalProtocol, MDC}
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.util.{Failure, Success}
 
 /**
  * INTERNAL API
@@ -100,7 +102,13 @@ private[akka] object EventsourcedRunning {
           // also, ensure that there is an event handler for each single event
           val newState = state.applyEvent(setup, event)
 
-          val eventToPersist = setup.wrapper.toJournal(event)
+          val tags = setup.tagger(event)
+          val eventToPersist = if (tags.isEmpty) {
+            setup.wrapper.toJournal(event)
+          } else {
+            // Tags always need to be on the outside as journals match on it
+            Tagged(setup.wrapper.toJournal(event), tags)
+          }
 
           val newState2 = internalPersist(newState, eventToPersist)
 
@@ -267,10 +275,12 @@ private[akka] object EventsourcedRunning {
     response match {
       case SaveSnapshotSuccess(meta) ⇒
         setup.context.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
+        setup.onSnapshot(commandContext, meta, Success(Done))
         outer
       case SaveSnapshotFailure(meta, ex) ⇒
         setup.context.log.error(ex, "Save snapshot failed, snapshot metadata: [{}]", meta)
-        outer // FIXME https://github.com/akka/akka/issues/24637 should we provide callback for this? to allow Stop
+        setup.onSnapshot(commandContext, meta, Failure(ex))
+        outer
 
       // FIXME not implemented
       case DeleteSnapshotFailure(_, _)  ⇒ ???

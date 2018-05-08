@@ -4,15 +4,17 @@
 
 package akka.persistence.typed.internal
 
+import akka.Done
 import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.persistence._
-import akka.persistence.journal.Tagged
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
+
+import scala.util.Try
 
 @InternalApi
 private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
@@ -26,7 +28,8 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   tagger:            Event ⇒ Set[String]                                       = (_: Event) ⇒ Set.empty[String],
   eventAdapter:      EventWrapper[Event]                                       = new NoOpEventWrapper[Event](),
   snapshotWhen:      (State, Event, Long) ⇒ Boolean                            = ConstantFun.scalaAnyThreeToFalse,
-  recovery:          Recovery                                                  = Recovery()
+  recovery:          Recovery                                                  = Recovery(),
+  onSnapshot: (ActorContext[Command], SnapshotMetadata, Try[Done]) => Unit     = ConstantFun.scalaAnyThreeToUnit
 ) extends PersistentBehavior[Command, Event, State] with EventsourcedStashReferenceManagement {
 
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
@@ -47,6 +50,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
               eventHandler,
               WriterIdentity.newIdentity(),
               recoveryCompleted,
+              onSnapshot,
               tagger,
               eventAdapter,
               snapshotWhen,
@@ -129,16 +133,19 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
    * This is a convenience function that uses withWrapper to wrap the event in Tags.
    */
   def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State] =
-    eventWrapper(new TaggingEventWrapper[Event](tagger))
+    copy(tagger = tagger)
 
   /**
    * Wrap the event in another type before giving to the journal. This can be used to work
    * with event adapters and journals that expect types to be wrapped in classes like [Tagged]
    *
-   * TODO: Do we need a manifest here?
-   *       Should we support EventSeq?
    */
   def eventWrapper[A](adapter: EventWrapper[Event]): PersistentBehavior[Command, Event, State] =
     copy(eventAdapter = adapter)
 
+  /**
+    * The `callback` function is called to notify the actor that a snapshot has finished
+    */
+  def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) => Unit): PersistentBehavior[Command, Event, State] =
+    copy(onSnapshot = callback)
 }
