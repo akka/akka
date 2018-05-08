@@ -23,7 +23,7 @@ import scala.reflect.ClassTag
 
 /**
  * * Upcast a stream of elements to a stream of supertypes of that element. Useful in combination with
- * fan-in combinators where you do not want to pay the cost of casting each element in a `map`.
+ * fan-in operators where you do not want to pay the cost of casting each element in a `map`.
  */
 object SubSource {
   def upcast[U, T <: U, Mat](source: SubSource[T, Mat]): SubSource[U, Mat] = source.asInstanceOf[SubSource[U, Mat]]
@@ -1679,7 +1679,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
-   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
@@ -1712,7 +1712,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
-   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
@@ -1754,7 +1754,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
-   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
@@ -1795,7 +1795,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
    * calculating for each element individually by calling `calculateCost` function.
-   * This combinator works for streams when elements have different cost(length).
+   * This operator works for streams when elements have different cost(length).
    * Streams of `ByteString` for example.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
@@ -1831,7 +1831,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
    * calculating for each element individually by calling `calculateCost` function.
-   * This combinator works for streams when elements have different cost(length).
+   * This operator works for streams when elements have different cost(length).
    * Streams of `ByteString` for example.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
@@ -1876,7 +1876,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
    * calculating for each element individually by calling `calculateCost` function.
-   * This combinator works for streams when elements have different cost(length).
+   * This operator works for streams when elements have different cost(length).
    * Streams of `ByteString` for example.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
@@ -1919,7 +1919,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * Use this operator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use
@@ -1934,7 +1934,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * Use this operator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use
@@ -1949,7 +1949,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * Use this operator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use
@@ -1965,7 +1965,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * Use this operator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use

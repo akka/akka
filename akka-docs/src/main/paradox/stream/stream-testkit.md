@@ -29,7 +29,7 @@ Java
 The same strategy can be applied for sources as well. In the next example we
 have a source that produces an infinite stream of elements. Such source can be
 tested by asserting that first arbitrary number of elements hold some
-condition. Here the `take` combinator and `Sink.seq` are very useful.
+condition. Here the `take` operator and `Sink.seq` are very useful.
 
 Scala
 :   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #grouped-infinite }
