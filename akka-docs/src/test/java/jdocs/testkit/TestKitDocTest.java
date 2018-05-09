@@ -32,12 +32,12 @@ import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.AbstractActor;
 import akka.testkit.TestActor.AutoPilot;
-import scala.concurrent.duration.Duration;
 
 import java.util.List;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 public class TestKitDocTest extends AbstractJavaTest {
 
@@ -89,8 +89,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     void triggerScheduling() {
       getTimers().startSingleTimer(
         SCHED_KEY,
-        new ScheduledMessage(),
-        Duration.create(500, TimeUnit.MILLISECONDS)
+        new ScheduledMessage(), Duration.ofMillis(500)
       );
     }
   }
@@ -126,7 +125,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-within
     new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
-      within(java.time.Duration.ZERO, java.time.Duration.ofSeconds(1), () -> {
+      within(Duration.ZERO, Duration.ofSeconds(1), () -> {
         assertEquals((Integer) 42, expectMsgClass(Integer.class));
         return null;
       });
@@ -159,7 +158,7 @@ public class TestKitDocTest extends AbstractJavaTest {
       getRef().tell(43, ActorRef.noSender());
       getRef().tell("hello", ActorRef.noSender());
 
-      final List<String> out = receiveWhile(java.time.Duration.ofSeconds(1), in -> {
+      final List<String> out = receiveWhile(Duration.ofSeconds(1), in -> {
         if (in instanceof Integer) {
           return in.toString();
         } else {
@@ -173,7 +172,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-receivewhile
     new TestKit(system) {{
       //#test-receivewhile-full
-      receiveWhile(java.time.Duration.ofMillis(100), java.time.Duration.ofMillis(50), 12, in -> {
+      receiveWhile(Duration.ofMillis(100), Duration.ofMillis(50), 12, in -> {
         //#match-elided
         throw JavaPartialFunction.noMatch();
         //#match-elided
@@ -187,7 +186,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-awaitCond
     new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
-      awaitCond(java.time.Duration.ofSeconds(1), java.time.Duration.ofMillis(100), this::msgAvailable);
+      awaitCond(Duration.ofSeconds(1), Duration.ofMillis(100), this::msgAvailable);
     }};
     //#test-awaitCond
   }
@@ -197,7 +196,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-awaitAssert
     new TestKit(system) {{
       getRef().tell(42, ActorRef.noSender());
-      awaitAssert(java.time.Duration.ofSeconds(1), java.time.Duration.ofMillis(100), () -> {
+      awaitAssert(Duration.ofSeconds(1), Duration.ofMillis(100), () -> {
         assertEquals(msgAvailable(), true);
         return null;
       });
@@ -257,8 +256,8 @@ public class TestKitDocTest extends AbstractJavaTest {
   public void demonstrateDilated() {
     //#duration-dilation
     new TestKit(system) {{
-      final java.time.Duration original = java.time.Duration.ofSeconds(1);
-      final java.time.Duration stretched = dilated(original);
+      final Duration original = Duration.ofSeconds(1);
+      final Duration stretched = dilated(original);
       assertTrue("dilated", stretched.compareTo(original)  >= 0);
     }};
     //#duration-dilation
@@ -396,7 +395,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-within-probe
     new TestKit(system) {{
       final TestKit probe = new TestKit(system);
-      within(java.time.Duration.ofSeconds(1), () -> probe.expectMsgEquals("hello"));
+      within(Duration.ofSeconds(1), () -> probe.expectMsgEquals("hello"));
     }};
     //#test-within-probe
     } catch (AssertionError e) {
