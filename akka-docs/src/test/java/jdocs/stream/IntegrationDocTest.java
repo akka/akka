@@ -4,6 +4,7 @@
 
 package jdocs.stream;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.*;
 import akka.stream.*;
@@ -311,7 +312,13 @@ public class IntegrationDocTest extends AbstractJavaTest {
   //#ask-actor
 
   //#actorRefWithAck-actor
-  static class Ack {}
+  static class Ack {
+    public static final Ack INSTANCE = new Ack();
+
+    private Ack() {
+
+    }
+  }
 
   static class StreamInitialized {}
   static class StreamCompleted {}
@@ -329,11 +336,11 @@ public class IntegrationDocTest extends AbstractJavaTest {
       return receiveBuilder()
         .match(StreamInitialized.class, init -> {
           log().info("Stream initialized");
-          sender().tell(new Ack(), self());
+          sender().tell(Ack.INSTANCE, self());
         })
         .match(String.class, element -> {
           log().info("Received element: {}", element);
-          sender().tell(new Ack(), self());
+          sender().tell(Ack.INSTANCE, self());
         })
         .match(StreamCompleted.class, completed -> {
           log().info("Stream completed");
@@ -368,12 +375,14 @@ public class IntegrationDocTest extends AbstractJavaTest {
     Source<String, NotUsed> words =
       Source.from(Arrays.asList("hello", "hi"));
 
+    final TestProbe probe = new TestProbe(system);
+
     ActorRef receiver =
         system.actorOf(Props.create(AckingReceiver.class));
 
     Sink<String, NotUsed> sink = Sink.<String>actorRefWithAck(receiver,
         new StreamInitialized(),
-        new Ack(),
+        Ack.INSTANCE,
         new StreamCompleted(),
         ex -> new StreamFailure(ex)
     );
@@ -382,6 +391,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
         .map(el -> el.toLowerCase())
         .runWith(sink, mat);
     //#actorRefWithAck
+    Thread.sleep(10000);
   }
 
 
