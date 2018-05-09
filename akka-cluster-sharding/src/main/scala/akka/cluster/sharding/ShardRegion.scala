@@ -679,8 +679,8 @@ private[akka] class ShardRegion(
     if (shardBuffers.nonEmpty && retryCount >= 5) coordinatorSelection match {
       case Some(actorSelection) ⇒
         val coordinatorMessage =
-          if (cluster.state.unreachable(membersByAge.head)) s"Coordinator ${membersByAge.head} is unreachable."
-          else s"Coordinator ${membersByAge.head} is reachable."
+          if (cluster.state.unreachable(membersByAge.head)) s"Coordinator [${membersByAge.head}] is unreachable."
+          else s"Coordinator [${membersByAge.head}] is reachable."
         log.warning(
           "Trying to register to coordinator at [{}], but no acknowledgement. Total [{}] buffered messages. [{}]",
           actorSelection, shardBuffers.totalSize, coordinatorMessage
