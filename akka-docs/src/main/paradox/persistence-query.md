@@ -143,7 +143,7 @@ Scala
 Java
 :  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #events-by-tag }
 
-As you can see, we can use all the usual stream combinators available from @ref:[Streams](stream/index.md) on the resulting query stream,
+As you can see, we can use all the usual stream operators available from @ref:[Streams](stream/index.md) on the resulting query stream,
 including for example taking the first 10 and cancelling the stream. It is worth pointing out that the built-in `EventsByTag`
 query has an optionally supported offset parameter (of type `Long`) which the journals can use to implement resumable-streams.
 For example a journal may be able to use a WHERE clause to begin the read starting from a specific row, or in a datastore
