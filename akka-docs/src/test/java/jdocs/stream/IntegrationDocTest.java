@@ -311,7 +311,9 @@ public class IntegrationDocTest extends AbstractJavaTest {
   //#ask-actor
 
   //#actorRefWithAck-actor
-  static class Ack {}
+  enum Ack {
+    INSTANCE;
+  }
 
   static class StreamInitialized {}
   static class StreamCompleted {}
@@ -324,22 +326,32 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
   static class AckingReceiver extends AbstractLoggingActor {
 
+    private final ActorRef probe;
+
+    public AckingReceiver(ActorRef probe) {
+      this.probe = probe;
+    }
+
     @Override
     public Receive createReceive() {
       return receiveBuilder()
         .match(StreamInitialized.class, init -> {
           log().info("Stream initialized");
-          sender().tell(new Ack(), self());
+          probe.tell("Stream initialized", getSelf());
+          sender().tell(Ack.INSTANCE, self());
         })
         .match(String.class, element -> {
           log().info("Received element: {}", element);
-          sender().tell(new Ack(), self());
+          probe.tell(element, getSelf());
+          sender().tell(Ack.INSTANCE, self());
         })
         .match(StreamCompleted.class, completed -> {
           log().info("Stream completed");
+          probe.tell("Stream completed", getSelf());
         })
         .match(StreamFailure.class, failed -> {
           log().error(failed.getCause(),"Stream failed!");
+          probe.tell("Stream failed!", getSelf());
         })
         .build();
     }
@@ -368,12 +380,14 @@ public class IntegrationDocTest extends AbstractJavaTest {
     Source<String, NotUsed> words =
       Source.from(Arrays.asList("hello", "hi"));
 
+    final TestKit probe = new TestKit(system);
+
     ActorRef receiver =
-        system.actorOf(Props.create(AckingReceiver.class));
+        system.actorOf(Props.create(AckingReceiver.class, probe.getRef()));
 
     Sink<String, NotUsed> sink = Sink.<String>actorRefWithAck(receiver,
         new StreamInitialized(),
-        new Ack(),
+        Ack.INSTANCE,
         new StreamCompleted(),
         ex -> new StreamFailure(ex)
     );
@@ -381,6 +395,11 @@ public class IntegrationDocTest extends AbstractJavaTest {
     words
         .map(el -> el.toLowerCase())
         .runWith(sink, mat);
+
+    probe.expectMsg("Stream initialized");
+    probe.expectMsg("hello");
+    probe.expectMsg("hi");
+    probe.expectMsg("Stream completed");
     //#actorRefWithAck
   }
 
@@ -388,9 +407,9 @@ public class IntegrationDocTest extends AbstractJavaTest {
   @Test
   public void callingExternalServiceWithMapAsync() throws Exception {
     new TestKit(system) {
-      final TestProbe probe = new TestProbe(system);
+      final TestKit probe = new TestKit(system);
       final AddressSystem addressSystem = new AddressSystem();
-      final EmailServer emailServer = new EmailServer(probe.ref());
+      final EmailServer emailServer = new EmailServer(probe.getRef());
 
       {
         //#tweet-authors
