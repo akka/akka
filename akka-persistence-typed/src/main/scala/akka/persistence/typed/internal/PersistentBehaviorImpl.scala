@@ -14,7 +14,20 @@ import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, 
 import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
 
-import scala.util.Try
+import scala.util.{ Failure, Success, Try }
+
+@InternalApi
+private[akka] object PersistentBehaviorImpl {
+
+  def defaultOnSnapshot[A](ctx: ActorContext[A], meta: SnapshotMetadata, result: Try[Done]): Unit = {
+    result match {
+      case Success(_) ⇒
+        ctx.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
+      case Failure(t) ⇒
+        ctx.log.error(t, "Save snapshot failed, snapshot metadata: [{}]", meta)
+    }
+  }
+}
 
 @InternalApi
 private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
@@ -26,10 +39,10 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   snapshotPluginId:  Option[String]                                              = None,
   recoveryCompleted: (ActorContext[Command], State) ⇒ Unit                       = ConstantFun.scalaAnyTwoToUnit,
   tagger:            Event ⇒ Set[String]                                         = (_: Event) ⇒ Set.empty[String],
-  eventAdapter:      EventTransformer[Event]                                     = NoOpEventTransformer.instance[Event],
+  eventAdapter:      EventAdapter[Event]                                         = NoOpEventAdapter.instance[Event],
   snapshotWhen:      (State, Event, Long) ⇒ Boolean                              = ConstantFun.scalaAnyThreeToFalse,
   recovery:          Recovery                                                    = Recovery(),
-  onSnapshot:        (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit = ConstantFun.scalaAnyThreeToUnit
+  onSnapshot:        (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit = PersistentBehaviorImpl.defaultOnSnapshot[Command] _
 ) extends PersistentBehavior[Command, Event, State] with EventsourcedStashReferenceManagement {
 
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
@@ -140,7 +153,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
    * with event adapters and journals that expect types to be wrapped in classes like [Tagged]
    *
    */
-  def eventTransformer(adapter: EventTransformer[Event]): PersistentBehavior[Command, Event, State] =
+  def eventTransformer(adapter: EventAdapter[Event]): PersistentBehavior[Command, Event, State] =
     copy(eventAdapter = adapter)
 
   /**

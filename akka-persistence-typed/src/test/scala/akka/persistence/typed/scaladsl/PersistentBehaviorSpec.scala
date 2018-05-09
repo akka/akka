@@ -21,7 +21,6 @@ import akka.actor.testkit.typed.scaladsl._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.Eventually
 
-import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Success, Try }
@@ -30,7 +29,7 @@ object PersistentBehaviorSpec {
 
   case class Wrapper[T](t: T)
 
-  class WrapperEventTransformer[T] extends EventTransformer[T] {
+  class WrapperEventAdapter[T] extends EventAdapter[T] {
     override type P = Wrapper[T]
     override def toJournal(e: T): Wrapper[T] = Wrapper(e)
     override def fromJournal(p: Wrapper[T]): T = p.t
@@ -56,7 +55,7 @@ object PersistentBehaviorSpec {
   // also used from PersistentActorTest
   def conf: Config = ConfigFactory.parseString(
     s"""
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
     # akka.persistence.typed.log-stashing = INFO
     akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
@@ -487,7 +486,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
     "adapt events" in {
       val pid = nextPid
-      val c = spawn(counter(pid).eventTransformer(new WrapperEventTransformer[Event]))
+      val c = spawn(counter(pid).eventTransformer(new WrapperEventAdapter[Event]))
       val replyProbe = TestProbe[State]()
 
       c ! Increment
@@ -497,17 +496,37 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
       events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
 
-      val c2 = spawn(counter(pid).eventTransformer(new WrapperEventTransformer[Event]))
+      val c2 = spawn(counter(pid).eventTransformer(new WrapperEventAdapter[Event]))
       c2 ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
 
+    }
+
+    "adapter multiple events with persist all" in {
+      val pid = nextPid
+      val c = spawn(counter(pid).eventTransformer(new WrapperEventAdapter[Event]))
+      val replyProbe = TestProbe[State]()
+
+      c ! IncrementWithPersistAll(2)
+      c ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(2, Vector(0, 1)))
+
+      val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
+      events shouldEqual List(
+        EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))),
+        EventEnvelope(Sequence(2), pid, 2, Wrapper(Incremented(1)))
+      )
+
+      val c2 = spawn(counter(pid).eventTransformer(new WrapperEventAdapter[Event]))
+      c2 ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(2, Vector(0, 1)))
     }
 
     "adapt and tag events" in {
       val pid = nextPid
       val c = spawn(counter(pid)
         .withTagger(_ ⇒ Set("tag99"))
-        .eventTransformer(new WrapperEventTransformer[Event]))
+        .eventTransformer(new WrapperEventAdapter[Event]))
       val replyProbe = TestProbe[State]()
 
       c ! Increment
@@ -517,7 +536,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
       events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
 
-      val c2 = spawn(counter(pid).eventTransformer(new WrapperEventTransformer[Event]))
+      val c2 = spawn(counter(pid).eventTransformer(new WrapperEventAdapter[Event]))
       c2 ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
 

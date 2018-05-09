@@ -102,13 +102,7 @@ private[akka] object EventsourcedRunning {
           // also, ensure that there is an event handler for each single event
           val newState = state.applyEvent(setup, event)
 
-          val tags = setup.tagger(event)
-          val eventToPersist = if (tags.isEmpty) {
-            setup.wrapper.toJournal(event)
-          } else {
-            // Tags always need to be on the outside as journals match on it
-            Tagged(setup.wrapper.toJournal(event), tags)
-          }
+          val eventToPersist = adaptEvent(event)
 
           val newState2 = internalPersist(newState, eventToPersist)
 
@@ -129,7 +123,7 @@ private[akka] object EventsourcedRunning {
                 (currentState.applyEvent(setup, event), shouldSnapshot)
             }
 
-            val eventsToPersist = events.map(tagEvent)
+            val eventsToPersist = events.map(adaptEvent)
 
             val newState2 = internalPersistAll(eventsToPersist, newState)
 
@@ -152,9 +146,14 @@ private[akka] object EventsourcedRunning {
       }
     }
 
-    def tagEvent(event: E): Any = {
+    def adaptEvent(event: E): Any = {
       val tags = setup.tagger(event)
-      if (tags.isEmpty) event else Tagged(event, tags)
+      if (tags.isEmpty) {
+        setup.eventAdapter.toJournal(event)
+      } else {
+        // Tags always need to be on the outside as journals match on it
+        Tagged(setup.eventAdapter.toJournal(event), tags)
+      }
     }
 
     setup.setMdc(runningCmdsMdc)
@@ -274,11 +273,9 @@ private[akka] object EventsourcedRunning {
     outer:    Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
     response match {
       case SaveSnapshotSuccess(meta) ⇒
-        setup.context.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
         setup.onSnapshot(commandContext, meta, Success(Done))
         outer
       case SaveSnapshotFailure(meta, ex) ⇒
-        setup.context.log.error(ex, "Save snapshot failed, snapshot metadata: [{}]", meta)
         setup.onSnapshot(commandContext, meta, Failure(ex))
         outer
 

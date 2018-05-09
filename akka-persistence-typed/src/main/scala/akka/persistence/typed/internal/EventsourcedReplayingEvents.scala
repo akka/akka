@@ -79,7 +79,7 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
     try {
       response match {
         case ReplayedMessage(repr) ⇒
-          val event = setup.wrapper.fromJournal(repr.payload.asInstanceOf[setup.wrapper.P])
+          val event = setup.eventAdapter.fromJournal(repr.payload.asInstanceOf[setup.eventAdapter.P])
 
           try {
             val newState = state.copy(

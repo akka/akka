@@ -117,14 +117,6 @@ trait ActorTestKit {
     spawn(behavior, name, Props.empty)
 
   /**
-   * Stop an actor previously created with spawn.
-   */
-  final def stop[T](actorRef: ActorRef[T]): Unit = {
-    val x: Future[ActorTestKitGuardian.Ack.type] = internalSystem ? (ActorTestKitGuardian.StopActor(actorRef, _))
-    Await.result(x, timeout.duration)
-  }
-
-  /**
    * Spawn the given behavior. This is created as a child of the test kit
    * guardian
    */

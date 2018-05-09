@@ -83,9 +83,16 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
 
   /**
    * The `callback` function is called to notify the actor that the recovery process
-   * is finished.
+   * is finished. The default implementation logs failures at error and success writes at
+   * debug.
    */
-  def onSnapshot(ctx: ActorContext[Command], meta: SnapshotMetadata, result: Optional[Throwable]): Unit = {}
+  def onSnapshot(ctx: ActorContext[Command], meta: SnapshotMetadata, result: Optional[Throwable]): Unit = {
+    if (result.isPresent) {
+      ctx.getLog.error(result.get(), "Save snapshot failed, snapshot metadata: [{}]", meta)
+    } else {
+      ctx.getLog.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
+    }
+  }
 
   /**
    * Override and define that snapshot should be saved every N events.
@@ -138,7 +145,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
 
     val javaEventTransformer = eventTransformer[Any]()
 
-    val transformer = new scaladsl.EventTransformer[Event] {
+    val transformer = new scaladsl.EventAdapter[Event] {
       override type P = Any
       override def toJournal(e: Event): Any = javaEventTransformer.toJournal(e)
       override def fromJournal(p: Any): Event = javaEventTransformer.fromJournal(p)

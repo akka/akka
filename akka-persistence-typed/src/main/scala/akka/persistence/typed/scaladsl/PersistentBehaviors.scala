@@ -9,7 +9,6 @@ import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence._
-import akka.persistence.journal.Tagged
 import akka.persistence.typed.internal._
 
 import scala.util.Try
@@ -76,7 +75,6 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
   /**
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
-   *
    */
   def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
@@ -124,10 +122,10 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * Transform the event in another type before giving to the journal. Can be used to wrap events
    * in types Journals and Adapters understand as well as simple event migrations.
    */
-  def eventTransformer(adapter: EventTransformer[Event]): PersistentBehavior[Command, Event, State]
+  def eventTransformer(adapter: EventAdapter[Event]): PersistentBehavior[Command, Event, State]
 }
 
-trait EventTransformer[E] {
+trait EventAdapter[E] {
   /**
    * Type of the event to persist
    */
@@ -145,15 +143,18 @@ trait EventTransformer[E] {
   def fromJournal(p: P): E
 }
 
-object NoOpEventTransformer {
-  private val i = new NoOpEventTransformer[Nothing]
-  def instance[E] = i.asInstanceOf[NoOpEventTransformer[E]]
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object NoOpEventAdapter {
+  private val i = new NoOpEventAdapter[Nothing]
+  def instance[E]: NoOpEventAdapter[E] = i.asInstanceOf[NoOpEventAdapter[E]]
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class NoOpEventTransformer[E] extends EventTransformer[E] {
+@InternalApi private[akka] class NoOpEventAdapter[E] extends EventAdapter[E] {
   type P = E
   override def toJournal(e: E): E = e
   override def fromJournal(p: E): E = p
