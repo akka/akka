@@ -28,11 +28,11 @@ public class PingSerializerExampleTest {
   //#serializer
   public class PingSerializer extends SerializerWithStringManifest {
 
-    ExtendedActorSystem system;
-    ActorRefResolver actorRefResolver;
+    final ExtendedActorSystem system;
+    final ActorRefResolver actorRefResolver;
 
-    String PingManifest = "a";
-    String PongManifest = "b";
+    static final String PING_MANIFEST = "a";
+    static final String PONG_MANIFEST = "b";
 
     PingSerializer(ExtendedActorSystem system) {
       this.system = system;
@@ -47,9 +47,9 @@ public class PingSerializerExampleTest {
     @Override
     public String manifest(Object obj) {
       if (obj instanceof Ping)
-        return PingManifest;
+        return PING_MANIFEST;
       else if (obj instanceof Pong)
-        return PongManifest;
+        return PONG_MANIFEST;
       else
         throw new IllegalArgumentException("Unknown type: " + obj);
     }
@@ -66,11 +66,11 @@ public class PingSerializerExampleTest {
 
     @Override
     public Object fromBinary(byte[] bytes, String manifest) throws NotSerializableException {
-      if (PingManifest.equals(manifest)) {
+      if (PING_MANIFEST.equals(manifest)) {
         String str = new String(bytes, StandardCharsets.UTF_8);
         ActorRef<Pong> ref = actorRefResolver.resolveActorRef(str);
         return new Ping(ref);
-      } else if (PongManifest.equals(manifest)) {
+      } else if (PONG_MANIFEST.equals(manifest)) {
         return new Pong();
       } else {
         throw new NotSerializableException("Unable to handle manifest: " + manifest);
