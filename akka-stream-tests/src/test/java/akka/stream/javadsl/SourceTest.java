@@ -440,11 +440,11 @@ public class SourceTest extends StreamTest {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
     })).run(materializer);
-    probe.expectNoMsg(FiniteDuration.create(600, TimeUnit.MILLISECONDS));
+    probe.expectNoMessage(Duration.ofMillis(600));
     probe.expectMsgEquals("tick");
-    probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
+    probe.expectNoMessage(Duration.ofMillis(200));
     probe.expectMsgEquals("tick");
-    probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
+    probe.expectNoMessage(Duration.ofMillis(200));
   }
 
   @Test
@@ -642,9 +642,9 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals(0);
     probe.expectMsgEquals(1);
 
-    FiniteDuration duration = FiniteDuration.apply(200, TimeUnit.MILLISECONDS);
+    Duration duration = Duration.ofMillis(200);
 
-    probe.expectNoMsg(duration);
+    probe.expectNoMessage(duration);
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 

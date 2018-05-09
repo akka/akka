@@ -129,13 +129,13 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
-            within(duration("0.9 seconds"), remainingOrDefault(), () -> {
+            within(java.time.Duration.ofMillis(900), getRemainingOrDefault(), () -> {
                 PersistentFSM.Transition st = expectMsgClass(PersistentFSM.Transition.class);
                 assertTransition(st, fsmRef, UserState.SHOPPING, UserState.INACTIVE);
                 return null;
             });
 
-            within(duration("1.9 seconds"), remainingOrDefault(), () -> expectTerminated(fsmRef));
+            within(java.time.Duration.ofMillis(1900), getRemainingOrDefault(), () -> expectTerminated(fsmRef));
         }};
     }
 
@@ -296,7 +296,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
-            expectNoMsg(duration("0.6seconds")); //randomly chosen delay, less than the timeout, before stopping the FSM
+            expectNoMessage(java.time.Duration.ofMillis(600)); //randomly chosen delay, less than the timeout, before stopping the FSM
             fsmRef.tell(PoisonPill.getInstance(), ActorRef.noSender());
             expectTerminated(fsmRef);
 
@@ -308,13 +308,13 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.SHOPPING);
 
-            within(duration("0.9 seconds"), remainingOrDefault(), () -> {
+            within(java.time.Duration.ofMillis(900), getRemainingOrDefault(), () -> {
                 PersistentFSM.Transition st = expectMsgClass(PersistentFSM.Transition.class);
                 assertTransition(st, recoveredFsmRef, UserState.SHOPPING, UserState.INACTIVE);
                 return null;
             });
 
-            expectNoMsg(duration("0.9 seconds")); //randomly chosen delay, less than the timeout, before stopping the FSM
+            expectNoMessage(java.time.Duration.ofMillis(900)); //randomly chosen delay, less than the timeout, before stopping the FSM
             recoveredFsmRef.tell(PoisonPill.getInstance(), ActorRef.noSender());
             expectTerminated(recoveredFsmRef);
 
@@ -325,7 +325,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.INACTIVE);
 
-            within(duration("1.9 seconds"), remainingOrDefault(), () -> expectTerminated(recoveredFsmRef2));
+            within(java.time.Duration.ofMillis(1900), getRemainingOrDefault(), () -> expectTerminated(recoveredFsmRef2));
 
         }};
     }
@@ -641,7 +641,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
         new TestKit(system) {{
             ActorRef persistentActor = system.actorOf(Props.create(PFSMwithLog.class));
             persistentActor.tell("check", getRef());
-            expectMsg(duration("1000 millis"), "started");
+            expectMsg(java.time.Duration.ofSeconds(1), "started");
         }};
     }
 }
