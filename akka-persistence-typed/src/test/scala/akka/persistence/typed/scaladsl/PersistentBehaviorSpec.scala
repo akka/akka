@@ -214,7 +214,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
   import akka.actor.typed.scaladsl.adapter._
 
   implicit val materializer = ActorMaterializer()(system.toUntyped)
-  val queries = PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](
+  val queries: LeveldbReadJournal = PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](
     LeveldbReadJournal.Identifier)
 
   val pidCounter = new AtomicInteger(0)

@@ -4,15 +4,18 @@
 
 package akka.persistence.typed.javadsl
 
-import java.util.Collections
+import java.util.{ Collections, Optional }
 
 import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
-import akka.annotation.ApiMayChange
+import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.persistence.SnapshotMetadata
 import akka.persistence.typed._
 import akka.persistence.typed.internal._
+
+import scala.util.{ Failure, Success }
 
 /** Java API */
 @ApiMayChange
@@ -79,6 +82,12 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
   def onRecoveryCompleted(ctx: ActorContext[Command], state: State): Unit = {}
 
   /**
+   * The `callback` function is called to notify the actor that the recovery process
+   * is finished.
+   */
+  def onSnapshot(ctx: ActorContext[Command], meta: SnapshotMetadata, result: Optional[Throwable]): Unit = {}
+
+  /**
    * Override and define that snapshot should be saved every N events.
    *
    * If this is overridden `shouldSnapshot` is not used.
@@ -105,6 +114,8 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
    */
   def tagsFor(event: Event): java.util.Set[String] = Collections.emptySet()
 
+  def eventTransformer[P](): EventTransformer[Event, P] = new NoOpEventTransformer[Event].asInstanceOf[EventTransformer[Event, P]]
+
   /**
    * INTERNAL API: DeferredBehavior init
    */
@@ -125,6 +136,14 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
       else tags.asScala.toSet
     }
 
+    val javaEventTransformer = eventTransformer[Any]()
+
+    val transformer = new scaladsl.EventTransformer[Event] {
+      override type P = Any
+      override def toJournal(e: Event): Any = javaEventTransformer.toJournal(e)
+      override def fromJournal(p: Any): Event = javaEventTransformer.fromJournal(p)
+    }
+
     scaladsl.PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
       initialState,
@@ -133,7 +152,23 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
       .onRecoveryCompleted((ctx, state) ⇒ onRecoveryCompleted(ctx.asJava, state))
       .snapshotWhen(snapshotWhen)
       .withTagger(tagger)
+      .onSnapshot((ctx, meta, result) ⇒ {
+        onSnapshot(ctx.asJava, meta, result match {
+          case Success(_) ⇒ Optional.empty()
+          case Failure(t) ⇒ Optional.of(t)
+        })
+      }).eventTransformer(transformer)
   }
 
+}
+
+abstract class EventTransformer[E, P] {
+  def toJournal(e: E): P
+  def fromJournal(p: P): E
+}
+
+@InternalApi private[akka] class NoOpEventTransformer[E] extends EventTransformer[E, Any]() {
+  override def toJournal(e: E): E = e
+  override def fromJournal(p: Any): E = p.asInstanceOf[E]
 }
 

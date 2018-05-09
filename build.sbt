@@ -398,8 +398,8 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
     actorTyped,
     persistence % "compile->compile;test->test",
     persistenceQuery % "test",
-    actorTestkitTyped % "test->test",
-    actorTypedTests % "test->test"
+    actorTypedTests % "test->test",
+    actorTestkitTyped % "compile->compile;test->test"
   )
   .settings(Dependencies.persistenceShared)
   .settings(AkkaBuild.mayChangeSettings)

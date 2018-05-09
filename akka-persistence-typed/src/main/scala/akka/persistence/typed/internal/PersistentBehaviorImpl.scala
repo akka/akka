@@ -26,7 +26,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   snapshotPluginId:  Option[String]                                              = None,
   recoveryCompleted: (ActorContext[Command], State) ⇒ Unit                       = ConstantFun.scalaAnyTwoToUnit,
   tagger:            Event ⇒ Set[String]                                         = (_: Event) ⇒ Set.empty[String],
-  eventAdapter:      EventTransformer[Event]                                     = new NoOpEventTransformer[Event](),
+  eventAdapter:      EventTransformer[Event]                                     = NoOpEventTransformer.instance[Event],
   snapshotWhen:      (State, Event, Long) ⇒ Boolean                              = ConstantFun.scalaAnyThreeToFalse,
   recovery:          Recovery                                                    = Recovery(),
   onSnapshot:        (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit = ConstantFun.scalaAnyThreeToUnit

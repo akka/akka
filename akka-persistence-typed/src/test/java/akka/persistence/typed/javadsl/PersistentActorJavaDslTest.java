@@ -8,35 +8,56 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Signal;
 import akka.actor.typed.SupervisorStrategy;
+import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.Pair;
 import akka.japi.function.Function3;
-import akka.persistence.typed.scaladsl.PersistentBehaviorSpec;
+import akka.japi.function.Function;
+import akka.persistence.SnapshotMetadata;
+import akka.persistence.query.EventEnvelope;
+import akka.persistence.query.NoOffset;
+import akka.persistence.query.PersistenceQuery;
+import akka.persistence.query.Sequence;
+import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
+import akka.stream.ActorMaterializer;
+import akka.stream.javadsl.Sink;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 
+import static akka.persistence.typed.scaladsl.PersistentBehaviorSpec.*;
 import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertEquals;
 
-public class PersistentActorTest extends JUnitSuite {
+public class PersistentActorJavaDslTest extends JUnitSuite {
+
+  public static final Config config = conf().withFallback(ConfigFactory.load());
 
   @ClassRule
-  public static final TestKitJunitResource testKit = new TestKitJunitResource(PersistentBehaviorSpec.conf());
+  public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
+
 
   static final Incremented timeoutEvent = new Incremented(100);
   static final State emptyState = new State(0, Collections.emptyList());
   static final Incremented terminatedEvent = new Incremented(10);
 
-  public PersistentActorTest() {
-    super();
-  }
+  private LeveldbReadJournal queries = PersistenceQuery.get(Adapter.toUntyped(testKit.system()))
+    .getReadJournalFor(LeveldbReadJournal.class, LeveldbReadJournal.Identifier());
 
-  interface Command {
+  private ActorMaterializer materializer = ActorMaterializer.create(Adapter.toUntyped(testKit.system()));
+
+  interface Command extends Serializable {
   }
 
   public static class Increment implements Command {
@@ -79,7 +100,7 @@ public class PersistentActorTest extends JUnitSuite {
     }
   }
 
-  public static class Incremented {
+  public static class Incremented implements Serializable {
     private final int delta;
 
     public Incremented(int delta) {
@@ -108,7 +129,7 @@ public class PersistentActorTest extends JUnitSuite {
     }
   }
 
-  public static class State {
+  public static class State implements Serializable {
     private final int value;
     private final List<Integer> history;
 
@@ -153,44 +174,78 @@ public class PersistentActorTest extends JUnitSuite {
 
   private PersistentBehavior<Command, Incremented, State> counter(String persistenceId, ActorRef<Pair<State, Incremented>> probe) {
     ActorRef<String> loggingProbe = TestProbe.create(String.class, testKit.system()).ref();
-    return counter(persistenceId, probe, loggingProbe, (s, i, l) -> false);
+    ActorRef<Optional<Throwable>> snapshotProbe = TestProbe.<Optional<Throwable>>create(testKit.system()).ref();
+    return counter(persistenceId, probe, loggingProbe, (s, i, l) -> false, (e) -> Collections.emptySet(), snapshotProbe, new NoOpEventTransformer<>());
+  }
+
+  private PersistentBehavior<Command, Incremented, State> counter(String persistenceId,
+                                                                  ActorRef<Pair<State, Incremented>> probe,
+                                                                  Function<Incremented, Set<String>> tagger) {
+    ActorRef<String> loggingProbe = TestProbe.create(String.class, testKit.system()).ref();
+    ActorRef<Optional<Throwable>> snapshotProbe = TestProbe.<Optional<Throwable>>create(testKit.system()).ref();
+    return counter(persistenceId, probe, loggingProbe, (s, i, l) -> false, tagger, snapshotProbe, new NoOpEventTransformer<>());
+  }
+
+ private PersistentBehavior<Command, Incremented, State> counter(String persistenceId,
+                                                                  ActorRef<Pair<State, Incremented>> probe,
+                                                                  EventTransformer<Incremented, ?> transformer) {
+    ActorRef<String> loggingProbe = TestProbe.create(String.class, testKit.system()).ref();
+    ActorRef<Optional<Throwable>> snapshotProbe = TestProbe.<Optional<Throwable>>create(testKit.system()).ref();
+    return counter(persistenceId, probe, loggingProbe, (s, i, l) -> false, e -> Collections.emptySet(), snapshotProbe, transformer);
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(String persistenceId) {
     return counter(persistenceId,
       TestProbe.<Pair<State, Incremented>>create(testKit.system()).ref(),
       TestProbe.<String>create(testKit.system()).ref(),
-      (s, i, l) -> false);
+      (s, i, l) -> false,
+      (i) -> Collections.emptySet(),
+      TestProbe.<Optional<Throwable>>create(testKit.system()).ref(),
+      new NoOpEventTransformer<>()
+    );
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(
     String persistenceId,
-    Function3<State, Incremented, Long, Boolean> snapshot
+    Function3<State, Incremented, Long, Boolean> snapshot,
+    ActorRef<Optional<Throwable>> snapshotProbe
   ) {
     return counter(persistenceId,
       testKit.<Pair<State, Incremented>>createTestProbe().ref(),
-      testKit.<String>createTestProbe().ref(), snapshot);
+      testKit.<String>createTestProbe().ref(),
+      snapshot,
+      e -> Collections.emptySet(),
+      snapshotProbe,
+      new NoOpEventTransformer<>());
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(
     String persistentId,
     ActorRef<Pair<State, Incremented>> eventProbe,
     ActorRef<String> loggingProbe) {
-    return counter(persistentId, eventProbe, loggingProbe, (s, i, l) -> false);
+    return counter(persistentId, eventProbe, loggingProbe, (s, i, l) -> false, e -> Collections.emptySet(),
+      TestProbe.<Optional<Throwable>>create(testKit.system()).ref(),
+      new NoOpEventTransformer<>()
+    );
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(
     String persistentId,
     ActorRef<Pair<State, Incremented>> eventProbe,
     Function3<State, Incremented, Long, Boolean> snapshot) {
-    return counter(persistentId, eventProbe, testKit.<String>createTestProbe().ref(), snapshot);
+    return counter(persistentId, eventProbe, testKit.<String>createTestProbe().ref(), snapshot, (e) -> Collections.emptySet(),
+      TestProbe.<Optional<Throwable>>create(testKit.system()).ref(), new NoOpEventTransformer<>()
+    );
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(
     String persistentId,
     ActorRef<Pair<State, Incremented>> eventProbe,
     ActorRef<String> loggingProbe,
-    Function3<State, Incremented, Long, Boolean> snapshot) {
+    Function3<State, Incremented, Long, Boolean> snapshot,
+    Function<Incremented, Set<String>> tagsFunction,
+    ActorRef<Optional<Throwable>> snapshotProbe,
+    EventTransformer<Incremented, ?> transformer) {
     return new PersistentBehavior<Command, Incremented, State>(persistentId) {
       @Override
       public CommandHandler<Command, Incremented, State> commandHandler() {
@@ -251,8 +306,27 @@ public class PersistentActorTest extends JUnitSuite {
         try {
           return snapshot.apply(state, event, sequenceNr);
         } catch (Exception e) {
-          return false;
+          throw new RuntimeException(e);
         }
+      }
+
+      @Override
+      public Set<String> tagsFor(Incremented incremented) {
+        try {
+          return tagsFunction.apply(incremented);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      @Override
+      public void onSnapshot(ActorContext<Command> ctx, SnapshotMetadata meta, Optional<Throwable> result) {
+        snapshotProbe.tell(result);
+      }
+
+      @Override
+      public EventTransformer<Incremented, ?> eventTransformer() {
+        return transformer;
       }
     };
   }
@@ -327,12 +401,15 @@ public class PersistentActorTest extends JUnitSuite {
 
   @Test
   public void snapshot() {
-    PersistentBehavior<Command, Incremented, State> snapshoter = counter("c11", (s, e, l) -> s.value % 2 == 0);
+    TestProbe<Optional<Throwable>> snapshotProbe = testKit.createTestProbe();
+    PersistentBehavior<Command, Incremented, State> snapshoter = counter("c11", (s, e, l) -> s.value % 2 == 0, snapshotProbe.ref());
     ActorRef<Command> c = testKit.spawn(snapshoter);
     c.tell(Increment.instance);
     c.tell(Increment.instance);
+    snapshotProbe.expectMessage(Optional.empty());
     c.tell(Increment.instance);
     TestProbe<State> probe = testKit.createTestProbe();
+
     c.tell(new GetValue(probe.ref()));
     probe.expectMessage(new State(3, Arrays.asList(0, 1, 2)));
 
@@ -358,12 +435,61 @@ public class PersistentActorTest extends JUnitSuite {
     TestProbe<Command> interceptProbe = testKit.createTestProbe();
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
     ActorRef<Command> c = testKit.spawn(Behaviors.tap(Command.class,
-      (ctx,  cmd) -> interceptProbe.ref().tell(cmd),
+      (ctx, cmd) -> interceptProbe.ref().tell(cmd),
       (ctx, signal) -> signalProbe.ref().tell(signal),
       counter("tap1")));
     c.tell(Increment.instance);
     interceptProbe.expectMessage(Increment.instance);
     signalProbe.expectNoMessage();
+  }
+
+  @Test
+  public void tagEvent() throws Exception {
+    TestProbe<Pair<State, Incremented>> eventProbe = testKit.createTestProbe();
+    TestProbe<State> stateProbe = testKit.createTestProbe();
+    ActorRef<Command> c = testKit.spawn(counter("tagging", eventProbe.ref(), e -> Sets.newHashSet("tag1", "tag2")));
+    c.tell(new Increment());
+    c.tell(new GetValue(stateProbe.ref()));
+    stateProbe.expectMessage(new State(1, Collections.singletonList(0)));
+
+    List<EventEnvelope> events = queries.currentEventsByTag("tag1", NoOffset.getInstance()).runWith(Sink.seq(), materializer)
+      .toCompletableFuture().get();
+    assertEquals(Lists.newArrayList(
+      new EventEnvelope(new Sequence(1), "tagging", 1, new Incremented(1))
+    ), events);
+  }
+
+  @Test
+  public void transformEvent() throws Exception {
+    TestProbe<Pair<State, Incremented>> eventProbe = testKit.createTestProbe();
+    TestProbe<State> stateProbe = testKit.createTestProbe();
+    ActorRef<Command> c = testKit.spawn(counter("transform", eventProbe.ref(), new WrapperEventTransformer()));
+
+    c.tell(new Increment());
+    c.tell(new GetValue(stateProbe.ref()));
+    stateProbe.expectMessage(new State(1, Collections.singletonList(0)));
+
+    List<EventEnvelope> events = queries.currentEventsByPersistenceId("transform", 0, Long.MAX_VALUE)
+      .runWith(Sink.seq(), materializer).toCompletableFuture().get();
+    assertEquals(Lists.newArrayList(
+      new EventEnvelope(new Sequence(1), "transform", 1, new Wrapper<>(new Incremented(1)))
+        ), events);
+
+    ActorRef<Command> c2 = testKit.spawn(counter("transform", eventProbe.ref(), new WrapperEventTransformer()));
+    c2.tell(new GetValue(stateProbe.ref()));
+    stateProbe.expectMessage(new State(1, Collections.singletonList(0)));
+  }
+
+  class WrapperEventTransformer extends EventTransformer<Incremented,Wrapper> {
+    @Override
+    public Wrapper toJournal(Incremented incremented) {
+      return new Wrapper<>(incremented);
+    }
+
+    @Override
+    public Incremented fromJournal(Wrapper wrapper) {
+      return (Incremented) wrapper.t();
+    }
   }
 
   // FIXME test with by state command handler

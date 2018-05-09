@@ -145,6 +145,11 @@ trait EventTransformer[E] {
   def fromJournal(p: P): E
 }
 
+object NoOpEventTransformer {
+  private val i = new NoOpEventTransformer[Nothing]
+  def instance[E] = i.asInstanceOf[NoOpEventTransformer[E]]
+}
+
 /**
  * INTERNAL API
  */
