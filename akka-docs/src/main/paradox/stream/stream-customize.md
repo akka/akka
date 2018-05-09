@@ -484,7 +484,7 @@ or the downstreams. Even for stages that do not complete or fail in this manner,
 
 @@@ div { .group-scala }
 
-## Extending Flow Combinators with Custom Operators
+## Extending Flow Operators with Custom Operators
 
 The most general way of extending any `Source`, `Flow` or `SubFlow` (e.g. from `groupBy`) is
 demonstrated above: create a graph of flow-shape like the `Duplicator` example given above and use the `.via(...)`

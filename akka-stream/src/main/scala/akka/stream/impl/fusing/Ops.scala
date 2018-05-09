@@ -1667,7 +1667,7 @@ private[stream] object Collect {
         }
       case Fail ⇒
         () ⇒ {
-          failStage(new BufferOverflowException(s"Buffer overflow for delay combinator (max capacity was: $size)!"))
+          failStage(new BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
         }
       case Backpressure ⇒
         () ⇒ {

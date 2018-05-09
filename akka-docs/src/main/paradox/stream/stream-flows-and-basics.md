@@ -318,7 +318,7 @@ is needed in order to allow the stream to run at all, you will have to insert ex
 
 Since every processing stage in Akka Streams can provide a materialized value after being materialized, it is necessary
 to somehow express how these values should be composed to a final value when we plug these stages together. For this,
-many combinator methods have variants that take an additional argument, a function, that will be used to combine the
+many operator methods have variants that take an additional argument, a function, that will be used to combine the
 resulting values. Some examples of using these combiners are illustrated in the example below.
 
 Scala
