@@ -783,16 +783,6 @@ talk by Mark Shapiro
  * [A comprehensive study of Convergent and Commutative Replicated Data Types](http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf)
 paper by Mark Shapiro et. al.
 
-## Dependencies
-
-To use Distributed Data you must add the following dependency in your project.
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-distributed-data_$scala.binary_version$"
-  version="$akka.version$"
-}
-
 ## Configuration
 
 The `DistributedData` extension can be configured with the following properties:

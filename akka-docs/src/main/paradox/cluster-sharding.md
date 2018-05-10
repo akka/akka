@@ -425,16 +425,6 @@ If you specify `-2.3` as the first program argument it will also try
 to remove data that was stored by Cluster Sharding in Akka 2.3.x using
 different persistenceId.
 
-## Dependencies
-
-To use the Cluster Sharding you must add the following dependency in your project.
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-cluster-sharding_$scala.binary_version$"
-  version="$akka.version$"
-}
-
 ## Configuration
 
 The `ClusterSharding` extension can be configured with the following properties. These configuration

@@ -229,13 +229,3 @@ As in @ref:[Message Delivery Reliability](general/message-delivery-reliability.m
 In other words, messages can be lost over the wire.
 
 If you are looking for at-least-once delivery guarantee, we recommend [Kafka Akka Streams integration](http://doc.akka.io/docs/akka-stream-kafka/current/home.html).
-
-## Dependencies
-
-To use Distributed Publish Subscribe you must add the following dependency in your project.
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-cluster-tools_$scala.binary_version$"
-  version="$akka.version$"
-}
