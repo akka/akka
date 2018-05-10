@@ -219,7 +219,7 @@ object Patterns {
    *   // apply some transformation (i.e. enrich with request info)
    *   final Future<Object> transformed = f.map(new akka.japi.Function<Object, Object>() { ... });
    *   // send it on to the next stage
-   *   Patterns.pipe(transformed).to(nextActor);
+   *   Patterns.pipe(transformed, context).to(nextActor);
    * }}}
    */
   def pipe[T](future: Future[T], context: ExecutionContext): PipeableFuture[T] = scalaPipe(future)(context)
@@ -314,12 +314,8 @@ object PatternsCS {
    * <b>Recommended usage:</b>
    *
    * {{{
-   *   final CompletionStage<Object> f = Patterns.ask(worker, request, timeout);
-   *   f.onSuccess(new Procedure<Object>() {
-   *     public void apply(Object o) {
-   *       nextActor.tell(new EnrichedResult(request, o));
-   *     }
-   *   });
+   *   final CompletionStage<Object> f = PatternsCS.ask(worker, request, timeout);
+   *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
   def ask(actor: ActorRef, message: Any, timeout: Timeout): CompletionStage[AnyRef] =
@@ -365,11 +361,7 @@ object PatternsCS {
    *
    * {{{
    *   final CompletionStage<Object> f = PatternsCS.ask(worker, request, timeout);
-   *   f.onSuccess(new Procedure<Object>() {
-   *     public void apply(Object o) {
-   *       nextActor.tell(new EnrichedResult(request, o));
-   *     }
-   *   });
+   *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
   def ask(actor: ActorRef, message: Any, timeoutMillis: Long): CompletionStage[AnyRef] =
@@ -414,12 +406,8 @@ object PatternsCS {
    * <b>Recommended usage:</b>
    *
    * {{{
-   *   final CompletionStage<Object> f = Patterns.ask(selection, request, timeout);
-   *   f.onSuccess(new Procedure<Object>() {
-   *     public void apply(Object o) {
-   *       nextActor.tell(new EnrichedResult(request, o));
-   *     }
-   *   });
+   *   final CompletionStage<Object> f = PatternsCS.ask(selection, request, timeout);
+   *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
   def ask(selection: ActorSelection, message: Any, timeout: Timeout): CompletionStage[AnyRef] =
@@ -446,12 +434,8 @@ object PatternsCS {
    * <b>Recommended usage:</b>
    *
    * {{{
-   *   final CompletionStage<Object> f = Patterns.ask(selection, request, timeout);
-   *   f.onSuccess(new Procedure<Object>() {
-   *     public void apply(Object o) {
-   *       nextActor.tell(new EnrichedResult(request, o));
-   *     }
-   *   });
+   *   final CompletionStage<Object> f = PatternsCS.ask(selection, request, timeout);
+   *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
   def ask(selection: ActorSelection, message: Any, timeoutMillis: Long): CompletionStage[AnyRef] =
@@ -472,8 +456,8 @@ object PatternsCS {
     extended.ask(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis)).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
-   * Register an onComplete callback on this [[java.util.concurrent.CompletionStage]] to send
-   * the result to the given [[akka.actor.ActorRef]] or [[akka.actor.ActorSelection]].
+   * When this [[java.util.concurrent.CompletionStage]] finishes, send its result to the given
+   * [[akka.actor.ActorRef]] or [[akka.actor.ActorSelection]].
    * Returns the original CompletionStage to allow method chaining.
    * If the future was completed with failure it is sent as a [[akka.actor.Status.Failure]]
    * to the recipient.
@@ -481,11 +465,11 @@ object PatternsCS {
    * <b>Recommended usage example:</b>
    *
    * {{{
-   *   final CompletionStage<Object> f = Patterns.ask(worker, request, timeout);
+   *   final CompletionStage<Object> f = PatternsCS.ask(worker, request, timeout);
    *   // apply some transformation (i.e. enrich with request info)
-   *   final CompletionStage<Object> transformed = f.map(new akka.japi.Function<Object, Object>() { ... });
+   *   final CompletionStage<Object> transformed = f.thenApply(result -> { ... });
    *   // send it on to the next stage
-   *   Patterns.pipe(transformed).to(nextActor);
+   *   PatternsCS.pipe(transformed, context).to(nextActor);
    * }}}
    */
   def pipe[T](future: CompletionStage[T], context: ExecutionContext): PipeableCompletionStage[T] = pipeCompletionStage(future)(context)
