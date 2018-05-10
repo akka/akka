@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Akka Distributed Data, you must add the following dependency in your project.
+To use Akka Distributed Data, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

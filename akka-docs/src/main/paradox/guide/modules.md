@@ -220,6 +220,8 @@ Streams solve the following challenges:
 
 ### HTTP
 
+[Akka HTTP](https://doc.akka.io/docs/akka-http/current) is a separate module from Akka.
+
 The de facto standard for providing APIs remotely, internal or external, is [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol). Akka provides a library to construct or consume such HTTP services by giving a set of tools to create HTTP services (and serve them) and a client that can be
 used to consume other services. These tools are particularly suited to streaming in and out a large set of data or real-time events by leveraging the underlying model of Akka Streams.
 
@@ -228,8 +230,6 @@ Some of the challenges that HTTP tackles:
 * How to expose services of a system or cluster to the external world via an HTTP API in a performant way.
 * How to stream large datasets in and out of a system using HTTP.
 * How to stream live events in and out of a system using HTTP.
-
-[Akka HTTP](http://doc.akka.io/docs/akka-http/current/scala.html) is a separate module from Akka.
 
 ### Example of module use
 

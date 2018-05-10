@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use I/O, you must add the following dependency in your project.
+To use I/O, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

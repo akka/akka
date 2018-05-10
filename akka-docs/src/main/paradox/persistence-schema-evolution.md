@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Akka Persistence - Schema Evolution, you must add the following dependency in your project.
+This documentation page touches upon @ref[Akka Persitence](persistence.md), so to follow those examples you will want to depend on:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

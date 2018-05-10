@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Future with Akka actors, you must add the following dependency in your project.
+This section explains using plain Scala Futures but focuses on their interop with Akka Actors, so to follow those examples you will want to depend on:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Remoting (codename Artery), you must add the following dependency in your project.
+To use Remoting (codename Artery), you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka

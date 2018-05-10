@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Distributed Publish Subscribe you must add the following dependency in your project.
+To use Distributed Publish Subscribe you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

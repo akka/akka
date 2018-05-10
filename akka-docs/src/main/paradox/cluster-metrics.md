@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Cluster Metrics Extension, you must add the following dependency in your project,
+To use Cluster Metrics Extension, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
@@ -109,7 +109,7 @@ unique per instance directory. You can control the extract directory with the
 
 @@@
 
-To enable usage of Sigar you can add the following dependency to the user project
+To enable usage of Sigar you can add the following dependency to the user project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="io.kamon"

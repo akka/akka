@@ -2,13 +2,15 @@
 
 ## Dependency
 
-To use Persistence Query, you must add the following dependency in your project.
+To use Persistence Query, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
   artifact=akka-persistence-query_$scala.binary_version$
   version=$akka.version$
 }
+
+This will also add dependency on the @ref[akka-persistence](persistence.md) module.
 
 ## Introduction
 

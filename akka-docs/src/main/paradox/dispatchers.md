@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Dispatchers, you must add the following dependency in your project.
+Dispatchers are part of core akka, which means that they are part of the akka-actor dependency:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

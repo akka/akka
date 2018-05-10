@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Fault Tolerance, you must add the following dependency in your project.
+The concept of fault tolerance relates to actors, so in order to use these make sure to depend on actors:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use FSM, you must add the following dependency in your project.
+To use Finite State Machine actors, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"

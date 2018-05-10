@@ -2,7 +2,7 @@
 
 ## Dependency
 
-Add the following dependency in your project.
+Add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
