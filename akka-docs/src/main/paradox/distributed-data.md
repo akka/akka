@@ -73,11 +73,8 @@ The `modify` function is called by the `Replicator` actor and must therefore be 
 function that only uses the data parameter and stable fields from enclosing scope. It must
 for example not access the sender (@scala[`sender()`]@java[`getSender()`]) reference of an enclosing actor.
 
-`Update`
- is intended to only be sent from an actor running in same local
-`ActorSystem`
- as
-: the `Replicator`, because the `modify` function is typically not serializable.
+`Update` is intended to only be sent from an actor running in same local `ActorSystem`
+ as the `Replicator`, because the `modify` function is typically not serializable.
 
 
 You supply a write consistency level which has the following meaning:
@@ -93,7 +90,7 @@ at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 (or all nodes in the cluster role group)
 
 When you specify to write to `n` out of `x`  nodes, the update will first replicate to `n` nodes.
-If there are not enough Acks after 1/5th of the timeout, the update will be replicated to `n` other
+If there are not enough Acks after a 1/5th of the timeout, the update will be replicated to `n` other
 nodes. If there are less than n nodes left all of the remaining nodes are used. Reachable nodes
 are preferred over unreachable nodes.
 
@@ -270,7 +267,7 @@ Java
 In some rare cases, when performing an `Update` it is needed to first try to fetch latest data from
 other nodes. That can be done by first sending a `Get` with `ReadMajority` and then continue with
 the `Update` when the `GetSuccess`, `GetFailure` or `NotFound` reply is received. This might be
-needed when you need to base a decision on latest information or when removing entries from `ORSet`
+needed when you need to base a decision on latest information or when removing entries from an `ORSet`
 or `ORMap`. If an entry is added to an `ORSet` or `ORMap` from one node and removed from another
 node the entry will only be removed if the added entry is visible on the node where the removal is
 performed (hence the name observed-removed set).
@@ -351,7 +348,7 @@ types that support both updates and removals, for example `ORMap` or `ORSet`.
 ### delta-CRDT
 
 [Delta State Replicated Data Types](http://arxiv.org/abs/1603.01529)
-are supported. delta-CRDT is a way to reduce the need for sending the full state
+are supported. A delta-CRDT is a way to reduce the need for sending the full state
 for updates. For example adding element `'c'` and `'d'` to set `{'a', 'b'}` would
 result in sending the delta `{'c', 'd'}` and merge that with the state on the
 receiving side, resulting in set `{'a', 'b', 'c', 'd'}`.
@@ -360,7 +357,7 @@ The protocol for replicating the deltas supports causal consistency if the data 
 is marked with `RequiresCausalDeliveryOfDeltas`. Otherwise it is only eventually
 consistent. Without causal consistency it means that if elements `'c'` and `'d'` are
 added in two separate *Update* operations these deltas may occasionally be propagated
-to nodes in different order than the causal order of the updates. For this example it
+to nodes in a different order to the causal order of the updates. For this example it
 can result in that set `{'a', 'b', 'd'}` can be seen before element 'c' is seen. Eventually
 it will be `{'a', 'b', 'c', 'd'}`.
 
@@ -398,7 +395,7 @@ each node.
 If you need both increments and decrements you can use the `PNCounter` (positive/negative counter).
 
 It is tracking the increments (P) separate from the decrements (N). Both P and N are represented
-as two internal `GCounter`. Merge is handled by merging the internal P and N counters.
+as two internal `GCounter`s. Merge is handled by merging the internal P and N counters.
 The value of the counter is the value of the P counter minus the value of the N counter.
 
 Scala
@@ -785,6 +782,16 @@ talk by Sean Cribbs
 talk by Mark Shapiro
  * [A comprehensive study of Convergent and Commutative Replicated Data Types](http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf)
 paper by Mark Shapiro et. al.
+
+## Dependencies
+
+To use Distributed Data you must add the following dependency in your project.
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-distributed-data_$scala.binary_version$"
+  version="$akka.version$"
+}
 
 ## Configuration
 

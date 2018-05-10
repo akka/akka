@@ -920,8 +920,6 @@ trait FlowOps[+Out, +Mat] {
    * still be in the mailbox, so defaulting to sending the second one a bit earlier than when first ask has replied maintains
    * a slightly healthier throughput.
    *
-   * The mapTo class parameter is used to cast the incoming responses to the expected response type.
-   *
    * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
    * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
    *
@@ -959,12 +957,8 @@ trait FlowOps[+Out, +Mat] {
    * Please note that the elements emitted by this stage are in-order with regards to the asks being issued
    * (i.e. same behaviour as mapAsync).
    *
-   * The mapTo class parameter is used to cast the incoming responses to the expected response type.
-   *
-   * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
-   * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
-   *
-   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated,
+   * or with an [[java.util.concurrent.TimeoutException]] in case the ask exceeds the timeout passed in.
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
@@ -985,7 +979,7 @@ trait FlowOps[+Out, +Mat] {
       .mapAsync(parallelism) { el ⇒
         akka.pattern.ask(ref).?(el)(timeout).mapTo[S](tag)
       }
-      .recover[S] {
+      .mapError {
         // the purpose of this recovery is to change the name of the stage in that exception
         // we do so in order to help users find which stage caused the failure -- "the ask stage"
         case ex: WatchedActorTerminatedException ⇒
@@ -1768,8 +1762,17 @@ trait FlowOps[+Out, +Mat] {
    * a new substream is opened and subsequently fed with all elements belonging to
    * that key.
    *
+   * WARNING: If `allowClosedSubstreamRecreation` is set to `false` (default behavior) the stage
+   * keeps track of all keys of streams that have already been closed. If you expect an infinite
+   * number of keys this can cause memory issues. Elements belonging to those keys are drained
+   * directly and not send to the substream.
+   *
+   * Note: If `allowClosedSubstreamRecreation` is set to `true` substream completion and incoming
+   * elements are subject to race-conditions. If elements arrive for a stream that is in the process
+   * of closing these elements might get lost.
+   *
    * The object returned from this method is not a normal [[Source]] or [[Flow]],
-   * it is a [[SubFlow]]. This means that after this combinator all transformations
+   * it is a [[SubFlow]]. This means that after this operator all transformations
    * are applied to all encountered substreams in the same fashion. Substream mode
    * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
    * or by merging the substreams back together; see the `to` and `mergeBack` methods
@@ -1803,19 +1806,37 @@ trait FlowOps[+Out, +Mat] {
    *
    * @param maxSubstreams configures the maximum number of substreams (keys)
    *        that are supported; if more distinct keys are encountered then the stream fails
+   * @param f computes the key for each element
+   * @param allowClosedSubstreamRecreation enables recreation of already closed substreams if elements with their
+   *        corresponding keys arrive after completion
    */
-  def groupBy[K](maxSubstreams: Int, f: Out ⇒ K): SubFlow[Out, Mat, Repr, Closed] = {
+  def groupBy[K](maxSubstreams: Int, f: Out ⇒ K, allowClosedSubstreamRecreation: Boolean): SubFlow[Out, Mat, Repr, Closed] = {
     val merge = new SubFlowImpl.MergeBack[Out, Repr] {
       override def apply[T](flow: Flow[Out, T, NotUsed], breadth: Int): Repr[T] =
-        via(new GroupBy(maxSubstreams, f))
+        via(new GroupBy(maxSubstreams, f, allowClosedSubstreamRecreation))
           .map(_.via(flow))
           .via(new FlattenMerge(breadth))
     }
     val finish: (Sink[Out, NotUsed]) ⇒ Closed = s ⇒
-      via(new GroupBy(maxSubstreams, f))
+      via(new GroupBy(maxSubstreams, f, allowClosedSubstreamRecreation))
         .to(Sink.foreach(_.runWith(s)(GraphInterpreter.currentInterpreter.materializer)))
     new SubFlowImpl(Flow[Out], merge, finish)
   }
+
+  /**
+   * This operation demultiplexes the incoming stream into separate output
+   * streams, one for each element key. The key is computed for each element
+   * using the given function. When a new key is encountered for the first time
+   * a new substream is opened and subsequently fed with all elements belonging to
+   * that key.
+   *
+   * WARNING: The stage keeps track of all keys of streams that have already been closed.
+   * If you expect an infinite number of keys this can cause memory issues. Elements belonging
+   * to those keys are drained directly and not send to the substream.
+   *
+   * @see [[#groupBy]]
+   */
+  def groupBy[K](maxSubstreams: Int, f: Out ⇒ K): SubFlow[Out, Mat, Repr, Closed] = groupBy(maxSubstreams, f, false)
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -1839,7 +1860,7 @@ trait FlowOps[+Out, +Mat] {
    * }}}
    *
    * The object returned from this method is not a normal [[Source]] or [[Flow]],
-   * it is a [[SubFlow]]. This means that after this combinator all transformations
+   * it is a [[SubFlow]]. This means that after this operator all transformations
    * are applied to all encountered substreams in the same fashion. Substream mode
    * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
    * or by merging the substreams back together; see the `to` and `mergeBack` methods
@@ -1909,7 +1930,7 @@ trait FlowOps[+Out, +Mat] {
    * }}}
    *
    * The object returned from this method is not a normal [[Source]] or [[Flow]],
-   * it is a [[SubFlow]]. This means that after this combinator all transformations
+   * it is a [[SubFlow]]. This means that after this operator all transformations
    * are applied to all encountered substreams in the same fashion. Substream mode
    * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
    * or by merging the substreams back together; see the `to` and `mergeBack` methods
@@ -2074,7 +2095,7 @@ trait FlowOps[+Out, +Mat] {
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
-   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
@@ -2106,7 +2127,7 @@ trait FlowOps[+Out, +Mat] {
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
-   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
@@ -2147,7 +2168,7 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
    * calculating for each element individually by calling `calculateCost` function.
-   * This combinator works for streams when elements have different cost(length).
+   * This operator works for streams when elements have different cost(length).
    * Streams of `ByteString` for example.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
@@ -2182,7 +2203,7 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
    * calculating for each element individually by calling `calculateCost` function.
-   * This combinator works for streams when elements have different cost(length).
+   * This operator works for streams when elements have different cost(length).
    * Streams of `ByteString` for example.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
@@ -2226,7 +2247,7 @@ trait FlowOps[+Out, +Mat] {
    * This is a simplified version of throttle that spreads events evenly across the given time interval. throttleEven using
    * best effort approach to meet throttle rate.
    *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * Use this operator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use
@@ -2241,7 +2262,7 @@ trait FlowOps[+Out, +Mat] {
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * Use this operator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use

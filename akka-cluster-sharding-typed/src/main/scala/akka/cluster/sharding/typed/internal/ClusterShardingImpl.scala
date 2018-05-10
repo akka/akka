@@ -15,7 +15,6 @@ import akka.actor.{ InternalActorRef, Scheduler }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
-import akka.actor.typed.Behavior.UntypedPropsBehavior
 import akka.actor.typed.Props
 import akka.actor.typed.internal.adapter.ActorRefAdapter
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
@@ -142,10 +141,7 @@ import akka.japi.function.{ Function ⇒ JFunction }
         log.info("Starting Shard Region [{}]...", typeKey.name)
 
         val untypedEntityPropsFactory: String ⇒ akka.actor.Props = { entityId ⇒
-          behavior(entityId) match {
-            case u: UntypedPropsBehavior[_] ⇒ u.untypedProps(Props.empty) // PersistentBehavior
-            case b                          ⇒ PropsAdapter(b, entityProps)
-          }
+          PropsAdapter(behavior(entityId), entityProps)
         }
 
         untypedSharding.internalStart(

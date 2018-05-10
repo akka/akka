@@ -19,6 +19,14 @@ akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
 
 ## Introduction
 
+To enable usage of the extension you need to add the following dependency to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-cluster-metrics_$scala.binary_version$"
+  version="$akka.version$"
+}
+
 The member nodes of the cluster can collect system health metrics and publish that to other cluster nodes
 and to the registered subscribers on the system event bus with the help of Cluster Metrics Extension.
 
@@ -102,25 +110,12 @@ unique per instance directory. You can control the extract directory with the
 @@@
 
 To enable usage of Sigar you can add the following dependency to the user project
-:
 
-Scala
-:  @@@vars
-```
-"io.kamon" % "sigar-loader" % "$sigar_loader.version$"
-```
-@@@
-
-Java
-:  @@@vars
-```
-<dependency>
-  <groupId>io.kamon</groupId>
-  <artifactId>sigar-loader</artifactId>
-  <version>$sigar_loader.version$</version>
-</dependency>
-```
-@@@
+@@dependency[sbt,Maven,Gradle] {
+  group="io.kamon"
+  artifact="sigar-loader"
+  version="$sigar_loader.version$"
+}
 
 You can download Kamon sigar-loader from [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Csigar-loader)
 

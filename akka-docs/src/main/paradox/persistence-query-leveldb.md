@@ -15,6 +15,17 @@ To use Persistence Query, you must add the following dependency in your project.
 This is documentation for the LevelDB implementation of the @ref:[Persistence Query](persistence-query.md) API.
 Note that implementations for other journals may have different semantics.
 
+## Dependencies
+
+Akka persistence LevelDB query implementation is bundled in the `akka-persistence-query` artifact.
+Make sure that you have the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-persistence-query_$scala.binary_version$"
+  version="$akka.version$"
+}
+
 ## How to get the ReadJournal
 
 The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery`

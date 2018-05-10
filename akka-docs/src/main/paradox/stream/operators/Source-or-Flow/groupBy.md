@@ -14,7 +14,21 @@ Demultiplex the incoming stream into separate output streams.
 
 ## Description
 
-Demultiplex the incoming stream into separate output streams.
+This operation demultiplexes the incoming stream into separate output streams, one for each element key. The
+key is computed for each element using the given function. When a new key is encountered for the first time
+a new substream is opened and subsequently fed with all elements belonging to that key.
+
+Note: If `allowClosedSubstreamRecreation` is set to `true` substream completion and incoming
+elements are subject to race-conditions. If elements arrive for a stream that is in the process
+of closing these elements might get lost.
+
+@@@ warning
+
+If `allowClosedSubstreamRecreation` is set to `false` (default behavior) the stage keeps track of all
+keys of streams that have already been closed. If you expect an infinite number of keys this can cause
+memory issues. Elements belonging to those keys are drained directly and not send to the substream.
+
+@@@
 
 
 @@@div { .callout }

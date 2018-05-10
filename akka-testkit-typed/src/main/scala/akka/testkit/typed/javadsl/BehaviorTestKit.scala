@@ -63,6 +63,11 @@ abstract class BehaviorTestKit[T] {
   def selfInbox(): TestInbox[T]
 
   /**
+   * The self reference of the actor living inside this testkit.
+   */
+  def getRef(): ActorRef[T] = selfInbox.getRef()
+
+  /**
    * Requests all the effects. The effects are consumed, subsequent calls will only
    * see new effects.
    */
@@ -106,6 +111,11 @@ abstract class BehaviorTestKit[T] {
    * Send the msg to the behavior and record any [[Effect]]s
    */
   def run(msg: T): Unit
+
+  /**
+   * Send the first message in the selfInbox to the behavior and run it, recording [[Effect]]s.
+   */
+  def runOne(): Unit
 
   /**
    * Send the signal to the beheavior and record any [[Effect]]s

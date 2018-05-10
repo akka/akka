@@ -4,6 +4,8 @@
 
 package akka.remote.artery
 
+import akka.actor.BootstrapSetup
+import akka.actor.setup.ActorSystemSetup
 import akka.actor.{ ActorSystem, RootActorPath }
 import akka.remote.RARP
 import akka.testkit.AkkaSpec
@@ -33,15 +35,23 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
    * @return A new actor system configured with artery enabled. The system will
    *         automatically be terminated after test is completed to avoid leaks.
    */
-  def newRemoteSystem(extraConfig: Option[String] = None, name: Option[String] = None): ActorSystem = {
+  def newRemoteSystem(
+    extraConfig: Option[String]           = None,
+    name:        Option[String]           = None,
+    setup:       Option[ActorSystemSetup] = None): ActorSystem = {
     val config =
       ArterySpecSupport.newFlightRecorderConfig.withFallback(extraConfig.fold(
         localSystem.settings.config
       )(
           str ⇒ ConfigFactory.parseString(str).withFallback(localSystem.settings.config)
         ))
+    val sysName = name.getOrElse(nextGeneratedSystemName)
 
-    val remoteSystem = ActorSystem(name.getOrElse(nextGeneratedSystemName), config)
+    val remoteSystem = setup match {
+      case None    ⇒ ActorSystem(sysName, config)
+      case Some(s) ⇒ ActorSystem(sysName, s.and(BootstrapSetup.apply(config)))
+    }
+
     remoteSystems = remoteSystems :+ remoteSystem
 
     remoteSystem
@@ -52,5 +62,10 @@ abstract class ArteryMultiNodeSpec(config: Config) extends AkkaSpec(config.withF
     (system +: remoteSystems).foreach(handleFlightRecorderFile)
     remoteSystems = Vector.empty
     super.afterTermination()
+  }
+
+  def arteryTcpTlsEnabled(system: ActorSystem = system): Boolean = {
+    val arterySettings = ArterySettings(system.settings.config.getConfig("akka.remote.artery"))
+    arterySettings.Enabled && arterySettings.Transport == ArterySettings.TlsTcp
   }
 }

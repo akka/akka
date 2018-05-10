@@ -10,12 +10,17 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Future
 
 import akka.actor.BootstrapSetup
+import akka.actor.setup.ActorSystemSetup
 
 class DummyExtension1 extends Extension
 object DummyExtension1 extends ExtensionId[DummyExtension1] {
   def createExtension(system: ActorSystem[_]) = new DummyExtension1
   def get(system: ActorSystem[_]): DummyExtension1 = apply(system)
 }
+class DummyExtension1Setup(factory: ActorSystem[_] ⇒ DummyExtension1)
+  extends AbstractExtensionSetup[DummyExtension1](DummyExtension1, factory)
+
+class DummyExtension1ViaSetup extends DummyExtension1
 
 class SlowExtension extends Extension
 object SlowExtension extends ExtensionId[SlowExtension] {
@@ -43,6 +48,15 @@ object InstanceCountingExtension extends ExtensionId[DummyExtension1] {
     createCount.addAndGet(1)
     new DummyExtension1
   }
+}
+
+object ExtensionsSpec {
+  val config = ConfigFactory.parseString(
+    """
+akka.typed {
+  library-extensions += "akka.actor.typed.InstanceCountingExtension"
+}
+   """).resolve()
 }
 
 class ExtensionsSpec extends TypedAkkaSpec {
@@ -156,7 +170,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
     "load registered typed extensions eagerly even for untyped system" in {
       import akka.actor.typed.scaladsl.adapter._
       val beforeCreation = InstanceCountingExtension.createCount.get()
-      val untypedSystem = akka.actor.ActorSystem()
+      val untypedSystem = akka.actor.ActorSystem("as", ExtensionsSpec.config)
       try {
         val before = InstanceCountingExtension.createCount.get()
         InstanceCountingExtension(untypedSystem.toTyped)
@@ -184,12 +198,34 @@ class ExtensionsSpec extends TypedAkkaSpec {
         untypedSystem.terminate().futureValue
       }
     }
+
+    "override extensions via ActorSystemSetup" in
+      withEmptyActorSystem("ExtensionsSpec10", Some(ConfigFactory.parseString(
+        """
+          akka.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
+        """)),
+        Some(ActorSystemSetup(new DummyExtension1Setup(sys ⇒ new DummyExtension1ViaSetup)))
+      ) { system ⇒
+          system.hasExtension(DummyExtension1) should ===(true)
+          system.extension(DummyExtension1) shouldBe a[DummyExtension1ViaSetup]
+          DummyExtension1(system) shouldBe a[DummyExtension1ViaSetup]
+          DummyExtension1(system) shouldBe theSameInstanceAs(DummyExtension1(system))
+
+          system.hasExtension(SlowExtension) should ===(true)
+          system.extension(SlowExtension) shouldBe a[SlowExtension]
+        }
   }
 
-  def withEmptyActorSystem[T](name: String, config: Option[Config] = None)(f: ActorSystem[_] ⇒ T): T = {
-    val system = config match {
-      case None    ⇒ ActorSystem[Any](Behavior.EmptyBehavior, name)
-      case Some(c) ⇒ ActorSystem[Any](Behavior.EmptyBehavior, name, c)
+  def withEmptyActorSystem[T](name: String, config: Option[Config] = None, setup: Option[ActorSystemSetup] = None)(
+    f: ActorSystem[_] ⇒ T): T = {
+
+    val bootstrap = config match {
+      case Some(c) ⇒ BootstrapSetup(c)
+      case None    ⇒ BootstrapSetup(ExtensionsSpec.config)
+    }
+    val system = setup match {
+      case None    ⇒ ActorSystem[Any](Behavior.EmptyBehavior, name, bootstrap)
+      case Some(s) ⇒ ActorSystem[Any](Behavior.EmptyBehavior, name, s.and(bootstrap))
     }
 
     try f(system) finally system.terminate().futureValue

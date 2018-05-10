@@ -107,7 +107,7 @@ Scala
 Java
 :   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #transform-source }
 
-First we use the `scan` combinator to run a computation over the whole
+First we use the `scan` operator to run a computation over the whole
 stream: starting with the number 1 (@scala[`BigInt(1)`]@java[`BigInteger.ONE`]) we multiple by each of
 the incoming numbers, one after the other; the scan operation emits the initial
 value and then every calculation result. This yields the series of factorial
@@ -185,7 +185,7 @@ Java
 All operations so far have been time-independent and could have been performed
 in the same fashion on strict collections of elements. The next line
 demonstrates that we are in fact dealing with streams that can flow at a
-certain speed: we use the `throttle` combinator to slow down the stream to 1
+certain speed: we use the `throttle` operator to slow down the stream to 1
 element per second.
 
 If you run this program you will see one line printed per second. One aspect
@@ -195,14 +195,14 @@ JVM does not crash with an OutOfMemoryError, even though you will also notice
 that running the streams happens in the background, asynchronously (this is the
 reason for the auxiliary information to be provided as a @scala[`Future`]@java[`CompletionStage`], in the future). The
 secret that makes this work is that Akka Streams implicitly implement pervasive
-flow control, all combinators respect back-pressure. This allows the throttle
+flow control, all operators respect back-pressure. This allows the throttle
 combinator to signal to all its upstream sources of data that it can only
 accept elements at a certain rate—when the incoming rate is higher than one per
-second the throttle combinator will assert *back-pressure* upstream.
+second the throttle operator will assert *back-pressure* upstream.
 
 This is basically all there is to Akka Streams in a nutshell—glossing over the
 fact that there are dozens of sources and sinks and many more stream
-transformation combinators to choose from, see also @ref:[operator index](operators/index.md).
+transformation operators to choose from, see also @ref:[operator index](operators/index.md).
 
 # Reactive Tweets
 
