@@ -12,7 +12,7 @@ which spans multiple network hosts. The basic mechanism for communication is
 the same whether sending to an actor on the local JVM or to a remote actor, but
 of course there will be observable differences in the latency of delivery
 (possibly also depending on the bandwidth of the network link and the message
-size) and the reliability. In case of a remote message send there are obviously
+size) and the reliability. In case of a remote message send there are
 more steps involved which means that more can go wrong. Another aspect is that
 local sending will just pass a reference to the message inside the same JVM,
 without any restrictions on the underlying object which is sent, whereas a
