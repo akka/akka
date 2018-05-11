@@ -103,8 +103,9 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
   override def initialParticipants = roles.size
 
   def identify(role: RoleName, actorName: String): ActorRef = {
-    system.actorSelection(node(role) / "user" / actorName) ! Identify(actorName)
-    expectMsgType[ActorIdentity].ref.get
+    val p = TestProbe()
+    (system.actorSelection(node(role) / "user" / actorName)).tell(Identify(actorName), p.ref)
+    p.expectMsgType[ActorIdentity](remainingOrDefault).ref.get
   }
 
   "TransportFail" must {
