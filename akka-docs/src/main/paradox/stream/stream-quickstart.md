@@ -63,7 +63,7 @@ Java
 :   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #run-source }
 
 This line will complement the source with a consumer function—in this example
-we simply print out the numbers to the console—and pass this little stream
+we print out the numbers to the console—and pass this little stream
 setup to an Actor that runs it. This activation is signaled by having “run” be
 part of the method name; there are other methods that run Akka Streams, and
 they all follow this pattern.
@@ -281,7 +281,7 @@ Finally in order to @ref:[materialize](stream-flows-and-basics.md#stream-materia
 the Flow to a @scala[`Sink`]@java[`Sink<T, M>`] that will get the Flow running. The simplest way to do this is to call
 `runWith(sink)` on a @scala[`Source`]@java[`Source<Out, M>`]. For convenience a number of common Sinks are predefined and collected as @java[static] methods on
 the @scala[`Sink` companion object]@java[`Sink class`].
-For now let's simply print each author:
+For now let's print each author:
 
 Scala
 :   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #authors-foreachsink-println }
@@ -340,7 +340,7 @@ For example we'd like to write all author handles into one file, and all hashtag
 This means we have to split the source stream into two streams which will handle the writing to these different files.
 
 Elements that can be used to form such "fan-out" (or "fan-in") structures are referred to as "junctions" in Akka Streams.
-One of these that we'll be using in this example is called `Broadcast`, and it simply emits elements from its
+One of these that we'll be using in this example is called `Broadcast`, and it emits elements from its
 input port to all of its output ports.
 
 Akka Streams intentionally separate the linear stream structures (Flows) from the non-linear, branching ones (Graphs)

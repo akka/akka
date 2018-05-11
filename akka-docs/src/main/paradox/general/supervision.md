@@ -177,7 +177,7 @@ message will be delivered irrespective of the order in which the monitoring
 request and target’s termination occur, i.e. you still get the message even if
 at the time of registration the target is already dead.
 
-Monitoring is particularly useful if a supervisor cannot simply restart its
+Monitoring is particularly useful if a supervisor cannot restart its
 children and has to terminate them, e.g. in case of errors during actor
 initialization. In that case it should monitor those children and re-create
 them or schedule itself to retry this at a later time.

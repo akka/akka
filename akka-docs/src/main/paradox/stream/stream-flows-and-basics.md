@@ -73,7 +73,7 @@ it will be represented by the `RunnableGraph` type, indicating that it is ready 
 It is important to remember that even after constructing the `RunnableGraph` by connecting all the source, sink and
 different processing stages, no data will flow through it until it is materialized. Materialization is the process of
 allocating all resources needed to run the computation described by a Graph (in Akka Streams this will often involve
-starting up Actors). Thanks to Flows being simply a description of the processing pipeline they are *immutable,
+starting up Actors). Thanks to Flows being a description of the processing pipeline they are *immutable,
 thread-safe, and freely shareable*, which means that it is for example safe to share and send them between actors, to have
 one actor prepare the work, and then have it be materialized at some completely different place in the code.
 

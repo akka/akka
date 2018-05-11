@@ -141,7 +141,7 @@ After gossip convergence a `leader` for the cluster can be determined. There is 
 `leader` election process, the `leader` can always be recognised deterministically
 by any node whenever there is gossip convergence. The leader is just a role, any node
 can be the leader and it can change between convergence rounds.
-The `leader` is simply the first node in sorted order that is able to take the leadership role,
+The `leader` is the first node in sorted order that is able to take the leadership role,
 where the preferred member states for a `leader` are `up` and `leaving`
 (see the [Membership Lifecycle](#membership-lifecycle) section below for more  information about member states).
 

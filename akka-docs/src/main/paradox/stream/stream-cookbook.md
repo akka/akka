@@ -22,7 +22,7 @@ general, more targeted recipes are available as separate sections (@ref:[Buffers
 
 **Situation:** During development it is sometimes helpful to see what happens in a particular section of a stream.
 
-The simplest solution is to simply use a `map` operation and use `println` to print the elements received to the console.
+The simplest solution is to use a `map` operation and use `println` to print the elements received to the console.
 While this recipe is rather simplistic, it is often suitable for a quick debug session.
 
 Scala
@@ -246,8 +246,8 @@ In this collection we show recipes that use stream graph elements to achieve var
 In other words, even if the stream would be able to flow (not being backpressured) we want to hold back elements until a
 trigger signal arrives.
 
-This recipe solves the problem by simply zipping the stream of `Message` elements with the stream of `Trigger`
-signals. Since `Zip` produces pairs, we simply map the output stream selecting the first element of the pair.
+This recipe solves the problem by zipping the stream of `Message` elements with the stream of `Trigger`
+signals. Since `Zip` produces pairs, we map the output stream selecting the first element of the pair.
 
 Scala
 :   @@snip [RecipeManualTrigger.scala]($code$/scala/docs/stream/cookbook/RecipeManualTrigger.scala) { #manually-triggered-stream }
@@ -303,7 +303,7 @@ This can be solved by using a versatile rate-transforming operation, `conflate`.
 a special `reduce` operation that collapses multiple upstream elements into one aggregate element if needed to keep
 the speed of the upstream unaffected by the downstream.
 
-When the upstream is faster, the reducing process of the `conflate` starts. Our reducer function simply takes
+When the upstream is faster, the reducing process of the `conflate` starts. Our reducer function takes
 the freshest element. This in a simple dropping operation.
 
 Scala
@@ -345,7 +345,7 @@ We will use `conflateWithSeed` to solve the problem. The seed version of conflat
 the downstream. In our case the seed function is a constant function that returns 0 since there were no missed ticks
 at that point.
  * A fold function that is invoked when multiple upstream messages needs to be collapsed to an aggregate value due
-to the insufficient processing rate of the downstream. Our folding function simply increments the currently stored
+to the insufficient processing rate of the downstream. Our folding function increments the currently stored
 count of the missed ticks so far.
 
 As a result, we have a flow of `Int` where the number represents the missed ticks. A number 0 means that we were

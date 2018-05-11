@@ -152,7 +152,7 @@ In order to communicate with an actor, it is necessary to have its `ActorRef`. I
 the creator of the actor (the caller of `actorOf()`) is who gets the `ActorRef` for an actor that it can
 then send to other actors. In other words:
 
- * An Actor can get a remote Actor's reference simply by receiving a message from it (as it's available as @scala[`sender()`]@java[`getSender()`] then),
+ * An Actor can get a remote Actor's reference by receiving a message from it (as it's available as @scala[`sender()`]@java[`getSender()`] then),
 or inside of a remote message (e.g. *PleaseReply(message: String, remoteActorRef: ActorRef)*)
 
 Alternatively, an actor can look up another located at a known path using

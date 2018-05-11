@@ -1338,7 +1338,7 @@ traits and implementing the actor's `receive` as combination of these partial fu
 
 @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #receive-orElse }
 
-Instead of inheritance the same pattern can be applied via composition - one would simply compose the receive method using partial functions from delegates.
+Instead of inheritance the same pattern can be applied via composition - compose the receive method using partial functions from delegates.
 
 @@@
 

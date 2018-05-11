@@ -4,7 +4,7 @@ The conversational patterns that we have seen so far are simple in the sense tha
 
 * Device actors return a reading, which requires no state change
 * Record a temperature, which updates a single field
-* Device Group actors maintain group membership by simply adding or removing entries from a map
+* Device Group actors maintain group membership by adding or removing entries from a map
 
 In this part, we will use a more complex example. Since homeowners will be interested in the temperatures throughout their home, our goal is to be able to query all of the device actors in a group. Let us start by investigating how such a query API should behave.
 
@@ -17,8 +17,8 @@ The very first issue we face is that the membership of a group is dynamic. Each 
 These issues can be addressed in many different ways, but the important point is to settle on the desired behavior. The following works well for our use case:
 
  * When a query arrives, the group actor takes a _snapshot_ of the existing device actors and will only ask those actors for the temperature.
- * Actors that start up _after_ the query arrives are simply ignored.
- * If an actor in the snapshot stops during the query without answering, we will simply report the fact that it stopped to the sender of the query message.
+ * Actors that start up _after_ the query arrives are ignored.
+ * If an actor in the snapshot stops during the query without answering, we will just report the fact that it stopped to the sender of the query message.
 
 Apart from device actors coming and going dynamically, some actors might take a long time to answer. For example, they could be stuck in an accidental infinite loop, or fail due to a bug and drop our request. We don't want the query to continue indefinitely, so we will consider it complete in either of the following cases:
 
@@ -87,7 +87,7 @@ Java
 The query actor, apart from the pending timer, has one stateful aspect, tracking the set of actors that: have replied, have stopped, or have not replied. One way to track this state is
 to create a mutable field in the actor @scala[(a `var`)]. A different approach takes advantage of the ability to change how
 an actor responds to messages. A
-`Receive` is just a function (or an object, if you like) that can be returned from another function. By default, the `receive` block defines the behavior of the actor, but it is possible to change it multiple times during the life of the actor. We simply call `context.become(newBehavior)`
+`Receive` is just a function (or an object, if you like) that can be returned from another function. By default, the `receive` block defines the behavior of the actor, but it is possible to change it multiple times during the life of the actor. We call `context.become(newBehavior)`
 where `newBehavior` is anything with type `Receive` @scala[(which is just a shorthand for `PartialFunction[Any, Unit]`)].  We will leverage this
 feature to track the state of our actor.
 
@@ -104,7 +104,7 @@ For our use case:
 that has been stopped in the meantime.
    * We can reach the deadline and receive a `CollectionTimeout`.
 
-In the first two cases, we need to keep track of the replies, which we now simply delegate to a method `receivedResponse`, which we will discuss later. In the case of timeout, we need to simply take all the actors that have not yet replied yet (the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply. Then we reply to the submitter of the query with the collected results and stop the query actor.
+In the first two cases, we need to keep track of the replies, which we now delegate to a method `receivedResponse`, which we will discuss later. In the case of timeout, we need to simply take all the actors that have not yet replied yet (the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply. Then we reply to the submitter of the query with the collected results and stop the query actor.
 
 To accomplish this, add the following to your `DeviceGroupQuery` source file:
 
@@ -120,7 +120,7 @@ It is not yet clear how we will "mutate" the `repliesSoFar` and `stillWaiting` d
 then it returns a brand new `Receive` that will use those new parameters.
 
 We have seen how we
-can install the initial `Receive` by simply returning it from `receive`. In order to install a new one, to record a
+can install the initial `Receive` by returning it from `receive`. In order to install a new one, to record a
 new reply, for example, we need some mechanism. This mechanism is the method `context.become(newReceive)` which will
 _change_ the actor's message handling function to the provided `newReceive` function. You can imagine that before
 starting, your actor automatically calls `context.become(receive)`, i.e. installing the `Receive` function that
@@ -136,7 +136,7 @@ response from a device actor, but then it stops during the lifetime of the query
 to overwrite the already received reply. In other words, we don't want to receive `Terminated` after we recorded the
 response. This is simple to achieve by calling `context.unwatch(ref)`. This method also ensures that we don't
 receive `Terminated` events that are already in the mailbox of the actor. It is also safe to call this multiple times,
-only the first call will have any effect, the rest is simply ignored.
+only the first call will have any effect, the rest is ignored.
 
 With all this knowledge, we can create the `receivedResponse` method:
 

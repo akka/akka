@@ -420,7 +420,7 @@ Java
 
 If you only need to add elements to a set and not remove elements the `GSet` (grow-only set) is
 the data type to use. The elements can be any type of values that can be serialized.
-Merge is simply the union of the two sets.
+Merge is the union of the two sets.
 
 Scala
 : @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #gset }

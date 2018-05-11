@@ -320,7 +320,7 @@ Scala
 Java
 : @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-router-types }
 
-In order to round robin among a few instances of such actors, you can simply create a plain untyped router,
+In order to round robin among a few instances of such actors, you can create a plain untyped router,
 and then facade it with a `TypedActor` like shown in the example below. This works because typed actors of course
 communicate using the same mechanisms as normal actors, and methods calls on them get transformed into message sends of `MethodCall` messages.
 

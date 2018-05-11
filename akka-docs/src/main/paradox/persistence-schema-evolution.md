@@ -123,7 +123,7 @@ origin of the event (`persistenceId`, `sequenceNr` and more).
 
 More advanced techniques (e.g. [Remove event class and ignore events](#remove-event-class)) will dive into using the manifests for increasing the
 flexibility of the persisted vs. exposed types even more. However for now we will focus on the simpler evolution techniques,
-concerning simply configuring the payload serializers.
+concerning just configuring the payload serializers.
 
 By default the `payload` will be serialized using Java Serialization. This is fine for testing and initial phases
 of your development (while you're still figuring out things and the data will not need to stay persisted forever).
@@ -311,12 +311,12 @@ and should be deleted. You still have to be able to replay from a journal which 
 
 The problem of removing an event type from the domain model is not as much its removal, as the implications
 for the recovery mechanisms that this entails. For example, a naive way of filtering out certain kinds of events from
-being delivered to a recovering `PersistentActor` is pretty simple, as one can simply filter them out in an @ref:[EventAdapter](persistence.md#event-adapters):
+being delivered to a recovering `PersistentActor` is pretty simple, as one can filter them out in an @ref:[EventAdapter](persistence.md#event-adapters):
 
 ![persistence-drop-event.png](./images/persistence-drop-event.png)
  
 The `EventAdapter` can drop old events (**O**) by emitting an empty `EventSeq`.
-Other events can simply be passed through (**E**).
+Other events can be passed through (**E**).
 
 This however does not address the underlying cost of having to deserialize all the events during recovery,
 even those which will be filtered out by the adapter. In the next section we will improve the above explained mechanism
@@ -345,8 +345,8 @@ that the type is no longer needed, and skip the deserialization all-together:
 ![persistence-drop-event-serializer.png](./images/persistence-drop-event-serializer.png)
  
 The serializer is aware of the old event types that need to be skipped (**O**), and can skip deserializing them alltogether
-by simply returning a "tombstone" (**T**), which the EventAdapter converts into an empty EventSeq.
-Other events (**E**) can simply be passed through.
+by returning a "tombstone" (**T**), which the EventAdapter converts into an empty EventSeq.
+Other events (**E**) can just be passed through.
 
 The serializer detects that the string manifest points to a removed event type and skips attempting to deserialize it:
 
@@ -474,7 +474,7 @@ Let us consider a situation where an event represents "user details changed". Af
 event is too coarse, and needs to be split into "user name changed" and "user address changed", because somehow
 users keep changing their usernames a lot and we'd like to keep this as a separate event.
 
-The write side change is very simple, we simply persist `UserNameChanged` or `UserAddressChanged` depending
+The write side change is very simple, we persist `UserNameChanged` or `UserAddressChanged` depending
 on what the user actually intended to change (instead of the composite `UserDetailsChanged` that we had in version 1
 of our model).
 

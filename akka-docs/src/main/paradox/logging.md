@@ -243,7 +243,7 @@ Also see the @ref:[logging options for TestKit](testing.md#actor-logging).
 
 The rules for translating the source object to the source string and class
 which are inserted into the `LogEvent` during runtime are implemented
-using implicit parameters and thus fully customizable: simply create your own
+using implicit parameters and thus fully customizable: create your own
 instance of `LogSource[T]` and have it in scope when creating the
 logger.
 

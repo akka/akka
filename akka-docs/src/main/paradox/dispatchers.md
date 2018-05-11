@@ -382,8 +382,8 @@ on which DBMS is deployed on what hardware.
 
 @@@ note
 
-Configuring thread pools is a task best delegated to Akka, simply configure
-in the `application.conf` and instantiate through an
+Configuring thread pools is a task best delegated to Akka, configure
+it in `application.conf` and instantiate through an
 @ref:[`ActorSystem`](#dispatcher-lookup)
 
 @@@

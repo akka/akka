@@ -11,7 +11,7 @@ The tasks of a device actor will be simple:
  * Collect temperature measurements
  * When asked, report the last measured temperature
 
-However, a device might start without immediately having a temperature measurement. Hence, we need to account for the case where a temperature is not present. This also allows us to test the query part of the actor without the write part present, as the device actor can simply report an empty result.
+However, a device might start without immediately having a temperature measurement. Hence, we need to account for the case where a temperature is not present. This also allows us to test the query part of the actor without the write part present, as the device actor can report an empty result.
 
 The protocol for obtaining the current temperature from the device actor is simple. The actor:
 
@@ -129,7 +129,7 @@ Note in the code that:
 
 * The @scala[companion object]@java[static method] defines how to construct a `Device` actor. The `props` parameters include an ID for the device and the group to which it belongs, which we will use later.
 * The @scala[companion object]@java[class] includes the definitions of the messages we reasoned about previously.
-* In the `Device` class, the value of `lastTemperatureReading` is initially set to @scala[`None`]@java[`Optional.empty()`], and the actor will simply report it back if queried.
+* In the `Device` class, the value of `lastTemperatureReading` is initially set to @scala[`None`]@java[`Optional.empty()`], and the actor will just report it back if queried.
 
 ## Testing the actor
 

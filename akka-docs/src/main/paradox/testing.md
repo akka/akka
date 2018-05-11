@@ -332,7 +332,7 @@ Java
 ### Resolving Conflicts with Implicit ActorRef
 
 If you want the sender of messages inside your TestKit-based tests to be the `testActor`
-simply mix in `ImplicitSender` into your test.
+ mix in `ImplicitSender` into your test.
 
 @@snip [PlainWordSpec.scala]($code$/scala/docs/testkit/PlainWordSpec.scala) { #implicit-sender }
 
@@ -598,8 +598,8 @@ simplest example for this situation is an actor which sends a message to
 itself. In this case, processing cannot continue immediately as that would
 violate the actor model, so the invocation is queued and will be processed when
 the active invocation on that actor finishes its processing; thus, it will be
-processed on the calling thread, but simply after the actor finishes its
-previous work. In the other case, the invocation is simply processed
+processed on the calling thread, but after the actor finishes its
+previous work. In the other case, the invocation is processed
 immediately on the current thread. Futures scheduled via this dispatcher are
 also executed immediately.
 

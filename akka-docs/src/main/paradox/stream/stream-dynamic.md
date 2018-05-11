@@ -139,7 +139,7 @@ Java
 
 We now use a few tricks to add more features. First of all, we attach a `Sink.ignore`
 at the broadcast side of the channel to keep it drained when there are no subscribers. If this behavior is not the
-desired one this line can be simply dropped.
+desired one this line can be dropped.
 
 Scala
 :   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-2 }
@@ -149,7 +149,7 @@ Java
 
 We now wrap the `Sink` and `Source` in a `Flow` using `Flow.fromSinkAndSource`. This bundles
 up the two sides of the channel into one and forces users of it to always define a publisher and subscriber side
-(even if the subscriber side is just dropping). It also allows us to very simply attach a `KillSwitch` as
+(even if the subscriber side is just dropping). It also allows us to attach a `KillSwitch` as
 a `BidiStage` which in turn makes it possible to close both the original `Sink` and `Source` at the
 same time.
 Finally, we add `backpressureTimeout` on the consumer side to ensure that subscribers that block the channel for more

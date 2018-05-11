@@ -151,7 +151,7 @@ A partial graph also verifies that all ports are either connected or part of the
 <a id="constructing-sources-sinks-flows-from-partial-graphs"></a>
 ## Constructing Sources, Sinks and Flows from Partial Graphs
 
-Instead of treating a @scala[partial graph]@java[`Graph`] as simply a collection of flows and junctions which may not yet all be
+Instead of treating a @scala[partial graph]@java[`Graph`] as a collection of flows and junctions which may not yet all be
 connected it is sometimes useful to expose such a complex graph as a simpler structure,
 such as a `Source`, `Sink` or `Flow`.
 

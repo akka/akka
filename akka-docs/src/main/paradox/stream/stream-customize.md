@@ -21,7 +21,7 @@ or output ports. It is a counterpart of the `GraphDSL.create()` method which cre
 stages by composing others. Where `GraphStage` differs is that it creates a stage that is itself not divisible into
 smaller ones, and allows state to be maintained inside it in a safe way.
 
-As a first motivating example, we will build a new `Source` that will simply emit numbers from 1 until it is
+As a first motivating example, we will build a new `Source` that will emit numbers from 1 until it is
 cancelled. To start, we need to define the "interface" of our stage, which is called *shape* in Akka Streams terminology
 (this is explained in more detail in the section @ref:[Modularity, Composition and Hierarchy](stream-composition.md)). This is how this looks like:
 
@@ -50,7 +50,7 @@ To receive the necessary events one needs to register a subclass of @scala[`OutH
 (`Outlet`). This handler will receive events related to the lifecycle of the port. In our case we need to
 override `onPull()` which indicates that we are free to emit a single element. There is another callback,
 `onDownstreamFinish()` which is called if the downstream cancelled. Since the default behavior of that callback is
-to stop the stage, we don't need to override it. In the `onPull` callback we will simply emit the next number. This
+to stop the stage, we don't need to override it. In the `onPull` callback we will emit the next number. This
 is how it looks like in the end:
 
 Scala
@@ -298,7 +298,7 @@ the `Materializer` you're using is able to provide you with a logger.
 
 @@@ note
 
-Please note that you can always simply use a logging library directly inside a Stage.
+Please note that you can always use a logging library directly inside a Stage.
 Make sure to use an asynchronous appender however, to not accidentally block the stage when writing to files etc.
 See @ref:[Using the SLF4J API directly](../logging.md#slf4j-directly) for more details on setting up async appenders in SLF4J.
 

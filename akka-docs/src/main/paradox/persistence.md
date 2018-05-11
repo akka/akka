@@ -309,7 +309,7 @@ Java
 
 @@@ note
 
-In order to implement the pattern known as "*command sourcing*" simply call @scala[`persistAsync(cmd)(...)`]@java[`persistAsync`] right away on all incoming
+In order to implement the pattern known as "*command sourcing*" call @scala[`persistAsync(cmd)(...)`]@java[`persistAsync`] right away on all incoming
 messages and handle them in the callback.
 
 @@@
@@ -1151,7 +1151,7 @@ has, and also performs some longer operations on the Journal while printing its 
 to provide a proper benchmarking environment it can be used to get a rough feel about your journal's performance in the most
 typical scenarios.
 
-In order to include the `SnapshotStore` TCK tests in your test suite simply extend the `SnapshotStoreSpec`:
+In order to include the `SnapshotStore` TCK tests in your test suite extend the `SnapshotStoreSpec`:
 
 Scala
 :  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #snapshot-store-tck-scala }

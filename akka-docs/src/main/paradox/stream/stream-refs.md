@@ -50,7 +50,7 @@ Actors would usually be used to establish the stream, by means of some initial m
 "I want to offer you many log elements (the stream ref)", or alternatively in the opposite way "If you need
 to send me much data, here is the stream ref you can use to do so".   
 
-Since the two sides ("local" and "remote") of each reference may be confusing to simply refer to as
+Since the two sides ("local" and "remote") of each reference may be confusing to refer to as
 "remote" and "local" -- since either side can be seen as "local" or "remote" depending how we look at it --
 we propose to use the terminology "origin" and "target", which is defined by where the stream ref was created.
 For `SourceRef`s, the "origin" is the side which has the data that it is going to stream out. For `SinkRef`s
