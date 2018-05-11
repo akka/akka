@@ -1333,7 +1333,7 @@ and partial functions can be chained together using the `PartialFunction#orElse`
 however you should keep in mind that "first match" wins - which may be important when combining functions that both can handle the same type of message.
 
 For example, imagine you have a set of actors which are either `Producers` or `Consumers`, yet sometimes it makes sense to
-have an actor share both behaviors. This can be easily achieved without having to duplicate code by extracting the behaviors to
+have an actor share both behaviors. This can be achieved without having to duplicate code by extracting the behaviors to
 traits and implementing the actor's `receive` as combination of these partial functions.
 
 @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #receive-orElse }

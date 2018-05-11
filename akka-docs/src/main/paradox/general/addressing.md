@@ -220,7 +220,7 @@ release.
 @@@ note
 
 What the above sections described in some detail can be summarized and
-memorized easily as follows:
+memorized as follows:
 
  * `actorOf` only ever creates a new actor, and it creates it as a direct
 child of the context on which this method is invoked (which may be any

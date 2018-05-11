@@ -336,7 +336,7 @@ The thread pool behavior is shown in the below diagram.
 
 ![dispatcher-behaviour-on-good-code.png](./images/dispatcher-behaviour-on-good-code.png)
 
-Messages sent to `SeparateDispatcherFutureActor` and `PrintActor` are easily handled by the default dispatcher - the
+Messages sent to `SeparateDispatcherFutureActor` and `PrintActor` are handled by the default dispatcher - the
 green lines, which represent the actual execution.
 
 When blocking operations are run on the `my-blocking-dispatcher`,

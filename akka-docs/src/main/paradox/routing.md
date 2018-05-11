@@ -161,7 +161,7 @@ is to make the default behave such that adding `.withRouter` to a child’s defi
 change the supervision strategy applied to the child. This might be an inefficiency that you can avoid 
 by specifying the strategy when defining the router.
 
-Setting the strategy is easily done:
+Setting the strategy is done like this:
 
 Scala
 :  @@snip [RoutingSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala) { #supervision }

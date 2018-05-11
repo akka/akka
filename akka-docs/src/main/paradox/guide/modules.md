@@ -177,7 +177,7 @@ Some of the challenges that HTTP tackles:
 
 ### Example of module use
 
-Akka modules integrate together seamlessly. For example, think of a large set of stateful business objects, such as documents or shopping carts, that website users access. If you model these as sharded entities, using Sharding and Persistence, they will be balanced across a cluster that you can scale out on-demand. They will be available during spikes that come from advertising campaigns or before holidays will be handled, even if some systems crash. You can also easily take the real-time stream of domain events with Persistence Query and use Streams to pipe them into a streaming Fast Data engine. Then, take the output of that engine as a Stream, manipulate it using Akka Streams
+Akka modules integrate together seamlessly. For example, think of a large set of stateful business objects, such as documents or shopping carts, that website users access. If you model these as sharded entities, using Sharding and Persistence, they will be balanced across a cluster that you can scale out on-demand. They will be available during spikes that come from advertising campaigns or before holidays will be handled, even if some systems crash. You can also take the real-time stream of domain events with Persistence Query and use Streams to pipe them into a streaming Fast Data engine. Then, take the output of that engine as a Stream, manipulate it using Akka Streams
 operators and expose it as web socket connections served by a load balanced set of HTTP servers hosted by your cluster
 to power your real-time business analytics tool.
 

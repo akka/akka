@@ -282,7 +282,7 @@ more advanced stages which may need to be debugged at some point.
 
 @@@ div { .group-scala }
 
-The helper trait `akka.stream.stage.StageLogging` is provided to enable you to easily obtain a `LoggingAdapter`
+The helper trait `akka.stream.stage.StageLogging` is provided to enable you to obtain a `LoggingAdapter`
 inside of a `GraphStage` as long as the `Materializer` you're using is able to provide you with a logger.
 In that sense, it serves a very similar purpose as `ActorLogging` does for Actors. 
 
@@ -291,7 +291,7 @@ In that sense, it serves a very similar purpose as `ActorLogging` does for Actor
 @@@ div { .group-java }
 
 You can extend the `akka.stream.stage.GraphStageWithLogging` or `akka.strea.stage.TimerGraphStageWithLogging` classes
-instead of the usual `GraphStage` to enable you to easily obtain a `LoggingAdapter` inside your stage as long as 
+instead of the usual `GraphStage` to enable you to obtain a `LoggingAdapter` inside your stage as long as 
 the `Materializer` you're using is able to provide you with a logger.
 
 @@@

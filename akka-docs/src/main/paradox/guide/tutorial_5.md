@@ -169,7 +169,7 @@ Java
 Now let's verify the correctness of the query actor implementation. There are various scenarios we need to test individually to make
 sure everything works as expected. To be able to do this, we need to simulate the device actors somehow to exercise
 various normal or failure scenarios. Thankfully we took the list of collaborators (actually a `Map`) as a parameter
-to the query actor, so we can easily pass in @scala[`TestProbe`] @java[`TestKit`] references. In our first test, we try out the case when
+to the query actor, so we can pass in @scala[`TestProbe`] @java[`TestKit`] references. In our first test, we try out the case when
 there are two devices and both report a temperature:
 
 Scala

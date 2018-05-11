@@ -496,7 +496,7 @@ For some use cases it is convenient and sometimes also mandatory to ensure that
 you have exactly one actor of a certain type running somewhere in the cluster.
 
 This can be implemented by subscribing to member events, but there are several corner
-cases to consider. Therefore, this specific use case is made easily accessible by the
+cases to consider. Therefore, this specific use case is covered by the
 @ref:[Cluster Singleton](cluster-singleton.md).
 
 ## Cluster Sharding

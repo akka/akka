@@ -558,7 +558,7 @@ changing and writing the value with `WriteMajority` (or more).
 
 ### Custom Data Type
 
-You can rather easily implement your own data types. The only requirement is that it implements
+You can implement your own data types. The only requirement is that it implements
 the @scala[`merge`]@java[`mergeData`] function of the @scala[`ReplicatedData`]@java[`AbstractReplicatedData`] trait.
 
 A nice property of stateful CRDTs is that they typically compose nicely, i.e. you can combine several

@@ -155,13 +155,13 @@ Instead of treating a @scala[partial graph]@java[`Graph`] as a collection of flo
 connected it is sometimes useful to expose such a complex graph as a simpler structure,
 such as a `Source`, `Sink` or `Flow`.
 
-In fact, these concepts can be easily expressed as special cases of a partially connected graph:
+In fact, these concepts can be expressed as special cases of a partially connected graph:
 
  * `Source` is a partial graph with *exactly one* output, that is it returns a `SourceShape`.
  * `Sink` is a partial graph with *exactly one* input, that is it returns a `SinkShape`.
  * `Flow` is a partial graph with *exactly one* input and *exactly one* output, that is it returns a `FlowShape`.
 
-Being able to hide complex graphs inside of simple elements such as Sink / Source / Flow enables you to easily create one
+Being able to hide complex graphs inside of simple elements such as Sink / Source / Flow enables you to create one
 complex element and from there on treat it as simple compound stage for linear computations.
 
 In order to create a Source from a graph the method `Source.fromGraph` is used, to use it we must have a
@@ -312,7 +312,7 @@ Java
 :   @@snip [BidiFlowDocTest.java]($code$/java/jdocs/stream/BidiFlowDocTest.java) { #codec-impl }
 
 
-In this way you could easily integrate any other serialization library that
+In this way you can integrate any other serialization library that
 turns an object into a sequence of bytes.
 
 The other stage that we talked about is a little more involved since reversing

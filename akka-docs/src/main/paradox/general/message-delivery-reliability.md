@@ -293,7 +293,7 @@ replication and scaling of consumers of this event stream (i.e. other
 components may consume the event stream as a means to replicate the component’s
 state on a different continent or to react to changes). If the component’s
 state is lost—due to a machine failure or by being pushed out of a cache—it can
-easily be reconstructed by replaying the event stream (usually employing
+be reconstructed by replaying the event stream (usually employing
 snapshots to speed up the process). @ref:[Event sourcing](../persistence.md#event-sourcing) is supported by
 Akka Persistence.
 

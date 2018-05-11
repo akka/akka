@@ -189,7 +189,7 @@ If the system or config property `akka.log-config-on-start` is set to `on`, then
 complete configuration is logged at INFO level when the actor system is started. This is
 useful when you are uncertain of what configuration is used.
 
-If in doubt, you can also easily and nicely inspect configuration objects
+If in doubt, you can inspect your configuration objects
 before or after using them to construct an actor system:
 
 @@@vars

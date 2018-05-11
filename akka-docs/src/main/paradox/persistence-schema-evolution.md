@@ -197,7 +197,7 @@ needs to have an associated code which indicates if it is a window or aisle seat
 **Solution:**
 Adding fields is the most common change you'll need to apply to your messages so make sure the serialization format
 you picked for your payloads can handle it apropriately, i.e. such changes should be *binary compatible*.
-This is easily achieved using the right serializer toolkit – we recommend something like [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) or
+This is achieved using the right serializer toolkit – we recommend something like [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) or
 [Apache Thrift](https://thrift.apache.org/) however other tools may fit your needs just as well – picking a serializer backend is something
 you should research before picking one to run with. In the following examples we will be using protobuf, mostly because
 we are familiar with it, it does its job well and Akka is using it internally as well.
@@ -213,7 +213,7 @@ Java
 :  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #protobuf-read-optional-model }
 
 Next we prepare an protocol definition using the protobuf Interface Description Language, which we'll use to generate
-the serializer code to be used on the Akka Serialization layer (notice that the schema aproach allows us to easily rename
+the serializer code to be used on the Akka Serialization layer (notice that the schema aproach allows us to rename
 fields, as long as the numeric identifiers of the fields do not change):
 
 @@snip [FlightAppModels.proto]($code$/../main/protobuf/FlightAppModels.proto) { #protobuf-read-optional-proto }
@@ -268,7 +268,7 @@ sometimes renaming fields etc.), while some other operations are strictly not po
 @@@
 
 **Solution 2 - by manually handling the event versions:**
-Another solution, in case your serialization format does not support renames as easily as the above mentioned formats,
+Another solution, in case your serialization format does not support renames like the above mentioned formats,
 is versioning your schema. For example, you could have made your events carry an additional field called `_version`
 which was set to `1` (because it was the initial schema), and once you change the schema you bump this number to `2`,
 and write an adapter which can perform the rename.
