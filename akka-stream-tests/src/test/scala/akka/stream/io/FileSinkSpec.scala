@@ -4,8 +4,9 @@
 
 package akka.stream.io
 
-import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
-import java.nio.file.{ Files, Path, StandardOpenOption }
+import java.nio.channels.NonWritableChannelException
+import java.nio.file.StandardOpenOption.{ CREATE, READ, WRITE }
+import java.nio.file._
 
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
@@ -220,6 +221,22 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         val ex = intercept[AbruptIOTerminationException] { Await.result(completion, 3.seconds) }
         ex.ioResult.count should equal(1001)
         checkFileContents(f, TestLines.takeWhile(!_.contains('b')).mkString(""))
+      }
+    }
+
+    "complete with failure when file cannot be open" in {
+      val completion = Source.single(ByteString("42"))
+        .runWith(FileIO.toPath(Paths.get("/I/hope/this/file/doesnt/exist.txt")))
+
+      completion.failed.futureValue shouldBe an[NoSuchFileException]
+    }
+
+    "complete with failure when stream cannot write to file" in {
+      targetFile { f ⇒
+        val completion = Source.single(ByteString("42"))
+          .runWith(FileIO.toPath(f, Set(READ)))
+
+        completion.failed.futureValue shouldBe an[NonWritableChannelException]
       }
     }
   }
