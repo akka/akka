@@ -9,6 +9,7 @@ import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.internal._
 
 import scala.util.Try
@@ -122,41 +123,6 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * Transform the event in another type before giving to the journal. Can be used to wrap events
    * in types Journals and Adapters understand as well as simple event migrations.
    */
-  def eventTransformer(adapter: EventAdapter[Event]): PersistentBehavior[Command, Event, State]
-}
-
-trait EventAdapter[E] {
-  /**
-   * Type of the event to persist
-   */
-  type P
-  /**
-   * Transform event on the way to the journal
-   */
-  def toJournal(e: E): P
-
-  /**
-   * Transform the event on recovery from the journal.
-   * Note that this is not called in any read side so will need to be applied
-   * manually when using Query.
-   */
-  def fromJournal(p: P): E
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] object NoOpEventAdapter {
-  private val i = new NoOpEventAdapter[Nothing]
-  def instance[E]: NoOpEventAdapter[E] = i.asInstanceOf[NoOpEventAdapter[E]]
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] class NoOpEventAdapter[E] extends EventAdapter[E] {
-  type P = E
-  override def toJournal(e: E): E = e
-  override def fromJournal(p: E): E = p
+  def eventAdapter(adapter: EventAdapter[Event, _]): PersistentBehavior[Command, Event, State]
 }
 

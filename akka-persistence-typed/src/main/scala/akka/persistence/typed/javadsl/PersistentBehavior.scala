@@ -12,7 +12,7 @@ import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.persistence.SnapshotMetadata
-import akka.persistence.typed._
+import akka.persistence.typed.{ EventAdapter, _ }
 import akka.persistence.typed.internal._
 
 import scala.util.{ Failure, Success }
@@ -121,7 +121,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
    */
   def tagsFor(event: Event): java.util.Set[String] = Collections.emptySet()
 
-  def eventTransformer[P](): EventTransformer[Event, P] = new NoOpEventTransformer[Event].asInstanceOf[EventTransformer[Event, P]]
+  def eventAdapter(): EventAdapter[Event, _] = NoOpEventAdapter.instance[Event]
 
   /**
    * INTERNAL API: DeferredBehavior init
@@ -143,14 +143,6 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
       else tags.asScala.toSet
     }
 
-    val javaEventTransformer = eventTransformer[Any]()
-
-    val transformer = new scaladsl.EventAdapter[Event] {
-      override type P = Any
-      override def toJournal(e: Event): Any = javaEventTransformer.toJournal(e)
-      override def fromJournal(p: Any): Event = javaEventTransformer.fromJournal(p)
-    }
-
     scaladsl.PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
       initialState,
@@ -164,18 +156,8 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
           case Success(_) ⇒ Optional.empty()
           case Failure(t) ⇒ Optional.of(t)
         })
-      }).eventTransformer(transformer)
+      }).eventAdapter(eventAdapter())
   }
 
-}
-
-abstract class EventTransformer[E, P] {
-  def toJournal(e: E): P
-  def fromJournal(p: P): E
-}
-
-@InternalApi private[akka] class NoOpEventTransformer[E] extends EventTransformer[E, Any]() {
-  override def toJournal(e: E): E = e
-  override def fromJournal(p: Any): E = p.asInstanceOf[E]
 }
 

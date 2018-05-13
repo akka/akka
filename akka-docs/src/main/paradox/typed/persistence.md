@@ -233,7 +233,29 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #tagging }
 
+## Event adapters
+
+Event adapters can be programmatically added to your `PersistentBehavior`s that can convert from your `Event` type
+to another type that is then passed to the journal.
+
+Defining an event adapter is done by extending an EventAdapter:
+
+Scala
+:  @@snip [x]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentBehaviorSpec.scala) { #event-wrapper }
+
+Java
+:  @@snip [x]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #event-wrapper }
+
+Then install it on a persistent behavior:
+
+Scala
+:  @@snip [x]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentBehaviorSpec.scala) { #install-event-adapter }
+
+Java
+:  @@snip [x]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #install-event-adapter }
+
 ## Wrapping Persistent Behaviors
+
 When creating a `PersistentBehavior`, it is possible to wrap `PersistentBehavior` in
 other behaviors such as `Behaviors.setup` in order to access the `ActorContext` object. For instance
 to access the actor logging upon taking snapshots for debug purpose.

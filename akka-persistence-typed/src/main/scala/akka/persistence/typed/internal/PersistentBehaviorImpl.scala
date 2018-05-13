@@ -10,6 +10,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.typed.{ EventAdapter, NoOpEventAdapter }
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
@@ -39,7 +40,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   snapshotPluginId:  Option[String]                                              = None,
   recoveryCompleted: (ActorContext[Command], State) ⇒ Unit                       = ConstantFun.scalaAnyTwoToUnit,
   tagger:            Event ⇒ Set[String]                                         = (_: Event) ⇒ Set.empty[String],
-  eventAdapter:      EventAdapter[Event]                                         = NoOpEventAdapter.instance[Event],
+  eventAdapter:      EventAdapter[Event, _]                                      = NoOpEventAdapter.instance[Event],
   snapshotWhen:      (State, Event, Long) ⇒ Boolean                              = ConstantFun.scalaAnyThreeToFalse,
   recovery:          Recovery                                                    = Recovery(),
   onSnapshot:        (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit = PersistentBehaviorImpl.defaultOnSnapshot[Command] _
@@ -142,18 +143,15 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query
-   *
-   * This is a convenience function that uses withWrapper to wrap the event in Tags.
    */
   def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State] =
     copy(tagger = tagger)
 
   /**
-   * Wrap the event in another type before giving to the journal. This can be used to work
-   * with event adapters and journals that expect types to be wrapped in classes like [Tagged]
-   *
+   * Adapt the event before sending to the journal e.g. wrapping the event in a type
+   * the journal understands
    */
-  def eventTransformer(adapter: EventAdapter[Event]): PersistentBehavior[Command, Event, State] =
+  def eventAdapter(adapter: EventAdapter[Event, _]): PersistentBehavior[Command, Event, State] =
     copy(eventAdapter = adapter)
 
   /**

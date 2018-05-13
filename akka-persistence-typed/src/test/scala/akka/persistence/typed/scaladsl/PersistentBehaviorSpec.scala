@@ -13,6 +13,7 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, T
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.snapshot.SnapshotStore
+import akka.persistence.typed.EventAdapter
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
@@ -27,13 +28,13 @@ import scala.util.{ Success, Try }
 
 object PersistentBehaviorSpec {
 
+  //#event-wrapper
   case class Wrapper[T](t: T)
-
-  class WrapperEventAdapter[T] extends EventAdapter[T] {
-    override type P = Wrapper[T]
+  class WrapperEventAdapter[T] extends EventAdapter[T, Wrapper[T]] {
     override def toJournal(e: T): Wrapper[T] = Wrapper(e)
     override def fromJournal(p: Wrapper[T]): T = p.t
   }
+  //#event-wrapper
 
   class InMemorySnapshotStore extends SnapshotStore {
 
@@ -486,7 +487,11 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
     "adapt events" in {
       val pid = nextPid
-      val c = spawn(counter(pid).eventTransformer(new WrapperEventAdapter[Event]))
+      val persistentBehavior = counter(pid)
+      val c = spawn(
+        //#install-event-adapter
+        persistentBehavior.eventAdapter(new WrapperEventAdapter[Event]))
+      //#install-event-adapter
       val replyProbe = TestProbe[State]()
 
       c ! Increment
@@ -496,7 +501,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
       events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
 
-      val c2 = spawn(counter(pid).eventTransformer(new WrapperEventAdapter[Event]))
+      val c2 = spawn(counter(pid).eventAdapter(new WrapperEventAdapter[Event]))
       c2 ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
 
@@ -504,7 +509,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
     "adapter multiple events with persist all" in {
       val pid = nextPid
-      val c = spawn(counter(pid).eventTransformer(new WrapperEventAdapter[Event]))
+      val c = spawn(counter(pid).eventAdapter(new WrapperEventAdapter[Event]))
       val replyProbe = TestProbe[State]()
 
       c ! IncrementWithPersistAll(2)
@@ -517,7 +522,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
         EventEnvelope(Sequence(2), pid, 2, Wrapper(Incremented(1)))
       )
 
-      val c2 = spawn(counter(pid).eventTransformer(new WrapperEventAdapter[Event]))
+      val c2 = spawn(counter(pid).eventAdapter(new WrapperEventAdapter[Event]))
       c2 ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(2, Vector(0, 1)))
     }
@@ -526,7 +531,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val pid = nextPid
       val c = spawn(counter(pid)
         .withTagger(_ ⇒ Set("tag99"))
-        .eventTransformer(new WrapperEventAdapter[Event]))
+        .eventAdapter(new WrapperEventAdapter[Event]))
       val replyProbe = TestProbe[State]()
 
       c ! Increment
@@ -536,7 +541,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
       events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
 
-      val c2 = spawn(counter(pid).eventTransformer(new WrapperEventAdapter[Event]))
+      val c2 = spawn(counter(pid).eventAdapter(new WrapperEventAdapter[Event]))
       c2 ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
 
