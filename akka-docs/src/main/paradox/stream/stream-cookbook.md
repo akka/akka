@@ -158,7 +158,7 @@ we have a stream of streams, where every substream will serve identical words.
 To count the words, we need to process the stream of streams (the actual groups
 containing identical words). `groupBy` returns a @scala[`SubFlow`] @java[`SubSource`], which
 means that we transform the resulting substreams directly. In this case we use
-the `reduce` combinator to aggregate the word itself and the number of its
+the `reduce` operator to aggregate the word itself and the number of its
 occurrences within a @scala[tuple `(String, Integer)`] @java[`Pair<String, Integer>`]. Each substream will then
 emit one final value—precisely such a pair—when the overall input completes. As
 a last step we merge back these values from the substreams into one single

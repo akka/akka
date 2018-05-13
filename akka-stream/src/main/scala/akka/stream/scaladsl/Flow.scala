@@ -1772,7 +1772,7 @@ trait FlowOps[+Out, +Mat] {
    * of closing these elements might get lost.
    *
    * The object returned from this method is not a normal [[Source]] or [[Flow]],
-   * it is a [[SubFlow]]. This means that after this combinator all transformations
+   * it is a [[SubFlow]]. This means that after this operator all transformations
    * are applied to all encountered substreams in the same fashion. Substream mode
    * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
    * or by merging the substreams back together; see the `to` and `mergeBack` methods
@@ -1860,7 +1860,7 @@ trait FlowOps[+Out, +Mat] {
    * }}}
    *
    * The object returned from this method is not a normal [[Source]] or [[Flow]],
-   * it is a [[SubFlow]]. This means that after this combinator all transformations
+   * it is a [[SubFlow]]. This means that after this operator all transformations
    * are applied to all encountered substreams in the same fashion. Substream mode
    * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
    * or by merging the substreams back together; see the `to` and `mergeBack` methods
@@ -1930,7 +1930,7 @@ trait FlowOps[+Out, +Mat] {
    * }}}
    *
    * The object returned from this method is not a normal [[Source]] or [[Flow]],
-   * it is a [[SubFlow]]. This means that after this combinator all transformations
+   * it is a [[SubFlow]]. This means that after this operator all transformations
    * are applied to all encountered substreams in the same fashion. Substream mode
    * is exited either by closing the substream (i.e. connecting it to a [[Sink]])
    * or by merging the substreams back together; see the `to` and `mergeBack` methods
@@ -2095,7 +2095,7 @@ trait FlowOps[+Out, +Mat] {
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
-   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
@@ -2127,7 +2127,7 @@ trait FlowOps[+Out, +Mat] {
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
-   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
@@ -2168,7 +2168,7 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
    * calculating for each element individually by calling `calculateCost` function.
-   * This combinator works for streams when elements have different cost(length).
+   * This operator works for streams when elements have different cost(length).
    * Streams of `ByteString` for example.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
@@ -2203,7 +2203,7 @@ trait FlowOps[+Out, +Mat] {
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
    * calculating for each element individually by calling `calculateCost` function.
-   * This combinator works for streams when elements have different cost(length).
+   * This operator works for streams when elements have different cost(length).
    * Streams of `ByteString` for example.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
@@ -2247,7 +2247,7 @@ trait FlowOps[+Out, +Mat] {
    * This is a simplified version of throttle that spreads events evenly across the given time interval. throttleEven using
    * best effort approach to meet throttle rate.
    *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * Use this operator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use
@@ -2262,7 +2262,7 @@ trait FlowOps[+Out, +Mat] {
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * Use this operator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use

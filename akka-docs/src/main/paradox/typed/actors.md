@@ -278,7 +278,7 @@ A side-effect of this is that behaviors can now be tested in isolation without
 having to be packaged into an Actor, tests can run fully synchronously without
 having to worry about timeouts and spurious failures. Another side-effect is
 that behaviors can nicely be composed and decorated, for example `Behaviors.tap`
-is not special or using something internal. New combinators can be written as
+is not special or using something internal. New operators can be written as
 external libraries or tailor-made for each project.
 
 ## A Little Bit of Theory
