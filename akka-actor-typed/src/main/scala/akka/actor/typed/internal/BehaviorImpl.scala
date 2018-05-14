@@ -125,15 +125,14 @@ import scala.reflect.ClassTag
     afterSignal:    (SAC[T], Signal, Behavior[T]) ⇒ Behavior[T],
     behavior:       Behavior[T],
     toStringPrefix: String                                      = "Intercept"): Behavior[T] = {
-    behavior match {
+    val b = behavior match {
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[T] { ctx ⇒
-          val b = Behavior.validateAsInitial(Behavior.start(d, ctx))
-          Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, b, toStringPrefix)
+          Behavior.validateAsInitial(Behavior.start(d, ctx))
         }
-      case _ ⇒
-        Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, behavior, toStringPrefix)
+      case _ ⇒ Behavior.validateAsInitial(behavior)
     }
+    Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, b, toStringPrefix)
   }
 
   private final case class Intercept[T, U <: Any: ClassTag](

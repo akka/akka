@@ -251,7 +251,7 @@ object Behavior {
     nextBehavior match {
       case SameBehavior | `currentBehavior` ⇒ same
       case UnhandledBehavior                ⇒ unhandled
-      case StoppedBehavior                  ⇒ stopped
+      case stopped: StoppedBehavior[T]      ⇒ stopped.asInstanceOf[Behavior[U]] // won't receive more messages so cast is safe
       case deferred: DeferredBehavior[T]    ⇒ wrap(currentBehavior, start(deferred, ctx), ctx)(f)
       case other                            ⇒ f(other)
     }
