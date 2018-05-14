@@ -615,7 +615,7 @@ object Source {
   }
 
   /**
-   * Creates a `Source` that is materialized as an [[akka.stream.scaladsl.SourceQueue]].
+   * Creates a `Source` that is materialized as an [[akka.stream.scaladsl.SourceQueueWithComplete]].
    * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
    * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
    * if downstream is terminated.
@@ -624,7 +624,7 @@ object Source {
    * there is no space available in the buffer.
    *
    * Acknowledgement mechanism is available.
-   * [[akka.stream.scaladsl.SourceQueue.offer]] returns `Future[QueueOfferResult]` which completes with
+   * [[akka.stream.scaladsl.SourceQueueWithComplete.offer]] returns `Future[QueueOfferResult]` which completes with
    * `QueueOfferResult.Enqueued` if element was added to buffer or sent downstream. It completes with
    * `QueueOfferResult.Dropped` if element was dropped. Can also complete  with `QueueOfferResult.Failure` -
    * when stream failed or `QueueOfferResult.QueueClosed` when downstream is completed.
@@ -632,7 +632,7 @@ object Source {
    * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete last `offer():Future`
    * call when buffer is full.
    *
-   * You can watch accessibility of stream with [[akka.stream.scaladsl.SourceQueue.watchCompletion]].
+   * You can watch accessibility of stream with [[akka.stream.scaladsl.SourceQueueWithComplete.watchCompletion]].
    * It returns future that completes with success when the operator is completed or fails when the stream is failed.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
