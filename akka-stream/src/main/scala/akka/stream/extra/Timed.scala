@@ -82,6 +82,7 @@ private[akka] trait TimedIntervalBetweenOps {
   }
 }
 
+@Deprecated
 @deprecated("Moved to the akka/akka-stream-contrib project", since = "2.4.5")
 object Timed extends TimedOps with TimedIntervalBetweenOps {
 

@@ -10,6 +10,7 @@ class StreamTcpException(msg: String) extends RuntimeException(msg) with NoStack
 
 class BindFailedException extends StreamTcpException("bind failed")
 
+@Deprecated
 @deprecated("BindFailedException object will never be thrown. Match on the class instead.")
 case object BindFailedException extends BindFailedException
 

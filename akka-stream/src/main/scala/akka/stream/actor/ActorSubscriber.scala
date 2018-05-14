@@ -162,6 +162,7 @@ abstract class MaxInFlightRequestStrategy(max: Int) extends RequestStrategy {
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
+@Deprecated
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 trait ActorSubscriber extends Actor {
   import ActorSubscriber._
@@ -354,6 +355,7 @@ object UntypedActorSubscriber {
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
+@Deprecated
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 abstract class UntypedActorSubscriber extends UntypedActor with ActorSubscriber
 
@@ -362,6 +364,7 @@ abstract class UntypedActorSubscriber extends UntypedActor with ActorSubscriber
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
+@Deprecated
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 object AbstractActorSubscriber {
   /**
@@ -378,5 +381,6 @@ object AbstractActorSubscriber {
  *
  * @deprecated Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
  */
+@Deprecated
 @deprecated("Use `akka.stream.stage.GraphStage` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
 abstract class AbstractActorSubscriber extends AbstractActor with ActorSubscriber

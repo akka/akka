@@ -245,6 +245,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * Java API: Get the least specific attribute (added first) of a given `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
+  @Deprecated
   @deprecated("Attributes should always be most specific, use getAttribute[T]", "2.5.7")
   def getFirstAttribute[T <: Attribute](c: Class[T], default: T): T =
     getFirstAttribute(c).orElse(default)
@@ -252,6 +253,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * Java API: Get the least specific attribute (added first) of a given `Class` or subclass thereof.
    */
+  @Deprecated
   @deprecated("Attributes should always be most specific, use get[T]", "2.5.7")
   def getFirstAttribute[T <: Attribute](c: Class[T]): Optional[T] =
     attributeList.reverseIterator.collectFirst { case attr if c.isInstance(attr) ⇒ c cast attr }.asJava
@@ -260,6 +262,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof.
    * If no such attribute exists the `default` value is returned.
    */
+  @Deprecated
   @deprecated("Attributes should always be most specific, use get[T]", "2.5.7")
   def getFirst[T <: Attribute: ClassTag](default: T): T = {
     getFirst[T] match {
@@ -271,6 +274,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * Scala API: Get the least specific attribute (added first) of a given type parameter T `Class` or subclass thereof.
    */
+  @Deprecated
   @deprecated("Attributes should always be most specific, use get[T]", "2.5.7")
   def getFirst[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]

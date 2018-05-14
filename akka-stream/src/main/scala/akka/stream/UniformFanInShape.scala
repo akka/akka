@@ -25,6 +25,7 @@ class UniformFanInShape[-T, +O](val n: Int, _init: FanInShape.Init[O]) extends F
 
   final override def inlets: immutable.Seq[Inlet[T @uncheckedVariance]] = super.inlets.asInstanceOf[immutable.Seq[Inlet[T]]]
 
+  @Deprecated
   @deprecated("Use 'inlets' or 'in(id)' instead.", "2.5.5")
   def inSeq: immutable.IndexedSeq[Inlet[T @uncheckedVariance]] = _inSeq
 

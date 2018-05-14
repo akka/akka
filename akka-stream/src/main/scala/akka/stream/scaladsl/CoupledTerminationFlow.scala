@@ -59,6 +59,7 @@ object CoupledTerminationFlow {
    *
    * The order in which the `in` and `out` sides receive their respective completion signals is not defined, do not rely on its ordering.
    */
+  @Deprecated
   @deprecated("Use `Flow.fromSinkAndSourceCoupledMat(..., ...)(Keep.both)` instead", "2.5.2")
   def fromSinkAndSource[I, O, M1, M2](in: Sink[I, M1], out: Source[O, M2]): Flow[I, O, (M1, M2)] =
     Flow.fromSinkAndSourceCoupledMat(in, out)(Keep.both)

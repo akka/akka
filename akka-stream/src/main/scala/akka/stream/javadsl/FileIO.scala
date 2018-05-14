@@ -32,6 +32,7 @@ object FileIO {
    *
    * @param f The file to write to
    */
+  @Deprecated
   @deprecated("Use `toPath` instead.", "2.4.5")
   def toFile(f: File): javadsl.Sink[ByteString, CompletionStage[IOResult]] = toPath(f.toPath)
 
@@ -69,6 +70,7 @@ object FileIO {
    * @param f The file to write to
    * @param options File open options, see [[java.nio.file.StandardOpenOption]]
    */
+  @Deprecated
   @deprecated("Use `toPath` instead.", "2.4.5")
   def toFile[Opt <: OpenOption](f: File, options: util.Set[Opt]): javadsl.Sink[ByteString, CompletionStage[IOResult]] =
     toPath(f.toPath)
@@ -129,6 +131,7 @@ object FileIO {
    *
    * @param f         the file to read from
    */
+  @Deprecated
   @deprecated("Use `fromPath` instead.", "2.4.5")
   def fromFile(f: File): javadsl.Source[ByteString, CompletionStage[IOResult]] = fromPath(f.toPath)
 
@@ -160,6 +163,7 @@ object FileIO {
    * @param f         the file to read from
    * @param chunkSize the size of each read operation
    */
+  @Deprecated
   @deprecated("Use `fromPath` instead.", "2.4.5")
   def fromFile(f: File, chunkSize: Int): javadsl.Source[ByteString, CompletionStage[IOResult]] =
     fromPath(f.toPath, chunkSize)

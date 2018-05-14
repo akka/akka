@@ -745,6 +745,7 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int, val e
   /**
    * Sets `eagerCancel` to `false`.
    */
+  @Deprecated
   @deprecated("Use the constructor which also specifies the `eagerCancel` parameter")
   def this(outputPorts: Int, partitioner: T ⇒ Int) = this(outputPorts, partitioner, false)
 
@@ -1070,6 +1071,7 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] ⇒ O)(n: Int) extends GraphStage[
   override val shape = new UniformFanInShape[A, O](n)
   def out: Outlet[O] = shape.out
 
+  @Deprecated
   @deprecated("use `shape.inlets` or `shape.in(id)` instead", "2.5.5")
   def inSeq: immutable.IndexedSeq[Inlet[A]] = shape.inlets.asInstanceOf[immutable.IndexedSeq[Inlet[A]]]
 
