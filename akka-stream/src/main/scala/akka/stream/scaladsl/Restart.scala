@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 
 import akka.NotUsed
 import akka.annotation.ApiMayChange
+import akka.event.Logging
 import akka.pattern.BackoffSupervisor
 import akka.stream.Attributes.Attribute
 import akka.stream._
@@ -464,7 +465,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
         if (finishing || maxRestartsReached()) {
           fail(out, ex)
         } else {
-          log.error(ex, "Restarting graph due to failure")
+          log.warning("Restarting graph due to failure. stack_trace: {}", Logging.stackTraceFor(ex))
           scheduleRestartTimer()
         }
       }
