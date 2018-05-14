@@ -55,7 +55,9 @@ object ReliableDeliveryPoc {
 
     sealed trait ProducerMessage
     final case class Request[T](confirmedSeqNr: Long, upToSeqNr: Long, consumer: ActorRef[SequencedMessage[T]],
-                                supportResend: Boolean, viaReceiveTimeout: Boolean) extends ProducerMessage
+      supportResend: Boolean, viaReceiveTimeout: Boolean) extends ProducerMessage {
+      require(confirmedSeqNr < upToSeqNr)
+    }
     final case class Resend(fromSeqNr: Long) extends ProducerMessage
     private case class Msg[T](msg: T) extends ProducerMessage
 
@@ -68,11 +70,11 @@ object ReliableDeliveryPoc {
         val requestNext = requestNextFactory(msgAdapter)
 
         Behaviors.receiveMessagePartial {
-          case Request(_, upToSeqNr, receiver: ActorRef[SequencedMessage[T]] @unchecked, supportResend, _) ⇒
+          case Request(confirmedSeqNr, upToSeqNr, receiver: ActorRef[SequencedMessage[T]] @unchecked, supportResend, _) ⇒
             producer ! requestNext
             val unconfirmed: Option[Vector[SequencedMessage[T]]] = if (supportResend) Some(Vector.empty) else None
             active[T, RequestNext](producer, requestNext, requested = true, receiver,
-              currentSeqNr = 1, requestedSeqNr = upToSeqNr, unconfirmed)
+              currentSeqNr = confirmedSeqNr + 1, requestedSeqNr = upToSeqNr, unconfirmed)
         }
       }
     }
@@ -200,10 +202,11 @@ object ReliableDeliveryPoc {
           Behaviors.setup[ConsumerMessage] { ctx ⇒
             // simulate lost messages from producerController to consumerController
             val flakySelf = ctx.spawn(flakyNetwork[SequencedMessage[T]](ctx.self, dropProbability = 0.1), "flaky")
-            producer ! Request(seqNr, RequestWindow, flakySelf, resendLost, viaReceiveTimeout = false)
+            val requestedSeqNr = seqNr + RequestWindow
+            producer ! Request(seqNr, requestedSeqNr, flakySelf, resendLost, viaReceiveTimeout = false)
             ctx.setReceiveTimeout(1.second, RetryRequest)
             val stashBuffer = StashBuffer[ConsumerMessage](100)
-            active[T](flakySelf, producer, deliverTo, stashBuffer, resendLost, receivedSeqNr = seqNr, requestedSeqNr = RequestWindow)
+            active[T](flakySelf, producer, deliverTo, stashBuffer, resendLost, receivedSeqNr = seqNr, requestedSeqNr)
           }
       }
     }
@@ -243,10 +246,17 @@ object ReliableDeliveryPoc {
         }
       }
 
-      def becomeWaitingForConfirmation(seqNr: Long): Behavior[ConsumerMessage] = {
+      def becomeWaitingForConfirmation(expectedSeqNr: Long): Behavior[ConsumerMessage] = {
         Behaviors.receive { (ctx, msg) ⇒
           msg match {
-            case Confirmed(`seqNr`, deliverTo: ActorRef[Delivery[T]] @unchecked) ⇒
+            case Confirmed(seqNr, deliverTo: ActorRef[Delivery[T]] @unchecked) ⇒
+              if (seqNr > expectedSeqNr) {
+                throw new IllegalStateException(s"Expected confirmation of seqNr [$expectedSeqNr], but got higher [$seqNr]")
+              } else if (seqNr != expectedSeqNr) {
+                ctx.log.info(
+                  "Expected confirmation of seqNr [{}] but got [{}]. Perhaps the destination was restarted.",
+                  expectedSeqNr, seqNr)
+              }
               ctx.log.info("Confirmed {}, stashed {}", seqNr, stashBuffer.size)
               val newRequestedSeqNr =
                 if ((requestedSeqNr - seqNr) == RequestWindow / 2) {
@@ -340,7 +350,11 @@ object ReliableDeliveryPoc {
       }
     }
 
-    // FIXME it must be possible to restart the producer, and then it needs to retrieve the request state
+    // FIXME it must be possible to restart the producer, and then it needs to retrieve the request state,
+    // which would complicate the protocol. A more pragmatic, and easier to use, approach might be to
+    // allow for buffering of messages from the producer in the ProducerController if it it has no demand.
+    // Then the restarted producer can assume that it can send next message. As a recommendation it
+    // should not abuse this capability.
 
   }
 
@@ -356,7 +370,7 @@ object ReliableDeliveryPoc {
     def behavior(controller: ActorRef[Confirmed[String]]): Behavior[MyConsumerMessage] =
       Behaviors.setup { ctx ⇒
         val deliverTo: ActorRef[Delivery[String]] = ctx.messageAdapter(MyDelivery.apply)
-        controller ! Confirmed(seqNr = 0L, deliverTo)
+        controller ! Confirmed(seqNr = 0, deliverTo)
 
         Behaviors.receiveMessage {
           case MyDelivery(d) ⇒
