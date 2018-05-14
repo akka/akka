@@ -4,9 +4,7 @@
 
 package akka.actor.dungeon
 
-import ReceiveTimeout.emptyReceiveTimeoutData
 import akka.actor.ActorCell
-import akka.actor.ActorCell.emptyCancellable
 import akka.actor.Cancellable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
@@ -40,7 +38,7 @@ private[akka] trait ReceiveTimeout { this: ActorCell ⇒
 
   }
 
-  final def cancelReceiveTimeout(): Unit =
+  override final def cancelReceiveTimeout(): Unit =
     if (receiveTimeoutData._2 ne emptyCancellable) {
       receiveTimeoutData._2.cancel()
       receiveTimeoutData = (receiveTimeoutData._1, emptyCancellable)
