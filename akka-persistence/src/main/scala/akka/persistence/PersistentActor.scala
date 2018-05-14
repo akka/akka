@@ -291,6 +291,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
 /**
  * Java API: an persistent actor - can be used to implement command or event sourcing.
  */
+@Deprecated
 @deprecated("Use AbstractPersistentActor instead of UntypedPersistentActor.", since = "2.5.0")
 abstract class UntypedPersistentActor extends UntypedActor with Eventsourced with PersistenceIdentity {
 

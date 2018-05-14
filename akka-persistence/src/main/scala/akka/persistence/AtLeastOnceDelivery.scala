@@ -388,6 +388,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
  * @see [[AtLeastOnceDelivery]]
  * @see [[AtLeastOnceDeliveryLike]]
  */
+@Deprecated
 @deprecated("Use AbstractPersistentActorWithAtLeastOnceDelivery instead.", since = "2.5.0")
 abstract class UntypedPersistentActorWithAtLeastOnceDelivery extends UntypedPersistentActor with AtLeastOnceDeliveryLike {
   /**
