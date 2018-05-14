@@ -22,6 +22,52 @@ import akka.actor.typed.scaladsl.StashBuffer
  */
 object ReliableDeliveryPoc {
 
+  /* https://www.websequencediagrams.com
+
+title Reliable Delivery
+
+Main->MyProducer: spawn
+Main->ProducerController: spawn
+Main->ConsumerController: spawn
+Main->MyConsumer: spawn
+
+MyConsumer->ConsumerController: Confirmed(0)
+ConsumerController->ProducerController: Request 0-10
+ProducerController->MyProducer: RequestNext
+MyProducer->ProducerController: msg-1
+ProducerController->ConsumerController: Sequenced(1, msg-1)
+ProducerController->MyProducer: RequestNext
+ConsumerController->MyConsumer: Delivery(1, msg-1)
+MyConsumer->ConsumerController: Confirmed(1)
+
+MyProducer->ProducerController: msg-2
+ProducerController->ConsumerController: Sequenced(2, msg-2)
+ProducerController->MyProducer: RequestNext
+MyProducer->ProducerController: msg-3
+ConsumerController->MyConsumer: Delivery(2, msg-2)
+MyConsumer->ConsumerController: Confirmed(2)
+ProducerController->ConsumerController: Sequenced(3, msg-3)
+ProducerController->MyProducer: RequestNext
+ConsumerController->MyConsumer: Delivery(3, msg-3)
+MyConsumer->ConsumerController: Confirmed(3)
+
+MyProducer->ProducerController: msg-4
+ProducerController->ConsumerController: Sequenced(4, msg-4)
+ProducerController->MyProducer: RequestNext
+ConsumerController->MyConsumer: Delivery(4, msg-4)
+MyConsumer->ConsumerController: Confirmed(4)
+
+
+MyProducer->ProducerController: msg-5
+ProducerController->ConsumerController: Sequenced(5, msg-5)
+ProducerController->MyProducer: RequestNext
+ConsumerController->ProducerController: Request 5-15
+ConsumerController->MyConsumer: Delivery(5, msg-5)
+MyConsumer->ConsumerController: Confirmed(5)
+
+
+   */
+
   /**
    * The `ProducerController` will not send more messages than requested by the `ConsumerController`.
    * It expects an initial [[ProducerController.Request]] message before sending anything, and that
@@ -55,7 +101,7 @@ object ReliableDeliveryPoc {
 
     sealed trait ProducerMessage
     final case class Request[T](confirmedSeqNr: Long, upToSeqNr: Long, consumer: ActorRef[SequencedMessage[T]],
-      supportResend: Boolean, viaReceiveTimeout: Boolean) extends ProducerMessage {
+                                supportResend: Boolean, viaReceiveTimeout: Boolean) extends ProducerMessage {
       require(confirmedSeqNr < upToSeqNr)
     }
     final case class Resend(fromSeqNr: Long) extends ProducerMessage
@@ -407,8 +453,13 @@ object ReliableDeliveryPoc {
     val flaky = ctx.spawn(flakyNetwork(producerController, dropProbability = 0.3), "flakyProducer")
     val consumerController = ctx.spawn(ConsumerController.behavior(flaky, resendLost = true), "consumerController")
     ctx.spawn(MyConsumer.behavior(consumerController), name = "destination")
+
+    // TODO Think about how to support ClusterSharding.
+
     Behaviors.empty
   }
+
+  // FIXME also think about
 
   def flakyNetwork[T](destination: ActorRef[T], dropProbability: Double): Behavior[T] = {
     Behaviors.receive { (ctx, msg) ⇒
