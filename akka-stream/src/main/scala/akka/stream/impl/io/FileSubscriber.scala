@@ -57,7 +57,7 @@ import scala.util.{ Failure, Success, Try }
         bytesWritten += chan.write(bytes.asByteBuffer)
       } catch {
         case ex: Exception ⇒
-          closeAndComplete(Failure(ex))
+          closeAndComplete(Success(IOResult(bytesWritten, Failure(ex))))
           cancel()
       }
 

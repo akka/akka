@@ -230,15 +230,6 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       completion.failed.futureValue shouldBe an[NoSuchFileException]
     }
-
-    "complete with failure when stream cannot write to file" in {
-      targetFile { f ⇒
-        val completion = Source.single(ByteString("42"))
-          .runWith(FileIO.toPath(f, Set(READ)))
-
-        completion.failed.futureValue shouldBe an[NonWritableChannelException]
-      }
-    }
   }
 
   private def targetFile(block: Path ⇒ Unit, create: Boolean = true) {
