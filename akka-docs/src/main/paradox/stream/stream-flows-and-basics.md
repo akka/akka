@@ -214,7 +214,7 @@ To illustrate this further let us consider both problem situations and how the b
 
 ### Slow Publisher, fast Subscriber
 
-This is the happy case of course – we do not need to slow down the Publisher in this case. However signalling rates are
+This is the happy case – we do not need to slow down the Publisher in this case. However signalling rates are
 rarely constant and could change at any point in time, suddenly ending up in a situation where the Subscriber is now
 slower than the Publisher. In order to safeguard from these situations, the back-pressure protocol must still be enabled
 during such situations, however we do not want to pay a high penalty for this safety net being enabled.

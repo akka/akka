@@ -185,7 +185,7 @@ Java
 
 The event handler is always the same independent of state. The main reason for not making the event handler
 part of the `CommandHandler` is that all events must be handled and that is typically independent of what the
-current state is. The event handler can of course still decide what to do based on the state if that is needed.
+current state is. The event handler can still decide what to do based on the state if that is needed.
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #event-handler }

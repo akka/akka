@@ -204,7 +204,7 @@ filter. The conceptual wiring of `Filter` looks like this:
 As we see above, if the given predicate matches the current element we are propagating it downwards, otherwise
 we return the “ball” to our upstream so that we get the new element. This is achieved by modifying the map
 example by adding a conditional in the `onPush` handler and decide between a `pull(in)` or `push(out)` call
-(and of course not having a mapping `f` function).
+(and not having a mapping `f` function).
 
 Scala
 :   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #many-to-one }

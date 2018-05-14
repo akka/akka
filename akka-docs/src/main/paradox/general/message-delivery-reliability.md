@@ -10,7 +10,7 @@ chapter.
 In order to give some context to the discussion below, consider an application
 which spans multiple network hosts. The basic mechanism for communication is
 the same whether sending to an actor on the local JVM or to a remote actor, but
-of course there will be observable differences in the latency of delivery
+there will be observable differences in the latency of delivery
 (possibly also depending on the bandwidth of the network link and the message
 size) and the reliability. In case of a remote message send there are
 more steps involved which means that more can go wrong. Another aspect is that
@@ -20,7 +20,7 @@ remote transport will place a limit on the message size.
 
 Writing your actors such that every interaction could possibly be remote is the
 safe, pessimistic bet. It means to only rely on those properties which are
-always guaranteed and which are discussed in detail below.  This has of course
+always guaranteed and which are discussed in detail below.  This has 
 some overhead in the actor’s implementation. If you are willing to sacrifice full
 location transparency—for example in case of a group of closely collaborating
 actors—you can place them always on the same JVM and enjoy stricter guarantees
@@ -351,7 +351,7 @@ Every time an actor does not terminate by its own decision, there is a chance
 that some messages which it sends to itself are lost. There is one which
 happens quite easily in complex shutdown scenarios that is usually benign:
 seeing a `akka.dispatch.Terminate` message dropped means that two
-termination requests were given, but of course only one can succeed. In the
+termination requests were given, but only one can succeed. In the
 same vein, you might see `akka.actor.Terminated` messages from children
 while stopping a hierarchy of actors turning up in dead letters if the parent
 is still watching the child when the parent terminates.

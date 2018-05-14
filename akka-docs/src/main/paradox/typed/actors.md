@@ -33,7 +33,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #imports }
 
-With these in place we can define our first Actor, and of course it will say
+With these in place we can define our first Actor, and it will say
 hello!
 
 Scala

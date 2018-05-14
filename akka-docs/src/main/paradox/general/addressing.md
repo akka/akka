@@ -181,7 +181,7 @@ example send a message to a specific sibling:
 context.actorSelection("../brother") ! msg
 ```
 
-Absolute paths may of course also be looked up on *context* in the usual way, i.e.
+Absolute paths may also be looked up on *context* in the usual way, i.e.
 
 ```scala
 context.actorSelection("/user/serviceA") ! msg

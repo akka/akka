@@ -700,7 +700,7 @@ actor system to make the name unique. If using a dynamically assigned
 port (0) it will be different each time and the previously stored data
 will not be loaded.
 
-Making the data durable has of course a performance cost. By default, each update is flushed
+Making the data durable has a performance cost. By default, each update is flushed
 to disk before the `UpdateSuccess` reply is sent. For better performance, but with the risk of losing
 the last writes if the JVM crashes, you can enable write behind mode. Changes are then accumulated during
 a time period before it is written to LMDB and flushed to disk. Enabling write behind is especially

@@ -892,7 +892,7 @@ routing logic directly in their `ActorRef` rather than in the router actor. Mess
 a router's `ActorRef` can be immediately routed to the routee, bypassing the single-threaded
 router actor entirely.
 
-The cost to this is, of course, that the internals of routing code are more complicated than if
+The cost to this is that the internals of routing code are more complicated than if
 routers were implemented with normal actors. Fortunately all of this complexity is invisible to
 consumers of the routing API. However, it is something to be aware of when implementing your own
 routers.

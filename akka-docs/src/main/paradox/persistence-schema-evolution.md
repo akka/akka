@@ -294,7 +294,7 @@ or put together in a simple helper @scala[trait]@java[class].
 @@@ note
 
 The technique of versioning events and then promoting them to the latest version using JSON transformations
-can of course be applied to more than just field renames – it also applies to adding fields and all kinds of
+can be applied to more than just field renames – it also applies to adding fields and all kinds of
 changes in the message format.
 
 @@@

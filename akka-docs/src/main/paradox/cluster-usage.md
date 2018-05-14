@@ -882,7 +882,7 @@ Then the abstract `MultiNodeSpec`, which takes the `MultiNodeConfig` as construc
 
 @@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #abstract-test }
 
-Most of this can of course be extracted to a separate trait to avoid repeating this in all your tests.
+Most of this can be extracted to a separate trait to avoid repeating this in all your tests.
 
 Typically you begin your test by starting up the cluster and let the members join, and create some actors.
 That can be done like this:

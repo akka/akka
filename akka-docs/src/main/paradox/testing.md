@@ -21,7 +21,7 @@ To use Akka Testkit, add the module to your project:
 ## Asynchronous Testing: `TestKit`
 
 Testkit allows you to test your actors in a controlled but realistic
-environment. The definition of the environment depends of course very much on
+environment. The definition of the environment depends very much on
 the problem at hand and the level at which you intend to test, ranging from
 simple checks to full system tests.
 
@@ -957,7 +957,7 @@ Java
 
 ### Use Cases
 
-You may of course mix and match both modi operandi of `TestActorRef` as
+You may mix and match both modi operandi of `TestActorRef` as
 suits your test needs:
 
  * one common use case is setting up the actor into a specific internal state
