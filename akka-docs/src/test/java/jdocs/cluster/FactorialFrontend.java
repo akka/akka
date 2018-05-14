@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import akka.actor.Props;
 import akka.cluster.metrics.AdaptiveLoadBalancingGroup;
@@ -19,7 +19,6 @@ import akka.cluster.routing.ClusterRouterGroup;
 import akka.cluster.routing.ClusterRouterGroupSettings;
 import akka.cluster.routing.ClusterRouterPool;
 import akka.cluster.routing.ClusterRouterPoolSettings;
-import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ReceiveTimeout;
 import akka.actor.AbstractActor;
@@ -45,7 +44,7 @@ public class FactorialFrontend extends AbstractActor {
   @Override
   public void preStart() {
     sendJobs();
-    getContext().setReceiveTimeout(Duration.create(10, TimeUnit.SECONDS));
+    getContext().setReceiveTimeout(Duration.ofSeconds(10));
   }
 
   @Override
