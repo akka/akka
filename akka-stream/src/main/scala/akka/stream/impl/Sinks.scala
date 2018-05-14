@@ -4,9 +4,6 @@
 
 package akka.stream.impl
 
-import java.util.Optional
-import java.util.concurrent.CompletionStage
-
 import akka.NotUsed
 import akka.actor.{ ActorRef, Props }
 import akka.annotation.{ DoNotInherit, InternalApi }
@@ -405,16 +402,6 @@ import scala.util.{ Failure, Success, Try }
 
     (stageLogic, stageLogic)
   }
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] final class SinkQueueAdapter[T](delegate: SinkQueueWithCancel[T]) extends akka.stream.javadsl.SinkQueueWithCancel[T] {
-  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
-  def pull(): CompletionStage[Optional[T]] = delegate.pull().map(_.asJava)(same).toJava
-  def cancel(): Unit = delegate.cancel()
-
 }
 
 /**
