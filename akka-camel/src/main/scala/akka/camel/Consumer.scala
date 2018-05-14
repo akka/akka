@@ -13,6 +13,7 @@ import akka.dispatch.Mapper
 /**
  * Mixed in by Actor implementations that consume message from Camel endpoints.
  */
+@Deprecated
 @deprecated("Akka Camel is deprecated in favour of 'Alpakka', the Akka Streams based collection of integrations to various endpoints (including Camel).", since = "2.5.0")
 trait Consumer extends Actor with CamelSupport {
   import Consumer._
