@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit
  * @see [[akka.contrib.throttle.Throttler.SetRate]]
  * @see [[akka.contrib.throttle.Throttler.SetTarget]]
  */
+@Deprecated
 @deprecated("Use streams, see migration guide", "2.5.0")
 object Throttler {
   /**
@@ -215,6 +216,7 @@ private[throttle] object TimerBasedThrottler {
  *
  * @see [[akka.contrib.throttle.Throttler]]
  */
+@Deprecated
 @deprecated("Use streams, see migration guide", "2.5.0")
 class TimerBasedThrottler(var rate: Rate) extends Actor with FSM[State, Data] {
   import FSM.`→`

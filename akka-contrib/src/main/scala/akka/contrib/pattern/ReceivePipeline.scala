@@ -6,6 +6,7 @@ package akka.contrib.pattern
 
 import akka.actor.Actor
 
+@Deprecated
 @deprecated("Feel free to copy", "2.5.0")
 object ReceivePipeline {
   /**
@@ -48,6 +49,7 @@ object ReceivePipeline {
  * for configuring a chain of interceptors to be applied around
  * Actor's current behavior.
  */
+@Deprecated
 @deprecated("Feel free to copy", "2.5.0")
 trait ReceivePipeline extends Actor {
   import ReceivePipeline._
