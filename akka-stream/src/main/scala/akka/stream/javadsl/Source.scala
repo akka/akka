@@ -285,6 +285,7 @@ object Source {
    *
    * @deprecated Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
    */
+  @Deprecated
   @deprecated("Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.", since = "2.5.0")
   def actorPublisher[T](props: Props): Source[T, ActorRef] =
     new Source(scaladsl.Source.actorPublisher(props))
@@ -1110,6 +1111,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
+  @Deprecated
   @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(pf: PartialFunction[Throwable, Out]): javadsl.Source[Out, Mat] =
     new Source(delegate.recover(pf))

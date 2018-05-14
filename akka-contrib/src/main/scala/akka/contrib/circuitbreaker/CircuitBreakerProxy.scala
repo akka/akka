@@ -16,6 +16,7 @@ import scala.util.{ Failure, Success }
  * This is an Actor which implements the circuit breaker pattern,
  * you may also be interested in the raw circuit breaker [[akka.pattern.CircuitBreaker]]
  */
+@Deprecated
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 object CircuitBreakerProxy {
 
@@ -102,6 +103,7 @@ object CircuitBreakerProxy {
 
 import akka.contrib.circuitbreaker.CircuitBreakerProxy._
 
+@Deprecated
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class CircuitBreakerProxy(
   target:               ActorRef,

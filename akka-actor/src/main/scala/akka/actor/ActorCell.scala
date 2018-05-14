@@ -238,6 +238,7 @@ trait ActorContext extends ActorRefFactory {
  * UntypedActorContext is the UntypedActor equivalent of ActorContext,
  * containing the Java API
  */
+@Deprecated
 @deprecated("Use AbstractActor.ActorContext instead of UntypedActorContext.", since = "2.5.0")
 trait UntypedActorContext extends ActorContext {
 

@@ -161,6 +161,7 @@ object Member {
     (a, b) ⇒ a.isOlderThan(b)
   }
 
+  @Deprecated
   @deprecated("Was accidentally made a public API, internal", since = "2.5.4")
   def pickHighestPriority(a: Set[Member], b: Set[Member]): Set[Member] =
     pickHighestPriority(a, b, Map.empty)
@@ -278,6 +279,7 @@ object MemberStatus {
 object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
 
   // for binary compatibility
+  @Deprecated
   @deprecated("Use Long UID apply instead", since = "2.4.11")
   def apply(address: Address, uid: Int) = new UniqueAddress(address, uid.toLong)
 
@@ -300,10 +302,11 @@ final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[
   }
 
   // for binary compatibility
-
+  @Deprecated
   @deprecated("Use Long UID constructor instead", since = "2.4.11")
   def this(address: Address, uid: Int) = this(address, uid.toLong)
 
+  @Deprecated
   @deprecated("Use longUid instead", since = "2.4.11")
   def uid = longUid.toInt
 
@@ -311,6 +314,7 @@ final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[
    * For binary compatibility
    * Stops `copy(Address, Long)` copy from being generated, use `apply` instead.
    */
+  @Deprecated
   @deprecated("Use Long UID constructor instead", since = "2.4.11")
   def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid)
 

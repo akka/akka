@@ -41,6 +41,7 @@ object LoggingReceive {
   /**
    * Java API: compatible with lambda expressions
    */
+  @Deprecated
   @deprecated("Use the create method with `AbstractActor.Receive` parameter instead.", since = "2.5.0")
   def create(r: Receive, context: ActorContext): Receive = apply(r)(context)
 

@@ -124,6 +124,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
    *   ``Cluster.downingProvider.downRemovalMargin`` should be used as it allows the downing provider to decide removal
    *   margins
    */
+  @Deprecated
   @deprecated("Use Cluster.downingProvider.downRemovalMargin", since = "2.4.5")
   val DownRemovalMargin: FiniteDuration = {
     val key = "down-removal-margin"

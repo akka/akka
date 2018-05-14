@@ -905,6 +905,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * '''Cancels when''' downstream cancels
    *
    */
+  @Deprecated
   @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recoverWith(pf: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]]): SubFlow[In, Out, Mat @uncheckedVariance] =
     new SubFlow(delegate.recoverWith(pf))

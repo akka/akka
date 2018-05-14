@@ -11,6 +11,7 @@ import scala.language.implicitConversions
 
 import scala.concurrent.{ ExecutionContext, Future }
 
+@Deprecated
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 sealed class OpenCircuitException(message: String) extends RuntimeException(message)
 private[circuitbreaker] final object OpenCircuitException extends OpenCircuitException("Unable to complete operation since the Circuit Breaker Actor Proxy is in Open State")
@@ -21,6 +22,7 @@ private[circuitbreaker] final object OpenCircuitException extends OpenCircuitExc
  * `Future` result of an `ask` pattern to fail in case of
  * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] response
  */
+@Deprecated
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 object Implicits {
   /**
@@ -64,6 +66,7 @@ object Implicits {
  * [[akka.contrib.circuitbreaker.CircuitBreakerProxy.CircuitOpenFailure]] failure responses throwing
  * an exception built with the given exception builder
  */
+@Deprecated
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class CircuitBreakerAwareFuture(val future: Future[Any]) extends AnyVal {
   @throws[OpenCircuitException]
@@ -79,6 +82,7 @@ final class CircuitBreakerAwareFuture(val future: Future[Any]) extends AnyVal {
   }
 }
 
+@Deprecated
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class AskeableWithCircuitBreakerActor(val actorRef: ActorRef) extends AnyVal {
   def askWithCircuitBreaker(message: Any)(implicit executionContext: ExecutionContext, timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
@@ -93,6 +97,7 @@ final class AskeableWithCircuitBreakerActor(val actorRef: ActorRef) extends AnyV
   }
 }
 
+@Deprecated
 @deprecated("Use akka.pattern.CircuitBreaker + ask instead", "2.5.0")
 final class AskeableWithCircuitBreakerActorSelection(val actorSelection: ActorSelection) extends AnyVal {
   def askWithCircuitBreaker(message: Any)(implicit executionContext: ExecutionContext, timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =

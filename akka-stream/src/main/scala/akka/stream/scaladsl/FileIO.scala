@@ -36,6 +36,7 @@ object FileIO {
    * @param f         the file to read from
    * @param chunkSize the size of each read operation, defaults to 8192
    */
+  @Deprecated
   @deprecated("Use `fromPath` instead", "2.4.5")
   def fromFile(f: File, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] =
     fromPath(f.toPath, chunkSize)
@@ -88,6 +89,7 @@ object FileIO {
    * @param f the file to write to
    * @param options File open options, see [[java.nio.file.StandardOpenOption]], defaults to Set(WRITE, TRUNCATE_EXISTING, CREATE)
    */
+  @Deprecated
   @deprecated("Use `toPath` instead", "2.4.5")
   def toFile(f: File, options: Set[OpenOption] = Set(WRITE, TRUNCATE_EXISTING, CREATE)): Sink[ByteString, Future[IOResult]] =
     toPath(f.toPath, options)

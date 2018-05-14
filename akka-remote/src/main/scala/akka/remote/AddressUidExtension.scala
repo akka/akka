@@ -48,6 +48,7 @@ class AddressUidExtension(val system: ExtendedActorSystem) extends Extension {
   }
 
   // used by old remoting and part of public api
+  @Deprecated
   @deprecated("Use longAddressUid instead", "2.4.x")
   def addressUid: Int = _addressUid
 }

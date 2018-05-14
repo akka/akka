@@ -11,6 +11,7 @@ import com.typesafe.config.Config
 import akka.actor.{ ActorContext, ActorRef, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.dispatch.{ Envelope, MailboxType, MessageQueue, UnboundedQueueBasedMessageQueue }
 
+@Deprecated
 @deprecated("Use an explicit supervisor or proxy actor instead", "2.5.0")
 object PeekMailboxExtension extends ExtensionId[PeekMailboxExtension] with ExtensionIdProvider {
   def lookup = this
@@ -19,6 +20,7 @@ object PeekMailboxExtension extends ExtensionId[PeekMailboxExtension] with Exten
   def ack()(implicit context: ActorContext): Unit = PeekMailboxExtension(context.system).ack()
 }
 
+@Deprecated
 @deprecated("Use an explicit supervisor or proxy actor instead", "2.5.0")
 class PeekMailboxExtension(val system: ExtendedActorSystem) extends Extension {
   private val mailboxes = new ConcurrentHashMap[ActorRef, PeekMailbox]
@@ -43,6 +45,7 @@ class PeekMailboxExtension(val system: ExtendedActorSystem) extends Extension {
  *   }
  * }}}
  */
+@Deprecated
 @deprecated("Use an explicit supervisor or proxy actor instead", "2.5.0")
 class PeekMailboxType(settings: ActorSystem.Settings, config: Config) extends MailboxType {
   override def create(owner: Option[ActorRef], system: Option[ActorSystem]) = (owner, system) match {
@@ -56,6 +59,7 @@ class PeekMailboxType(settings: ActorSystem.Settings, config: Config) extends Ma
   }
 }
 
+@Deprecated
 @deprecated("Use an explicit supervisor or proxy actor instead", "2.5.0")
 class PeekMailbox(owner: ActorRef, system: ActorSystem, maxRetries: Int)
   extends UnboundedQueueBasedMessageQueue {

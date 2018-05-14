@@ -484,6 +484,7 @@ object PatternsCS {
    * If the target actor isn't terminated within the timeout the [[java.util.concurrent.CompletionStage]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
+  @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def gracefulStop(target: ActorRef, timeout: FiniteDuration): CompletionStage[java.lang.Boolean] =
     scalaGracefulStop(target, timeout).toJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
@@ -514,6 +515,7 @@ object PatternsCS {
    * If the target actor isn't terminated within the timeout the [[java.util.concurrent.CompletionStage]]
    * is completed with failure [[akka.pattern.AskTimeoutException]].
    */
+  @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def gracefulStop(target: ActorRef, timeout: FiniteDuration, stopMessage: Any): CompletionStage[java.lang.Boolean] =
     scalaGracefulStop(target, timeout, stopMessage).toJava.asInstanceOf[CompletionStage[java.lang.Boolean]]
@@ -538,6 +540,7 @@ object PatternsCS {
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided Callable
    * after the specified duration.
    */
+  @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: Callable[CompletionStage[T]]): CompletionStage[T] =
     afterCompletionStage(duration, scheduler)(value.call())(context)
@@ -553,6 +556,7 @@ object PatternsCS {
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
+  @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: CompletionStage[T]): CompletionStage[T] =
     afterCompletionStage(duration, scheduler)(value)(context)

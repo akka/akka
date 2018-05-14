@@ -180,6 +180,7 @@ object Futures {
  * Internal use only.
  */
 object japi {
+  @Deprecated
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
   class CallbackBridge[-T] extends AbstractPartialFunction[T, BoxedUnit] {
     override final def isDefinedAt(t: T): Boolean = true
@@ -190,6 +191,7 @@ object japi {
     protected def internal(result: T): Unit = ()
   }
 
+  @Deprecated
   @deprecated("Do not use this directly, use 'Recover'", "2.0")
   class RecoverBridge[+T] extends AbstractPartialFunction[Throwable, T] {
     override final def isDefinedAt(t: Throwable): Boolean = true
@@ -197,12 +199,14 @@ object japi {
     protected def internal(result: Throwable): T = null.asInstanceOf[T]
   }
 
+  @Deprecated
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
   class BooleanFunctionBridge[-T] extends scala.Function1[T, Boolean] {
     override final def apply(t: T): Boolean = internal(t)
     protected def internal(result: T): Boolean = false
   }
 
+  @Deprecated
   @deprecated("Do not use this directly, use subclasses of this", "2.0")
   class UnitFunctionBridge[-T] extends (T ⇒ BoxedUnit) {
     final def apply$mcLJ$sp(l: Long): BoxedUnit = { internal(l.asInstanceOf[T]); BoxedUnit.UNIT }

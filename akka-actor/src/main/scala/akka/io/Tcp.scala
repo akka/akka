@@ -344,6 +344,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
   /**
    * @see [[WritePath]]
    */
+  @Deprecated
   @deprecated("Use WritePath instead", "2.5.10")
   final case class WriteFile(filePath: String, position: Long, count: Long, ack: Event) extends SimpleWriteCommand {
     require(position >= 0, "WriteFile.position must be >= 0")

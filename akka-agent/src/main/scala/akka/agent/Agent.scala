@@ -8,11 +8,13 @@ import scala.concurrent.stm._
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import akka.util.SerializedSuspendableExecutionContext
 
+@Deprecated
 @deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
 object Agent {
   /**
    * Factory method for creating an Agent.
    */
+  @Deprecated
   @deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
   def apply[T](initialValue: T)(implicit context: ExecutionContext): Agent[T] = new SecretAgent(initialValue, context)
 
@@ -159,6 +161,7 @@ object Agent {
  *
  * @deprecated Agents are deprecated and scheduled for removal in the next major version, use Actors instead.
  */
+@Deprecated
 @deprecated("Agents are deprecated and scheduled for removal in the next major version, use Actors instead.", since = "2.5.0")
 abstract class Agent[T] {
 

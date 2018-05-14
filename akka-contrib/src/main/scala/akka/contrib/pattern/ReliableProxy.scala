@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import scala.util.Try
 import java.util.concurrent.TimeUnit
 
+@Deprecated
 @deprecated("Use AtLeastOnceDelivery instead", "2.5.0")
 object ReliableProxy {
   /**
@@ -225,6 +226,7 @@ import ReliableProxy._
  * @param maxConnectAttempts &nbsp;is an optional maximum number of attempts to connect to the
  *   target actor. Use `None` for no limit. If `reconnectAfter` is `None` this value is ignored.
  */
+@Deprecated
 @deprecated("Use AtLeastOnceDelivery instead", "2.5.0")
 class ReliableProxy(targetPath: ActorPath, retryAfter: FiniteDuration,
                     reconnectAfter: Option[FiniteDuration], maxConnectAttempts: Option[Int])

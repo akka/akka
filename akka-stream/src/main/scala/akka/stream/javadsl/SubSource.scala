@@ -889,6 +889,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
    * '''Cancels when''' downstream cancels
    *
    */
+  @Deprecated
   @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recoverWith(pf: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]]): SubSource[Out, Mat] =
     new SubSource(delegate.recoverWith(pf))

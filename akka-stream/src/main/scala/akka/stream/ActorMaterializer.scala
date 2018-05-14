@@ -366,6 +366,7 @@ final class ActorMaterializerSettings @InternalApi private (
   require(initialInputBufferSize <= maxInputBufferSize, s"initialInputBufferSize($initialInputBufferSize) must be <= maxInputBufferSize($maxInputBufferSize)")
 
   // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
+  @Deprecated
   @deprecated("Use ActorMaterializerSettings.apply or ActorMaterializerSettings.create instead", "2.5.10")
   def this(
     initialInputBufferSize:      Int,
@@ -388,6 +389,7 @@ final class ActorMaterializerSettings @InternalApi private (
     )
 
   // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
+  @Deprecated
   @deprecated("Use ActorMaterializerSettings.apply or ActorMaterializerSettings.create instead", "2.5.10")
   def this(
     initialInputBufferSize:      Int,
@@ -409,6 +411,7 @@ final class ActorMaterializerSettings @InternalApi private (
     )
 
   // backwards compatibility when added IOSettings, shouldn't be needed since private, but added to satisfy mima
+  @Deprecated
   @deprecated("Use ActorMaterializerSettings.apply or ActorMaterializerSettings.create instead", "2.5.10")
   def this(
     initialInputBufferSize:      Int,
@@ -538,6 +541,7 @@ final class ActorMaterializerSettings @InternalApi private (
    * this may cause an initial runtime overhead, but most of the time fusing is
    * desirable since it reduces the number of Actors that are created.
    */
+  @Deprecated
   @deprecated("Turning off fusing is no longer possible with the traversal based materializer", since = "2.5.0")
   def withAutoFusing(enable: Boolean): ActorMaterializerSettings =
     if (enable == this.autoFusing) this
