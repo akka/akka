@@ -264,6 +264,7 @@ trait AssociationHandle {
    * could be called arbitrarily many times.
    *
    */
+  @Deprecated
   @deprecated(message = "Use method that states reasons to make sure disassociation reasons are logged.", since = "2.5.3")
   def disassociate(): Unit
 
