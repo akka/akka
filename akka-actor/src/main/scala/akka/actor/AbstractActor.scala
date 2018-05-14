@@ -62,6 +62,7 @@ object AbstractActor {
      * Returns a reference to the named child or null if no child with
      * that name exists.
      */
+    @Deprecated
     @deprecated("Use findChild instead", "2.5.0")
     def getChild(name: String): ActorRef
 
@@ -231,6 +232,7 @@ abstract class AbstractActor extends Actor {
   override def postStop(): Unit = super.postStop()
 
   // TODO In 2.6.0 we can remove deprecation and make the method final
+  @Deprecated
   @deprecated("Override preRestart with message parameter with Optional type instead", "2.5.0")
   @throws(classOf[Exception])
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {

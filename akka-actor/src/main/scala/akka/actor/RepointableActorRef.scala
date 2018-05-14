@@ -134,6 +134,7 @@ private[akka] class RepointableActorRef(
     case _                ⇒ true
   }
 
+  @Deprecated
   @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") def isTerminated: Boolean = underlying.isTerminated
 
   def provider: ActorRefProvider = system.provider

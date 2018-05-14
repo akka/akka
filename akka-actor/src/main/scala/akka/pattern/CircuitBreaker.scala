@@ -58,6 +58,7 @@ object CircuitBreaker {
    * @param callTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to consider a call a failure
    * @param resetTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to attempt to close the circuit
    */
+  @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def create(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration): CircuitBreaker =
     apply(scheduler, maxFailures, callTimeout, resetTimeout)
@@ -130,6 +131,7 @@ class CircuitBreaker(
 
   require(exponentialBackoffFactor >= 1.0, "factor must be >= 1.0")
 
+  @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def this(executor: ExecutionContext, scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration) = {
     this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0)(executor)
@@ -400,6 +402,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
+  @Deprecated
   @deprecated("Use addOnOpenListener instead", "2.5.0")
   def onOpen(callback: Runnable): CircuitBreaker = addOnOpenListener(callback)
 
@@ -429,6 +432,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
+  @Deprecated
   @deprecated("Use addOnHalfOpenListener instead", "2.5.0")
   def onHalfOpen(callback: Runnable): CircuitBreaker = addOnHalfOpenListener(callback)
 
@@ -459,6 +463,7 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
+  @Deprecated
   @deprecated("Use addOnCloseListener instead", "2.5.0")
   def onClose(callback: Runnable): CircuitBreaker = addOnCloseListener(callback)
 

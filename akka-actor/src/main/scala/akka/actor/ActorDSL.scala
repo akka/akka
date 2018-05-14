@@ -69,6 +69,7 @@ import akka.util.JavaDurationConverters._
  *
  * @deprecated Use the normal `actorOf` methods defined on `ActorSystem` and `ActorContext` to create Actors instead.
  */
+@Deprecated
 @deprecated("deprecated Use the normal `actorOf` methods defined on `ActorSystem` and `ActorContext` to create Actors instead.", since = "2.5.0")
 object ActorDSL extends dsl.Inbox with dsl.Creators {
 
