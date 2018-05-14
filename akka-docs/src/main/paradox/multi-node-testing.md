@@ -66,7 +66,7 @@ will be the server. All failure injection and throttling must be done from this 
 
 The @ref:[SbtMultiJvm Plugin](multi-jvm-testing.md) has been updated to be able to run multi node tests, by
 automatically generating the relevant `multinode.*` properties. This means that you can run multi node tests
-on a single machine without any special configuration by just running them as normal multi-jvm tests. These tests can
+on a single machine without any special configuration by running them as normal multi-jvm tests. These tests can
 then be run distributed over multiple machines without any changes by using the multi-node additions to the
 plugin.
 

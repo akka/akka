@@ -92,11 +92,11 @@ There are other ways to create a materializer, e.g. from an
 `ActorContext` when using streams from within Actors. The
 `Materializer` is a factory for stream execution engines, it is the
 thing that makes streams run—you don’t need to worry about any of the details
-just now apart from that you need one for calling any of the `run` methods on
+right now apart from that you need one for calling any of the `run` methods on
 a `Source`. @scala[The materializer is picked up implicitly if it is omitted
 from the `run` method call arguments, which we will do in the following.]
 
-The nice thing about Akka Streams is that the `Source` is just a
+The nice thing about Akka Streams is that the `Source` is a
 description of what you want to run, and like an architect’s blueprint it can
 be reused, incorporated into a larger design. We may choose to transform the
 source of integers and write it to a file instead:
@@ -112,7 +112,7 @@ stream: starting with the number 1 (@scala[`BigInt(1)`]@java[`BigInteger.ONE`]) 
 the incoming numbers, one after the other; the scan operation emits the initial
 value and then every calculation result. This yields the series of factorial
 numbers which we stash away as a `Source` for later reuse—it is
-important to keep in mind that nothing is actually computed yet, this is just a
+important to keep in mind that nothing is actually computed yet, this is a
 description of what we want to have computed once we run the stream. Then we
 convert the resulting series of numbers into a stream of `ByteString`
 objects describing lines in a text file. This stream is then run by attaching a
@@ -435,7 +435,7 @@ In our case this type is @scala[`Future[Int]`]@java[`CompletionStage<Integer>`] 
 In case of the stream failing, this future would complete with a Failure.
 
 A `RunnableGraph` may be reused
-and materialized multiple times, because it is just the "blueprint" of the stream. This means that if we materialize a stream,
+and materialized multiple times, because it is only the "blueprint" of the stream. This means that if we materialize a stream,
 for example one that consumes a live stream of tweets within a minute, the materialized values for those two materializations
 will be different, as illustrated by this example:
 

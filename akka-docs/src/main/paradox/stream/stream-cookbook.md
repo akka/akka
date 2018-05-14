@@ -63,7 +63,7 @@ all the nested elements inside the sequences separately.
 
 The `mapConcat` operation can be used to implement a one-to-many transformation of elements using a mapper function
 in the form of @scala[`In => immutable.Seq[Out]`] @java[`In -> List<Out>`]. In this case we want to map a @scala[`Seq`] @java[`List`] of elements to the elements in the
-collection itself, so we can just call @scala[`mapConcat(identity)`] @java[`mapConcat(l -> l)`].
+collection itself, so we can call @scala[`mapConcat(identity)`] @java[`mapConcat(l -> l)`].
 
 Scala
 :   @@snip [RecipeFlattenSeq.scala]($code$/scala/docs/stream/cookbook/RecipeFlattenSeq.scala) { #flattening-seqs }
@@ -103,7 +103,7 @@ of the stream.
 
 This recipe uses a `GraphStage` to host a mutable `MessageDigest` class (part of the Java Cryptography
 API) and update it with the bytes arriving from the stream. When the stream starts, the `onPull` handler of the
-stage is called, which just bubbles up the `pull` event to its upstream. As a response to this pull, a ByteString
+stage is called, which bubbles up the `pull` event to its upstream. As a response to this pull, a ByteString
 chunk will arrive (`onPush`) which we use to update the digest, then it will pull for the next chunk.
 
 Eventually the stream of `ByteString` s depletes and we get a notification about this event via `onUpstreamFinish`.
@@ -365,7 +365,7 @@ the last value for the downstream if necessary.
 
 We have two options to implement this feature. In both cases we will use `GraphStage` to build our custom
 element. In the first version we will use a provided initial value `initial` that will be used
-to feed the downstream if no upstream element is ready yet. In the `onPush()` handler we just overwrite the
+to feed the downstream if no upstream element is ready yet. In the `onPush()` handler we overwrite the
 `currentValue` variable and immediately relieve the upstream by calling `pull()`. The downstream `onPull` handler
 is very similar, we immediately relieve the downstream by emitting `currentValue`.
 
@@ -464,7 +464,7 @@ Java
 consumed.
 
 This recipe uses a `GraphStage` to implement the desired feature. In the only handler we override,
-`onPush()` we just update a counter and see if it gets larger than `maximumBytes`. If a violation happens
+`onPush()` we update a counter and see if it gets larger than `maximumBytes`. If a violation happens
 we signal failure, otherwise we forward the chunk we have received.
 
 Scala

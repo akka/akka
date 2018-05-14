@@ -88,7 +88,7 @@ You can combine your own strategy with the default strategy:
 
 ### Stopping Supervisor Strategy
 
-Closer to the Erlang way is the strategy to just stop children when they fail
+Closer to the Erlang way is the strategy to stop children when they fail
 and then take corrective action in the supervisor when DeathWatch signals the
 loss of the child. This strategy is also provided pre-packaged as
 `SupervisorStrategy.stoppingStrategy` with an accompanying

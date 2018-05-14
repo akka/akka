@@ -260,7 +260,7 @@ Java
 The most interesting part is probably the last: an `Ack` removes the oldest
 data chunk from the buffer, and if that was the last chunk then we either close
 the connection (if the peer closed its half already) or return to the idle
-behavior; otherwise we just send the next buffered chunk and stay waiting for
+behavior; otherwise we send the next buffered chunk and stay waiting for
 the next `Ack`.
 
 Back-pressure can be propagated also across the reading side back to the writer

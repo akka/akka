@@ -472,7 +472,7 @@ If you want to more accurately output the timestamp, use the MDC attribute `akka
 ### MDC values defined by the application
 
 One useful feature available in Slf4j is [MDC](http://logback.qos.ch/manual/mdc.html),
-Akka has a way to let the application specify custom values, you just need to get a
+Akka has a way to let the application specify custom values, for this you need to use a
 specialized `LoggingAdapter`, the `DiagnosticLoggingAdapter`. In order to
 get it you can use the factory, providing an @scala[Actor] @java[AbstractActor] as logSource:
 
@@ -488,7 +488,7 @@ Java
     final DiagnosticLoggingAdapter log = Logging.getLogger(this);
     ```
 
-Once you have the logger, you just need to add the custom values before you log something.
+Once you have the logger, you need to add the custom values before you log something.
 This way, the values will be put in the SLF4J MDC right before appending the log and removed after.
 
 @@@ note

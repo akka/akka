@@ -424,7 +424,7 @@ You have a few choices how to set up certificates and hostname verification:
     * The single set of keys and the single certificate is distributed to all nodes. The certificate can
       be self-signed as it is distributed both as a certificate for authentication but also as the trusted certificate.
     * If the keys/certificate are lost, someone else can connect to your cluster.
-    * Adding nodes to the cluster is simple as the key material can just be deployed / distributed to the new node.
+    * Adding nodes to the cluster is simple as the key material can be deployed / distributed to the new node.
 * Have a single set of keys and a single certificate for all nodes that contains all of the host names and *enable*
   hostname checking.
     * This means that only the hosts mentioned in the certificate can connect to the cluster.

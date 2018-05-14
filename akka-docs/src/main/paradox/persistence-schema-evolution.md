@@ -123,7 +123,7 @@ origin of the event (`persistenceId`, `sequenceNr` and more).
 
 More advanced techniques (e.g. [Remove event class and ignore events](#remove-event-class)) will dive into using the manifests for increasing the
 flexibility of the persisted vs. exposed types even more. However for now we will focus on the simpler evolution techniques,
-concerning just configuring the payload serializers.
+concerning only configuring the payload serializers.
 
 By default the `payload` will be serialized using Java Serialization. This is fine for testing and initial phases
 of your development (while you're still figuring out things and the data will not need to stay persisted forever).

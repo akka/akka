@@ -276,7 +276,7 @@ e.g. when interfacing with untyped actors.
 ## Proxying
 
 You can use the `typedActorOf` that takes a TypedProps and an ActorRef to proxy the given ActorRef as a TypedActor.
-This is usable if you want to communicate remotely with TypedActors on other machines, just pass the `ActorRef` to `typedActorOf`.
+This is usable if you want to communicate remotely with TypedActors on other machines, pass the `ActorRef` to `typedActorOf`.
 
 @@@ note
 

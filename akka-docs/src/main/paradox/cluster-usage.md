@@ -274,7 +274,7 @@ Because of these issues, auto-downing should **never** be used in a production e
 
 There are two ways to remove a member from the cluster.
 
-You can just stop the actor system (or the JVM process). It will be detected
+You can stop the actor system (or the JVM process). It will be detected
 as unreachable and removed after the automatic or manual downing as described
 above.
 

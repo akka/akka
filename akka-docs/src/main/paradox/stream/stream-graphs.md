@@ -245,7 +245,7 @@ of the same type,
  * `FanInShape1`, `FanInShape2`, ..., `FanOutShape1`, `FanOutShape2`, ... for junctions
 with multiple input (or output) ports of different types.
 
-Since our shape has two input ports and one output port, we can just use the `FanInShape` DSL to define
+Since our shape has two input ports and one output port, we can use the `FanInShape` DSL to define
 our custom shape:
 
 Scala
@@ -339,7 +339,7 @@ Java
 This example demonstrates how `BidiFlow` subgraphs can be hooked
 together and also turned around with the @scala[`.reversed`]@java[`.reversed()`] method. The test
 simulates both parties of a network communication protocol without actually
-having to open a network connection—the flows can just be connected directly.
+having to open a network connection—the flows can be connected directly.
 
 <a id="graph-matvalue"></a>
 ## Accessing the materialized value inside the Graph

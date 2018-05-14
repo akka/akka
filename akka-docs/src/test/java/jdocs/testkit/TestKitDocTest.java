@@ -271,7 +271,7 @@ public class TestKitDocTest extends AbstractJavaTest {
   public void demonstrateProbe() {
     //#test-probe
     new TestKit(system) {{
-      // simple actor which just forwards messages
+      // simple actor which only forwards messages
       class Forwarder extends AbstractActor {
         final ActorRef target;
         @SuppressWarnings("unused")

@@ -33,7 +33,7 @@ These two messages seem to cover the required functionality. However, the approa
 
 * There will be observable differences in the latency of delivery between local and remote messages, because factors like network link bandwidth and the message size also come into play.
 * Reliability is a concern because a remote message send involves more steps, which means that more can go wrong.
-* A local send will just pass a reference to the message inside the same JVM, without any restrictions on the underlying object which is sent, whereas a remote transport will place a limit on the message size.
+* A local send will pass a reference to the message inside the same JVM, without any restrictions on the underlying object which is sent, whereas a remote transport will place a limit on the message size.
 
 In addition, while sending inside the same JVM is significantly more reliable, if an
 actor fails due to a programmer error while processing the message, the effect is the same as if a remote network request fails due to the remote host crashing while processing the message. Even though in both cases, the service recovers after a while (the actor is restarted by its supervisor, the host is restarted by an operator or by a monitoring system) individual requests are lost during the crash. **Therefore, writing your actors such that every
@@ -129,7 +129,7 @@ Note in the code that:
 
 * The @scala[companion object]@java[static method] defines how to construct a `Device` actor. The `props` parameters include an ID for the device and the group to which it belongs, which we will use later.
 * The @scala[companion object]@java[class] includes the definitions of the messages we reasoned about previously.
-* In the `Device` class, the value of `lastTemperatureReading` is initially set to @scala[`None`]@java[`Optional.empty()`], and the actor will just report it back if queried.
+* In the `Device` class, the value of `lastTemperatureReading` is initially set to @scala[`None`]@java[`Optional.empty()`], and the actor will report it back if queried.
 
 ## Testing the actor
 

@@ -18,7 +18,7 @@ These issues can be addressed in many different ways, but the important point is
 
  * When a query arrives, the group actor takes a _snapshot_ of the existing device actors and will only ask those actors for the temperature.
  * Actors that start up _after_ the query arrives are ignored.
- * If an actor in the snapshot stops during the query without answering, we will just report the fact that it stopped to the sender of the query message.
+ * If an actor in the snapshot stops during the query without answering, we will report the fact that it stopped to the sender of the query message.
 
 Apart from device actors coming and going dynamically, some actors might take a long time to answer. For example, they could be stuck in an accidental infinite loop, or fail due to a bug and drop our request. We don't want the query to continue indefinitely, so we will consider it complete in either of the following cases:
 
@@ -88,7 +88,7 @@ The query actor, apart from the pending timer, has one stateful aspect, tracking
 to create a mutable field in the actor @scala[(a `var`)]. A different approach takes advantage of the ability to change how
 an actor responds to messages. A
 `Receive` is just a function (or an object, if you like) that can be returned from another function. By default, the `receive` block defines the behavior of the actor, but it is possible to change it multiple times during the life of the actor. We call `context.become(newBehavior)`
-where `newBehavior` is anything with type `Receive` @scala[(which is just a shorthand for `PartialFunction[Any, Unit]`)].  We will leverage this
+where `newBehavior` is anything with type `Receive` @scala[(which is a shorthand for `PartialFunction[Any, Unit]`)].  We will leverage this
 feature to track the state of our actor.
 
 For our use case:
@@ -125,7 +125,7 @@ new reply, for example, we need some mechanism. This mechanism is the method `co
 _change_ the actor's message handling function to the provided `newReceive` function. You can imagine that before
 starting, your actor automatically calls `context.become(receive)`, i.e. installing the `Receive` function that
 is returned from `receive`. This is another important observation: **it is not `receive` that handles the messages,
-it just returns a `Receive` function that will actually handle the messages**.
+it returns a `Receive` function that will actually handle the messages**.
 
 We now have to figure out what to do in `receivedResponse`. First, we need to record the new result in the map `repliesSoFar` and remove the actor from `stillWaiting`. The next step is to check if there are any remaining actors we are waiting for. If there is none, we send the result of the query to the original requester and stop the query actor. Otherwise, we need to update the `repliesSoFar` and `stillWaiting` structures and wait for more
 messages.
@@ -147,7 +147,7 @@ Java
 :   @@snip [DeviceGroupQuery.java]($code$/java/jdocs/tutorial_5/DeviceGroupQuery.java) { #query-collect-reply }
 
 It is quite natural to ask at this point, what have we gained by using the `context.become()` trick instead of
-just making the `repliesSoFar` and `stillWaiting` structures mutable fields of the actor (i.e. `var`s)? In this
+making the `repliesSoFar` and `stillWaiting` structures mutable fields of the actor (i.e. `var`s)? In this
 simple example, not that much. The value of this style of state keeping becomes more evident when you suddenly have
 _more kinds_ of states. Since each state
 might have temporary data that is relevant itself, keeping these as fields would pollute the global state
@@ -230,7 +230,7 @@ Java
 It is probably worth restating what we said at the beginning of the chapter. By keeping the temporary state that is only relevant to the query itself in a separate actor we keep the group actor implementation very simple. It delegates
 everything to child actors and therefore does not have to keep state that is not relevant to its core business. Also, multiple queries can now run parallel to each other, in fact, as many as needed. In our case querying an individual device actor is a fast operation, but if this were not the case, for example, because the remote sensors need to be contacted over the network, this design would significantly improve throughput.
 
-We close this chapter by testing that everything works together. This test is just a variant of the previous ones, now exercising the group query feature:
+We close this chapter by testing that everything works together. This test is a variant of the previous ones, now exercising the group query feature:
 
 Scala
 :   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_5/DeviceGroupSpec.scala) { #group-query-integration-test }

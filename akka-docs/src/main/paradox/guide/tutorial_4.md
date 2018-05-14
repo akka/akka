@@ -186,7 +186,7 @@ We are almost ready to test the removal of devices. But, we still need the follo
  * To be notified once the device actor is stopped. We can use the _Death Watch_ facility for this purpose, too. The @scala[`TestProbe`] @java[`TestKit`] has two messages that we can easily use, `watch()` to watch a specific actor, and `expectTerminated`
    to assert that the watched actor has been terminated.
 
-We add two more test cases now. In the first, we just test that we get back the list of proper IDs once we have added a few devices. The second test case makes sure that the device ID is properly removed after the device actor has been stopped:
+We add two more test cases now. In the first, we test that we get back the list of proper IDs once we have added a few devices. The second test case makes sure that the device ID is properly removed after the device actor has been stopped:
 
 Scala
 :   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_4/DeviceGroupSpec.scala) { #device-group-list-terminate-test }

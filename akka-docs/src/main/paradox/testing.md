@@ -945,7 +945,7 @@ dispatcher to `CallingThreadDispatcher.global` and it sets the
 
 If you want to test the actor behavior, including hotswapping, but without
 involving a dispatcher and without having the `TestActorRef` swallow
-any thrown exceptions, then there is another mode available for you: just use
+any thrown exceptions, then there is another mode available for you: use
 the `receive` method on `TestActorRef`, which will be forwarded to the
 underlying actor:
 

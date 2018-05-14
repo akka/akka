@@ -499,7 +499,7 @@ an implicit class that enriches them generically, this class would require expli
 parameters due to [SI-2712](https://issues.scala-lang.org/browse/SI-2712). For a partial workaround that unifies
 extensions to `Source` and `Flow` see [this sketch by R. Kuhn](https://gist.github.com/rkuhn/2870fcee4937dda2cad5).
 
-A lot simpler is the task of just adding an extension method to `Source` as shown below:
+A lot simpler is the task of adding an extension method to `Source` as shown below:
 
 @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #extending-source }
 

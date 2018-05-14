@@ -188,7 +188,7 @@ Java
 
 
 When facing this, you
-may be tempted to just wrap the blocking call inside a `Future` and work
+may be tempted to wrap the blocking call inside a `Future` and work
 with that instead, but this strategy is too simple: you are quite likely to
 find bottlenecks or run out of memory or threads when the application runs
 under increased load.

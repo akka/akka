@@ -64,7 +64,7 @@ Java
 :   @@snip [StreamTcpDocTest.java]($code$/java/jdocs/stream/io/StreamTcpDocTest.java) { #repl-client }
 
 The `repl` flow we use to handle the server interaction first prints the servers response, then awaits on input from
-the command line (this blocking call is used here just for the sake of simplicity) and converts it to a
+the command line (this blocking call is used here for the sake of simplicity) and converts it to a
 `ByteString` which is then sent over the wire to the server. Then we connect the TCP pipeline to this
 processing stage–at this point it will be materialized and start processing data once the server responds with
 an *initial message*.
@@ -112,7 +112,7 @@ which completes the stream once it encounters such command].
 
 ### Using framing in your protocol
 
-Streaming transport protocols like TCP just pass streams of bytes, and does not know what is a logical chunk of bytes from the
+Streaming transport protocols like TCP only pass streams of bytes, and does not know what is a logical chunk of bytes from the
 application's point of view. Often when implementing network protocols you will want to introduce your own framing.
 This can be done in two ways:
 An end-of-frame marker, e.g. end line `\n`, can do framing via `Framing.delimiter`.

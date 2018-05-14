@@ -221,8 +221,8 @@ Java
 If the target database does not provide a reactive streams `Subscriber` that can perform writes,
 you may have to implement the write logic using plain functions or Actors instead.
 
-In case your write logic is state-less and you just need to convert the events from one data type to another
-before writing into the alternative datastore, then the projection is as simple as:
+In case your write logic is state-less and you need to convert the events from one data type to another
+before writing into the alternative datastore, then the projection will look like this:
 
 Scala
 :  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-simple-classes }
