@@ -140,6 +140,7 @@ object Behaviors {
    * some action upon each received message or signal. It is most commonly used
    * for logging or tracing what a certain Actor does.
    */
+  @Deprecated
   @deprecated("Use overloaded tap", "2.5.13")
   def tap[T: ClassTag](
     onMessage: (ActorContext[T], T) ⇒ _,
