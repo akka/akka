@@ -621,6 +621,7 @@ class TestKit(system: ActorSystem) {
   /**
    * Same as `expectNoMsg(remainingOrDefault)`, but correctly treating the timeFactor.
    */
+  @Deprecated
   @deprecated(message = "Use expectNoMessage instead", since = "2.5.10")
   def expectNoMsg(): Unit = tp.expectNoMessage()
 
@@ -632,6 +633,7 @@ class TestKit(system: ActorSystem) {
   /**
    * Assert that no message is received for the specified time.
    */
+  @Deprecated
   @deprecated(message = "Use expectNoMessage instead", since = "2.5.10")
   def expectNoMsg(max: FiniteDuration): Unit = tp.expectNoMsg(max)
 

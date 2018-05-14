@@ -641,6 +641,7 @@ trait TestKitBase {
   /**
    * Same as `expectNoMsg(remainingOrDefault)`, but correctly treating the timeFactor.
    */
+  @Deprecated
   @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
   def expectNoMsg() { expectNoMsg_internal(remainingOrDefault) }
 
@@ -648,6 +649,7 @@ trait TestKitBase {
    * Assert that no message is received for the specified time.
    * NOTE! Supplied value is always dilated.
    */
+  @Deprecated
   @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
   def expectNoMsg(max: FiniteDuration) {
     expectNoMsg_internal(max.dilated)
