@@ -95,6 +95,7 @@ final class DistributedPubSubSettings(
   val maxDeltaElements:                   Int,
   val sendToDeadLettersWhenNoSubscribers: Boolean) extends NoSerializationVerificationNeeded {
 
+  @Deprecated
   @deprecated("Use the other constructor instead.", "2.5.5")
   def this(
     role:              Option[String],
