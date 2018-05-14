@@ -209,7 +209,7 @@ In addition, local sends can fail in Akka-specific ways:
  * if the receiving actor fails while processing the message or is already
 terminated
 
-While the first is clearly a matter of configuration the second deserves some
+While the first is a matter of configuration the second deserves some
 thought: the sender of a message does not get feedback if there was an
 exception while processing, that notification goes to the supervisor instead.
 This is in general not distinguishable from a lost message for an outside
