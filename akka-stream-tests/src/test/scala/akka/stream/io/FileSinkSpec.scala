@@ -23,6 +23,7 @@ import com.google.common.jimfs.{ Configuration, Jimfs }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
@@ -226,7 +227,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "complete with failure when file cannot be open" in {
       val completion = Source.single(ByteString("42"))
-        .runWith(FileIO.toPath(Paths.get("/I/hope/this/file/doesnt/exist.txt")))
+        .runWith(FileIO.toPath(fs.getPath("/I/hope/this/file/doesnt/exist.txt")))
 
       completion.failed.futureValue shouldBe an[NoSuchFileException]
     }
