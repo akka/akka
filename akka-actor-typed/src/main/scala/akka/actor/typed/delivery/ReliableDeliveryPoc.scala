@@ -44,13 +44,18 @@ object ReliableDeliveryPoc {
    * producer will resend all messages from that sequence number. The producer keeps
    * unconfirmed messages in a buffer to be able to resend them. The buffer size is limited
    * by the request window size.
+   *
+   * The resending is optional, and the `ConsumerController` can be started with `resendLost=false`
+   * to ignore lost messages, and then the `ProducerController` will not buffer unconfirmed messages.
+   * In that mode it provides only flow control but no reliable delivery.
    */
   object ProducerController {
 
     import ConsumerController.SequencedMessage
 
     sealed trait ProducerMessage
-    final case class Request[T](confirmedSeqNr: Long, upToSeqNr: Long, consumer: ActorRef[SequencedMessage[T]], viaReceiveTimeout: Boolean) extends ProducerMessage
+    final case class Request[T](confirmedSeqNr: Long, upToSeqNr: Long, consumer: ActorRef[SequencedMessage[T]],
+                                supportResend: Boolean, viaReceiveTimeout: Boolean) extends ProducerMessage
     final case class Resend(fromSeqNr: Long) extends ProducerMessage
     private case class Msg[T](msg: T) extends ProducerMessage
 
@@ -63,10 +68,11 @@ object ReliableDeliveryPoc {
         val requestNext = requestNextFactory(msgAdapter)
 
         Behaviors.receiveMessagePartial {
-          case Request(_, upToSeqNr, receiver, _) ⇒
+          case Request(_, upToSeqNr, receiver: ActorRef[SequencedMessage[T]] @unchecked, supportResend, _) ⇒
             producer ! requestNext
-            active(producer, requestNext, requested = true, receiver,
-              currentSeqNr = 1, requestedSeqNr = upToSeqNr, Vector.empty)
+            val unconfirmed: Option[Vector[SequencedMessage[T]]] = if (supportResend) Some(Vector.empty) else None
+            active[T, RequestNext](producer, requestNext, requested = true, receiver,
+              currentSeqNr = 1, requestedSeqNr = upToSeqNr, unconfirmed)
         }
       }
     }
@@ -78,13 +84,13 @@ object ReliableDeliveryPoc {
       receiver:       ActorRef[SequencedMessage[T]],
       currentSeqNr:   Long,
       requestedSeqNr: Long,
-      unconfirmed:    Vector[SequencedMessage[T]]): Behavior[ProducerMessage] = {
+      unconfirmed:    Option[Vector[SequencedMessage[T]]]): Behavior[ProducerMessage] = { // FIXME use OptionVal
 
       def become(
         requested:      Boolean,
         currentSeqNr:   Long,
         requestedSeqNr: Long,
-        unconfirmed:    Vector[SequencedMessage[T]]): Behavior[ProducerMessage] =
+        unconfirmed:    Option[Vector[SequencedMessage[T]]]): Behavior[ProducerMessage] =
         active(producer, requestNext, requested, receiver, currentSeqNr, requestedSeqNr, unconfirmed)
 
       Behaviors.receive { (ctx, msg) ⇒
@@ -93,7 +99,11 @@ object ReliableDeliveryPoc {
             if (requested && currentSeqNr <= requestedSeqNr) {
               ctx.log.info("sent {}", currentSeqNr)
               val seqMsg = SequencedMessage(currentSeqNr, m)
-              val newUnconfirmed = unconfirmed :+ seqMsg
+              val newUnconfirmed = unconfirmed match {
+                case Some(u) ⇒ Some(u :+ seqMsg)
+                case None    ⇒ None // no resending, no need to keep unconfirmed
+              }
+
               receiver ! seqMsg
               val newRequested =
                 if (currentSeqNr == requestedSeqNr)
@@ -107,12 +117,25 @@ object ReliableDeliveryPoc {
               throw new IllegalStateException(s"Unexpected Msg when no demand, requested $requested, " +
                 s"requestedSeqNr $requestedSeqNr, currentSeqNr $currentSeqNr")
             }
-          case Request(confirmedSeqNr, seqNr, `receiver`, viaReceiveTimeout) ⇒
-            val newUnconfirmed = unconfirmed.dropWhile(_.seqNr <= confirmedSeqNr)
+
+          case Request(confirmedSeqNr, seqNr, rcv, supportResend, viaReceiveTimeout) ⇒
+            if (rcv != receiver) {
+              // FIXME change of receiver should be supported
+              ctx.log.warning(s"Unexpected receiver {}, expected {}", rcv, receiver)
+            }
+            val newUnconfirmed =
+              if (supportResend) unconfirmed match {
+                case Some(u) ⇒ Some(u.dropWhile(_.seqNr <= confirmedSeqNr))
+                case None    ⇒ Some(Vector.empty)
+              }
+              else None
+
             if (viaReceiveTimeout && newUnconfirmed.nonEmpty) {
               // the last message was lost and no more message was sent that would trigger Resend
-              ctx.log.info("resending after ReceiveTimeout {}", newUnconfirmed.map(_.seqNr).mkString(", "))
-              newUnconfirmed.foreach(receiver ! _)
+              newUnconfirmed.foreach { u ⇒
+                ctx.log.info("resending after ReceiveTimeout {}", u.map(_.seqNr).mkString(", "))
+                u.foreach(receiver ! _)
+              }
             }
             if (seqNr > requestedSeqNr) {
               if (!requested && (seqNr - currentSeqNr) > 0)
@@ -121,15 +144,16 @@ object ReliableDeliveryPoc {
             } else Behaviors.same
 
           case Resend(fromSeqNr) ⇒
-            val newUnconfirmed = unconfirmed.dropWhile(_.seqNr < fromSeqNr)
-            ctx.log.info("resending {}", newUnconfirmed.map(_.seqNr).mkString(", "))
-            newUnconfirmed.foreach(receiver ! _)
-            become(requested, currentSeqNr, requestedSeqNr, newUnconfirmed)
+            unconfirmed match {
+              case Some(u) ⇒
+                val newUnconfirmed = u.dropWhile(_.seqNr < fromSeqNr)
+                ctx.log.info("resending {}", newUnconfirmed.map(_.seqNr).mkString(", "))
+                newUnconfirmed.foreach(receiver ! _)
+                become(requested, currentSeqNr, requestedSeqNr, Some(newUnconfirmed))
+              case None ⇒
+                throw new IllegalStateException("Resend not supported, run the ConsumerController with resendLost = true")
+            }
 
-          case Request(_, _, otherReceiver, _) ⇒
-            // FIXME change of receiver should be supported
-            ctx.log.warning(s"Unexpected receiver {}, expected {}", otherReceiver, receiver)
-            Behaviors.same
         }
       }
     }
@@ -170,26 +194,27 @@ object ReliableDeliveryPoc {
 
     private val RequestWindow = 50
 
-    def behavior[T](producer: ActorRef[ProducerMessage]): Behavior[ConsumerMessage] = {
+    def behavior[T](producer: ActorRef[ProducerMessage], resendLost: Boolean): Behavior[ConsumerMessage] = {
       Behaviors.receiveMessagePartial {
         case Confirmed(seqNr, deliverTo: ActorRef[Delivery[T]] @unchecked) ⇒
           Behaviors.setup[ConsumerMessage] { ctx ⇒
             // simulate lost messages from producerController to consumerController
             val flakySelf = ctx.spawn(flakyNetwork[SequencedMessage[T]](ctx.self, dropProbability = 0.1), "flaky")
-            producer ! Request(seqNr, RequestWindow, flakySelf, viaReceiveTimeout = false)
+            producer ! Request(seqNr, RequestWindow, flakySelf, resendLost, viaReceiveTimeout = false)
             ctx.setReceiveTimeout(1.second, RetryRequest)
             val stashBuffer = StashBuffer[ConsumerMessage](100)
-            active[T](flakySelf, producer, deliverTo, stashBuffer, receivedSeqNr = seqNr, requestedSeqNr = RequestWindow)
+            active[T](flakySelf, producer, deliverTo, stashBuffer, resendLost, receivedSeqNr = seqNr, requestedSeqNr = RequestWindow)
           }
       }
     }
 
-    private def active[T](flakySelf: ActorRef[SequencedMessage[T]], producer: ActorRef[ProducerMessage],
+    private def active[T](
+      flakySelf: ActorRef[SequencedMessage[T]], producer: ActorRef[ProducerMessage],
       destination: ActorRef[Delivery[T]], stashBuffer: StashBuffer[ConsumerMessage],
-      receivedSeqNr: Long, requestedSeqNr: Long): Behavior[ConsumerMessage] = {
+      resendLost: Boolean, receivedSeqNr: Long, requestedSeqNr: Long): Behavior[ConsumerMessage] = {
 
       def become(destination: ActorRef[Delivery[T]], receivedSeqNr: Long = receivedSeqNr, requestedSeqNr: Long = requestedSeqNr) =
-        active[T](flakySelf, producer, destination, stashBuffer, receivedSeqNr, requestedSeqNr)
+        active[T](flakySelf, producer, destination, stashBuffer, resendLost, receivedSeqNr, requestedSeqNr)
 
       def becomeResending(): Behavior[ConsumerMessage] = {
         Behaviors.receive { (ctx, msg) ⇒
@@ -227,7 +252,7 @@ object ReliableDeliveryPoc {
                 if ((requestedSeqNr - seqNr) == RequestWindow / 2) {
                   val newRequestedSeqNr = requestedSeqNr + RequestWindow / 2
                   ctx.log.info("request {}", newRequestedSeqNr)
-                  producer ! Request(confirmedSeqNr = seqNr, newRequestedSeqNr, flakySelf, viaReceiveTimeout = false)
+                  producer ! Request(confirmedSeqNr = seqNr, newRequestedSeqNr, flakySelf, resendLost, viaReceiveTimeout = false)
                   newRequestedSeqNr
                 } else {
                   requestedSeqNr
@@ -251,8 +276,13 @@ object ReliableDeliveryPoc {
               becomeWaitingForConfirmation(seqNr)
             } else if (seqNr > expectedSeqNr) {
               ctx.log.info("missing {}, received {}", expectedSeqNr, seqNr)
-              producer ! Resend(fromSeqNr = expectedSeqNr)
-              becomeResending()
+              if (resendLost) {
+                producer ! Resend(fromSeqNr = expectedSeqNr)
+                becomeResending()
+              } else {
+                destination ! Delivery(seqNr, msg, ctx.self)
+                becomeWaitingForConfirmation(seqNr)
+              }
             } else { // seqNr < expectedSeqNr
               ctx.log.info("deduplicate {}, expected {}", seqNr, expectedSeqNr)
               Behaviors.same
@@ -262,7 +292,7 @@ object ReliableDeliveryPoc {
             // in case the Request or the SequencedMessage triggering the Request is lost
             val newRequestedSeqNr = receivedSeqNr + RequestWindow
             ctx.log.info("retry request {}", newRequestedSeqNr)
-            producer ! Request(receivedSeqNr, newRequestedSeqNr, flakySelf, viaReceiveTimeout = true)
+            producer ! Request(receivedSeqNr, newRequestedSeqNr, flakySelf, resendLost, viaReceiveTimeout = true)
             become(destination, requestedSeqNr = newRequestedSeqNr)
 
           case Confirmed(seqNr, _) ⇒
@@ -333,7 +363,7 @@ object ReliableDeliveryPoc {
             // confirmation can be later, asynchronously
             // schedule to simulate slow consumer
             ctx.schedule(10.millis, ctx.self, SomeAsyncJob(d))
-            if (d.seqNr == 500) {
+            if (d.seqNr >= 500) {
               ctx.system.terminate()
             }
             Behaviors.same
@@ -361,7 +391,7 @@ object ReliableDeliveryPoc {
       "producerController")
     // simulate lost messages from consumerController to producerController
     val flaky = ctx.spawn(flakyNetwork(producerController, dropProbability = 0.3), "flakyProducer")
-    val consumerController = ctx.spawn(ConsumerController.behavior(flaky), "consumerController")
+    val consumerController = ctx.spawn(ConsumerController.behavior(flaky, resendLost = true), "consumerController")
     ctx.spawn(MyConsumer.behavior(consumerController), name = "destination")
     Behaviors.empty
   }
