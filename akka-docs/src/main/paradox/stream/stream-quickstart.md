@@ -200,7 +200,7 @@ combinator to signal to all its upstream sources of data that it can only
 accept elements at a certain rate—when the incoming rate is higher than one per
 second the throttle operator will assert *back-pressure* upstream.
 
-This is basically all there is to Akka Streams in a nutshell—glossing over the
+This is all there is to Akka Streams in a nutshell—glossing over the
 fact that there are dozens of sources and sinks and many more stream
 transformation operators to choose from, see also @ref:[operator index](operators/index.md).
 

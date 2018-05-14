@@ -63,7 +63,7 @@ not used yet, the built-in scheduler facility. Using the scheduler is simple:
 
 * We get the scheduler from the `ActorSystem`, which, in turn,
 is accessible from the actor's context: @scala[`context.system.scheduler`]@java[`getContext().getSystem().scheduler()`]. This needs an @scala[implicit] `ExecutionContext` which
-is basically the thread-pool that will execute the timer task itself. In our case, we use the same dispatcher
+is the thread-pool that will execute the timer task itself. In our case, we use the same dispatcher
 as the actor by @scala[importing `import context.dispatcher`] @java[passing in `getContext().dispatcher()`].
 * The
 @scala[`scheduler.scheduleOnce(time, actorRef, message)`] @java[`scheduler.scheduleOnce(time, actorRef, message, executor, sender)`] method will schedule the message `message` into the future by the

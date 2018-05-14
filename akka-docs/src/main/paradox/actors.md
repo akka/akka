@@ -568,7 +568,7 @@ sending their ActorRefs to other Actors within messages.
 
 @@@
 
-The supplied path is parsed as a `java.net.URI`, which basically means
+The supplied path is parsed as a `java.net.URI`, which means
 that it is split on `/` into path elements. If the path starts with `/`, it
 is absolute and the look-up starts at the root guardian (which is the parent of
 `"/user"`); otherwise it starts at the current actor. If a path element equals
