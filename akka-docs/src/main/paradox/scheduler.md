@@ -1,5 +1,17 @@
 # Scheduler
 
+## Dependency
+
+To use Scheduler, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 Sometimes the need for making things happen in the future arises, and where do
 you go look then?  Look no further than `ActorSystem`! There you find the
 `scheduler` method that returns an instance of

@@ -1,5 +1,17 @@
 # Interaction Patterns
 
+## Dependency
+
+To use Akka Actor Typed, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-actor-typed_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
 Interacting with an Actor in Akka Typed is done through an @scala[`ActorRef[T]`]@java[`ActorRef<T>`] where `T` is the type of messages the actor accepts, also known as the "protocol". This ensures that only the right kind of messages can be sent to an actor and also that no one else but the Actor itself can access the Actor instance internals.
 
 Message exchange with Actors follow a few common patterns, let's go through each one of them. 

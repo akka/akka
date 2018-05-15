@@ -1,5 +1,18 @@
 # Camel
 
+## Dependency
+
+To use Camel, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-camel_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
+
 @@@ warning
 
 Akka Camel is deprecated in favour of [Alpakka](https://github.com/akka/alpakka) , the Akka Streams based collection of integrations to various endpoints (including Camel).

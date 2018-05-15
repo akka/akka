@@ -1,5 +1,17 @@
 # Working with streaming IO
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 Akka Streams provides a way of handling File IO and TCP connections with Streams.
 While the general approach is very similar to the @ref:[Actor based TCP handling](../io-tcp.md) using Akka IO,
 by using Akka Streams you are freed of having to manually react to back-pressure signals,

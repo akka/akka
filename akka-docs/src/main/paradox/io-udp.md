@@ -1,5 +1,17 @@
 # Using UDP
 
+## Dependency
+
+To use UDP, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 UDP is a connectionless datagram protocol which offers two different ways of
 communication on the JDK level:
 

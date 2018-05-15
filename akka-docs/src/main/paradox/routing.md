@@ -1,5 +1,17 @@
 # Routing
 
+## Dependency
+
+To use Routing, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 Messages can be sent via a router to efficiently route them to destination actors, known as
 its *routees*. A `Router` can be used inside or outside of an actor, and you can manage the
 routees yourselves or use a self contained router actor with configuration capabilities.

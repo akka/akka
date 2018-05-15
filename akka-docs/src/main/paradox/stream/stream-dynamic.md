@@ -1,5 +1,17 @@
 # Dynamic stream handling
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 <a id="kill-switch"></a>
 ## Controlling graph completion with KillSwitch
 

@@ -1,5 +1,17 @@
 # Distributed Data
 
+## Dependency
+
+To use Akka Distributed Data, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-distributed-data_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 *Akka Distributed Data* is useful when you need to share data between nodes in an
 Akka Cluster. The data is accessed with an actor providing a key-value store like API.
 The keys are unique identifiers with type information of the data values. The values
@@ -18,16 +30,6 @@ you can also implement your own custom data types.
 It is eventually consistent and geared toward providing high read and write availability
 (partition tolerance), with low latency. Note that in an eventually consistent system a read may return an
 out-of-date value.
-
-## Dependency
-
-To use Akka Distributed Data, add the module to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-distributed-data_$scala.binary_version$"
-  version="$akka.version$"
-}
 
 ## Using the Replicator
 
@@ -780,16 +782,6 @@ talk by Sean Cribbs
 talk by Mark Shapiro
  * [A comprehensive study of Convergent and Commutative Replicated Data Types](http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf)
 paper by Mark Shapiro et. al.
-
-## Dependencies
-
-To use Distributed Data you must add the following dependency in your project.
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-distributed-data_$scala.binary_version$"
-  version="$akka.version$"
-}
 
 ## Configuration
 

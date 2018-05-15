@@ -1,6 +1,18 @@
 # Actor discovery
 
-With @ref:[untyped actors](../general/addressing.md) you would use `ActorSelection` to "lookup" actors. Given an actor path with 
+## Dependency
+
+To use Akka Actor Typed, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-actor-typed_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
+With @ref:[untyped actors](../general/addressing.md) you would use `ActorSelection` to "lookup" actors. Given an actor path with
 address information you can get hold of an `ActorRef` to any actor. `ActorSelection` does not exist in Akka Typed, 
 so how do you get the actor references? You can send refs in messages but you need something to bootstrap the interaction.
 

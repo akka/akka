@@ -1,6 +1,18 @@
 # Coexistence
 
-We believe Akka Typed will be adopted in existing systems gradually and therefore it's important to be able to use typed 
+## Dependency
+
+To use Akka Actor Typed, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-actor-typed_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
+We believe Akka Typed will be adopted in existing systems gradually and therefore it's important to be able to use typed
 and untyped actors together, within the same `ActorSystem`. Also, we will not be able to integrate with all existing modules in one big bang release and that is another reason for why these two ways of writing actors must be able to coexist.
 
 There are two different `ActorSystem`s: `akka.actor.ActorSystem` and `akka.actor.typed.ActorSystem`. 

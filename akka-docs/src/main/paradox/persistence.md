@@ -1,21 +1,8 @@
 # Persistence
 
-Akka persistence enables stateful actors to persist their internal state so that it can be recovered when an actor
-is started, restarted after a JVM crash or by a supervisor, or migrated in a cluster. The key concept behind Akka
-persistence is that only changes to an actor's internal state are persisted but never its current state directly
-(except for optional snapshots). These changes are only ever appended to storage, nothing is ever mutated, which
-allows for very high transaction rates and efficient replication. Stateful actors are recovered by replaying stored
-changes to these actors from which they can rebuild internal state. This can be either the full history of changes
-or starting from a snapshot which can dramatically reduce recovery times. Akka persistence also provides point-to-point
-communication with at-least-once message delivery semantics.
-
-Akka persistence is inspired by and the official replacement of the [eventsourced](https://github.com/eligosource/eventsourced) library. It follows the same
-concepts and architecture of [eventsourced](https://github.com/eligosource/eventsourced) but significantly differs on API and implementation level. See also
-@ref:[migration-eventsourced-2.3](project/migration-guide-eventsourced-2.3.x.md)
-
 ## Dependency
 
-To use Akka Persistence, add the module to your project:
+To use Akka Persistence, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -33,6 +20,21 @@ LevelDB-based plugins will require the following additional dependency:
   artifact="leveldbjni-all"
   version="1.8"
 }
+
+## Introduction
+
+Akka persistence enables stateful actors to persist their internal state so that it can be recovered when an actor
+is started, restarted after a JVM crash or by a supervisor, or migrated in a cluster. The key concept behind Akka
+persistence is that only changes to an actor's internal state are persisted but never its current state directly
+(except for optional snapshots). These changes are only ever appended to storage, nothing is ever mutated, which
+allows for very high transaction rates and efficient replication. Stateful actors are recovered by replaying stored
+changes to these actors from which they can rebuild internal state. This can be either the full history of changes
+or starting from a snapshot which can dramatically reduce recovery times. Akka persistence also provides point-to-point
+communication with at-least-once message delivery semantics.
+
+Akka persistence is inspired by and the official replacement of the [eventsourced](https://github.com/eligosource/eventsourced) library. It follows the same
+concepts and architecture of [eventsourced](https://github.com/eligosource/eventsourced) but significantly differs on API and implementation level. See also
+@ref:[migration-eventsourced-2.3](project/migration-guide-eventsourced-2.3.x.md)
 
 ## Architecture
 

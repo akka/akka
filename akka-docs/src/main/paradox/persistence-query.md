@@ -1,5 +1,19 @@
 # Persistence Query
 
+## Dependency
+
+To use Persistence Query, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-persistence-query_$scala.binary_version$
+  version=$akka.version$
+}
+
+This will also add dependency on the @ref[Akka Persistence](persistence.md) module.
+
+## Introduction
+
 Akka persistence query complements @ref:[Persistence](persistence.md) by providing a universal asynchronous stream based
 query interface that various journal plugins can implement in order to expose their query capabilities.
 
@@ -9,16 +23,6 @@ persistence) is completely separated from the "query side". Akka Persistence Que
 side of an application, however it can help to migrate data from the write side to the query side database. In very
 simple scenarios Persistence Query may be powerful enough to fulfill the query needs of your app, however we highly
 recommend (in the spirit of CQRS) of splitting up the write/read sides into separate datastores as the need arises.
-
-## Dependencies
-
-Akka persistence query is a separate jar file. Make sure that you have the following dependency in your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-persistence-query_$scala.binary_version$"
-  version="$akka.version$"
-}
 
 ## Design overview
 

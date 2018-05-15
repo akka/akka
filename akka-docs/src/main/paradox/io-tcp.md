@@ -1,5 +1,17 @@
 # Using TCP
 
+## Dependency
+
+To use TCP, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 The code snippets through-out this section assume the following imports:
 
 Scala

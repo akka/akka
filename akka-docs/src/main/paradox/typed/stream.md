@@ -1,6 +1,18 @@
 # Streams
 
-@ref:[Akka Streams](../stream/index.md) make it easy to model type-safe message processing pipelines. With typed actors it is possible to connect streams to actors without losing the type information.
+## Dependency
+
+To use Akka Streams Typed, add the module to your project:
+
+@@dependency [sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-stream-typed_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
+@ref:[Akka Streams](../stream/index.md) make it easy to model type-safe message processing pipelines. With typed actors it is possible to connect streams to actors without loosing the type information.
 
 This module contains typed alternatives to the @ref:[already existing `ActorRef` sources and sinks](../stream/stream-integrations.md) together with a factory methods for @scala[@scaladoc[`ActorMaterializer`](akka.stream.typed.ActorMaterializer)]@java[@javadoc[`ActorMaterializer`](akka.stream.typed.ActorMaterializer)] which takes a typed `ActorSystem`.
 
@@ -14,16 +26,6 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
   this module in production just yet—you have been warned.
 
 @@@
-
-## Dependency
-
-To use Akka Streams Typed, add the module to your project:
-
-@@dependency [sbt,Maven,Gradle] {
-  group=com.typesafe.akka
-  artifact=akka-stream-typed_2.12
-  version=$akka.version$
-}
 
 ## Actor Source
 

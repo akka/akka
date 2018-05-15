@@ -1,5 +1,17 @@
 # Working with Graphs
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 In Akka Streams computation graphs are not expressed using a fluent DSL like linear computations are, instead they are
 written in a more graph-resembling DSL which aims to make translating graph drawings (e.g. from notes taken
 from design discussions, or illustrations in protocol specifications) to and from code simpler. In this section we'll
