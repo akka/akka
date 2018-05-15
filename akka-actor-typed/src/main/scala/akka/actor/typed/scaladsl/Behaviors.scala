@@ -115,6 +115,8 @@ object Behaviors {
 
   /**
    * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
+   *
+   * Behaviors can also be composed with [[Behavior#orElse]].
    */
   def receivePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Receive[T] =
     Behaviors.receive[T] { (ctx, t) ⇒
@@ -123,6 +125,8 @@ object Behaviors {
 
   /**
    * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
+   *
+   * Behaviors can also be composed with [[Behavior#orElse]].
    */
   def receiveMessagePartial[T](onMessage: PartialFunction[T, Behavior[T]]): Receive[T] =
     Behaviors.receive[T] { (_, t) ⇒
