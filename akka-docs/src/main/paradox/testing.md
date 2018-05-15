@@ -21,7 +21,7 @@ To use Akka Testkit, add the module to your project:
 ## Asynchronous Testing: `TestKit`
 
 Testkit allows you to test your actors in a controlled but realistic
-environment. The definition of the environment depends of course very much on
+environment. The definition of the environment depends very much on
 the problem at hand and the level at which you intend to test, ranging from
 simple checks to full system tests.
 
@@ -332,7 +332,7 @@ Java
 ### Resolving Conflicts with Implicit ActorRef
 
 If you want the sender of messages inside your TestKit-based tests to be the `testActor`
-simply mix in `ImplicitSender` into your test.
+ mix in `ImplicitSender` into your test.
 
 @@snip [PlainWordSpec.scala]($code$/scala/docs/testkit/PlainWordSpec.scala) { #implicit-sender }
 
@@ -598,8 +598,8 @@ simplest example for this situation is an actor which sends a message to
 itself. In this case, processing cannot continue immediately as that would
 violate the actor model, so the invocation is queued and will be processed when
 the active invocation on that actor finishes its processing; thus, it will be
-processed on the calling thread, but simply after the actor finishes its
-previous work. In the other case, the invocation is simply processed
+processed on the calling thread, but after the actor finishes its
+previous work. In the other case, the invocation is processed
 immediately on the current thread. Futures scheduled via this dispatcher are
 also executed immediately.
 
@@ -945,7 +945,7 @@ dispatcher to `CallingThreadDispatcher.global` and it sets the
 
 If you want to test the actor behavior, including hotswapping, but without
 involving a dispatcher and without having the `TestActorRef` swallow
-any thrown exceptions, then there is another mode available for you: just use
+any thrown exceptions, then there is another mode available for you: use
 the `receive` method on `TestActorRef`, which will be forwarded to the
 underlying actor:
 
@@ -957,7 +957,7 @@ Java
 
 ### Use Cases
 
-You may of course mix and match both modi operandi of `TestActorRef` as
+You may mix and match both modi operandi of `TestActorRef` as
 suits your test needs:
 
  * one common use case is setting up the actor into a specific internal state

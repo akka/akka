@@ -568,7 +568,7 @@ sending their ActorRefs to other Actors within messages.
 
 @@@
 
-The supplied path is parsed as a `java.net.URI`, which basically means
+The supplied path is parsed as a `java.net.URI`, which means
 that it is split on `/` into path elements. If the path starts with `/`, it
 is absolute and the look-up starts at the root guardian (which is the parent of
 `"/user"`); otherwise it starts at the current actor. If a path element equals
@@ -1333,12 +1333,12 @@ and partial functions can be chained together using the `PartialFunction#orElse`
 however you should keep in mind that "first match" wins - which may be important when combining functions that both can handle the same type of message.
 
 For example, imagine you have a set of actors which are either `Producers` or `Consumers`, yet sometimes it makes sense to
-have an actor share both behaviors. This can be easily achieved without having to duplicate code by extracting the behaviors to
+have an actor share both behaviors. This can be achieved without having to duplicate code by extracting the behaviors to
 traits and implementing the actor's `receive` as combination of these partial functions.
 
 @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #receive-orElse }
 
-Instead of inheritance the same pattern can be applied via composition - one would simply compose the receive method using partial functions from delegates.
+Instead of inheritance the same pattern can be applied via composition - compose the receive method using partial functions from delegates.
 
 @@@
 

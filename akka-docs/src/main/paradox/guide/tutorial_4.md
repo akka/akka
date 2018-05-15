@@ -151,7 +151,7 @@ Java
 
 ### Keeping track of the device actors in the group
 
-So far, we have implemented logic for registering device actors in the group. Devices come and go, however, so we will need a way to remove device actors from the @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`]. We will assume that when a device is removed, its corresponding device actor is simply stopped. Supervision, as we discussed earlier, only handles error scenarios &#8212; not graceful stopping. So we need to notify the parent when one of the device actors is stopped.
+So far, we have implemented logic for registering device actors in the group. Devices come and go, however, so we will need a way to remove device actors from the @scala[`Map[String, ActorRef]`] @java[`Map<String, ActorRef>`]. We will assume that when a device is removed, its corresponding device actor is stopped. Supervision, as we discussed earlier, only handles error scenarios &#8212; not graceful stopping. So we need to notify the parent when one of the device actors is stopped.
 
 Akka provides a _Death Watch_ feature that allows an actor to _watch_ another actor and be notified if the other actor is stopped. Unlike supervision, watching is not limited to parent-child relationships, any actor can watch any other actor as long as it knows the `ActorRef`. After a watched actor stops, the watcher receives a `Terminated(actorRef)` message which also contains the reference to the watched actor. The watcher can either handle this message explicitly or will fail with a `DeathPactException`. This latter is useful if the actor can no longer perform its own duties after the watched actor has been stopped. In our case, the group should still function after one device have been stopped, so we need to handle the `Terminated(actorRef)` message.
 
@@ -170,7 +170,7 @@ Scala
 Java
 :   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_4/DeviceGroup.java) { #device-group-remove }
 
-So far we have no means to get which devices the group device actor keeps track of and, therefore, we cannot test our new functionality yet. To make it testable, we add a new query capability (message @scala[`RequestDeviceList(requestId: Long)`] @java[`RequestDeviceList`]) that simply lists the currently active
+So far we have no means to get which devices the group device actor keeps track of and, therefore, we cannot test our new functionality yet. To make it testable, we add a new query capability (message @scala[`RequestDeviceList(requestId: Long)`] @java[`RequestDeviceList`]) that lists the currently active
 device IDs:
 
 Scala
@@ -181,12 +181,12 @@ Java
 
 We are almost ready to test the removal of devices. But, we still need the following capabilities:
 
- * To stop a device actor from our test case. From the outside, any actor can be stopped by simply sending a special
+ * To stop a device actor from our test case. From the outside, any actor can be stopped by sending a special
    the built-in message, `PoisonPill`, which instructs the actor to stop.
  * To be notified once the device actor is stopped. We can use the _Death Watch_ facility for this purpose, too. The @scala[`TestProbe`] @java[`TestKit`] has two messages that we can easily use, `watch()` to watch a specific actor, and `expectTerminated`
    to assert that the watched actor has been terminated.
 
-We add two more test cases now. In the first, we just test that we get back the list of proper IDs once we have added a few devices. The second test case makes sure that the device ID is properly removed after the device actor has been stopped:
+We add two more test cases now. In the first, we test that we get back the list of proper IDs once we have added a few devices. The second test case makes sure that the device ID is properly removed after the device actor has been stopped:
 
 Scala
 :   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_4/DeviceGroupSpec.scala) { #device-group-list-terminate-test }

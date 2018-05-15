@@ -16,7 +16,7 @@ ensure the thread safety of his/her extension.
 
 ## Building an Extension
 
-So let's create a sample extension that just lets us count the number of times something has happened.
+So let's create a sample extension that lets us count the number of times something has happened.
 
 First, we define what our `Extension` should do:
 

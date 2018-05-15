@@ -364,7 +364,7 @@ together with a tutorial for a more hands-on experience. The source code of this
 ### Remote Events
 
 It is possible to listen to events that occur in Akka Remote, and to subscribe/unsubscribe to these events
-you simply register as listener to the below described types in on the `ActorSystem.eventStream`.
+you register as listener to the below described types in on the `ActorSystem.eventStream`.
 
 @@@ note
 

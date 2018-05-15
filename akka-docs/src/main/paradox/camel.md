@@ -358,7 +358,7 @@ able to suspend any work started for request processing (thereby freeing threads
 to do other work) and resume processing when the response is ready. This is
 currently the case for a [subset of components](http://camel.apache.org/asynchronous-routing-engine.html) 
 such as the Jetty component.
-All other Camel components can still be used, of course, but they will cause
+All other Camel components can still be used, but they will cause
 allocation of a thread for the duration of an in-out message exchange. There's
 also [Examples](#camel-examples) that implements both, an asynchronous
 consumer and an asynchronous producer, with the jetty component.

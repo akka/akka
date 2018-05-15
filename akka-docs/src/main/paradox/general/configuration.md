@@ -189,7 +189,7 @@ If the system or config property `akka.log-config-on-start` is set to `on`, then
 complete configuration is logged at INFO level when the actor system is started. This is
 useful when you are uncertain of what configuration is used.
 
-If in doubt, you can also easily and nicely inspect configuration objects
+If in doubt, you can inspect your configuration objects
 before or after using them to construct an actor system:
 
 @@@vars
@@ -238,8 +238,7 @@ bundles is not always trivial, the current approach of Akka is that each
 loader (if available, otherwise just its own loader as in
 `this.getClass.getClassLoader`) and uses that for all reflective accesses.
 This implies that putting Akka on the boot class path will yield
-`NullPointerException` from strange places: this is simply not
-supported.
+`NullPointerException` from strange places: this is not supported.
 
 ## Application specific settings
 

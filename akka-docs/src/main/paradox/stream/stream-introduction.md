@@ -42,7 +42,7 @@ implementations like Akka Streams offer a nice user API).
 
 The Akka Streams API is completely decoupled from the Reactive Streams
 interfaces. While Akka Streams focus on the formulation of transformations on
-data streams the scope of Reactive Streams is just to define a common mechanism
+data streams the scope of Reactive Streams is to define a common mechanism
 of how to move data across an asynchronous boundary without losses, buffering
 or resource exhaustion.
 

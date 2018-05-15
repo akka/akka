@@ -221,8 +221,8 @@ Java
 If the target database does not provide a reactive streams `Subscriber` that can perform writes,
 you may have to implement the write logic using plain functions or Actors instead.
 
-In case your write logic is state-less and you just need to convert the events from one data type to another
-before writing into the alternative datastore, then the projection is as simple as:
+In case your write logic is state-less and you need to convert the events from one data type to another
+before writing into the alternative datastore, then the projection will look like this:
 
 Scala
 :  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-simple-classes }
@@ -284,7 +284,7 @@ A read journal plugin must implement `akka.persistence.query.ReadJournalProvider
 creates instances of `akka.persistence.query.scaladsl.ReadJournal` and
 `akka.persistence.query.javaadsl.ReadJournal`. The plugin must implement both the `scaladsl`
 and the `javadsl` @scala[traits]@java[interfaces] because the `akka.stream.scaladsl.Source` and 
-`akka.stream.javadsl.Source` are different types and even though those types can easily be converted
+`akka.stream.javadsl.Source` are different types and even though those types can be converted
 to each other it is most convenient for the end user to get access to the Java or Scala `Source` directly.
 As illustrated below one of the implementations can delegate to the other. 
 

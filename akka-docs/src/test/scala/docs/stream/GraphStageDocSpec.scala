@@ -427,7 +427,7 @@ class GraphStageDocSpec extends AkkaSpec {
               promise.success(elem)
               push(out, elem)
 
-              // replace handler with one just forwarding
+              // replace handler with one that only forwards elements
               setHandler(in, new InHandler {
                 override def onPush(): Unit = {
                   push(out, grab(in))

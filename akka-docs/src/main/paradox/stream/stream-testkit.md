@@ -9,7 +9,7 @@ elements using:
  * sources and sinks specifically crafted for writing tests from the `akka-stream-testkit` module.
 
 It is important to keep your data processing pipeline as separate sources,
-flows and sinks. This makes them easily testable by wiring them up to other
+flows and sinks. This makes them testable by wiring them up to other
 sources or sinks, or some test harnesses that `akka-testkit` or
 `akka-stream-testkit` provide.
 

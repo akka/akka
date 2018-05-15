@@ -21,7 +21,7 @@ or output ports. It is a counterpart of the `GraphDSL.create()` method which cre
 stages by composing others. Where `GraphStage` differs is that it creates a stage that is itself not divisible into
 smaller ones, and allows state to be maintained inside it in a safe way.
 
-As a first motivating example, we will build a new `Source` that will simply emit numbers from 1 until it is
+As a first motivating example, we will build a new `Source` that will emit numbers from 1 until it is
 cancelled. To start, we need to define the "interface" of our stage, which is called *shape* in Akka Streams terminology
 (this is explained in more detail in the section @ref:[Modularity, Composition and Hierarchy](stream-composition.md)). This is how this looks like:
 
@@ -50,7 +50,7 @@ To receive the necessary events one needs to register a subclass of @scala[`OutH
 (`Outlet`). This handler will receive events related to the lifecycle of the port. In our case we need to
 override `onPull()` which indicates that we are free to emit a single element. There is another callback,
 `onDownstreamFinish()` which is called if the downstream cancelled. Since the default behavior of that callback is
-to stop the stage, we don't need to override it. In the `onPull` callback we will simply emit the next number. This
+to stop the stage, we don't need to override it. In the `onPull` callback we will emit the next number. This
 is how it looks like in the end:
 
 Scala
@@ -204,7 +204,7 @@ filter. The conceptual wiring of `Filter` looks like this:
 As we see above, if the given predicate matches the current element we are propagating it downwards, otherwise
 we return the “ball” to our upstream so that we get the new element. This is achieved by modifying the map
 example by adding a conditional in the `onPush` handler and decide between a `pull(in)` or `push(out)` call
-(and of course not having a mapping `f` function).
+(and not having a mapping `f` function).
 
 Scala
 :   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #many-to-one }
@@ -282,7 +282,7 @@ more advanced stages which may need to be debugged at some point.
 
 @@@ div { .group-scala }
 
-The helper trait `akka.stream.stage.StageLogging` is provided to enable you to easily obtain a `LoggingAdapter`
+The helper trait `akka.stream.stage.StageLogging` is provided to enable you to obtain a `LoggingAdapter`
 inside of a `GraphStage` as long as the `Materializer` you're using is able to provide you with a logger.
 In that sense, it serves a very similar purpose as `ActorLogging` does for Actors. 
 
@@ -291,14 +291,14 @@ In that sense, it serves a very similar purpose as `ActorLogging` does for Actor
 @@@ div { .group-java }
 
 You can extend the `akka.stream.stage.GraphStageWithLogging` or `akka.strea.stage.TimerGraphStageWithLogging` classes
-instead of the usual `GraphStage` to enable you to easily obtain a `LoggingAdapter` inside your stage as long as 
+instead of the usual `GraphStage` to enable you to obtain a `LoggingAdapter` inside your stage as long as 
 the `Materializer` you're using is able to provide you with a logger.
 
 @@@
 
 @@@ note
 
-Please note that you can always simply use a logging library directly inside a Stage.
+Please note that you can always use a logging library directly inside a Stage.
 Make sure to use an asynchronous appender however, to not accidentally block the stage when writing to files etc.
 See @ref:[Using the SLF4J API directly](../logging.md#slf4j-directly) for more details on setting up async appenders in SLF4J.
 
@@ -499,7 +499,7 @@ an implicit class that enriches them generically, this class would require expli
 parameters due to [SI-2712](https://issues.scala-lang.org/browse/SI-2712). For a partial workaround that unifies
 extensions to `Source` and `Flow` see [this sketch by R. Kuhn](https://gist.github.com/rkuhn/2870fcee4937dda2cad5).
 
-A lot simpler is the task of just adding an extension method to `Source` as shown below:
+A lot simpler is the task of adding an extension method to `Source` as shown below:
 
 @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #extending-source }
 

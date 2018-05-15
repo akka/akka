@@ -30,7 +30,7 @@ Java
 :   @@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #pipelining }
 
 The two `map` stages in sequence (encapsulated in the "frying pan" flows) will be executed in a pipelined way,
-basically doing the same as Roland with his frying pans:
+the same way that Roland was using his frying pans:
 
  1. A `ScoopOfBatter` enters `fryingPan1`
  2. `fryingPan1` emits a HalfCookedPancake once `fryingPan2` becomes available

@@ -17,7 +17,7 @@ Allows coupling termination (cancellation, completion, erroring) of Sinks and So
 Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow between them.
 Similar to `Flow.fromSinkAndSource` however couples the termination of these two stages.
 
-E.g. if the emitted `Flow` gets a cancellation, the `Source` of course is cancelled,
+E.g. if the emitted `Flow` gets a cancellation, the `Source` is cancelled,
 however the Sink will also be completed. The table below illustrates the effects in detail:
 
 | Returned Flow                                   | Sink (in)                   | Source (out)                    |

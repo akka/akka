@@ -116,7 +116,7 @@ Java
 The resulting `Source` can be materialized any number of times, each materialization effectively attaching
 a new subscriber. If there are no subscribers attached to this hub then it will not drop any elements but instead
 backpressure the upstream producer until subscribers arrive. This behavior can be tweaked by using the combinators
-`.buffer` for example with a drop strategy, or just attaching a subscriber that drops all messages. If there
+`.buffer` for example with a drop strategy, or attaching a subscriber that drops all messages. If there
 are no other subscribers, this will ensure that the producer is kept drained (dropping all elements) and once a new
 subscriber arrives it will adaptively slow down, ensuring no more messages are dropped.
 
@@ -139,7 +139,7 @@ Java
 
 We now use a few tricks to add more features. First of all, we attach a `Sink.ignore`
 at the broadcast side of the channel to keep it drained when there are no subscribers. If this behavior is not the
-desired one this line can be simply dropped.
+desired one this line can be dropped.
 
 Scala
 :   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-2 }
@@ -149,7 +149,7 @@ Java
 
 We now wrap the `Sink` and `Source` in a `Flow` using `Flow.fromSinkAndSource`. This bundles
 up the two sides of the channel into one and forces users of it to always define a publisher and subscriber side
-(even if the subscriber side is just dropping). It also allows us to very simply attach a `KillSwitch` as
+(even if the subscriber side is dropping). It also allows us to attach a `KillSwitch` as
 a `BidiStage` which in turn makes it possible to close both the original `Sink` and `Source` at the
 same time.
 Finally, we add `backpressureTimeout` on the consumer side to ensure that subscribers that block the channel for more
@@ -195,7 +195,7 @@ i.e. `int` greater than or equal to 0 and less than number of consumers.
 The resulting `Source` can be materialized any number of times, each materialization effectively attaching
 a new consumer. If there are no consumers attached to this hub then it will not drop any elements but instead
 backpressure the upstream producer until consumers arrive. This behavior can be tweaked by using the combinators
-`.buffer` for example with a drop strategy, or just attaching a consumer that drops all messages. If there
+`.buffer` for example with a drop strategy, or attaching a consumer that drops all messages. If there
 are no other consumers, this will ensure that the producer is kept drained (dropping all elements) and once a new
 consumer arrives and messages are routed to the new consumer it will adaptively slow down, ensuring no more messages
 are dropped.

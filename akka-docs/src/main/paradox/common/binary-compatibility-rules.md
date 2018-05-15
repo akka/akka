@@ -57,7 +57,7 @@ Historically, Akka has been following the Java or Scala style of versioning wher
 the second one would mean **major**, and third be the **minor**, thus: `epoch.major.minor` (versioning scheme followed until and during `2.3.x`).
 
 **Currently**, since Akka `2.4.0`, the new versioning applies which is closer to semantic versioning many have come to expect, 
-in which the version number is deciphered as `major.minor.patch`. This also means that Akka `2.5.x` is binary compatible with the `2.4` series releases (with the exception of "may change" APIs of course).
+in which the version number is deciphered as `major.minor.patch`. This also means that Akka `2.5.x` is binary compatible with the `2.4` series releases (with the exception of "may change" APIs).
 
 In addition to that, Akka `2.4.x` has been made binary compatible with the `2.3.x` series,
 so there is no reason to remain on Akka 2.3.x, since upgrading is completely compatible 
