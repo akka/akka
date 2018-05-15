@@ -127,7 +127,7 @@ Java
 
 The resulting `Source` can be materialized any number of times, each materialization effectively attaching
 a new subscriber. If there are no subscribers attached to this hub then it will not drop any elements but instead
-backpressure the upstream producer until subscribers arrive. This behavior can be tweaked by using the combinators
+backpressure the upstream producer until subscribers arrive. This behavior can be tweaked by using the operators
 `.buffer` for example with a drop strategy, or attaching a subscriber that drops all messages. If there
 are no other subscribers, this will ensure that the producer is kept drained (dropping all elements) and once a new
 subscriber arrives it will adaptively slow down, ensuring no more messages are dropped.
@@ -206,8 +206,8 @@ i.e. `int` greater than or equal to 0 and less than number of consumers.
 
 The resulting `Source` can be materialized any number of times, each materialization effectively attaching
 a new consumer. If there are no consumers attached to this hub then it will not drop any elements but instead
-backpressure the upstream producer until consumers arrive. This behavior can be tweaked by using the combinators
-`.buffer` for example with a drop strategy, or attaching a consumer that drops all messages. If there
+backpressure the upstream producer until consumers arrive. This behavior can be tweaked by using an operator,
+for example `.buffer` with a drop strategy, or attaching a consumer that drops all messages. If there
 are no other consumers, this will ensure that the producer is kept drained (dropping all elements) and once a new
 consumer arrives and messages are routed to the new consumer it will adaptively slow down, ensuring no more messages
 are dropped.

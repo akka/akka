@@ -26,7 +26,7 @@ flows and sinks. This makes them testable by wiring them up to other
 sources or sinks, or some test harnesses that `akka-testkit` or
 `akka-stream-testkit` provide.
 
-## Built-in sources, sinks and combinators
+## Built-in sources, sinks and operators
 
 Testing a custom sink can be as simple as attaching a source that emits
 elements from a predefined collection, running a constructed test flow and

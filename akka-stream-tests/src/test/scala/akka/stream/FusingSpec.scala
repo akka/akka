@@ -44,7 +44,7 @@ class FusingSpec extends StreamSpec {
       refs.toSet should have size (11) // main flow + 10 subflows
     }
 
-    "use multiple actors when there are asynchronous boundaries in the subflows (combinator)" in {
+    "use multiple actors when there are asynchronous boundaries in the subflows (operator)" in {
       Source(0 to 9)
         .via(snitchFlow)
         .flatMapMerge(5, i ⇒ Source.single(i).via(snitchFlow.async))
@@ -70,7 +70,7 @@ class FusingSpec extends StreamSpec {
       refs.toSet should have size (in.size + 1) // outer/main actor + 1 actor per subflow
     }
 
-    "use one actor per grouped substream when there is an async boundary around the flow (combinator)" in {
+    "use one actor per grouped substream when there is an async boundary around the flow (operator)" in {
       val in = 0 to 9
       Source(in)
         .via(snitchFlow)

@@ -321,7 +321,7 @@ that holds a few elements for efficiency reasons. If your flow graphs contain cy
 may have been crucial in order to avoid deadlocks. With fusing these implicit buffers are no longer
 there, data elements are passed without buffering between fused stages. In those cases where buffering
 is needed in order to allow the stream to run at all, you will have to insert explicit buffers with the
-`.buffer()` combinator—typically a buffer of size 2 is enough to allow a feedback loop to function.
+`.buffer()` operator—typically a buffer of size 2 is enough to allow a feedback loop to function.
 
 @@@
 
