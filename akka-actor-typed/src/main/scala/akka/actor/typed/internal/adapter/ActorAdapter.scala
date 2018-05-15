@@ -7,10 +7,13 @@ package internal
 package adapter
 
 import scala.annotation.tailrec
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
 import akka.{ actor ⇒ a }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
-
 import scala.util.control.NonFatal
 
 /**
@@ -103,13 +106,15 @@ import scala.util.control.NonFatal
     handle(ctx.messageAdapters)
   }
 
-  private def withSafelyAdapted[U, V](adapt: () ⇒ U)(body: U ⇒ V): Unit =
-    try body(adapt())
-    catch {
-      case NonFatal(ex) ⇒
+  private def withSafelyAdapted[U, V](adapt: () ⇒ U)(body: U ⇒ V): Unit = {
+    Try(adapt()) match {
+      case Success(a) ⇒
+        body(a)
+      case Failure(ex) ⇒
         log.error(ex, "Exception thrown out of adapter. Stopping myself.")
         context.stop(self)
     }
+  }
 
   override def unhandled(msg: Any): Unit = msg match {
     case t @ Terminated(ref) ⇒ throw DeathPactException(ref)
