@@ -9,7 +9,7 @@ import java.net.URI
 import akka.NotUsed
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.util.Timeout
 
 import scala.concurrent.Future

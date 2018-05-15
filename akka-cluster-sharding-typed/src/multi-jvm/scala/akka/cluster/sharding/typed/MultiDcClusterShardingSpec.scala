@@ -9,7 +9,7 @@ import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.typed.{ MultiDcClusterActors, MultiNodeTypedClusterSpec }
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures

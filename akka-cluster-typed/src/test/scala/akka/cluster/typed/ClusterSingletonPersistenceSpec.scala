@@ -6,7 +6,7 @@ package akka.cluster.typed
 
 import akka.actor.typed.{ ActorRef, Behavior, Props, TypedAkkaSpecWithShutdown }
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 object ClusterSingletonPersistenceSpec {

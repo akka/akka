@@ -6,7 +6,7 @@ package akka.actor.typed
 package scaladsl
 
 import akka.Done
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 
 final class OnSignalSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 

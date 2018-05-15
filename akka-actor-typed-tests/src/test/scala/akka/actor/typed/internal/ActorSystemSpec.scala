@@ -8,7 +8,7 @@ package internal
 import akka.Done
 import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.scaladsl.TestInbox
+import akka.actor.testkit.typed.scaladsl.TestInbox
 import org.scalatest._
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 

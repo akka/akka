@@ -13,7 +13,7 @@ import scala.util.control.NoStackTrace
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.testkit.TimingTest
-import akka.testkit.typed.scaladsl.{ ActorTestKit, _ }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, _ }
 import org.scalatest.WordSpecLike
 
 class TimerSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShutdown {

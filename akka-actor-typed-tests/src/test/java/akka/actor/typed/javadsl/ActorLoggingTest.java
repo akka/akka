@@ -8,7 +8,7 @@ import akka.actor.typed.Behavior;
 import akka.event.Logging;
 import akka.japi.pf.PFBuilder;
 import akka.testkit.CustomEventFilter;
-import akka.testkit.typed.javadsl.TestKitJunitResource;
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;

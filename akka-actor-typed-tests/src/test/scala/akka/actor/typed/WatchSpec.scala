@@ -9,7 +9,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.MutableBehavior
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 
 import scala.concurrent._
 import scala.concurrent.duration._

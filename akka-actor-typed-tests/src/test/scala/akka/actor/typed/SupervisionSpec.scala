@@ -11,8 +11,8 @@ import akka.actor.ActorInitializationException
 import akka.actor.typed.scaladsl.{ Behaviors, MutableBehavior }
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.testkit.EventFilter
-import akka.testkit.typed.scaladsl._
-import akka.testkit.typed._
+import akka.actor.testkit.typed.scaladsl._
+import akka.actor.testkit.typed._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
 

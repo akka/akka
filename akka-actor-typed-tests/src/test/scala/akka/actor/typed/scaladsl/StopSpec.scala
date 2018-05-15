@@ -6,7 +6,7 @@ package akka.actor.typed.scaladsl
 
 import akka.Done
 import akka.actor.typed.{ PostStop, TypedAkkaSpecWithShutdown }
-import akka.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 import scala.concurrent.Promise
 

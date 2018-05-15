@@ -5,8 +5,8 @@
 package akka.actor.typed
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.scaladsl._
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl._
 
 import scala.util.control.NoStackTrace
 
