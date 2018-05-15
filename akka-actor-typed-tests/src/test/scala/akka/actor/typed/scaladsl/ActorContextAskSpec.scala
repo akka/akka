@@ -7,7 +7,7 @@ package akka.actor.typed.scaladsl
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ ActorRef, PostStop, Props, TypedAkkaSpecWithShutdown }
 import akka.testkit.EventFilter
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.TimeoutException

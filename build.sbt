@@ -37,7 +37,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   slf4j,
   stream, streamTestkit, streamTests, streamTestsTck,
   testkit,
-  actorTyped, actorTypedTests, typedTestkit,
+  actorTyped, actorTypedTests, actorTestkitTyped,
   persistenceTyped,
   clusterTyped, clusterShardingTyped,
   streamTyped
@@ -397,7 +397,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
     actorTyped,
     persistence,
-    typedTestkit % "test->test",
+    actorTestkitTyped % "test->test",
     actorTypedTests % "test->test"
   )
   .settings(Dependencies.persistenceShared)
@@ -414,7 +414,7 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     persistence % "test->test",
     persistenceTyped % "test->test",
     protobuf,
-    typedTestkit % "test->test",
+    actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     remoteTests % "test->test"
   )
@@ -429,7 +429,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     clusterTyped % "compile->compile;test->test;multi-jvm->multi-jvm",
     persistenceTyped,
     clusterSharding,
-    typedTestkit % "test->test",
+    actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     persistenceTyped % "test->test",
     remoteTests % "test->test"
@@ -447,7 +447,7 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
     actorTyped,
     stream,
     streamTestkit % "test->test",
-    typedTestkit % "test->test",
+    actorTestkitTyped % "test->test",
     actorTypedTests % "test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
@@ -455,16 +455,16 @@ lazy val streamTyped = akkaModule("akka-stream-typed")
   .disablePlugins(MimaPlugin)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
-lazy val typedTestkit = akkaModule("akka-testkit-typed")
+lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .dependsOn(actorTyped, testkit % "compile->compile;test->test")
-  .settings(AutomaticModuleName.settings("akka.testkit.typed"))
-  .settings(Dependencies.typedTestkit)
+  .settings(AutomaticModuleName.settings("akka.actor.testkit.typed"))
+  .settings(Dependencies.actorTestkitTyped)
   .disablePlugins(MimaPlugin)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
   .dependsOn(
     actorTyped,
-    typedTestkit % "compile->compile;test->test"
+    actorTestkitTyped % "compile->compile;test->test"
   )
   .settings(AkkaBuild.mayChangeSettings)
   .disablePlugins(MimaPlugin)

@@ -12,7 +12,7 @@ import akka.persistence.Persistence
 import akka.persistence.RecoveryPermitter.{ RecoveryPermitGranted, RequestRecoveryPermit, ReturnRecoveryPermit }
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.Eventually
 

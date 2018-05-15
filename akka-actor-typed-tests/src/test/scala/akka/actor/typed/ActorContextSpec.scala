@@ -6,7 +6,7 @@ package akka.actor.typed
 
 import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag

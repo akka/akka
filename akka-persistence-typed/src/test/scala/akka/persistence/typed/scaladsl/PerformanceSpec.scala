@@ -9,8 +9,8 @@ import java.util.UUID
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, SupervisorStrategy, TypedAkkaSpecWithShutdown }
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
-import akka.testkit.typed.TE
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.TE
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.Eventually
 

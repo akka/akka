@@ -84,7 +84,7 @@ Java
 
 
 @scala[That adds some implicit extension methods that are added to untyped and typed `ActorSystem` and `ActorContext` in both directions.]
-@java[To convert between typed and untyped there are adapter methods in `akka.typed.javadsl.Adapter`.] Note the inline comments in the example above. 
+@java[To convert between typed and untyped there are adapter methods in `akka.actor.typed.javadsl.Adapter`.] Note the inline comments in the example above.
 
 ## Typed to untyped
 

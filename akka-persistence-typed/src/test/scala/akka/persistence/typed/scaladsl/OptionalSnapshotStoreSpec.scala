@@ -10,7 +10,7 @@ import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps }
 import akka.event.Logging
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.Eventually
 

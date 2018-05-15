@@ -21,7 +21,7 @@ import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.cluster.typed.Leave
 import akka.serialization.SerializerWithStringManifest
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.time.Span

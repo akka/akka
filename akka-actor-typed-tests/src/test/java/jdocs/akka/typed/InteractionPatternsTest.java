@@ -9,7 +9,7 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.*;
-import akka.testkit.typed.javadsl.TestProbe;
+import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.util.Timeout;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;

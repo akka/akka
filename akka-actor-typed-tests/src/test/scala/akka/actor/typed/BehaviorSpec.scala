@@ -12,7 +12,7 @@ import akka.japi.pf.{ FI, PFBuilder }
 import java.util.function.{ Function ⇒ F1 }
 
 import akka.Done
-import akka.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox }
+import akka.actor.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox }
 
 object BehaviorSpec {
   sealed trait Command {

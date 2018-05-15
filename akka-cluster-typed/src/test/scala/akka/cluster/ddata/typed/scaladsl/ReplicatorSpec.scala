@@ -12,8 +12,8 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.Cluster
 import akka.cluster.ddata.typed.scaladsl.Replicator._
 import akka.cluster.ddata.{ GCounter, GCounterKey, ReplicatedData }
-import akka.testkit.typed.scaladsl._
-import akka.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl._
+import akka.actor.testkit.typed.TestKitSettings
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually

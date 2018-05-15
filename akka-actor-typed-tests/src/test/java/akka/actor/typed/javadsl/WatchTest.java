@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.Done;
-import akka.testkit.typed.javadsl.TestKitJunitResource;
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import org.junit.ClassRule;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.Duration;
