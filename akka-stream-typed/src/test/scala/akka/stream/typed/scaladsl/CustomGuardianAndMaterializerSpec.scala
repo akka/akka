@@ -10,7 +10,6 @@ import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.stream.typed.ActorMaterializer
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 object CustomGuardianAndMaterializerSpec {
