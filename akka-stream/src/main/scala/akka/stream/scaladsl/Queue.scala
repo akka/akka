@@ -41,14 +41,6 @@ trait SourceQueue[T] {
    * - failed when the operator faces an internal failure
    */
   def watchCompletion(): Future[Done]
-
-  /**
-   * Converts the queue into a `javadsl.SourceQueue`
-   */
-  def asJava: akka.stream.javadsl.SourceQueue[T] = new akka.stream.javadsl.SourceQueue[T] {
-    def offer(elem: T): CompletionStage[QueueOfferResult] = SourceQueue.this.offer(elem).toJava
-    def watchCompletion(): CompletionStage[Done] = SourceQueue.this.watchCompletion().toJava
-  }
 }
 
 /**
@@ -76,16 +68,26 @@ trait SourceQueueWithComplete[T] extends SourceQueue[T] {
    *   - the [[SourceQueueWithComplete.fail]] method is invoked.
    */
   def watchCompletion(): Future[Done]
+}
 
+object SourceQueueWithComplete {
+  implicit def QueueOps[T](f: SourceQueueWithComplete[T]): QueueOps[T] = new QueueOps[T](f)
+  final class QueueOps[T](val queue: SourceQueueWithComplete[T]) extends AnyVal {
+    def asJava: akka.stream.javadsl.SourceQueueWithComplete[T] = SourceQueueConverter.asJava(queue)
+  }
+}
+
+object SourceQueueConverter {
   /**
    * Converts the queue into a `javadsl.SourceQueueWithComplete`
    */
-  override def asJava: akka.stream.javadsl.SourceQueueWithComplete[T] = new akka.stream.javadsl.SourceQueueWithComplete[T] {
-    def offer(elem: T): CompletionStage[QueueOfferResult] = SourceQueueWithComplete.this.offer(elem).toJava
-    def watchCompletion(): CompletionStage[Done] = SourceQueueWithComplete.this.watchCompletion().toJava
-    def complete(): Unit = SourceQueueWithComplete.this.complete()
-    def fail(ex: Throwable): Unit = SourceQueueWithComplete.this.fail(ex)
-  }
+  def asJava[T](queue: SourceQueueWithComplete[T]): akka.stream.javadsl.SourceQueueWithComplete[T] =
+    new akka.stream.javadsl.SourceQueueWithComplete[T] {
+      def offer(elem: T): CompletionStage[QueueOfferResult] = queue.offer(elem).toJava
+      def watchCompletion(): CompletionStage[Done] = queue.watchCompletion().toJava
+      def complete(): Unit = queue.complete()
+      def fail(ex: Throwable): Unit = queue.fail(ex)
+    }
 }
 
 /**
@@ -101,14 +103,6 @@ trait SinkQueue[T] {
    * - completes with `Some(element)` in case the next element is available from stream.
    */
   def pull(): Future[Option[T]]
-
-  /**
-   * Converts the queue into a `javadsl.SinkQueue`
-   */
-  def asJava: akka.stream.javadsl.SinkQueue[T] = new akka.stream.javadsl.SinkQueue[T] {
-    import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
-    override def pull(): CompletionStage[Optional[T]] = SinkQueue.this.pull().map(_.asJava)(same).toJava
-  }
 }
 
 /**
@@ -119,14 +113,23 @@ trait SinkQueueWithCancel[T] extends SinkQueue[T] {
    * Cancels the stream. This method returns right away without waiting for actual finalizing the stream.
    */
   def cancel(): Unit
+}
 
-  /**
-   * Converts the queue into a `javadsl.SinkQueueWithCancel`
-   */
-  override def asJava: akka.stream.javadsl.SinkQueueWithCancel[T] = new akka.stream.javadsl.SinkQueueWithCancel[T] {
-    import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
-    override def pull(): CompletionStage[Optional[T]] = SinkQueueWithCancel.this.pull().map(_.asJava)(same).toJava
-    override def cancel(): Unit = SinkQueueWithCancel.this.cancel()
+object SinkQueueWithCancel {
+  implicit def QueueOps[T](f: SinkQueueWithCancel[T]): QueueOps[T] = new QueueOps[T](f)
+  final class QueueOps[T](val queue: SinkQueueWithCancel[T]) extends AnyVal {
+    def asJava: akka.stream.javadsl.SinkQueueWithCancel[T] = SinkQueueConverter.asJava(queue)
   }
 }
 
+object SinkQueueConverter {
+  /**
+   * Converts the queue into a `javadsl.SinkQueueWithCancel`
+   */
+  def asJava[T](queue: SinkQueueWithCancel[T]): akka.stream.javadsl.SinkQueueWithCancel[T] =
+    new akka.stream.javadsl.SinkQueueWithCancel[T] {
+      import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
+      override def pull(): CompletionStage[Optional[T]] = queue.pull().map(_.asJava)(same).toJava
+      override def cancel(): Unit = queue.cancel()
+    }
+}

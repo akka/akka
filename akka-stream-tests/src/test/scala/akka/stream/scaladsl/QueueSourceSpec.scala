@@ -383,6 +383,23 @@ class QueueSourceSpec extends StreamSpec {
       }
     }
 
+    "materialize to a queue which is seamlessly translatable between scala and java DSL" in {
+      val s = TestSubscriber.manualProbe[Int]()
+
+      val queue = Source.queue(10, OverflowStrategy.fail).to(Sink.fromSubscriber(s)).run().asJava.asScala
+      val sub = s.expectSubscription
+
+      sub.request(1)
+      assertSuccess(queue.offer(42))
+      s.expectNext(42)
+
+      queue.watchCompletion().pipeTo(testActor)
+      expectNoMessage(pause)
+
+      sub.cancel()
+      expectMsg(Done)
+    }
+
   }
 
 }

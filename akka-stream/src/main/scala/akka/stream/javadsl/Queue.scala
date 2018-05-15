@@ -41,14 +41,6 @@ trait SourceQueue[T] {
    * - failed when the operator faces an internal failure
    */
   def watchCompletion(): CompletionStage[Done]
-
-  /**
-   * Converts the queue into a `scaladsl.SourceQueue`
-   */
-  def asScala(): akka.stream.scaladsl.SourceQueue[T] = new akka.stream.scaladsl.SourceQueue[T] {
-    def offer(elem: T): Future[QueueOfferResult] = SourceQueue.this.offer(elem).toScala
-    def watchCompletion(): Future[Done] = SourceQueue.this.watchCompletion().toScala
-  }
 }
 
 /**
@@ -76,16 +68,26 @@ trait SourceQueueWithComplete[T] extends SourceQueue[T] {
    *   - the [[SourceQueueWithComplete.fail]] method is invoked.
    */
   def watchCompletion(): CompletionStage[Done]
+}
 
+object SourceQueueWithComplete {
+  implicit def QueueOps[T](f: SourceQueueWithComplete[T]): QueueOps[T] = new QueueOps[T](f)
+  final class QueueOps[T](val queue: SourceQueueWithComplete[T]) extends AnyVal {
+    def asScala: akka.stream.scaladsl.SourceQueueWithComplete[T] = SourceQueueConverter.asScala(queue)
+  }
+}
+
+object SourceQueueConverter {
   /**
    * Converts the queue into a `scaladsl.SourceQueueWithComplete`
    */
-  override def asScala(): akka.stream.scaladsl.SourceQueueWithComplete[T] = new akka.stream.scaladsl.SourceQueueWithComplete[T] {
-    def offer(elem: T): Future[QueueOfferResult] = SourceQueueWithComplete.this.offer(elem).toScala
-    def watchCompletion(): Future[Done] = SourceQueueWithComplete.this.watchCompletion().toScala
-    def complete(): Unit = SourceQueueWithComplete.this.complete()
-    def fail(ex: Throwable): Unit = SourceQueueWithComplete.this.fail(ex)
-  }
+  def asScala[T](queue: SourceQueueWithComplete[T]): akka.stream.scaladsl.SourceQueueWithComplete[T] =
+    new akka.stream.scaladsl.SourceQueueWithComplete[T] {
+      def offer(elem: T): Future[QueueOfferResult] = queue.offer(elem).toScala
+      def watchCompletion(): Future[Done] = queue.watchCompletion().toScala
+      def complete(): Unit = queue.complete()
+      def fail(ex: Throwable): Unit = queue.fail(ex)
+    }
 }
 
 /**
@@ -101,14 +103,6 @@ trait SinkQueue[T] {
    * - completes with `element` in case the next element is available from the stream.
    */
   def pull(): CompletionStage[Optional[T]]
-
-  /**
-   * Converts the queue into a `scaladsl.SinkQueue`
-   */
-  def asScala(): akka.stream.scaladsl.SinkQueue[T] = new akka.stream.scaladsl.SinkQueue[T] {
-    import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
-    override def pull(): Future[Option[T]] = SinkQueue.this.pull().toScala.map(_.asScala)(same)
-  }
 }
 
 /**
@@ -119,14 +113,23 @@ trait SinkQueueWithCancel[T] extends SinkQueue[T] {
    * Cancels the stream. This method returns right away without waiting for actual finalizing the stream.
    */
   def cancel(): Unit
+}
 
-  /**
-   * Converts the queue into a `scaladsl.SinkQueueWithCancel`
-   */
-  override def asScala(): akka.stream.scaladsl.SinkQueueWithCancel[T] = new akka.stream.scaladsl.SinkQueueWithCancel[T] {
-    import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
-    override def pull(): Future[Option[T]] = SinkQueueWithCancel.this.pull().toScala.map(_.asScala)(same)
-    override def cancel(): Unit = SinkQueueWithCancel.this.cancel()
+object SinkQueueWithCancel {
+  implicit def QueueOps[T](f: SinkQueueWithCancel[T]): QueueOps[T] = new QueueOps[T](f)
+  final class QueueOps[T](val queue: SinkQueueWithCancel[T]) extends AnyVal {
+    def asScala: akka.stream.scaladsl.SinkQueueWithCancel[T] = SinkQueueConverter.asScala(queue)
   }
 }
 
+object SinkQueueConverter {
+  /**
+   * Converts the queue into a `scaladsl.SinkQueueWithCancel`
+   */
+  def asScala[T](queue: SinkQueueWithCancel[T]): akka.stream.scaladsl.SinkQueueWithCancel[T] =
+    new akka.stream.scaladsl.SinkQueueWithCancel[T] {
+      import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ same }
+      override def pull(): Future[Option[T]] = queue.pull().toScala.map(_.asScala)(same)
+      override def cancel(): Unit = queue.cancel()
+    }
+}

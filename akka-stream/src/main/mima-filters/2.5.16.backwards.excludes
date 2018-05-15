@@ -6,11 +6,3 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.StreamRefSetti
 # #25045 adding Java/Scala interop to SourceQueue and SinkQueue
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SinkQueueAdapter")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SourceQueueAdapter")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.SourceQueue.asScala")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.SourceQueueWithComplete.asScala")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.SinkQueue.asScala")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.SinkQueueWithCancel.asScala")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.SourceQueue.asJava")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.SourceQueueWithComplete.asJava")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.SinkQueue.asJava")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.SinkQueueWithCancel.asJava")
