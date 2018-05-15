@@ -180,7 +180,7 @@ import scala.util.{ Failure, Success, Try }
    *  - inbound close initiated, outbound still open
    *  - fully closed
    *
-   * Upon reaching the last state we obviously just shut down. In addition to
+   * Upon reaching the last state we just shut down. In addition to
    * these user-data states, the engine may at any point in time also be
    * handshaking. This is mostly transparent, but it has an influence on the
    * outbound direction:

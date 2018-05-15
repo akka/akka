@@ -33,7 +33,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #imports }
 
-With these in place we can define our first Actor, and of course it will say
+With these in place we can define our first Actor, and it will say
 hello!
 
 Scala
@@ -172,7 +172,7 @@ The state is managed by changing behavior rather than using any variables.
 When a new `GetSession` command comes in we add that client to the
 list that is in the returned behavior. Then we also need to create the session’s
 `ActorRef` that will be used to post messages. In this case we want to
-create a very simple Actor that just repackages the `PostMessage`
+create a very simple Actor that repackages the `PostMessage`
 command into a `PublishSessionMessage` command which also includes the
 screen name.
 
@@ -190,7 +190,7 @@ has `private` visibility and can't be created outside the `ChatRoom` @scala[obje
 If we did not care about securing the correspondence between a session and a
 screen name then we could change the protocol such that `PostMessage` is
 removed and all clients just get an @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] to
-send to. In this case no session actor would be needed and we could just use
+send to. In this case no session actor would be needed and we could use
 @scala[`ctx.self`]@java[`ctx.getSelf()`]. The type-checks work out in that case because
 @scala[`ActorRef[-T]`]@java[`ActorRef<T>`] is contravariant in its type parameter, meaning that we
 can use a @scala[`ActorRef[RoomCommand]`]@java[`ActorRef<RoomCommand>`] wherever an
@@ -257,7 +257,7 @@ called `ctx.watch` for it. This allows us to shut down the Actor system: when
 the main Actor terminates there is nothing more to do.
 
 Therefore after creating the Actor system with the `main` Actor’s
-`Behavior` we just await its termination.
+`Behavior` the only thing we do is await its termination.
 
 
 ## Relation to Akka (untyped) Actors

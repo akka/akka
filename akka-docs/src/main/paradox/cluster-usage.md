@@ -274,7 +274,7 @@ Because of these issues, auto-downing should **never** be used in a production e
 
 There are two ways to remove a member from the cluster.
 
-You can just stop the actor system (or the JVM process). It will be detected
+You can stop the actor system (or the JVM process). It will be detected
 as unreachable and removed after the automatic or manual downing as described
 above.
 
@@ -496,7 +496,7 @@ For some use cases it is convenient and sometimes also mandatory to ensure that
 you have exactly one actor of a certain type running somewhere in the cluster.
 
 This can be implemented by subscribing to member events, but there are several corner
-cases to consider. Therefore, this specific use case is made easily accessible by the
+cases to consider. Therefore, this specific use case is covered by the
 @ref:[Cluster Singleton](cluster-singleton.md).
 
 ## Cluster Sharding
@@ -882,7 +882,7 @@ Then the abstract `MultiNodeSpec`, which takes the `MultiNodeConfig` as construc
 
 @@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #abstract-test }
 
-Most of this can of course be extracted to a separate trait to avoid repeating this in all your tests.
+Most of this can be extracted to a separate trait to avoid repeating this in all your tests.
 
 Typically you begin your test by starting up the cluster and let the members join, and create some actors.
 That can be done like this:

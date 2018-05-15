@@ -13,7 +13,7 @@ To use Cluster Client, you must add the following dependency in your project:
 ## Introduction
 
 An actor system that is not part of the cluster can communicate with actors
-somewhere in the cluster via this @unidoc[ClusterClient]. The client can of course be part of
+somewhere in the cluster via the @unidoc[ClusterClient], the client can run in an `ActorSystem` that is part of
 another cluster. It only needs to know the location of one (or more) nodes to use as initial
 contact points. It will establish a connection to a @unidoc[akka.cluster.client.ClusterReceptionist] somewhere in
 the cluster. It will monitor the connection to the receptionist and establish a new

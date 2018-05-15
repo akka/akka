@@ -4,8 +4,9 @@
 
 package akka.stream.io
 
-import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
-import java.nio.file.{ Files, Path, StandardOpenOption }
+import java.nio.channels.NonWritableChannelException
+import java.nio.file.StandardOpenOption.{ CREATE, READ, WRITE }
+import java.nio.file._
 
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
@@ -22,6 +23,7 @@ import com.google.common.jimfs.{ Configuration, Jimfs }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
@@ -221,6 +223,13 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         ex.ioResult.count should equal(1001)
         checkFileContents(f, TestLines.takeWhile(!_.contains('b')).mkString(""))
       }
+    }
+
+    "complete with failure when file cannot be open" in {
+      val completion = Source.single(ByteString("42"))
+        .runWith(FileIO.toPath(fs.getPath("/I/hope/this/file/doesnt/exist.txt")))
+
+      completion.failed.futureValue shouldBe an[NoSuchFileException]
     }
   }
 

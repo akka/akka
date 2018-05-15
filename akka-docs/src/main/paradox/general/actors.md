@@ -36,7 +36,7 @@ pending requests, etc. These data are what make an actor valuable, and they
 must be protected from corruption by other actors. The good news is that Akka
 actors conceptually each have their own light-weight thread, which is
 completely shielded from the rest of the system. This means that instead of
-having to synchronize access using locks you can just write your actor code
+having to synchronize access using locks you can write your actor code
 without worrying about concurrency at all.
 
 Behind the scenes Akka will run sets of actors on sets of real threads, where
