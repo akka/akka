@@ -548,9 +548,9 @@ the stream may deadlock.
 @@@ warning
 
 **Deprecation warning:** `ActorPublisher` is deprecated in favour of the vastly more
-type-safe and safe to implement `akka.stream.stage.GraphStage`. It can also
+type-safe and safe to implement @ref[`GraphStage`](stream-customize.md). It can also
 expose a "stage actor ref" is needed to be addressed as-if an Actor.
-Custom stages implemented using `GraphStage` are also automatically fusable.
+Custom stages implemented using @ref[`GraphStage`](stream-customize.md) are also automatically fusable.
 
 To learn more about implementing custom stages using it refer to @ref:[Custom processing with GraphStage](stream-customize.md#graphstage).
 
@@ -614,9 +614,9 @@ Java
 @@@ warning
 
 **Deprecation warning:** `ActorSubscriber` is deprecated in favour of the vastly more
-type-safe and safe to implement `akka.stream.stage.GraphStage`. It can also
+type-safe and safe to implement @ref[`GraphStage`](stream-customize.md). It can also
 expose a "stage actor ref" is needed to be addressed as-if an Actor.
-Custom stages implemented using `GraphStage` are also automatically fusable.
+Custom stages implemented using @ref[`GraphStage`](stream-customize.md) are also automatically fusable.
 
 To learn more about implementing custom stages using it refer to @ref:[Custom processing with GraphStage](stream-customize.md#graphstage).
 

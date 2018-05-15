@@ -21,7 +21,7 @@ junctions of various kinds.
 
 A custom graph stage should not be the first tool you reach for, defining graphs using flows
 and the graph DSL is in general easier and does to a larger extent protect you from mistakes that
-might be easy to make with a custom `GraphStage`
+might be easy to make with a custom @ref[`GraphStage`](stream-customize.md)
 
 @@@
 

@@ -119,7 +119,7 @@ framing and transformation to `ByteString` s this way we do not have to repeat s
 
 In this example both client and server may need to close the stream based on a parsed command - `BYE` in the case
 of the server, and `q` in the case of the client. This is implemented by @scala[taking from the stream until `q` and
-and concatenating a `Source` with a single `BYE` element which will then be sent after the original source completed]@java[using a custom `GraphStage`
+and concatenating a `Source` with a single `BYE` element which will then be sent after the original source completed]@java[using a custom operator extending @ref[`GraphStage`](stream-customize.md)
 which completes the stream once it encounters such command].
 
 ### Using framing in your protocol

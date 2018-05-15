@@ -111,7 +111,7 @@ Java
 **Situation:** A stream of bytes is given as a stream of `ByteString` s and we want to calculate the cryptographic digest
 of the stream.
 
-This recipe uses a `GraphStage` to host a mutable `MessageDigest` class (part of the Java Cryptography
+This recipe uses a @ref[`GraphStage`](stream-customize.md) to define a custom Akka Stream operator, to host a mutable `MessageDigest` class (part of the Java Cryptography
 API) and update it with the bytes arriving from the stream. When the stream starts, the `onPull` handler of the
 stage is called, which bubbles up the `pull` event to its upstream. As a response to this pull, a ByteString
 chunk will arrive (`onPush`) which we use to update the digest, then it will pull for the next chunk.
@@ -373,8 +373,8 @@ Java
 of them is slowing down the other by dropping earlier unconsumed elements from the upstream if necessary, and repeating
 the last value for the downstream if necessary.
 
-We have two options to implement this feature. In both cases we will use `GraphStage` to build our custom
-element. In the first version we will use a provided initial value `initial` that will be used
+We have two options to implement this feature. In both cases we will use @ref[`GraphStage`](stream-customize.md), to build our custom
+operator. In the first version we will use a provided initial value `initial` that will be used
 to feed the downstream if no upstream element is ready yet. In the `onPush()` handler we overwrite the
 `currentValue` variable and immediately relieve the upstream by calling `pull()`. The downstream `onPull` handler
 is very similar, we immediately relieve the downstream by emitting `currentValue`.
@@ -451,7 +451,7 @@ for this actor.
 the same sequence, but capping the size of `ByteString` s. In other words we want to slice up `ByteString` s into smaller
 chunks if they exceed a size threshold.
 
-This can be achieved with a single `GraphStage`. The main logic of our stage is in `emitChunk()`
+This can be achieved with a single @ref[`GraphStage`](stream-customize.md) to define a custom Akka Stream operator. The main logic of our stage is in `emitChunk()`
 which implements the following logic:
 
  * if the buffer is empty, and upstream is not closed we pull for more bytes, if it is closed we complete
@@ -473,7 +473,7 @@ Java
 **Situation:** Given a stream of `ByteString` s we want to fail the stream if more than a given maximum of bytes has been
 consumed.
 
-This recipe uses a `GraphStage` to implement the desired feature. In the only handler we override,
+This recipe uses a @ref[`GraphStage`](stream-customize.md) to implement the desired feature. In the only handler we override,
 `onPush()` we update a counter and see if it gets larger than `maximumBytes`. If a violation happens
 we signal failure, otherwise we forward the chunk we have received.
 
