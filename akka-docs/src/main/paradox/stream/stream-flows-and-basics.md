@@ -47,7 +47,7 @@ is running.
 
 Processing Stage
 : The common name for all building blocks that build up a Graph.
-Examples of a processing stage would be  operations like `map()`, `filter()`, custom `GraphStage` s and graph
+Examples of a processing stage would be operations like `map()`, `filter()`, custom operators extending @ref[`GraphStage`s](stream-customize.md) and graph
 junctions like `Merge` or `Broadcast`. For the full list of built-in processing stages see the @ref:[operator index](operators/index.md)
 
 
@@ -375,7 +375,7 @@ such as `Zip` however *do guarantee* their outputs order, as each output element
 been signalled already – thus the ordering in the case of zipping is defined by this property.
 
 If you find yourself in need of fine grained control over order of emitted elements in fan-in
-scenarios consider using `MergePreferred`, `MergePrioritized` or `GraphStage` – which gives you full control over how the
+scenarios consider using `MergePreferred`, `MergePrioritized` or @ref[`GraphStage`](stream-customize.md) – which gives you full control over how the
 merge is performed.
 
 ## Actor Materializer Lifecycle

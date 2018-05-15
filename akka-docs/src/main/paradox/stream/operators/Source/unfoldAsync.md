@@ -17,7 +17,7 @@ Just like `unfold` but the fold function returns a @scala[`Future`] @java[`Compl
 Just like `unfold` but the fold function returns a @scala[`Future`] @java[`CompletionStage`] which will cause the source to
 complete or emit when it completes.
 
-Can be used to implement many stateful sources without having to touch the more low level `GraphStage` API.
+Can be used to implement many stateful sources without having to touch the more low level @ref[`GraphStage`](../../stream-customize.md) API.
 
 
 @@@div { .callout }
