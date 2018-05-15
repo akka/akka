@@ -1,5 +1,17 @@
 # Stash
 
+## Dependency
+
+To use Akka Actor Typed, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-actor-typed_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
 Stashing enables an actor to temporarily buffer all or some messages that cannot or should not
 be handled using the actor's current behavior.
 

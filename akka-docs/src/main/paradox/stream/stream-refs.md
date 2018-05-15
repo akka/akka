@@ -1,5 +1,17 @@
 # StreamRefs - Reactive Streams over the network
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 @@@ warning
 
 This module is currently marked as @ref:[may change](../common/may-change.md) in the sense

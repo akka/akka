@@ -1,5 +1,17 @@
 # Actors
 
+## Dependency
+
+To use Akka Actor Typed, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-actor-typed_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
 @@@ warning
 
 This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
@@ -8,18 +20,6 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
   this module in production just yet—you have been warned.
 
 @@@
-
-## Dependency
-
-To use Akka Actor Typed add the following dependency:
-
-@@dependency[sbt,Maven,Gradle] {
-  group=com.typesafe.akka
-  artifact=akka-actor-typed_2.12
-  version=$akka.version$
-}
-
-## Introduction
 
 As discussed in @ref:[Actor Systems](../general/actor-systems.md) Actors are about
 sending messages between independent units of computation, but how does that

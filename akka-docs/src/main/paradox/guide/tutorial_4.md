@@ -1,5 +1,17 @@
 # Part 4: Working with Device Groups
 
+## Dependency
+
+Add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 Let's take a closer look at the main functionality required by our use case. In a complete IoT system for monitoring home temperatures, the steps for connecting a device sensor to our system might look like this:
 
 1. A sensor device in the home connects through some protocol.

@@ -1,30 +1,16 @@
 # Remoting
 
-We recommend @ref:[Akka Cluster](cluster-usage.md) over using remoting directly. As remoting is the
-underlying module that allows for Cluster, it is still useful to understand details about it though.
+## Dependency
 
-For an introduction of remoting capabilities of Akka please see @ref:[Location Transparency](general/remoting.md).
-
-@@@ note
-
-As explained in that chapter Akka remoting is designed for communication in a
-peer-to-peer fashion and it is not a good fit for client-server setups. In
-particular Akka Remoting does not work transparently with Network Address Translation,
-Load Balancers, or in Docker containers. For symmetric communication in these situations
-network and/or Akka configuration will have to be changed as described in
-[Akka behind NAT or in a Docker container](#remote-configuration-nat).
-
-@@@
-
-## Preparing your ActorSystem for Remoting
-
-The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project:
+To use Akka Remoting, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-remote_$scala.binary_version$"
-  version="$akka.version$"
+  group=com.typesafe.akka
+  artifact=akka-remote_$scala.major_version$
+  version=$akka.version$
 }
+
+## Configuration
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
 to your `application.conf` file:
@@ -64,6 +50,24 @@ listening for connections and handling messages as not to interfere with other a
 
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
 All settings are described in [Remote Configuration](#remote-configuration).
+
+## Introduction
+
+We recommend @ref:[Akka Cluster](cluster-usage.md) over using remoting directly. As remoting is the
+underlying module that allows for Cluster, it is still useful to understand details about it though.
+
+For an introduction of remoting capabilities of Akka please see @ref:[Location Transparency](general/remoting.md).
+
+@@@ note
+
+As explained in that chapter Akka remoting is designed for communication in a
+peer-to-peer fashion and it is not a good fit for client-server setups. In
+particular Akka Remoting does not work transparently with Network Address Translation,
+Load Balancers, or in Docker containers. For symmetric communication in these situations
+network and/or Akka configuration will have to be changed as described in
+[Akka behind NAT or in a Docker container](#remote-configuration-nat).
+
+@@@
 
 ## Types of Remote Interaction
 

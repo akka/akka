@@ -1,5 +1,59 @@
 # Remoting (codename Artery)
 
+## Dependency
+
+To use Remoting (codename Artery), you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-remote_$scala.major_version$
+  version=$akka.version$
+}
+
+## Configuration
+
+To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
+to your `application.conf` file:
+
+```
+akka {
+  actor {
+    provider = remote
+  }
+  remote {
+    artery {
+      enabled = on
+      transport = aeron-udp
+      canonical.hostname = "127.0.0.1"
+      canonical.port = 25520
+    }
+  }
+}
+```
+
+As you can see in the example above there are four things you need to add to get started:
+
+ * Change provider from `local` to `remote`
+ * Enable Artery to use it as the remoting implementation
+ * Add host name - the machine you want to run the actor system on; this host
+name is exactly what is passed to remote systems in order to identify this
+system and consequently used for connecting back to this system if need be,
+hence set it to a reachable IP address or resolvable name in case you want to
+communicate across the network.
+ * Add port number - the port the actor system should listen on, set to 0 to have it chosen automatically
+
+@@@ note
+
+The port number needs to be unique for each actor system on the same machine even if the actor
+systems have different names. This is because each actor system has its own networking subsystem
+listening for connections and handling messages as not to interfere with other actor systems.
+
+@@@
+
+The example above only illustrates the bare minimum of properties you have to add to enable remoting.
+All settings are described in @ref:[Remote Configuration](#remote-configuration-artery).
+
+## Introduction
 
 We recommend @ref:[Akka Cluster](cluster-usage.md) over using remoting directly. As remoting is the
 underlying module that allows for Cluster, it is still useful to understand details about it though.
@@ -47,57 +101,6 @@ specific events
 The main incompatible change from the previous implementation that the protocol field of the string representation of an
 `ActorRef` is always *akka* instead of the previously used *akka.tcp* or *akka.ssl.tcp*. Configuration properties
 are also different.
-
-## Preparing your ActorSystem for Remoting
-
-The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-remote_$scala.binary_version$"
-  version="$akka.version$"
-}
-
-To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
-to your `application.conf` file:
-
-```
-akka {
-  actor {
-    provider = remote
-  }
-  remote {
-    artery {
-      enabled = on
-      transport = aeron-udp
-      canonical.hostname = "127.0.0.1"
-      canonical.port = 25520
-    }
-  }
-}
-```
-
-As you can see in the example above there are four things you need to add to get started:
-
- * Change provider from `local` to `remote`
- * Enable Artery to use it as the remoting implementation
- * Add host name - the machine you want to run the actor system on; this host
-name is exactly what is passed to remote systems in order to identify this
-system and consequently used for connecting back to this system if need be,
-hence set it to a reachable IP address or resolvable name in case you want to
-communicate across the network.
- * Add port number - the port the actor system should listen on, set to 0 to have it chosen automatically
-
-@@@ note
-
-The port number needs to be unique for each actor system on the same machine even if the actor
-systems have different names. This is because each actor system has its own networking subsystem
-listening for connections and handling messages as not to interfere with other actor systems.
-
-@@@
-
-The example above only illustrates the bare minimum of properties you have to add to enable remoting.
-All settings are described in @ref:[Remote Configuration](#remote-configuration-artery).
 
 ### Selecting transport
 

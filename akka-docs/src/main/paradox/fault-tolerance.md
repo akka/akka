@@ -1,5 +1,17 @@
 # Fault Tolerance
 
+## Dependency
+
+The concept of fault tolerance relates to actors, so in order to use these make sure to depend on actors:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 As explained in @ref:[Actor Systems](general/actor-systems.md) each actor is the supervisor of its
 children, and as such each actor defines fault handling supervisor strategy.
 This strategy cannot be changed afterwards as it is an integral part of the

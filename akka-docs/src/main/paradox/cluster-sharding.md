@@ -1,5 +1,17 @@
 # Cluster Sharding
 
+## Dependency
+
+To use Cluster Sharding, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster-sharding_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
 Cluster sharding is useful when you need to distribute actors across several nodes in the cluster and want to
 be able to interact with them using their logical identifier, but without having to care about
 their physical location in the cluster, which might also change over time.
@@ -30,16 +42,6 @@ in *multiple shards and entities* being started, one in each separate cluster!
 See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing).
 
 @@@
-
-## Dependency
-
-To use Akka Cluster Sharding, add the module to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-cluster-sharding_$scala.binary_version$"
-  version="$akka.version$"
-}
 
 ## An Example
 
@@ -422,16 +424,6 @@ of `ClusterSharding`) as program arguments.
 If you specify `-2.3` as the first program argument it will also try
 to remove data that was stored by Cluster Sharding in Akka 2.3.x using
 different persistenceId.
-
-## Dependencies
-
-To use the Cluster Sharding you must add the following dependency in your project.
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-cluster-sharding_$scala.binary_version$"
-  version="$akka.version$"
-}
 
 ## Configuration
 

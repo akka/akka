@@ -1,5 +1,17 @@
 # Cluster Client
 
+## Dependency
+
+To use Cluster Client, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster-tools_$scala.major_version$
+  version=$akka.version$
+}
+
+## Introduction
+
 An actor system that is not part of the cluster can communicate with actors
 somewhere in the cluster via the @unidoc[ClusterClient], the client can run in an `ActorSystem` that is part of
 another cluster. It only needs to know the location of one (or more) nodes to use as initial
@@ -160,16 +172,6 @@ Scala
 
 Java
 :  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #receptionistEventsListener }
-
-## Dependencies
-
-To use the Cluster Client you must add the following dependency in your project.
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-cluster-tools_$scala.binary_version$"
-  version="$akka.version$"
-}
 
 <a id="cluster-client-config"></a>
 ## Configuration

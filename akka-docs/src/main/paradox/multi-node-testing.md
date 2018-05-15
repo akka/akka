@@ -1,5 +1,19 @@
 # Multi Node Testing
 
+## Dependency
+
+To use Multi Node Testing, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-multi-node-testkit_$scala.binary_version$
+  version=$akka.version$
+}
+
+If you are using the latest nightly build you should pick a timestamped Akka version from
+[https://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/](https://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/).
+We recommend against using `SNAPSHOT` in order to obtain stable builds.
+
 ## Multi Node Testing Concepts
 
 When we talk about multi node testing in Akka we mean the process of running coordinated tests on multiple actor
@@ -147,20 +161,6 @@ multi-jvm:testOnly your.MultiNodeTest
 
 More than one test name can be listed to run multiple specific tests. Tab completion in sbt makes it easy to
 complete the test names.
-
-## Preparing Your Project for Multi Node Testing
-
-The multi node testing kit is a separate jar file. Make sure that you have the following dependency in your project:
-
-@@@vars
-```
-"com.typesafe.akka" %% "akka-multi-node-testkit" % "$akka.version$"
-```
-@@@
-
-If you are using the latest nightly build you should pick a timestamped Akka version from
-[https://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/](https://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/).
-We recommend against using `SNAPSHOT` in order to obtain stable builds.
 
 ## A Multi Node Testing Example
 

@@ -1,5 +1,17 @@
 # Mailboxes
 
+## Dependency
+
+To use Mailboxes, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 An Akka `Mailbox` holds the messages that are destined for an `Actor`.
 Normally each `Actor` has its own mailbox, but with for example a `BalancingPool`
 all routees will share a single mailbox instance.

@@ -1,5 +1,17 @@
 # Cluster Singleton
 
+## Dependency
+
+To use Cluster Singleton, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster-typed_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
 @@@ warning
 
 This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
@@ -24,17 +36,6 @@ Using a singleton should not be the first design choice. It has several drawback
 such as single-point of bottleneck. Single-point of failure is also a relevant concern,
 but for some cases this feature takes care of that by making sure that another singleton
 instance will eventually be started.
-
-
-## Dependency
-
-Cluster singleton is part of the cluster module:
-
-@@dependency[sbt,Maven,Gradle] {
-  group=com.typesafe.akka
-  artifact=akka-cluster-typed_2.12
-  version=$akka.version$
-}
 
 ## Example
 

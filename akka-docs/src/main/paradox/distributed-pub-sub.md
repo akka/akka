@@ -1,5 +1,17 @@
 # Distributed Publish Subscribe in Cluster
 
+## Dependency
+
+To use Distributed Publish Subscribe you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-cluster-tools_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 How do I send a message to an actor without knowing which node it is running on?
 
 How do I send messages to all actors in the cluster that have registered interest
@@ -217,13 +229,3 @@ As in @ref:[Message Delivery Reliability](general/message-delivery-reliability.m
 In other words, messages can be lost over the wire.
 
 If you are looking for at-least-once delivery guarantee, we recommend [Kafka Akka Streams integration](http://doc.akka.io/docs/akka-stream-kafka/current/home.html).
-
-## Dependencies
-
-To use Distributed Publish Subscribe you must add the following dependency in your project.
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-cluster-tools_$scala.binary_version$"
-  version="$akka.version$"
-}

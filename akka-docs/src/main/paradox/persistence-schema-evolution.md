@@ -1,5 +1,17 @@
 # Persistence - Schema Evolution
 
+## Dependency
+
+This documentation page touches upon @ref[Akka Persitence](persistence.md), so to follow those examples you will want to depend on:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-persistence_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 When working on long running projects using @ref:[Persistence](persistence.md), or any kind of [Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html) architectures,
 schema evolution becomes one of the more important technical aspects of developing your application.
 The requirements as well as our own understanding of the business domain may (and will) change in time.

@@ -1,5 +1,15 @@
 # Integration
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
 ## Integrating with Actors
 
 For piping the elements of a stream as messages to an ordinary actor you can use 

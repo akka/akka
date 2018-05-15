@@ -1,5 +1,17 @@
 # Cluster Sharding
 
+## Dependency
+
+To use Akka Cluster Sharding Typed, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster-sharding-typed_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
 For an introduction to Sharding concepts see @ref:[Cluster Sharding](../cluster-sharding.md). This documentation shows how to use the typed
 Cluster Sharding API.
 
@@ -11,16 +23,6 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
   this module in production just yet—you have been warned.
 
 @@@
-
-## Dependency
-
-To use Akka Cluster Sharding Typed, add the module to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group=com.typesafe.akka
-  artifact=akka-cluster-sharding-typed_2.12
-  version=$akka.version$
-}
 
 ## Basic example
 

@@ -1,15 +1,23 @@
 # Cluster Metrics Extension
 
+## Dependency
+
+To use Cluster Metrics Extension, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster-metrics_$scala.binary_version$
+  version=$akka.version$
+}
+
+and add the following configuration stanza to your `application.conf`
+:
+
+```
+akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
+```
+
 ## Introduction
-
-The member nodes of the cluster can collect system health metrics and publish that to other cluster nodes
-and to the registered subscribers on the system event bus with the help of Cluster Metrics Extension.
-
-Cluster metrics information is primarily used for load-balancing routers,
-and can also be used to implement advanced metrics-based node life cycles,
-such as "Node Let-it-crash" when CPU steal time becomes excessive.
-
-Cluster Metrics Extension is a separate Akka module delivered in `akka-cluster-metrics` jar.
 
 To enable usage of the extension you need to add the following dependency to your project:
 
@@ -19,12 +27,12 @@ To enable usage of the extension you need to add the following dependency to you
   version="$akka.version$"
 }
 
-and add the following configuration stanza to your `application.conf`
-:
+The member nodes of the cluster can collect system health metrics and publish that to other cluster nodes
+and to the registered subscribers on the system event bus with the help of Cluster Metrics Extension.
 
-```
-akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
-```
+Cluster metrics information is primarily used for load-balancing routers,
+and can also be used to implement advanced metrics-based node life cycles,
+such as "Node Let-it-crash" when CPU steal time becomes excessive.
 
 Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up), if that feature is enabled,
 will participate in Cluster Metrics collection and dissemination.
@@ -101,7 +109,7 @@ unique per instance directory. You can control the extract directory with the
 
 @@@
 
-To enable usage of Sigar you can add the following dependency to the user project
+To enable usage of Sigar you can add the following dependency to the user project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="io.kamon"

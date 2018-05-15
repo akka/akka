@@ -1,5 +1,17 @@
 # Part 5: Querying Device Groups
 
+## Dependency
+
+Add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 The conversational patterns that we have seen so far are simple in the sense that they require the actor to keep little or no state. Specifically:
 
 * Device actors return a reading, which requires no state change
