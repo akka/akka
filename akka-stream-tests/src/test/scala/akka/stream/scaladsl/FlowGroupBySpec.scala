@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 
 import java.util
 
-import akka.NotUsed
+import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.stream.Attributes._
 import akka.stream.impl.SinkModule
@@ -25,6 +25,8 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit.scaladsl.TestSink
 import java.util.concurrent.ThreadLocalRandom
+
+import akka.testkit.TestLatch
 
 object FlowGroupBySpec {
 
@@ -459,6 +461,34 @@ class FlowGroupBySpec extends StreamSpec {
       upstream.sendComplete()
     }
 
+    "allow to recreate an already closed substream (#24758)" in assertAllStagesStopped {
+      val (up, down) = Flow[Int]
+        .groupBy(2, identity, true)
+        .take(1) // close the substream after 1 element
+        .mergeSubstreams
+        .runWith(TestSource.probe[Int], TestSink.probe)
+
+      down.request(4)
+
+      // Creates and closes substream "1"
+      up.sendNext(1)
+      down.expectNext(1)
+
+      // Creates and closes substream "2"
+      up.sendNext(2)
+      down.expectNext(2)
+
+      // Recreates and closes substream "1" twice
+      up.sendNext(1)
+      down.expectNext(1)
+      up.sendNext(1)
+      down.expectNext(1)
+
+      // Cleanup, not part of the actual test
+      up.sendComplete()
+      down.expectComplete()
+    }
+
     "cancel if downstream has cancelled & all substreams cancel" in assertAllStagesStopped {
       val upstream = TestPublisher.probe[Int]()
       val downstreamMaster = TestSubscriber.probe[Source[Int, NotUsed]]()
@@ -587,6 +617,35 @@ class FlowGroupBySpec extends StreamSpec {
         }
       }
       upstreamSubscription.sendComplete()
+    }
+
+    "not block all substreams when one is blocked but has a buffer in front" in assertAllStagesStopped {
+      case class Elem(id: Int, substream: Int, f: () ⇒ Any)
+      val queue = Source.queue[Elem](3, OverflowStrategy.backpressure)
+        .groupBy(2, _.substream)
+        .buffer(2, OverflowStrategy.backpressure)
+        .map { _.f() }.async
+        .to(Sink.ignore)
+        .run()
+
+      val threeProcessed = Promise[Done]()
+      val blockSubStream1 = TestLatch()
+      List(
+        Elem(1, 1, () ⇒ {
+          // timeout just to not wait forever if something is wrong, not really relevant for test
+          Await.result(blockSubStream1, 10.seconds)
+          1
+        }),
+        Elem(2, 1, () ⇒ 2),
+        Elem(3, 2, () ⇒ {
+          threeProcessed.success(Done)
+          3
+        })).foreach(queue.offer)
+      // two and three are processed as fast as possible, not blocked by substream 1 being clogged
+      threeProcessed.future.futureValue should ===(Done)
+      // let 1 pass so stream can complete
+      blockSubStream1.open()
+      queue.complete()
     }
 
   }

@@ -1,5 +1,17 @@
 # Buffers and working with rate
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 When upstream and downstream rates differ, especially when the throughput has spikes, it can be useful to introduce
 buffers in a stream. In this chapter we cover how buffers are used in Akka Streams.
 
@@ -165,7 +177,7 @@ Java
 If our imaginary external job provider is a client using our API, we might
 want to enforce that the client cannot have more than 1000 queued jobs
 otherwise we consider it flooding and terminate the connection. This is
-easily achievable by the error strategy which simply fails the stream
+achievable by the error strategy which fails the stream
 once the buffer gets full.
 
 Scala

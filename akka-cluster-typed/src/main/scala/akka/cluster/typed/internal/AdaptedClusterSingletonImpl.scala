@@ -10,7 +10,6 @@ import java.util.function.{ Function ⇒ JFunction }
 import akka.actor.{ ExtendedActorSystem, InvalidActorNameException }
 import akka.annotation.InternalApi
 import akka.cluster.singleton.{ ClusterSingletonProxy, ClusterSingletonManager ⇒ OldSingletonManager }
-import akka.actor.typed.Behavior.UntypedPropsBehavior
 import akka.cluster.typed.{ Cluster, ClusterSingleton, ClusterSingletonImpl, ClusterSingletonSettings }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
@@ -41,10 +40,7 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
     if (settings.shouldRunManager(cluster)) {
       val managerName = managerNameFor(singletonName)
       // start singleton on this node
-      val untypedProps = behavior match {
-        case u: UntypedPropsBehavior[_] ⇒ u.untypedProps(props) // PersistentBehavior
-        case _                          ⇒ PropsAdapter(behavior, props)
-      }
+      val untypedProps = PropsAdapter(behavior, props)
       try {
         untypedSystem.systemActorOf(
           OldSingletonManager.props(untypedProps, terminationMessage, settings.toManagerSettings(singletonName)),

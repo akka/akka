@@ -101,12 +101,8 @@ object Serializers {
  * start-up, where two constructors are tried in order:
  *
  * <ul>
- * <li>taking exactly one argument of type [[akka.actor.ExtendedActorSystem]];
- * this should be the preferred one because all reflective loading of classes
- * during deserialization should use ExtendedActorSystem.dynamicAccess (see
- * [[akka.actor.DynamicAccess]]), and</li>
- * <li>without arguments, which is only an option if the serializer does not
- * load classes using reflection.</li>
+ * <li>taking exactly one argument of type [[akka.actor.ExtendedActorSystem]], and</li>
+ * <li>without arguments</li>
  * </ul>
  *
  * <b>Be sure to always use the </b>[[akka.actor.DynamicAccess]]<b> for loading classes!</b> This is necessary to
@@ -135,8 +131,7 @@ abstract class SerializerWithStringManifest extends Serializer {
   def toBinary(o: AnyRef): Array[Byte]
 
   /**
-   * Produces an object from an array of bytes, with an optional type-hint;
-   * the class should be loaded using ActorSystem.dynamicAccess.
+   * Produces an object from an array of bytes, with an optional type-hint.
    *
    * It's recommended to throw `java.io.NotSerializableException` in `fromBinary`
    * if the manifest is unknown. This makes it possible to introduce new message

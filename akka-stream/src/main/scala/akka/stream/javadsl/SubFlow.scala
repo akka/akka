@@ -25,7 +25,7 @@ import scala.reflect.ClassTag
 object SubFlow {
   /**
    * Upcast a stream of elements to a stream of supertypes of that element. Useful in combination with
-   * fan-in combinators where you do not want to pay the cost of casting each element in a `map`.
+   * fan-in operators where you do not want to pay the cost of casting each element in a `map`.
    *
    * @tparam SuperOut a supertype to the type of element flowing out of the flow
    * @return A flow that accepts `In` and outputs elements of the super type
@@ -114,6 +114,9 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *     |  +------+        +------+  |
    *     +----------------------------+
    * }}}
+   *
+   * Note that attributes set on the returned graph, including async boundaries are now for the entire graph and not
+   * the `SubFlow`. for example `async` will not have any effect as the returned graph is the entire, closed graph.
    */
   def to(sink: Graph[SinkShape[Out], _]): Sink[In, Mat] =
     new Sink(delegate.to(sink))
@@ -1515,8 +1518,8 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipWithIndex: SubFlow[In, akka.japi.Pair[Out @uncheckedVariance, Long], Mat] =
-    new SubFlow(delegate.zipWithIndex.map { case (elem, index) ⇒ akka.japi.Pair(elem, index) })
+  def zipWithIndex: SubFlow[In, akka.japi.Pair[Out @uncheckedVariance, java.lang.Long], Mat] =
+    new SubFlow(delegate.zipWithIndex.map { case (elem, index) ⇒ akka.japi.Pair[Out, java.lang.Long](elem, index) })
 
   /**
    * If the first element has not passed through this stage before the provided timeout, the stream is failed
@@ -1694,7 +1697,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
-   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
@@ -1727,7 +1730,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
-   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
@@ -1769,7 +1772,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
 
   /**
    * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
-   * for emitting messages. This combinator works for streams where all elements have the same cost or length.
+   * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
    * Tokens drops into the bucket at a given rate and can be `spared` for later use up to bucket capacity
@@ -1810,7 +1813,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
    * calculating for each element individually by calling `calculateCost` function.
-   * This combinator works for streams when elements have different cost(length).
+   * This operator works for streams when elements have different cost(length).
    * Streams of `ByteString` for example.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
@@ -1846,7 +1849,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
    * calculating for each element individually by calling `calculateCost` function.
-   * This combinator works for streams when elements have different cost(length).
+   * This operator works for streams when elements have different cost(length).
    * Streams of `ByteString` for example.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
@@ -1891,7 +1894,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
   /**
    * Sends elements downstream with speed limited to `cost/per`. Cost is
    * calculating for each element individually by calling `calculateCost` function.
-   * This combinator works for streams when elements have different cost(length).
+   * This operator works for streams when elements have different cost(length).
    * Streams of `ByteString` for example.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
@@ -1934,7 +1937,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * Use this operator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use
@@ -1949,7 +1952,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * Use this operator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use
@@ -1964,7 +1967,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * Use this operator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use
@@ -1980,7 +1983,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
   /**
    * This is a simplified version of throttle that spreads events evenly across the given time interval.
    *
-   * Use this combinator when you need just slow down a stream without worrying about exact amount
+   * Use this operator when you need just slow down a stream without worrying about exact amount
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use

@@ -1,5 +1,19 @@
 # Persistence Query
 
+## Dependency
+
+To use Persistence Query, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-persistence-query_$scala.binary_version$
+  version=$akka.version$
+}
+
+This will also add dependency on the @ref[Akka Persistence](persistence.md) module.
+
+## Introduction
+
 Akka persistence query complements @ref:[Persistence](persistence.md) by providing a universal asynchronous stream based
 query interface that various journal plugins can implement in order to expose their query capabilities.
 
@@ -9,35 +23,6 @@ persistence) is completely separated from the "query side". Akka Persistence Que
 side of an application, however it can help to migrate data from the write side to the query side database. In very
 simple scenarios Persistence Query may be powerful enough to fulfill the query needs of your app, however we highly
 recommend (in the spirit of CQRS) of splitting up the write/read sides into separate datastores as the need arises.
-
-## Dependencies
-
-Akka persistence query is a separate jar file. Make sure that you have the following dependency in your project:
-
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-persistence-query" % "$akka.version$"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-persistence-query_$scala.binary_version$', version: '$akka.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-persistence-query_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
 
 ## Design overview
 
@@ -162,7 +147,7 @@ Scala
 Java
 :  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #events-by-tag }
 
-As you can see, we can use all the usual stream combinators available from @ref:[Streams](stream/index.md) on the resulting query stream,
+As you can see, we can use all the usual stream operators available from @ref:[Streams](stream/index.md) on the resulting query stream,
 including for example taking the first 10 and cancelling the stream. It is worth pointing out that the built-in `EventsByTag`
 query has an optionally supported offset parameter (of type `Long`) which the journals can use to implement resumable-streams.
 For example a journal may be able to use a WHERE clause to begin the read starting from a specific row, or in a datastore
@@ -240,8 +225,8 @@ Java
 If the target database does not provide a reactive streams `Subscriber` that can perform writes,
 you may have to implement the write logic using plain functions or Actors instead.
 
-In case your write logic is state-less and you just need to convert the events from one data type to another
-before writing into the alternative datastore, then the projection is as simple as:
+In case your write logic is state-less and you need to convert the events from one data type to another
+before writing into the alternative datastore, then the projection will look like this:
 
 Scala
 :  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-simple-classes }
@@ -303,7 +288,7 @@ A read journal plugin must implement `akka.persistence.query.ReadJournalProvider
 creates instances of `akka.persistence.query.scaladsl.ReadJournal` and
 `akka.persistence.query.javaadsl.ReadJournal`. The plugin must implement both the `scaladsl`
 and the `javadsl` @scala[traits]@java[interfaces] because the `akka.stream.scaladsl.Source` and 
-`akka.stream.javadsl.Source` are different types and even though those types can easily be converted
+`akka.stream.javadsl.Source` are different types and even though those types can be converted
 to each other it is most convenient for the end user to get access to the Java or Scala `Source` directly.
 As illustrated below one of the implementations can delegate to the other. 
 

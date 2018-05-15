@@ -1,21 +1,8 @@
 # Persistence
 
-Akka persistence enables stateful actors to persist their internal state so that it can be recovered when an actor
-is started, restarted after a JVM crash or by a supervisor, or migrated in a cluster. The key concept behind Akka
-persistence is that only changes to an actor's internal state are persisted but never its current state directly
-(except for optional snapshots). These changes are only ever appended to storage, nothing is ever mutated, which
-allows for very high transaction rates and efficient replication. Stateful actors are recovered by replaying stored
-changes to these actors from which they can rebuild internal state. This can be either the full history of changes
-or starting from a snapshot which can dramatically reduce recovery times. Akka persistence also provides point-to-point
-communication with at-least-once message delivery semantics.
-
-Akka persistence is inspired by and the official replacement of the [eventsourced](https://github.com/eligosource/eventsourced) library. It follows the same
-concepts and architecture of [eventsourced](https://github.com/eligosource/eventsourced) but significantly differs on API and implementation level. See also
-@ref:[migration-eventsourced-2.3](project/migration-guide-eventsourced-2.3.x.md)
-
 ## Dependency
 
-To use Akka Persistence, add the module to your project:
+To use Akka Persistence, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -33,6 +20,21 @@ LevelDB-based plugins will require the following additional dependency:
   artifact="leveldbjni-all"
   version="1.8"
 }
+
+## Introduction
+
+Akka persistence enables stateful actors to persist their internal state so that it can be recovered when an actor
+is started, restarted after a JVM crash or by a supervisor, or migrated in a cluster. The key concept behind Akka
+persistence is that only changes to an actor's internal state are persisted but never its current state directly
+(except for optional snapshots). These changes are only ever appended to storage, nothing is ever mutated, which
+allows for very high transaction rates and efficient replication. Stateful actors are recovered by replaying stored
+changes to these actors from which they can rebuild internal state. This can be either the full history of changes
+or starting from a snapshot which can dramatically reduce recovery times. Akka persistence also provides point-to-point
+communication with at-least-once message delivery semantics.
+
+Akka persistence is inspired by and the official replacement of the [eventsourced](https://github.com/eligosource/eventsourced) library. It follows the same
+concepts and architecture of [eventsourced](https://github.com/eligosource/eventsourced) but significantly differs on API and implementation level. See also
+@ref:[migration-eventsourced-2.3](project/migration-guide-eventsourced-2.3.x.md)
 
 ## Architecture
 
@@ -62,7 +64,7 @@ If validation succeeds, events are generated from the command, representing the 
 are then persisted and, after successful persistence, used to change the actor's state. When the persistent actor
 needs to be recovered, only the persisted events are replayed of which we know that they can be successfully applied.
 In other words, events cannot fail when being replayed to a persistent actor, in contrast to commands. Event sourced
-actors may of course also process commands that do not change application state such as query commands for example.
+actors may also process commands that do not change application state such as query commands for example.
 
 Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493) by Randy Shoup. It is a short and recommended read if you're starting
 developing Events based applications.
@@ -309,7 +311,7 @@ Java
 
 @@@ note
 
-In order to implement the pattern known as "*command sourcing*" simply call @scala[`persistAsync(cmd)(...)`]@java[`persistAsync`] right away on all incoming
+In order to implement the pattern known as "*command sourcing*" call @scala[`persistAsync(cmd)(...)`]@java[`persistAsync`] right away on all incoming
 messages and handle them in the callback.
 
 @@@
@@ -454,7 +456,7 @@ if you for example know that serialization format has changed in an incompatible
 
 ### Atomic writes
 
-Each event is of course stored atomically, but it is also possible to store several events atomically by
+Each event is stored atomically, but it is also possible to store several events atomically by
 using the `persistAll` or `persistAllAsync` method. That means that all events passed to that method
 are stored or none of them are stored if there is an error.
 
@@ -1128,31 +1130,11 @@ In order to help developers build correct and high quality storage plugins, we p
 
 The TCK is usable from Java as well as Scala projects. To test your implementation (independently of language) you need to include the akka-persistence-tck dependency:
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-persistence-tck" % "$akka.version$" % "test"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    testCompile group: 'com.typesafe.akka', name: 'akka-persistence-tck_$scala.binary_version$', version: '$akka.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-persistence-tck_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-      <scope>test</scope>
-    </dependency>
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-persistence-tck_$scala.binary_version$"
+  version="$akka.version$"
+}
 
 To include the Journal TCK tests in your test suite simply extend the provided @scala[`JournalSpec`]@java[`JavaJournalSpec`]:
 
@@ -1171,7 +1153,7 @@ has, and also performs some longer operations on the Journal while printing its 
 to provide a proper benchmarking environment it can be used to get a rough feel about your journal's performance in the most
 typical scenarios.
 
-In order to include the `SnapshotStore` TCK tests in your test suite simply extend the `SnapshotStoreSpec`:
+In order to include the `SnapshotStore` TCK tests in your test suite extend the `SnapshotStoreSpec`:
 
 Scala
 :  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #snapshot-store-tck-scala }
@@ -1204,30 +1186,11 @@ instance. Enable this plugin by defining config property:
 
 LevelDB based plugins will also require the following additional dependency declaration:
 
-sbt
-:   @@@vars
-    ```
-    "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'org.fusesource.leveldbjni', name: 'leveldbjni-all', version: '1.8'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>org.fusesource.leveldbjni</groupId>
-      <artifactId>leveldbjni-all</artifactId>
-      <version>1.8</version>
-    </dependency>
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="org.fusesource.leveldbjni"
+  artifact="leveldbjni-all"
+  version="1.8"
+}
 
 The default location of LevelDB files is a directory named `journal` in the current working
 directory. This location can be changed by configuration where the specified path can be relative or absolute:
@@ -1378,31 +1341,11 @@ in your Akka configuration. The LevelDB Java port is for testing purposes only.
 
 Also note that for the LevelDB Java port, you will need the following dependencies:
 
-sbt
-:   @@@vars
-    ```
-    "org.iq80.leveldb"            % "leveldb"          % "0.9"          % "test"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    testCompile group: 'org.iq80.leveldb', name: 'leveldb', version: '0.9'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>org.iq80.leveldb</groupId>
-      <artifactId>leveldb</artifactId>
-      <version>0.9</version>
-      <scope>test</scope>
-    </dependency>
-    ```
-    @@@
+@@dependency[sbt,Maven,Gradle] {
+  group="org.iq80.leveldb"
+  artifact="leveldb"
+  version="0.9"
+}
 
 @@@ warning
 

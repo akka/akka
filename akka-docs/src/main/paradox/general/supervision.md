@@ -177,7 +177,7 @@ message will be delivered irrespective of the order in which the monitoring
 request and target’s termination occur, i.e. you still get the message even if
 at the time of registration the target is already dead.
 
-Monitoring is particularly useful if a supervisor cannot simply restart its
+Monitoring is particularly useful if a supervisor cannot restart its
 children and has to terminate them, e.g. in case of errors during actor
 initialization. In that case it should monitor those children and re-create
 them or schedule itself to retry this at a later time.
@@ -269,7 +269,7 @@ but processed afterwards.
 
 Normally stopping a child (i.e. not in response to a failure) will not
 automatically terminate the other children in an all-for-one strategy; this can
-easily be done by watching their lifecycle: if the `Terminated` message
+be done by watching their lifecycle: if the `Terminated` message
 is not handled by the supervisor, it will throw a `DeathPactException`
 which (depending on its supervisor) will restart it, and the default
 `preRestart` action will terminate all children. Of course this can be
@@ -278,5 +278,5 @@ handled explicitly as well.
 Please note that creating one-off actors from an all-for-one supervisor entails
 that failures escalated by the temporary actor will affect all the permanent
 ones. If this is not desired, install an intermediate supervisor; this can very
-easily be done by declaring a router of size 1 for the worker, see
+be done by declaring a router of size 1 for the worker, see
 @ref:[Routing](../routing.md).

@@ -1,5 +1,17 @@
 # Persistence
 
+## Dependency
+
+To use Akka Persistence Typed, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-persistence-typed_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
 Akka Persistence is a library for building event sourced actors. For background about how it works
 see the @ref:[untyped Akka Persistence section](../persistence.md). This documentation shows how the typed API for persistence
 works and assumes you know what is meant by `Command`, `Event` and `State`.
@@ -12,16 +24,6 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
   this module in production just yet—you have been warned.
 
 @@@
-
-## Dependency
-
-To use Akka Persistence Typed, add the module to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group=com.typesafe.akka
-  artifact=akka-persistence-typed_2.12
-  version=$akka.version$
-}
 
 ## Example
 
@@ -96,7 +98,7 @@ Scala
 Java
 :  @@snip [PersistentActorCompileOnyTest.java]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #state }
 
-The command handler just persists the `Cmd` payload in an `Evt`@java[. In this simple example the command handler is defined using a lambda, for the more complicated example below a `CommandHandlerBuilder` is used]:
+The command handler persists the `Cmd` payload in an `Evt`@java[. In this simple example the command handler is defined using a lambda, for the more complicated example below a `CommandHandlerBuilder` is used]:
 
 Scala
 :  @@snip [PersistentActorCompileOnyTest.scala]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #command-handler }
@@ -185,7 +187,7 @@ Java
 
 The event handler is always the same independent of state. The main reason for not making the event handler
 part of the `CommandHandler` is that all events must be handled and that is typically independent of what the
-current state is. The event handler can of course still decide what to do based on the state if that is needed.
+current state is. The event handler can still decide what to do based on the state if that is needed.
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #event-handler }
@@ -231,8 +233,13 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #tagging }
 
-## Current limitations
+## Wrapping Persistent Behaviors
+When creating a `PersistentBehavior`, it is possible to wrap `PersistentBehavior` in
+other behaviors such as `Behaviors.setup` in order to access the `ActorContext` object. For instance
+to access the actor logging upon taking snapshots for debug purpose.
 
-* The `PersistentBehavior` can't be wrapped in other behaviors, such as `Behaviors.setup`. See [#23694](https://github.com/akka/akka/issues/23694)
+Scala
+:  @@snip [BasicPersistentActorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #wrapPersistentBehavior }
 
-
+Java
+:  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #wrapPersistentBehavior }

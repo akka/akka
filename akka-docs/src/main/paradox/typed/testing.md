@@ -1,5 +1,18 @@
 # Testing
 
+## Dependency
+
+To use Akka TestKit Typed, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-testkit-typed_$scala.binary_version$
+  version=$akka.version$
+  scope=test
+}
+
+## Introduction
+
 Testing can either be done asynchronously using a real `ActorSystem` or synchronously on the testing thread using the `BehaviousTestKit`.
 
 For testing logic in a `Behavior` in isolation synchronous testing is preferred. For testing interactions between multiple
@@ -17,17 +30,6 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
   this module in production just yet—you have been warned.
 
 @@@
-
-## Dependency
-
-To use Akka TestKit Typed, add the module to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group=com.typesafe.akka
-  artifact=akka-testkit-typed_2.12
-  version=$akka.version$
-  scope=test
-}
 
 ## Synchronous behavior testing
 

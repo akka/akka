@@ -1,5 +1,59 @@
 # Remoting (codename Artery)
 
+## Dependency
+
+To use Remoting (codename Artery), you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-remote_$scala.major_version$
+  version=$akka.version$
+}
+
+## Configuration
+
+To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
+to your `application.conf` file:
+
+```
+akka {
+  actor {
+    provider = remote
+  }
+  remote {
+    artery {
+      enabled = on
+      transport = aeron-udp
+      canonical.hostname = "127.0.0.1"
+      canonical.port = 25520
+    }
+  }
+}
+```
+
+As you can see in the example above there are four things you need to add to get started:
+
+ * Change provider from `local` to `remote`
+ * Enable Artery to use it as the remoting implementation
+ * Add host name - the machine you want to run the actor system on; this host
+name is exactly what is passed to remote systems in order to identify this
+system and consequently used for connecting back to this system if need be,
+hence set it to a reachable IP address or resolvable name in case you want to
+communicate across the network.
+ * Add port number - the port the actor system should listen on, set to 0 to have it chosen automatically
+
+@@@ note
+
+The port number needs to be unique for each actor system on the same machine even if the actor
+systems have different names. This is because each actor system has its own networking subsystem
+listening for connections and handling messages as not to interfere with other actor systems.
+
+@@@
+
+The example above only illustrates the bare minimum of properties you have to add to enable remoting.
+All settings are described in @ref:[Remote Configuration](#remote-configuration-artery).
+
+## Introduction
 
 We recommend @ref:[Akka Cluster](cluster-usage.md) over using remoting directly. As remoting is the
 underlying module that allows for Cluster, it is still useful to understand details about it though.
@@ -48,70 +102,6 @@ The main incompatible change from the previous implementation that the protocol 
 `ActorRef` is always *akka* instead of the previously used *akka.tcp* or *akka.ssl.tcp*. Configuration properties
 are also different.
 
-## Preparing your ActorSystem for Remoting
-
-The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project:
-
-Scala
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-remote" % "$akka.version$"
-    ```
-    @@@
-
-Java
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-remote_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
-
-
-To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
-to your `application.conf` file:
-
-```
-akka {
-  actor {
-    provider = remote
-  }
-  remote {
-    artery {
-      enabled = on
-      transport = aeron-udp
-      canonical.hostname = "127.0.0.1"
-      canonical.port = 25520
-    }
-  }
-}
-```
-
-As you can see in the example above there are four things you need to add to get started:
-
- * Change provider from `local` to `remote`
- * Enable Artery to use it as the remoting implementation
- * Add host name - the machine you want to run the actor system on; this host
-name is exactly what is passed to remote systems in order to identify this
-system and consequently used for connecting back to this system if need be,
-hence set it to a reachable IP address or resolvable name in case you want to
-communicate across the network.
- * Add port number - the port the actor system should listen on, set to 0 to have it chosen automatically
-
-@@@ note
-
-The port number needs to be unique for each actor system on the same machine even if the actor
-systems have different names. This is because each actor system has its own networking subsystem
-listening for connections and handling messages as not to interfere with other actor systems.
-
-@@@
-
-The example above only illustrates the bare minimum of properties you have to add to enable remoting.
-All settings are described in @ref:[Remote Configuration](#remote-configuration-artery).
-
 ### Selecting transport
 
 There are three alternatives of which underlying transport to use. It is configured by property
@@ -133,7 +123,10 @@ might not be as good as the Aeron transport.
 
 @@@ note
 
-Aeron requires 64bit JVM to work reliably.
+Aeron requires 64bit JVM to work reliably and is only officially supported on Linux, Mac and Windows.
+It may work on other Unixes e.g. Solaris but insufficient testing has taken place for it to be
+officially supported. If you're on a Big Endian processor, such as Sparc, it is recommended to use
+ TCP.
 
 @@@
 
@@ -162,7 +155,7 @@ In order to communicate with an actor, it is necessary to have its `ActorRef`. I
 the creator of the actor (the caller of `actorOf()`) is who gets the `ActorRef` for an actor that it can
 then send to other actors. In other words:
 
- * An Actor can get a remote Actor's reference simply by receiving a message from it (as it's available as @scala[`sender()`]@java[`getSender()`] then),
+ * An Actor can get a remote Actor's reference by receiving a message from it (as it's available as @scala[`sender()`]@java[`getSender()`] then),
 or inside of a remote message (e.g. *PleaseReply(message: String, remoteActorRef: ActorRef)*)
 
 Alternatively, an actor can look up another located at a known path using
@@ -434,7 +427,7 @@ You have a few choices how to set up certificates and hostname verification:
     * The single set of keys and the single certificate is distributed to all nodes. The certificate can
       be self-signed as it is distributed both as a certificate for authentication but also as the trusted certificate.
     * If the keys/certificate are lost, someone else can connect to your cluster.
-    * Adding nodes to the cluster is simple as the key material can just be deployed / distributed to the new node.
+    * Adding nodes to the cluster is simple as the key material can be deployed / distributed to the new node.
 * Have a single set of keys and a single certificate for all nodes that contains all of the host names and *enable*
   hostname checking.
     * This means that only the hosts mentioned in the certificate can connect to the cluster.

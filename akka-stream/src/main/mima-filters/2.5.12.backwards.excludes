@@ -77,3 +77,8 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.Traversal
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.TraversalBuilder.offsetOf")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.TraversalBuilder.offsetOfModule")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.TraversalBuilder.wire")
+
+# #24758 recreate already closed substreams 
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GroupBy.this")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.groupBy")
+

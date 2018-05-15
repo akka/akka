@@ -4,7 +4,7 @@ For introduction to the Akka Cluster concepts please see @ref:[Cluster Specifica
 
 ## Dependency
 
-To use Akka Cluster, add the module to your project:
+To use Akka Cluster, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -94,6 +94,8 @@ The source code of this sample can be found in the
   [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module.
 @@@
 
+### Joining configured seed nodes
+
 You may decide if joining to the cluster should be done manually or automatically
 to configured initial contact points, so-called seed nodes. After the joining process
 the seed nodes are not special and they participate in the cluster in exactly the same
@@ -118,12 +120,6 @@ This can also be defined as Java system properties when starting the JVM using t
 -Dakka.cluster.seed-nodes.1=akka.tcp://ClusterSystem@host2:2552
 ```
 
-Instead of manually configuring seed nodes, which is useful in development or statically assigned node IPs, you may want 
-to automate the discovery of seed nodes using your cloud providers or cluster orchestrator, or some other form of service 
-discovery (such as managed DNS). The open source Akka Management library includes the 
-[Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module which handles 
-just that. Please refer to its documentation for more details. 
-
 The seed nodes can be started in any order and it is not necessary to have all
 seed nodes running, but the node configured as the **first element** in the `seed-nodes`
 configuration list must be started when initially starting a cluster, otherwise the
@@ -142,11 +138,27 @@ form a new cluster instead of joining remaining nodes of the existing cluster. T
 likely not desired and should be avoided by listing several nodes as seed nodes for redundancy
 and don't stop all of them at the same time.
 
+### Automatically joining to seed nodes with Cluster Bootstrap
+
+Instead of manually configuring seed nodes, which is useful in development or statically assigned node IPs, you may want
+to automate the discovery of seed nodes using your cloud providers or cluster orchestrator, or some other form of service
+discovery (such as managed DNS). The open source Akka Management library includes the
+[Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module which handles
+just that. Please refer to its documentation for more details.
+
+### Programatically joining to seed nodes with `joinSeedNodes`
+
 You may also use @scala[`Cluster(system).joinSeedNodes`]@java[`Cluster.get(system).joinSeedNodes`] to join programmatically,
 which is attractive when dynamically discovering other nodes at startup by using some external tool or API.
 When using `joinSeedNodes` you should not include the node itself except for the node that is
 supposed to be the first seed node, and that should be placed first in the parameter to
 `joinSeedNodes`.
+
+Scala
+:  @@snip [ClusterDocSpec.scala]($code$/scala/docs/cluster/ClusterDocSpec.scala) { #join-seed-nodes }
+
+Java
+:  @@snip [ClusterDocTest.java]($code$/java/jdocs/cluster/ClusterDocTest.java) { #join-seed-nodes-imports #join-seed-nodes }
 
 Unsuccessful attempts to contact seed nodes are automatically retried after the time period defined in
 configuration property `seed-node-timeout`. Unsuccessful attempt to join a specific seed node is
@@ -198,6 +210,10 @@ can be performed automatically or manually. By default it must be done manually,
 [JMX](#cluster-jmx) or [HTTP](#cluster-http).
 
 It can also be performed programmatically with @scala[`Cluster(system).down(address)`]@java[`Cluster.get(system).down(address)`].
+
+If a node is still running and sees its self as Down it will shutdown. @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown) will automatically
+run if `run-coordinated-shutdown-when-down` is set to `on` (the default) however the node will not try
+and leave the cluster gracefully so sharding and singleton migration will not occur.
 
 A pre-packaged solution for the downing problem is provided by
 [Split Brain Resolver](http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html),
@@ -258,7 +274,7 @@ Because of these issues, auto-downing should **never** be used in a production e
 
 There are two ways to remove a member from the cluster.
 
-You can just stop the actor system (or the JVM process). It will be detected
+You can stop the actor system (or the JVM process). It will be detected
 as unreachable and removed after the automatic or manual downing as described
 above.
 
@@ -480,7 +496,7 @@ For some use cases it is convenient and sometimes also mandatory to ensure that
 you have exactly one actor of a certain type running somewhere in the cluster.
 
 This can be implemented by subscribing to member events, but there are several corner
-cases to consider. Therefore, this specific use case is made easily accessible by the
+cases to consider. Therefore, this specific use case is covered by the
 @ref:[Cluster Singleton](cluster-singleton.md).
 
 ## Cluster Sharding
@@ -866,7 +882,7 @@ Then the abstract `MultiNodeSpec`, which takes the `MultiNodeConfig` as construc
 
 @@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #abstract-test }
 
-Most of this can of course be extracted to a separate trait to avoid repeating this in all your tests.
+Most of this can be extracted to a separate trait to avoid repeating this in all your tests.
 
 Typically you begin your test by starting up the cluster and let the members join, and create some actors.
 That can be done like this:

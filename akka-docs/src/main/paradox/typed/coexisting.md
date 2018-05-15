@@ -1,6 +1,18 @@
 # Coexistence
 
-We believe Akka Typed will be adopted in existing systems gradually and therefore it's important to be able to use typed 
+## Dependency
+
+To use Akka Actor Typed, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-actor-typed_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
+We believe Akka Typed will be adopted in existing systems gradually and therefore it's important to be able to use typed
 and untyped actors together, within the same `ActorSystem`. Also, we will not be able to integrate with all existing modules in one big bang release and that is another reason for why these two ways of writing actors must be able to coexist.
 
 There are two different `ActorSystem`s: `akka.actor.ActorSystem` and `akka.actor.typed.ActorSystem`. 
@@ -103,6 +115,6 @@ Scala
 Java
 :  @@snip [TypedWatchingUntypedTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/TypedWatchingUntypedTest.java) { #typed }
 
-There is one caveat regarding supervision of untyped child from typed parent. If the child throws an exception we would expect it to be restarted, but supervision in Akka Typed defaults to stopping the child in case it fails. The restarting facilities in Akka Typed will not work with untyped children. However, the workaround is simply to add another untyped actor that takes care of the supervision, i.e. restarts in case of failure if that is the desired behavior.
+There is one caveat regarding supervision of untyped child from typed parent. If the child throws an exception we would expect it to be restarted, but supervision in Akka Typed defaults to stopping the child in case it fails. The restarting facilities in Akka Typed will not work with untyped children. However, the workaround is to add another untyped actor that takes care of the supervision, i.e. restarts in case of failure if that is the desired behavior.
 
 

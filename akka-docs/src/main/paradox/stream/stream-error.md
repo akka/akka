@@ -1,5 +1,17 @@
 # Error Handling in Streams
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 When a stage in a stream fails this will normally lead to the entire stream being torn down.
 Each of the stages downstream gets informed about the failure and each upstream stage sees a cancellation.
 

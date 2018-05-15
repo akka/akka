@@ -1,5 +1,17 @@
 # Logging
 
+## Dependency
+
+To use Logging, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 Logging in Akka is not tied to a specific logging backend. By default
 log messages are printed to STDOUT, but you can plug-in a SLF4J logger or
 your own logger. Logging is performed asynchronously to ensure that logging
@@ -243,7 +255,7 @@ Also see the @ref:[logging options for TestKit](testing.md#actor-logging).
 
 The rules for translating the source object to the source string and class
 which are inserted into the `LogEvent` during runtime are implemented
-using implicit parameters and thus fully customizable: simply create your own
+using implicit parameters and thus fully customizable: create your own
 instance of `LogSource[T]` and have it in scope when creating the
 logger.
 
@@ -339,20 +351,11 @@ stdout logger is `WARNING` and it can be silenced completely by setting
 Akka provides a logger for [SLF4J](http://www.slf4j.org/). This module is available in the 'akka-slf4j.jar'.
 It has a single dependency: the slf4j-api jar. In your runtime, you also need a SLF4J backend. We recommend [Logback](http://logback.qos.ch/):
 
-sbt
-:   ```scala
-libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
-```
-
-Maven
-:   ```xml
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>1.2.3</version>
-    </dependency>
-    ```
-
+@@dependency[sbt,Maven,Gradle] {
+  group="ch.qos.logback"
+  artifact="logback-classic"
+  version="1.2.3"
+}
 
 You need to enable the Slf4jLogger in the `loggers` element in
 the @ref:[configuration](general/configuration.md). Here you can also define the log level of the event bus.
@@ -481,7 +484,7 @@ If you want to more accurately output the timestamp, use the MDC attribute `akka
 ### MDC values defined by the application
 
 One useful feature available in Slf4j is [MDC](http://logback.qos.ch/manual/mdc.html),
-Akka has a way to let the application specify custom values, you just need to get a
+Akka has a way to let the application specify custom values, for this you need to use a
 specialized `LoggingAdapter`, the `DiagnosticLoggingAdapter`. In order to
 get it you can use the factory, providing an @scala[Actor] @java[AbstractActor] as logSource:
 
@@ -497,7 +500,7 @@ Java
     final DiagnosticLoggingAdapter log = Logging.getLogger(this);
     ```
 
-Once you have the logger, you just need to add the custom values before you log something.
+Once you have the logger, you need to add the custom values before you log something.
 This way, the values will be put in the SLF4J MDC right before appending the log and removed after.
 
 @@@ note

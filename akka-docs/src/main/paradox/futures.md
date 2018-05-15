@@ -1,5 +1,15 @@
 # Futures
 
+## Dependency
+
+This section explains using plain Scala Futures but focuses on their interop with Akka Actors, so to follow those examples you will want to depend on:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
 ## Introduction
 
 In the Scala Standard Library, a [Future](http://en.wikipedia.org/wiki/Futures_and_promises) is a data structure
@@ -178,7 +188,7 @@ but if 2 or more `Future`s are involved `map` will not allow you to combine them
 
 @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #flat-map }
 
-Composing futures using nested combinators it can sometimes become quite complicated and hard to read, in these cases using Scala's
+Composing futures using nested operators it can sometimes become quite complicated and hard to read, in these cases using Scala's
 'for comprehensions' usually yields more readable code. See next section for examples.
 
 If you need to do conditional propagation, you can use `filter`:
@@ -187,7 +197,7 @@ If you need to do conditional propagation, you can use `filter`:
 
 ### For Comprehensions
 
-Since `Future` has a `map`, `filter` and `flatMap` method it can be easily used in a 'for comprehension':
+Since `Future` has a `map`, `filter` and `flatMap` method it can be used in a 'for comprehension':
 
 @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #for-comprehension }
 
@@ -391,7 +401,7 @@ Java
 
 ## Retry
 
-`akka.pattern.retry` will retry a @scala[`Future` class]@java[`CompletionStage` class] some number of times with a delay between each attempt.
+@scala[`akka.pattern.retry`]@java[`akka.pattern.PatternsCS.retry`] will retry a @scala[`Future` class]@java[`CompletionStage` class] some number of times with a delay between each attempt.
 
 Scala
 :   @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #retry }

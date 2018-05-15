@@ -6,6 +6,7 @@ package jdocs.akka.persistence.typed;
 
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
@@ -60,4 +61,18 @@ public class BasicPersistentBehaviorsTest {
 
   static Behavior<Command> persistentBehavior = new MyPersistentBehavior("pid");
   //#structure
+
+  //#wrapPersistentBehavior
+  static Behavior<Command> debugAlwaysSnapshot = Behaviors.setup((context) -> {
+            return new MyPersistentBehavior("pid") {
+              @Override
+              public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
+                context.getLog().info("Snapshot actor {} => state: {}",
+                        context.getSelf().path().name(), state);
+                return true;
+              }
+            };
+          }
+  );
+  //#wrapPersistentBehavior
 }

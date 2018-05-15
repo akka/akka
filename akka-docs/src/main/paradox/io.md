@@ -1,5 +1,15 @@
 # I/O
 
+## Dependency
+
+To use I/O, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
 ## Introduction
 
 The `akka.io` package has been developed in collaboration between the Akka
@@ -71,7 +81,7 @@ nacked messages it may need to keep a buffer of pending messages.
 
 @@@ warning
 
-An acknowledged write does not mean acknowledged delivery or storage; receiving an ack for a write simply signals that
+An acknowledged write does not mean acknowledged delivery or storage; receiving an ack for a write signals that
 the I/O driver has successfully processed the write. The Ack/Nack protocol described here is a means of flow control
 not error handling. In other words, data may still be lost, even if every write is acknowledged.
 

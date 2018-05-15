@@ -1,5 +1,17 @@
 # Using UDP
 
+## Dependency
+
+To use UDP, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 UDP is a connectionless datagram protocol which offers two different ways of
 communication on the JDK level:
 
@@ -29,7 +41,7 @@ demonstrated above. The UDP extension is queried using the
 @scala[`SimpleSender`]@java[`UdpMessage.simpleSender`] message, which is answered by a `SimpleSenderReady`
 notification. The sender of this message is the newly created sender actor
 which from this point onward can be used to send datagrams to arbitrary
-destinations; in this example it will just send any UTF-8 encoded
+destinations; in this example it will send any UTF-8 encoded
 `String` it receives to a predefined remote address.
 
 @@@ note

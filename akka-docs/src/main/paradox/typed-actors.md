@@ -276,7 +276,7 @@ e.g. when interfacing with untyped actors.
 ## Proxying
 
 You can use the `typedActorOf` that takes a TypedProps and an ActorRef to proxy the given ActorRef as a TypedActor.
-This is usable if you want to communicate remotely with TypedActors on other machines, just pass the `ActorRef` to `typedActorOf`.
+This is usable if you want to communicate remotely with TypedActors on other machines, pass the `ActorRef` to `typedActorOf`.
 
 @@@ note
 
@@ -320,8 +320,8 @@ Scala
 Java
 : @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-router-types }
 
-In order to round robin among a few instances of such actors, you can simply create a plain untyped router,
-and then facade it with a `TypedActor` like shown in the example below. This works because typed actors of course
+In order to round robin among a few instances of such actors, you can create a plain untyped router,
+and then facade it with a `TypedActor` like shown in the example below. This works because typed actors 
 communicate using the same mechanisms as normal actors, and methods calls on them get transformed into message sends of `MethodCall` messages.
 
 Scala

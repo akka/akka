@@ -1,5 +1,18 @@
 # Testing streams
 
+## Dependency
+
+To use Akka Stream TestKit, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream-testkit_$scala.binary_version$"
+  version="$akka.version$"
+  scope="test"
+}
+
+## Introduction
+
 Verifying behavior of Akka Stream sources, flows and sinks can be done using
 various code patterns and libraries. Here we will discuss testing these
 elements using:
@@ -9,7 +22,7 @@ elements using:
  * sources and sinks specifically crafted for writing tests from the `akka-stream-testkit` module.
 
 It is important to keep your data processing pipeline as separate sources,
-flows and sinks. This makes them easily testable by wiring them up to other
+flows and sinks. This makes them testable by wiring them up to other
 sources or sinks, or some test harnesses that `akka-testkit` or
 `akka-stream-testkit` provide.
 
@@ -29,7 +42,7 @@ Java
 The same strategy can be applied for sources as well. In the next example we
 have a source that produces an infinite stream of elements. Such source can be
 tested by asserting that first arbitrary number of elements hold some
-condition. Here the `take` combinator and `Sink.seq` are very useful.
+condition. Here the `take` operator and `Sink.seq` are very useful.
 
 Scala
 :   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #grouped-infinite }
@@ -92,17 +105,6 @@ pipelines. Akka Stream has a separate `akka-stream-testkit` module that
 provides tools specifically for writing stream tests. This module comes with
 two main components that are `TestSource` and `TestSink` which
 provide sources and sinks that materialize to probes that allow fluent API.
-
-### Dependency
-
-To use Akka Stream TestKit, add the module to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-stream-testkit_$scala.binary_version$"
-  version="$akka.version$"
-  scope="test"
-}
 
 ### Using the TestKit
 

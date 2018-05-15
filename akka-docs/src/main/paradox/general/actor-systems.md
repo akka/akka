@@ -43,7 +43,7 @@ communicated to the right person, a better solution can be found than if
 trying to keep everything “under the carpet”.
 
 Now, the difficulty in designing such a system is how to decide who should
-supervise what. There is of course no single best solution, but there are a few
+supervise what. There is no single best solution, but there are a few
 guidelines which might be helpful:
 
  * If one actor manages the work another actor is doing, e.g. by passing on
@@ -64,7 +64,7 @@ influence on the supervisor strategy, and it should be noted that a
 functional dependency alone is not a criterion for deciding where to place a
 certain child actor in the hierarchy.
 
-There are of course always exceptions to these rules, but no matter whether you
+There are always exceptions to these rules, but no matter whether you
 follow the rules or break them, you should always have a reason.
 
 ## Configuration Container

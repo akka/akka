@@ -1,5 +1,17 @@
 # Basics and working with Flows
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 <a id="core-concepts"></a>
 ## Core concepts
 
@@ -73,7 +85,7 @@ it will be represented by the `RunnableGraph` type, indicating that it is ready 
 It is important to remember that even after constructing the `RunnableGraph` by connecting all the source, sink and
 different processing stages, no data will flow through it until it is materialized. Materialization is the process of
 allocating all resources needed to run the computation described by a Graph (in Akka Streams this will often involve
-starting up Actors). Thanks to Flows being simply a description of the processing pipeline they are *immutable,
+starting up Actors). Thanks to Flows being a description of the processing pipeline they are *immutable,
 thread-safe, and freely shareable*, which means that it is for example safe to share and send them between actors, to have
 one actor prepare the work, and then have it be materialized at some completely different place in the code.
 
@@ -214,7 +226,7 @@ To illustrate this further let us consider both problem situations and how the b
 
 ### Slow Publisher, fast Subscriber
 
-This is the happy case of course – we do not need to slow down the Publisher in this case. However signalling rates are
+This is the happy case – we do not need to slow down the Publisher in this case. However signalling rates are
 rarely constant and could change at any point in time, suddenly ending up in a situation where the Subscriber is now
 slower than the Publisher. In order to safeguard from these situations, the back-pressure protocol must still be enabled
 during such situations, however we do not want to pay a high penalty for this safety net being enabled.
@@ -318,7 +330,7 @@ is needed in order to allow the stream to run at all, you will have to insert ex
 
 Since every processing stage in Akka Streams can provide a materialized value after being materialized, it is necessary
 to somehow express how these values should be composed to a final value when we plug these stages together. For this,
-many combinator methods have variants that take an additional argument, a function, that will be used to combine the
+many operator methods have variants that take an additional argument, a function, that will be used to combine the
 resulting values. Some examples of using these combiners are illustrated in the example below.
 
 Scala

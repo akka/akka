@@ -1,5 +1,17 @@
 # Routing
 
+## Dependency
+
+To use Routing, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 Messages can be sent via a router to efficiently route them to destination actors, known as
 its *routees*. A `Router` can be used inside or outside of an actor, and you can manage the
 routees yourselves or use a self contained router actor with configuration capabilities.
@@ -161,7 +173,7 @@ is to make the default behave such that adding `.withRouter` to a child’s defi
 change the supervision strategy applied to the child. This might be an inefficiency that you can avoid 
 by specifying the strategy when defining the router.
 
-Setting the strategy is easily done:
+Setting the strategy is done like this:
 
 Scala
 :  @@snip [RoutingSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala) { #supervision }
@@ -892,7 +904,7 @@ routing logic directly in their `ActorRef` rather than in the router actor. Mess
 a router's `ActorRef` can be immediately routed to the routee, bypassing the single-threaded
 router actor entirely.
 
-The cost to this is, of course, that the internals of routing code are more complicated than if
+The cost to this is that the internals of routing code are more complicated than if
 routers were implemented with normal actors. Fortunately all of this complexity is invisible to
 consumers of the routing API. However, it is something to be aware of when implementing your own
 routers.

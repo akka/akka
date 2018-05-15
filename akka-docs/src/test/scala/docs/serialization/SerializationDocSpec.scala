@@ -214,12 +214,12 @@ package docs.serialization {
       // (beneath toBinary)
       val identifier: String = Serialization.serializedActorPath(theActorRef)
 
-      // Then just serialize the identifier however you like
+      // Then serialize the identifier however you like
 
       // Deserialize
       // (beneath fromBinary)
       val deserializedActorRef = extendedSystem.provider.resolveActorRef(identifier)
-      // Then just use the ActorRef
+      // Then use the ActorRef
       //#actorref-serializer
 
       //#external-address

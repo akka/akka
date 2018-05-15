@@ -10,6 +10,7 @@ import akka.actor.ActorRef;
 import akka.japi.JavaPartialFunction;
 import akka.japi.Pair;
 import akka.japi.function.*;
+import akka.japi.pf.PFBuilder;
 import akka.stream.*;
 import akka.stream.scaladsl.FlowSpec;
 import akka.util.ConstantFun;
@@ -106,7 +107,7 @@ public class FlowTest extends StreamTest {
 
     probe.expectMsgEquals(2);
     probe.expectMsgEquals(3);
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -149,7 +150,7 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals(",");
     probe.expectMsgEquals("3");
     probe.expectMsgEquals("]");
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -169,7 +170,7 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals("2");
     probe.expectMsgEquals(",");
     probe.expectMsgEquals("3");
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -192,7 +193,7 @@ public class FlowTest extends StreamTest {
     FiniteDuration duration = Duration.apply(200, TimeUnit.MILLISECONDS);
 
     probe.expectNoMsg(duration);
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
 
@@ -386,7 +387,7 @@ public class FlowTest extends StreamTest {
     final Publisher<String> pub = source.runWith(publisher, materializer);
     final CompletionStage<List<String>> all = Source.fromPublisher(pub).limit(100).runWith(Sink.<String>seq(), materializer);
 
-    final List<String> result = all.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    final List<String> result = all.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
   }
 
@@ -435,7 +436,7 @@ public class FlowTest extends StreamTest {
     final Publisher<String> pub = source.runWith(publisher, materializer);
     final CompletionStage<List<String>> all = Source.fromPublisher(pub).limit(100).runWith(Sink.<String>seq(), materializer);
 
-    final List<String> result = all.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    final List<String> result = all.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
   }
 
@@ -711,12 +712,10 @@ public class FlowTest extends StreamTest {
     final TestKit probe = new TestKit(system);
 
     final Source<Integer, NotUsed> source = Source.fromPublisher(publisherProbe);
-    final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).map(
-            new Function<Integer, Integer>() {
-              public Integer apply(Integer elem) {
-                if (elem == 2) throw new RuntimeException("ex");
-                else return elem;
-              }
+    final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class)
+            .map(elem -> {
+              if (elem == 2) throw new RuntimeException("ex");
+              else return elem;
             })
             .recover(new JavaPartialFunction<Throwable, Integer>() {
               public Integer apply(Throwable elem, boolean isCheck) {
@@ -736,7 +735,37 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals(1);
     s.sendNext(2);
     probe.expectMsgEquals(0);
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void mustBeAbleToRecoverClass() throws Exception {
+    final TestPublisher.ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
+    final TestKit probe = new TestKit(system);
+
+    final Source<Integer, NotUsed> source = Source.fromPublisher(publisherProbe);
+    final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class)
+        .map(elem -> {
+          if (elem == 2) throw new RuntimeException("ex");
+          else return elem;
+        })
+        .recover(
+            RuntimeException.class,
+            () -> 0
+        );
+
+    final CompletionStage<Done> future =
+        source.via(flow).runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+
+    final PublisherProbeSubscription<Integer> s = publisherProbe.expectSubscription();
+
+    s.sendNext(0);
+    probe.expectMsgEquals(0);
+    s.sendNext(1);
+    probe.expectMsgEquals(1);
+    s.sendNext(2);
+    probe.expectMsgEquals(0);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -746,12 +775,10 @@ public class FlowTest extends StreamTest {
     final Iterable<Integer> recover = Arrays.asList(55, 0);
 
     final Source<Integer, NotUsed> source = Source.fromPublisher(publisherProbe);
-    final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class).map(
-            new Function<Integer, Integer>() {
-              public Integer apply(Integer elem) {
-                if (elem == 2) throw new RuntimeException("ex");
-                else return elem;
-              }
+    final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class)
+            .map(elem -> {
+              if (elem == 2) throw new RuntimeException("ex");
+              else return elem;
             })
             .recoverWith(new JavaPartialFunction<Throwable, Source<Integer, NotUsed>>() {
               public Source<Integer, NotUsed> apply(Throwable elem, boolean isCheck) {
@@ -772,8 +799,104 @@ public class FlowTest extends StreamTest {
     s.sendNext(2);
     probe.expectMsgEquals(55);
     probe.expectMsgEquals(0);
-    future.toCompletableFuture().get(200, TimeUnit.MILLISECONDS);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
+
+  @Test
+  public void mustBeAbleToRecoverWithClass() throws Exception {
+    final TestPublisher.ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
+    final TestKit probe = new TestKit(system);
+    final Iterable<Integer> recover = Arrays.asList(55, 0);
+
+    final Source<Integer, NotUsed> source = Source.fromPublisher(publisherProbe);
+    final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class)
+        .map(elem -> {
+          if (elem == 2) throw new RuntimeException("ex");
+          else return elem;
+        })
+        .recoverWith(
+          RuntimeException.class,
+          () -> Source.from(recover));
+
+    final CompletionStage<Done> future =
+        source.via(flow).runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+
+    final PublisherProbeSubscription<Integer> s = publisherProbe.expectSubscription();
+
+    s.sendNext(0);
+    probe.expectMsgEquals(0);
+    s.sendNext(1);
+    probe.expectMsgEquals(1);
+    s.sendNext(2);
+    probe.expectMsgEquals(55);
+    probe.expectMsgEquals(0);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void mustBeAbleToRecoverWithRetries() throws Exception {
+    final TestPublisher.ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
+    final TestKit probe = new TestKit(system);
+    final Iterable<Integer> recover = Arrays.asList(55, 0);
+
+    final Source<Integer, NotUsed> source = Source.fromPublisher(publisherProbe);
+    final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class)
+        .map(elem -> {
+          if (elem == 2) throw new RuntimeException("ex");
+          else return elem;
+        })
+        .recoverWithRetries(
+          3,
+          new PFBuilder()
+            .match(RuntimeException.class, ex -> Source.from(recover))
+            .build());
+
+    final CompletionStage<Done> future =
+        source.via(flow).runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+
+    final PublisherProbeSubscription<Integer> s = publisherProbe.expectSubscription();
+
+    s.sendNext(0);
+    probe.expectMsgEquals(0);
+    s.sendNext(1);
+    probe.expectMsgEquals(1);
+    s.sendNext(2);
+    probe.expectMsgEquals(55);
+    probe.expectMsgEquals(0);
+    future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+  }
+
+    @Test
+    public void mustBeAbleToRecoverWithRetriesClass() throws Exception {
+      final TestPublisher.ManualProbe<Integer> publisherProbe = TestPublisher.manualProbe(true,system);
+      final TestKit probe = new TestKit(system);
+      final Iterable<Integer> recover = Arrays.asList(55, 0);
+
+      final Source<Integer, NotUsed> source = Source.fromPublisher(publisherProbe);
+      final Flow<Integer, Integer, NotUsed> flow = Flow.of(Integer.class)
+          .map(elem -> {
+            if (elem == 2) throw new RuntimeException("ex");
+            else return elem;
+          })
+          .recoverWithRetries(
+              3,
+              RuntimeException.class,
+              () -> Source.from(recover));
+
+      final CompletionStage<Done> future =
+          source.via(flow).runWith(Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), materializer);
+
+      final PublisherProbeSubscription<Integer> s = publisherProbe.expectSubscription();
+
+      s.sendNext(0);
+      probe.expectMsgEquals(0);
+      s.sendNext(1);
+      probe.expectMsgEquals(1);
+      s.sendNext(2);
+      probe.expectMsgEquals(55);
+      probe.expectMsgEquals(0);
+      future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    }
 
   @Test
   public void mustBeAbleToMaterializeIdentityWithJavaFlow() throws Exception {

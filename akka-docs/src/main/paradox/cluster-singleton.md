@@ -1,5 +1,17 @@
 # Cluster Singleton
 
+## Dependency
+
+To use Cluster Singleton, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster-tools_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
 For some use cases it is convenient and sometimes also mandatory to ensure that
 you have exactly one actor of a certain type running somewhere in the cluster.
 
@@ -127,28 +139,6 @@ Java
 
 A more comprehensive sample is available in the tutorial named 
 @scala[[Distributed workers with Akka and Scala!](https://github.com/typesafehub/activator-akka-distributed-workers)]@java[[Distributed workers with Akka and Java!](https://github.com/typesafehub/activator-akka-distributed-workers-java)].
-
-## Dependencies
-
-To use the Cluster Singleton you must add the following dependency in your project.
-
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-cluster-tools" % "$akka.version$"
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-cluster-tools_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
 
 ## Configuration
 

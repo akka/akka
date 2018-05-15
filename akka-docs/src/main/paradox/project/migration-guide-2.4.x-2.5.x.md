@@ -28,7 +28,7 @@ which are unnecessary concepts for newcomers to learn. The new `createReceive` r
 additional imports.
 
 Note that The `Receive` can still be implemented in other ways than using the `ReceiveBuilder`
-since it in the end is just a wrapper around a Scala `PartialFunction`. For example, one could
+since it in the end is a wrapper around a Scala `PartialFunction`. For example, one could
 implement an adapter to [Javaslang Pattern Matching DSL](http://www.javaslang.io/javaslang-docs/#_pattern_matching).
 
 The mechanical source code change for migration to the new `AbstractActor` is to implement the

@@ -1,5 +1,17 @@
 # Dispatchers
 
+## Dependency
+
+Dispatchers are part of core akka, which means that they are part of the akka-actor dependency:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 An Akka `MessageDispatcher` is what makes Akka Actors "tick", it is the engine of the machine so to speak.
 All `MessageDispatcher` implementations are also an `ExecutionContext`, which means that they can be used
 to execute arbitrary code, for instance @ref:[Futures](futures.md).
@@ -188,7 +200,7 @@ Java
 
 
 When facing this, you
-may be tempted to just wrap the blocking call inside a `Future` and work
+may be tempted to wrap the blocking call inside a `Future` and work
 with that instead, but this strategy is too simple: you are quite likely to
 find bottlenecks or run out of memory or threads when the application runs
 under increased load.
@@ -336,7 +348,7 @@ The thread pool behavior is shown in the below diagram.
 
 ![dispatcher-behaviour-on-good-code.png](./images/dispatcher-behaviour-on-good-code.png)
 
-Messages sent to `SeparateDispatcherFutureActor` and `PrintActor` are easily handled by the default dispatcher - the
+Messages sent to `SeparateDispatcherFutureActor` and `PrintActor` are handled by the default dispatcher - the
 green lines, which represent the actual execution.
 
 When blocking operations are run on the `my-blocking-dispatcher`,
@@ -382,8 +394,8 @@ on which DBMS is deployed on what hardware.
 
 @@@ note
 
-Configuring thread pools is a task best delegated to Akka, simply configure
-in the `application.conf` and instantiate through an
+Configuring thread pools is a task best delegated to Akka, configure
+it in `application.conf` and instantiate through an
 @ref:[`ActorSystem`](#dispatcher-lookup)
 
 @@@

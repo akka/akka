@@ -92,7 +92,7 @@ nodes have been downed.
 
 The failure detector is responsible for trying to detect if a node is
 `unreachable` from the rest of the cluster. For this we are using an
-implementation of [The Phi Accrual Failure Detector](http://fubica.lsd.ufcg.edu.br/hp/cursos/cfsc/papers/hayashibara04theaccrual.pdf) by Hayashibara et al.
+implementation of [The Phi Accrual Failure Detector](https://pdfs.semanticscholar.org/11ae/4c0c0d0c36dc177c1fff5eb84fa49aa3e1a8.pdf) by Hayashibara et al.
 
 An accrual failure detector decouples monitoring and interpretation. That makes
 them applicable to a wider area of scenarios and more adequate to build generic
@@ -100,7 +100,7 @@ failure detection services. The idea is that it is keeping a history of failure
 statistics, calculated from heartbeats received from other nodes, and is
 trying to do educated guesses by taking multiple factors, and how they
 accumulate over time, into account in order to come up with a better guess if a
-specific node is up or down. Rather than just answering "yes" or "no" to the
+specific node is up or down. Rather than only answering "yes" or "no" to the
 question "is the node down?" it returns a `phi` value representing the
 likelihood that the node is down.
 
@@ -139,9 +139,9 @@ and the actor system must be restarted before it can join the cluster again.
 
 After gossip convergence a `leader` for the cluster can be determined. There is no
 `leader` election process, the `leader` can always be recognised deterministically
-by any node whenever there is gossip convergence. The leader is just a role, any node
+by any node whenever there is gossip convergence. The leader is only a role, any node
 can be the leader and it can change between convergence rounds.
-The `leader` is simply the first node in sorted order that is able to take the leadership role,
+The `leader` is the first node in sorted order that is able to take the leadership role,
 where the preferred member states for a `leader` are `up` and `leaving`
 (see the [Membership Lifecycle](#membership-lifecycle) section below for more  information about member states).
 

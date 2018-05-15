@@ -1,5 +1,19 @@
 # Multi Node Testing
 
+## Dependency
+
+To use Multi Node Testing, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-multi-node-testkit_$scala.binary_version$
+  version=$akka.version$
+}
+
+If you are using the latest nightly build you should pick a timestamped Akka version from
+[https://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/](https://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/).
+We recommend against using `SNAPSHOT` in order to obtain stable builds.
+
 ## Multi Node Testing Concepts
 
 When we talk about multi node testing in Akka we mean the process of running coordinated tests on multiple actor
@@ -37,7 +51,7 @@ of convenience functions for making the test nodes interact with each other. Mor
 operations is available in the `akka.remote.testkit.MultiNodeSpec` API documentation.
 
 The setup of the `MultiNodeSpec` is configured through java system properties that you set on all JVMs that's going to run a
-node under test. These can easily be set on the JVM command line with `-Dproperty=value`.
+node under test. These can be set on the JVM command line with `-Dproperty=value`.
 
 These are the available properties:
 : 
@@ -65,9 +79,9 @@ will be the server. All failure injection and throttling must be done from this 
 ## The SbtMultiJvm Plugin
 
 The @ref:[SbtMultiJvm Plugin](multi-jvm-testing.md) has been updated to be able to run multi node tests, by
-automatically generating the relevant `multinode.*` properties. This means that you can easily run multi node tests
-on a single machine without any special configuration by just running them as normal multi-jvm tests. These tests can
-then be run distributed over multiple machines without any changes simply by using the multi-node additions to the
+automatically generating the relevant `multinode.*` properties. This means that you can run multi node tests
+on a single machine without any special configuration by running them as normal multi-jvm tests. These tests can
+then be run distributed over multiple machines without any changes by using the multi-node additions to the
 plugin.
 
 ### Multi Node Specific Additions
@@ -147,20 +161,6 @@ multi-jvm:testOnly your.MultiNodeTest
 
 More than one test name can be listed to run multiple specific tests. Tab completion in sbt makes it easy to
 complete the test names.
-
-## Preparing Your Project for Multi Node Testing
-
-The multi node testing kit is a separate jar file. Make sure that you have the following dependency in your project:
-
-@@@vars
-```
-"com.typesafe.akka" %% "akka-multi-node-testkit" % "$akka.version$"
-```
-@@@
-
-If you are using the latest nightly build you should pick a timestamped Akka version from
-[https://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/](https://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/).
-We recommend against using `SNAPSHOT` in order to obtain stable builds.
 
 ## A Multi Node Testing Example
 

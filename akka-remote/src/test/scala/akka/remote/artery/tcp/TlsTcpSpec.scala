@@ -15,10 +15,13 @@ import akka.actor.ActorIdentity
 import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.RootActorPath
+import akka.actor.setup.ActorSystemSetup
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
+import akka.testkit.TestProbe
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import javax.net.ssl.SSLEngine
 
 class TlsTcpWithDefaultConfigSpec extends TlsTcpSpec(ConfigFactory.empty())
 
@@ -160,13 +163,53 @@ class TlsTcpWithHostnameVerificationSpec extends ArteryMultiNodeSpec(
   "Artery with TLS/TCP and hostname-verification=on" must {
     "reject invalid" in {
       // this test only makes sense with tls-tcp transport
-      val arterySettings = ArterySettings(system.settings.config.getConfig("akka.remote.artery"))
-      if (!arterySettings.Enabled || arterySettings.Transport != ArterySettings.TlsTcp)
+      if (!arteryTcpTlsEnabled())
         pending
 
       systemB.actorOf(TestActors.echoActorProps, "echo")
       system.actorSelection(rootB / "user" / "echo") ! Identify("echo")
       expectNoMessage(2.seconds)
+    }
+  }
+}
+
+class TlsTcpWithActorSystemSetupSpec
+  extends ArteryMultiNodeSpec(TlsTcpSpec.config) with ImplicitSender {
+
+  val sslProviderServerProbe = TestProbe()
+  val sslProviderClientProbe = TestProbe()
+
+  val sslProviderSetup = SSLEngineProviderSetup(sys ⇒ new ConfigSSLEngineProvider(sys) {
+    override def createServerSSLEngine(hostname: String, port: Int): SSLEngine = {
+      sslProviderServerProbe.ref ! "createServerSSLEngine"
+      super.createServerSSLEngine(hostname, port)
+    }
+
+    override def createClientSSLEngine(hostname: String, port: Int): SSLEngine = {
+      sslProviderClientProbe.ref ! "createClientSSLEngine"
+      super.createClientSSLEngine(hostname, port)
+    }
+
+  })
+
+  val systemB = newRemoteSystem(name = Some("systemB"), setup = Some(ActorSystemSetup(sslProviderSetup)))
+  val addressB = address(systemB)
+  val rootB = RootActorPath(addressB)
+
+  "Artery with TLS/TCP with SSLEngineProvider defined via Setup" must {
+    "use the right SSLEngineProvider" in {
+      if (!arteryTcpTlsEnabled())
+        pending
+
+      systemB.actorOf(TestActors.echoActorProps, "echo")
+      val path = rootB / "user" / "echo"
+      system.actorSelection(path) ! Identify(path.name)
+      val echoRef = expectMsgType[ActorIdentity].ref.get
+      echoRef ! "ping-1"
+      expectMsg("ping-1")
+
+      sslProviderServerProbe.expectMsg("createServerSSLEngine")
+      sslProviderClientProbe.expectMsg("createClientSSLEngine")
     }
   }
 }

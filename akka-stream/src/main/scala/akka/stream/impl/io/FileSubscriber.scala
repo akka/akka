@@ -47,7 +47,7 @@ import scala.util.{ Failure, Success, Try }
     super.preStart()
   } catch {
     case ex: Exception ⇒
-      closeAndComplete(Success(IOResult(bytesWritten, Failure(ex))))
+      closeAndComplete(Failure(ex))
       cancel()
   }
 
