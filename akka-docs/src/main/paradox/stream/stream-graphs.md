@@ -330,7 +330,7 @@ turns an object into a sequence of bytes.
 
 The other stage that we talked about is a little more involved since reversing
 a framing protocol means that any received chunk of bytes may correspond to
-zero or more messages. This is best implemented using a `GraphStage`
+zero or more messages. This is best implemented using @ref[`GraphStage`](stream-customize.md)
 (see also @ref[Custom processing with GraphStage](stream-customize.md#graphstage)).
 
 Scala

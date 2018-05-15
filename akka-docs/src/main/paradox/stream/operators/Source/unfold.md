@@ -18,7 +18,7 @@ Stream the result of a function as long as it returns a @scala[`Some`] @java[`Op
 consists of a @scala[tuple] @java[pair] where the first value is a state passed back into the next call to the function allowing
 to pass a state. The first invocation of the provided fold function will receive the `zero` state.
 
-Can be used to implement many stateful sources without having to touch the more low level `GraphStage` API.
+Can be used to implement many stateful sources without having to touch the more low level @ref[`GraphStage`](../../stream-customize.md) API.
 
 
 @@@div { .callout }

@@ -144,7 +144,7 @@ it cancels, while the `RestartFlow` is restarted when either the in port cancels
 
 @@@ note
 
-Care should be taken when using `GraphStage`s that conditionally propagate termination signals inside a 
+Care should be taken when using @ref[`GraphStage`s](stream-customize.md) that conditionally propagate termination signals inside a
 `RestartSource`, `RestartSink` or `RestartFlow`.  
 
 An example is a `Broadcast` stage with the default `eagerCancel = false` where 
