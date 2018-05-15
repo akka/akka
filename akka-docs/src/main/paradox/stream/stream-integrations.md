@@ -198,7 +198,7 @@ email addresses looked up.
 The final piece of this pipeline is to generate the demand that pulls the tweet
 authors information through the emailing pipeline: we attach a `Sink.ignore`
 which makes it all run. If our email process would return some interesting data
-for further transformation then we would of course not ignore it but send that
+for further transformation then we would not ignore it but send that
 result stream onwards for further processing or storage.
 
 Note that `mapAsync` preserves the order of the stream elements. In this example the order

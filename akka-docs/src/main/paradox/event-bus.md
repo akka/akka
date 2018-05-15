@@ -268,6 +268,6 @@ Java
 
 ### Other Uses
 
-The event stream is always there and ready to be used, just publish your own
+The event stream is always there and ready to be used, you can publish your own
 events (it accepts @scala[`AnyRef`]@java[`Object`]) and subscribe listeners to the corresponding JVM
 classes.

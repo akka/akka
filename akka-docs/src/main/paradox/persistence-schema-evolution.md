@@ -123,7 +123,7 @@ origin of the event (`persistenceId`, `sequenceNr` and more).
 
 More advanced techniques (e.g. [Remove event class and ignore events](#remove-event-class)) will dive into using the manifests for increasing the
 flexibility of the persisted vs. exposed types even more. However for now we will focus on the simpler evolution techniques,
-concerning simply configuring the payload serializers.
+concerning only configuring the payload serializers.
 
 By default the `payload` will be serialized using Java Serialization. This is fine for testing and initial phases
 of your development (while you're still figuring out things and the data will not need to stay persisted forever).
@@ -197,7 +197,7 @@ needs to have an associated code which indicates if it is a window or aisle seat
 **Solution:**
 Adding fields is the most common change you'll need to apply to your messages so make sure the serialization format
 you picked for your payloads can handle it apropriately, i.e. such changes should be *binary compatible*.
-This is easily achieved using the right serializer toolkit – we recommend something like [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) or
+This is achieved using the right serializer toolkit – we recommend something like [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) or
 [Apache Thrift](https://thrift.apache.org/) however other tools may fit your needs just as well – picking a serializer backend is something
 you should research before picking one to run with. In the following examples we will be using protobuf, mostly because
 we are familiar with it, it does its job well and Akka is using it internally as well.
@@ -213,7 +213,7 @@ Java
 :  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #protobuf-read-optional-model }
 
 Next we prepare an protocol definition using the protobuf Interface Description Language, which we'll use to generate
-the serializer code to be used on the Akka Serialization layer (notice that the schema aproach allows us to easily rename
+the serializer code to be used on the Akka Serialization layer (notice that the schema aproach allows us to rename
 fields, as long as the numeric identifiers of the fields do not change):
 
 @@snip [FlightAppModels.proto]($code$/../main/protobuf/FlightAppModels.proto) { #protobuf-read-optional-proto }
@@ -268,7 +268,7 @@ sometimes renaming fields etc.), while some other operations are strictly not po
 @@@
 
 **Solution 2 - by manually handling the event versions:**
-Another solution, in case your serialization format does not support renames as easily as the above mentioned formats,
+Another solution, in case your serialization format does not support renames like the above mentioned formats,
 is versioning your schema. For example, you could have made your events carry an additional field called `_version`
 which was set to `1` (because it was the initial schema), and once you change the schema you bump this number to `2`,
 and write an adapter which can perform the rename.
@@ -294,7 +294,7 @@ or put together in a simple helper @scala[trait]@java[class].
 @@@ note
 
 The technique of versioning events and then promoting them to the latest version using JSON transformations
-can of course be applied to more than just field renames – it also applies to adding fields and all kinds of
+can be applied to more than just field renames – it also applies to adding fields and all kinds of
 changes in the message format.
 
 @@@
@@ -311,12 +311,12 @@ and should be deleted. You still have to be able to replay from a journal which 
 
 The problem of removing an event type from the domain model is not as much its removal, as the implications
 for the recovery mechanisms that this entails. For example, a naive way of filtering out certain kinds of events from
-being delivered to a recovering `PersistentActor` is pretty simple, as one can simply filter them out in an @ref:[EventAdapter](persistence.md#event-adapters):
+being delivered to a recovering `PersistentActor` is pretty simple, as one can filter them out in an @ref:[EventAdapter](persistence.md#event-adapters):
 
 ![persistence-drop-event.png](./images/persistence-drop-event.png)
  
 The `EventAdapter` can drop old events (**O**) by emitting an empty `EventSeq`.
-Other events can simply be passed through (**E**).
+Other events can be passed through (**E**).
 
 This however does not address the underlying cost of having to deserialize all the events during recovery,
 even those which will be filtered out by the adapter. In the next section we will improve the above explained mechanism
@@ -345,8 +345,8 @@ that the type is no longer needed, and skip the deserialization all-together:
 ![persistence-drop-event-serializer.png](./images/persistence-drop-event-serializer.png)
  
 The serializer is aware of the old event types that need to be skipped (**O**), and can skip deserializing them alltogether
-by simply returning a "tombstone" (**T**), which the EventAdapter converts into an empty EventSeq.
-Other events (**E**) can simply be passed through.
+by returning a "tombstone" (**T**), which the EventAdapter converts into an empty EventSeq.
+Other events (**E**) can just be passed through.
 
 The serializer detects that the string manifest points to a removed event type and skips attempting to deserialize it:
 
@@ -474,7 +474,7 @@ Let us consider a situation where an event represents "user details changed". Af
 event is too coarse, and needs to be split into "user name changed" and "user address changed", because somehow
 users keep changing their usernames a lot and we'd like to keep this as a separate event.
 
-The write side change is very simple, we simply persist `UserNameChanged` or `UserAddressChanged` depending
+The write side change is very simple, we persist `UserNameChanged` or `UserAddressChanged` depending
 on what the user actually intended to change (instead of the composite `UserDetailsChanged` that we had in version 1
 of our model).
 

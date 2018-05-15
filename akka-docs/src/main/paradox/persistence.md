@@ -62,7 +62,7 @@ If validation succeeds, events are generated from the command, representing the 
 are then persisted and, after successful persistence, used to change the actor's state. When the persistent actor
 needs to be recovered, only the persisted events are replayed of which we know that they can be successfully applied.
 In other words, events cannot fail when being replayed to a persistent actor, in contrast to commands. Event sourced
-actors may of course also process commands that do not change application state such as query commands for example.
+actors may also process commands that do not change application state such as query commands for example.
 
 Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493) by Randy Shoup. It is a short and recommended read if you're starting
 developing Events based applications.
@@ -309,7 +309,7 @@ Java
 
 @@@ note
 
-In order to implement the pattern known as "*command sourcing*" simply call @scala[`persistAsync(cmd)(...)`]@java[`persistAsync`] right away on all incoming
+In order to implement the pattern known as "*command sourcing*" call @scala[`persistAsync(cmd)(...)`]@java[`persistAsync`] right away on all incoming
 messages and handle them in the callback.
 
 @@@
@@ -454,7 +454,7 @@ if you for example know that serialization format has changed in an incompatible
 
 ### Atomic writes
 
-Each event is of course stored atomically, but it is also possible to store several events atomically by
+Each event is stored atomically, but it is also possible to store several events atomically by
 using the `persistAll` or `persistAllAsync` method. That means that all events passed to that method
 are stored or none of them are stored if there is an error.
 
@@ -1151,7 +1151,7 @@ has, and also performs some longer operations on the Journal while printing its 
 to provide a proper benchmarking environment it can be used to get a rough feel about your journal's performance in the most
 typical scenarios.
 
-In order to include the `SnapshotStore` TCK tests in your test suite simply extend the `SnapshotStoreSpec`:
+In order to include the `SnapshotStore` TCK tests in your test suite extend the `SnapshotStoreSpec`:
 
 Scala
 :  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #snapshot-store-tck-scala }

@@ -151,17 +151,17 @@ A partial graph also verifies that all ports are either connected or part of the
 <a id="constructing-sources-sinks-flows-from-partial-graphs"></a>
 ## Constructing Sources, Sinks and Flows from Partial Graphs
 
-Instead of treating a @scala[partial graph]@java[`Graph`] as simply a collection of flows and junctions which may not yet all be
+Instead of treating a @scala[partial graph]@java[`Graph`] as a collection of flows and junctions which may not yet all be
 connected it is sometimes useful to expose such a complex graph as a simpler structure,
 such as a `Source`, `Sink` or `Flow`.
 
-In fact, these concepts can be easily expressed as special cases of a partially connected graph:
+In fact, these concepts can be expressed as special cases of a partially connected graph:
 
  * `Source` is a partial graph with *exactly one* output, that is it returns a `SourceShape`.
  * `Sink` is a partial graph with *exactly one* input, that is it returns a `SinkShape`.
  * `Flow` is a partial graph with *exactly one* input and *exactly one* output, that is it returns a `FlowShape`.
 
-Being able to hide complex graphs inside of simple elements such as Sink / Source / Flow enables you to easily create one
+Being able to hide complex graphs inside of simple elements such as Sink / Source / Flow enables you to create one
 complex element and from there on treat it as simple compound stage for linear computations.
 
 In order to create a Source from a graph the method `Source.fromGraph` is used, to use it we must have a
@@ -245,7 +245,7 @@ of the same type,
  * `FanInShape1`, `FanInShape2`, ..., `FanOutShape1`, `FanOutShape2`, ... for junctions
 with multiple input (or output) ports of different types.
 
-Since our shape has two input ports and one output port, we can just use the `FanInShape` DSL to define
+Since our shape has two input ports and one output port, we can use the `FanInShape` DSL to define
 our custom shape:
 
 Scala
@@ -312,7 +312,7 @@ Java
 :   @@snip [BidiFlowDocTest.java]($code$/java/jdocs/stream/BidiFlowDocTest.java) { #codec-impl }
 
 
-In this way you could easily integrate any other serialization library that
+In this way you can integrate any other serialization library that
 turns an object into a sequence of bytes.
 
 The other stage that we talked about is a little more involved since reversing
@@ -339,7 +339,7 @@ Java
 This example demonstrates how `BidiFlow` subgraphs can be hooked
 together and also turned around with the @scala[`.reversed`]@java[`.reversed()`] method. The test
 simulates both parties of a network communication protocol without actually
-having to open a network connection—the flows can just be connected directly.
+having to open a network connection—the flows can be connected directly.
 
 <a id="graph-matvalue"></a>
 ## Accessing the materialized value inside the Graph

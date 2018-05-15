@@ -16,7 +16,7 @@ we illustrate the most common used stages viewed as "boxes".
 The *linear* stages are `Source`, `Sink`
 and `Flow`, as these can be used to compose strict chains of processing stages.
 Fan-in and Fan-out stages have usually multiple input or multiple output ports, therefore they allow to build
-more complex graph layouts, not just chains. `BidiFlow` stages are usually useful in IO related tasks, where
+more complex graph layouts, not only chains. `BidiFlow` stages are usually useful in IO related tasks, where
 there are input and output channels to be handled. Due to the specific shape of `BidiFlow` it is easy to
 stack them on top of each other to build a layered protocol for example. The `TLS` support in Akka is for example
 implemented as a `BidiFlow`.
@@ -76,7 +76,7 @@ Java
 It is clear however that there is no nesting present in our first attempt, since the library cannot figure out
 where we intended to put composite module boundaries, it is our responsibility to do that. If we are using the
 DSL provided by the `Flow`, `Source`, `Sink` classes then nesting can be achieved by calling one of the
-methods `withAttributes()` or `named()` (where the latter is just a shorthand for adding a name attribute).
+methods `withAttributes()` or `named()` (where the latter is a shorthand for adding a name attribute).
 
 The following code demonstrates how to achieve the desired nesting:
 
@@ -170,7 +170,7 @@ Java
 :   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #partial-use }
 
 It is not possible to use it as a `Flow` yet, though (i.e. we cannot call `.filter()` on it), but `Flow`
-has a `fromGraph()` method that just adds the DSL to a `FlowShape`. There are similar methods on `Source`,
+has a `fromGraph()` method that adds the DSL to a `FlowShape`. There are similar methods on `Source`,
 `Sink` and `BidiShape`, so it is easy to get back to the simpler DSL if a graph has the right shape.
 For convenience, it is also possible to skip the partial graph creation, and use one of the convenience creator methods.
 To demonstrate this, we will create the following graph:
@@ -192,7 +192,7 @@ throw an exception if this is violated.
 
 @@@
 
-We are still in debt of demonstrating that `RunnableGraph` is a component just like any other, which can
+We are still in debt of demonstrating that `RunnableGraph` is a component like any other, which can
 be embedded in graphs. In the following snippet we embed one closed graph in another:
 
 Scala
@@ -273,7 +273,7 @@ Java
 :   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-3 }
 
 As the last example, we wire together `nestedSource` and `nestedSink` and we use a custom combiner function to
-create a yet another materialized type of the resulting `RunnableGraph`. This combiner function just ignores
+create a yet another materialized type of the resulting `RunnableGraph`. This combiner function ignores
 the @scala[`Future[String]`] @java[`CompletionStage<String>`] part, and wraps the other two values in a custom case class `MyClass`
 (indicated by color *purple* on the diagram):
 
@@ -288,7 +288,7 @@ Java
 
 @@@ note
 
-The nested structure in the above example is not necessary for combining the materialized values, it just
+The nested structure in the above example is not necessary for combining the materialized values, it 
 demonstrates how the two features work together. See @ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat) for further examples
 of combining materialized values without nesting and hierarchy involved.
 

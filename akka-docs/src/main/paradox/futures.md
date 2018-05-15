@@ -187,7 +187,7 @@ If you need to do conditional propagation, you can use `filter`:
 
 ### For Comprehensions
 
-Since `Future` has a `map`, `filter` and `flatMap` method it can be easily used in a 'for comprehension':
+Since `Future` has a `map`, `filter` and `flatMap` method it can be used in a 'for comprehension':
 
 @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #for-comprehension }
 

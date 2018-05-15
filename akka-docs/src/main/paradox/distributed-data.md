@@ -420,7 +420,7 @@ Java
 
 If you only need to add elements to a set and not remove elements the `GSet` (grow-only set) is
 the data type to use. The elements can be any type of values that can be serialized.
-Merge is simply the union of the two sets.
+Merge is the union of the two sets.
 
 Scala
 : @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #gset }
@@ -558,7 +558,7 @@ changing and writing the value with `WriteMajority` (or more).
 
 ### Custom Data Type
 
-You can rather easily implement your own data types. The only requirement is that it implements
+You can implement your own data types. The only requirement is that it implements
 the @scala[`merge`]@java[`mergeData`] function of the @scala[`ReplicatedData`]@java[`AbstractReplicatedData`] trait.
 
 A nice property of stateful CRDTs is that they typically compose nicely, i.e. you can combine several
@@ -700,7 +700,7 @@ actor system to make the name unique. If using a dynamically assigned
 port (0) it will be different each time and the previously stored data
 will not be loaded.
 
-Making the data durable has of course a performance cost. By default, each update is flushed
+Making the data durable has a performance cost. By default, each update is flushed
 to disk before the `UpdateSuccess` reply is sent. For better performance, but with the risk of losing
 the last writes if the JVM crashes, you can enable write behind mode. Changes are then accumulated during
 a time period before it is written to LMDB and flushed to disk. Enabling write behind is especially

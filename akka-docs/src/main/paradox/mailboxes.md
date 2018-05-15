@@ -269,7 +269,7 @@ Scala
 Java
 :   @@snip [MyUnboundedMailbox.java]($code$/java/jdocs/dispatcher/MyUnboundedMailbox.java) { #mailbox-implementation-example }
 
-And then you just specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher
+And then you specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher
 configuration, or the mailbox configuration.
 
 @@@ note

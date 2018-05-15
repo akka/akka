@@ -22,7 +22,7 @@ general, more targeted recipes are available as separate sections (@ref:[Buffers
 
 **Situation:** During development it is sometimes helpful to see what happens in a particular section of a stream.
 
-The simplest solution is to simply use a `map` operation and use `println` to print the elements received to the console.
+The simplest solution is to use a `map` operation and use `println` to print the elements received to the console.
 While this recipe is rather simplistic, it is often suitable for a quick debug session.
 
 Scala
@@ -63,7 +63,7 @@ all the nested elements inside the sequences separately.
 
 The `mapConcat` operation can be used to implement a one-to-many transformation of elements using a mapper function
 in the form of @scala[`In => immutable.Seq[Out]`] @java[`In -> List<Out>`]. In this case we want to map a @scala[`Seq`] @java[`List`] of elements to the elements in the
-collection itself, so we can just call @scala[`mapConcat(identity)`] @java[`mapConcat(l -> l)`].
+collection itself, so we can call @scala[`mapConcat(identity)`] @java[`mapConcat(l -> l)`].
 
 Scala
 :   @@snip [RecipeFlattenSeq.scala]($code$/scala/docs/stream/cookbook/RecipeFlattenSeq.scala) { #flattening-seqs }
@@ -103,7 +103,7 @@ of the stream.
 
 This recipe uses a `GraphStage` to host a mutable `MessageDigest` class (part of the Java Cryptography
 API) and update it with the bytes arriving from the stream. When the stream starts, the `onPull` handler of the
-stage is called, which just bubbles up the `pull` event to its upstream. As a response to this pull, a ByteString
+stage is called, which bubbles up the `pull` event to its upstream. As a response to this pull, a ByteString
 chunk will arrive (`onPush`) which we use to update the digest, then it will pull for the next chunk.
 
 Eventually the stream of `ByteString` s depletes and we get a notification about this event via `onUpstreamFinish`.
@@ -246,8 +246,8 @@ In this collection we show recipes that use stream graph elements to achieve var
 In other words, even if the stream would be able to flow (not being backpressured) we want to hold back elements until a
 trigger signal arrives.
 
-This recipe solves the problem by simply zipping the stream of `Message` elements with the stream of `Trigger`
-signals. Since `Zip` produces pairs, we simply map the output stream selecting the first element of the pair.
+This recipe solves the problem by zipping the stream of `Message` elements with the stream of `Trigger`
+signals. Since `Zip` produces pairs, we map the output stream selecting the first element of the pair.
 
 Scala
 :   @@snip [RecipeManualTrigger.scala]($code$/scala/docs/stream/cookbook/RecipeManualTrigger.scala) { #manually-triggered-stream }
@@ -303,7 +303,7 @@ This can be solved by using a versatile rate-transforming operation, `conflate`.
 a special `reduce` operation that collapses multiple upstream elements into one aggregate element if needed to keep
 the speed of the upstream unaffected by the downstream.
 
-When the upstream is faster, the reducing process of the `conflate` starts. Our reducer function simply takes
+When the upstream is faster, the reducing process of the `conflate` starts. Our reducer function takes
 the freshest element. This in a simple dropping operation.
 
 Scala
@@ -345,7 +345,7 @@ We will use `conflateWithSeed` to solve the problem. The seed version of conflat
 the downstream. In our case the seed function is a constant function that returns 0 since there were no missed ticks
 at that point.
  * A fold function that is invoked when multiple upstream messages needs to be collapsed to an aggregate value due
-to the insufficient processing rate of the downstream. Our folding function simply increments the currently stored
+to the insufficient processing rate of the downstream. Our folding function increments the currently stored
 count of the missed ticks so far.
 
 As a result, we have a flow of `Int` where the number represents the missed ticks. A number 0 means that we were
@@ -365,7 +365,7 @@ the last value for the downstream if necessary.
 
 We have two options to implement this feature. In both cases we will use `GraphStage` to build our custom
 element. In the first version we will use a provided initial value `initial` that will be used
-to feed the downstream if no upstream element is ready yet. In the `onPush()` handler we just overwrite the
+to feed the downstream if no upstream element is ready yet. In the `onPush()` handler we overwrite the
 `currentValue` variable and immediately relieve the upstream by calling `pull()`. The downstream `onPull` handler
 is very similar, we immediately relieve the downstream by emitting `currentValue`.
 
@@ -464,7 +464,7 @@ Java
 consumed.
 
 This recipe uses a `GraphStage` to implement the desired feature. In the only handler we override,
-`onPush()` we just update a counter and see if it gets larger than `maximumBytes`. If a violation happens
+`onPush()` we update a counter and see if it gets larger than `maximumBytes`. If a violation happens
 we signal failure, otherwise we forward the chunk we have received.
 
 Scala

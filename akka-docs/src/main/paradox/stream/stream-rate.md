@@ -165,7 +165,7 @@ Java
 If our imaginary external job provider is a client using our API, we might
 want to enforce that the client cannot have more than 1000 queued jobs
 otherwise we consider it flooding and terminate the connection. This is
-easily achievable by the error strategy which simply fails the stream
+achievable by the error strategy which fails the stream
 once the buffer gets full.
 
 Scala

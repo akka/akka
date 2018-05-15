@@ -594,7 +594,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
               promise.complete(elem);
               push(out, elem);
 
-              // replace handler with one just forwarding
+              // replace handler with one that only forwards elements
               setHandler(in, new AbstractInHandler() {
                 @Override
                 public void onPush() {

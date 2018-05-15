@@ -88,7 +88,7 @@ You can combine your own strategy with the default strategy:
 
 ### Stopping Supervisor Strategy
 
-Closer to the Erlang way is the strategy to just stop children when they fail
+Closer to the Erlang way is the strategy to stop children when they fail
 and then take corrective action in the supervisor when DeathWatch signals the
 loss of the child. This strategy is also provided pre-packaged as
 `SupervisorStrategy.stoppingStrategy` with an accompanying
@@ -114,7 +114,7 @@ by overriding the `logFailure` method.
 
 Toplevel actors means those which are created using `system.actorOf()`, and
 they are children of the @ref:[User Guardian](general/supervision.md#user-guardian). There are no
-special rules applied in this case, the guardian simply applies the configured
+special rules applied in this case, the guardian applies the configured
 strategy.
 
 ## Test Application

@@ -29,7 +29,7 @@ demonstrated above. The UDP extension is queried using the
 @scala[`SimpleSender`]@java[`UdpMessage.simpleSender`] message, which is answered by a `SimpleSenderReady`
 notification. The sender of this message is the newly created sender actor
 which from this point onward can be used to send datagrams to arbitrary
-destinations; in this example it will just send any UTF-8 encoded
+destinations; in this example it will send any UTF-8 encoded
 `String` it receives to a predefined remote address.
 
 @@@ note

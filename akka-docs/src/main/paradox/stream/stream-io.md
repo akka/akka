@@ -20,12 +20,12 @@ Java
 
 ![tcp-stream-bind.png](../images/tcp-stream-bind.png)
 
-Next, we simply handle *each* incoming connection using a `Flow` which will be used as the processing stage
+Next, we handle *each* incoming connection using a `Flow` which will be used as the processing stage
 to handle and emit `ByteString` s from and to the TCP Socket. Since one `ByteString` does not have to necessarily
 correspond to exactly one line of text (the client might be sending the line in chunks) we use the @scala[`Framing.delimiter`]@java[`delimiter`]
 helper Flow @java[from `akka.stream.javadsl.Framing`] to chunk the inputs up into actual lines of text. The last boolean
 argument indicates that we require an explicit line ending even for the last message before the connection is closed.
-In this example we simply add exclamation marks to each incoming text message and push it through the flow:
+In this example we add exclamation marks to each incoming text message and push it through the flow:
 
 Scala
 :   @@snip [StreamTcpDocSpec.scala]($code$/scala/docs/stream/io/StreamTcpDocSpec.scala) { #echo-server-simple-handle }
@@ -64,8 +64,8 @@ Java
 :   @@snip [StreamTcpDocTest.java]($code$/java/jdocs/stream/io/StreamTcpDocTest.java) { #repl-client }
 
 The `repl` flow we use to handle the server interaction first prints the servers response, then awaits on input from
-the command line (this blocking call is used here just for the sake of simplicity) and converts it to a
-`ByteString` which is then sent over the wire to the server. Then we simply connect the TCP pipeline to this
+the command line (this blocking call is used here for the sake of simplicity) and converts it to a
+`ByteString` which is then sent over the wire to the server. Then we connect the TCP pipeline to this
 processing stage–at this point it will be materialized and start processing data once the server responds with
 an *initial message*.
 
@@ -80,7 +80,7 @@ in which *either side is waiting for the other one to start the conversation*. O
 to find examples of such back-pressure loops. In the two examples shown previously, we always assumed that the side we
 are connecting to would start the conversation, which effectively means both sides are back-pressured and can not get
 the conversation started. There are multiple ways of dealing with this which are explained in depth in @ref:[Graph cycles, liveness and deadlocks](stream-graphs.md#graph-cycles),
-however in client-server scenarios it is often the simplest to make either side simply send an initial message.
+however in client-server scenarios it is often the simplest to make either side send an initial message.
 
 @@@ note
 
@@ -112,7 +112,7 @@ which completes the stream once it encounters such command].
 
 ### Using framing in your protocol
 
-Streaming transport protocols like TCP just pass streams of bytes, and does not know what is a logical chunk of bytes from the
+Streaming transport protocols like TCP only pass streams of bytes, and does not know what is a logical chunk of bytes from the
 application's point of view. Often when implementing network protocols you will want to introduce your own framing.
 This can be done in two ways:
 An end-of-frame marker, e.g. end line `\n`, can do framing via `Framing.delimiter`.
