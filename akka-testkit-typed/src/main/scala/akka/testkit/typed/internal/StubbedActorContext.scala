@@ -154,7 +154,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
   override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ctx.self)
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
-    val btk = new BehaviorTestKitImpl[U](path / childName.next() withUid rnd().nextInt(), behavior)
+    val btk = new BehaviorTestKitImpl[U](path / childName.next() withUid rnd().nextInt(), behavior, Map.empty) // FIXME the extensions?
     _children += btk.ctx.self.path.name → btk
     btk.ctx.self
   }
@@ -162,7 +162,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
     _children get name match {
       case Some(_) ⇒ throw untyped.InvalidActorNameException(s"actor name $name is already taken")
       case None ⇒
-        val btk = new BehaviorTestKitImpl[U](path / name withUid rnd().nextInt(), behavior)
+        val btk = new BehaviorTestKitImpl[U](path / name withUid rnd().nextInt(), behavior, Map.empty) // FIXME the extensions?
         _children += name → btk
         btk.ctx.self
     }
@@ -199,7 +199,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
 
     val n = if (name != "") s"${childName.next()}-$name" else childName.next()
     val p = path / n withUid rnd().nextInt()
-    val i = new BehaviorTestKitImpl[U](p, Behavior.ignore)
+    val i = new BehaviorTestKitImpl[U](p, Behavior.ignore, Map.empty) // FIXME extensions?
     _children += p.name → i
 
     new FunctionRef[U](

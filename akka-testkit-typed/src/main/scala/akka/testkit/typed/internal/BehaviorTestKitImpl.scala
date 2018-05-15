@@ -12,7 +12,6 @@ import akka.actor.typed.{ Behavior, PostStop, Signal, ActorRef }
 import akka.annotation.InternalApi
 import akka.testkit.typed.Effect
 import akka.testkit.typed.scaladsl.Effects._
-
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -20,16 +19,29 @@ import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 
+import akka.actor.typed.Extension
+import akka.actor.typed.ExtensionId
+
 /**
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehavior: Behavior[T])
+private[akka] final class BehaviorTestKitImpl[T](
+  _path:            ActorPath,
+  _initialBehavior: Behavior[T],
+  _extensions:      Map[ExtensionId[_], Extension])
   extends akka.testkit.typed.javadsl.BehaviorTestKit[T]
   with akka.testkit.typed.scaladsl.BehaviorTestKit[T] {
 
   // really this should be private, make so when we port out tests that need it
-  private[akka] val ctx = new EffectfulActorContext[T](_path)
+  private[akka] val ctx = {
+    val c = new EffectfulActorContext[T](_path)
+    _extensions.foreach {
+      case (extId: ExtensionId[Extension] @unchecked, extImpl) ⇒
+        c.system.asInstanceOf[ActorSystemStub].registerExtension(extId, extImpl)
+    }
+    c
+  }
 
   private[akka] def as[U]: BehaviorTestKitImpl[U] = this.asInstanceOf[BehaviorTestKitImpl[U]]
 
@@ -123,7 +135,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
     } catch handleException
   }
 
-  override def runOne(): Unit = run(selfInbox.receiveMessage())
+  override def runOne(): Unit = run(selfInbox().receiveMessage())
 
   override def signal(signal: Signal): Unit = {
     try {

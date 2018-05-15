@@ -4,28 +4,30 @@
 
 package akka.testkit.typed.javadsl
 
-import akka.actor.typed.{ Behavior, Signal, ActorRef }
+import java.util.concurrent.ThreadLocalRandom
+
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
+import akka.actor.typed.Signal
 import akka.annotation.DoNotInherit
 import akka.testkit.typed.Effect
 import akka.testkit.typed.internal.BehaviorTestKitImpl
-
-import java.util.concurrent.ThreadLocalRandom
+import akka.testkit.typed.scaladsl
 
 object BehaviorTestKit {
   import akka.testkit.typed.scaladsl.TestInbox.address
 
-  /**
-   * JAVA API
-   */
+  val DefaultName: String = scaladsl.BehaviorTestKitSetup.DefaultName
+
   def create[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
-    new BehaviorTestKitImpl(address / name withUid (uid), initialBehavior)
+    new BehaviorTestKitImpl((address / name).withUid(uid), initialBehavior, Map.empty)
   }
-  /**
-   * JAVA API
-   */
+
   def create[T](initialBehavior: Behavior[T]): BehaviorTestKit[T] =
     create(initialBehavior, "testkit")
+
+  // FIXME BehaviorTestKitSetup as in scaladsl, for extensions
 
 }
 

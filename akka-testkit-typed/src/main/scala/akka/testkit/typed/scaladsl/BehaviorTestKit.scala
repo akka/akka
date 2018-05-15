@@ -4,25 +4,54 @@
 
 package akka.testkit.typed.scaladsl
 
-import akka.actor.typed.{ Behavior, Signal, ActorRef }
-import akka.annotation.DoNotInherit
-import akka.testkit.typed.Effect
-import akka.testkit.typed.internal.BehaviorTestKitImpl
-
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
+
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
+import akka.actor.typed.Extension
+import akka.actor.typed.ExtensionId
+import akka.actor.typed.Signal
+import akka.annotation.DoNotInherit
+import akka.testkit.typed.Effect
+import akka.testkit.typed.internal.BehaviorTestKitImpl
+
+object BehaviorTestKitSetup {
+  val DefaultName = "testkit"
+
+  def apply[T](initialBehavior: Behavior[T]) =
+    new BehaviorTestKitSetup(initialBehavior, DefaultName, Map.empty)
+}
+
+class BehaviorTestKitSetup[T] private (
+  val initialBehavior:          Behavior[T],
+  val name:                     String,
+  private[akka] val extensions: Map[ExtensionId[_], Extension]) {
+
+  def withName(name: String): BehaviorTestKitSetup[T] =
+    new BehaviorTestKitSetup(initialBehavior, name, extensions)
+
+  def withExtension[A <: Extension](extId: ExtensionId[A], extImpl: A): BehaviorTestKitSetup[T] =
+    new BehaviorTestKitSetup(initialBehavior, name, extensions.updated(extId, extImpl))
+}
 
 object BehaviorTestKit {
   import akka.testkit.typed.scaladsl.TestInbox.address
 
   def apply[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
-    new BehaviorTestKitImpl(address / name withUid (uid), initialBehavior)
+    new BehaviorTestKitImpl((address / name).withUid(uid), initialBehavior, Map.empty)
   }
+
   def apply[T](initialBehavior: Behavior[T]): BehaviorTestKit[T] =
-    apply(initialBehavior, "testkit")
+    apply(initialBehavior, BehaviorTestKitSetup.DefaultName)
+
+  def apply[T](setup: BehaviorTestKitSetup[T]): BehaviorTestKit[T] = {
+    val uid = ThreadLocalRandom.current().nextInt()
+    new BehaviorTestKitImpl[T]((address / setup.name).withUid(uid), setup.initialBehavior, setup.extensions)
+  }
 
 }
 
