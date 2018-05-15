@@ -224,11 +224,12 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     words
       .map(_.toLowerCase)
       .runWith(sink)
-    //#actorRefWithAck
+
     probe.expectMsg("Stream initialized!")
     probe.expectMsg("hello")
     probe.expectMsg("hi")
     probe.expectMsg("Stream completed!")
+    //#actorRefWithAck
   }
 
   //#actorRefWithAck-actor
