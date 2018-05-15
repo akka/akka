@@ -196,7 +196,7 @@ that running the streams happens in the background, asynchronously (this is the
 reason for the auxiliary information to be provided as a @scala[`Future`]@java[`CompletionStage`], in the future). The
 secret that makes this work is that Akka Streams implicitly implement pervasive
 flow control, all operators respect back-pressure. This allows the throttle
-combinator to signal to all its upstream sources of data that it can only
+operator to signal to all its upstream sources of data that it can only
 accept elements at a certain rate—when the incoming rate is higher than one per
 second the throttle operator will assert *back-pressure* upstream.
 
@@ -313,7 +313,7 @@ Java
 In the previous section we were working on 1:1 relationships of elements which is the most common case, but sometimes
 we might want to map from one element to a number of elements and receive a "flattened" stream, similarly like `flatMap`
 works on Scala Collections. In order to get a flattened stream of hashtags from our stream of tweets we can use the `mapConcat`
-combinator:
+operator:
 
 Scala
 :   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #hashtags-mapConcat }

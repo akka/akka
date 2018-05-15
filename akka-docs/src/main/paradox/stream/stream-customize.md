@@ -500,7 +500,7 @@ or the downstreams. Even for stages that do not complete or fail in this manner,
 
 The most general way of extending any `Source`, `Flow` or `SubFlow` (e.g. from `groupBy`) is
 demonstrated above: create a graph of flow-shape like the `Duplicator` example given above and use the `.via(...)`
-combinator to integrate it into your stream topology. This works with all `FlowOps` sub-types, including the
+operator to integrate it into your stream topology. This works with all `FlowOps` sub-types, including the
 ports that you connect with the graph DSL.
 
 Advanced Scala users may wonder whether it is possible to write extension methods that enrich `FlowOps` to

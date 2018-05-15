@@ -190,7 +190,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
 
   /**
    * This Actor’s execution context. It can be used to run asynchronous tasks
-   * like [[scala.concurrent.Future]] combinators.
+   * like [[scala.concurrent.Future]] operators.
    *
    * This field is thread-safe and can be called from other threads than the ordinary
    * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
