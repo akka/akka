@@ -8,7 +8,7 @@ import java.io.NotSerializableException
 
 import akka.actor.{ Actor, ActorSystem, ExtendedActorSystem, Props, RootActorPath }
 import akka.serialization.SerializerWithStringManifest
-import akka.testkit.{ AkkaSpec, TestKit }
+import akka.testkit.{ AkkaSpec, TestActors, TestKit }
 import com.typesafe.config.{ Config, ConfigFactory }
 
 object TransientSerializationErrorSpec {
@@ -78,16 +78,10 @@ abstract class AbstractTransientSerializationErrorSpec(config: Config) extends A
   val system2 = ActorSystem(system.name, system.settings.config)
   val system2Address = RARP(system2).provider.getDefaultAddress
 
-  class EchoActor extends Actor {
-    def receive = {
-      case msg ⇒ sender() ! msg
-    }
-  }
-
   "The transport" must {
 
     "stay alive after a transient exception from the serializer" in {
-      system2.actorOf(Props(new EchoActor), "echo")
+      system2.actorOf(TestActors.echoActorProps, "echo")
 
       val selection = system.actorSelection(RootActorPath(system2Address) / "user" / "echo")
 
