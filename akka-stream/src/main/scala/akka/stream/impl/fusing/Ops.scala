@@ -428,6 +428,7 @@ private[stream] object Collect {
 
       private var current: Out = zero
       private var eventualCurrent: Future[Out] = Future.successful(current)
+      private var futureScheduled = false
 
       private def ec = ExecutionContexts.sameThreadExecutionContext
 
@@ -467,6 +468,7 @@ private[stream] object Collect {
         } else if (isAvailable(out)) {
           safePull()
         }
+        futureScheduled = false
       }
 
       private def doSupervision(t: Throwable): Unit = {
@@ -495,6 +497,8 @@ private[stream] object Collect {
         try {
           eventualCurrent = f(current, grab(in))
 
+          futureScheduled = true
+
           eventualCurrent.value match {
             case Some(result) ⇒ futureCB(result)
             case _            ⇒ eventualCurrent.onComplete(futureCB)(ec)
@@ -518,6 +522,8 @@ private[stream] object Collect {
               completeStage()
             case _ ⇒ // in all other cases we will get a complete when the future completes
           }
+        } else if (!futureScheduled && !hasBeenPulled(in)) {
+          completeStage()
         }
       }
 

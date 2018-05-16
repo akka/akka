@@ -61,6 +61,21 @@ class FlowScanAsyncSpec extends StreamSpec {
       sub.expectError(TE("bang"))
     }
 
+    "complete after an element has been consumed and upstream's completion is delayed" in {
+      val (pub, sub) =
+        TestSource.probe[Int]
+          .via(Flow[Int].scanAsync(0)((acc, in) ⇒ Future.successful(acc + in)))
+          .toMat(TestSink.probe)(Keep.both)
+          .run()
+
+      pub.sendNext(1)
+      sub.request(10)
+      sub.expectNext(0)
+      sub.expectNext(1)
+      pub.sendComplete()
+      sub.expectComplete()
+    }
+
     "work with a single source" in {
       Source.single(1)
         .via(sumScanFlow)
