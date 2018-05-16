@@ -32,7 +32,7 @@ This page does not list all available modules, but overviews the main functional
   version=$akka.version$
 }
 
-The core Akka library is `akka-actor`. But, actors are used across Akka libraries, providing a consistent, integrated model that relieves you from individually
+The core Akka library is `akka-actor`, but actors are used across Akka libraries, providing a consistent, integrated model that relieves you from individually
 solving the challenges that arise in concurrent or distributed system design. From a birds-eye view,
 actors are a programming paradigm that takes encapsulation, one of the pillars of OOP, to its extreme.
 Unlike objects, actors encapsulate not only their
