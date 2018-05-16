@@ -7,6 +7,7 @@ package akka.remote
 import akka.remote.WireFormats._
 import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
 import akka.remote.artery.{ EnvelopeBuffer, HeaderBuilder, OutboundEnvelope }
 import akka.serialization._
 
@@ -17,6 +18,7 @@ import scala.util.control.NonFatal
  *
  * MessageSerializer is a helper for serializing and deserialize messages
  */
+@InternalApi
 private[akka] object MessageSerializer {
 
   class SerializationException(msg: String, cause: Throwable) extends RuntimeException(msg, cause)
