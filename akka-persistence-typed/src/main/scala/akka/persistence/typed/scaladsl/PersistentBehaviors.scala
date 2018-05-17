@@ -74,8 +74,7 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
   def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
   /**
-   * The `callback` function is called to notify the actor that the recovery process
-   * is finished.
+   * The `callback` function is called to notify when a snapshot is complete.
    */
   def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
@@ -121,7 +120,7 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
 
   /**
    * Transform the event in another type before giving to the journal. Can be used to wrap events
-   * in types Journals and Adapters understand as well as simple event migrations.
+   * in types Journals understand but is of a different type than `Event`.
    */
   def eventAdapter(adapter: EventAdapter[Event, _]): PersistentBehavior[Command, Event, State]
 }

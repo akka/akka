@@ -148,12 +148,11 @@ private[akka] object EventsourcedRunning {
 
     def adaptEvent(event: E): Any = {
       val tags = setup.tagger(event)
-      if (tags.isEmpty) {
-        setup.eventAdapter.toJournal(event)
-      } else {
-        // Tags always need to be on the outside as journals match on it
-        Tagged(setup.eventAdapter.toJournal(event), tags)
-      }
+      val adaptedEvent = setup.eventAdapter.toJournal(event)
+      if (tags.isEmpty)
+        adaptedEvent
+      else
+        Tagged(adaptedEvent, tags)
     }
 
     setup.setMdc(runningCmdsMdc)

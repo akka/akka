@@ -82,9 +82,11 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
   def onRecoveryCompleted(ctx: ActorContext[Command], state: State): Unit = {}
 
   /**
-   * The `callback` function is called to notify the actor that the recovery process
-   * is finished. The default implementation logs failures at error and success writes at
+   * Override to get notified when a snapshot is finished.
+   * The default implementation logs failures at error and success writes at
    * debug.
+   *
+   * @param result None if successful otherwise contains the exception thrown when snapshotting
    */
   def onSnapshot(ctx: ActorContext[Command], meta: SnapshotMetadata, result: Optional[Throwable]): Unit = {
     if (result.isPresent) {
