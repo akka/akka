@@ -29,7 +29,7 @@ import scala.util.control.NonFatal
 
   def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
     lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
-    private implicit def ec = ActorMaterializerHelper.downcast(materializer).system.dispatcher
+    private implicit def ec = materializer.executionContext
     private var state: Option[S] = None
 
     private val createdCallback = getAsyncCallback[Try[S]] {
