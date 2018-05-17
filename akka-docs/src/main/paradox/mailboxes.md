@@ -63,7 +63,7 @@ then that names a configuration section describing the mailbox type to be
 used.
  2. If the actor’s `Props` contains a mailbox selection—i.e. `withMailbox`
 was called on it—then that names a configuration section describing the
-mailbox type to be used (note that this needs to be a an absolute config path, 
+mailbox type to be used (note that this needs to be an absolute config path, 
 for example `myapp.special-mailbox`, and is not nested inside the `akka` namespace).
  3. If the dispatcher’s configuration section contains a `mailbox-type` key
 the same section will be used to configure the mailbox type.
