@@ -2,7 +2,7 @@
 
 Use the `ask` pattern to send a request-reply message to the target `ref` actor.
 
-@ref[Asynchronous processing stages](../index.md#asynchronous-processing-stages)
+@ref[Asynchronous operators](../index.md#asynchronous-operators)
 
 @@@ div { .group-scala }
 ## Signature

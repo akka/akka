@@ -2,7 +2,7 @@
 
 Transform each element in the stream by calling a mapping function with it and passing the returned value downstream.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

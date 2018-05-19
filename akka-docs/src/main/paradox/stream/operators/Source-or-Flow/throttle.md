@@ -2,7 +2,7 @@
 
 Limit the throughput to a specific number of elements per time unit, or a specific total cost per time unit, where a function has to be provided to calculate the individual cost of each element.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

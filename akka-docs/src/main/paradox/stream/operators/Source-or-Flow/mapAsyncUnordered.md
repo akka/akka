@@ -2,7 +2,7 @@
 
 Like `mapAsync` but @scala[`Future`] @java[`CompletionStage`] results are passed downstream as they arrive regardless of the order of the elements that triggered them.
 
-@ref[Asynchronous processing stages](../index.md#asynchronous-processing-stages)
+@ref[Asynchronous operators](../index.md#asynchronous-operators)
 
 @@@div { .group-scala }
 

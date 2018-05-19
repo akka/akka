@@ -45,13 +45,13 @@ Graph
 : A description of a stream processing topology, defining the pathways through which elements shall flow when the stream
 is running.
 
-Processing Stage
+Operator
 : The common name for all building blocks that build up a Graph.
-Examples of a processing stage would be operations like `map()`, `filter()`, custom operators extending @ref[`GraphStage`s](stream-customize.md) and graph
-junctions like `Merge` or `Broadcast`. For the full list of built-in processing stages see the @ref:[operator index](operators/index.md)
+Examples of operators are like `map()`, `filter()`, custom ones extending @ref[`GraphStage`s](stream-customize.md) and graph
+junctions like `Merge` or `Broadcast`. For the full list of built-in operators see the @ref:[operator index](operators/index.md)
 
 
-When we talk about *asynchronous, non-blocking backpressure* we mean that the processing stages available in Akka
+When we talk about *asynchronous, non-blocking backpressure* we mean that the operators available in Akka
 Streams will not use blocking calls but asynchronous message passing to exchange messages between each other, and they
 will use asynchronous means to slow down a fast producer, without blocking its thread. This is a thread-pool friendly
 design, since entities that need to wait (a fast producer waiting on a slow consumer) will not block the thread but
@@ -63,15 +63,15 @@ can hand it back for further use to an underlying thread-pool.
 Linear processing pipelines can be expressed in Akka Streams using the following core abstractions:
 
 Source
-: A processing stage with *exactly one output*, emitting data elements whenever downstream processing stages are
+: A operator with *exactly one output*, emitting data elements whenever downstream operators are
 ready to receive them.
 
 Sink
-: A processing stage with *exactly one input*, requesting and accepting data elements possibly slowing down the upstream
+: A operator with *exactly one input*, requesting and accepting data elements possibly slowing down the upstream
 producer of elements
 
 Flow
-: A processing stage which has *exactly one input and output*, which connects its upstream and downstream by
+: A operator which has *exactly one input and output*, which connects its upstream and downstream by
 transforming the data elements flowing through it.
 
 RunnableGraph
@@ -83,7 +83,7 @@ a `Flow` to a `Sink` to get a new sink. After a stream is properly terminated by
 it will be represented by the `RunnableGraph` type, indicating that it is ready to be executed.
 
 It is important to remember that even after constructing the `RunnableGraph` by connecting all the source, sink and
-different processing stages, no data will flow through it until it is materialized. Materialization is the process of
+different operators, no data will flow through it until it is materialized. Materialization is the process of
 allocating all resources needed to run the computation described by a Graph (in Akka Streams this will often involve
 starting up Actors). Thanks to Flows being a description of the processing pipeline they are *immutable,
 thread-safe, and freely shareable*, which means that it is for example safe to share and send them between actors, to have
@@ -132,7 +132,7 @@ Scala
 Java
 :   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #materialization-runWith }
 
-It is worth pointing out that since processing stages are *immutable*, connecting them returns a new processing stage,
+It is worth pointing out that since operators are *immutable*, connecting them returns a new operator,
 instead of modifying the existing instance, so while constructing long flows, remember to assign the new value to a variable or run it:
 
 Scala
@@ -143,8 +143,8 @@ Java
 
 @@@ note
 
-By default Akka Streams elements support **exactly one** downstream processing stage.
-Making fan-out (supporting multiple downstream processing stages) an explicit opt-in feature allows default stream elements to
+By default Akka Streams elements support **exactly one** downstream operator.
+Making fan-out (supporting multiple downstream operators) an explicit opt-in feature allows default stream elements to
 be less complex and more efficient. Also it allows for greater flexibility on *how exactly* to handle the multicast scenarios,
 by providing named fan-out elements such as broadcast (signals all down-stream elements) or balance (signals one of available down-stream elements).
 
@@ -196,7 +196,7 @@ Akka Streams implement an asynchronous non-blocking back-pressure protocol stand
 specification, which Akka is a founding member of.
 
 The user of the library does not have to write any explicit back-pressure handling code — it is built in
-and dealt with automatically by all of the provided Akka Streams processing stages. It is possible however to add
+and dealt with automatically by all of the provided Akka Streams operators. It is possible however to add
 explicit buffer stages with overflow strategies that can influence the behavior of the stream. This is especially important
 in complex processing graphs which may even contain loops (which *must* be treated with very special
 care, as explained in @ref:[Graph cycles, liveness and deadlocks](stream-graphs.md#graph-cycles)).
@@ -287,9 +287,9 @@ yet will materialize that stage multiple times.
 By default Akka Streams will fuse the stream operators. This means that the processing steps of a flow or
 stream graph can be executed within the same Actor and has two consequences:
 
- * passing elements from one processing stage to the next is a lot faster between fused
+ * passing elements from one operator to the next is a lot faster between fused
 stages due to avoiding the asynchronous messaging overhead
- * fused stream processing stages does not run in parallel to each other, meaning that
+ * fused stream operators do not run in parallel to each other, meaning that
 only up to one CPU core is used for each fused part
 
 To allow for parallel processing you will have to insert asynchronous boundaries manually into your flows and
@@ -312,11 +312,11 @@ by adding information to the flow graph that has been constructed up to this poi
 
 This means that everything that is inside the red bubble will be executed by one actor and everything outside of it
 by another. This scheme can be applied successively, always having one such boundary enclose the previous ones plus all
-processing stages that have been added since them.
+operators that have been added since them.
 
 @@@ warning
 
-Without fusing (i.e. up to version 2.0-M2) each stream processing stage had an implicit input buffer
+Without fusing (i.e. up to version 2.0-M2) each stream operator had an implicit input buffer
 that holds a few elements for efficiency reasons. If your flow graphs contain cycles then these buffers
 may have been crucial in order to avoid deadlocks. With fusing these implicit buffers are no longer
 there, data elements are passed without buffering between fused stages. In those cases where buffering
@@ -328,7 +328,7 @@ is needed in order to allow the stream to run at all, you will have to insert ex
 <a id="flow-combine-mat"></a>
 ### Combining materialized values
 
-Since every processing stage in Akka Streams can provide a materialized value after being materialized, it is necessary
+Since every operator in Akka Streams can provide a materialized value after being materialized, it is necessary
 to somehow express how these values should be composed to a final value when we plug these stages together. For this,
 many operator methods have variants that take an additional argument, a function, that will be used to combine the
 resulting values. Some examples of using these combiners are illustrated in the example below.

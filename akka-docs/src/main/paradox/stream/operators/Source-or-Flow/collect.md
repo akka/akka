@@ -2,7 +2,7 @@
 
 Apply a partial function to each incoming element, if the partial function is defined for a value the returned value is passed downstream.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

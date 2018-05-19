@@ -14,7 +14,7 @@ To use Akka Streams, add the module to your project:
 
 While the processing vocabulary of Akka Streams is quite rich (see the @ref:[Streams Cookbook](stream-cookbook.md) for examples) it
 is sometimes necessary to define new transformation stages either because some functionality is missing from the
-stock operations, or for performance reasons. In this part we show how to build custom processing stages and graph
+stock operations, or for performance reasons. In this part we show how to build custom operators and graph
 junctions of various kinds.
 
 @@@ note
@@ -28,7 +28,7 @@ might be easy to make with a custom @ref[`GraphStage`](stream-customize.md)
 <a id="graphstage"></a>
 ## Custom processing with GraphStage
 
-The `GraphStage` abstraction can be used to create arbitrary graph processing stages with any number of input
+The `GraphStage` abstraction can be used to create arbitrary operators with any number of input
 or output ports. It is a counterpart of the `GraphDSL.create()` method which creates new stream processing
 stages by composing others. Where `GraphStage` differs is that it creates a stage that is itself not divisible into
 smaller ones, and allows state to be maintained inside it in a safe way.
@@ -181,7 +181,7 @@ and `abortReading()`
 
 An example of how this API simplifies a stage can be found below in the second version of the `Duplicator`.
 
-### Custom linear processing stages using GraphStage
+### Custom linear operators using GraphStage
 
 GraphStage allows for custom linear processing stages through letting them
 have one input and one output and using `FlowShape` as their shape.
@@ -276,7 +276,7 @@ in circulation in a potential chain of stages, just like our conceptual "railroa
 
 ### Completion
 
-Completion handling usually (but not exclusively) comes into the picture when processing stages need to emit
+Completion handling usually (but not exclusively) comes into the picture when operators need to emit
 a few more elements after their upstream source has been completed. We have seen an example of this in our
 first `Duplicator` implementation where the last element needs to be doubled even after the upstream neighbor
 stage has been completed. This can be done by overriding the `onUpstreamFinish` method in @scala[`InHandler`]@java[`AbstractInHandler`].
@@ -462,7 +462,7 @@ Scala
 Java
 :   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #detached }
 
-## Thread safety of custom processing stages
+## Thread safety of custom operators
 
 All of the above custom stages (linear or graph) provide a few simple guarantees that implementors can rely on.
 : 
