@@ -2,7 +2,7 @@
 
 Attaches the given `Sink` to this `Flow`, meaning that elements that pass through this `Flow` will also be sent to the `Sink`.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@ div { .group-scala }
 ## Signature

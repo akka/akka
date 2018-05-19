@@ -2,7 +2,7 @@
 
 Just like `fold` but receiving a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

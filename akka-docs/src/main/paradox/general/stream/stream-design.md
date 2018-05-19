@@ -4,7 +4,7 @@ It took quite a while until we were reasonably happy with the look and feel of t
 
 @@@ note
 
-As detailed in the introduction keep in mind that the Akka Streams API is completely decoupled from the Reactive Streams interfaces which are an implementation detail for how to pass stream data between individual processing stages.
+As detailed in the introduction keep in mind that the Akka Streams API is completely decoupled from the Reactive Streams interfaces which are an implementation detail for how to pass stream data between individual operators.
 
 @@@
 

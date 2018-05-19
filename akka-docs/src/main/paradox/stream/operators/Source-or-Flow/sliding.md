@@ -2,7 +2,7 @@
 
 Provide a sliding window over the incoming stream and pass the windows as groups of elements downstream.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

@@ -2,7 +2,7 @@
 
 Drop `n` elements and then pass any subsequent element downstream.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 
