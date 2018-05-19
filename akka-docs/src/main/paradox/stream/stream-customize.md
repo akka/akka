@@ -19,7 +19,7 @@ junctions of various kinds.
 
 @@@ note
 
-A custom graph stage should not be the first tool you reach for, defining graphs using flows
+A custom operator should not be the first tool you reach for, defining graphs using flows
 and the graph DSL is in general easier and does to a larger extent protect you from mistakes that
 might be easy to make with a custom @ref[`GraphStage`](stream-customize.md)
 
@@ -183,7 +183,7 @@ An example of how this API simplifies a stage can be found below in the second v
 
 ### Custom linear processing stages using GraphStage
 
-Graph stages allows for custom linear processing stages through letting them
+GraphStage allows for custom linear processing stages through letting them
 have one input and one output and using `FlowShape` as their shape.
 
 Such a stage can be illustrated as a box with two flows as it is
@@ -366,7 +366,7 @@ implementation.
 Sharing the AsyncCallback from the constructor risks race conditions, therefore it is recommended to use the
 `preStart()` lifecycle hook instead.
 
-This example shows an asynchronous side channel graph stage that starts dropping elements
+This example shows an asynchronous side channel operator that starts dropping elements
 when a future completes:
 
 Scala
@@ -426,7 +426,7 @@ decision.
 
 See @ref:[Modularity, Composition and Hierarchy](stream-composition.md) for an explanation on how attributes work.
 
-### Rate decoupled graph stages
+### Rate decoupled operators
 
 Sometimes it is desirable to *decouple* the rate of the upstream and downstream of a stage, synchronizing only
 when needed.
