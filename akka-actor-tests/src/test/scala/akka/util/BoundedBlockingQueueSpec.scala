@@ -47,7 +47,7 @@ class BoundedBlockingQueueSpec
       }
     }
 
-    "accept and empty backing Queue" in {
+    "accept an empty backing Queue" in {
       new BoundedBlockingQueue(10, new util.LinkedList()).size() should equal(0)
     }
 
@@ -57,11 +57,10 @@ class BoundedBlockingQueueSpec
       }
     }
 
-    "check remainingCapacity for BlockingQueue" in {
+    "not accept a backing queue with lower capacity" in {
       intercept[IllegalArgumentException] {
-        new BoundedBlockingQueue(0, new LinkedBlockingQueue(1))
+        new BoundedBlockingQueue(2, new LinkedBlockingQueue(1))
       }
-      new BoundedBlockingQueue(1, new LinkedBlockingQueue(1)).remainingCapacity() should equal(1)
     }
 
   }
@@ -115,10 +114,11 @@ class BoundedBlockingQueueSpec
       val f = Future(queue.put("b"))
 
       after(10 milliseconds) {
+        f.isCompleted should be(false)
         queue.take()
       }
 
-      Await.result(f, 100 milliseconds)
+      Await.result(f, 3 seconds)
       events should contain inOrder (offer("a"), poll, offer("b"))
     }
 
@@ -130,6 +130,7 @@ class BoundedBlockingQueueSpec
       val f = Future(queue.put("b"))
 
       after(10 milliseconds) {
+        f.isCompleted should be(false)
         lock.lockInterruptibly()
         notFull.signal()
         lock.unlock()
@@ -172,10 +173,11 @@ class BoundedBlockingQueueSpec
 
       val f = Future(queue.take())
       after(10 milliseconds) {
+        f.isCompleted should be(false)
         queue.put("a")
       }
 
-      Await.ready(f, 100 milliseconds)
+      Await.ready(f, 3 seconds)
       events should contain inOrder (awaitNotEmpty, offer("a"), poll)
     }
 
@@ -187,6 +189,7 @@ class BoundedBlockingQueueSpec
 
       // Cause `notFull` signal, but don't fill the queue
       after(10 milliseconds) {
+        f.isCompleted should be(false)
         lock.lockInterruptibly()
         notEmpty.signal()
         lock.unlock()
@@ -249,6 +252,7 @@ class BoundedBlockingQueueSpec
 
       val f = Future(queue.offer("World", 100, TimeUnit.MILLISECONDS))
       after(10 milliseconds) {
+        f.isCompleted should be(false)
         notFull.advanceTime(99 milliseconds)
       }
       mustBlockFor(100 milliseconds, f)
@@ -270,9 +274,10 @@ class BoundedBlockingQueueSpec
       val f = Future(queue.offer("World", 100, TimeUnit.MILLISECONDS))
       notFull.advanceTime(99 milliseconds)
       after(50 milliseconds) {
+        f.isCompleted should be(false)
         queue.take()
       }
-      Await.result(f, 100 milliseconds) should equal(true)
+      Await.result(f, 3 seconds) should equal(true)
       events should contain inOrder (awaitNotFull, signalNotFull, offer("World"))
     }
 
@@ -284,6 +289,7 @@ class BoundedBlockingQueueSpec
 
       // Cause `notFull` signal, but don't fill the queue
       after(10 milliseconds) {
+        f.isCompleted should be(false)
         lock.lockInterruptibly()
         notFull.signal()
         lock.unlock()
@@ -346,6 +352,7 @@ class BoundedBlockingQueueSpec
       val f = Future(queue.poll(100, TimeUnit.MILLISECONDS))
 
       after(10 milliseconds) {
+        f.isCompleted should be(false)
         notEmpty.advanceTime(99 milliseconds)
       }
       mustBlockFor(100 milliseconds, f)
@@ -374,9 +381,10 @@ class BoundedBlockingQueueSpec
 
       notEmpty.advanceTime(99 milliseconds)
       after(50 milliseconds) {
+        f.isCompleted should be(false)
         queue.put("Hello")
       }
-      Await.result(f, 100 milliseconds) should equal("Hello")
+      Await.result(f, 3 seconds) should equal("Hello")
       events should contain inOrder (awaitNotEmpty, signalNotEmpty, poll)
     }
   }
@@ -758,7 +766,7 @@ trait QueueSetupHelper {
         } catch {
           case e: InterruptedException ⇒
         }
-        0
+        waitTime
       }
     }
 
