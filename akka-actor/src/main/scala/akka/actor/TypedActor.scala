@@ -177,7 +177,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       val system = akka.serialization.JavaSerializer.currentSystem.value
       if (system eq null) throw new IllegalStateException(
         "Trying to deserialize a SerializedMethodCall without an ActorSystem in scope." +
-          " Use akka.serialization.Serialization.currentSystem.withValue(system) { ... }")
+          " Use akka.serialization.JavaSerializer.currentSystem.withValue(system) { ... }")
       val serialization = SerializationExtension(system)
       MethodCall(ownerType.getDeclaredMethod(methodName, parameterTypes: _*), serializedParameters match {
         case null               ⇒ null
@@ -443,7 +443,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    */
   private[akka] final case class SerializedTypedActorInvocationHandler(val actor: ActorRef, val timeout: FiniteDuration) {
     @throws(classOf[ObjectStreamException]) private def readResolve(): AnyRef = JavaSerializer.currentSystem.value match {
-      case null ⇒ throw new IllegalStateException("SerializedTypedActorInvocationHandler.readResolve requires that JavaSerializer.currentSystem.value is set to a non-null value")
+      case null ⇒ throw new IllegalStateException("SerializedTypedActorInvocationHandler.readResolve requires that " +
+        "JavaSerializer.currentSystem.value is set to a non-null value")
       case some ⇒ toTypedActorInvocationHandler(some)
     }
 

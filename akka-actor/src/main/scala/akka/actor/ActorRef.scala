@@ -422,7 +422,7 @@ private[akka] final case class SerializedActorRef private (path: String) {
     case null ⇒
       throw new IllegalStateException(
         "Trying to deserialize a serialized ActorRef without an ActorSystem in scope." +
-          " Use 'akka.serialization.Serialization.currentSystem.withValue(system) { ... }'")
+          " Use 'akka.serialization.JavaSerializer.currentSystem.withValue(system) { ... }'")
     case someSystem ⇒
       someSystem.provider.resolveActorRef(path)
   }

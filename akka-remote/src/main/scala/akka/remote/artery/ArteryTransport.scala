@@ -340,7 +340,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   def bindAddress: UniqueAddress = _bindAddress
   override def localAddress: UniqueAddress = _localAddress
-  override def defaultAddress: Address = localAddress.address
+  override def defaultAddress: Address = if (_localAddress eq null) null else localAddress.address
   override def addresses: Set[Address] = _addresses
   override def localAddressForRemote(remote: Address): Address = defaultAddress
 

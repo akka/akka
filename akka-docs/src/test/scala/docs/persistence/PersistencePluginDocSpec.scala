@@ -193,6 +193,9 @@ object PersistenceTCKDoc {
 
       override def supportsRejectingNonSerializableObjects: CapabilityFlag =
         false // or CapabilityFlag.off
+
+      override def supportsSerialization: CapabilityFlag =
+        true // or CapabilityFlag.on
     }
     //#journal-tck-scala
   }
@@ -204,7 +207,11 @@ object PersistenceTCKDoc {
       config = ConfigFactory.parseString(
         """
         akka.persistence.snapshot-store.plugin = "my.snapshot-store.plugin"
-        """))
+        """)) {
+
+      override def supportsSerialization: CapabilityFlag =
+        true // or CapabilityFlag.on
+    }
     //#snapshot-store-tck-scala
   }
   new AnyRef {

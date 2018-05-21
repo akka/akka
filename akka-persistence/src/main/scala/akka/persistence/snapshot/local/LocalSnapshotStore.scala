@@ -116,8 +116,9 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
   protected def deserialize(inputStream: InputStream): Snapshot =
     serializationExtension.deserialize(streamToBytes(inputStream), classOf[Snapshot]).get
 
-  protected def serialize(outputStream: OutputStream, snapshot: Snapshot): Unit =
-    outputStream.write(serializationExtension.findSerializerFor(snapshot).toBinary(snapshot))
+  protected def serialize(outputStream: OutputStream, snapshot: Snapshot): Unit = {
+    outputStream.write(serializationExtension.serialize(snapshot).get)
+  }
 
   protected def withOutputStream(metadata: SnapshotMetadata)(p: (OutputStream) ⇒ Unit): File = {
     val tmpFile = snapshotFileForWrite(metadata, extension = "tmp")

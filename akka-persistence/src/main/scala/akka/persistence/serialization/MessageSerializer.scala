@@ -39,12 +39,6 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
 
   override val includeManifest: Boolean = true
 
-  private lazy val transportInformation: Option[Serialization.Information] = {
-    val address = system.provider.getDefaultAddress
-    if (address.hasLocalScope) None
-    else Some(Serialization.Information(address, system))
-  }
-
   /**
    * Serializes persistent messages. Delegates serialization of a persistent
    * message's payload to a matching `akka.serialization.Serializer`.
@@ -175,11 +169,12 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       builder
     }
 
-    // serialize actor references with full address information (defaultAddress)
-    transportInformation match {
-      case Some(ti) ⇒ Serialization.currentTransportInformation.withValue(ti) { payloadBuilder() }
-      case None     ⇒ payloadBuilder()
-    }
+    val oldInfo = Serialization.currentTransportInformation.value
+    try {
+      if (oldInfo eq null)
+        Serialization.currentTransportInformation.value = system.provider.serializationInformation
+      payloadBuilder()
+    } finally Serialization.currentTransportInformation.value = oldInfo
   }
 
   //
