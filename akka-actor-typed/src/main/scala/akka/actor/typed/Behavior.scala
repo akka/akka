@@ -6,8 +6,9 @@ package akka.actor.typed
 
 import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.BehaviorImpl
-
 import scala.annotation.tailrec
+
+import akka.actor.typed.internal.BehaviorImpl.OrElseBehavior
 import akka.util.{ LineNumbers, OptionVal }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
@@ -41,6 +42,15 @@ sealed abstract class Behavior[T] { behavior ⇒
    * (which cannot be expressed directly due to type inference problems).
    */
   final def narrow[U <: T]: Behavior[U] = this.asInstanceOf[Behavior[U]]
+
+  /**
+   * Composes this `Behavior with a fallback `Behavior` which
+   * is used when this `Behavior` doesn't handle the message or signal, i.e.
+   * when `unhandled` is returned.
+   *
+   *  @param that the fallback `Behavior`
+   */
+  final def orElse(that: Behavior[T]): Behavior[T] = new OrElseBehavior[T](this, that)
 }
 
 /**
