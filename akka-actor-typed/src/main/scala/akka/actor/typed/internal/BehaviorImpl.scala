@@ -132,8 +132,10 @@ import scala.reflect.ClassTag
           Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, b, toStringPrefix)
         }
       case _ ⇒
-        Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, behavior, toStringPrefix)
+        val b = Behavior.validateAsInitial(behavior)
+        Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, b, toStringPrefix)
     }
+
   }
 
   private final case class Intercept[T, U <: Any: ClassTag](
