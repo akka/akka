@@ -10,7 +10,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
 //#imports
 
-import akka.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import scala.concurrent.Await

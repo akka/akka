@@ -14,8 +14,8 @@ import akka.actor.typed.{ ActorRef, ActorRefResolver }
 import akka.cluster.MemberStatus
 import akka.cluster.typed.{ Cluster, Join }
 import akka.serialization.SerializerWithStringManifest
-import akka.testkit.typed.FishingOutcome
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.FishingOutcome
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ Matchers, WordSpec }
 
@@ -37,8 +37,6 @@ object ClusterReceptionistSpec {
           "akka.cluster.typed.internal.receptionist.ClusterReceptionistSpec$$Ping" = test
           "akka.cluster.typed.internal.receptionist.ClusterReceptionistSpec$$Pong$$" = test
           "akka.cluster.typed.internal.receptionist.ClusterReceptionistSpec$$Perish$$" = test
-          # for now, using Java serializers is good enough (tm), see #23687
-          # "akka.typed.internal.receptionist.ReceptionistImpl$$DefaultServiceKey" = test
         }
       }
       akka.remote.artery.enabled = true

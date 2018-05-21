@@ -62,8 +62,8 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] ⇒
         }
       }
 
-    loadExtensions("akka.typed.library-extensions", throwOnLoadFail = true)
-    loadExtensions("akka.typed.extensions", throwOnLoadFail = false)
+    loadExtensions("akka.actor.typed.library-extensions", throwOnLoadFail = true)
+    loadExtensions("akka.actor.typed.extensions", throwOnLoadFail = false)
   }
 
   final override def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean = findExtension(ext) != null

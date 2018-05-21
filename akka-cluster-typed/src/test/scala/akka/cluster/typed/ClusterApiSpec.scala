@@ -8,8 +8,8 @@ import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-import akka.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.TestKitSettings
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
@@ -31,7 +31,7 @@ object ClusterApiSpec {
         allow-java-serialization = off
       }
       # generous timeout for cluster forming probes
-      akka.actor.typed.test.default-timeout = 10s
+      akka.actor.testkit.typed.default-timeout = 10s
     """)
 }
 

@@ -11,7 +11,7 @@ import akka.actor.typed.{ Behavior, LogMarker, TestException, TypedAkkaSpec }
 import akka.event.Logging
 import akka.event.Logging.{ LogEventWithCause, LogEventWithMarker }
 import akka.testkit.EventFilter
-import akka.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 
 class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {

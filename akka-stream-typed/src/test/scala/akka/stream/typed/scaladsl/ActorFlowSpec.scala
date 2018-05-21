@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 //#imports
 import akka.actor.typed.{ DispatcherSelector, TypedAkkaSpecWithShutdown }
 import akka.stream.testkit.TestSubscriber
-import akka.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }

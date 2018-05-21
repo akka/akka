@@ -9,7 +9,7 @@ import akka.actor.typed.internal.ActorRefSerializationSpec
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
-import akka.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 class ServiceKeySerializationSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 

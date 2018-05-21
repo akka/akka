@@ -5,7 +5,7 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 
 class ReceivePartialSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 

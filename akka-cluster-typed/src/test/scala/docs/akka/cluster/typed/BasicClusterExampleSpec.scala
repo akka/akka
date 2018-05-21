@@ -14,7 +14,7 @@ import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
 import akka.cluster.typed._
 //#cluster-imports
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.time.{ Millis, Seconds, Span }
 

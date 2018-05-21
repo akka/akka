@@ -46,7 +46,7 @@ trait Extension
  * // can be loaded eagerly on system startup through configuration
  * // note that the name is the JVM/Java class name, with a dollar sign in the end
  * // and not the Scala object name
- * akka.typed.extensions = ["com.example.MyExt$"]
+ * akka.actor.typed.extensions = ["com.example.MyExt$"]
  *
  * // Allows access like this from Scala
  * MyExt().someMethodOnTheExtension()
@@ -57,7 +57,7 @@ trait Extension
  * *Java API*
  *
  * To implement an extension in Java you should first create an `ExtensionId` singleton by implementing a static method
- * called `getInstance`, this is needed to be able to list the extension among the `akka.typed.extensions` in the configuration
+ * called `getInstance`, this is needed to be able to list the extension among the `akka.actor.typed.extensions` in the configuration
  * and have it loaded when the actor system starts up.
  *
  * {{{
@@ -90,7 +90,7 @@ trait Extension
  * }
  *
  * // can be loaded eagerly on system startup through configuration
- * akka.typed.extensions = ["com.example.MyExt"]
+ * akka.actor.typed.extensions = ["com.example.MyExt"]
  *
  * // Allows access like this from Scala
  * MyExt.someMethodOnTheExtension()

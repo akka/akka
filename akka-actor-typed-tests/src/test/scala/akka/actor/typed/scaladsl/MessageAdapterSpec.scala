@@ -11,7 +11,7 @@ import akka.actor.typed.Props
 import akka.actor.typed.TestException
 import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.testkit.EventFilter
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 object MessageAdapterSpec {

@@ -7,7 +7,7 @@ package docs.akka.typed
 //#imports
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorSystem, Logger, PostStop }
-import akka.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 import scala.concurrent.Await
 import scala.concurrent.duration._

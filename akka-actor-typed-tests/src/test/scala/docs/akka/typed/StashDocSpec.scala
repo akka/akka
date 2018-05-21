@@ -11,7 +11,7 @@ import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox }
+import akka.actor.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox }
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 

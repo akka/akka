@@ -138,7 +138,7 @@ object Dependencies {
   val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath,
     Test.mockito, Test.scalacheck.value, Test.jimfs)
 
-  val typedTestkit = l ++= Seq(Provided.junit)
+  val actorTestkitTyped = l ++= Seq(Provided.junit)
 
   val remote = l ++= Seq(netty, aeronDriver, aeronClient, Test.junit, Test.scalatest.value, Test.jimfs)
 

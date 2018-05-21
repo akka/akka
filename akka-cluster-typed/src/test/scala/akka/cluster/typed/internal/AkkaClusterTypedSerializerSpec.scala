@@ -9,7 +9,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ Behavior, TypedAkkaSpecWithShutdown }
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist
 import akka.serialization.SerializationExtension
-import akka.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 class AkkaClusterTypedSerializerSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 

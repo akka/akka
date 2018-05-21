@@ -53,7 +53,7 @@ object InstanceCountingExtension extends ExtensionId[DummyExtension1] {
 object ExtensionsSpec {
   val config = ConfigFactory.parseString(
     """
-akka.typed {
+akka.actor.typed {
   library-extensions += "akka.actor.typed.InstanceCountingExtension"
 }
    """).resolve()
@@ -97,7 +97,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
     "load extensions from the configuration" in
       withEmptyActorSystem("ExtensionsSpec03", Some(ConfigFactory.parseString(
         """
-          akka.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
+          akka.actor.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
         """))
       ) { system ⇒
         system.hasExtension(DummyExtension1) should ===(true)
@@ -111,7 +111,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
       def create(): Unit = {
         ActorSystem[Any](Behavior.EmptyBehavior, "ExtensionsSpec04", ConfigFactory.parseString(
           """
-          akka.typed.extensions = ["akka.actor.typed.FailingToLoadExtension$"]
+          akka.actor.typed.extensions = ["akka.actor.typed.FailingToLoadExtension$"]
         """))
       }
 
@@ -136,7 +136,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
 
     "allow for auto-loading of library-extensions" in
       withEmptyActorSystem("ExtensionsSpec06") { system ⇒
-        val listedExtensions = system.settings.config.getStringList("akka.typed.library-extensions")
+        val listedExtensions = system.settings.config.getStringList("akka.actor.typed.library-extensions")
         listedExtensions.size should be > 0
         // could be initalized by other tests, so at least once
         InstanceCountingExtension.createCount.get() should be > 0
@@ -146,7 +146,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
       intercept[RuntimeException] {
         withEmptyActorSystem(
           "ExtensionsSpec07",
-          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.actor.typed.FailingToLoadExtension$""""))
+          Some(ConfigFactory.parseString("""akka.actor.typed.library-extensions += "akka.actor.typed.FailingToLoadExtension$""""))
         ) { _ ⇒ () }
       }
 
@@ -154,7 +154,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
       intercept[RuntimeException] {
         withEmptyActorSystem(
           "ExtensionsSpec08",
-          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.actor.typed.MissingExtension""""))
+          Some(ConfigFactory.parseString("""akka.actor.typed.library-extensions += "akka.actor.typed.MissingExtension""""))
         ) { _ ⇒ () }
       }
 
@@ -202,7 +202,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
     "override extensions via ActorSystemSetup" in
       withEmptyActorSystem("ExtensionsSpec10", Some(ConfigFactory.parseString(
         """
-          akka.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
+          akka.actor.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
         """)),
         Some(ActorSystemSetup(new DummyExtension1Setup(sys ⇒ new DummyExtension1ViaSetup)))
       ) { system ⇒

@@ -6,7 +6,7 @@ package akka.persistence.typed.javadsl;
 
 import akka.actor.Scheduler;
 import akka.actor.typed.ActorRef;
-import akka.testkit.typed.javadsl.TestInbox;
+import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.util.Timeout;
 
 import java.util.*;
