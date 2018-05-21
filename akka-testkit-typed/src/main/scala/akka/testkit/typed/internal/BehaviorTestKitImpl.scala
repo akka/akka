@@ -69,13 +69,14 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
 
   override def expectEffect(expectedEffect: Effect): Unit = {
     ctx.effectQueue.poll() match {
-      case null   ⇒ throw new AssertionError(s"expected: $expectedEffect but no effects were recorded")
+      case null   ⇒ assert(expectedEffect == NoEffects, s"expected: $expectedEffect but no effects were recorded")
       case effect ⇒ assert(expectedEffect == effect, s"expected: $expectedEffect but found $effect")
     }
   }
 
   def expectEffectClass[E <: Effect](effectClass: Class[E]): E = {
     ctx.effectQueue.poll() match {
+      case null if effectClass.isAssignableFrom(NoEffects.getClass) ⇒ effectClass.cast(NoEffects)
       case null ⇒ throw new AssertionError(s"expected: effect type ${effectClass.getName} but no effects were recorded")
       case effect if effectClass.isAssignableFrom(effect.getClass) ⇒ effect.asInstanceOf[E]
       case other ⇒ throw new AssertionError(s"expected: effect class ${effectClass.getName} but found $other")
@@ -84,7 +85,8 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
 
   def expectEffectPF[R](f: PartialFunction[Effect, R]): R = {
     ctx.effectQueue.poll() match {
-      case null ⇒ throw new AssertionError(s"expected matching effect but no effects were recorded")
+      case null if f.isDefinedAt(NoEffects) ⇒
+        f.apply(NoEffects)
       case eff if f.isDefinedAt(eff) ⇒
         f.apply(eff)
       case other ⇒
