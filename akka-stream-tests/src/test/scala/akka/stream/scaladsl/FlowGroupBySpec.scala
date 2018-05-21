@@ -336,6 +336,18 @@ class FlowGroupBySpec extends StreamSpec {
       s1.expectError(ex)
     }
 
+    "resume when exceeding maxSubstreams" in {
+      val (up, down) = Flow[Int]
+        .groupBy(0, identity).mergeSubstreams
+        .withAttributes(ActorAttributes.supervisionStrategy(resumingDecider))
+        .runWith(TestSource.probe[Int], TestSink.probe)
+
+      down.request(1)
+
+      up.sendNext(1)
+      down.expectNoMessage(1.second)
+    }
+
     "emit subscribe before completed" in assertAllStagesStopped {
       val futureGroupSource =
         Source.single(0)
