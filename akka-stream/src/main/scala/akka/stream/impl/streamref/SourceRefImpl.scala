@@ -218,7 +218,7 @@ private[stream] final class SourceRefStageImpl[Out](
             } // else, ref is valid and we don't need to do anything with it
         }
 
-      /** @throws InvalidSequenceNumberException when sequence number is is invalid */
+      /** @throws InvalidSequenceNumberException when sequence number is invalid */
       def observeAndValidateSequenceNr(seqNr: Long, msg: String): Unit =
         if (isInvalidSequenceNr(seqNr)) {
           throw InvalidSequenceNumberException(expectingSeqNr, seqNr, msg)

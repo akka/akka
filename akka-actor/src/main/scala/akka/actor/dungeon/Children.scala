@@ -9,11 +9,9 @@ import scala.util.control.NonFatal
 import scala.collection.immutable
 
 import akka.actor._
-import akka.serialization.{ SerializationExtension, Serializers }
+import akka.serialization.{ Serialization, SerializationExtension, Serializers }
 import akka.util.{ Helpers, Unsafe }
 import java.util.Optional
-
-import akka.serialization.Serialization
 
 private[akka] object Children {
   val GetNobody = () ⇒ Nobody

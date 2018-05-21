@@ -103,7 +103,7 @@ object Serialization {
   final case class Information(address: Address, system: ActorSystem)
 
   /**
-   * Sets serialization information in a `ThreadLocal` and runs `f`. The information is is
+   * Sets serialization information in a `ThreadLocal` and runs `f`. The information is
    * needed for serializing local actor refs, or if serializer library e.g. custom serializer/deserializer
    * in Jackson need access to the current `ActorSystem`. The current [[Information]] can be accessed within
    * `f` via [[Serialization#getCurrentTransportInformation]].
@@ -126,7 +126,7 @@ object Serialization {
 
   /**
    * Gets the serialization information from a `ThreadLocal` that was assigned via
-   * [[Serialization#withTransportInformation]]. The information is is needed for serializing
+   * [[Serialization#withTransportInformation]]. The information is needed for serializing
    * local actor refs, or if serializer library e.g. custom serializer/deserializer
    * in Jackson need access to the current `ActorSystem`.
    *
@@ -160,17 +160,23 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   @InternalApi private[akka] def serializationInformation: Serialization.Information =
     system.provider.serializationInformation
 
+  private def withTransportInformation[T](f: () ⇒ T): T = {
+    val oldInfo = Serialization.currentTransportInformation.value
+    try {
+      if (oldInfo eq null)
+        Serialization.currentTransportInformation.value = serializationInformation
+      f()
+    } finally Serialization.currentTransportInformation.value = oldInfo
+  }
+
   /**
    * Serializes the given AnyRef/java.lang.Object according to the Serialization configuration
    * to either an Array of Bytes or an Exception if one was thrown.
    */
   def serialize(o: AnyRef): Try[Array[Byte]] = {
-    val oldInfo = Serialization.currentTransportInformation.value
-    try {
-      if (oldInfo eq null)
-        Serialization.currentTransportInformation.value = serializationInformation
+    withTransportInformation { () ⇒
       Try(findSerializerFor(o).toBinary(o))
-    } finally Serialization.currentTransportInformation.value = oldInfo
+    }
   }
 
   /**
@@ -185,12 +191,9 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
           s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
             "akka.actor.serializers is not in synch between the two systems.")
       }
-      val oldInfo = Serialization.currentTransportInformation.value
-      try {
-        if (oldInfo eq null)
-          Serialization.currentTransportInformation.value = serializationInformation
+      withTransportInformation { () ⇒
         serializer.fromBinary(bytes, clazz).asInstanceOf[T]
-      } finally Serialization.currentTransportInformation.value = oldInfo
+      }
     }
 
   /**
@@ -215,11 +218,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
         updateCache(manifestCache.get, key, value) // recursive, try again
     }
 
-    val oldInfo = Serialization.currentTransportInformation.value
-    try {
-      if (oldInfo eq null)
-        Serialization.currentTransportInformation.value = serializationInformation
-
+    withTransportInformation { () ⇒
       serializer match {
         case s2: SerializerWithStringManifest ⇒ s2.fromBinary(bytes, manifest)
         case s1 ⇒
@@ -242,7 +241,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
             }
           }
       }
-    } finally Serialization.currentTransportInformation.value = oldInfo
+    }
   }
 
   /**
@@ -257,6 +256,9 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
         s"Cannot find serializer with id [$serializerId]. The most probable reason is that the configuration entry " +
           "akka.actor.serializers is not in synch between the two systems.")
     }
+
+    // not using `withTransportInformation { () =>` because deserializeByteBuffer is supposed to be the
+    // possibility for allocation free serialization
     val oldInfo = Serialization.currentTransportInformation.value
     try {
       if (oldInfo eq null)
@@ -278,12 +280,9 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * Returns either the resulting object or an Exception if one was thrown.
    */
   def deserialize[T](bytes: Array[Byte], clazz: Class[T]): Try[T] = {
-    val oldInfo = Serialization.currentTransportInformation.value
-    try {
-      if (oldInfo eq null)
-        Serialization.currentTransportInformation.value = serializationInformation
+    withTransportInformation { () ⇒
       Try(serializerFor(clazz).fromBinary(bytes, Some(clazz)).asInstanceOf[T])
-    } finally Serialization.currentTransportInformation.value = oldInfo
+    }
   }
 
   /**
