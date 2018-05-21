@@ -110,4 +110,5 @@ For example here's how a serializer could look for the `Ping` and `Pong` message
 Scala
 :  @@snip [PingSerializer.scala]($akka$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/PingSerializer.scala) { #serializer }
 
-
+Java
+:  @@snip [PingSerializerExampleTest.java]($akka$/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/PingSerializerExampleTest.java) { #serializer }
