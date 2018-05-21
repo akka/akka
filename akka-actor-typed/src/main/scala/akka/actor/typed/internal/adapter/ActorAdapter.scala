@@ -125,9 +125,14 @@ import scala.util.control.NonFatal
   }
 
   override def preStart(): Unit =
-    if (!isAlive(behavior))
-      context.stop(self)
-    else
+    if (!isAlive(behavior)) {
+      if (behavior == Behavior.stopped) context.stop(self)
+      else {
+        // post stop hook may touch context
+        initializeContext()
+        context.stop(self)
+      }
+    } else
       start()
 
   protected def start(): Unit = {
