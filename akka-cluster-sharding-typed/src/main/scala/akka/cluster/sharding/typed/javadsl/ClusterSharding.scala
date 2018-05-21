@@ -136,6 +136,9 @@ object ClusterSharding {
  * between reception of `Passivate` and termination of the entity. Such buffered messages
  * are thereafter delivered to a new incarnation of the entity.
  *
+ * This class is not intended for user extension other than for test purposes (e.g.
+ * stub implementation). More methods may be added in the future and that may break
+ * such implementations.
  */
 @DoNotInherit
 abstract class ClusterSharding {

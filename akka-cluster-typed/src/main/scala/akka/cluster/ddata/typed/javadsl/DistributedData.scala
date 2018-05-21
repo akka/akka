@@ -9,12 +9,14 @@ import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ExtensionSetup
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 
 object DistributedData extends ExtensionId[DistributedData] {
   def get(system: ActorSystem[_]): DistributedData = apply(system)
 
   override def createExtension(system: ActorSystem[_]): DistributedData =
-    new DistributedData(system)
+    new DistributedDataImpl(system)
 }
 
 /**
@@ -25,13 +27,25 @@ object DistributedData extends ExtensionId[DistributedData] {
  * This is using the same underlying `Replicator` instance as
  * [[akka.cluster.ddata.DistributedData]] and that means that typed
  * and untyped actors can share the same data.
+ *
+ * This class is not intended for user extension other than for test purposes (e.g.
+ * stub implementation). More methods may be added in the future and that may break
+ * such implementations.
  */
-class DistributedData(system: ActorSystem[_]) extends Extension {
-
+@DoNotInherit
+abstract class DistributedData extends Extension {
   /**
    * `ActorRef` of the [[Replicator]] .
    */
-  val replicator: ActorRef[Replicator.Command] =
+  def replicator: ActorRef[Replicator.Command]
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] class DistributedDataImpl(system: ActorSystem[_]) extends DistributedData {
+
+  override val replicator: ActorRef[Replicator.Command] =
     akka.cluster.ddata.typed.scaladsl.DistributedData(system).replicator.narrow[Replicator.Command]
 
 }

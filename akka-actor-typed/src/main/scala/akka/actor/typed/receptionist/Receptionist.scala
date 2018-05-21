@@ -12,8 +12,22 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
 import akka.actor.typed.ExtensionSetup
+import akka.annotation.InternalApi
 
-class Receptionist(system: ActorSystem[_]) extends Extension {
+/**
+ * This class is not intended for user extension other than for test purposes (e.g.
+ * stub implementation). More methods may be added in the future and that may break
+ * such implementations.
+ */
+@DoNotInherit
+abstract class Receptionist extends Extension {
+  def ref: ActorRef[Receptionist.Command]
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] class ReceptionistImpl(system: ActorSystem[_]) extends Receptionist {
 
   private def hasCluster: Boolean = {
     // FIXME: replace with better indicator that cluster is enabled
@@ -21,7 +35,7 @@ class Receptionist(system: ActorSystem[_]) extends Extension {
     provider == "akka.cluster.ClusterActorRefProvider"
   }
 
-  val ref: ActorRef[Receptionist.Command] = {
+  override val ref: ActorRef[Receptionist.Command] = {
     val provider: ReceptionistBehaviorProvider =
       if (hasCluster) {
         system.dynamicAccess
@@ -99,7 +113,7 @@ abstract class ServiceKey[T] extends AbstractServiceKey { key ⇒
  * The receptionist is easiest accessed through the system: [[ActorSystem.receptionist]]
  */
 object Receptionist extends ExtensionId[Receptionist] {
-  def createExtension(system: ActorSystem[_]): Receptionist = new Receptionist(system)
+  def createExtension(system: ActorSystem[_]): Receptionist = new ReceptionistImpl(system)
   def get(system: ActorSystem[_]): Receptionist = apply(system)
 
   /**
