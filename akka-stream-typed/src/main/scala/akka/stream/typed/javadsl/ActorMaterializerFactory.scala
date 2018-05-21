@@ -2,31 +2,16 @@
  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.typed
+package akka.stream.typed.javadsl
 
 import akka.actor.typed.ActorSystem
 import akka.stream.ActorMaterializerSettings
 
-object ActorMaterializer {
+object ActorMaterializerFactory {
   import akka.actor.typed.scaladsl.adapter._
 
   /**
-   * Scala API: Creates an ActorMaterializer which will execute every step of a transformation
-   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.typed.ActorSystem]]
-   * will be used to create one actor that in turn creates actors for the transformation steps.
-   *
-   * The materializer's [[akka.stream.ActorMaterializerSettings]] will be obtained from the
-   * configuration of the `context`'s underlying [[akka.actor.typed.ActorSystem]].
-   *
-   * The `namePrefix` is used as the first part of the names of the actors running
-   * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
-   * `namePrefix-flowNumber-flowStepNumber-stepName`.
-   */
-  def apply[T](materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None)(implicit actorSystem: ActorSystem[T]): akka.stream.ActorMaterializer =
-    akka.stream.ActorMaterializer(materializerSettings, namePrefix)(actorSystem.toUntyped)
-
-  /**
-   * Java API: Creates an ActorMaterializer which will execute every step of a transformation
+   * Creates an `ActorMaterializer` which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.typed.ActorSystem]]
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
@@ -35,18 +20,18 @@ object ActorMaterializer {
    * The actor names are built up of `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
   def create[T](actorSystem: ActorSystem[T]): akka.stream.ActorMaterializer =
-    apply()(actorSystem)
+    akka.stream.ActorMaterializer.create(actorSystem.toUntyped)
 
   /**
-   * Java API: Creates an ActorMaterializer which will execute every step of a transformation
+   * Creates an `ActorMaterializer` which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.typed.ActorSystem]]
    * will be used to create one actor that in turn creates actors for the transformation steps.
    */
   def create[T](settings: ActorMaterializerSettings, actorSystem: ActorSystem[T]): akka.stream.ActorMaterializer =
-    apply(Option(settings), None)(actorSystem)
+    akka.stream.ActorMaterializer.create(settings, actorSystem.toUntyped)
 
   /**
-   * Java API: Creates an ActorMaterializer which will execute every step of a transformation
+   * Creates an `ActorMaterializer` which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.typed.ActorSystem]]
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
@@ -56,6 +41,6 @@ object ActorMaterializer {
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
   def create[T](settings: ActorMaterializerSettings, namePrefix: String, actorSystem: ActorSystem[T]): akka.stream.ActorMaterializer =
-    apply(Option(settings), Option(namePrefix))(actorSystem)
+    akka.stream.ActorMaterializer.create(settings, actorSystem.toUntyped, namePrefix)
 
 }

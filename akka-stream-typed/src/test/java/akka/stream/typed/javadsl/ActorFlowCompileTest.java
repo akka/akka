@@ -25,7 +25,7 @@ public class ActorFlowCompileTest {
 
   {
     final ActorSystem<String> system = null;
-    final ActorMaterializer mat = akka.stream.typed.ActorMaterializer.create(system);
+    final ActorMaterializer mat = ActorMaterializerFactory.create(system);
   }
 
   static

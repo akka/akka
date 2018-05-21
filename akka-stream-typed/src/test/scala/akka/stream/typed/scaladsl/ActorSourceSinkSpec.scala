@@ -11,7 +11,6 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.stream.typed.ActorMaterializer
 import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, _ }
 
 object ActorSourceSinkSpec {
