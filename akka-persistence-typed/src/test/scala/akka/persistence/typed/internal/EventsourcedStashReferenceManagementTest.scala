@@ -8,7 +8,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ Behavior, Signal, TypedAkkaSpecWithShutdown }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol.{ IncomingCommand, RecoveryPermitGranted }
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 
 import scala.concurrent.duration.{ FiniteDuration, _ }
 

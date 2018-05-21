@@ -4,7 +4,7 @@
 
 package akka.actor.typed
 
-import akka.testkit.typed.scaladsl.{ TestInbox, ActorTestKit }
+import akka.actor.testkit.typed.scaladsl.{ TestInbox, ActorTestKit }
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.time.Span

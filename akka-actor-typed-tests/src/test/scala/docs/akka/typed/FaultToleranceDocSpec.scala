@@ -6,7 +6,7 @@ package docs.akka.typed
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ DeathPactException, SupervisorStrategy, TypedAkkaSpecWithShutdown }
-import akka.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 
 class FaultToleranceDocSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {

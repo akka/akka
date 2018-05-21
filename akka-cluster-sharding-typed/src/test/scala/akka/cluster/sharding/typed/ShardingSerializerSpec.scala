@@ -8,7 +8,7 @@ import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.cluster.sharding.typed.internal.ShardingSerializer
 import akka.serialization.SerializationExtension
-import akka.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 class ShardingSerializerSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 

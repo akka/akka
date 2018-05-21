@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets
 
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, MutableBehavior }
-import akka.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 import scala.concurrent.duration._
 import scala.concurrent.Await

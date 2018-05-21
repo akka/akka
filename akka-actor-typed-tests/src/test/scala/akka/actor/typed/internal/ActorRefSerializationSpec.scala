@@ -8,7 +8,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ ActorRef, TypedAkkaSpecWithShutdown }
 import akka.serialization.{ JavaSerializer, SerializationExtension }
-import akka.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 
 object ActorRefSerializationSpec {

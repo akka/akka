@@ -9,8 +9,8 @@ import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.scaladsl.{ ActorTestKit, BehaviorTestKit, TestInbox, TestProbe }
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, BehaviorTestKit, TestInbox, TestProbe }
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Future
