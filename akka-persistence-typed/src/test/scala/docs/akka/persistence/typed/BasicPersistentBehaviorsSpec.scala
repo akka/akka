@@ -16,20 +16,18 @@ object BasicPersistentBehaviorsSpec {
   case class State()
 
   val behavior: Behavior[Command] =
-    PersistentBehaviors.receive[Command, Event, State](
-      persistenceId = "abc",
-      initialState = State(),
-      commandHandler = (ctx, state, cmd) ⇒ ???,
-      eventHandler = (state, evt) ⇒ ???)
+    PersistentBehaviors[Command, Event, State]
+      .identifiedBy("abc")
+      .onCreation(???, ???)
+      .onUpdate(???, ???)
   //#structure
 
   //#recovery
   val recoveryBehavior: Behavior[Command] =
-    PersistentBehaviors.receive[Command, Event, State](
-      persistenceId = "abc",
-      initialState = State(),
-      commandHandler = (ctx, state, cmd) ⇒ ???,
-      eventHandler = (state, evt) ⇒ ???)
+    PersistentBehaviors[Command, Event, State]
+      .identifiedBy("abc")
+      .onCreation(???, ???)
+      .onUpdate(???, ???)
       .onRecoveryCompleted { (ctx, state) ⇒
         ???
       }
@@ -37,24 +35,22 @@ object BasicPersistentBehaviorsSpec {
 
   //#tagging
   val taggingBehavior: Behavior[Command] =
-    PersistentBehaviors.receive[Command, Event, State](
-      persistenceId = "abc",
-      initialState = State(),
-      commandHandler = (ctx, state, cmd) ⇒ ???,
-      eventHandler = (state, evt) ⇒ ???
-    ).withTagger(_ ⇒ Set("tag1", "tag2"))
-
+    PersistentBehaviors[Command, Event, State]
+      .identifiedBy("abc")
+      .onCreation(???, ???)
+      .onUpdate(???, ???)
+      .withTagger(_ ⇒ Set("tag1", "tag2"))
   //#tagging
 
   //#wrapPersistentBehavior
-  val samplePersistentBehavior = PersistentBehaviors.receive[Command, Event, State](
-    persistenceId = "abc",
-    initialState = State(),
-    commandHandler = (ctx, state, cmd) ⇒ ???,
-    eventHandler = (state, evt) ⇒ ???)
-    .onRecoveryCompleted { (ctx, state) ⇒
-      ???
-    }
+  val samplePersistentBehavior =
+    PersistentBehaviors[Command, Event, State]
+      .identifiedBy("abc")
+      .onCreation(???, ???)
+      .onUpdate(???, ???)
+      .onRecoveryCompleted { (ctx, state) ⇒
+        ???
+      }
 
   val debugAlwaysSnapshot: Behavior[Command] = Behaviors.setup {
     context ⇒

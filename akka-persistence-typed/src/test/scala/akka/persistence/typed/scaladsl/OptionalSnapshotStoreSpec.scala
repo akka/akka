@@ -10,6 +10,7 @@ import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps }
 import akka.event.Logging
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
+import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler.command
 import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.Eventually
@@ -27,16 +28,21 @@ object OptionalSnapshotStoreSpec {
   def persistentBehavior(
     probe: TestProbe[State],
     name:  String           = UUID.randomUUID().toString) =
-    PersistentBehaviors.receive[Command, Event, State](
-      persistenceId = name,
-      initialState = State(),
-      commandHandler = CommandHandler.command {
-        _ ⇒ Effect.persist(Event()).andThen(probe.ref ! _)
-      },
-      eventHandler = {
-        case (_, _) ⇒ State()
-      }
-    ).snapshotWhen { case _ ⇒ true }
+    PersistentBehaviors[Command, Event, State]
+      .identifiedBy(name)
+      .onCreation(
+        commandHandler = command {
+          _ ⇒ Effect.persist(Event()).andThen(probe.ref ! _)
+        },
+        eventHandler = _ ⇒ State()
+      )
+      .onUpdate(
+        commandHandler = _ ⇒ command {
+          _ ⇒ Effect.persist(Event()).andThen(probe.ref ! _)
+        },
+        eventHandler = st ⇒ _ ⇒ st
+      )
+      .snapshotWhen { case _ ⇒ true }
 
   def persistentBehaviorWithSnapshotPlugin(probe: TestProbe[State]) =
     persistentBehavior(probe).withSnapshotPluginId("akka.persistence.snapshot-store.local")

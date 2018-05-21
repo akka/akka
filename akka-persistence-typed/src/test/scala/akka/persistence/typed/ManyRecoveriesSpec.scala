@@ -8,6 +8,7 @@ import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
+import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler.command
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehavior, PersistentBehaviors }
 import akka.testkit.TestLatch
 import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
@@ -27,16 +28,20 @@ object ManyRecoveriesSpec {
     name:  String,
     probe: TestProbe[String],
     latch: Option[TestLatch]): PersistentBehavior[Cmd, Evt, String] =
-    PersistentBehaviors.receive[Cmd, Evt, String](
-      persistenceId = name,
-      initialState = "",
-      commandHandler = CommandHandler.command {
-        case Cmd(s) ⇒ Effect.persist(Evt(s)).andThen(_ ⇒ probe.ref ! s"$name-$s")
-      },
-      eventHandler = {
-        case (state, _) ⇒ latch.foreach(Await.ready(_, 10.seconds)); state
-      }
-    )
+    PersistentBehaviors[Cmd, Evt, String]
+      .identifiedBy(persistenceId = name)
+      .onCreation(
+        commandHandler = command {
+          case Cmd(s) ⇒ Effect.persist(Evt(s)).andThen(_ ⇒ probe.ref ! s"$name-$s")
+        },
+        eventHandler = _ ⇒ { latch.foreach(Await.ready(_, 10.seconds)); "" }
+      )
+      .onUpdate(
+        commandHandler = _ ⇒ command {
+          case Cmd(s) ⇒ Effect.persist(Evt(s)).andThen(_ ⇒ probe.ref ! s"$name-$s")
+        },
+        eventHandler = state ⇒ _ ⇒ { latch.foreach(Await.ready(_, 10.seconds)); state }
+      )
 
   def forwardBehavior(sender: TestProbe[String]): Behaviors.Receive[Int] =
     Behaviors.receiveMessagePartial[Int] {

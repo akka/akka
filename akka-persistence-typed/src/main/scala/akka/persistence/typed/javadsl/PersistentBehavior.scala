@@ -4,7 +4,7 @@
 
 package akka.persistence.typed.javadsl
 
-import java.util.Collections
+import java.util.{ Collections, Optional }
 
 import akka.actor.typed
 import akka.actor.typed.Behavior
@@ -25,13 +25,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
    */
   protected final def Effect: EffectFactories[Command, Event, State] = EffectFactory.asInstanceOf[EffectFactories[Command, Event, State]]
 
-  /**
-   * Implement by returning the initial state object.
-   * This object will be passed into this behaviors handlers, until a new state replaces it.
-   *
-   * Also known as "zero state" or "neutral state".
-   */
-  protected def initialState: State
+  protected def commandHandler(): CommandHandler[Command, Event, State]
 
   /**
    * Implement by handling incoming commands and return an `Effect()` to persist or signal other effects
@@ -41,8 +35,9 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
    * While the actor is persisting events, the incoming messages are stashed and only
    * delivered to the handler once persisting them has completed.
    */
-  protected def commandHandler(): CommandHandler[Command, Event, State]
+  protected def commandHandler(state: State): CommandHandler[Command, Event, State]
 
+  protected def eventHandler(): EventHandler[Event, State]
   /**
    * Implement by applying the event to the current state in order to return a new state.
    *
@@ -52,7 +47,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
    * For that reason it is strongly discouraged to perform side-effects in this handler;
    * Side effects should be executed in `andThen` or `recoveryCompleted` blocks.
    */
-  protected def eventHandler(): EventHandler[Event, State]
+  protected def eventHandler(state: State): EventHandler[Event, State]
 
   /**
    * @return A new, mutable, by state command handler builder
@@ -63,8 +58,8 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
   /**
    * @return A new, mutable, by state command handler builder
    */
-  protected final def byStateCommandHandlerBuilder(): ByStateCommandHandlerBuilder[Command, Event, State] =
-    new ByStateCommandHandlerBuilder[Command, Event, State]()
+  protected final def byStateCommandHandlerBuilder(currentState: State): ByStateCommandHandlerBuilder[Command, Event, State] =
+    new ByStateCommandHandlerBuilder[Command, Event, State](currentState)
 
   /**
    * @return A new, mutable, event handler builder
@@ -76,7 +71,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(ctx: ActorContext[Command], state: State): Unit = {}
+  def onRecoveryCompleted(ctx: ActorContext[Command], state: Optional[State]): Unit = {}
 
   /**
    * Override and define that snapshot should be saved every N events.
@@ -125,12 +120,17 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
       else tags.asScala.toSet
     }
 
-    scaladsl.PersistentBehaviors.receive[Command, Event, State](
-      persistenceId,
-      initialState,
-      (c, state, cmd) ⇒ commandHandler()(c.asJava, state, cmd).asInstanceOf[EffectImpl[Event, State]],
-      eventHandler()(_, _))
-      .onRecoveryCompleted((ctx, state) ⇒ onRecoveryCompleted(ctx.asJava, state))
+    scaladsl.PersistentBehaviors[Command, Event, State]
+      .identifiedBy(persistenceId)
+      .onCreation(
+        (c, cmd) ⇒ commandHandler()(c.asJava, cmd).asInstanceOf[EffectImpl[Event, State]],
+        eventHandler()(_)
+      )
+      .onUpdate(
+        state ⇒ (c, cmd) ⇒ commandHandler(state)(c.asJava, cmd).asInstanceOf[EffectImpl[Event, State]],
+        state ⇒ eventHandler(state)(_)
+      )
+      .onRecoveryCompleted((ctx, state) ⇒ onRecoveryCompleted(ctx.asJava, Optional.ofNullable(state.orNull)))
       .snapshotWhen(snapshotWhen)
       .withTagger(tagger)
   }

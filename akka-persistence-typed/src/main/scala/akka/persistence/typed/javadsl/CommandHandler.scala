@@ -17,7 +17,7 @@ import akka.util.OptionVal
  */
 @FunctionalInterface
 trait CommandHandler[Command, Event, State] {
-  def apply(ctx: ActorContext[Command], state: State, command: Command): Effect[Event, State]
+  def apply(ctx: ActorContext[Command], command: Command): Effect[Event, State]
 }
 /**
  * FunctionalInterface for reacting on signals
@@ -29,7 +29,7 @@ trait CommandToEffect[Command, MsgCommand <: Command, Event, State] {
   /**
    * @return An effect for the given command
    */
-  def apply(ctx: ActorContext[Command], state: State, command: MsgCommand): Effect[Event, State]
+  def apply(ctx: ActorContext[Command], command: MsgCommand): Effect[Event, State]
 }
 
 final class CommandHandlerBuilder[Command, Event, State] @InternalApi private[persistence] () {
@@ -61,14 +61,14 @@ final class CommandHandlerBuilder[Command, Event, State] @InternalApi private[pe
     val builtCases = cases.reverse.toArray
     cases = Nil
     new CommandHandler[Command, Event, State] {
-      override def apply(ctx: ActorContext[Command], state: State, command: Command) = {
+      override def apply(ctx: ActorContext[Command], command: Command) = {
         var idx = 0
         var effect: OptionVal[Effect[Event, State]] = OptionVal.None
 
         while (idx < builtCases.length && effect.isEmpty) {
           val curr = builtCases(idx)
           if (curr.predicate(command)) {
-            effect = OptionVal.Some(curr.handler.apply(ctx, state, command))
+            effect = OptionVal.Some(curr.handler.apply(ctx, command))
           }
           idx += 1
         }
@@ -90,7 +90,7 @@ final class CommandHandlerBuilder[Command, Event, State] @InternalApi private[pe
  * evaluating the built [[CommandHandler]] for a given state a [[scala.MatchError]] is thrown.
  */
 
-final class ByStateCommandHandlerBuilder[Command, Event, State] @InternalApi private[javadsl] () {
+final class ByStateCommandHandlerBuilder[Command, Event, State] @InternalApi private[javadsl] (currentState: State) {
 
   private final case class ByStateCase(predicate: State ⇒ Boolean, handler: CommandHandler[Command, Event, State])
 
@@ -147,7 +147,7 @@ final class ByStateCommandHandlerBuilder[Command, Event, State] @InternalApi pri
    *
    * Builds and returns the handler since this will not let through any states to subsequent match statements
    */
-  def matchAny(commandHandler: CommandHandler[Command, Event, State]): CommandHandler[Command, Event, State] = {
+  def matchAny(state: State, commandHandler: CommandHandler[Command, Event, State]): CommandHandler[Command, Event, State] = {
     addCase(_ ⇒ true, commandHandler)
     build()
   }
@@ -162,14 +162,14 @@ final class ByStateCommandHandlerBuilder[Command, Event, State] @InternalApi pri
     val builtCases = cases.reverse.toArray
     cases = Nil
     new CommandHandler[Command, Event, State] {
-      override def apply(ctx: ActorContext[Command], state: State, command: Command) = {
+      override def apply(ctx: ActorContext[Command], command: Command) = {
         var idx = 0
         var effect: OptionVal[Effect[Event, State]] = OptionVal.None
 
         while (idx < builtCases.length && effect.isEmpty) {
           val curr = builtCases(idx)
-          if (curr.predicate(state)) {
-            effect = OptionVal.Some(curr.handler.apply(ctx, state, command))
+          if (curr.predicate(currentState)) {
+            effect = OptionVal.Some(curr.handler.apply(ctx, command))
           }
           idx += 1
         }

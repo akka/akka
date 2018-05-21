@@ -11,20 +11,21 @@ import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl.{ PersistentBehavior, PersistentBehaviors }
-import akka.util.ConstantFun
+import akka.util.{ ConstantFun, OptionVal }
 
 @InternalApi
 private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
-  persistenceId:     String,
-  initialState:      State,
-  commandHandler:    PersistentBehaviors.CommandHandler[Command, Event, State],
-  eventHandler:      (State, Event) ⇒ State,
-  journalPluginId:   Option[String]                                            = None,
-  snapshotPluginId:  Option[String]                                            = None,
-  recoveryCompleted: (ActorContext[Command], State) ⇒ Unit                     = ConstantFun.scalaAnyTwoToUnit,
-  tagger:            Event ⇒ Set[String]                                       = (_: Event) ⇒ Set.empty[String],
-  snapshotWhen:      (State, Event, Long) ⇒ Boolean                            = ConstantFun.scalaAnyThreeToFalse,
-  recovery:          Recovery                                                  = Recovery()
+  persistenceId:            String,
+  commandHandlerOnCreation: PersistentBehaviors.CommandHandler[Command, Event, State],
+  eventHandlerOnCreation:   PersistentBehaviors.EventHandler[Event, State],
+  commandHandlerOnUpdate:   State ⇒ PersistentBehaviors.CommandHandler[Command, Event, State],
+  eventHandlerOnUpdate:     State ⇒ PersistentBehaviors.EventHandler[Event, State],
+  journalPluginId:          Option[String]                                                    = None,
+  snapshotPluginId:         Option[String]                                                    = None,
+  recoveryCompleted:        (ActorContext[Command], Option[State]) ⇒ Unit                     = ConstantFun.scalaAnyTwoToUnit,
+  tagger:                   Event ⇒ Set[String]                                               = (_: Event) ⇒ Set.empty[String],
+  snapshotWhen:             (State, Event, Long) ⇒ Boolean                                    = ConstantFun.scalaAnyThreeToFalse,
+  recovery:                 Recovery                                                          = Recovery()
 ) extends PersistentBehavior[Command, Event, State] with EventsourcedStashReferenceManagement {
 
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
@@ -40,9 +41,10 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
               ctx,
               timers,
               persistenceId,
-              initialState,
-              commandHandler,
-              eventHandler,
+              commandHandlerOnCreation,
+              eventHandlerOnCreation,
+              commandHandlerOnUpdate,
+              eventHandlerOnUpdate,
               WriterIdentity.newIdentity(),
               recoveryCompleted,
               tagger,
@@ -69,7 +71,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State] =
+  def onRecoveryCompleted(callback: (ActorContext[Command], Option[State]) ⇒ Unit): PersistentBehavior[Command, Event, State] =
     copy(recoveryCompleted = callback)
 
   /**

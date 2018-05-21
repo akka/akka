@@ -9,21 +9,59 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.internal._
+import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
 
 object PersistentBehaviors {
 
   // we use this type internally, however it's easier for users to understand the function, so we use it in external api
-  type CommandHandler[Command, Event, State] = (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
+  type CommandHandler[Command, Event, State] = (ActorContext[Command], Command) ⇒ Effect[Event, State]
+  type EventHandler[Event, State] = Event ⇒ State
+
+  def apply[Command, Event, State] = new PersistentBehaviorBuilderIdentifiedBy[Command, Event, State]
 
   /**
-   * Create a `Behavior` for a persistent actor.
+   * INTERNAL API
    */
-  def receive[Command, Event, State](
-    persistenceId:  String,
-    initialState:   State,
-    commandHandler: CommandHandler[Command, Event, State],
-    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
-    PersistentBehaviorImpl(persistenceId, initialState, commandHandler, eventHandler)
+  @InternalApi
+  private[akka] final class PersistentBehaviorBuilderIdentifiedBy[Command, Event, State] {
+    def identifiedBy(persistenceId: String) = new PersistentBehaviorBuilderOnCreation[Command, Event, State](persistenceId)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] final class PersistentBehaviorBuilderOnCreation[Command, Event, State](persistenceId: String) {
+
+    def onCreation(
+      commandHandler: CommandHandler[Command, Event, State],
+      eventHandler:   EventHandler[Event, State]): PersistentBehaviorBuilderOnUpdate[Command, Event, State] =
+      new PersistentBehaviorBuilderOnUpdate(persistenceId, commandHandler, eventHandler)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] final class PersistentBehaviorBuilderOnUpdate[Command, Event, State](
+    persistenceId:            String,
+    commandHandlerOnCreation: CommandHandler[Command, Event, State],
+    eventHandlerOnCreation:   EventHandler[Event, State]) {
+
+    def onUpdate(
+      commandHandler: State ⇒ CommandHandler[Command, Event, State],
+      eventHandler:   State ⇒ EventHandler[Event, State]): PersistentBehavior[Command, Event, State] = {
+
+      // build the behavior with everything with have got
+      PersistentBehaviorImpl(
+        persistenceId = persistenceId,
+        commandHandlerOnCreation = commandHandlerOnCreation,
+        eventHandlerOnCreation = eventHandlerOnCreation,
+        commandHandlerOnUpdate = commandHandler,
+        eventHandlerOnUpdate = eventHandler
+      )
+    }
+  }
 
   /**
    * The `CommandHandler` defines how to act on commands.
@@ -39,7 +77,7 @@ object PersistentBehaviors {
      * @see [[Effect]] for possible effects of a command.
      */
     def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): CommandHandler[Command, Event, State] =
-      (_, _, cmd) ⇒ commandHandler(cmd)
+      (_, cmd) ⇒ commandHandler(cmd)
 
     /**
      * Select different command handlers based on current state.
@@ -56,10 +94,10 @@ object PersistentBehaviors {
     choice: State ⇒ CommandHandler[Command, Event, State])
     extends CommandHandler[Command, Event, State] {
 
-    override def apply(ctx: ActorContext[Command], state: State, cmd: Command): Effect[Event, State] =
-      choice(state)(ctx, state, cmd)
+    override def apply(ctx: ActorContext[Command], cmd: Command): Effect[Event, State] = ???
 
   }
+
 }
 
 trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command] {
@@ -67,7 +105,7 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State]
+  def onRecoveryCompleted(callback: (ActorContext[Command], Option[State]) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
   /**
    * Initiates a snapshot if the given function returns true.

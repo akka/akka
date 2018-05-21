@@ -10,7 +10,7 @@ import akka.actor.typed.Signal;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.Pair;
-import akka.japi.function.Function3;
+import akka.japi.function.Function2;
 import akka.persistence.typed.scaladsl.PersistentBehaviorSpec;
 import akka.testkit.typed.javadsl.TestKitJunitResource;
 import akka.testkit.typed.javadsl.TestProbe;
@@ -153,19 +153,19 @@ public class PersistentActorTest extends JUnitSuite {
 
   private PersistentBehavior<Command, Incremented, State> counter(String persistenceId, ActorRef<Pair<State, Incremented>> probe) {
     ActorRef<String> loggingProbe = TestProbe.create(String.class, testKit.system()).ref();
-    return counter(persistenceId, probe, loggingProbe, (s, i, l) -> false);
+    return counter(persistenceId, probe, loggingProbe, (s, l) -> false);
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(String persistenceId) {
     return counter(persistenceId,
       TestProbe.<Pair<State, Incremented>>create(testKit.system()).ref(),
       TestProbe.<String>create(testKit.system()).ref(),
-      (s, i, l) -> false);
+      (s, l) -> false);
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(
     String persistenceId,
-    Function3<State, Incremented, Long, Boolean> snapshot
+    Function2<State, Long, Boolean> snapshot
   ) {
     return counter(persistenceId,
       testKit.<Pair<State, Incremented>>createTestProbe().ref(),
@@ -176,13 +176,13 @@ public class PersistentActorTest extends JUnitSuite {
     String persistentId,
     ActorRef<Pair<State, Incremented>> eventProbe,
     ActorRef<String> loggingProbe) {
-    return counter(persistentId, eventProbe, loggingProbe, (s, i, l) -> false);
+    return counter(persistentId, eventProbe, loggingProbe, (s, l) -> false);
   }
 
   private PersistentBehavior<Command, Incremented, State> counter(
     String persistentId,
     ActorRef<Pair<State, Incremented>> eventProbe,
-    Function3<State, Incremented, Long, Boolean> snapshot) {
+    Function2<State, Long, Boolean> snapshot) {
     return counter(persistentId, eventProbe, testKit.<String>createTestProbe().ref(), snapshot);
   }
 
@@ -190,66 +190,81 @@ public class PersistentActorTest extends JUnitSuite {
     String persistentId,
     ActorRef<Pair<State, Incremented>> eventProbe,
     ActorRef<String> loggingProbe,
-    Function3<State, Incremented, Long, Boolean> snapshot) {
+    Function2<State, Long, Boolean> snapshot) {
     return new PersistentBehavior<Command, Incremented, State>(persistentId) {
       @Override
       public CommandHandler<Command, Incremented, State> commandHandler() {
-        return commandHandlerBuilder()
-          .matchCommand(Increment.class, (ctx, state, command) -> Effect().persist(new Incremented(1)))
-          .matchCommand(GetValue.class, (ctx, state, command) -> {
-            command.replyTo.tell(state);
-            return Effect().none();
-          })
-          .matchCommand(IncrementLater.class, (ctx, state, command) -> {
-            ActorRef<Object> delay = ctx.spawnAnonymous(Behaviors.withTimers(timers -> {
-              timers.startSingleTimer(Tick.instance, Tick.instance, Duration.ofMillis(10));
-              return Behaviors.receive((context, o) -> Behaviors.stopped());
-            }));
-            ctx.watchWith(delay, new DelayFinished());
-            return Effect().none();
-          })
-          .matchCommand(DelayFinished.class, (ctx, state, finished) -> Effect().persist(new Incremented(10)))
-          .matchCommand(Increment100OnTimeout.class, (ctx, state, msg) -> {
-            ctx.setReceiveTimeout(Duration.ofMillis(10), new Timeout());
-            return Effect().none();
-          })
-          .matchCommand(Timeout.class,
-            (ctx, state, msg) -> Effect().persist(timeoutEvent))
-          .matchCommand(EmptyEventsListAndThenLog.class, (ctx, state, msg) -> Effect().persist(Collections.emptyList())
-            .andThen(s -> loggingProbe.tell(loggingOne)))
-          .matchCommand(StopThenLog.class,
-            (ctx, state, msg) -> Effect().stop()
-              .andThen(s -> loggingProbe.tell(loggingOne)))
-          .matchCommand(IncrementTwiceAndLog.class,
-            (ctx, state, msg) -> Effect().persist(
-              Arrays.asList(new Incremented(1), new Incremented(1)))
-              .andThen(s -> loggingProbe.tell(loggingOne)))
-          .build();
+        return commandHandler(emptyState);
+      }
 
+      @Override
+      public CommandHandler<Command, Incremented, State> commandHandler(State state) {
+        return commandHandlerBuilder()
+                .matchCommand(Increment.class,
+                        (ctx, command) -> Effect().persist(new Incremented(1)))
+
+                .matchCommand(GetValue.class,
+                        (ctx, command) -> {
+                          command.replyTo.tell(state);
+                          return Effect().none();
+                        })
+
+                .matchCommand(IncrementLater.class, (ctx, command) -> {
+                  ActorRef<Object> delay = ctx.spawnAnonymous(Behaviors.withTimers(timers -> {
+                    timers.startSingleTimer(Tick.instance, Tick.instance, Duration.ofMillis(10));
+                    return Behaviors.receive((context, o) -> Behaviors.stopped());
+                  }));
+                  ctx.watchWith(delay, new DelayFinished());
+                  return Effect().none();
+                })
+
+                .matchCommand(DelayFinished.class,
+                        (ctx, finished) -> Effect().persist(new Incremented(10)))
+
+                .matchCommand(Increment100OnTimeout.class, (ctx, msg) -> {
+                  ctx.setReceiveTimeout(Duration.ofMillis(10), new Timeout());
+                  return Effect().none();
+                })
+
+                .matchCommand(Timeout.class,
+                        (ctx, msg) -> Effect().persist(timeoutEvent))
+
+                .matchCommand(EmptyEventsListAndThenLog.class,
+                        (ctx, msg) -> Effect().persist(Collections.emptyList())
+                                .andThen(s -> loggingProbe.tell(loggingOne)))
+
+                .matchCommand(StopThenLog.class,
+                        (ctx, msg) -> Effect().stop()
+                                .andThen(s -> loggingProbe.tell(loggingOne)))
+
+                .matchCommand(IncrementTwiceAndLog.class,
+                        (ctx, msg) -> Effect().persist(Arrays.asList(new Incremented(1), new Incremented(1)))
+                                .andThen(s -> loggingProbe.tell(loggingOne)))
+                .build();
       }
 
       @Override
       public EventHandler<Incremented, State> eventHandler() {
-        return eventHandlerBuilder()
-          .matchEvent(Incremented.class, (state, event) -> {
-            List<Integer> newHistory = new ArrayList<>(state.history);
-            newHistory.add(state.value);
-            eventProbe.tell(Pair.create(state, event));
-            return new State(state.value + event.delta, newHistory);
-          })
-          .build();
+        return eventHandler(emptyState);
 
       }
 
       @Override
-      public State initialState() {
-        return emptyState;
+      public EventHandler<Incremented, State> eventHandler(State state) {
+        return eventHandlerBuilder()
+                .matchEvent(Incremented.class, event -> {
+                  List<Integer> newHistory = new ArrayList<>(state.history);
+                  newHistory.add(state.value);
+                  eventProbe.tell(Pair.create(state, event));
+                  return new State(state.value + event.delta, newHistory);
+                })
+                .build();
       }
 
       @Override
       public boolean shouldSnapshot(State state, Incremented event, long sequenceNr) {
         try {
-          return snapshot.apply(state, event, sequenceNr);
+          return snapshot.apply(state, sequenceNr);
         } catch (Exception e) {
           return false;
         }
@@ -327,7 +342,7 @@ public class PersistentActorTest extends JUnitSuite {
 
   @Test
   public void snapshot() {
-    PersistentBehavior<Command, Incremented, State> snapshoter = counter("c11", (s, e, l) -> s.value % 2 == 0);
+    PersistentBehavior<Command, Incremented, State> snapshoter = counter("c11", (s, l) -> s.value % 2 == 0);
     ActorRef<Command> c = testKit.spawn(snapshoter);
     c.tell(Increment.instance);
     c.tell(Increment.instance);
@@ -337,7 +352,7 @@ public class PersistentActorTest extends JUnitSuite {
     probe.expectMessage(new State(3, Arrays.asList(0, 1, 2)));
 
     TestProbe<Pair<State, Incremented>> eventProbe = testKit.createTestProbe();
-    snapshoter = counter("c11", eventProbe.ref(), (s, e, l) -> s.value % 2 == 0);
+    snapshoter = counter("c11", eventProbe.ref(), (s, l) -> s.value % 2 == 0);
     ActorRef<Command> c2 = testKit.spawn(snapshoter);
     // First 2 are snapshot
     eventProbe.expectMessage(Pair.create(new State(2, Arrays.asList(0, 1)), new Incremented(1)));

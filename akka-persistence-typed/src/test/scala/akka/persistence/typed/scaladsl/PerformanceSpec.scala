@@ -7,11 +7,11 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, SupervisorStrategy, TypedAkkaSpecWithShutdown }
-import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
+import akka.actor.typed.{ActorRef, SupervisorStrategy, TypedAkkaSpecWithShutdown}
+import akka.persistence.typed.scaladsl.PersistentBehaviors.{CommandHandler, EventHandler}
 import akka.testkit.typed.TE
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.testkit.typed.scaladsl.{ActorTestKit, TestProbe}
+import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._
@@ -59,19 +59,23 @@ object PerformanceSpec {
 
   def behavior(name: String, probe: TestProbe[Command])(other: (Command, Parameters) ⇒ Effect[String, String]) = {
     Behaviors.supervise({
+
       val parameters = Parameters()
-      PersistentBehaviors.receive[Command, String, String](
-        persistenceId = name,
-        "",
-        commandHandler = CommandHandler.command {
+
+      def commandHandler(state: String): CommandHandler[Command, String, String] =
+        CommandHandler.command {
           case StopMeasure      ⇒ Effect.none.andThen(probe.ref ! StopMeasure)
           case FailAt(sequence) ⇒ Effect.none.andThen(_ ⇒ parameters.failAt = sequence)
           case command          ⇒ other(command, parameters)
-        },
-        eventHandler = {
-          case (state, _) ⇒ state
         }
-      ).onRecoveryCompleted {
+
+      def eventHandler(state: String): EventHandler[String, String] = _ ⇒ state
+
+      PersistentBehaviors[Command, String, String]
+        .identifiedBy(name)
+        .onCreation(commandHandler(""), eventHandler(""))
+        .onUpdate(commandHandler, eventHandler)
+        .onRecoveryCompleted {
           case (_, _) ⇒ if (parameters.every(1000)) print("r")
         }
     }).onFailure(SupervisorStrategy.restart)

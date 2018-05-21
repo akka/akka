@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
 import akka.persistence.snapshot.SnapshotStore
+import akka.persistence.typed.scaladsl.PersistentBehaviors.{ CommandHandler, EventHandler }
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.testkit.typed.TestKitSettings
 import akka.testkit.typed.scaladsl._
@@ -87,92 +88,106 @@ object PersistentBehaviorSpec {
     persistenceId: String,
     loggingActor:  ActorRef[String],
     probe:         ActorRef[(State, Event)]): PersistentBehavior[Command, Event, State] = {
-    PersistentBehaviors.receive[Command, Event, State](
-      persistenceId,
-      initialState = State(0, Vector.empty),
-      commandHandler = (ctx, state, cmd) ⇒ cmd match {
-        case Increment ⇒
-          Effect.persist(Incremented(1))
 
-        case IncrementThenLogThenStop ⇒
-          Effect.persist(Incremented(1))
-            .andThen {
-              loggingActor ! firstLogging
-            }
-            .andThenStop
+    def commandHandler(state: State): CommandHandler[Command, Event, State] = {
+      (ctx, cmd) ⇒
+        cmd match {
+          case Increment ⇒
+            Effect.persist(Incremented(1))
 
-        case IncrementTwiceThenLogThenStop ⇒
-          Effect.persist(Incremented(1), Incremented(2))
-            .andThen {
-              loggingActor ! firstLogging
-            }
-            .andThenStop
+          case IncrementThenLogThenStop ⇒
+            Effect.persist(Incremented(1))
+              .andThen {
+                loggingActor ! firstLogging
+              }
+              .andThenStop
 
-        case IncrementWithPersistAll(n) ⇒
-          Effect.persist((0 until n).map(_ ⇒ Incremented(1)))
+          case IncrementTwiceThenLogThenStop ⇒
+            Effect.persist(Incremented(1), Incremented(2))
+              .andThen {
+                loggingActor ! firstLogging
+              }
+              .andThenStop
 
-        case GetValue(replyTo) ⇒
-          replyTo ! state
-          Effect.none
+          case IncrementWithPersistAll(n) ⇒
+            Effect.persist((0 until n).map(_ ⇒ Incremented(1)))
 
-        case IncrementLater ⇒
-          // purpose is to test signals
-          val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type] { timers ⇒
-            timers.startSingleTimer(Tick, Tick, 10.millis)
-            Behaviors.receive((_, msg) ⇒ msg match {
-              case Tick ⇒ Behaviors.stopped
+          case GetValue(replyTo) ⇒
+            replyTo ! state
+            Effect.none
+
+          case IncrementLater ⇒
+            // purpose is to test signals
+            val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type] { timers ⇒
+              timers.startSingleTimer(Tick, Tick, 10.millis)
+              Behaviors.receive((_, msg) ⇒ msg match {
+                case Tick ⇒ Behaviors.stopped
+              })
             })
-          })
-          ctx.watchWith(delay, DelayFinished)
-          Effect.none
+            ctx.watchWith(delay, DelayFinished)
+            Effect.none
 
-        case DelayFinished ⇒
-          Effect.persist(Incremented(10))
+          case DelayFinished ⇒
+            Effect.persist(Incremented(10))
 
-        case IncrementAfterReceiveTimeout ⇒
-          ctx.setReceiveTimeout(10.millis, Timeout)
-          Effect.none
+          case IncrementAfterReceiveTimeout ⇒
+            ctx.setReceiveTimeout(10.millis, Timeout)
+            Effect.none
 
-        case Timeout ⇒
-          ctx.cancelReceiveTimeout()
-          Effect.persist(Incremented(100))
+          case Timeout ⇒
+            ctx.cancelReceiveTimeout()
+            Effect.persist(Incremented(100))
 
-        case IncrementTwiceAndThenLog ⇒
-          Effect
-            .persist(Incremented(1), Incremented(1))
-            .andThen {
-              loggingActor ! firstLogging
-            }
-            .andThen {
-              loggingActor ! secondLogging
-            }
+          case IncrementTwiceAndThenLog ⇒
+            Effect
+              .persist(Incremented(1), Incremented(1))
+              .andThen {
+                loggingActor ! firstLogging
+              }
+              .andThen {
+                loggingActor ! secondLogging
+              }
 
-        case EmptyEventsListAndThenLog ⇒
-          Effect
-            .persist(List.empty) // send empty list of events
-            .andThen {
-              loggingActor ! firstLogging
-            }
+          case EmptyEventsListAndThenLog ⇒
+            Effect
+              .persist(List.empty) // send empty list of events
+              .andThen {
+                loggingActor ! firstLogging
+              }
 
-        case DoNothingAndThenLog ⇒
-          Effect
-            .none
-            .andThen {
-              loggingActor ! firstLogging
-            }
+          case DoNothingAndThenLog ⇒
+            Effect
+              .none
+              .andThen {
+                loggingActor ! firstLogging
+              }
 
-        case LogThenStop ⇒
-          Effect.none
-            .andThen {
-              loggingActor ! firstLogging
-            }
-            .andThenStop
-      },
-      eventHandler = (state, evt) ⇒ evt match {
-        case Incremented(delta) ⇒
-          probe ! ((state, evt))
-          State(state.value + delta, state.history :+ state.value)
-      })
+          case LogThenStop ⇒
+            Effect
+              .none
+              .andThen {
+                loggingActor ! firstLogging
+              }
+              .andThenStop
+        }
+    }
+
+    def eventHandler(state: State): EventHandler[Event, State] = {
+      case evt @ Incremented(delta) ⇒
+        probe ! ((state, evt))
+        State(state.value + delta, state.history :+ state.value)
+    }
+
+    PersistentBehaviors[Command, Event, State]
+      .identifiedBy(persistenceId)
+      .onCreation(
+        commandHandler(State(0, Vector.empty)),
+        eventHandler(State(0, Vector.empty))
+      )
+      .onUpdate(
+        commandHandler,
+        eventHandler
+      )
   }
 
 }
