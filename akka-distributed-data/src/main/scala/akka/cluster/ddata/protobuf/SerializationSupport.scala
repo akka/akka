@@ -149,11 +149,14 @@ trait SerializationSupport {
 
     // Serialize actor references with full address information (defaultAddress).
     // When sending remote messages currentTransportInformation is already set,
-    // but when serializing for digests it must be set here.
-    if (Serialization.currentTransportInformation.value == null)
-      Serialization.currentTransportInformation.withValue(transportInformation) { buildOther() }
-    else
+    // but when serializing for digests or DurableStore it must be set here.
+    val oldInfo = Serialization.currentTransportInformation.value
+    try {
+      if (oldInfo eq null)
+        Serialization.currentTransportInformation.value = system.provider.serializationInformation
       buildOther()
+    } finally Serialization.currentTransportInformation.value = oldInfo
+
   }
 
   def otherMessageFromBinary(bytes: Array[Byte]): AnyRef =

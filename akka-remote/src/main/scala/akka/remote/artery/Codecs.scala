@@ -57,10 +57,9 @@ private[remote] class Encoder(
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging with OutboundCompressionAccess {
 
       private val headerBuilder = HeaderBuilder.out()
-      headerBuilder setVersion version
-      headerBuilder setUid uniqueLocalAddress.uid
+      headerBuilder.setVersion(version)
+      headerBuilder.setUid(uniqueLocalAddress.uid)
       private val localAddress = uniqueLocalAddress.address
-      private val serializationInfo = Serialization.Information(localAddress, system)
 
       // lazy init of SerializationExtension to avoid loading serializers before ActorRefProvider has been initialized
       private var _serialization: OptionVal[Serialization] = OptionVal.None
@@ -104,34 +103,34 @@ private[remote] class Encoder(
         // without depending on compression tables being in sync when systems are restarted
         headerBuilder.useOutboundCompression(!outboundEnvelope.message.isInstanceOf[ArteryMessage])
 
-        // internally compression is applied by the builder:
-        outboundEnvelope.recipient match {
-          case OptionVal.Some(r) ⇒ headerBuilder setRecipientActorRef r
-          case OptionVal.None    ⇒ headerBuilder.setNoRecipient()
-        }
-
+        // Important to set Serialization.currentTransportInformation because setRecipientActorRef
+        // and setSenderActorRef are using using Serialization.serializedActorPath.
+        // Avoiding currentTransportInformation.withValue due to thunk allocation.
+        val oldInfo = Serialization.currentTransportInformation.value
         try {
-          // avoiding currentTransportInformation.withValue due to thunk allocation
-          val oldValue = Serialization.currentTransportInformation.value
-          try {
-            Serialization.currentTransportInformation.value = serializationInfo
+          Serialization.currentTransportInformation.value = serialization.serializationInformation
 
-            outboundEnvelope.sender match {
-              case OptionVal.None    ⇒ headerBuilder.setNoSender()
-              case OptionVal.Some(s) ⇒ headerBuilder setSenderActorRef s
-            }
+          // internally compression is applied by the builder:
+          outboundEnvelope.recipient match {
+            case OptionVal.Some(r) ⇒ headerBuilder.setRecipientActorRef(r)
+            case OptionVal.None    ⇒ headerBuilder.setNoRecipient()
+          }
 
-            val startTime: Long = if (instruments.timeSerialization) System.nanoTime else 0
-            if (instruments.nonEmpty)
-              headerBuilder.setRemoteInstruments(instruments)
+          outboundEnvelope.sender match {
+            case OptionVal.None    ⇒ headerBuilder.setNoSender()
+            case OptionVal.Some(s) ⇒ headerBuilder.setSenderActorRef(s)
+          }
 
-            MessageSerializer.serializeForArtery(serialization, outboundEnvelope, headerBuilder, envelope)
+          val startTime: Long = if (instruments.timeSerialization) System.nanoTime else 0
+          if (instruments.nonEmpty)
+            headerBuilder.setRemoteInstruments(instruments)
 
-            if (instruments.nonEmpty) {
-              val time = if (instruments.timeSerialization) System.nanoTime - startTime else 0
-              instruments.messageSent(outboundEnvelope, envelope.byteBuffer.position(), time)
-            }
-          } finally Serialization.currentTransportInformation.value = oldValue
+          MessageSerializer.serializeForArtery(serialization, outboundEnvelope, headerBuilder, envelope)
+
+          if (instruments.nonEmpty) {
+            val time = if (instruments.timeSerialization) System.nanoTime - startTime else 0
+            instruments.messageSent(outboundEnvelope, envelope.byteBuffer.position(), time)
+          }
 
           envelope.byteBuffer.flip()
 
@@ -162,6 +161,7 @@ private[remote] class Encoder(
                 pull(in)
             }
         } finally {
+          Serialization.currentTransportInformation.value = oldInfo
           outboundEnvelope match {
             case r: ReusableOutboundEnvelope ⇒ outboundEnvelopePool.release(r)
             case _                           ⇒ // no need to release it

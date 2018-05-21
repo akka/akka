@@ -288,13 +288,13 @@ object JavaSerializer {
    * If you are using Serializers yourself, outside of SerializationExtension,
    * you'll need to surround the serialization/deserialization with:
    *
-   * currentSystem.withValue(system) {
+   * JavaSerializer.currentSystem.withValue(system) {
    *   ...code...
    * }
    *
    * or
    *
-   * currentSystem.withValue(system, callable)
+   * JavaSerializer.currentSystem.withValue(system, callable)
    */
   val currentSystem = new CurrentSystem
   final class CurrentSystem extends DynamicVariable[ExtendedActorSystem](null) {

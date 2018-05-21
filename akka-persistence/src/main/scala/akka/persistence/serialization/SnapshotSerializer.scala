@@ -93,11 +93,12 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
       out.toByteArray
     }
 
-    // serialize actor references with full address information (defaultAddress)
-    transportInformation match {
-      case Some(ti) ⇒ Serialization.currentTransportInformation.withValue(ti) { serialize() }
-      case None     ⇒ serialize()
-    }
+    val oldInfo = Serialization.currentTransportInformation.value
+    try {
+      if (oldInfo eq null)
+        Serialization.currentTransportInformation.value = system.provider.serializationInformation
+      serialize()
+    } finally Serialization.currentTransportInformation.value = oldInfo
   }
 
   private def snapshotFromBinary(bytes: Array[Byte]): AnyRef = {
