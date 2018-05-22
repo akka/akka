@@ -47,7 +47,7 @@ is running.
 
 Operator
 : The common name for all building blocks that build up a Graph.
-Examples of operators are like `map()`, `filter()`, custom ones extending @ref[`GraphStage`s](stream-customize.md) and graph
+Examples of operators are `map()`, `filter()`, custom ones extending @ref[`GraphStage`s](stream-customize.md) and graph
 junctions like `Merge` or `Broadcast`. For the full list of built-in operators see the @ref:[operator index](operators/index.md)
 
 
