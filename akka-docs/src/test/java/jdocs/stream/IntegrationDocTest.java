@@ -20,7 +20,9 @@ import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.concurrent.duration.FiniteDuration;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -712,5 +714,29 @@ public class IntegrationDocTest extends AbstractJavaTest {
     };
   }
 
+  @Test
+  public void illustrateSourceQueue() throws Exception {
+    new TestKit(system) {
+      {
+        //#source-queue
+        int bufferSize = 5;
+        int elementsToProcess = 3;
+
+        SourceQueueWithComplete<Integer> sourceQueue =
+            Source.<Integer>queue(bufferSize, OverflowStrategy.backpressure())
+                .throttle(elementsToProcess, Duration.ofSeconds(3))
+                .map(x -> x * x)
+                .to(Sink.foreach(x -> System.out.println("got: " + x)))
+                .run(mat);
+
+        Source<Integer, NotUsed> source
+            = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+
+        source.map(x -> sourceQueue.offer(x)).runWith(Sink.ignore(), mat);
+
+        //#source-queue
+      }
+    };
+  }
 
 }

@@ -1,4 +1,4 @@
-# ask
+# Flow.ask
 
 Use the `ask` pattern to send a request-reply message to the target `ref` actor.
 
