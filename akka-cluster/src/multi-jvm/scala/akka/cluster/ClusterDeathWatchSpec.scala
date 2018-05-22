@@ -89,15 +89,16 @@ abstract class ClusterDeathWatchSpec
         watchEstablished.await
         enterBarrier("watch-established")
         expectMsg(path2)
-        expectNoMsg(2 seconds)
+        expectNoMessage(2.seconds)
         enterBarrier("second-terminated")
+        awaitAssert(clusterView.members.map(_.address) should not contain address(second))
 
         markNodeAsUnavailable(third)
         awaitAssert(clusterView.unreachableMembers.map(_.address) should contain(address(third)))
         cluster.down(third)
         // removed
-        awaitAssert(clusterView.members.map(_.address) should not contain (address(third)))
-        awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain (address(third)))
+        awaitAssert(clusterView.members.map(_.address) should not contain address(third))
+        awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain address(third))
         expectMsg(path3)
         enterBarrier("third-terminated")
 
@@ -112,11 +113,15 @@ abstract class ClusterDeathWatchSpec
           awaitAssert(clusterView.unreachableMembers.map(_.address) should contain(address(second)))
           cluster.down(second)
           // removed
-          awaitAssert(clusterView.members.map(_.address) should not contain (address(second)))
-          awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain (address(second)))
+          awaitAssert(clusterView.members.map(_.address) should not contain address(second))
+          awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain address(second))
         }
         enterBarrier("second-terminated")
         enterBarrier("third-terminated")
+        runOn(fourth) {
+          awaitAssert(clusterView.members.map(_.address) should not contain address(second))
+          awaitAssert(clusterView.members.map(_.address) should not contain address(third))
+        }
       }
 
       runOn(fifth) {
