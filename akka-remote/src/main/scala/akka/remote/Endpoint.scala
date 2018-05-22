@@ -1033,9 +1033,20 @@ private[remote] class EndpointReader(
     case StopReading(writer, replyTo) ⇒
       replyTo ! StoppedReading(writer)
 
-    case InboundPayload(p) ⇒
-      val (ackOption, _) = tryDecodeMessageAndAck(p)
+    case InboundPayload(p) if p.size <= transport.maximumPayloadBytes ⇒
+      val (ackOption, msgOption) = tryDecodeMessageAndAck(p)
       for (ack ← ackOption; reliableDelivery ← reliableDeliverySupervisor) reliableDelivery ! ack
+
+      if (log.isWarningEnabled)
+        log.warning("Discarding inbound message to [{}] in read-only association to [{}]. " +
+          "If this happens often you may consider using akka.remote.use-passive-connections=off " +
+          "or use Artery TCP.", msgOption.map(_.recipient).getOrElse("unknown"), remoteAddress)
+
+    case InboundPayload(oversized) ⇒
+      log.error(
+        new OversizedPayloadException(s"Discarding oversized payload received in read-only association: " +
+          s"max allowed size [${transport.maximumPayloadBytes}] bytes, actual size [${oversized.size}] bytes."),
+        "Transient error while reading from association (association remains live)")
 
     case _ ⇒
   }
