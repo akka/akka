@@ -2,7 +2,7 @@
 
 Allow switching to alternative Source when a failure has happened upstream.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

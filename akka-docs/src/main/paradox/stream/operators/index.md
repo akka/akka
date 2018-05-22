@@ -107,7 +107,7 @@ Sources and sinks for reading and writing files can be found on `FileIO`.
 |FileIO|<a name="frompath"></a>@ref[fromPath](FileIO/fromPath.md)|Emit the contents of a file.|
 |FileIO|<a name="topath"></a>@ref[toPath](FileIO/toPath.md)|Create a sink which will write incoming `ByteString` s to a given file path.|
 
-## Simple processing stages
+## Simple operators
 
 These stages can transform the rate of incoming elements since there are stages that emit multiple elements for a
 single input (e.g. `mapConcat`) or consume multiple elements before emitting one output (e.g. `filter`).
@@ -160,7 +160,7 @@ depending on being backpressured by downstream or not.
 |Flow|<a name="fromsinkandsource"></a>@ref[fromSinkAndSource](Flow/fromSinkAndSource.md)|Creates a `Flow` from a `Sink` and a `Source` where the Flow's input will be sent to the `Sink` and the `Flow` 's output will come from the Source.|
 |Flow|<a name="fromsinkandsourcecoupled"></a>@ref[fromSinkAndSourceCoupled](Flow/fromSinkAndSourceCoupled.md)|Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow between them.|
 
-## Asynchronous processing stages
+## Asynchronous operators
 
 These stages encapsulate an asynchronous computation, properly handling backpressure while taking care of the asynchronous
 operation at the same time (usually handling the completion of a @scala[`Future`] @java[`CompletionStage`]).

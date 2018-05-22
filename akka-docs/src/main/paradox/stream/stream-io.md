@@ -32,7 +32,7 @@ Java
 
 ![tcp-stream-bind.png](../images/tcp-stream-bind.png)
 
-Next, we handle *each* incoming connection using a `Flow` which will be used as the processing stage
+Next, we handle *each* incoming connection using a `Flow` which will be used as the operator
 to handle and emit `ByteString` s from and to the TCP Socket. Since one `ByteString` does not have to necessarily
 correspond to exactly one line of text (the client might be sending the line in chunks) we use the @scala[`Framing.delimiter`]@java[`delimiter`]
 helper Flow @java[from `akka.stream.javadsl.Framing`] to chunk the inputs up into actual lines of text. The last boolean
@@ -78,7 +78,7 @@ Java
 The `repl` flow we use to handle the server interaction first prints the servers response, then awaits on input from
 the command line (this blocking call is used here for the sake of simplicity) and converts it to a
 `ByteString` which is then sent over the wire to the server. Then we connect the TCP pipeline to this
-processing stage–at this point it will be materialized and start processing data once the server responds with
+operator–at this point it will be materialized and start processing data once the server responds with
 an *initial message*.
 
 A resilient REPL client would be more sophisticated than this, for example it should split out the input reading into
@@ -172,7 +172,7 @@ Scala
 Java
 :   @@snip [StreamFileDocTest.java]($code$/java/jdocs/stream/io/StreamFileDocTest.java) { #file-source } 
 
-Please note that these processing stages are backed by Actors and by default are configured to run on a pre-configured
+Please note that these operators are backed by Actors and by default are configured to run on a pre-configured
 threadpool-backed dispatcher dedicated for File IO. This is very important as it isolates the blocking file IO operations from the rest
 of the ActorSystem allowing each dispatcher to be utilised in the most efficient way. If you want to configure a custom
 dispatcher for file IO operations globally, you can do so by changing the `akka.stream.materializer.blocking-io-dispatcher`,

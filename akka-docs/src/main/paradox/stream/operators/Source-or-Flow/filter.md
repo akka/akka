@@ -2,7 +2,7 @@
 
 Filter the incoming elements using a predicate.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

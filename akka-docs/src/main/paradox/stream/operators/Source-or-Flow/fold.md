@@ -2,7 +2,7 @@
 
 Start with current value `zero` and then apply the current and next value to the given function, when upstream complete the current value is emitted downstream.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

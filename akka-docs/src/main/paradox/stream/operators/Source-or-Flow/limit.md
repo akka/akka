@@ -2,7 +2,7 @@
 
 Limit number of element from upstream to given `max` number.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

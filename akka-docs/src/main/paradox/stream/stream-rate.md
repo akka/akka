@@ -65,7 +65,7 @@ These situations are exactly those where the internal batching buffering strateg
 
 ### Internal buffers and their effect
 
-As we have explained, for performance reasons Akka Streams introduces a buffer for every asynchronous processing stage.
+As we have explained, for performance reasons Akka Streams introduces a buffer for every asynchronous operator.
 The purpose of these buffers is solely optimization, in fact the size of 1 would be the most natural choice if there
 would be no need for throughput improvements. Therefore it is recommended to keep these buffer sizes small,
 and increase them only to a level suitable for the throughput requirements of the application. Default buffer sizes
@@ -110,7 +110,7 @@ a leading 1 though which is caused by an initial prefetch of the @scala[@scalado
 
 @@@ note
 
-In general, when time or rate driven processing stages exhibit strange behavior, one of the first solutions to try
+In general, when time or rate driven operators exhibit strange behavior, one of the first solutions to try
 should be to decrease the input buffer of the affected elements to 1.
 
 @@@
