@@ -93,7 +93,7 @@ private[remote] final class InboundCompressionsImpl(
   override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = {
     _actorRefsIns.get(originUid) match {
       case null ⇒ // ignore
-      case a    ⇒ a.confirmAdvertisement(tableVersion)
+      case a    ⇒ a.confirmAdvertisement(tableVersion, gaveUp = false)
     }
   }
   /** Send compression table advertisement over control stream. Should be called from Decoder. */
@@ -124,7 +124,7 @@ private[remote] final class InboundCompressionsImpl(
   override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = {
     _classManifestsIns.get(originUid) match {
       case null ⇒ // ignore
-      case a    ⇒ a.confirmAdvertisement(tableVersion)
+      case a    ⇒ a.confirmAdvertisement(tableVersion, gaveUp = false)
     }
   }
   /** Send compression table advertisement over control stream. Should be called from Decoder. */
@@ -296,6 +296,7 @@ private[remote] abstract class InboundCompression[T >: Null](
   // We should not continue sending advertisements to an association that might be dead (not quarantined yet)
   @volatile private[this] var alive = true
   private[this] var resendCount = 0
+  private[this] val maxResendCount = 3
 
   private[this] val cms = new CountMinSketch(16, 1024, System.currentTimeMillis().toInt)
 
@@ -338,7 +339,7 @@ private[remote] abstract class InboundCompression[T >: Null](
             "Received first value from originUid [{}] compressed using the advertised compression table, " +
               "flipping to it (version: {})",
             originUid, current.nextTable.version)
-          confirmAdvertisement(incomingTableVersion)
+          confirmAdvertisement(incomingTableVersion, gaveUp = false)
           decompressInternal(incomingTableVersion, idx, attemptCounter + 1) // recurse
 
         case _ ⇒
@@ -354,15 +355,17 @@ private[remote] abstract class InboundCompression[T >: Null](
     }
   }
 
-  final def confirmAdvertisement(tableVersion: Byte): Unit = {
+  final def confirmAdvertisement(tableVersion: Byte, gaveUp: Boolean): Unit = {
     tables.advertisementInProgress match {
       case Some(inProgress) if tableVersion == inProgress.version ⇒
         tables = tables.startUsingNextTable()
-        log.debug("Confirmed compression table version [{}] for originUid [{}]", tableVersion, originUid)
+        log.debug(
+          "{} compression table version [{}] for originUid [{}]",
+          if (gaveUp) "Gave up" else "Confirmed", tableVersion, originUid)
       case Some(inProgress) if tableVersion != inProgress.version ⇒
         log.debug(
-          "Confirmed compression table version [{}] for originUid [{}] but other version in progress [{}]",
-          tableVersion, originUid, inProgress.version)
+          "{} compression table version [{}] for originUid [{}] but other version in progress [{}]",
+          if (gaveUp) "Gave up" else "Confirmed", tableVersion, originUid, inProgress.version)
       case None ⇒
       // already confirmed
     }
@@ -410,7 +413,7 @@ private[remote] abstract class InboundCompression[T >: Null](
               alive = false // will be set to true on first incoming message
               resendCount = 0
               advertiseCompressionTable(association, table)
-            } else {
+            } else if (association.isOrdinaryMessageStreamActive()) {
               log.debug("{} for originUid [{}] not changed, no need to advertise same.", Logging.simpleName(tables.activeTable), originUid)
             }
 
@@ -422,23 +425,23 @@ private[remote] abstract class InboundCompression[T >: Null](
 
       case Some(inProgress) ⇒
         resendCount += 1
-        if (resendCount <= 5) {
+        if (resendCount <= maxResendCount) {
           // The ActorRefCompressionAdvertisement message is resent because it can be lost
 
           inboundContext.association(originUid) match {
             case OptionVal.Some(association) ⇒
               log.debug(
-                "Advertisement in progress for originUid [{}] version {}, resending",
-                originUid, inProgress.version)
+                "Advertisement in progress for originUid [{}] version [{}], resending [{}:{}]",
+                originUid, inProgress.version, resendCount, maxResendCount)
               advertiseCompressionTable(association, inProgress) // resend
             case OptionVal.None ⇒
           }
         } else {
           // give up, it might be dead
           log.debug(
-            "Advertisement in progress for originUid [{}] version {} but no confirmation after retries.",
+            "Advertisement in progress for originUid [{}] version [{}] but no confirmation after retries.",
             originUid, inProgress.version)
-          confirmAdvertisement(inProgress.version)
+          confirmAdvertisement(inProgress.version, gaveUp = true)
         }
     }
   }

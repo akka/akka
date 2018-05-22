@@ -1,3 +1,10 @@
+# #24972 Artery internals
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.compress.InboundCompression.confirmAdvertisement")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.OutboundHandshake.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArteryTransport.terminationHintReplier")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.RemoteWatcher.quarantine")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.Association.quarantine")
+
 # Internal API changes
 ProblemFilters.exclude[MissingTypesProblem]("akka.remote.artery.ArteryTransport$InboundStreamMatValues$")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.artery.ArteryTransport#InboundStreamMatValues.apply")

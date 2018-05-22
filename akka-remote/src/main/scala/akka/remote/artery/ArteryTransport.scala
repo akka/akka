@@ -736,8 +736,12 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   }
 
   override def quarantine(remoteAddress: Address, uid: Option[Long], reason: String): Unit = {
+    quarantine(remoteAddress, uid, reason, harmless = false)
+  }
+
+  def quarantine(remoteAddress: Address, uid: Option[Long], reason: String, harmless: Boolean): Unit = {
     try {
-      association(remoteAddress).quarantine(reason, uid)
+      association(remoteAddress).quarantine(reason, uid, harmless)
     } catch {
       case ShuttingDown ⇒ // silence it
     }
@@ -772,15 +776,16 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, settings.Advanced.HandshakeTimeout,
-        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval))
+        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval, Duration.Undefined))
       .viaMat(createEncoder(bufferPool, streamId))(Keep.right)
   }
 
   def outboundControl(outboundContext: OutboundContext): Sink[OutboundEnvelope, (OutboundControlIngress, Future[Done])] = {
-
+    val livenessProbeInterval = (settings.Advanced.QuarantineIdleOutboundAfter / 10)
+      .max(settings.Advanced.HandshakeRetryInterval)
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, settings.Advanced.HandshakeTimeout,
-        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval))
+        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval, livenessProbeInterval))
       .via(new SystemMessageDelivery(outboundContext, system.deadLetters, settings.Advanced.SystemMessageResendInterval,
         settings.Advanced.SysMsgBufferSize))
       // note that System messages must not be dropped before the SystemMessageDelivery stage
@@ -813,13 +818,20 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   // Checks for termination hint messages and sends an ACK for those (not processing them further)
   // Purpose of this stage is flushing, the sender can wait for the ACKs up to try flushing
   // pending messages.
-  def terminationHintReplier(): Flow[InboundEnvelope, InboundEnvelope, NotUsed] = {
+  def terminationHintReplier(inControlStream: Boolean): Flow[InboundEnvelope, InboundEnvelope, NotUsed] = {
     Flow[InboundEnvelope].filter { envelope ⇒
       envelope.message match {
-        case _: ActorSystemTerminating ⇒
+        case ActorSystemTerminating(from) ⇒
           envelope.sender match {
-            case OptionVal.Some(snd) ⇒ snd.tell(ActorSystemTerminatingAck(localAddress), ActorRef.noSender)
-            case OptionVal.None      ⇒ log.error("Expected sender for ActorSystemTerminating message")
+            case OptionVal.Some(snd) ⇒
+              snd.tell(ActorSystemTerminatingAck(localAddress), ActorRef.noSender)
+              if (inControlStream)
+                system.scheduler.scheduleOnce(settings.Advanced.ShutdownFlushTimeout) {
+                  if (!isShutdown)
+                    quarantine(from.address, Some(from.uid), "ActorSystem terminated", harmless = true)
+                }(materializer.executionContext)
+            case OptionVal.None ⇒
+              log.error("Expected sender for ActorSystemTerminating message from [{}]", from)
           }
           false
         case _ ⇒ true
@@ -831,7 +843,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     Flow[InboundEnvelope]
       .via(createDeserializer(bufferPool))
       .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
-      .via(terminationHintReplier())
+      .via(terminationHintReplier(inControlStream = false))
       .via(new InboundHandshake(this, inControlStream = false))
       .via(new InboundQuarantineCheck(this))
       .toMat(messageDispatcherSink)(Keep.right)
@@ -850,7 +862,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     Flow[InboundEnvelope]
       .via(createDeserializer(envelopeBufferPool))
       .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
-      .via(terminationHintReplier())
+      .via(terminationHintReplier(inControlStream = true))
       .via(new InboundHandshake(this, inControlStream = true))
       .via(new InboundQuarantineCheck(this))
       .viaMat(new InboundControlJunction)(Keep.right)

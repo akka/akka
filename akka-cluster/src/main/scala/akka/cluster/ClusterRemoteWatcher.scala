@@ -108,7 +108,8 @@ private[cluster] class ClusterRemoteWatcher(
       clusterNodes -= m.address
 
       if (previousStatus == MemberStatus.Down) {
-        quarantine(m.address, Some(m.uniqueAddress.longUid), s"Cluster member removed, previous status [$previousStatus]")
+        quarantine(m.address, Some(m.uniqueAddress.longUid),
+          s"Cluster member removed, previous status [$previousStatus]", harmless = false)
       } else if (arteryEnabled) {
         // Don't quarantine gracefully removed members (leaving) directly,
         // give Cluster Singleton some time to exchange TakeOver/HandOver messages.
@@ -128,14 +129,15 @@ private[cluster] class ClusterRemoteWatcher(
       pendingDelayedQuarantine.find(_.address == newIncarnation.address).foreach { oldIncarnation ⇒
         pendingDelayedQuarantine -= oldIncarnation
         quarantine(oldIncarnation.address, Some(oldIncarnation.longUid),
-          s"Cluster member removed, new incarnation joined")
+          s"Cluster member removed, new incarnation joined", harmless = true)
       }
   }
 
   def delayedQuarantine(m: Member, previousStatus: MemberStatus): Unit = {
     if (pendingDelayedQuarantine(m.uniqueAddress)) {
       pendingDelayedQuarantine -= m.uniqueAddress
-      quarantine(m.address, Some(m.uniqueAddress.longUid), s"Cluster member removed, previous status [$previousStatus]")
+      quarantine(m.address, Some(m.uniqueAddress.longUid), s"Cluster member removed, previous status [$previousStatus]",
+        harmless = true)
     }
   }
 
