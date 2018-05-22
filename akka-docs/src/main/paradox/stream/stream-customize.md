@@ -14,12 +14,12 @@ To use Akka Streams, add the module to your project:
 
 While the processing vocabulary of Akka Streams is quite rich (see the @ref:[Streams Cookbook](stream-cookbook.md) for examples) it
 is sometimes necessary to define new transformation stages either because some functionality is missing from the
-stock operations, or for performance reasons. In this part we show how to build custom processing stages and graph
+stock operations, or for performance reasons. In this part we show how to build custom operators and graph
 junctions of various kinds.
 
 @@@ note
 
-A custom graph stage should not be the first tool you reach for, defining graphs using flows
+A custom operator should not be the first tool you reach for, defining graphs using flows
 and the graph DSL is in general easier and does to a larger extent protect you from mistakes that
 might be easy to make with a custom @ref[`GraphStage`](stream-customize.md)
 
@@ -28,7 +28,7 @@ might be easy to make with a custom @ref[`GraphStage`](stream-customize.md)
 <a id="graphstage"></a>
 ## Custom processing with GraphStage
 
-The `GraphStage` abstraction can be used to create arbitrary graph processing stages with any number of input
+The `GraphStage` abstraction can be used to create arbitrary operators with any number of input
 or output ports. It is a counterpart of the `GraphDSL.create()` method which creates new stream processing
 stages by composing others. Where `GraphStage` differs is that it creates a stage that is itself not divisible into
 smaller ones, and allows state to be maintained inside it in a safe way.
@@ -181,10 +181,9 @@ and `abortReading()`
 
 An example of how this API simplifies a stage can be found below in the second version of the `Duplicator`.
 
-### Custom linear processing stages using GraphStage
+### Custom linear operators using GraphStage
 
-Graph stages allows for custom linear processing stages through letting them
-have one input and one output and using `FlowShape` as their shape.
+To define custom linear operators, you should extend `GraphStage` using `FlowShape` which has one input and one output.
 
 Such a stage can be illustrated as a box with two flows as it is
 seen in the illustration below. Demand flowing upstream leading to elements
@@ -276,7 +275,7 @@ in circulation in a potential chain of stages, just like our conceptual "railroa
 
 ### Completion
 
-Completion handling usually (but not exclusively) comes into the picture when processing stages need to emit
+Completion handling usually (but not exclusively) comes into the picture when operators need to emit
 a few more elements after their upstream source has been completed. We have seen an example of this in our
 first `Duplicator` implementation where the last element needs to be doubled even after the upstream neighbor
 stage has been completed. This can be done by overriding the `onUpstreamFinish` method in @scala[`InHandler`]@java[`AbstractInHandler`].
@@ -366,7 +365,7 @@ implementation.
 Sharing the AsyncCallback from the constructor risks race conditions, therefore it is recommended to use the
 `preStart()` lifecycle hook instead.
 
-This example shows an asynchronous side channel graph stage that starts dropping elements
+This example shows an asynchronous side channel operator that starts dropping elements
 when a future completes:
 
 Scala
@@ -426,7 +425,7 @@ decision.
 
 See @ref:[Modularity, Composition and Hierarchy](stream-composition.md) for an explanation on how attributes work.
 
-### Rate decoupled graph stages
+### Rate decoupled operators
 
 Sometimes it is desirable to *decouple* the rate of the upstream and downstream of a stage, synchronizing only
 when needed.
@@ -462,7 +461,7 @@ Scala
 Java
 :   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #detached }
 
-## Thread safety of custom processing stages
+## Thread safety of custom operators
 
 All of the above custom stages (linear or graph) provide a few simple guarantees that implementors can rely on.
 : 

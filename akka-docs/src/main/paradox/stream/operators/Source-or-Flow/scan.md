@@ -2,7 +2,7 @@
 
 Emit its current value which starts at `zero` and then applies the current and next value to the given function emitting the next current value.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

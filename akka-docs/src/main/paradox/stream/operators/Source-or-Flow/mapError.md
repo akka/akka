@@ -2,7 +2,7 @@
 
 While similar to `recover` this stage can be used to transform an error signal to a different one *without* logging it as an error in the process.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

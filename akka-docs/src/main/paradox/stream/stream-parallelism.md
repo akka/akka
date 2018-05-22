@@ -12,12 +12,12 @@ To use Akka Streams, add the module to your project:
 
 ## Introduction
 
-Akka Streams processing stages (be it simple operators on Flows and Sources or graph junctions) are "fused" together
+Akka Streams operators (be it simple operators on Flows and Sources or graph junctions) are "fused" together
 and executed sequentially by default. This avoids the overhead of events crossing asynchronous boundaries but
 limits the flow to execute at most one stage at any given time.
 
 In many cases it is useful to be able to concurrently execute the stages of a flow, this is done by explicitly marking
-them as asynchronous using the @scala[`async`]@java[`async()`] method. Each processing stage marked as asynchronous will run in a
+them as asynchronous using the @scala[`async`]@java[`async()`] method. Each operator marked as asynchronous will run in a
 dedicated actor internally, while all stages not marked asynchronous will run in one single actor.
 
 We will illustrate through the example of pancake cooking how streams can be used for various processing patterns,
@@ -58,7 +58,7 @@ not be able to operate at full capacity <a id="^1" href="#1">[1]</a>.
 
 @@@ note
 
-Asynchronous stream processing stages have internal buffers to make communication between them more efficient.
+Asynchronous stream operators have internal buffers to make communication between them more efficient.
 For more details about the behavior of these and how to add additional buffers refer to @ref:[Buffers and working with rate](stream-rate.md).
 
 @@@
@@ -92,7 +92,7 @@ The two concurrency patterns that we demonstrated as means to increase throughpu
 In fact, it is rather simple to combine the two approaches and streams provide
 a nice unifying language to express and compose them.
 
-First, let's look at how we can parallelize pipelined processing stages. In the case of pancakes this means that we
+First, let's look at how we can parallelize pipelined operators. In the case of pancakes this means that we
 will employ two chefs, each working using Roland's pipelining method, but we use the two chefs in parallel, just like
 Patrik used the two frying pans. This is how it looks like if expressed as streams:
 

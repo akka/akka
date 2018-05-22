@@ -2,7 +2,7 @@
 
 Pass incoming elements to a function that return a @scala[`Future`] @java[`CompletionStage`] result.
 
-@ref[Asynchronous processing stages](../index.md#asynchronous-processing-stages)
+@ref[Asynchronous operators](../index.md#asynchronous-operators)
 
 @@@div { .group-scala }
 

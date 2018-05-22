@@ -2,7 +2,7 @@
 
 Each upstream element will either be diverted to the given sink, or the downstream consumer according to the predicate function applied to the element.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

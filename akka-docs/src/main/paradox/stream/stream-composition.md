@@ -18,7 +18,7 @@ the modularity aspects of the library.
 
 ## Basics of composition and modularity
 
-Every processing stage used in Akka Streams can be imagined as a "box" with input and output ports where elements to
+Every operator used in Akka Streams can be imagined as a "box" with input and output ports where elements to
 be processed arrive and leave the stage. In this view, a `Source` is nothing else than a "box" with a single
 output port, or, a `BidiFlow` is a "box" with exactly two input and two output ports. In the figure below
 we illustrate the most common used stages viewed as "boxes".
@@ -26,7 +26,7 @@ we illustrate the most common used stages viewed as "boxes".
 ![compose_shapes.png](../images/compose_shapes.png)
 
 The *linear* stages are `Source`, `Sink`
-and `Flow`, as these can be used to compose strict chains of processing stages.
+and `Flow`, as these can be used to compose strict chains of operators.
 Fan-in and Fan-out stages have usually multiple input or multiple output ports, therefore they allow to build
 more complex graph layouts, not only chains. `BidiFlow` stages are usually useful in IO related tasks, where
 there are input and output channels to be handled. Due to the specific shape of `BidiFlow` it is easy to
@@ -243,7 +243,7 @@ needs to return a different object that provides the necessary interaction capab
  * a network of running processing entities, inaccessible from the outside
  * a materialized value, optionally providing a controlled interaction capability with the network
 
-Unlike actors though, each of the processing stages might provide a materialized value, so when we compose multiple
+Unlike actors though, each of the operators might provide a materialized value, so when we compose multiple
 stages or modules, we need to combine the materialized value as well (there are default rules which make this easier,
 for example *to()* and *via()* takes care of the most common case of taking the materialized value to the left.
 See @ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat) for details). 

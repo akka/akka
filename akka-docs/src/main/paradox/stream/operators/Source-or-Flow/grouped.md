@@ -2,7 +2,7 @@
 
 Accumulate incoming events until the specified number of elements have been accumulated and then pass the collection of elements downstream.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 

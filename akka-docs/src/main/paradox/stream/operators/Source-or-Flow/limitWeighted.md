@@ -2,7 +2,7 @@
 
 Ensure stream boundedness by evaluating the cost of incoming elements using a cost function.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 
