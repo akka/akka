@@ -183,8 +183,7 @@ An example of how this API simplifies a stage can be found below in the second v
 
 ### Custom linear operators using GraphStage
 
-GraphStage allows for custom linear processing stages through letting them
-have one input and one output and using `FlowShape` as their shape.
+To define custom linear operators, you should extend `GraphStage` using `FlowShape` which has one input and one output.
 
 Such a stage can be illustrated as a box with two flows as it is
 seen in the illustration below. Demand flowing upstream leading to elements
