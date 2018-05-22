@@ -299,7 +299,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
       }
 
       @Override
-      public State initialState() {
+      public State emptyState() {
         return emptyState;
       }
 

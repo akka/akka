@@ -29,12 +29,12 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
   protected final def Effect: EffectFactories[Command, Event, State] = EffectFactory.asInstanceOf[EffectFactories[Command, Event, State]]
 
   /**
-   * Implement by returning the initial state object.
+   * Implement by returning the initial empty state object.
    * This object will be passed into this behaviors handlers, until a new state replaces it.
    *
    * Also known as "zero state" or "neutral state".
    */
-  protected def initialState: State
+  protected def emptyState: State
 
   /**
    * Implement by handling incoming commands and return an `Effect()` to persist or signal other effects
@@ -147,7 +147,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
 
     scaladsl.PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
-      initialState,
+      emptyState,
       (c, state, cmd) ⇒ commandHandler()(c.asJava, state, cmd).asInstanceOf[EffectImpl[Event, State]],
       eventHandler()(_, _))
       .onRecoveryCompleted((ctx, state) ⇒ onRecoveryCompleted(ctx.asJava, state))
