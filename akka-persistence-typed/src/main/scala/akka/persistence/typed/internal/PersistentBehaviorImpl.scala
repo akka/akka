@@ -33,7 +33,7 @@ private[akka] object PersistentBehaviorImpl {
 @InternalApi
 private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   persistenceId:     String,
-  initialState:      State,
+  emptyBehavior:     State,
   commandHandler:    PersistentBehaviors.CommandHandler[Command, Event, State],
   eventHandler:      (State, Event) ⇒ State,
   journalPluginId:   Option[String]                                              = None,
@@ -59,7 +59,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
               ctx,
               timers,
               persistenceId,
-              initialState,
+              emptyBehavior,
               commandHandler,
               eventHandler,
               WriterIdentity.newIdentity(),
