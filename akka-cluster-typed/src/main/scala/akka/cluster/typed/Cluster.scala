@@ -159,7 +159,9 @@ object Cluster extends ExtensionId[Cluster] {
 }
 
 /**
- * Not intended for user extension.
+ * This class is not intended for user extension other than for test purposes (e.g.
+ * stub implementation). More methods may be added in the future and that may break
+ * such implementations.
  */
 @DoNotInherit
 abstract class Cluster extends Extension {

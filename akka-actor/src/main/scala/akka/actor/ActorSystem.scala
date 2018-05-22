@@ -911,7 +911,7 @@ private[akka] class ActorSystemImpl(
         extensions.putIfAbsent(ext, inProcessOfRegistration) match { // Signal that registration is in process
           case null ⇒ try { // Signal was successfully sent
             ext.createExtension(this) match { // Create and initialize the extension
-              case null ⇒ throw new IllegalStateException("Extension instance created as 'null' for extension [" + ext + "]")
+              case null ⇒ throw new IllegalStateException(s"Extension instance created as 'null' for extension [$ext]")
               case instance ⇒
                 extensions.replace(ext, inProcessOfRegistration, instance) //Replace our in process signal with the initialized extension
                 instance //Profit!
@@ -930,7 +930,7 @@ private[akka] class ActorSystemImpl(
   }
 
   def extension[T <: Extension](ext: ExtensionId[T]): T = findExtension(ext) match {
-    case null ⇒ throw new IllegalArgumentException("Trying to get non-registered extension [" + ext + "]")
+    case null ⇒ throw new IllegalArgumentException(s"Trying to get non-registered extension [$ext]")
     case some ⇒ some.asInstanceOf[T]
   }
 
