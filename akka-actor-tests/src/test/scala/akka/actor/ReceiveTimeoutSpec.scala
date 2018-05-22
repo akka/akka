@@ -113,5 +113,23 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       ticks.cancel()
       system.stop(timeoutActor)
     }
+
+    "get timeout while receiving only NotInfluenceReceiveTimeout messages" taggedAs TimingTest in {
+      val timeoutLatch = TestLatch(2)
+
+      val timeoutActor = system.actorOf(Props(new Actor {
+        context.setReceiveTimeout(1 second)
+
+        def receive = {
+          case ReceiveTimeout ⇒
+            self ! TransperentTick
+            timeoutLatch.countDown()
+          case TransperentTick ⇒
+        }
+      }))
+
+      Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
+      system.stop(timeoutActor)
+    }
   }
 }
