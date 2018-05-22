@@ -5,15 +5,14 @@
 package akka.persistence.typed.scaladsl
 
 import akka.actor.typed.Behavior.DeferredBehavior
-import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.internal._
-
+import akka.persistence.typed.scaladsl.{ PersistentActorContext ⇒ PAC }
 object PersistentBehaviors {
 
   // we use this type internally, however it's easier for users to understand the function, so we use it in external api
-  type CommandHandler[Command, Event, State] = (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
+  type CommandHandler[Command, Event, State] = (PAC[Command], State, Command) ⇒ Effect[Event, State]
 
   /**
    * Create a `Behavior` for a persistent actor.
@@ -56,7 +55,7 @@ object PersistentBehaviors {
     choice: State ⇒ CommandHandler[Command, Event, State])
     extends CommandHandler[Command, Event, State] {
 
-    override def apply(ctx: ActorContext[Command], state: State, cmd: Command): Effect[Event, State] =
+    override def apply(ctx: PAC[Command], state: State, cmd: Command): Effect[Event, State] =
       choice(state)(ctx, state, cmd)
 
   }
@@ -67,7 +66,7 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State]
+  def onRecoveryCompleted(callback: (PAC[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
   /**
    * Initiates a snapshot if the given function returns true.

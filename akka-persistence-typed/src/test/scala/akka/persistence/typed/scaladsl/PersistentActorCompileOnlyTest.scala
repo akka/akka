@@ -112,7 +112,7 @@ object PersistentActorCompileOnlyTest {
 
       initialState = EventsInFlight(0, Map.empty),
 
-      commandHandler = (ctx: ActorContext[Command], state, cmd) ⇒ cmd match {
+      commandHandler = (ctx: PersistentActorContext[Command], state, cmd) ⇒ cmd match {
         case DoSideEffect(data) ⇒
           Effect.persist(IntentRecorded(state.nextCorrelationId, data)).andThen {
             performSideEffect(ctx.self, state.nextCorrelationId, data)

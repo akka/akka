@@ -5,12 +5,8 @@
 package jdocs.akka.persistence.typed;
 
 import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.persistence.typed.javadsl.CommandHandler;
-import akka.persistence.typed.javadsl.Effect;
-import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.PersistentBehavior;
+import akka.persistence.typed.javadsl.*;
 
 import java.util.Collections;
 import java.util.Set;
@@ -45,7 +41,7 @@ public class BasicPersistentBehaviorsTest {
 
     //#recovery
     @Override
-    public void onRecoveryCompleted(ActorContext<Command> ctx, State state) {
+    public void onRecoveryCompleted(PersistentActorContext<Command> ctx, State state) {
       // called once recovery is completed
     }
     //#recovery

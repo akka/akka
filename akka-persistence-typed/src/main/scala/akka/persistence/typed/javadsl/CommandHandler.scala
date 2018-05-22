@@ -4,7 +4,6 @@
 
 package akka.persistence.typed.javadsl
 
-import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.InternalApi
 import akka.japi.pf.FI
 import akka.persistence.typed.internal._
@@ -17,7 +16,7 @@ import akka.util.OptionVal
  */
 @FunctionalInterface
 trait CommandHandler[Command, Event, State] {
-  def apply(ctx: ActorContext[Command], state: State, command: Command): Effect[Event, State]
+  def apply(ctx: PersistentActorContext[Command], state: State, command: Command): Effect[Event, State]
 }
 /**
  * FunctionalInterface for reacting on signals
@@ -29,7 +28,7 @@ trait CommandToEffect[Command, MsgCommand <: Command, Event, State] {
   /**
    * @return An effect for the given command
    */
-  def apply(ctx: ActorContext[Command], state: State, command: MsgCommand): Effect[Event, State]
+  def apply(ctx: PersistentActorContext[Command], state: State, command: MsgCommand): Effect[Event, State]
 }
 
 final class CommandHandlerBuilder[Command, Event, State] @InternalApi private[persistence] () {
@@ -61,7 +60,7 @@ final class CommandHandlerBuilder[Command, Event, State] @InternalApi private[pe
     val builtCases = cases.reverse.toArray
     cases = Nil
     new CommandHandler[Command, Event, State] {
-      override def apply(ctx: ActorContext[Command], state: State, command: Command) = {
+      override def apply(ctx: PersistentActorContext[Command], state: State, command: Command) = {
         var idx = 0
         var effect: OptionVal[Effect[Event, State]] = OptionVal.None
 
@@ -162,7 +161,7 @@ final class ByStateCommandHandlerBuilder[Command, Event, State] @InternalApi pri
     val builtCases = cases.reverse.toArray
     cases = Nil
     new CommandHandler[Command, Event, State] {
-      override def apply(ctx: ActorContext[Command], state: State, command: Command) = {
+      override def apply(ctx: PersistentActorContext[Command], state: State, command: Command) = {
         var idx = 0
         var effect: OptionVal[Effect[Event, State]] = OptionVal.None
 

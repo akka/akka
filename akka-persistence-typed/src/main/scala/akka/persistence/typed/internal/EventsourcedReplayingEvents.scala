@@ -157,7 +157,7 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
 
   protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] = try {
     tryReturnRecoveryPermit("replay completed successfully")
-    setup.recoveryCompleted(setup.commandContext, state.state)
+    setup.recoveryCompleted(setup.commandContext(state.seqNr), state.state)
 
     val running = EventsourcedRunning[C, E, S](
       setup,

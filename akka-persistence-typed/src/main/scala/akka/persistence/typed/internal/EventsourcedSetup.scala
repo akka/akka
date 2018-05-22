@@ -9,6 +9,7 @@ import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer, TimerScheduler }
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.typed.scaladsl.{ PersistentActorContext ⇒ PAC }
 import akka.persistence.typed.internal.EventsourcedBehavior.MDC
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl.PersistentBehaviors
@@ -27,7 +28,7 @@ private[persistence] final class EventsourcedSetup[C, E, S](
   val commandHandler:        PersistentBehaviors.CommandHandler[C, E, S],
   val eventHandler:          (S, E) ⇒ S,
   val writerIdentity:        WriterIdentity,
-  val recoveryCompleted:     (ActorContext[C], S) ⇒ Unit,
+  val recoveryCompleted:     (PAC[C], S) ⇒ Unit,
   val tagger:                E ⇒ Set[String],
   val snapshotWhen:          (S, E, Long) ⇒ Boolean,
   val recovery:              Recovery,
@@ -37,7 +38,7 @@ private[persistence] final class EventsourcedSetup[C, E, S](
 ) {
   import akka.actor.typed.scaladsl.adapter._
 
-  def commandContext: ActorContext[C] = context.asInstanceOf[ActorContext[C]]
+  def commandContext(seqNr: Long): PAC[C] = PersistentActorContextImpl(context.asInstanceOf[ActorContext[C]], seqNr)
 
   val persistence: Persistence = Persistence(context.system.toUntyped)
 
@@ -50,7 +51,7 @@ private[persistence] final class EventsourcedSetup[C, E, S](
       .map(_.create(system.settings.config)).get
   }
 
-  def selfUntyped = context.self.toUntyped
+  def selfUntyped: ActorRef = context.self.toUntyped
 
   private var mdc: Map[String, Any] = Map.empty
   private var _log: OptionVal[Logger] = OptionVal.Some(context.log) // changed when mdc is changed

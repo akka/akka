@@ -6,10 +6,11 @@ package akka.persistence.typed.internal
 
 import akka.actor.typed
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
+import akka.persistence.typed.scaladsl.{ PersistentActorContext ⇒ PAC }
 import akka.persistence.typed.scaladsl.{ PersistentBehavior, PersistentBehaviors }
 import akka.util.ConstantFun
 
@@ -21,7 +22,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   eventHandler:      (State, Event) ⇒ State,
   journalPluginId:   Option[String]                                            = None,
   snapshotPluginId:  Option[String]                                            = None,
-  recoveryCompleted: (ActorContext[Command], State) ⇒ Unit                     = ConstantFun.scalaAnyTwoToUnit,
+  recoveryCompleted: (PAC[Command], State) ⇒ Unit                              = ConstantFun.scalaAnyTwoToUnit,
   tagger:            Event ⇒ Set[String]                                       = (_: Event) ⇒ Set.empty[String],
   snapshotWhen:      (State, Event, Long) ⇒ Boolean                            = ConstantFun.scalaAnyThreeToFalse,
   recovery:          Recovery                                                  = Recovery()
@@ -69,7 +70,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State] =
+  def onRecoveryCompleted(callback: (PAC[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State] =
     copy(recoveryCompleted = callback)
 
   /**

@@ -66,7 +66,7 @@ private[akka] object EventsourcedRunning {
   extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
   import EventsourcedRunning.EventsourcedState
 
-  private def commandContext = setup.commandContext
+  private def commandContext(seqNr: Long) = setup.commandContext(seqNr)
 
   private val runningCmdsMdc = MDC.create(setup.persistenceId, MDC.RunningCmds)
   private val persistingEventsMdc = MDC.create(setup.persistenceId, MDC.PersistingEvents)
@@ -74,7 +74,7 @@ private[akka] object EventsourcedRunning {
   def handlingCommands(state: EventsourcedState[S]): Behavior[InternalProtocol] = {
 
     def onCommand(state: EventsourcedState[S], cmd: C): Behavior[InternalProtocol] = {
-      val effect = setup.commandHandler(commandContext, state.state, cmd)
+      val effect = setup.commandHandler(commandContext(state.seqNr), state.state, cmd)
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
     }
 

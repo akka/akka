@@ -75,6 +75,7 @@ object InDepthPersistentBehaviorSpec {
         case ChangeBody(newBody, replyTo) ⇒
           val evt = BodyChanged(state.postId, newBody)
           Effect.persist(evt).andThen { _ ⇒
+            println(s"Last sequence nr: ${ctx.lastSequenceNr}")
             replyTo ! Done
           }
         case Publish(replyTo) ⇒

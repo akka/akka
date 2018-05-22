@@ -50,7 +50,7 @@ Next we'll discuss each of these in detail.
 
 ### Command handler
 
-The command handler is a function with 3 parameters for the `ActorContext`, current `State`, and `Command`.
+The command handler is a function with 3 parameters for the `PersistentActorContext`, current `State`, and `Command`.
 
 A command handler returns an `Effect` directive that defines what event or events, if any, to persist. 
 @java[Effects are created using a factory that is returned via the `Effect()` method]
@@ -221,7 +221,7 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #recovery }
 
-The `onRecoveryCompleted` takes on an `ActorContext` and the current `State`.
+The `onRecoveryCompleted` takes on a `PersistentActorContext` and the current `State`.
 
 ## Tagging
 
