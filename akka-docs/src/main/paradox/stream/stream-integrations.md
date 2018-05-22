@@ -20,6 +20,10 @@ materialized by `Source.actorRef`.
 
 ### ask
 
+@@@ note
+  See also: @ref[Flow.ask operator reference docs](operators/Source-or-Flow/ask.md), @ref[ActorFlow.ask operator reference docs](operators/ActorFlow/ask.md) for Akka Typed
+@@@
+
 A nice way to delegate some processing of elements in a stream to an actor is to use `ask`. 
 The back-pressure of the stream is maintained by the @scala[`Future`]@java[`CompletionStage`] of 
 the `ask` and the mailbox of the actor will not be filled with more messages than the given 
@@ -67,6 +71,10 @@ since multiple actors are being asked concurrently to begin with, and no single 
 
 ### Sink.actorRefWithAck
 
+@@@ note
+  See also: [Sink.actorRefWithAck operator reference docs](operators/Sink/actorRefWithAck.md)
+@@@
+
 The sink sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
 First element is always *onInitMessage*, then stream is waiting for the given acknowledgement message
 from the given actor which means that it is ready to process elements. It also requires the given acknowledgement
@@ -109,19 +117,34 @@ use `Sink.actorRefWithAck` or `ask` in `mapAsync`, though.
 
 ### Source.queue
 
+`Source.queue` is an improvement over `Sink.actorRef`, since it can provide backpressure.
+The `offer` method returns a @scala[`Future`]@java[`CompletionStage`], which completes with the result of the enqueue operation.
+
 `Source.queue` can be used for emitting elements to a stream from an actor (or from anything running outside
 the stream). The elements will be buffered until the stream can process them. You can `offer` elements to 
 the queue and they will be emitted to the stream if there is demand from downstream, otherwise they will 
-be buffered until request for demand is received. 
+be buffered until request for demand is received.
 
 Use overflow strategy `akka.stream.OverflowStrategy.backpressure` to avoid dropping of elements if the 
 buffer is full, instead the returned @scala[`Future`]@java[`CompletionStage`] does not complete until there is space in the
 buffer and `offer` should not be called again until it completes.
 
+Using `Source.queue` you can push elements to the queue and they will be emitted to the stream if there is
+demand from downstream, otherwise they will be buffered until request for demand is received. Elements in the buffer
+will be discarded if downstream is terminated.
+
+You could combine it with the @ref[`throttle`](operators/Source-or-Flow/throttle.md) operator is used to slow down the stream to `5 element` per `3 seconds` and other patterns.
+
 `SourceQueue.offer` returns @scala[`Future[QueueOfferResult]`]@java[`CompletionStage<QueueOfferResult>`] which completes with `QueueOfferResult.Enqueued`
 if element was added to buffer or sent downstream. It completes with `QueueOfferResult.Dropped` if element 
 was dropped. Can also complete  with `QueueOfferResult.Failure` - when stream failed or 
 `QueueOfferResult.QueueClosed` when downstream is completed.
+
+Scala
+:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #source-queue }
+
+Java
+:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #source-queue }
 
 When used from an actor you typically `pipe` the result of the @scala[`Future`]@java[`CompletionStage`] back to the actor to
 continue processing.

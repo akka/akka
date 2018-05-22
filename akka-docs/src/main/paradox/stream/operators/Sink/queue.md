@@ -18,6 +18,9 @@ Materialize a `SinkQueue` that can be pulled to trigger demand through the sink.
 a buffer in case stream emitting elements faster than queue pulling them.
 
 
+## Reactive Streams semantics
+
+
 @@@div { .callout }
 
 **cancels** when  `SinkQueue.cancel` is called
