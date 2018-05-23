@@ -16,12 +16,12 @@ When upstream and downstream rates differ, especially when the throughput has sp
 buffers in a stream. In this chapter we cover how buffers are used in Akka Streams.
 
 <a id="async-stream-buffers"></a>
-## Buffers for asynchronous stages
+## Buffers for asynchronous operators
 
-In this section we will discuss internal buffers that are introduced as an optimization when using asynchronous stages.
+In this section we will discuss internal buffers that are introduced as an optimization when using asynchronous operators.
 
-To run a stage asynchronously it has to be marked explicitly as such using the @scala[@scaladoc[`.async`](akka.stream.Graph#shape:S)]@java[@javadoc[`.async()`](akka.stream.Graph#async--)] method. Being run
-asynchronously means that a stage, after handing out an element to its downstream consumer is able to immediately
+To run an operator asynchronously it has to be marked explicitly as such using the @scala[@scaladoc[`.async`](akka.stream.Graph#shape:S)]@java[@javadoc[`.async()`](akka.stream.Graph#async--)] method. Being run
+asynchronously means that an operator, after handing out an element to its downstream consumer is able to immediately
 process the next message. To demonstrate what we mean by this, let's take a look at the following example:
 
 Scala
@@ -46,7 +46,7 @@ C: 3
 
 Note that the order is *not* `A:1, B:1, C:1, A:2, B:2, C:2,` which would correspond to the normal fused synchronous
 execution model of flows where an element completely passes through the processing pipeline before the next element
-enters the flow. The next element is processed by an asynchronous stage as soon as it is emitted the previous one.
+enters the flow. The next element is processed by an asynchronous operator as soon as it is emitted the previous one.
 
 While pipelining in general increases throughput, in practice there is a cost of passing an element through the
 asynchronous (and therefore thread crossing) boundary which is significant. To amortize this cost Akka Streams uses
@@ -58,7 +58,7 @@ propagating the backpressure signal through the asynchronous boundary.
 
 While this internal protocol is mostly invisible to the user (apart from its throughput increasing effects) there are
 situations when these details get exposed. In all of our previous examples we always assumed that the rate of the
-processing chain is strictly coordinated through the backpressure signal causing all stages to process no faster than
+processing chain is strictly coordinated through the backpressure signal causing all operators to process no faster than
 the throughput of the connected chain. There are tools in Akka Streams however that enable the rates of different segments
 of a processing chain to be "detached" or to define the maximum throughput of the stream through external timing sources.
 These situations are exactly those where the internal batching buffering strategy suddenly becomes non-transparent.
@@ -217,7 +217,7 @@ Java
 
 ### Understanding extrapolate and expand
 
-Now we will discuss two stages, `extrapolate` and `expand`, helping to deal with slow producers that are unable to keep 
+Now we will discuss two operators, `extrapolate` and `expand`, helping to deal with slow producers that are unable to keep 
 up with the demand coming from consumers.
 They allow for additional values to be sent as elements to a consumer.
 

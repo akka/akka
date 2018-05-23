@@ -103,9 +103,9 @@ The process of preparing and running a `SourceRef` powered distributed stream is
   A `SourceRef` is *by design* "single-shot". i.e. it may only be materialized once.
   This is in order to not complicate the mental model of what materialization means.
   
-  Multicast can be mimicked by starting a `BroadcastHub` stage once then attaching multiple new streams to it, each
+  Multicast can be mimicked by starting a `BroadcastHub` operator once then attaching multiple new streams to it, each
   emitting a new stream ref. This way materialization of the `BroadcastHub`s Source creates a unique single-shot
-  stream ref, however they can all be powered using a single `Source` -- located before the `BroadcastHub` stage.
+  stream ref, however they can all be powered using a single `Source` -- located before the `BroadcastHub` operator.
 @@@
 
 ### Sink Refs - offering to receive streaming data from a remote system
@@ -146,9 +146,9 @@ The process of preparing and running a `SinkRef` powered distributed stream is s
   This is in order to not complicate the mental model what materializing such value would mean.
   
   If you have an use case for building a fan-in operation accepting writes from multiple remote nodes,
-  you can build your Sink and prepend it with a `MergeHub` stage, each time materializing a new `SinkRef`
+  you can build your Sink and prepend it with a `MergeHub` operator, each time materializing a new `SinkRef`
   targeting that `MergeHub`. This has the added benefit of giving you full control how to merge these streams
-  (i.e. by using "merge preferred" or any other variation of the fan-in stages).
+  (i.e. by using "merge preferred" or any other variation of the fan-in operators).
 @@@
 
 ### Delivery guarantees

@@ -113,13 +113,13 @@ of the stream.
 
 This recipe uses a @ref[`GraphStage`](stream-customize.md) to define a custom Akka Stream operator, to host a mutable `MessageDigest` class (part of the Java Cryptography
 API) and update it with the bytes arriving from the stream. When the stream starts, the `onPull` handler of the
-stage is called, which bubbles up the `pull` event to its upstream. As a response to this pull, a ByteString
+operator is called, which bubbles up the `pull` event to its upstream. As a response to this pull, a ByteString
 chunk will arrive (`onPush`) which we use to update the digest, then it will pull for the next chunk.
 
 Eventually the stream of `ByteString` s depletes and we get a notification about this event via `onUpstreamFinish`.
 At this point we want to emit the digest value, but we cannot do it with `push` in this handler directly since there may
 be no downstream demand. Instead we call `emit` which will temporarily replace the handlers, emit the provided value when
-demand comes in and then reset the stage state. It will then complete the stage.
+demand comes in and then reset the operator state. It will then complete the operator.
 
 Scala
 :   @@snip [RecipeDigest.scala]($code$/scala/docs/stream/cookbook/RecipeDigest.scala) { #calculating-digest }
@@ -290,7 +290,7 @@ The graph consists of a `Balance` node which is a special fan-out operation that
 downstream consumers. In a `for` loop we wire all of our desired workers as outputs of this balancer element, then
 we wire the outputs of these workers to a `Merge` element that will collect the results from the workers.
 
-To make the worker stages run in parallel we mark them as asynchronous with *async*.
+To make the worker operators run in parallel we mark them as asynchronous with *async*.
 
 Scala
 :   @@snip [RecipeWorkerPool.scala]($code$/scala/docs/stream/cookbook/RecipeWorkerPool.scala) { #worker-pool }
@@ -451,7 +451,7 @@ for this actor.
 the same sequence, but capping the size of `ByteString` s. In other words we want to slice up `ByteString` s into smaller
 chunks if they exceed a size threshold.
 
-This can be achieved with a single @ref[`GraphStage`](stream-customize.md) to define a custom Akka Stream operator. The main logic of our stage is in `emitChunk()`
+This can be achieved with a single @ref[`GraphStage`](stream-customize.md) to define a custom Akka Stream operator. The main logic of our operator is in `emitChunk()`
 which implements the following logic:
 
  * if the buffer is empty, and upstream is not closed we pull for more bytes, if it is closed we complete

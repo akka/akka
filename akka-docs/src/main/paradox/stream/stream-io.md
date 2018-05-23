@@ -176,7 +176,7 @@ Please note that these operators are backed by Actors and by default are configu
 threadpool-backed dispatcher dedicated for File IO. This is very important as it isolates the blocking file IO operations from the rest
 of the ActorSystem allowing each dispatcher to be utilised in the most efficient way. If you want to configure a custom
 dispatcher for file IO operations globally, you can do so by changing the `akka.stream.materializer.blocking-io-dispatcher`,
-or for a specific stage by specifying a custom Dispatcher in code, like this:
+or for a specific operator by specifying a custom Dispatcher in code, like this:
 
 Scala
 :   @@snip [StreamFileDocSpec.scala]($code$/scala/docs/stream/io/StreamFileDocSpec.scala) { #custom-dispatcher-code }

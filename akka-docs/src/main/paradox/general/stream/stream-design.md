@@ -24,7 +24,7 @@ This means that we provide all the tools necessary to express any stream process
 
 One important consequence of offering only features that can be relied upon is the restriction that Akka Streams cannot ensure that all objects sent through a processing topology will be processed. Elements can be dropped for a number of reasons:
 
- * plain user code can consume one element in a *map(...)* stage and produce an entirely different one as its result
+ * plain user code can consume one element in a *map(...)* operator and produce an entirely different one as its result
  * common stream operators drop elements intentionally, e.g. take/drop/filter/conflate/buffer/…
  * stream failure will tear down the stream without waiting for processing to finish, all elements that are in flight will be discarded
  * stream cancellation will propagate upstream (e.g. from a *take* operator) leading to upstream processing steps being terminated without having processed all of their inputs
@@ -90,7 +90,7 @@ Unfortunately the method name for signaling *failure* to a Subscriber is called 
 
 @@@
 
-There is only limited support for treating `onError` in Akka Streams compared to the operators that are available for the transformation of data elements, which is intentional in the spirit of the previous paragraph. Since `onError` signals that the stream is collapsing, its ordering semantics are not the same as for stream completion: transformation stages of any kind will collapse with the stream, possibly still holding elements in implicit or explicit buffers. This means that data elements emitted before a failure can still be lost if the `onError` overtakes them.
+There is only limited support for treating `onError` in Akka Streams compared to the operators that are available for the transformation of data elements, which is intentional in the spirit of the previous paragraph. Since `onError` signals that the stream is collapsing, its ordering semantics are not the same as for stream completion: transformation operators of any kind will collapse with the stream, possibly still holding elements in implicit or explicit buffers. This means that data elements emitted before a failure can still be lost if the `onError` overtakes them.
 
 The ability for failures to propagate faster than data elements is essential for tearing down streams that are back-pressured—especially since back-pressure can be the failure mode (e.g. by tripping upstream buffers which then abort because they cannot do anything else; or if a dead-lock occurred).
 

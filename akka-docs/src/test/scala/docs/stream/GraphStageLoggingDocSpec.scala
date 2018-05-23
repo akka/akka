@@ -15,7 +15,7 @@ class GraphStageLoggingDocSpec extends AkkaSpec("akka.loglevel = DEBUG") {
   implicit val materializer = ActorMaterializer()
   implicit val ec = system.dispatcher
 
-  //#stage-with-logging
+  //#operator-with-logging
   import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, StageLogging }
 
   final class RandomLettersSource extends GraphStage[SourceShape[String]] {
@@ -39,7 +39,7 @@ class GraphStageLoggingDocSpec extends AkkaSpec("akka.loglevel = DEBUG") {
     def nextChar(): Char =
       ThreadLocalRandom.current().nextInt('a', 'z'.toInt + 1).toChar
   }
-  //#stage-with-logging
+  //#operator-with-logging
 
   "demonstrate logging in custom graphstage" in {
     val n = 10
