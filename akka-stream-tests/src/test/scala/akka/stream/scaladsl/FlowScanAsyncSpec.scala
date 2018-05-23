@@ -48,6 +48,21 @@ class FlowScanAsyncSpec extends StreamSpec {
       sub.expectComplete()
     }
 
+    "complete after stream has been consumed and pending futures resolved" in {
+      val (pub, sub) =
+        TestSource.probe[Int]
+          .via(Flow[Int].scanAsync(0)((acc, in) ⇒ Future.successful(acc + in)))
+          .toMat(TestSink.probe)(Keep.both)
+          .run()
+
+      pub.sendNext(1)
+      sub.request(10)
+      sub.expectNext(0)
+      sub.expectNext(1)
+      pub.sendComplete()
+      sub.expectComplete()
+    }
+
     "fail after zero-element has been consumed" in {
       val (pub, sub) =
         TestSource.probe[Int]

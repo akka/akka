@@ -511,13 +511,10 @@ private[stream] object Collect {
       }
 
       override def onUpstreamFinish(): Unit = {
-        if (current == zero) {
-          eventualCurrent.value match {
-            case Some(Success(`zero`)) ⇒
-              // #24036 upstream completed without emitting anything but after zero was emitted downstream
-              completeStage()
-            case _ ⇒ // in all other cases we will get a complete when the future completes
-          }
+        eventualCurrent.value match {
+          case Some(Success(value)) if value == current ⇒ //there is no pending future
+            completeStage()
+          case _ ⇒ // in all other cases we will get a complete when the future completes
         }
       }
 
