@@ -511,8 +511,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 matchEvent(AddItem.class,
                     (event, data) ->
                         goTo(UserState.SHOPPING).applying(new ItemAdded(event.getItem()))
-                            .forMax(scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS))
-                )
+                            .forMax(scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS)))
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
             );
 

@@ -12,7 +12,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import jdocs.AbstractJavaTest;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import static akka.pattern.Patterns.ask;
 
@@ -21,7 +21,6 @@ import akka.testkit.TestProbe;
 import akka.testkit.ErrorFilter;
 import akka.testkit.EventFilter;
 import akka.testkit.TestEvent;
-import scala.concurrent.duration.Duration;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static akka.japi.Util.immutableSeq;
 import scala.concurrent.Await;
@@ -55,7 +54,7 @@ public class FaultHandlingTest extends AbstractJavaTest {
 
     //#strategy
     private static SupervisorStrategy strategy =
-      new OneForOneStrategy(10, Duration.create(1, TimeUnit.MINUTES),
+      new OneForOneStrategy(10, Duration.ofMinutes(1),
           DeciderBuilder
               .match(ArithmeticException.class, e -> SupervisorStrategy.resume())
               .match(NullPointerException.class, e -> SupervisorStrategy.restart())
@@ -88,7 +87,7 @@ public class FaultHandlingTest extends AbstractJavaTest {
 
     //#strategy2
     private static SupervisorStrategy strategy =
-      new OneForOneStrategy(10, Duration.create(1, TimeUnit.MINUTES), DeciderBuilder.
+      new OneForOneStrategy(10, Duration.ofMinutes(1), DeciderBuilder.
         match(ArithmeticException.class, e -> SupervisorStrategy.resume()).
         match(NullPointerException.class, e -> SupervisorStrategy.restart()).
         match(IllegalArgumentException.class, e -> SupervisorStrategy.stop()).
@@ -138,7 +137,7 @@ public class FaultHandlingTest extends AbstractJavaTest {
 
   //#testkit
   static ActorSystem system;
-  Duration timeout = Duration.create(5, SECONDS);
+  scala.concurrent.duration.Duration timeout = scala.concurrent.duration.Duration.create(5, SECONDS);
 
   @BeforeClass
   public static void start() {
