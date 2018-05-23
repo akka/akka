@@ -29,7 +29,7 @@ private[persistence] final class EventsourcedSetup[C, E, S](
   val persistenceId:         String,
   val emptyState:            S,
   val commandHandler:        PersistentBehaviors.CommandHandler[C, E, S],
-  val eventHandler:          (S, E) ⇒ S,
+  val eventHandler:          PersistentBehaviors.EventHandler[S, E],
   val writerIdentity:        WriterIdentity,
   val recoveryCompleted:     (ActorContext[C], S) ⇒ Unit,
   val onSnapshot:            (ActorContext[C], SnapshotMetadata, Try[Done]) ⇒ Unit,

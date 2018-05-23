@@ -16,8 +16,23 @@ import scala.util.Try
 
 object PersistentBehaviors {
 
-  // we use this type internally, however it's easier for users to understand the function, so we use it in external api
+  /**
+   * Type alias for the command handler function for reacting on events having been persisted.
+   *
+   * The type alias is not used in API signatures because it's easier to see (in IDE) what is needed
+   * when full function type is used. When defining the handler as a separate function value it can
+   * be useful to use the alias for shorter type signature.
+   */
   type CommandHandler[Command, Event, State] = (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
+
+  /**
+   * Type alias for the event handler function defines how to act on commands.
+   *
+   * The type alias is not used in API signatures because it's easier to see (in IDE) what is needed
+   * when full function type is used. When defining the handler as a separate function value it can
+   * be useful to use the alias for shorter type signature.
+   */
+  type EventHandler[State, Event] = (State, Event) ⇒ State
 
   /**
    * Create a `Behavior` for a persistent actor.
@@ -25,15 +40,23 @@ object PersistentBehaviors {
   def receive[Command, Event, State](
     persistenceId:  String,
     emptyState:     State,
-    commandHandler: CommandHandler[Command, Event, State],
+    commandHandler: (ActorContext[Command], State, Command) ⇒ Effect[Event, State],
     eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     PersistentBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
 
   /**
-   * The `CommandHandler` defines how to act on commands.
+   * The `CommandHandler` defines how to act on commands. A `CommandHandler` is
+   * a function:
+   *
+   * {{{
+   *   (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
+   * }}}
    *
    * Note that you can have different command handlers based on current state by using
    * [[CommandHandler#byState]].
+   *
+   * The [[CommandHandler#command]] is useful for simple commands that don't need the state
+   * and context.
    */
   object CommandHandler {
 
@@ -42,14 +65,16 @@ object PersistentBehaviors {
      *
      * @see [[Effect]] for possible effects of a command.
      */
-    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): CommandHandler[Command, Event, State] =
+    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): (ActorContext[Command], State, Command) ⇒ Effect[Event, State] =
       (_, _, cmd) ⇒ commandHandler(cmd)
 
     /**
      * Select different command handlers based on current state.
      */
-    def byState[Command, Event, State](choice: State ⇒ CommandHandler[Command, Event, State]): CommandHandler[Command, Event, State] =
+    def byState[Command, Event, State](
+      choice: State ⇒ (ActorContext[Command], State, Command) ⇒ Effect[Event, State]): (ActorContext[Command], State, Command) ⇒ Effect[Event, State] = {
       new ByStateCommandHandler(choice)
+    }
 
   }
 

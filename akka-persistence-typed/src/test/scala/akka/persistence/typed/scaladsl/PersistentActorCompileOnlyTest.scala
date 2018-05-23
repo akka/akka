@@ -36,7 +36,7 @@ object PersistentActorCompileOnlyTest {
     //#command-handler
 
     //#event-handler
-    val eventHandler: (ExampleState, SimpleEvent) ⇒ (ExampleState) = {
+    val eventHandler: (ExampleState, SimpleEvent) ⇒ ExampleState = {
       case (state, Evt(data)) ⇒ state.copy(data :: state.events)
     }
     //#event-handler
@@ -341,30 +341,35 @@ object PersistentActorCompileOnlyTest {
       if (currentState == newMood) Effect.none
       else Effect.persist(MoodChanged(newMood))
 
+    val commandHandler: CommandHandler[Command, Event, Mood] = { (_, state, cmd) ⇒
+      cmd match {
+        case Greet(whom) ⇒
+          println(s"Hi there, I'm $state!")
+          Effect.none
+        case CheerUp(sender) ⇒
+          changeMoodIfNeeded(state, Happy)
+            .andThen {
+              sender ! Ack
+            }
+        case Remember(memory) ⇒
+          // A more elaborate example to show we still have full control over the effects
+          // if needed (e.g. when some logic is factored out but you want to add more effects)
+          val commonEffects: Effect[Event, Mood] = changeMoodIfNeeded(state, Happy)
+          Effect.persist(commonEffects.events :+ Remembered(memory), commonEffects.sideEffects)
+
+      }
+    }
+
+    private val eventHandler: EventHandler[Mood, Event] = {
+      case (_, MoodChanged(to))   ⇒ to
+      case (state, Remembered(_)) ⇒ state
+    }
+
     PersistentBehaviors.receive[Command, Event, Mood](
       persistenceId = "myPersistenceId",
       emptyState = Sad,
-      commandHandler = (_, state, cmd) ⇒
-        cmd match {
-          case Greet(whom) ⇒
-            println(s"Hi there, I'm $state!")
-            Effect.none
-          case CheerUp(sender) ⇒
-            changeMoodIfNeeded(state, Happy)
-              .andThen {
-                sender ! Ack
-              }
-          case Remember(memory) ⇒
-            // A more elaborate example to show we still have full control over the effects
-            // if needed (e.g. when some logic is factored out but you want to add more effects)
-            val commonEffects: Effect[Event, Mood] = changeMoodIfNeeded(state, Happy)
-            Effect.persist(commonEffects.events :+ Remembered(memory), commonEffects.sideEffects)
-
-        },
-      eventHandler = {
-        case (_, MoodChanged(to))   ⇒ to
-        case (state, Remembered(_)) ⇒ state
-      })
+      commandHandler,
+      eventHandler)
 
   }
 
