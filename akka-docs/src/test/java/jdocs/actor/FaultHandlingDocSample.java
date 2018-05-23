@@ -232,7 +232,7 @@ public class FaultHandlingDocSample {
     // Restart the storage child when StorageException is thrown.
     // After 3 restarts within 5 seconds it will be stopped.
     private static final SupervisorStrategy strategy =
-      new OneForOneStrategy(3, scala.concurrent.duration.Duration.create("5 seconds"), DeciderBuilder.
+      new OneForOneStrategy(3, Duration.ofSeconds(5), DeciderBuilder.
        match(StorageException.class, e -> restart()).
        matchAny(o -> escalate()).build());
 
