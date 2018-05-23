@@ -20,22 +20,22 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
   ))
 
   val categories = Seq(
-    "Source stages",
-    "Sink stages",
+    "Source operators",
+    "Sink operators",
     "Additional Sink and Source converters",
     "File IO Sinks and Sources",
     "Simple operators",
-    "Flow stages composed of Sinks and Sources",
+    "Flow operators composed of Sinks and Sources",
     "Asynchronous operators",
-    "Timer driven stages",
-    "Backpressure aware stages",
-    "Nesting and flattening stages",
-    "Time aware stages",
-    "Fan-in stages",
+    "Timer driven operators",
+    "Backpressure aware operators",
+    "Nesting and flattening operators",
+    "Time aware operators",
+    "Fan-in operators",
     // TODO these don't show up as def's yet so don't show up in the index..
-//    "Fan-out stages",
-    "Watching status stages",
-    "Actor interop stages",
+//    "Fan-out operators",
+    "Watching status operators",
+    "Actor interop operators"
   )
 
   def categoryId(name: String): String = name.toLowerCase.replace(' ', '-')

@@ -1,1 +1,0 @@
-Those stages operate taking time into consideration.

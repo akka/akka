@@ -1,0 +1,1 @@
+Those operators operate taking time into consideration.

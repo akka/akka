@@ -1,5 +1,5 @@
 Sources and sinks for integrating with `java.io.InputStream` and `java.io.OutputStream` can be found on
-`StreamConverters`. As they are blocking APIs the implementations of these stages are run on a separate
+`StreamConverters`. As they are blocking APIs the implementations of these operators are run on a separate
 dispatcher configured through the `akka.stream.blocking-io-dispatcher`.
 
 @@@ warning

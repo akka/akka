@@ -1,0 +1,1 @@
+These operators process elements using timers, delaying, dropping or grouping elements for certain time durations.
