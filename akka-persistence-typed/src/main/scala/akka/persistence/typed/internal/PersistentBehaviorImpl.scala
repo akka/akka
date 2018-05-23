@@ -35,7 +35,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   persistenceId:     String,
   emptyState:        State,
   commandHandler:    PersistentBehaviors.CommandHandler[Command, Event, State],
-  eventHandler:      (State, Event) ⇒ State,
+  eventHandler:      PersistentBehaviors.EventHandler[State, Event],
   journalPluginId:   Option[String]                                              = None,
   snapshotPluginId:  Option[String]                                              = None,
   recoveryCompleted: (ActorContext[Command], State) ⇒ Unit                       = ConstantFun.scalaAnyTwoToUnit,
