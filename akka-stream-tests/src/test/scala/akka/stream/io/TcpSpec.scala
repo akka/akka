@@ -619,6 +619,25 @@ class TcpSpec extends StreamSpec("""
       }
     }
 
+    "handle single connection when connection flow is immediately cancelled" in assertAllStagesStopped {
+      import system.dispatcher
+
+      val address = temporaryServerAddress()
+      val (binding, connection) = Tcp(system).bind(address.getHostString, address.getPort).toMat(Sink.head)(Keep.both).run()
+
+      val proxy = connection.map { c ⇒
+        c.handleWith(Flow[ByteString])
+      }
+
+      binding.futureValue
+
+      val expected = ByteString("test")
+      val msg = Source.single(expected).via(Tcp(system).outgoingConnection(address)).runWith(Sink.head)
+      msg.futureValue shouldBe expected
+
+      binding.futureValue.unbind()
+    }
+
     "shut down properly even if some accepted connection Flows have not been subscribed to" in assertAllStagesStopped {
       val address = temporaryServerAddress()
       val firstClientConnected = Promise[Unit]()
@@ -696,6 +715,7 @@ class TcpSpec extends StreamSpec("""
         binding.unbind().futureValue
       } finally sys2.terminate()
     }
+
   }
 
   "TLS client and server convenience methods" should {
