@@ -2,7 +2,7 @@
 
 Integration with Reactive Streams, subscribes to a `org.reactivestreams.Publisher`.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

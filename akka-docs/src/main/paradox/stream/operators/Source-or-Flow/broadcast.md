@@ -2,7 +2,7 @@
 
 Emit each incoming element each of `n` outputs.
 
-@ref[Fan-out stages](../index.md#fan-out-stages)
+@ref[Fan-out operators](../index.md#fan-out-operators)
 
 ## Description
 

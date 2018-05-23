@@ -2,7 +2,7 @@
 
 Integration with Reactive Streams, materializes into a `org.reactivestreams.Publisher`.
 
-@ref[Sink stages](../index.md#sink-stages)
+@ref[Sink operators](../index.md#sink-operators)
 
 @@@ div { .group-scala }
 ## Signature

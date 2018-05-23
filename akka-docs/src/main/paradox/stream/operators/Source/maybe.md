@@ -2,7 +2,7 @@
 
 Materialize a @scala[`Promise[Option[T]]`] @java[`CompletionStage`] that if completed with a @scala[`Some[T]`] @java[`Optional`] will emit that *T* and then complete the stream, or if completed with @scala[`None`] @java[`empty Optional`] complete the stream right away.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

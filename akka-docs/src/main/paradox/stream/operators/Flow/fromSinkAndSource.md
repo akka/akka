@@ -2,7 +2,7 @@
 
 Creates a `Flow` from a `Sink` and a `Source` where the Flow's input will be sent to the `Sink` and the `Flow` 's output will come from the Source.
 
-@ref[Flow stages composed of Sinks and Sources](../index.md#flow-stages-composed-of-sinks-and-sources)
+@ref[Flow operators composed of Sinks and Sources](../index.md#flow-operators-composed-of-sinks-and-sources)
 
 @@@div { .group-scala }
 

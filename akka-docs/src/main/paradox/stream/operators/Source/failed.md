@@ -2,7 +2,7 @@
 
 Fail directly with a user specified exception.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

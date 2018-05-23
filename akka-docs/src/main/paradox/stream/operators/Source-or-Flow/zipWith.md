@@ -2,7 +2,7 @@
 
 Combines elements from multiple sources through a `combine` function and passes the returned value downstream.
 
-@ref[Fan-in stages](../index.md#fan-in-stages)
+@ref[Fan-in operators](../index.md#fan-in-operators)
 
 @@@div { .group-scala }
 

@@ -2,7 +2,7 @@
 
 Like `foreach` but allows up to `parallellism` procedure calls to happen in parallel.
 
-@ref[Sink stages](../index.md#sink-stages)
+@ref[Sink operators](../index.md#sink-operators)
 
 @@@div { .group-scala }
 

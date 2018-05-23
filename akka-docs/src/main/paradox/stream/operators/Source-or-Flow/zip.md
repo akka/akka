@@ -2,7 +2,7 @@
 
 Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*] and passes the @scala[tuples] @java[pairs] downstream.
 
-@ref[Fan-in stages](../index.md#fan-in-stages)
+@ref[Fan-in operators](../index.md#fan-in-operators)
 
 @@@div { .group-scala }
 

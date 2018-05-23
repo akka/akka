@@ -2,7 +2,7 @@
 
 Take up to *n* elements from the stream (less than *n* only if the upstream completes before emitting *n* elements) and returns a pair containing a strict sequence of the taken element and a stream representing the remaining elements.
 
-@ref[Nesting and flattening stages](../index.md#nesting-and-flattening-stages)
+@ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
 @@@div { .group-scala }
 

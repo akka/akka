@@ -2,7 +2,7 @@
 
 Send the elements from the stream to an `ActorRef`.
 
-@ref[Sink stages](../index.md#sink-stages)
+@ref[Sink operators](../index.md#sink-operators)
 
 @@@ div { .group-scala }
 ## Signature

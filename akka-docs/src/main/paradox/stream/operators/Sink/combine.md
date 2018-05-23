@@ -2,7 +2,7 @@
 
 Combine several sinks into one using a user specified strategy
 
-@ref[Sink stages](../index.md#sink-stages)
+@ref[Sink operators](../index.md#sink-operators)
 
 @@@div { .group-scala }
 

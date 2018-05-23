@@ -2,7 +2,7 @@
 
 Merge multiple sources.
 
-@ref[Fan-in stages](../index.md#fan-in-stages)
+@ref[Fan-in operators](../index.md#fan-in-operators)
 
 ## Signature
 

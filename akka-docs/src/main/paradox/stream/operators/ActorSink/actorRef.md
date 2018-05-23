@@ -2,7 +2,7 @@
 
 Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`].
 
-@ref[Actor interop stages](../index.md#actor-interop-stages)
+@ref[Actor interop operators](../index.md#actor-interop-operators)
 
 @@@div { .group-scala }
 
@@ -37,7 +37,7 @@ upstream, but there is no back-pressure signal from the destination actor,
 i.e. if the actor is not consuming the messages fast enough the mailbox
 of the actor will grow. For potentially slow consumer actors it is recommended
 to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
-limiting stage in front of this `Sink`.
+limiting operator in front of this `Sink`.
 
 ## Examples
 

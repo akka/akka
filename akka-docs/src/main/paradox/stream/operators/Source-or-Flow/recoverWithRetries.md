@@ -20,7 +20,7 @@ it is fed into the *pf* and a new Source may be materialized. Note that if you p
 attempt to recover at all. A negative `attempts` number is interpreted as "infinite", which results in the exact same behavior as `recoverWith`.
 
 Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+This operators can recover the failure signal, but not the skipped elements, which will be dropped.
 
 
 @@@div { .callout }

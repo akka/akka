@@ -2,7 +2,7 @@
 
 Creates a real `Sink` upon receiving the first element. 
 
-@ref[Sink stages](../index.md#sink-stages)
+@ref[Sink operators](../index.md#sink-operators)
 
 @@@div { .group-scala }
 

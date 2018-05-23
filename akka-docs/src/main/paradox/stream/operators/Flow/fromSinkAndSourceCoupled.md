@@ -2,7 +2,7 @@
 
 Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow between them.
 
-@ref[Flow stages composed of Sinks and Sources](../index.md#flow-stages-composed-of-sinks-and-sources)
+@ref[Flow operators composed of Sinks and Sources](../index.md#flow-operators-composed-of-sinks-and-sources)
 
 @@@div { .group-scala }
 
@@ -15,7 +15,7 @@ Allows coupling termination (cancellation, completion, erroring) of Sinks and So
 ## Description
 
 Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow between them.
-Similar to `Flow.fromSinkAndSource` however couples the termination of these two stages.
+Similar to `Flow.fromSinkAndSource` however couples the termination of these two operators.
 
 E.g. if the emitted `Flow` gets a cancellation, the `Source` is cancelled,
 however the Sink will also be completed. The table below illustrates the effects in detail:

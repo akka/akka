@@ -2,7 +2,7 @@
 
 Demultiplex the incoming stream into separate output streams.
 
-@ref[Nesting and flattening stages](../index.md#nesting-and-flattening-stages)
+@ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
 @@@div { .group-scala }
 
@@ -24,7 +24,7 @@ of closing these elements might get lost.
 
 @@@ warning
 
-If `allowClosedSubstreamRecreation` is set to `false` (default behavior) the stage keeps track of all
+If `allowClosedSubstreamRecreation` is set to `false` (default behavior) the operators keeps track of all
 keys of streams that have already been closed. If you expect an infinite number of keys this can cause
 memory issues. Elements belonging to those keys are drained directly and not send to the substream.
 

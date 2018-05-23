@@ -2,7 +2,7 @@
 
 Stream the result of a function as long as it returns a @scala[`Some`] @java[`Optional`].
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

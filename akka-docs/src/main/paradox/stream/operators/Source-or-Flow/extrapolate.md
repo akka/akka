@@ -2,7 +2,7 @@
 
 Allow for a faster downstream by expanding the last emitted element to an `Iterator`.
 
-@ref[Backpressure aware stages](../index.md#backpressure-aware-stages)
+@ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
 @@@div { .group-scala }
 

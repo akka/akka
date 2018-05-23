@@ -1,8 +1,8 @@
 # monitor
 
-Materializes to a `FlowMonitor` that monitors messages flowing through or completion of the stage.
+Materializes to a `FlowMonitor` that monitors messages flowing through or completion of the operators.
 
-@ref[Watching status stages](../index.md#watching-status-stages)
+@ref[Watching status operators](../index.md#watching-status-operators)
 
 @@@div { .group-scala }
 
@@ -14,7 +14,7 @@ Materializes to a `FlowMonitor` that monitors messages flowing through or comple
 
 ## Description
 
-Materializes to a `FlowMonitor` that monitors messages flowing through or completion of the stage. The stage otherwise
+Materializes to a `FlowMonitor` that monitors messages flowing through or completion of the operators. The operators otherwise
 passes through elements unchanged. Note that the `FlowMonitor` inserts a memory barrier every time it processes an
 event, and may therefore affect performance.
 

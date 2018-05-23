@@ -2,7 +2,7 @@
 
 Invoke a given procedure for each element received.
 
-@ref[Sink stages](../index.md#sink-stages)
+@ref[Sink operators](../index.md#sink-operators)
 
 @@@div { .group-scala }
 

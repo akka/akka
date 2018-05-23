@@ -2,7 +2,7 @@
 
 Injects additional (configured) elements if upstream does not emit for a configured amount of time.
 
-@ref[Time aware stages](../index.md#time-aware-stages)
+@ref[Time aware operators](../index.md#time-aware-operators)
 
 @@@div { .group-scala }
 

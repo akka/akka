@@ -2,7 +2,7 @@
 
 If the primary source completes without emitting any elements, the elements from the secondary source are emitted.
 
-@ref[Fan-in stages](../index.md#fan-in-stages)
+@ref[Fan-in operators](../index.md#fan-in-operators)
 
 @@@div { .group-scala }
 

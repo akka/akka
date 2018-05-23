@@ -2,7 +2,7 @@
 
 After completion of the original upstream the elements of the given source will be emitted.
 
-@ref[Fan-in stages](../index.md#fan-in-stages)
+@ref[Fan-in operators](../index.md#fan-in-operators)
 
 @@@div { .group-scala }
 

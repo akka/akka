@@ -2,7 +2,7 @@
 
 Use the `AskPattern` to send each element as an `ask` to the target actor, and expect a reply back that will be sent further downstream.
 
-@ref[Actor interop stages](../index.md#actor-interop-stages)
+@ref[Actor interop operators](../index.md#actor-interop-operators)
 
 ## Dependency
 

@@ -2,7 +2,7 @@
 
 A periodical repetition of an arbitrary object.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

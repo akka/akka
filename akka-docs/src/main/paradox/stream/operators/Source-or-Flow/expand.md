@@ -2,7 +2,7 @@
 
 Like `extrapolate`, but does not have the `initial` argument, and the `Iterator` is also used in lieu of the original element, allowing for it to be rewritten and/or filtered.
 
-@ref[Backpressure aware stages](../index.md#backpressure-aware-stages)
+@ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
 @@@div { .group-scala }
 

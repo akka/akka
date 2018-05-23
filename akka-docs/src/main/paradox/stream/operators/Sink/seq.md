@@ -2,7 +2,7 @@
 
 Collect values emitted from the stream into a collection.
 
-@ref[Sink stages](../index.md#sink-stages)
+@ref[Sink operators](../index.md#sink-operators)
 
 @@@div { .group-scala }
 

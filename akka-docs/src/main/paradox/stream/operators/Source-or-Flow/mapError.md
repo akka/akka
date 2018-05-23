@@ -1,6 +1,6 @@
 # mapError
 
-While similar to `recover` this stage can be used to transform an error signal to a different one *without* logging it as an error in the process.
+While similar to `recover` this operators can be used to transform an error signal to a different one *without* logging it as an error in the process.
 
 @ref[Simple operators](../index.md#simple-operators)
 
@@ -14,12 +14,12 @@ While similar to `recover` this stage can be used to transform an error signal t
 
 ## Description
 
-While similar to `recover` this stage can be used to transform an error signal to a different one *without* logging
+While similar to `recover` this operators can be used to transform an error signal to a different one *without* logging
 it as an error in the process. So in that sense it is NOT exactly equivalent to `recover(t => throw t2)` since recover
 would log the `t2` error.
 
 Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+This operators can recover the failure signal, but not the skipped elements, which will be dropped.
 
 Similarily to `recover` throwing an exception inside `mapError` _will_ be logged on ERROR level automatically.
 

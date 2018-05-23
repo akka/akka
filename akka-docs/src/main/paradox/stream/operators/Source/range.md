@@ -2,7 +2,7 @@
 
 Emit each integer in a range, with an option to take bigger steps than 1.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 ## Description
 

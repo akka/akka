@@ -2,7 +2,7 @@
 
 Apply a reduction function on the incoming elements and pass the result to the next invocation.
 
-@ref[Sink stages](../index.md#sink-stages)
+@ref[Sink operators](../index.md#sink-operators)
 
 @@@div { .group-scala }
 

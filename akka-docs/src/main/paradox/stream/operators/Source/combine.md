@@ -2,7 +2,7 @@
 
 Combine several sources, using a given strategy such as merge or concat, into one source.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

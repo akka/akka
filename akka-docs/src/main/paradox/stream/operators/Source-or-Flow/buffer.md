@@ -2,7 +2,7 @@
 
 Allow for a temporarily faster upstream events by buffering `size` elements.
 
-@ref[Backpressure aware stages](../index.md#backpressure-aware-stages)
+@ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
 @@@ div { .group-scala }
 ## Signature

@@ -2,7 +2,7 @@
 
 Integration with Reactive Streams, wraps a `org.reactivestreams.Subscriber` as a sink.
 
-@ref[Sink stages](../index.md#sink-stages)
+@ref[Sink operators](../index.md#sink-operators)
 
 @@@div { .group-scala }
 

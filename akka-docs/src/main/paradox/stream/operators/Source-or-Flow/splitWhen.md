@@ -2,7 +2,7 @@
 
 Split off elements into a new substream whenever a predicate function return `true`.
 
-@ref[Nesting and flattening stages](../index.md#nesting-and-flattening-stages)
+@ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
 @@@div { .group-scala }
 
