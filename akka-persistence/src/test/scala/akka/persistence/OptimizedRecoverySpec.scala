@@ -97,5 +97,20 @@ class OptimizedRecoverySpec extends PersistenceSpec(PersistenceSpec.config(
       expectMsg("d")
     }
 
+    "get RecoveryCompleted but no SnapshotOffer and events when Recovery.first" in {
+      val persistenceId = "p2"
+      setup(persistenceId)
+
+      val ref = system.actorOf(TestPersistentActor.props(persistenceId, Recovery.first, testActor))
+      expectMsg(RecoveryCompleted)
+      expectMsg(PersistFromRecoveryCompleted)
+
+      // and highest sequence number not retrieved, so starting from 1, PersistFromRecoveryCompleted is 1
+      ref ! Save("d")
+      expectMsg(Saved("d", 2))
+      ref ! GetState
+      expectMsg("d")
+    }
+
   }
 }

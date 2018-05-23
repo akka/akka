@@ -234,8 +234,28 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   }
 
   private def requestRecoveryPermit(): Unit = {
-    extension.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, self)
-    changeState(waitingRecoveryPermit(recovery))
+    val r = recovery
+    if (r == Recovery.first) {
+      // permit not needed, skipping entire recovery process, first event will have sequenceNr 1
+      optimizedFirstRecovery()
+    } else {
+      extension.recoveryPermitter.tell(RecoveryPermitter.RequestRecoveryPermit, self)
+      changeState(waitingRecoveryPermit(r))
+    }
+  }
+
+  private def optimizedFirstRecovery(): Unit = {
+    val _receiveRecover = try receiveRecover catch {
+      case NonFatal(e) ⇒
+        try onRecoveryFailure(e, Some(e))
+        finally context.stop(self)
+        Actor.emptyBehavior
+    }
+
+    onReplaySuccess() // callback for subclass implementation
+    changeState(processingCommands) // needed because recoveryRunning should be false in RecoveryCompleted
+    _receiveRecover.applyOrElse(RecoveryCompleted, unhandled)
+    transitToProcessingState()
   }
 
   /** INTERNAL API. */
@@ -644,17 +664,17 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
       private def returnRecoveryPermit(): Unit =
         extension.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, self)
 
-      private def transitToProcessingState(): Unit = {
-        if (eventBatch.nonEmpty) flushBatch()
-
-        if (pendingStashingPersistInvocations > 0) changeState(persistingEvents)
-        else {
-          changeState(processingCommands)
-          internalStash.unstashAll()
-        }
-
-      }
     }
+
+  private def transitToProcessingState(): Unit = {
+    if (eventBatch.nonEmpty) flushBatch()
+
+    if (pendingStashingPersistInvocations > 0) changeState(persistingEvents)
+    else {
+      changeState(processingCommands)
+      internalStash.unstashAll()
+    }
+  }
 
   private def flushBatch() {
     if (eventBatch.nonEmpty) {
