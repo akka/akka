@@ -6,7 +6,7 @@ package jdocs.event;
 
 import akka.event.japi.EventBus;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
@@ -17,7 +17,6 @@ import akka.actor.ActorSystem;
 import akka.actor.ActorRef;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.util.Subclassification;
-import scala.concurrent.duration.FiniteDuration;
 
 //#lookup-bus
 import akka.event.japi.LookupEventBus;
@@ -319,7 +318,7 @@ public class EventBusDocTest extends AbstractJavaTest {
       Notification n2 = new Notification(observer2, 101);
       actorBus.publish(n2);
       probe2.expectMsgEquals(n2);
-      probe1.expectNoMsg(FiniteDuration.create(500, TimeUnit.MILLISECONDS));
+      probe1.expectNoMessage(Duration.ofMillis(500));
       //#actor-bus-test
   }
 

@@ -6,8 +6,7 @@ package jdocs.pattern;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeoutException;
-
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 
 import akka.actor.ActorKilledException;
 import akka.actor.ActorRef;
@@ -62,7 +61,7 @@ public class SupervisedAsk {
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
-      return new OneForOneStrategy(0, Duration.Zero(), cause -> {
+      return new OneForOneStrategy(0, Duration.ZERO, cause -> {
           caller.tell(new Status.Failure(cause), getSelf());
           return SupervisorStrategy.stop();
         });

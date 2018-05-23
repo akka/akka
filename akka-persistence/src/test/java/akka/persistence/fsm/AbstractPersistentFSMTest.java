@@ -18,11 +18,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import akka.persistence.fsm.PersistentFSM.CurrentState;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
-import scala.concurrent.duration.Duration;
 
 import static akka.persistence.fsm.PersistentFSM.FSMState;
 
@@ -135,7 +135,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 return null;
             });
 
-            within(duration("1.9 seconds"), remainingOrDefault(), () -> expectTerminated(fsmRef));
+            within(Duration.ofSeconds(2), getRemainingOrDefault(), () -> expectTerminated(fsmRef));
         }};
     }
 
@@ -511,8 +511,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 matchEvent(AddItem.class,
                     (event, data) ->
                         goTo(UserState.SHOPPING).applying(new ItemAdded(event.getItem()))
-                            .forMax(Duration.create(1, TimeUnit.SECONDS))
-                )
+                            .forMax(scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS)))
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
             );
 
@@ -520,7 +519,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 matchEvent(AddItem.class,
                     (event, data) ->
                         stay().applying(new ItemAdded(event.getItem()))
-                           .forMax(Duration.create(1, TimeUnit.SECONDS)))
+                           .forMax(scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS)))
                 .event(Buy.class,
                     //#customer-andthen-example
                     (event, data) ->
@@ -544,7 +543,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
                 .event(StateTimeout$.class,
                     (event, data) ->
-                        goTo(UserState.INACTIVE).forMax(Duration.create(2, TimeUnit.SECONDS)))
+                        goTo(UserState.INACTIVE).forMax(scala.concurrent.duration.Duration.create(2, TimeUnit.SECONDS)))
             );
 
 
@@ -552,7 +551,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 matchEvent(AddItem.class,
                     (event, data) ->
                         goTo(UserState.SHOPPING).applying(new ItemAdded(event.getItem()))
-                            .forMax(Duration.create(1, TimeUnit.SECONDS)))
+                            .forMax(scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS)))
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
                 .event(StateTimeout$.class,
                     (event, data) ->
@@ -641,7 +640,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
         new TestKit(system) {{
             ActorRef persistentActor = system.actorOf(Props.create(PFSMwithLog.class));
             persistentActor.tell("check", getRef());
-            expectMsg(duration("1000 millis"), "started");
+            expectMsg(Duration.ofMillis(1000), "started");
         }};
     }
 }
