@@ -7,8 +7,8 @@ package akka.stream.io
 import java.net._
 import java.security.SecureRandom
 import java.util.concurrent.atomic.AtomicInteger
-import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
 
+import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
 import akka.actor.{ ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, Kill }
 import akka.io.Tcp._
 import akka.stream._
@@ -26,7 +26,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.util.control.NonFatal
 
 class TcpSpec extends StreamSpec("""
@@ -413,7 +413,7 @@ class TcpSpec extends StreamSpec("""
         """).withFallback(system.settings.config))
 
       try {
-        import system2.dispatcher
+        implicit val ec: ExecutionContext = system2.dispatcher
         val mat2 = ActorMaterializer.create(system2)
 
         val serverAddress = temporaryServerAddress()
@@ -620,22 +620,21 @@ class TcpSpec extends StreamSpec("""
     }
 
     "handle single connection when connection flow is immediately cancelled" in assertAllStagesStopped {
-      import system.dispatcher
+      implicit val ec: ExecutionContext = system.dispatcher
 
-      val address = temporaryServerAddress()
-      val (binding, connection) = Tcp(system).bind(address.getHostString, address.getPort).toMat(Sink.head)(Keep.both).run()
+      val (bindingFuture, connection) = Tcp(system).bind("localhost", 0).toMat(Sink.head)(Keep.both).run()
 
       val proxy = connection.map { c ⇒
         c.handleWith(Flow[ByteString])
       }
 
-      binding.futureValue
+      val binding = bindingFuture.futureValue
 
       val expected = ByteString("test")
-      val msg = Source.single(expected).via(Tcp(system).outgoingConnection(address)).runWith(Sink.head)
+      val msg = Source.single(expected).via(Tcp(system).outgoingConnection(binding.localAddress)).runWith(Sink.head)
       msg.futureValue shouldBe expected
 
-      binding.futureValue.unbind()
+      binding.unbind()
     }
 
     "shut down properly even if some accepted connection Flows have not been subscribed to" in assertAllStagesStopped {
