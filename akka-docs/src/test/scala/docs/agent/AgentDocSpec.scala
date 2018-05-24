@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package docs.agent
+/*package docs.agent
 
 import language.postfixOps
 
@@ -155,4 +155,4 @@ class AgentDocSpec extends AkkaSpec {
     agent4() should be(4)
     agent5() should be(8)
   }
-}
+}*/
