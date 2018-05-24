@@ -63,7 +63,7 @@ class LazyFlowSpec extends StreamSpec {
     "complete when there was no elements in the stream" in assertAllStagesStopped {
       def flowMaker() = flowF
       val probe = Source.empty
-        .via(Flow.lazyInitAsync(flowMaker))
+        .via(Flow.lazyInitAsync(() ⇒ flowMaker))
         .runWith(TestSink.probe[Int])
       probe.request(1).expectComplete()
     }

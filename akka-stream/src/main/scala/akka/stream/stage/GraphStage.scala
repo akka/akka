@@ -805,7 +805,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   final protected def emitMultiple[T](out: Outlet[T], elems: java.util.Iterator[T], andThen: Effect): Unit = {
     import collection.JavaConverters._
-    emitMultiple(out, elems.asScala, andThen.apply _)
+    emitMultiple(out, elems.asScala, () ⇒ andThen.apply())
   }
 
   /**
@@ -859,7 +859,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def emit[T](out: Outlet[T], elem: T): Unit = emit(out, elem, DoNothing)
 
   final protected def emit[T](out: Outlet[T], elem: T, andThen: Effect): Unit = {
-    emit(out, elem, andThen.apply _)
+    emit(out, elem, () ⇒ andThen.apply())
   }
 
   /**
