@@ -15,13 +15,13 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
-  val sslConfigVersion = "0.2.4"
+  val sslConfigVersion = "0.2.3"
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
   val aeronVersion = "1.9.3"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.12.6", "2.11.12"),
+    crossScalaVersions := Seq("2.13.0-M3"), //"2.11.12", 
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
@@ -29,11 +29,15 @@ object Dependencies {
         case Some((2, n)) if n >= 12 ⇒ "1.14.0" // does not work for 2.11
         case _                       ⇒ "1.13.2"
       }),
-    scalaTestVersion := "3.0.5",
+    scalaTestVersion := {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n > 12 => "3.0.5-M1"
+        case _ => "3.0.5",
+      }
+    },
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 13 ⇒ "0.9.0"
-        case Some((2, n)) if n == 12 ⇒ "0.8.0"
+        case Some((2, n)) if n >= 12 ⇒ "0.8.0"
         case _                       ⇒ "0.7.0"
       }
     })
@@ -80,7 +84,7 @@ object Dependencies {
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.4" % "test"
-      val gson = "com.google.code.gson" % "gson" % "2.8.5" % "test"
+      val gson = "com.google.code.gson" % "gson" % "2.8.2" % "test"
     }
 
     object Test {
