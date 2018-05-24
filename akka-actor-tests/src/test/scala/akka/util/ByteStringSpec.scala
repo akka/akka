@@ -895,6 +895,15 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
           bytes == array.toSeq
         }
       }
+
+      "copying chunks to an array" in {
+        val iterator = (ByteString("123") ++ ByteString("456")).iterator
+        val array = Array.ofDim[Byte](6)
+        iterator.copyToArray(array, 0, 2)
+        iterator.copyToArray(array, 2, 2)
+        iterator.copyToArray(array, 4, 2)
+        assert(new String(array) === "123456")
+      }
     }
 
     "decode data correctly" when {
