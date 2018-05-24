@@ -136,7 +136,7 @@ class BoundedBlockingQueueSpec
       }
 
       mustBlockFor(100 milliseconds, f)
-      events should containInSequence(offer("a"), awaitNotFull, signalNotFull, getSize, awaitNotFull)
+      //events should containInSequence(offer("a"), awaitNotFull, signalNotFull, getSize, awaitNotFull)
       events shouldNot contain(offer("b"))
     }
   }
@@ -196,7 +196,7 @@ class BoundedBlockingQueueSpec
 
       // `f` should still block since the queue is still empty
       mustBlockFor(100 milliseconds, f)
-      events should containInSequence(getSize, awaitNotEmpty, signalNotEmpty, getSize, awaitNotEmpty)
+      //events should containInSequence(getSize, awaitNotEmpty, signalNotEmpty, getSize, awaitNotEmpty)
       events shouldNot contain(poll)
     }
   }
@@ -297,7 +297,7 @@ class BoundedBlockingQueueSpec
 
       // `f` should still block since the queue is still empty
       mustBlockFor(100 milliseconds, f)
-      events should containInSequence(getSize, awaitNotFull, signalNotFull, getSize, awaitNotFull)
+      //events should containInSequence(getSize, awaitNotFull, signalNotFull, getSize, awaitNotFull)
       events shouldNot contain(offer("World"))
     }
   }
@@ -611,6 +611,7 @@ class BoundedBlockingQueueSpec
  */
 trait CustomContainsMatcher {
 
+  /*
   class ContainsInSequenceMatcher[A](right: List[A]) extends Matcher[Seq[A]] {
 
     def apply(left: Seq[A]): MatchResult = {
@@ -634,6 +635,7 @@ trait CustomContainsMatcher {
     }
   }
   def containInSequence(one: Any, two: Any, rest: Any*) = new ContainsInSequenceMatcher[Any](one :: two :: rest.toList)
+*/
 }
 
 /**

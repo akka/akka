@@ -102,7 +102,7 @@ case object GetState
 /** Additional ScalaTest matchers useful in persistence tests */
 trait PersistenceMatchers {
   /** Use this matcher to verify in-order execution of independent "streams" of events */
-  final class IndependentlyOrdered(prefixes: immutable.Seq[String]) extends Matcher[immutable.Seq[Any]] {
+  /*final class IndependentlyOrdered(prefixes: immutable.Seq[String]) extends Matcher[immutable.Seq[Any]] {
     override def apply(_left: immutable.Seq[Any]) = {
       val left = _left.map(_.toString)
       val mapped = left.groupBy(l ⇒ prefixes.indexWhere(p ⇒ l.startsWith(p))) - (-1) // ignore other messages
@@ -121,5 +121,5 @@ trait PersistenceMatchers {
     }
   }
 
-  def beIndependentlyOrdered(prefixes: String*) = new IndependentlyOrdered(prefixes.toList)
+  def beIndependentlyOrdered(prefixes: String*) = new IndependentlyOrdered(prefixes.toList)*/
 }

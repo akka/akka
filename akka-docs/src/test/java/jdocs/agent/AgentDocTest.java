@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package jdocs.agent;
+/*package jdocs.agent;
 
 import static org.junit.Assert.*;
 
@@ -113,4 +113,4 @@ public class AgentDocTest extends jdocs.AbstractJavaTest {
 
     assertEquals(Await.result(f3, Duration.create(5,"s")), new Integer(14));
     }
-}
+}*/
