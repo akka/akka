@@ -22,7 +22,7 @@ resolverSettings
 
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   actor, actorTests,
-  agent,
+  //agent,
   benchJmh,
   camel,
   cluster, clusterMetrics, clusterSharding, clusterTools,
@@ -185,12 +185,16 @@ lazy val distributedData = akkaModule("akka-distributed-data")
   .settings(AutomaticModuleName.settings("akka.cluster.ddata"))
   .settings(OSGi.distributedData)
   .settings(Protobuf.settings)
+  .settings {
+    // https://github.com/akka/akka/issues/24675
+    Test / compile / sources := Seq()
+  }
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 
 lazy val docs = akkaModule("akka-docs")
   .dependsOn(
-    actor, cluster, clusterMetrics, slf4j, agent, osgi, persistenceTck, persistenceQuery, distributedData, stream,
+    actor, cluster, clusterMetrics, slf4j, /* agent ,*/ osgi, persistenceTck, persistenceQuery, distributedData, stream,
     camel % "compile->compile;test->test",
     clusterTools % "compile->compile;test->test",
     clusterSharding % "compile->compile;test->test",
