@@ -290,7 +290,9 @@ object ByteIterator {
         current.copyToArray(xs, pos, n)
         pos += n
         rest -= n
-        dropCurrent()
+        if (current.isEmpty) {
+          dropCurrent()
+        }
       }
       normalize()
     }
