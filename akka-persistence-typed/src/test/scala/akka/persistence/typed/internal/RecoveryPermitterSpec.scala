@@ -44,7 +44,7 @@ object RecoveryPermitterSpec {
     throwOnRecovery: Boolean        = false): Behavior[Command] =
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = name,
-      initialState = EmptyState,
+      emptyState = EmptyState,
       commandHandler = CommandHandler.command {
         case StopActor ⇒ Effect.stop
         case command   ⇒ commandProbe.ref ! command; Effect.none

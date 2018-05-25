@@ -89,7 +89,7 @@ public class PersistentActorCompileOnlyTest {
     //#behavior
     public static PersistentBehavior<SimpleCommand, SimpleEvent, SimpleState> pb = new PersistentBehavior<SimpleCommand, SimpleEvent, SimpleState>("p1") {
       @Override
-      public SimpleState initialState() {
+      public SimpleState emptyState() {
         return new SimpleState();
       }
 
@@ -150,7 +150,7 @@ public class PersistentActorCompileOnlyTest {
 
     private PersistentBehavior<MyCommand, MyEvent, ExampleState> pa = new PersistentBehavior<MyCommand, MyEvent, ExampleState>("pa") {
       @Override
-      public ExampleState initialState() {
+      public ExampleState emptyState() {
         return new ExampleState();
       }
 
@@ -259,7 +259,7 @@ public class PersistentActorCompileOnlyTest {
       }
 
       @Override
-      public EventsInFlight initialState() {
+      public EventsInFlight emptyState() {
         return new EventsInFlight(0, Collections.emptyMap());
       }
 

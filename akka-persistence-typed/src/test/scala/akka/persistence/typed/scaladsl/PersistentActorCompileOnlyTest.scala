@@ -45,7 +45,7 @@ object PersistentActorCompileOnlyTest {
     val simpleBehavior: PersistentBehavior[SimpleCommand, SimpleEvent, ExampleState] =
       PersistentBehaviors.receive[SimpleCommand, SimpleEvent, ExampleState](
         persistenceId = "sample-id-1",
-        initialState = ExampleState(Nil),
+        emptyState = ExampleState(Nil),
         commandHandler = commandHandler,
         eventHandler = eventHandler)
     //#behavior
@@ -66,7 +66,7 @@ object PersistentActorCompileOnlyTest {
     PersistentBehaviors.receive[MyCommand, MyEvent, ExampleState](
       persistenceId = "sample-id-1",
 
-      initialState = ExampleState(Nil),
+      emptyState = ExampleState(Nil),
 
       commandHandler = CommandHandler.command {
         case Cmd(data, sender) ⇒
@@ -110,7 +110,7 @@ object PersistentActorCompileOnlyTest {
     PersistentBehaviors.receive[Command, Event, EventsInFlight](
       persistenceId = "recovery-complete-id",
 
-      initialState = EventsInFlight(0, Map.empty),
+      emptyState = EventsInFlight(0, Map.empty),
 
       commandHandler = (ctx: ActorContext[Command], state, cmd) ⇒ cmd match {
         case DoSideEffect(data) ⇒
@@ -151,7 +151,7 @@ object PersistentActorCompileOnlyTest {
 
     val b: Behavior[Command] = PersistentBehaviors.receive[Command, Event, Mood](
       persistenceId = "myPersistenceId",
-      initialState = Happy,
+      emptyState = Happy,
       commandHandler = CommandHandler.byState {
         case Happy ⇒ CommandHandler.command {
           case Greet(whom) ⇒
@@ -192,7 +192,7 @@ object PersistentActorCompileOnlyTest {
 
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "asdf",
-      initialState = State(Nil),
+      emptyState = State(Nil),
       commandHandler = CommandHandler.command {
         case RegisterTask(task) ⇒ Effect.persist(TaskRegistered(task))
         case TaskDone(task)     ⇒ Effect.persist(TaskRemoved(task))
@@ -219,7 +219,7 @@ object PersistentActorCompileOnlyTest {
 
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "asdf",
-      initialState = State(Nil),
+      emptyState = State(Nil),
       commandHandler = (ctx, _, cmd) ⇒ cmd match {
         case RegisterTask(task) ⇒
           Effect.persist(TaskRegistered(task))
@@ -282,7 +282,7 @@ object PersistentActorCompileOnlyTest {
 
       PersistentBehaviors.receive[Command, Event, List[Id]](
         persistenceId = "basket-1",
-        initialState = Nil,
+        emptyState = Nil,
         commandHandler =
           CommandHandler.byState(state ⇒
             if (isFullyHydrated(basket, state)) (ctx, state, cmd) ⇒
@@ -343,7 +343,7 @@ object PersistentActorCompileOnlyTest {
 
     PersistentBehaviors.receive[Command, Event, Mood](
       persistenceId = "myPersistenceId",
-      initialState = Sad,
+      emptyState = Sad,
       commandHandler = (_, state, cmd) ⇒
         cmd match {
           case Greet(whom) ⇒
@@ -379,7 +379,7 @@ object PersistentActorCompileOnlyTest {
 
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "myPersistenceId",
-      initialState = new State,
+      emptyState = new State,
       commandHandler = CommandHandler.command {
         case Enough ⇒
           Effect.persist(Done)

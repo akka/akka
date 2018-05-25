@@ -29,7 +29,7 @@ object OptionalSnapshotStoreSpec {
     name:  String           = UUID.randomUUID().toString) =
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = name,
-      initialState = State(),
+      emptyState = State(),
       commandHandler = CommandHandler.command {
         _ ⇒ Effect.persist(Event()).andThen(probe.ref ! _)
       },

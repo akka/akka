@@ -27,7 +27,7 @@ private[persistence] final class EventsourcedSetup[C, E, S](
   val context:               ActorContext[InternalProtocol],
   val timers:                TimerScheduler[InternalProtocol],
   val persistenceId:         String,
-  val initialState:          S,
+  val emptyState:            S,
   val commandHandler:        PersistentBehaviors.CommandHandler[C, E, S],
   val eventHandler:          (S, E) ⇒ S,
   val writerIdentity:        WriterIdentity,
