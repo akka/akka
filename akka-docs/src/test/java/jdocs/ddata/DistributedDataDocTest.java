@@ -15,9 +15,8 @@ import akka.testkit.javadsl.TestKit;
 import com.typesafe.config.ConfigFactory;
 import docs.ddata.DistributedDataDocSpec;
 import jdocs.AbstractJavaTest;
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
@@ -68,16 +67,16 @@ public class DistributedDataDocTest extends AbstractJavaTest {
         replicator.tell(new Replicator.Update<PNCounter>(counter1Key, PNCounter.create(),
             Replicator.writeLocal(), curr -> curr.increment(node, 1)), getSelf());
 
-        final WriteConsistency writeTo3 = new WriteTo(3, Duration.create(1, SECONDS));
+        final WriteConsistency writeTo3 = new WriteTo(3, Duration.ofSeconds(1));
         replicator.tell(new Replicator.Update<GSet<String>>(set1Key, GSet.create(),
             writeTo3, curr -> curr.add("hello")), getSelf());
 
         final WriteConsistency writeMajority =
-            new WriteMajority(Duration.create(5, SECONDS));
+            new WriteMajority(Duration.ofSeconds(5));
         replicator.tell(new Replicator.Update<ORSet<String>>(set2Key, ORSet.create(),
             writeMajority, curr -> curr.add(node, "hello")), getSelf());
 
-        final WriteConsistency writeAll = new WriteAll(Duration.create(5, SECONDS));
+        final WriteConsistency writeAll = new WriteAll(Duration.ofSeconds(5));
         replicator.tell(new Replicator.Update<Flag>(activeFlagKey, Flag.create(),
             writeAll, curr -> curr.switchOn()), getSelf());
       });
@@ -111,7 +110,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
     final ActorRef replicator = 
       DistributedData.get(getContext().getSystem()).replicator();
 
-    final WriteConsistency writeTwo = new WriteTo(2, Duration.create(3, SECONDS));
+    final WriteConsistency writeTwo = new WriteTo(2, Duration.ofSeconds(3));
     final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
     
     @Override
@@ -160,15 +159,15 @@ public class DistributedDataDocTest extends AbstractJavaTest {
           replicator.tell(new Replicator.Get<PNCounter>(counter1Key,
               Replicator.readLocal()), getSelf());
   
-          final ReadConsistency readFrom3 = new ReadFrom(3, Duration.create(1, SECONDS));
+          final ReadConsistency readFrom3 = new ReadFrom(3, Duration.ofSeconds(1));
           replicator.tell(new Replicator.Get<GSet<String>>(set1Key,
               readFrom3), getSelf());
   
-          final ReadConsistency readMajority = new ReadMajority(Duration.create(5, SECONDS));
+          final ReadConsistency readMajority = new ReadMajority(Duration.ofSeconds(5));
           replicator.tell(new Replicator.Get<ORSet<String>>(set2Key,
               readMajority), getSelf());
   
-          final ReadConsistency readAll = new ReadAll(Duration.create(5, SECONDS));
+          final ReadConsistency readAll = new ReadAll(Duration.ofSeconds(5));
           replicator.tell(new Replicator.Get<Flag>(activeFlagKey,
               readAll), getSelf());
           
@@ -210,7 +209,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
     final ActorRef replicator = 
       DistributedData.get(getContext().getSystem()).replicator();
   
-      final ReadConsistency readTwo = new ReadFrom(2, Duration.create(3, SECONDS));
+      final ReadConsistency readTwo = new ReadFrom(2, Duration.ofSeconds(3));
       final Key<PNCounter> counter1Key = PNCounterKey.create("counter1");
       
       @Override
@@ -295,7 +294,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
               Replicator.writeLocal()), getSelf());
     
           final WriteConsistency writeMajority =
-              new WriteMajority(Duration.create(5, SECONDS));
+              new WriteMajority(Duration.ofSeconds(5));
           replicator.tell(new Delete<PNCounter>(counter1Key,
               writeMajority), getSelf());
         })

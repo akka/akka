@@ -16,7 +16,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.AbstractActor;
-import scala.concurrent.duration.Duration;
 
 public class TestKitSampleTest extends AbstractJavaTest {
   

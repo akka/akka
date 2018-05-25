@@ -22,8 +22,6 @@ import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
 import java.util.*;
@@ -34,6 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
+import java.time.Duration;
 
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static org.junit.Assert.*;
@@ -66,7 +65,7 @@ public class FlowTest extends StreamTest {
     final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
     final Source<Integer, NotUsed> ints = Source.from(input);
     final Flow<Integer, String, NotUsed> flow1 = Flow.of(Integer.class).drop(2).take(3
-    ).takeWithin(java.time.Duration.ofSeconds(10
+    ).takeWithin(Duration.ofSeconds(10
     )).map(new Function<Integer, String>() {
       public String apply(Integer elem) {
         return lookup[elem];
@@ -81,7 +80,7 @@ public class FlowTest extends StreamTest {
       public java.util.List<String> apply(java.util.List<String> elem) {
         return elem;
       }
-    }).groupedWithin(100, java.time.Duration.ofMillis(50)
+    }).groupedWithin(100, Duration.ofMillis(50)
     ).mapConcat(new Function<java.util.List<String>, java.lang.Iterable<String>>() {
           public java.util.List<String> apply(java.util.List<String> elem) {
             return elem;
@@ -190,9 +189,7 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals(0);
     probe.expectMsgEquals(1);
 
-    FiniteDuration duration = Duration.apply(200, TimeUnit.MILLISECONDS);
-
-    probe.expectNoMsg(duration);
+    probe.expectNoMessage(Duration.ofMillis(200));
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
@@ -1013,7 +1010,7 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseInitialTimeout() throws Throwable {
     try {
       try {
-        Source.<Integer> maybe().via(Flow.of(Integer.class).initialTimeout(Duration.create(1, "second")))
+        Source.<Integer> maybe().via(Flow.of(Integer.class).initialTimeout(Duration.ofSeconds(1)))
             .runWith(Sink.<Integer> head(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
@@ -1029,7 +1026,7 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseCompletionTimeout() throws Throwable {
     try {
       try {
-        Source.<Integer> maybe().via(Flow.of(Integer.class).completionTimeout(Duration.create(1, "second")))
+        Source.<Integer> maybe().via(Flow.of(Integer.class).completionTimeout(Duration.ofSeconds(1)))
             .runWith(Sink.<Integer> head(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
@@ -1044,7 +1041,7 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseIdleTimeout() throws Throwable {
     try {
       try {
-        Source.<Integer> maybe().via(Flow.of(Integer.class).idleTimeout(Duration.create(1, "second")))
+        Source.<Integer> maybe().via(Flow.of(Integer.class).idleTimeout(Duration.ofSeconds(1)))
             .runWith(Sink.<Integer> head(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
@@ -1060,9 +1057,9 @@ public class FlowTest extends StreamTest {
     Integer result =
         Source.<Integer>maybe()
             .via(Flow.of(Integer.class)
-              .keepAlive(Duration.create(1, "second"), (Creator<Integer>) () -> 0)
+              .keepAlive(Duration.ofSeconds(1), (Creator<Integer>) () -> 0)
             )
-            .takeWithin(Duration.create(1500, "milliseconds"))
+            .takeWithin(Duration.ofMillis(1500))
             .runWith(Sink.<Integer>head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
 

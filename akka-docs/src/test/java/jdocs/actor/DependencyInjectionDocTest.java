@@ -49,7 +49,6 @@ public class DependencyInjectionDocTest extends AbstractJavaTest {
 
   @AfterClass
   public static void afterClass() {
-    //Await.ready(system.terminate(), Duration.create("5 seconds"));
     TestKit.shutdownActorSystem(system);
   }
 
