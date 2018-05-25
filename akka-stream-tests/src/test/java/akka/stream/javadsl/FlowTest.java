@@ -65,7 +65,7 @@ public class FlowTest extends StreamTest {
     final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
     final Source<Integer, NotUsed> ints = Source.from(input);
     final Flow<Integer, String, NotUsed> flow1 = Flow.of(Integer.class).drop(2).take(3
-    ).takeWithin(java.time.Duration.ofSeconds(10
+    ).takeWithin(Duration.ofSeconds(10
     )).map(new Function<Integer, String>() {
       public String apply(Integer elem) {
         return lookup[elem];
@@ -80,7 +80,7 @@ public class FlowTest extends StreamTest {
       public java.util.List<String> apply(java.util.List<String> elem) {
         return elem;
       }
-    }).groupedWithin(100, java.time.Duration.ofMillis(50)
+    }).groupedWithin(100, Duration.ofMillis(50)
     ).mapConcat(new Function<java.util.List<String>, java.lang.Iterable<String>>() {
           public java.util.List<String> apply(java.util.List<String> elem) {
             return elem;
@@ -188,10 +188,7 @@ public class FlowTest extends StreamTest {
 
     probe.expectMsgEquals(0);
     probe.expectMsgEquals(1);
-
-    Duration duration = Duration.ofMillis(200);
-
-    probe.expectNoMessage(duration);
+    probe.expectNoMessage(Duration.ofMillis(200));
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 

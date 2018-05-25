@@ -25,7 +25,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
 import scala.util.Random;
 
 import java.util.ArrayList;
@@ -180,7 +179,7 @@ public class RateTransformationDocTest extends AbstractJavaTest {
     sub.requestNext(new Pair<>(1.0, 2));
 
     pub.sendNext(2.0);
-    Await.ready(latch, Duration.create(1, TimeUnit.SECONDS));
+    Await.ready(latch, scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS));
     sub.requestNext(new Pair<>(2.0, 0));
   }
 
@@ -211,7 +210,7 @@ public class RateTransformationDocTest extends AbstractJavaTest {
     sub.requestNext(new Pair<>(1.0, 2));
 
     pub.sendNext(2.0);
-    Await.ready(latch, Duration.create(1, TimeUnit.SECONDS));
+    Await.ready(latch, scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS));
     sub.requestNext(new Pair<>(2.0, 0));
   }
 
