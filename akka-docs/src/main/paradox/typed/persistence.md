@@ -30,7 +30,7 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 Let's start with a simple example. The minimum required for a `PersistentBehavior` is:
 
 Scala
-:  @@snip [BasicPersistentBehaviorsSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #structure }
+:  @@snip [BasicPersistentBehaviorsCompileOnly.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #structure }
 
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #structure }
@@ -216,7 +216,7 @@ Since it is strongly discouraged to perform side effects in applyEvent,
 side effects should be performed once recovery has completed @scala[in the `onRecoveryCompleted` callback.] @java[by overriding `onRecoveryCompleted`]
 
 Scala
-:  @@snip [BasicPersistentBehaviorsSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #recovery }
+:  @@snip [BasicPersistentBehaviorsCompileOnly.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #recovery }
 
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #recovery }
@@ -228,18 +228,40 @@ The `onRecoveryCompleted` takes on an `ActorContext` and the current `State`.
 Persistence typed allows you to use event tags without using @ref[`EventAdapter`](../persistence.md#event-adapters):
 
 Scala
-:  @@snip [BasicPersistentActorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #tagging }
+:  @@snip [BasicPersistentActorCompileOnly.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #tagging }
 
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #tagging }
 
+## Event adapters
+
+Event adapters can be programmatically added to your `PersistentBehavior`s that can convert from your `Event` type
+to another type that is then passed to the journal.
+
+Defining an event adapter is done by extending an EventAdapter:
+
+Scala
+:  @@snip [x]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentBehaviorSpec.scala) { #event-wrapper }
+
+Java
+:  @@snip [x]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #event-wrapper }
+
+Then install it on a persistent behavior:
+
+Scala
+:  @@snip [x]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentBehaviorSpec.scala) { #install-event-adapter }
+
+Java
+:  @@snip [x]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #install-event-adapter }
+
 ## Wrapping Persistent Behaviors
+
 When creating a `PersistentBehavior`, it is possible to wrap `PersistentBehavior` in
 other behaviors such as `Behaviors.setup` in order to access the `ActorContext` object. For instance
 to access the actor logging upon taking snapshots for debug purpose.
 
 Scala
-:  @@snip [BasicPersistentActorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #wrapPersistentBehavior }
+:  @@snip [BasicPersistentActorCompileOnly.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #wrapPersistentBehavior }
 
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #wrapPersistentBehavior }

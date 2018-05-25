@@ -4,11 +4,15 @@
 
 package akka.persistence.typed.scaladsl
 
+import akka.Done
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.internal._
+
+import scala.util.Try
 
 object PersistentBehaviors {
 
@@ -70,6 +74,11 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
   def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
   /**
+   * The `callback` function is called to notify when a snapshot is complete.
+   */
+  def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
+
+  /**
    * Initiates a snapshot if the given function returns true.
    * When persisting multiple events at once the snapshot is triggered after all the events have
    * been persisted.
@@ -108,4 +117,11 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * The `tagger` function should give event tags, which will be used in persistence query
    */
   def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State]
+
+  /**
+   * Transform the event in another type before giving to the journal. Can be used to wrap events
+   * in types Journals understand but is of a different type than `Event`.
+   */
+  def eventAdapter(adapter: EventAdapter[Event, _]): PersistentBehavior[Command, Event, State]
 }
+

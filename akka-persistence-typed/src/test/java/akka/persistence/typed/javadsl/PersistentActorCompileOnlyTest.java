@@ -6,6 +6,7 @@ package akka.persistence.typed.javadsl;
 
 import akka.actor.Scheduler;
 import akka.actor.typed.ActorRef;
+import akka.persistence.typed.EventAdapter;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.util.Timeout;
 
@@ -17,7 +18,32 @@ import static akka.actor.typed.javadsl.AskPattern.ask;
 
 public class PersistentActorCompileOnlyTest {
 
+
   public static abstract class Simple {
+
+    //#event-wrapper
+    public static class Wrapper<T> {
+      private final T t;
+      public Wrapper(T t) {
+        this.t = t;
+      }
+      public T getT() {
+        return t;
+      }
+    }
+
+    public static class EventAdapterExample extends EventAdapter<SimpleEvent, Wrapper<SimpleEvent>> {
+      @Override
+      public Wrapper<SimpleEvent> toJournal(SimpleEvent simpleEvent) {
+        return new Wrapper<>(simpleEvent);
+      }
+      @Override
+      public SimpleEvent fromJournal(Wrapper<SimpleEvent> simpleEventWrapper) {
+        return simpleEventWrapper.getT();
+      }
+    }
+    //#event-wrapper
+
     //#command
     public static class SimpleCommand {
       public final String data;
@@ -45,6 +71,7 @@ public class PersistentActorCompileOnlyTest {
       SimpleState(List<String> events) {
         this.events = events;
       }
+
       SimpleState() {
         this.events = new ArrayList<>();
       }
@@ -79,7 +106,15 @@ public class PersistentActorCompileOnlyTest {
         return (state, event) -> state.addEvent(event);
       }
       //#event-handler
+
+      //#install-event-adapter
+      @Override
+      public EventAdapter<SimpleEvent, Wrapper<SimpleEvent>> eventAdapter() {
+        return new EventAdapterExample();
+      }
+      //#install-event-adapter
     };
+
     //#behavior
   }
 

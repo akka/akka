@@ -11,7 +11,7 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.{ ActorTestKitGuardian, TestKitUtils }
 import com.typesafe.config.{ Config, ConfigFactory }
 
-import scala.concurrent.Await
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
 object ActorTestKit {
