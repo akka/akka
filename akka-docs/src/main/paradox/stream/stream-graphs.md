@@ -440,8 +440,8 @@ of initial elements from `source`.
 @@@ note
 
 What we see here is that in certain cases we need to choose between boundedness and liveness. Our first example would
-not deadlock if there would be an infinite buffer in the loop, or vice versa, if the elements in the cycle would
-be balanced (as many elements are removed as many are injected) then there would be no deadlock.
+not deadlock if there were an infinite buffer in the loop, or vice versa, if the elements in the cycle were 
+balanced (as many elements are removed as many are injected) then there would be no deadlock.
 
 @@@
 
