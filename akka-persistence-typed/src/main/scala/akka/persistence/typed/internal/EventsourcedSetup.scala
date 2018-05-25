@@ -4,16 +4,20 @@
 
 package akka.persistence.typed.internal
 
+import akka.Done
 import akka.actor.typed.Logger
 import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer, TimerScheduler }
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.internal.EventsourcedBehavior.MDC
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl.PersistentBehaviors
 import akka.util.Collections.EmptyImmutableSeq
 import akka.util.OptionVal
+
+import scala.util.Try
 
 /**
  * INTERNAL API: Carry state for the Persistent behavior implementation behaviors
@@ -28,7 +32,9 @@ private[persistence] final class EventsourcedSetup[C, E, S](
   val eventHandler:          (S, E) ⇒ S,
   val writerIdentity:        WriterIdentity,
   val recoveryCompleted:     (ActorContext[C], S) ⇒ Unit,
+  val onSnapshot:            (ActorContext[C], SnapshotMetadata, Try[Done]) ⇒ Unit,
   val tagger:                E ⇒ Set[String],
+  val eventAdapter:          EventAdapter[E, _],
   val snapshotWhen:          (S, E, Long) ⇒ Boolean,
   val recovery:              Recovery,
   var holdingRecoveryPermit: Boolean,

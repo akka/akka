@@ -8,7 +8,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.scaladsl.PersistentBehaviors
 
-object BasicPersistentBehaviorsSpec {
+object BasicPersistentBehaviorsCompileOnly {
 
   //#structure
   sealed trait Command

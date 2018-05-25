@@ -73,7 +73,7 @@ final class EventHandlerBuilder[Event, State >: Null]() {
         }
 
         result match {
-          case OptionVal.None    ⇒ throw new MatchError(s"No match found for event [${event.getClass}] and state [${state.getClass}]")
+          case OptionVal.None    ⇒ throw new MatchError(s"No match found for event [${event.getClass}] and state [${state.getClass}]. Has this event been stored using an EventAdapter?")
           case OptionVal.Some(s) ⇒ s
         }
       }

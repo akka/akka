@@ -4,15 +4,18 @@
 
 package akka.persistence.typed.javadsl
 
-import java.util.Collections
+import java.util.{ Collections, Optional }
 
 import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
-import akka.annotation.ApiMayChange
-import akka.persistence.typed._
+import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.persistence.SnapshotMetadata
+import akka.persistence.typed.{ EventAdapter, _ }
 import akka.persistence.typed.internal._
+
+import scala.util.{ Failure, Success }
 
 /** Java API */
 @ApiMayChange
@@ -79,6 +82,21 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
   def onRecoveryCompleted(ctx: ActorContext[Command], state: State): Unit = {}
 
   /**
+   * Override to get notified when a snapshot is finished.
+   * The default implementation logs failures at error and success writes at
+   * debug.
+   *
+   * @param result None if successful otherwise contains the exception thrown when snapshotting
+   */
+  def onSnapshot(ctx: ActorContext[Command], meta: SnapshotMetadata, result: Optional[Throwable]): Unit = {
+    if (result.isPresent) {
+      ctx.getLog.error(result.get(), "Save snapshot failed, snapshot metadata: [{}]", meta)
+    } else {
+      ctx.getLog.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
+    }
+  }
+
+  /**
    * Override and define that snapshot should be saved every N events.
    *
    * If this is overridden `shouldSnapshot` is not used.
@@ -104,6 +122,8 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
    * The `tagger` function should give event tags, which will be used in persistence query
    */
   def tagsFor(event: Event): java.util.Set[String] = Collections.emptySet()
+
+  def eventAdapter(): EventAdapter[Event, _] = NoOpEventAdapter.instance[Event]
 
   /**
    * INTERNAL API: DeferredBehavior init
@@ -133,6 +153,12 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
       .onRecoveryCompleted((ctx, state) ⇒ onRecoveryCompleted(ctx.asJava, state))
       .snapshotWhen(snapshotWhen)
       .withTagger(tagger)
+      .onSnapshot((ctx, meta, result) ⇒ {
+        onSnapshot(ctx.asJava, meta, result match {
+          case Success(_) ⇒ Optional.empty()
+          case Failure(t) ⇒ Optional.of(t)
+        })
+      }).eventAdapter(eventAdapter())
   }
 
 }
