@@ -4,3 +4,6 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowO
 # #24758 recreate already closed substreams 
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GroupBy.this")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.groupBy")
+
+# #24891 add return type for FlowMonitorState.finished
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.FlowMonitorState.finished")
