@@ -40,7 +40,7 @@ object BehaviorTestKit {
 @DoNotInherit
 abstract class BehaviorTestKit[T] {
   /**
-   * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.javadsl.Effects.noEffects]] if no effects
+   * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.javadsl.EffectFactory.noEffects]] if no effects
    * have taken place. The effect is consumed, subsequent calls won't
    * will not include this effect.
    */

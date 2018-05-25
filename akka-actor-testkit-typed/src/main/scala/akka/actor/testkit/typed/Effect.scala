@@ -10,8 +10,8 @@ import akka.annotation.DoNotInherit
  * All tracked effects for the [[akka.actor.testkit.typed.scaladsl.BehaviorTestKit]] and
  * [[akka.actor.testkit.typed.javadsl.BehaviorTestKit]] must extend this type.
  *
- * Factories/types for effects are available through [[akka.actor.testkit.typed.scaladsl.Effects]]
- * and [[akka.actor.testkit.typed.javadsl.Effects]]
+ * Factories/types for effects are available through [[akka.actor.testkit.typed.Effects]]
+ * and [[akka.actor.testkit.typed.javadsl.EffectFactory]]
  *
  * Not for user extension
  */

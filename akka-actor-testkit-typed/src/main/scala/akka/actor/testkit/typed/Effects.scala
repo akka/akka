@@ -2,12 +2,14 @@
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.testkit.typed.scaladsl
+package akka.actor.testkit.typed
 
+import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
 import akka.actor.typed.{ ActorRef, Behavior, Props }
-import akka.actor.testkit.typed.Effect
+import akka.annotation.InternalApi
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.compat.java8.FunctionConverters._
 
 /**
  * Types for behavior effects for [[BehaviorTestKit]], each effect has a suitable equals and can be used to compare
@@ -60,15 +62,18 @@ object Effects {
     override def _2: Props = props
     override def canEqual(o: Any) = o.isInstanceOf[SpawnedAnonymous[_]]
   }
+
   object SpawnedAnonymous {
     def apply[T](behavior: Behavior[T], props: Props = Props.empty): SpawnedAnonymous[T] = new SpawnedAnonymous(behavior, props, null)
     def unapply[T](s: SpawnedAnonymous[T]): Option[(Behavior[T], Props)] = Some((s.behavior, s.props))
   }
 
   /**
-   * The behavior spawned a named adapter, through `ctx.spawnMessageAdapter`
+   * INTERNAL API
+   * Spawning adapters is private[akka]
    */
-  final class SpawnedAdapter[T](val name: String, val ref: ActorRef[T])
+  @InternalApi
+  private[akka] final class SpawnedAdapter[T](val name: String, val ref: ActorRef[T])
     extends Effect with Product1[String] with Serializable {
 
     override def equals(other: Any) = other match {
@@ -82,7 +87,13 @@ object Effects {
     override def _1: String = name
     override def canEqual(o: Any) = o.isInstanceOf[SpawnedAdapter[_]]
   }
-  object SpawnedAdapter {
+
+  /**
+   * INTERNAL API
+   * Spawning adapters is private[akka]
+   */
+  @InternalApi
+  private[akka] object SpawnedAdapter {
     def apply[T](name: String): SpawnedAdapter[T] = new SpawnedAdapter(name, null)
     def unapply[T](s: SpawnedAdapter[T]): Option[Tuple1[String]] = Some(Tuple1(s.name))
   }
@@ -94,7 +105,7 @@ object Effects {
     extends Effect with Product with Serializable {
 
     override def equals(other: Any) = other match {
-      case o: SpawnedAnonymousAdapter[_] ⇒ true
+      case _: SpawnedAnonymousAdapter[_] ⇒ true
       case _                             ⇒ false
     }
     override def hashCode: Int = Nil.##
@@ -109,6 +120,16 @@ object Effects {
   object SpawnedAnonymousAdapter {
     def apply[T]() = new SpawnedAnonymousAdapter[T](null)
     def unapply[T](s: SpawnedAnonymousAdapter[T]): Boolean = true
+  }
+  /**
+   * The behavior create a message adapter for the messages of type clazz
+   * FIXME, function as a java api?
+   */
+  final case class MessageAdapter[A, T](messageClass: Class[A], adapt: A ⇒ T) extends Effect {
+    /**
+     * JAVA API
+     */
+    def adaptFunction: java.util.function.Function[A, T] = adapt.asJava
   }
   /**
    * The behavior stopped `childName`
@@ -142,5 +163,5 @@ object Effects {
   /**
    * Used for NoEffects expectations by type
    */
-  sealed trait NoEffects extends Effect
+  sealed abstract class NoEffects extends Effect
 }

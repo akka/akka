@@ -14,8 +14,8 @@ import akka.util.JavaDurationConverters._
  * Factories for behavior effects for [[BehaviorTestKit]], each effect has a suitable equals and can be used to compare
  * actual effects to expected ones.
  */
-object Effects {
-  import akka.actor.testkit.typed.scaladsl.Effects._
+object EffectFactory {
+  import akka.actor.testkit.typed.Effects._
 
   /**
    * The behavior spawned a named child with the given behavior with no specific props
