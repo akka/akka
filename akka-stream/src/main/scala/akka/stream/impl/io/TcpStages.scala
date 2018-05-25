@@ -118,12 +118,9 @@ import scala.concurrent.{ Future, Promise }
         connectionFlowsAwaitingInitialization.incrementAndGet()
 
         val tcpFlow =
-          Flow.fromGraph(new IncomingConnectionStage(connection, connected.remoteAddress, halfClose, ioSettings))
+          Flow.fromGraph(new IncomingConnectionStage(connection, connected.remoteAddress, halfClose, ioSettings,
+            () ⇒ connectionFlowsAwaitingInitialization.decrementAndGet()))
             .via(detacher[ByteString]) // must read ahead for proper completions
-            .mapMaterializedValue { m ⇒
-              connectionFlowsAwaitingInitialization.decrementAndGet()
-              m
-            }
 
         // FIXME: Previous code was wrong, must add new tests
         val handler = idleTimeout match {
@@ -192,7 +189,7 @@ private[stream] object ConnectionSourceStage {
     halfClose:           Boolean,
     ioSettings:          IOSettings) extends TcpRole
 
-  case class Inbound(connection: ActorRef, halfClose: Boolean, ioSettings: IOSettings) extends TcpRole
+  case class Inbound(connection: ActorRef, halfClose: Boolean, ioSettings: IOSettings, registerCallback: () ⇒ Unit) extends TcpRole
 
   /*
    * This is a *non-detached* design, i.e. this does not prefetch itself any of the inputs. It relies on downstream
@@ -221,11 +218,12 @@ private[stream] object ConnectionSourceStage {
     override def preStart(): Unit = {
       setKeepGoing(true)
       role match {
-        case Inbound(conn, _, _) ⇒
+        case Inbound(conn, _, _, registerCallback) ⇒
           setHandler(bytesOut, readHandler)
           connection = conn
           getStageActor(connected).watch(connection)
           connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
+          registerCallback()
           pull(bytesIn)
         case ob @ Outbound(manager, cmd, _, _, _) ⇒
           getStageActor(connecting(ob)).watch(manager)
@@ -366,7 +364,7 @@ private[stream] object ConnectionSourceStage {
  * INTERNAL API
  */
 @InternalApi private[akka] class IncomingConnectionStage(
-  connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean, ioSettings: IOSettings)
+  connection: ActorRef, remoteAddress: InetSocketAddress, halfClose: Boolean, ioSettings: IOSettings, registerCallback: () ⇒ Unit)
   extends GraphStage[FlowShape[ByteString, ByteString]] {
   import TcpConnectionStage._
 
@@ -381,7 +379,7 @@ private[stream] object ConnectionSourceStage {
     if (hasBeenCreated.get) throw new IllegalStateException("Cannot materialize an incoming connection Flow twice.")
     hasBeenCreated.set(true)
 
-    new TcpStreamLogic(shape, Inbound(connection, halfClose, ioSettings), remoteAddress)
+    new TcpStreamLogic(shape, Inbound(connection, halfClose, ioSettings, registerCallback), remoteAddress)
   }
 
   override def toString = s"TCP-from($remoteAddress)"
