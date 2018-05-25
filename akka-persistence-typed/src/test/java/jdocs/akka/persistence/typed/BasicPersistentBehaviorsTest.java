@@ -29,7 +29,7 @@ public class BasicPersistentBehaviorsTest {
     }
 
     @Override
-    public State initialState() {
+    public State emptyState() {
       return new State();
     }
 

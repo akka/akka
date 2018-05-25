@@ -18,7 +18,7 @@ object BasicPersistentBehaviorsCompileOnly {
   val behavior: Behavior[Command] =
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
-      initialState = State(),
+      emptyState = State(),
       commandHandler = (ctx, state, cmd) ⇒ ???,
       eventHandler = (state, evt) ⇒ ???)
   //#structure
@@ -27,7 +27,7 @@ object BasicPersistentBehaviorsCompileOnly {
   val recoveryBehavior: Behavior[Command] =
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
-      initialState = State(),
+      emptyState = State(),
       commandHandler = (ctx, state, cmd) ⇒ ???,
       eventHandler = (state, evt) ⇒ ???)
       .onRecoveryCompleted { (ctx, state) ⇒
@@ -39,7 +39,7 @@ object BasicPersistentBehaviorsCompileOnly {
   val taggingBehavior: Behavior[Command] =
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
-      initialState = State(),
+      emptyState = State(),
       commandHandler = (ctx, state, cmd) ⇒ ???,
       eventHandler = (state, evt) ⇒ ???
     ).withTagger(_ ⇒ Set("tag1", "tag2"))
@@ -49,7 +49,7 @@ object BasicPersistentBehaviorsCompileOnly {
   //#wrapPersistentBehavior
   val samplePersistentBehavior = PersistentBehaviors.receive[Command, Event, State](
     persistenceId = "abc",
-    initialState = State(),
+    emptyState = State(),
     commandHandler = (ctx, state, cmd) ⇒ ???,
     eventHandler = (state, evt) ⇒ ???)
     .onRecoveryCompleted { (ctx, state) ⇒

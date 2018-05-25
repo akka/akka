@@ -109,7 +109,7 @@ object PersistentBehaviorSpec {
     snapshotProbe: ActorRef[Try[Done]]): PersistentBehavior[Command, Event, State] = {
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
-      initialState = State(0, Vector.empty),
+      emptyState = State(0, Vector.empty),
       commandHandler = (ctx, state, cmd) ⇒ cmd match {
         case Increment ⇒
           Effect.persist(Incremented(1))

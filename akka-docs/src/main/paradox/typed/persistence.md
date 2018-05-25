@@ -42,7 +42,7 @@ The event and state are only used internally.
 The components that make up a PersistentBehavior are:
 
 * `persistenceId` is the unique identifier for the persistent actor.
-* `initialState` defines the `State` when the entity is first created e.g. a Counter would start with 0 as state.
+* `emptyState` defines the `State` when the entity is first created e.g. a Counter would start with 0 as state.
 * `commandHandler` defines how to handle command, resulting in Effects e.g. persisting events, stopping the persistent actor.
 * `eventHandler` updates the current state when an event has been persisted.
 

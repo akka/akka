@@ -170,7 +170,7 @@ public class InDepthPersistentBehaviorTest {
     }
 
     @Override
-    public BlogState initialState() {
+    public BlogState emptyState() {
       return new BlogState(Optional.empty(), false);
     }
 
