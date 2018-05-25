@@ -10,8 +10,6 @@ import akka.testkit.javadsl.EventFilter;
 import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.scalatest.junit.JUnitSuite;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.util.Timeout;
@@ -33,7 +31,7 @@ public class ConsumerJavaTest extends JUnitSuite {
   public void shouldHandleExceptionThrownByActorAndGenerateCustomResponse() throws Exception {
     new TestKit(system) {{
       String result = new EventFilter(Exception.class, system).occurrences(1).intercept(() -> {
-        FiniteDuration duration = Duration.create(1, TimeUnit.SECONDS);
+        scala.concurrent.duration.FiniteDuration duration = scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS);
         Timeout timeout = new Timeout(duration);
         Camel camel = CamelExtension.get(system);
         ExecutionContext executionContext = system.dispatcher();

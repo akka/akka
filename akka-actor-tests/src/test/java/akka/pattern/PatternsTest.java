@@ -8,7 +8,6 @@ import akka.actor.*;
 import akka.dispatch.Futures;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
-import akka.testkit.TestLatch;
 import akka.testkit.TestProbe;
 import akka.util.Timeout;
 import org.junit.ClassRule;
@@ -17,11 +16,10 @@ import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.Await;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.concurrent.*;
+import java.time.Duration;
 
 import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
@@ -75,15 +73,17 @@ public class PatternsTest extends JUnitSuite {
     @Test
     public void useAsk() throws Exception {
         ActorRef testActor = system.actorOf(Props.create(JavaAPITestActor.class), "test");
+        scala.concurrent.duration.Duration timeout = scala.concurrent.duration.Duration.create(3, "seconds");
         assertEquals("Ask should return expected answer",
-                JavaAPITestActor.ANSWER, Await.result(ask(testActor, "hey!", 3000), Duration.create(3, "seconds")));
+                JavaAPITestActor.ANSWER, Await.result(ask(testActor, "hey!", 3000), timeout));
     }
 
     @Test
     public void useAskWithActorSelection() throws Exception {
+        scala.concurrent.duration.Duration timeout = scala.concurrent.duration.Duration.create(3, "seconds");
         ActorRef testActor = system.actorOf(Props.create(JavaAPITestActor.class), "test2");
         ActorSelection selection = system.actorSelection("/user/test2");
-        ActorIdentity id = (ActorIdentity) Await.result(ask(selection, new Identify("yo!"), 3000), Duration.create(3, "seconds"));
+        ActorIdentity id = (ActorIdentity) Await.result(ask(selection, new Identify("yo!"), 3000), timeout);
         assertEquals("Ask (Identify) should return the proper ActorIdentity", testActor, id.getActorRef().get());
     }
 
@@ -171,7 +171,7 @@ public class PatternsTest extends JUnitSuite {
                         3000);
 
 
-        final Object actual = Await.result(response, FiniteDuration.apply(3, SECONDS));
+        final Object actual = Await.result(response, scala.concurrent.duration.FiniteDuration.apply(3, SECONDS));
         assertEquals(expected, actual);
     }
 
@@ -188,7 +188,7 @@ public class PatternsTest extends JUnitSuite {
                         3000);
 
 
-        final Object actual = Await.result(response, FiniteDuration.apply(3, SECONDS));
+        final Object actual = Await.result(response, scala.concurrent.duration.FiniteDuration.apply(3, SECONDS));
         assertEquals(expected, actual);
     }
 
@@ -205,7 +205,7 @@ public class PatternsTest extends JUnitSuite {
                         Timeout.apply(3, SECONDS));
 
 
-        final Object actual = Await.result(response, FiniteDuration.apply(3, SECONDS));
+        final Object actual = Await.result(response, scala.concurrent.duration.FiniteDuration.apply(3, SECONDS));
         assertEquals(expected, actual);
     }
 
@@ -251,10 +251,10 @@ public class PatternsTest extends JUnitSuite {
                 Patterns.retry(
                         () -> Futures.successful(expected),
                         3,
-                        Duration.apply(200, "millis"),
+                        scala.concurrent.duration.Duration.apply(200, "millis"),
                         system.scheduler(), ec);
 
-        String actual = Await.result(retriedFuture, FiniteDuration.apply(3, SECONDS));
+        String actual = Await.result(retriedFuture, scala.concurrent.duration.FiniteDuration.apply(3, SECONDS));
         assertEquals(expected, actual);
     }
 
@@ -268,7 +268,7 @@ public class PatternsTest extends JUnitSuite {
                 PatternsCS.retry(
                         attempt,
                         3,
-                        java.time.Duration.ofMillis(200),
+                        Duration.ofMillis(200),
                         system.scheduler(), ec);
 
         final String actual = retriedStage.toCompletableFuture().get(3, SECONDS);
@@ -281,13 +281,13 @@ public class PatternsTest extends JUnitSuite {
 
         Future<String> delayedFuture = Patterns
                 .after(
-                        Duration.create(200, "millis"),
+                        scala.concurrent.duration.Duration.create(200, "millis"),
                         system.scheduler(),
                         ec,
                         failedCallable);
 
         Future<String> resultFuture = Futures.firstCompletedOf(Arrays.asList(delayedFuture), ec);
-        Await.result(resultFuture, FiniteDuration.apply(3, SECONDS));
+        Await.result(resultFuture, scala.concurrent.duration.FiniteDuration.apply(3, SECONDS));
     }
 
     @Test(expected = IllegalStateException.class)
@@ -296,13 +296,13 @@ public class PatternsTest extends JUnitSuite {
 
         Future<String> delayedFuture = Patterns
                 .after(
-                        Duration.create(200, "millis"),
+                        scala.concurrent.duration.Duration.create(200, "millis"),
                         system.scheduler(),
                         ec,
                         failedFuture);
 
         Future<String> resultFuture = Futures.firstCompletedOf(Arrays.asList(delayedFuture), ec);
-        Await.result(resultFuture, FiniteDuration.apply(3, SECONDS));
+        Await.result(resultFuture, scala.concurrent.duration.FiniteDuration.apply(3, SECONDS));
     }
 
     @Test
@@ -311,13 +311,13 @@ public class PatternsTest extends JUnitSuite {
 
         Future<String> delayedFuture = Patterns
                 .after(
-                        Duration.create(200, "millis"),
+                        scala.concurrent.duration.Duration.create(200, "millis"),
                         system.scheduler(),
                         ec,
                         () -> Futures.successful(expected));
 
         Future<String> resultFuture = Futures.firstCompletedOf(Arrays.asList(delayedFuture), ec);
-        final String actual = Await.result(resultFuture, FiniteDuration.apply(3, SECONDS));
+        final String actual = Await.result(resultFuture, scala.concurrent.duration.FiniteDuration.apply(3, SECONDS));
 
         assertEquals(expected, actual);
     }
@@ -328,14 +328,14 @@ public class PatternsTest extends JUnitSuite {
 
         Future<String> delayedFuture = Patterns
                 .after(
-                        Duration.create(200, "millis"),
+                        scala.concurrent.duration.Duration.create(200, "millis"),
                         system.scheduler(),
                         ec,
                         Futures.successful(expected));
 
         Future<String> resultFuture = Futures.firstCompletedOf(Arrays.asList(delayedFuture), ec);
 
-        final String actual = Await.result(resultFuture, FiniteDuration.apply(3, SECONDS));
+        final String actual = Await.result(resultFuture, scala.concurrent.duration.FiniteDuration.apply(3, SECONDS));
         assertEquals(expected, actual);
     }
 
@@ -345,7 +345,7 @@ public class PatternsTest extends JUnitSuite {
 
         Future<String> delayedFuture = Patterns
                 .after(
-                        Duration.create(200, "millis"),
+                        scala.concurrent.duration.Duration.create(200, "millis"),
                         system.scheduler(),
                         ec,
                         Futures.successful("world"));
@@ -354,7 +354,7 @@ public class PatternsTest extends JUnitSuite {
 
         Future<String> resultFuture = Futures.firstCompletedOf(Arrays.asList(delayedFuture, immediateFuture), ec);
 
-        final String actual = Await.result(resultFuture, FiniteDuration.apply(3, SECONDS));
+        final String actual = Await.result(resultFuture, scala.concurrent.duration.FiniteDuration.apply(3, SECONDS));
         assertEquals(expected, actual);
     }
 
@@ -368,7 +368,7 @@ public class PatternsTest extends JUnitSuite {
 
         CompletionStage<String> delayedStage = PatternsCS
                 .after(
-                        java.time.Duration.ofMillis(200),
+                        Duration.ofMillis(200),
                         system.scheduler(),
                         ec,
                         failedCallable);
@@ -386,7 +386,7 @@ public class PatternsTest extends JUnitSuite {
 
         CompletionStage<String> delayedStage = PatternsCS
                 .after(
-                        Duration.create(200, "millis"),
+                        Duration.ofMillis(200),
                         system.scheduler(),
                         ec,
                         failedFuture);
@@ -405,7 +405,7 @@ public class PatternsTest extends JUnitSuite {
 
         CompletionStage<String> delayedStage = PatternsCS
                 .after(
-                        java.time.Duration.ofMillis(200),
+                        Duration.ofMillis(200),
                         system.scheduler(),
                         ec,
                         cf);
@@ -422,7 +422,7 @@ public class PatternsTest extends JUnitSuite {
 
         CompletionStage<String> delayedStage = PatternsCS
                 .after(
-                        Duration.create(200, "millis"),
+                        Duration.ofMillis(200),
                         system.scheduler(),
                         ec,
                         f);
@@ -439,7 +439,7 @@ public class PatternsTest extends JUnitSuite {
 
         CompletionStage<String> delayedStage = PatternsCS
                 .after(
-                        Duration.create(200, "millis"),
+                        Duration.ofMillis(200),
                         system.scheduler(),
                         ec,
                         f);
@@ -454,9 +454,10 @@ public class PatternsTest extends JUnitSuite {
     @Test
     public void testGracefulStop() throws Exception {
         ActorRef target = system.actorOf(Props.create(StopActor.class));
-        Future<Boolean> result = Patterns.gracefulStop(target, FiniteDuration.apply(200, TimeUnit.MILLISECONDS));
+        Future<Boolean> result = Patterns.gracefulStop(target,
+                scala.concurrent.duration.FiniteDuration.apply(200, TimeUnit.MILLISECONDS));
 
-        Boolean actual = Await.result(result, FiniteDuration.apply(3, SECONDS));
+        Boolean actual = Await.result(result, scala.concurrent.duration.FiniteDuration.apply(3, SECONDS));
         assertEquals(true, actual);
     }
 

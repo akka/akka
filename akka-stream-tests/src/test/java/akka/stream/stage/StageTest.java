@@ -12,12 +12,8 @@ import akka.stream.javadsl.Source;
 import akka.testkit.AkkaSpec;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import java.util.Arrays;
 import java.util.List;
