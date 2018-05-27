@@ -445,4 +445,18 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       a[RuntimeException] shouldBe thrownBy(matValPoweredSource.preMaterialize())
     }
   }
+
+  "Source connect" must {
+    "correctly connects a source to a sink" in {
+      val (sink, src) = Source.connect[Int]
+      Source(1 to 3).runWith(sink)
+      val probe = src.runWith(TestSink.probe)
+
+      probe.request(3)
+      probe.expectNext(1)
+      probe.expectNext(2)
+      probe.expectNext(3)
+      probe.expectComplete()
+    }
+  }
 }

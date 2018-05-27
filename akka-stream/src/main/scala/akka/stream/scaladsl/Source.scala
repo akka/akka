@@ -671,4 +671,21 @@ object Source {
   def unfoldResourceAsync[T, S](create: () ⇒ Future[S], read: (S) ⇒ Future[Option[T]], close: (S) ⇒ Future[Done]): Source[T, NotUsed] =
     Source.fromGraph(new UnfoldResourceSourceAsync(create, read, close))
 
+  /**
+   * Materializes into a sink connected to a source, i.e. the sink pushes into the source:
+   *
+   * +----------+       +----------+
+   * >   Sink   |------>|  Source  >
+   * +----------+       +----------+
+   *
+   * Should be provided by Akka Streams, see https://github.com/akka/akka/issues/24853.
+   */
+  def connect[Mat2]()(implicit materializer: Materializer): (Sink[Mat2, NotUsed], Source[Mat2, NotUsed]) =
+    Source
+      .asSubscriber[Mat2]
+      .toMat(Sink.asPublisher[Mat2](fanout = false))(Keep.both)
+      .mapMaterializedValue {
+        case (sub, pub) ⇒ (Sink.fromSubscriber(sub), Source.fromPublisher(pub))
+      }
+      .run()
 }
