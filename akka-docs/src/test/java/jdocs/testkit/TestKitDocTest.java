@@ -36,7 +36,6 @@ import akka.testkit.TestActor.AutoPilot;
 import java.util.List;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.time.Duration;
 
 public class TestKitDocTest extends AbstractJavaTest {
