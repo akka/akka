@@ -32,7 +32,8 @@ object Dependencies {
     scalaTestVersion := "3.0.4",
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 12 ⇒ "0.8.0"
+        case Some((2, n)) if n >= 13 ⇒ "0.9.0"
+        case Some((2, n)) if n == 12 ⇒ "0.8.0"
         case _                       ⇒ "0.7.0"
       }
     })

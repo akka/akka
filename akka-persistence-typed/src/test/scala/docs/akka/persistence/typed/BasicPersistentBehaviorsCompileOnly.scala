@@ -8,7 +8,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.scaladsl.PersistentBehaviors
 
-object BasicPersistentBehaviorsSpec {
+object BasicPersistentBehaviorsCompileOnly {
 
   //#structure
   sealed trait Command
@@ -18,7 +18,7 @@ object BasicPersistentBehaviorsSpec {
   val behavior: Behavior[Command] =
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
-      initialState = State(),
+      emptyState = State(),
       commandHandler = (ctx, state, cmd) ⇒ ???,
       eventHandler = (state, evt) ⇒ ???)
   //#structure
@@ -27,7 +27,7 @@ object BasicPersistentBehaviorsSpec {
   val recoveryBehavior: Behavior[Command] =
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
-      initialState = State(),
+      emptyState = State(),
       commandHandler = (ctx, state, cmd) ⇒ ???,
       eventHandler = (state, evt) ⇒ ???)
       .onRecoveryCompleted { (ctx, state) ⇒
@@ -39,7 +39,7 @@ object BasicPersistentBehaviorsSpec {
   val taggingBehavior: Behavior[Command] =
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
-      initialState = State(),
+      emptyState = State(),
       commandHandler = (ctx, state, cmd) ⇒ ???,
       eventHandler = (state, evt) ⇒ ???
     ).withTagger(_ ⇒ Set("tag1", "tag2"))
@@ -49,7 +49,7 @@ object BasicPersistentBehaviorsSpec {
   //#wrapPersistentBehavior
   val samplePersistentBehavior = PersistentBehaviors.receive[Command, Event, State](
     persistenceId = "abc",
-    initialState = State(),
+    emptyState = State(),
     commandHandler = (ctx, state, cmd) ⇒ ???,
     eventHandler = (state, evt) ⇒ ???)
     .onRecoveryCompleted { (ctx, state) ⇒

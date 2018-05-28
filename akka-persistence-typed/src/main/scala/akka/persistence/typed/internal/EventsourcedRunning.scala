@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.internal
 
+import akka.Done
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.MutableBehavior
@@ -16,6 +17,7 @@ import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.util.{ Failure, Success }
 
 /**
  * INTERNAL API
@@ -99,7 +101,8 @@ private[akka] object EventsourcedRunning {
           // the invalid event, in case such validation is implemented in the event handler.
           // also, ensure that there is an event handler for each single event
           val newState = state.applyEvent(setup, event)
-          val eventToPersist = tagEvent(event)
+
+          val eventToPersist = adaptEvent(event)
 
           val newState2 = internalPersist(newState, eventToPersist)
 
@@ -120,7 +123,7 @@ private[akka] object EventsourcedRunning {
                 (currentState.applyEvent(setup, event), shouldSnapshot)
             }
 
-            val eventsToPersist = events.map(tagEvent)
+            val eventsToPersist = events.map(adaptEvent)
 
             val newState2 = internalPersistAll(eventsToPersist, newState)
 
@@ -143,9 +146,13 @@ private[akka] object EventsourcedRunning {
       }
     }
 
-    def tagEvent(event: E): Any = {
+    def adaptEvent(event: E): Any = {
       val tags = setup.tagger(event)
-      if (tags.isEmpty) event else Tagged(event, tags)
+      val adaptedEvent = setup.eventAdapter.toJournal(event)
+      if (tags.isEmpty)
+        adaptedEvent
+      else
+        Tagged(adaptedEvent, tags)
     }
 
     setup.setMdc(runningCmdsMdc)
@@ -265,11 +272,11 @@ private[akka] object EventsourcedRunning {
     outer:    Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
     response match {
       case SaveSnapshotSuccess(meta) ⇒
-        setup.context.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
+        setup.onSnapshot(commandContext, meta, Success(Done))
         outer
       case SaveSnapshotFailure(meta, ex) ⇒
-        setup.context.log.error(ex, "Save snapshot failed, snapshot metadata: [{}]", meta)
-        outer // FIXME https://github.com/akka/akka/issues/24637 should we provide callback for this? to allow Stop
+        setup.onSnapshot(commandContext, meta, Failure(ex))
+        outer
 
       // FIXME not implemented
       case DeleteSnapshotFailure(_, _)  ⇒ ???

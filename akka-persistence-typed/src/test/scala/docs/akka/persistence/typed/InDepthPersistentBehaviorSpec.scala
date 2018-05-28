@@ -121,7 +121,7 @@ object InDepthPersistentBehaviorSpec {
   def behavior(entityId: String): Behavior[BlogCommand] =
     PersistentBehaviors.receive[BlogCommand, BlogEvent, BlogState](
       persistenceId = "Blog-" + entityId,
-      initialState = BlogState.empty,
+      emptyState = BlogState.empty,
       commandHandler,
       eventHandler)
   //#behavior

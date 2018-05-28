@@ -4,15 +4,18 @@
 
 package akka.persistence.typed.javadsl
 
-import java.util.Collections
+import java.util.{ Collections, Optional }
 
 import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
-import akka.annotation.ApiMayChange
-import akka.persistence.typed._
+import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.persistence.SnapshotMetadata
+import akka.persistence.typed.{ EventAdapter, _ }
 import akka.persistence.typed.internal._
+
+import scala.util.{ Failure, Success }
 
 /** Java API */
 @ApiMayChange
@@ -26,12 +29,12 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
   protected final def Effect: EffectFactories[Command, Event, State] = EffectFactory.asInstanceOf[EffectFactories[Command, Event, State]]
 
   /**
-   * Implement by returning the initial state object.
+   * Implement by returning the initial empty state object.
    * This object will be passed into this behaviors handlers, until a new state replaces it.
    *
    * Also known as "zero state" or "neutral state".
    */
-  protected def initialState: State
+  protected def emptyState: State
 
   /**
    * Implement by handling incoming commands and return an `Effect()` to persist or signal other effects
@@ -79,6 +82,21 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
   def onRecoveryCompleted(ctx: ActorContext[Command], state: State): Unit = {}
 
   /**
+   * Override to get notified when a snapshot is finished.
+   * The default implementation logs failures at error and success writes at
+   * debug.
+   *
+   * @param result None if successful otherwise contains the exception thrown when snapshotting
+   */
+  def onSnapshot(ctx: ActorContext[Command], meta: SnapshotMetadata, result: Optional[Throwable]): Unit = {
+    if (result.isPresent) {
+      ctx.getLog.error(result.get(), "Save snapshot failed, snapshot metadata: [{}]", meta)
+    } else {
+      ctx.getLog.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
+    }
+  }
+
+  /**
    * Override and define that snapshot should be saved every N events.
    *
    * If this is overridden `shouldSnapshot` is not used.
@@ -105,6 +123,8 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
    */
   def tagsFor(event: Event): java.util.Set[String] = Collections.emptySet()
 
+  def eventAdapter(): EventAdapter[Event, _] = NoOpEventAdapter.instance[Event]
+
   /**
    * INTERNAL API: DeferredBehavior init
    */
@@ -127,12 +147,18 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
 
     scaladsl.PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
-      initialState,
+      emptyState,
       (c, state, cmd) ⇒ commandHandler()(c.asJava, state, cmd).asInstanceOf[EffectImpl[Event, State]],
       eventHandler()(_, _))
       .onRecoveryCompleted((ctx, state) ⇒ onRecoveryCompleted(ctx.asJava, state))
       .snapshotWhen(snapshotWhen)
       .withTagger(tagger)
+      .onSnapshot((ctx, meta, result) ⇒ {
+        onSnapshot(ctx.asJava, meta, result match {
+          case Success(_) ⇒ Optional.empty()
+          case Failure(t) ⇒ Optional.of(t)
+        })
+      }).eventAdapter(eventAdapter())
   }
 
 }

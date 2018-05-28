@@ -301,8 +301,8 @@ In that sense, it serves a very similar purpose as `ActorLogging` does for Actor
 
 @@@ div { .group-java }
 
-You can extend the `akka.stream.operator.GraphStageWithLogging` or `akka.strea.operator.TimerGraphStageWithLogging` classes
-instead of the usual `GraphStage` to enable you to obtain a `LoggingAdapter` inside your operator as long as 
+You can extend the @unidoc[GraphStageLogicWithLogging] or @unidoc[TimerGraphStageLogicWithLogging] classes
+instead of the usual `GraphStageLogic` to enable you to obtain a `LoggingAdapter` inside your stage as long as 
 the `Materializer` you're using is able to provide you with a logger.
 
 @@@
