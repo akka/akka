@@ -270,11 +270,7 @@ checked external to the examination, which is facilitated by a new construct
 for managing time constraints:
 
 Scala
-:   ```scala
-within([min, ]max) {
-  ...
-}
-```
+:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-within }
 
 Java
 :   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-within }
@@ -292,8 +288,6 @@ It should be noted that if the last message-receiving assertion of the block is
 latencies. This means that while individual contained assertions still use the
 maximum time bound, the overall block may take arbitrarily longer in this case.
 
-Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-within }
 
 @@@ note
 
