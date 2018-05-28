@@ -79,7 +79,7 @@ out, in which case they use the default value from configuration item
 `akka.test.single-expect-default` which itself defaults to 3 seconds (or they
 obey the innermost enclosing `Within` as detailed [below](#testkit-within)). The full signatures are:
 
-* @scala[`expectMsg[T](d: Duration, msg: T): T`]@java[`public <T> T expectMsgEquals(FiniteDuration max, T msg)`]
+* @scala[`expectMsg[T](d: Duration, msg: T): T`]@java[`public <T> T expectMsgEquals(Duration max, T msg)`]
    The given message object must be received within the specified time; the
 object will be returned.
 * @scala[`expectMsgPF[T](d: Duration)(pf: PartialFunction[Any, T]): T`]@java[`public <T> T expectMsgPF(Duration max, String hint, Function<Object, T> f)`]
@@ -89,7 +89,7 @@ the @scala[partial] function to the received message is returned. @scala[The dur
 be left unspecified (empty parentheses are required in this case) to use
 the deadline from the innermost enclosing [within](#testkit-within)
 block instead.]
-* @scala[`expectMsgClass[T](d: Duration, c: Class[T]): T`]@java[`public <T> T expectMsgClass(FiniteDuration max, Class<T> c)`]
+* @scala[`expectMsgClass[T](d: Duration, c: Class[T]): T`]@java[`public <T> T expectMsgClass(Duration max, Class<T> c)`]
    An object which is an instance of the given `Class` must be received
 within the allotted time frame; the object will be returned. Note that this
 does a conformance check; if you need the class to be equal, @scala[have a look at
@@ -109,12 +109,12 @@ method is approximately equivalent to
    An object must be received within the given time, and it must be equal (
 compared with @scala[`==`]@java[`equals()`]) to at least one of the passed reference objects; the
 received object will be returned.
-* @scala[`expectMsgAnyClassOf[T](d: Duration, obj: Class[_ <: T]*): T`]@java[`public <T> T expectMsgAnyClassOf(FiniteDuration max, Class<? extends T>... c)`]
+* @scala[`expectMsgAnyClassOf[T](d: Duration, obj: Class[_ <: T]*): T`]@java[`public <T> T expectMsgAnyClassOf(Duration max, Class<? extends T>... c)`]
    An object must be received within the given time, and it must be an
 instance of at least one of the supplied `Class` objects; the
 received object will be returned. Note that this does a conformance check,
 if you need the class to be equal you need to verify that afterwards.
-* @scala[`expectMsgAllOf[T](d: Duration, obj: T*): Seq[T]`]@java[`public List<Object> expectMsgAllOf(FiniteDuration max, Object... msg)`]
+* @scala[`expectMsgAllOf[T](d: Duration, obj: T*): Seq[T]`]@java[`public List<Object> expectMsgAllOf(Duration max, Object... msg)`]
    A number of objects matching the size of the supplied object array must be
 received within the given time, and for each of the given objects there
 must exist at least one among the received ones which equals (compared with
@@ -137,11 +137,11 @@ instance of this class. The full sequence of received objects is returned.
 
 @@@
 
-* @scala[`expectNoMsg(d: Duration)`]@java[`public void expectNoMsg(FiniteDuration max)`]
+* @scala[`expectNoMessage(d: Duration)`]@java[`public void expectNoMessage(Duration max)`]
    No message must be received within the given time. This also fails if a
 message has been received before calling this method which has not been
 removed from the queue using one of the other methods.
-* @scala[`receiveN(n: Int, d: Duration): Seq[AnyRef]`]@java[`List<Object> receiveN(int n, FiniteDuration max)`]
+* @scala[`receiveN(n: Int, d: Duration): Seq[AnyRef]`]@java[`List<Object> receiveN(int n, Duration max)`]
    `n` messages must be received within the given time; the received
 messages are returned.
 
@@ -283,7 +283,7 @@ you do not specify it, it is inherited from the innermost enclosing
 `within` block.
 
 It should be noted that if the last message-receiving assertion of the block is
-`expectNoMsg` or `receiveWhile`, the final check of the
+`expectNoMessage` or `receiveWhile`, the final check of the
 `within` is skipped in order to avoid false positives due to wake-up
 latencies. This means that while individual contained assertions still use the
 maximum time bound, the overall block may take arbitrarily longer in this case.
