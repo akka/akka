@@ -24,7 +24,6 @@ object ClusterLogSpec {
     akka.loggers = ["akka.testkit.TestEventListener"]
     """
 
-  final case class GossipTo(address: Address)
 }
 
 class ClusterLogSpec extends AkkaSpec(ClusterLogSpec.config) with ImplicitSender {
@@ -39,11 +38,10 @@ class ClusterLogSpec extends AkkaSpec(ClusterLogSpec.config) with ImplicitSender
   "A Cluster" must {
 
     "Log a message when becoming and stopping being a leader" in {
-      clusterView.members.size should ===(0)
-      cluster.join(selfAddress)
       EventFilter
         .info(occurrences = 1, pattern = "((^|, )(.+?(is the new leader)))+$")
         .intercept {
+          cluster.join(selfAddress)
           leaderActions() // Joining -> Up
         }
       awaitCond(clusterView.isSingletonCluster)

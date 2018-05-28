@@ -7,13 +7,17 @@ package akka.cluster
 import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import akka.actor.{ ActorSystem, Address, CoordinatedShutdown, ExtendedActorSystem, Props }
+import akka.actor.ExtendedActorSystem
+import akka.actor.Address
 import akka.cluster.InternalClusterAction._
 import java.lang.management.ManagementFactory
-
 import javax.management.ObjectName
+
 import akka.testkit.TestProbe
+import akka.actor.ActorSystem
+import akka.actor.Props
 import com.typesafe.config.ConfigFactory
+import akka.actor.CoordinatedShutdown
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent._
 
@@ -281,5 +285,4 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
 
     }
   }
-
 }
