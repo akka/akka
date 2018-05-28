@@ -702,6 +702,13 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   // optimized in subclasses
   override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
 
+  override def grouped(size: Int): Iterator[ByteString] = {
+    require(size >= 1, s"size=$size must be positive")
+    Iterator.iterate(this)(_.drop(size))
+      .takeWhile(_.nonEmpty)
+      .map(_.take(size))
+  }
+
   override def toString(): String = {
     val maxSize = 100
     if (size > maxSize)
