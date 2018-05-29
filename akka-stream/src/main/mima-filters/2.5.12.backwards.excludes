@@ -11,3 +11,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConne
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Inbound.this")
 ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.TcpConnectionStage$Inbound$")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Inbound.apply")
+
+# #24891 add return type for FlowMonitorState.finished
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.FlowMonitorState.finished")
