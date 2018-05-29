@@ -19,7 +19,7 @@ Detach upstream demand from downstream demand without detaching the stream rates
 
 @@@div { .callout }
 
-**emits** when the upstream stage has emitted and there is demand
+**emits** when the upstream operators has emitted and there is demand
 
 **backpressures** when downstream backpressures
 

@@ -2,7 +2,7 @@
 
 End the current substream whenever a predicate returns `true`, starting a new substream for the next element.
 
-@ref[Nesting and flattening stages](../index.md#nesting-and-flattening-stages)
+@ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
 @@@div { .group-scala }
 

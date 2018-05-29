@@ -2,7 +2,7 @@
 
 Invoke a callback when the stream has completed or failed.
 
-@ref[Sink stages](../index.md#sink-stages)
+@ref[Sink operators](../index.md#sink-operators)
 
 @@@div { .group-scala }
 

@@ -2,7 +2,7 @@
 
 Materialize a `SourceQueue` onto which elements can be pushed for emitting from the source. 
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

@@ -2,7 +2,7 @@
 
 Stream the values of an `immutable.Seq`.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@ div { .group-scala }
 ## Signature

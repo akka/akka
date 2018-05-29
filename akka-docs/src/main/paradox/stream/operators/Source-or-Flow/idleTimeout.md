@@ -2,7 +2,7 @@
 
 If the time between two processed elements exceeds the provided timeout, the stream is failed with a `TimeoutException`.
 
-@ref[Time aware stages](../index.md#time-aware-stages)
+@ref[Time aware operators](../index.md#time-aware-operators)
 
 @@@div { .group-scala }
 

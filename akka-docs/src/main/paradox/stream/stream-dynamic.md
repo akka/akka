@@ -132,7 +132,7 @@ backpressure the upstream producer until subscribers arrive. This behavior can b
 are no other subscribers, this will ensure that the producer is kept drained (dropping all elements) and once a new
 subscriber arrives it will adaptively slow down, ensuring no more messages are dropped.
 
-### Combining dynamic stages to build a simple Publish-Subscribe service
+### Combining dynamic operators to build a simple Publish-Subscribe service
 
 The features provided by the Hub implementations are limited by default. This is by design, as various combinations
 can be used to express additional features like unsubscribing producers or consumers externally. We show here

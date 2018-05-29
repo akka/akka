@@ -48,8 +48,8 @@ or resource exhaustion.
 
 The relationship between these two is that the Akka Streams API is geared
 towards end-users while the Akka Streams implementation uses the Reactive
-Streams interfaces internally to pass data between the different processing
-stages. For this reason you will not find any resemblance between the Reactive
+Streams interfaces internally to pass data between the different operators.
+For this reason you will not find any resemblance between the Reactive
 Streams interfaces and the Akka Streams API. This is in line with the
 expectations of the Reactive Streams project, whose primary purpose is to
 define interfaces such that different streaming implementation can

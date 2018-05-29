@@ -2,7 +2,7 @@
 
 Emits a specifiable number of elements from the original source, then from the provided source and repeats.
 
-@ref[Fan-in stages](../index.md#fan-in-stages)
+@ref[Fan-in operators](../index.md#fan-in-operators)
 
 @@@div { .group-scala }
 

@@ -97,8 +97,8 @@ Java
 
 @@@ div { .group-scala }
 
-After running (materializing) the `RunnableGraph[T]` we get back the materialized value of type T. Every stream processing
-stage can produce a materialized value, and it is the responsibility of the user to combine them to a new type.
+After running (materializing) the `RunnableGraph[T]` we get back the materialized value of type T. Every stream
+operator can produce a materialized value, and it is the responsibility of the user to combine them to a new type.
 In the above example we used `toMat` to indicate that we want to transform the materialized value of the source and
 sink, and we used the convenience function `Keep.right` to say that we are only interested in the materialized value
 of the sink.
@@ -197,7 +197,7 @@ specification, which Akka is a founding member of.
 
 The user of the library does not have to write any explicit back-pressure handling code — it is built in
 and dealt with automatically by all of the provided Akka Streams operators. It is possible however to add
-explicit buffer stages with overflow strategies that can influence the behavior of the stream. This is especially important
+explicit buffer operators with overflow strategies that can influence the behavior of the stream. This is especially important
 in complex processing graphs which may even contain loops (which *must* be treated with very special
 care, as explained in @ref:[Graph cycles, liveness and deadlocks](stream-graphs.md#graph-cycles)).
 
@@ -276,8 +276,8 @@ which will be running on the thread pools they have been configured to run on - 
 
 @@@ note
 
-Reusing *instances* of linear computation stages (Source, Sink, Flow) inside composite Graphs is legal,
-yet will materialize that stage multiple times.
+Reusing *instances* of linear computation operators (Source, Sink, Flow) inside composite Graphs is legal,
+yet will materialize that operator multiple times.
 
 @@@
 
@@ -288,7 +288,7 @@ By default Akka Streams will fuse the stream operators. This means that the proc
 stream graph can be executed within the same Actor and has two consequences:
 
  * passing elements from one operator to the next is a lot faster between fused
-stages due to avoiding the asynchronous messaging overhead
+operators due to avoiding the asynchronous messaging overhead
  * fused stream operators do not run in parallel to each other, meaning that
 only up to one CPU core is used for each fused part
 
@@ -319,7 +319,7 @@ operators that have been added since them.
 Without fusing (i.e. up to version 2.0-M2) each stream operator had an implicit input buffer
 that holds a few elements for efficiency reasons. If your flow graphs contain cycles then these buffers
 may have been crucial in order to avoid deadlocks. With fusing these implicit buffers are no longer
-there, data elements are passed without buffering between fused stages. In those cases where buffering
+there, data elements are passed without buffering between fused operators. In those cases where buffering
 is needed in order to allow the stream to run at all, you will have to insert explicit buffers with the
 `.buffer()` operator—typically a buffer of size 2 is enough to allow a feedback loop to function.
 
@@ -329,7 +329,7 @@ is needed in order to allow the stream to run at all, you will have to insert ex
 ### Combining materialized values
 
 Since every operator in Akka Streams can provide a materialized value after being materialized, it is necessary
-to somehow express how these values should be composed to a final value when we plug these stages together. For this,
+to somehow express how these values should be composed to a final value when we plug these operators together. For this,
 many operator methods have variants that take an additional argument, a function, that will be used to combine the
 resulting values. Some examples of using these combiners are illustrated in the example below.
 
@@ -361,7 +361,7 @@ Java
 
 ## Stream ordering
 
-In Akka Streams almost all computation stages *preserve input order* of elements. This means that if inputs `{IA1,IA2,...,IAn}`
+In Akka Streams almost all computation operators *preserve input order* of elements. This means that if inputs `{IA1,IA2,...,IAn}`
 "cause" outputs `{OA1,OA2,...,OAk}` and inputs `{IB1,IB2,...,IBm}` "cause" outputs `{OB1,OB2,...,OBl}` and all of
 `IAi` happened before all `IBi` then `OAi` happens before `OBi`.
 

@@ -2,7 +2,7 @@
 
 Fan-out the stream to several streams.
 
-@ref[Fan-out stages](../index.md#fan-out-stages)
+@ref[Fan-out operators](../index.md#fan-out-operators)
 
 ## Signature
 
