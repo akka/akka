@@ -193,9 +193,9 @@ a resizer.
 ### Group
 
 Sometimes, rather than having the router actor create its routees, it is desirable to create routees
-separately and provide them to the router for its use. You can do this by passing an
+separately and provide them to the router for its use. You can do this by passing in
 paths of the routees to the router's configuration. Messages will be sent with `ActorSelection` 
-to these paths.  
+to these paths, wildcards can be and will result in the same @ref:[semantics as explicitly using `ActorSelection`](general/addressing.md#querying-the-logical-actor-hierarchy).
 
 The example below shows how to create a router by providing it with the path strings of three
 routee actors. 
@@ -212,10 +212,10 @@ Here is the same example, but with the router configuration provided programmati
 from configuration.
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-group-2 }
+:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #round-robin-group-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #round-robin-group-2 }
+:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #paths #round-robin-group-2 }
 
 The routee actors are created externally from the router:
 
