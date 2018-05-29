@@ -60,5 +60,5 @@ object FlowMonitorState {
   /**
    * Java API
    */
-  def finished[U]() = Finished
+  def finished[U](): StreamState[U] = Finished
 }
