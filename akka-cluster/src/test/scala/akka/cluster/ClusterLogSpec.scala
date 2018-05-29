@@ -12,7 +12,6 @@ object ClusterLogSpec {
   val config = """
     akka.cluster {
       auto-down-unreachable-after = 0s
-      periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
       publish-stats-interval = 0 s # always, when it happens
       failure-detector.implementation-class = akka.cluster.FailureDetectorPuppet
     }
@@ -33,26 +32,24 @@ class ClusterLogSpec extends AkkaSpec(ClusterLogSpec.config) with ImplicitSender
   val cluster = Cluster(system)
   def clusterView: ClusterReadView = cluster.readView
 
-  def leaderActions(): Unit = cluster.clusterCore ! LeaderActionsTick
-
   "A Cluster" must {
 
     "Log a message when becoming and stopping being a leader" in {
       EventFilter
-        .info(occurrences = 1, pattern = "((^|, )(.+?(is the new leader)))+$")
+        .info(occurrences = 1, pattern = "is the new leader")
         .intercept {
           cluster.join(selfAddress)
-          leaderActions() // Joining -> Up
         }
+
       awaitCond(clusterView.isSingletonCluster)
       clusterView.self.address should ===(selfAddress)
       clusterView.members.map(_.address) should ===(Set(selfAddress))
       awaitAssert(clusterView.status should ===(MemberStatus.Up))
-      cluster.down(selfAddress)
+
       EventFilter
-        .info(occurrences = 1, pattern = "((^|, )(.+?(is no longer the leader)))+$")
+        .info(occurrences = 1, pattern = "is no longer the leader")
         .intercept {
-          leaderActions()
+          cluster.down(selfAddress)
         }
     }
 
