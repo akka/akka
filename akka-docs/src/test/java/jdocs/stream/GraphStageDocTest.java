@@ -408,14 +408,14 @@ public class GraphStageDocTest extends AbstractJavaTest {
   public void demonstrateChainingOfGraphStages() throws Exception {
     Graph<SinkShape<Integer>, CompletionStage<String>> sink = Sink.fold("", (acc, n) -> acc + n.toString());
 
-    //#graph-stage-chain
+    //#graph-operator-chain
     CompletionStage<String> resultFuture = Source.from(Arrays.asList(1,2,3,4,5))
             .via(new Filter<Integer>((n) -> n % 2 == 0))
             .via(new Duplicator<Integer>())
             .via(new Map<Integer, Integer>((n) -> n / 2))
             .runWith(sink, mat);
 
-    //#graph-stage-chain
+    //#graph-operator-chain
 
     assertEquals("1122", resultFuture.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }

@@ -287,14 +287,14 @@ class GraphStageDocSpec extends AkkaSpec {
   "Demonstrate chaining of graph stages" in {
     val sink = Sink.fold[List[Int], Int](List.empty[Int])((acc, n) ⇒ acc :+ n)
 
-    //#graph-stage-chain
+    //#graph-operator-chain
     val resultFuture = Source(1 to 5)
       .via(new Filter(_ % 2 == 0))
       .via(new Duplicator())
       .via(new Map(_ / 2))
       .runWith(sink)
 
-    //#graph-stage-chain
+    //#graph-operator-chain
 
     Await.result(resultFuture, 3.seconds) should ===(List(1, 1, 2, 2))
   }

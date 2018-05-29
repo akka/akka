@@ -2,7 +2,7 @@
 
 Materialize a `SinkQueue` that can be pulled to trigger demand through the sink.
 
-@ref[Sink stages](../index.md#sink-stages)
+@ref[Sink operators](../index.md#sink-operators)
 
 @@@div { .group-scala }
 

@@ -2,7 +2,7 @@
 
 Pass elements downstream within a timeout and then complete.
 
-@ref[Timer driven stages](../index.md#timer-driven-stages)
+@ref[Timer driven operators](../index.md#timer-driven-operators)
 
 @@@div { .group-scala }
 

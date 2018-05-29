@@ -12,15 +12,15 @@ To use Akka Streams, add the module to your project:
 
 ## Introduction
 
-When a stage in a stream fails this will normally lead to the entire stream being torn down.
-Each of the stages downstream gets informed about the failure and each upstream stage sees a cancellation.
+When an operator in a stream fails this will normally lead to the entire stream being torn down.
+Each of the operators downstream gets informed about the failure and each upstream operator sees a cancellation.
 
 In many cases you may want to avoid complete stream failure, this can be done in a few different ways:
 
  * `recover` to emit a final element then complete the stream normally on upstream failure 
  * `recoverWithRetries` to create a new upstream and start consuming from that on failure
  * Restarting sections of the stream after a backoff
- * Using a supervision strategy for stages that support it
+ * Using a supervision strategy for operators that support it
  
 In addition to these built in tools for error handling, a common pattern is to wrap the stream 
 inside an actor, and have the actor restart the entire stream on failure.
@@ -28,7 +28,7 @@ inside an actor, and have the actor restart the entire stream on failure.
 ## Logging errors
 
 `log()` enables logging of a stream, which is typically useful for error logging. 
-The below stream fails with `ArithmeticException` when the element `0` goes through the `map` stage, 
+The below stream fails with `ArithmeticException` when the element `0` goes through the `map` operator, 
 
 Scala
 :   @@snip [RecipeLoggingElements.scala]($code$/scala/docs/stream/cookbook/RecipeLoggingElements.scala) { #log-error }
@@ -97,13 +97,13 @@ Java
 
 <a id="restart-with-backoff"></a>
 
-## Delayed restarts with a backoff stage
+## Delayed restarts with a backoff operator
 
 Just as Akka provides the @ref:[backoff supervision pattern for actors](../general/supervision.md#backoff-supervisor), Akka streams
 also provides a `RestartSource`, `RestartSink` and `RestartFlow` for implementing the so-called *exponential backoff 
-supervision strategy*, starting a stage again when it fails or completes, each time with a growing time delay between restarts.
+supervision strategy*, starting an operator again when it fails or completes, each time with a growing time delay between restarts.
 
-This pattern is useful when the stage fails or completes because some external resource is not available
+This pattern is useful when the operator fails or completes because some external resource is not available
 and we need to give it some time to start-up again. One of the prime examples when this is useful is
 when a WebSocket connection fails due to the HTTP server it's running on going down, perhaps because it is overloaded. 
 By using an exponential backoff, we avoid going into a tight reconnect loop, which both gives the HTTP server some time
@@ -147,7 +147,7 @@ it cancels, while the `RestartFlow` is restarted when either the in port cancels
 Care should be taken when using @ref[`GraphStage`s](stream-customize.md) that conditionally propagate termination signals inside a
 `RestartSource`, `RestartSink` or `RestartFlow`.  
 
-An example is a `Broadcast` stage with the default `eagerCancel = false` where 
+An example is a `Broadcast` operator with the default `eagerCancel = false` where 
 some of the outlets are for side-effecting branches (that do not re-join e.g. via a `Merge`). 
 A failure on a side branch will not terminate the supervised stream which will 
 not be restarted. Conversely, a failure on the main branch can trigger a restart but leave behind old
@@ -162,32 +162,32 @@ or `divertTo` should be considered as alternatives.
 
 @@@ note
 
-The stages that support supervision strategies are explicitly documented to do so, if there is
-nothing in the documentation of a stage saying that it adheres to the supervision strategy it
+The operators that support supervision strategies are explicitly documented to do so, if there is
+nothing in the documentation of an operator saying that it adheres to the supervision strategy it
 means it fails rather than applies supervision.
 
 @@@
 
 The error handling strategies are inspired by actor supervision strategies, but the semantics 
 have been adapted to the domain of stream processing. The most important difference is that 
-supervision is not automatically applied to stream stages but instead something that each stage 
+supervision is not automatically applied to stream operators but instead something that each operator 
 has to implement explicitly. 
 
-For many stages it may not even make sense to implement support for supervision strategies,
-this is especially true for stages connecting to external technologies where for example a
+For many operators it may not even make sense to implement support for supervision strategies,
+this is especially true for operators connecting to external technologies where for example a
 failed connection will likely still fail if a new connection is tried immediately (see 
 @ref:[Restart with back off](#restart-with-backoff) for such scenarios). 
 
-For stages that do implement supervision, the strategies for how to handle exceptions from 
+For operators that do implement supervision, the strategies for how to handle exceptions from 
 processing stream elements can be selected when materializing the stream through use of an attribute. 
 
 There are three ways to handle exceptions from application code:
 
  * `Stop` - The stream is completed with failure.
  * `Resume` - The element is dropped and the stream continues.
- * `Restart` - The element is dropped and the stream continues after restarting the stage.
-Restarting a stage means that any accumulated state is cleared. This is typically
-performed by creating a new instance of the stage.
+ * `Restart` - The element is dropped and the stream continues after restarting the operator.
+Restarting an operator means that any accumulated state is cleared. This is typically
+performed by creating a new instance of the operator.
 
 By default the stopping strategy is used for all exceptions, i.e. the stream will be completed with
 failure when an exception is thrown.
@@ -225,7 +225,7 @@ Java
 :   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #resume-section }
 
 `Restart` works in a similar way as `Resume` with the addition that accumulated state,
-if any, of the failing processing stage will be reset.
+if any, of the failing processing operator will be reset.
 
 Scala
 :   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #restart-section }
@@ -236,7 +236,7 @@ Java
 ### Errors from mapAsync
 
 Stream supervision can also be applied to the futures of `mapAsync` and `mapAsyncUnordered` even if such
-failures happen in the future rather than inside the stage itself.
+failures happen in the future rather than inside the operator itself.
 
 Let's say that we use an external service to lookup email addresses and we would like to
 discard those that cannot be found.

@@ -2,7 +2,7 @@
 
 Complete right away without ever emitting any elements.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

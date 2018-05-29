@@ -2,7 +2,7 @@
 
 Stream the values of an `Iterable`.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 ## Description
 

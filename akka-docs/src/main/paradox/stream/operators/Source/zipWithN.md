@@ -2,7 +2,7 @@
 
 Combine the elements of multiple streams into a stream of sequences using a combiner function.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

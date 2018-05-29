@@ -2,7 +2,7 @@
 
 Stream the values from an `Iterator`, requesting the next value when there is demand.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 
