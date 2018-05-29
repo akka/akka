@@ -7,7 +7,7 @@ package akka.stream.io;
 import static org.junit.Assert.assertEquals;
 
 import java.io.OutputStream;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
@@ -22,7 +22,6 @@ import akka.stream.javadsl.Source;
 import akka.stream.javadsl.StreamConverters;
 import akka.stream.testkit.Utils;
 import akka.util.ByteString;
-import scala.concurrent.duration.FiniteDuration;
 
 public class OutputStreamSourceTest extends StreamTest {
     public OutputStreamSourceTest() {
@@ -34,8 +33,8 @@ public class OutputStreamSourceTest extends StreamTest {
             Utils.UnboundedMailboxConfig());
     @Test
     public void mustSendEventsViaOutputStream() throws Exception {
-        final FiniteDuration timeout = FiniteDuration.create(3, TimeUnit.SECONDS);
         final TestKit probe = new TestKit(system);
+        final Duration timeout = Duration.ofSeconds(3);
 
         final Source<ByteString, OutputStream> source = StreamConverters.asOutputStream(timeout);
         final OutputStream s = source.to(Sink.foreach(new Procedure<ByteString>() {
