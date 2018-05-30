@@ -1256,7 +1256,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * See also [[Flow.limit]], [[Flow.limitWeighted]]
    */
-  def takeWhile(p: function.Predicate[Out], inclusive: Boolean = false): javadsl.Flow[In, Out, Mat] = new Flow(delegate.takeWhile(p.test, inclusive))
+  def takeWhile(p: function.Predicate[Out], inclusive: Boolean): javadsl.Flow[In, Out, Mat] = new Flow(delegate.takeWhile(p.test, inclusive))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
