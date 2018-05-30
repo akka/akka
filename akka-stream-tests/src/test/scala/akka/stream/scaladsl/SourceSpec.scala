@@ -446,9 +446,9 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
   }
 
-  "Source connect" must {
+  "Source sinkToSource" must {
     "correctly connects a source to a sink" in {
-      val (sink, src) = Source.connect[Int]
+      val (sink, src) = Source.sinkToSource[Int].run
       Source(1 to 3).runWith(sink)
       val probe = src.runWith(TestSink.probe)
 

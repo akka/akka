@@ -680,12 +680,11 @@ object Source {
    *
    * Should be provided by Akka Streams, see https://github.com/akka/akka/issues/24853.
    */
-  def connect[Mat2]()(implicit materializer: Materializer): (Sink[Mat2, NotUsed], Source[Mat2, NotUsed]) =
+  def sinkToSource[M]: RunnableGraph[(Sink[M, NotUsed], Source[M, NotUsed])] =
     Source
-      .asSubscriber[Mat2]
-      .toMat(Sink.asPublisher[Mat2](fanout = false))(Keep.both)
+      .asSubscriber[M]
+      .toMat(Sink.asPublisher[M](fanout = false))(Keep.both)
       .mapMaterializedValue {
         case (sub, pub) ⇒ (Sink.fromSubscriber(sub), Source.fromPublisher(pub))
       }
-      .run()
 }
