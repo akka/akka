@@ -34,6 +34,7 @@ These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] 
 |Source|<a name="unfoldresourceasync"></a>@ref[unfoldResourceAsync](Source/unfoldResourceAsync.md)|Wrap any resource that can be opened, queried for next element (in a blocking way) and closed using three distinct functions into a source.|
 |Source|<a name="zipn"></a>@ref[zipN](Source/zipN.md)|Combine the elements of multiple streams into a stream of sequences.|
 |Source|<a name="zipwithn"></a>@ref[zipWithN](Source/zipWithN.md)|Combine the elements of multiple streams into a stream of sequences using a combiner function.|
+|Source|<a name="sinkToSource"></a>@ref[sinkToSource](Source/sinkToSource.md)|Materializes into a sink connected to a source.|
 
 ## Sink stages
 
