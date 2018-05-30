@@ -52,6 +52,15 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     } yield (xs, from, until)
   }
 
+  case class ByteStringGrouped(bs: ByteString, size: Int)
+
+  implicit val arbitraryByteStringGrouped = Arbitrary {
+    for {
+      xs ← arbitraryByteString.arbitrary
+      size ← Gen.choose(1, 1 max xs.length)
+    } yield ByteStringGrouped(xs, size)
+  }
+
   type ArraySlice[A] = (Array[A], Int, Int)
 
   def arbSlice[A](arbArray: Arbitrary[Array[A]]): Arbitrary[ArraySlice[A]] = Arbitrary {
@@ -726,6 +735,14 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
             case (xs, from, until) ⇒ likeVector(xs)({
               _.drop(from).take(until - from)
             })
+          }
+        }
+      }
+
+      "calling grouped" in {
+        check { grouped: ByteStringGrouped ⇒
+          likeVector(grouped.bs) {
+            _.grouped(grouped.size).toIndexedSeq
           }
         }
       }
