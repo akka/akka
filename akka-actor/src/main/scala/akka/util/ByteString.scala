@@ -703,7 +703,10 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
 
   override def grouped(size: Int): Iterator[ByteString] = {
-    require(size >= 1, s"size=$size must be positive")
+    if (size <= 0) {
+      throw new IllegalArgumentException(s"size=$size must be positive")
+    }
+
     Iterator.iterate(this)(_.drop(size))
       .takeWhile(_.nonEmpty)
       .map(_.take(size))

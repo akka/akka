@@ -57,7 +57,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
   implicit val arbitraryByteStringGrouped = Arbitrary {
     for {
       xs ← arbitraryByteString.arbitrary
-      size ← Gen.choose(1, 1 max (xs.length - 1))
+      size ← Gen.choose(1, 1 max xs.length)
     } yield ByteStringGrouped(xs, size)
   }
 

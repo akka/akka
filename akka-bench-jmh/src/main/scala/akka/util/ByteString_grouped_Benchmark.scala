@@ -19,7 +19,7 @@ class ByteString_grouped_Benchmark {
   private val bsLarge = ByteString(Array.ofDim[Byte](1000 * 1000))
 
   /*
-    > akka-bench-jmh/jmh:run -t1 -f1 .*ByteString_grouped_Benchmark
+    > akka-bench-jmh/jmh:run -f1 .*ByteString_grouped_Benchmark
     [info] Benchmark                             Mode  Cnt      Score      Error  Units
     [info] ByteString_grouped_Benchmark.grouped  avgt   10  59386.328 ± 1466.045  ns/op
    */
