@@ -72,7 +72,7 @@ since multiple actors are being asked concurrently to begin with, and no single 
 ### Sink.actorRefWithAck
 
 @@@ note
-  See also: [Sink.actorRefWithAck operator reference docs](operators/Sink/actorRefWithAck.md)
+  See also: @ref[Sink.actorRefWithAck operator reference docs](operators/Sink/actorRefWithAck.md)
 @@@
 
 The sink sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
