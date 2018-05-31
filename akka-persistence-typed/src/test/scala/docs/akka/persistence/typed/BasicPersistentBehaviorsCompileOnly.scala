@@ -4,9 +4,12 @@
 
 package docs.akka.persistence.typed
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.typed.PersistFailedException
 import akka.persistence.typed.scaladsl.PersistentBehaviors
+
+import scala.concurrent.duration._
 
 object BasicPersistentBehaviorsCompileOnly {
 
@@ -83,4 +86,13 @@ object BasicPersistentBehaviorsCompileOnly {
       })
   }
   //#wrapPersistentBehavior
+
+  //#supervision
+  val supervisedBehavior = Behaviors.supervise(samplePersistentBehavior)
+    .onFailure[PersistFailedException](SupervisorStrategy.restartWithBackoff(
+      minBackoff = 10.seconds,
+      maxBackoff = 60.seconds,
+      randomFactor = 0.1
+    ))
+  //#supervision
 }

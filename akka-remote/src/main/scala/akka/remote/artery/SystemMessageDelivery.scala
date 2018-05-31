@@ -61,7 +61,7 @@ import akka.util.OptionVal
 
   private case object ResendTick
 
-  // If other message types than SystemMesage need acked delivery they can extend this trait.
+  // If other message types than SystemMessage need acked delivery they can extend this trait.
   // Used in tests since real SystemMessage are somewhat cumbersome to create.
   trait AckedDeliveryMessage
 

@@ -5,12 +5,14 @@
 package jdocs.akka.persistence.typed;
 
 import akka.actor.typed.Behavior;
+import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.persistence.typed.PersistFailedException;
 import akka.persistence.typed.javadsl.CommandHandler;
-import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.PersistentBehavior;
+import java.time.Duration;
 
 import java.util.Collections;
 import java.util.Set;
@@ -78,4 +80,10 @@ public class BasicPersistentBehaviorsTest {
           }
   );
   //#wrapPersistentBehavior
+
+  //#supervision
+  static Behavior<Command> supervisedPersistentBehavior = Behaviors.supervise(persistentBehavior)
+    .onFailure(PersistFailedException.class,
+      SupervisorStrategy.restartWithBackoff(Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2));
+  //#supervision
 }

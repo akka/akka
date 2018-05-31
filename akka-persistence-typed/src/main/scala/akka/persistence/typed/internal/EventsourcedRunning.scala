@@ -12,6 +12,7 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
+import akka.persistence.typed.PersistFailedException
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, MDC }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
 
@@ -233,7 +234,7 @@ private[akka] object EventsourcedRunning {
 
         case WriteMessageFailure(p, cause, id) ⇒
           if (id == setup.writerIdentity.instanceId)
-            onPersistFailureThenStop(cause, p.payload, p.sequenceNr)
+            throw PersistFailedException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           else this
 
         case WriteMessagesSuccessful ⇒
@@ -255,14 +256,6 @@ private[akka] object EventsourcedRunning {
         cause,
         "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
         event.getClass.getName, seqNr, setup.persistenceId, cause.getMessage)
-    }
-
-    private def onPersistFailureThenStop(cause: Throwable, event: Any, seqNr: Long): Behavior[InternalProtocol] = {
-      setup.log.error(cause, "Failed to persist event type [{}] with sequence number [{}] for persistenceId [{}].",
-        event.getClass.getName, seqNr, setup.persistenceId)
-
-      // FIXME see #24479 for reconsidering the stopping behaviour
-      Behaviors.stopped
     }
 
   }

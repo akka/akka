@@ -269,3 +269,18 @@ Scala
 
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #wrapPersistentBehavior }
+
+
+## Journal failures
+
+If an exception is thrown from the journal when persisting an event it is wrapped in a `PersistFailedException`
+that can be matched against in
+a supervision strategy. It is recommended to use a back off strategy to give the journal time to recover.
+
+
+Scala
+:  @@snip [BasicPersistentBehaviorsSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #supervision }
+
+Java
+:  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #supervision }
+
