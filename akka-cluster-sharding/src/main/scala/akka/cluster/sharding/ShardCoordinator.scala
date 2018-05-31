@@ -10,7 +10,6 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
-
 import akka.actor._
 import akka.actor.DeadLetterSuppression
 import akka.cluster.Cluster
@@ -953,7 +952,7 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
 
     case GetFailure(CoordinatorStateKey, _) ⇒
       log.error(
-        "The ShardCoordinator was unable to get an initial state within 'waiting-for-state-timeout': {} millis (retrying)",
+        "The ShardCoordinator was unable to get an initial state within 'waiting-for-state-timeout': {} millis (retrying). Has ClusterSharding been started on all nodes?",
         readMajority.timeout.toMillis)
       // repeat until GetSuccess
       getCoordinatorState()
