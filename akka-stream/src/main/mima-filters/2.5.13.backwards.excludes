@@ -1,0 +1,2 @@
+# #25175 eliminate extraneous takeWhile$default$2 method in Java DSL
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Flow.takeWhile$default$2")
