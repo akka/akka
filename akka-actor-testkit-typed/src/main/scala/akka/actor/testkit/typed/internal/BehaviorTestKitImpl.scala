@@ -11,7 +11,7 @@ import akka.actor.ActorPath
 import akka.actor.typed.{ Behavior, PostStop, Signal, ActorRef }
 import akka.annotation.InternalApi
 import akka.actor.testkit.typed.Effect
-import akka.actor.testkit.typed.Effects._
+import akka.actor.testkit.typed.Effect._
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._

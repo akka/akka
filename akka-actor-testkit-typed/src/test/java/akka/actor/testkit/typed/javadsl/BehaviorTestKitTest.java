@@ -6,7 +6,6 @@ package akka.actor.testkit.typed.javadsl;
 
 import akka.Done;
 import akka.actor.testkit.typed.Effect;
-import akka.actor.testkit.typed.Effects;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
@@ -179,20 +178,20 @@ public class BehaviorTestKitTest extends JUnitSuite {
   public void allowAssertionsOnEffectType() {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
     test.run(new SpawnChildren(1));
-    Effects.Spawned spawned = test.expectEffectClass(Effects.Spawned.class);
+    Effect.Spawned spawned = test.expectEffectClass(Effect.Spawned.class);
     assertEquals(spawned.childName(), "child0");
   }
 
   @Test
   public void allowExpectingNoEffects() {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
-    test.expectEffect(EffectFactory.noEffects());
+    test.expectEffect(Effects.noEffects());
   }
 
   @Test
   public void allowsExpectingNoEffectByType() {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
-    test.expectEffectClass(Effects.NoEffects.class);
+    test.expectEffectClass(Effect.NoEffects.class);
   }
 
   @Test
@@ -214,7 +213,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
     test.run(new SpawnChildren(2));
     List<Effect> allEffects = test.getAllEffects();
     assertEquals(
-      Arrays.asList(EffectFactory.spawned(childInitial, "child0"), EffectFactory.spawned(childInitial, "child1", Props.empty())),
+      Arrays.asList(Effects.spawned(childInitial, "child0"), Effects.spawned(childInitial, "child1", Props.empty())),
       allEffects
     );
   }
@@ -223,7 +222,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
   public void spawnChildrenWithProps() {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
     test.run(new SpawnChildrenWithProps(1, props));
-    assertEquals(props, test.expectEffectClass(Effects.Spawned.class).props());
+    assertEquals(props, test.expectEffectClass(Effect.Spawned.class).props());
   }
 
   @Test
@@ -232,7 +231,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
     test.run(new SpawnChildrenAnonymous(2));
     List<Effect> allEffects = test.getAllEffects();
     assertEquals(
-      Arrays.asList(EffectFactory.spawnedAnonymous(childInitial), EffectFactory.spawnedAnonymous(childInitial, Props.empty())),
+      Arrays.asList(Effects.spawnedAnonymous(childInitial), Effects.spawnedAnonymous(childInitial, Props.empty())),
       allEffects
     );
   }
@@ -241,7 +240,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
   public void spawnAnonChildrenWithProps() {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
     test.run(new SpawnChildrenAnonymousWithProps(1, props));
-    assertEquals(props, test.expectEffectClass(Effects.SpawnedAnonymous.class).props());
+    assertEquals(props, test.expectEffectClass(Effect.SpawnedAnonymous.class).props());
   }
 
   @Test
@@ -249,7 +248,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
     SpawnChildren adaptedMessage = new SpawnChildren(1);
     test.run(new CreateMessageAdapter(String.class, o -> adaptedMessage));
-    Effects.MessageAdapter mAdapter = test.expectEffectClass(Effects.MessageAdapter.class);
+    Effect.MessageAdapter mAdapter = test.expectEffectClass(Effect.MessageAdapter.class);
     assertEquals(String.class, mAdapter.messageClass());
     assertEquals(adaptedMessage, mAdapter.adaptFunction().apply("anything"));
   }
@@ -259,9 +258,9 @@ public class BehaviorTestKitTest extends JUnitSuite {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
     test.run(new SpawnWatchAndUnWatch("name"));
     ActorRef<Object> child = test.childInbox("name").getRef();
-    test.expectEffectClass(Effects.Spawned.class);
-    assertEquals(child, test.expectEffectClass(Effects.Watched.class).other());
-    assertEquals(child, test.expectEffectClass(Effects.Unwatched.class).other());
+    test.expectEffectClass(Effect.Spawned.class);
+    assertEquals(child, test.expectEffectClass(Effect.Watched.class).other());
+    assertEquals(child, test.expectEffectClass(Effect.Unwatched.class).other());
   }
 
   @Test
@@ -269,8 +268,8 @@ public class BehaviorTestKitTest extends JUnitSuite {
     BehaviorTestKit<Command> test = BehaviorTestKit.create(behavior);
     test.run(new SpawnWatchAndUnWatch("name"));
     ActorRef<Object> child = test.childInbox("name").getRef();
-    test.expectEffectClass(Effects.Spawned.class);
-    assertEquals(child, test.expectEffectClass(Effects.Watched.class).other());
+    test.expectEffectClass(Effect.Spawned.class);
+    assertEquals(child, test.expectEffectClass(Effect.Watched.class).other());
   }
 
   @Test
@@ -282,7 +281,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
 
     ActorRef<String> sessionRef = i.receiveMessage();
     assertFalse(i.hasMessages());
-    Effects.SpawnedAnonymous s = test.expectEffectClass(Effects.SpawnedAnonymous.class);
+    Effect.SpawnedAnonymous s = test.expectEffectClass(Effect.SpawnedAnonymous.class);
     assertEquals(sessionRef, s.ref());
 
     BehaviorTestKit<String> session = test.childTestKit(sessionRef);
@@ -293,7 +292,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
     test.run(new KillSession(sessionRef, d.getRef()));
 
     assertEquals(Collections.singletonList(Done.getInstance()), d.getAllReceived());
-    test.expectEffectClass(Effects.Stopped.class);
+    test.expectEffectClass(Effect.Stopped.class);
   }
 
 }

@@ -7,8 +7,8 @@ package akka.actor.testkit.typed.scaladsl
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, Props }
-import akka.actor.testkit.typed.Effects
-import akka.actor.testkit.typed.Effects._
+import akka.actor.testkit.typed.Effect
+import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Father }
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Father._
 import org.scalatest.{ Matchers, WordSpec }
@@ -118,7 +118,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
     "allow assertions on effect type" in {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnAnonymous(1))
-      val spawnAnonymous = testkit.expectEffectType[Effects.SpawnedAnonymous[_]]
+      val spawnAnonymous = testkit.expectEffectType[Effect.SpawnedAnonymous[_]]
       spawnAnonymous.props should ===(Props.empty)
     }
 
@@ -240,9 +240,9 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       testkit.run(SpawnAndWatchUnwatch("hello"))
       val child = testkit.childInbox("hello").ref
       testkit.retrieveAllEffects() should be(Seq(
-        Spawned(Child.initial, "hello", Props.empty),
-        Watched(child),
-        Unwatched(child)
+        Effects.spawned(Child.initial, "hello", Props.empty),
+        Effects.watched(child),
+        Effects.unwatched(child)
       ))
     }
 
@@ -251,8 +251,8 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       testkit.run(SpawnAndWatchWith("hello"))
       val child = testkit.childInbox("hello").ref
       testkit.retrieveAllEffects() should be(Seq(
-        Spawned(Child.initial, "hello", Props.empty),
-        Watched(child)
+        Effects.spawned(Child.initial, "hello", Props.empty),
+        Effects.watched(child)
       ))
     }
   }

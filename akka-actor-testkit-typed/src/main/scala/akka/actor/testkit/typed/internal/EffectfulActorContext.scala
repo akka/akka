@@ -11,7 +11,7 @@ import akka.actor.{ ActorPath, Cancellable }
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.annotation.InternalApi
 import akka.actor.testkit.typed.Effect
-import akka.actor.testkit.typed.Effects._
+import akka.actor.testkit.typed.Effect._
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.reflect.ClassTag
@@ -75,7 +75,7 @@ import scala.compat.java8.FunctionConverters._
     super.setReceiveTimeout(d, msg)
   }
   override def cancelReceiveTimeout(): Unit = {
-    effectQueue.offer(ReceiveTimeoutSet(Duration.Undefined, null))
+    effectQueue.offer(ReceiveTimeoutCancelled)
     super.cancelReceiveTimeout()
   }
   override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): Cancellable = {

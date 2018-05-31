@@ -71,7 +71,7 @@ public class SyncTestingExampleTest extends JUnitSuite {
     //#test-child
     BehaviorTestKit<Command> test = BehaviorTestKit.create(myBehavior);
     test.run(new CreateAChild("child"));
-    test.expectEffect(EffectFactory.spawned(childActor, "child", Props.empty()));
+    test.expectEffect(Effects.spawned(childActor, "child", Props.empty()));
     //#test-child
   }
 
@@ -80,7 +80,7 @@ public class SyncTestingExampleTest extends JUnitSuite {
     //#test-anonymous-child
     BehaviorTestKit<Command> test = BehaviorTestKit.create(myBehavior);
     test.run(new CreateAnAnonymousChild());
-    test.expectEffect(EffectFactory.spawnedAnonymous(childActor, Props.empty()));
+    test.expectEffect(Effects.spawnedAnonymous(childActor, Props.empty()));
     //#test-anonymous-child
   }
 
