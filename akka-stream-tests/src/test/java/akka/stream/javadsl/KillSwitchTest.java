@@ -17,6 +17,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
+import static akka.Done.done;
 import static org.junit.Assert.*;
 
 public class KillSwitchTest extends StreamTest {
@@ -55,7 +56,7 @@ public class KillSwitchTest extends StreamTest {
     upstream.expectCancellation();
     downstream.expectComplete();
 
-    assertEquals(completionStage.toCompletableFuture().get(3, TimeUnit.SECONDS), Done.getInstance());
+    assertEquals(completionStage.toCompletableFuture().get(3, TimeUnit.SECONDS), done());
   }
 
   @Test
