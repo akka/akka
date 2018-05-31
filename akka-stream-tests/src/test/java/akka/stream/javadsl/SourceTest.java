@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
+import static akka.NotUsed.notUsed;
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static akka.stream.testkit.TestPublisher.ManualProbe;
 import static org.junit.Assert.*;
@@ -451,7 +452,7 @@ public class SourceTest extends StreamTest {
   @SuppressWarnings("unused")
   public void mustCompileMethodsWithJavaDuration() {
     Source<NotUsed, Cancellable> tickSource = Source.tick(Duration.ofSeconds(1),
-            Duration.ofMillis(500), NotUsed.getInstance());
+            Duration.ofMillis(500), notUsed());
   }
 
   @Test

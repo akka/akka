@@ -34,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import java.time.Duration;
 
+import static akka.Done.done;
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static org.junit.Assert.*;
 
@@ -595,7 +596,7 @@ public class FlowTest extends StreamTest {
             .watchTermination(Keep.right())
             .to(Sink.ignore()).run(materializer);
 
-    assertEquals(Done.getInstance(), future.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(done(), future.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   @Test
