@@ -313,6 +313,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     cluster.settings.SelfDataCenter,
     cluster.settings.MultiDataCenter.CrossDcConnections)
 
+  var isCurrentlyLeader = false
+
   def latestGossip: Gossip = membershipState.latestGossip
 
   val statsEnabled = PublishStatsInterval.isFinite
@@ -1020,6 +1022,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   def leaderActions(): Unit = {
     if (membershipState.isLeader(selfUniqueAddress)) {
       // only run the leader actions if we are the LEADER of the data center
+      if (!isCurrentlyLeader) {
+        logInfo("Cluster Node [{}] dc [{}] is the new leader", selfAddress, cluster.settings.SelfDataCenter)
+        isCurrentlyLeader = true
+      }
       val firstNotice = 20
       val periodicNotice = 60
       if (membershipState.convergence(exitingConfirmed)) {
@@ -1041,6 +1047,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
                 s"${m.address} ${m.status} seen=${latestGossip.seenByNode(m.uniqueAddress)}"
             }.mkString(", "))
       }
+    } else if (isCurrentlyLeader) {
+      logInfo("Cluster Node [{}] dc [{}] is no longer the leader", selfAddress, cluster.settings.SelfDataCenter)
+      isCurrentlyLeader = false
     }
     cleanupExitingConfirmed()
     shutdownSelfWhenDown()
