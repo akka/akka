@@ -180,20 +180,18 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "fail when close throws exception" in assertAllStagesStopped {
-      val p = Source.unfoldResource[String, BufferedReader](
-        () ⇒ newBufferedReader(),
-        reader ⇒ Option(reader.readLine()),
-        reader ⇒ throw TE(""))
-        .runWith(Sink.asPublisher(false))
-      val c = TestSubscriber.manualProbe[String]()
-      p.subscribe(c)
-
-      val sub = c.expectSubscription()
-      sub.request(61)
+      val out = TestSubscriber.probe[String]()
 
       EventFilter[TE](occurrences = 1).intercept {
-        c.expectNextN(60)
-        c.expectError(TE(""))
+        Source.unfoldResource[String, Iterator[String]](
+          () ⇒ Iterator("a"),
+          it ⇒ if (it.hasNext) Some(it.next()) else None,
+          _ ⇒ throw TE(""))
+          .runWith(Sink.fromSubscriber(out))
+
+        out.request(61)
+        out.expectNext("a")
+        out.expectError(TE(""))
       }
     }
 
