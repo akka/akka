@@ -45,13 +45,15 @@ end-to-end back-pressure, and the synchronous communication tools can also be us
 response interactions. It is also important to note that when using these tools both sides of the communication
 does not have to be implemented with Akka, or not even Java/Scala.
 
-We recommend the microservices architectural pattern and Akka Cluster should then be used inside a service for
-the communication between the nodes of that service.
+We recommend the microservices architectural pattern and Akka Cluster should then be used inside a single service for
+the communication between, and failure management of, the nodes of that service.
 
 However, we acknowledge that microservices also introduce many new challenges and it's not the only way to
-build applications. A traditional distributed application may have less complexity and work well. For example
-for a small startup, with a single team, building an application where time to market is everything. Akka Cluster
-can efficiently be used for building such distributed application.
+build applications. A traditional distributed application may have less complexity and work well in many cases.
+For example for a small startup, with a single team, building an application where time to market is everything.
+Akka Cluster can efficiently be used for building such distributed application. Even though it is considered an
+anti-pattern in the microservices world, it's a great pattern if you have the right use-cases. It has served
+the industry and many Akka users well for years and is still a valid choice.
 
 ## A Simple Cluster Example
 
