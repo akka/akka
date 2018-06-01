@@ -171,49 +171,55 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     coord
   }
 
-  private[akka] def readExitCodeFromConf(conf: Config, reason: Option[Reason]) = {
-    reason.flatMap {
-      r ⇒
-        val path = s"""reason-overrides."${r.getClass.getCanonicalName}".exit-code"""
-        if (conf.hasPath(path)) Option(conf.getInt(path)) else None
+  // decide what sub-config to use depending on the reason and the existence of an override
+  private[akka] def locatePath(settingName: String, conf: Config, reason: Option[Reason]): Config = {
+    reason.flatMap { r ⇒
+      val basePath = s"""reason-overrides."${r.getClass.getCanonicalName}""""
+      val path = s"$basePath.$settingName"
+      if (conf.hasPath(path)) Some(conf.getConfig(basePath)) else None
     }.getOrElse(
-      conf.getInt("exit-code")
+      conf
     )
   }
+  private[akka] def readExitCode(conf: Config, reason: Option[Reason]): Int =
+    locatePath("exit-code", conf, reason).getInt("exit-code")
+  private[akka] def readTerminateActorSystem(conf: Config, reason: Option[Reason]): Boolean =
+    locatePath("terminate-actor-system", conf, reason).getBoolean("terminate-actor-system")
+  private[akka] def readExitJvm(conf: Config, reason: Option[Reason]): Boolean =
+    locatePath("exit-jvm", conf, reason).getBoolean("exit-jvm")
 
   private def initPhaseActorSystemTerminate(system: ActorSystem, conf: Config, coord: CoordinatedShutdown): Unit = {
-    val terminateActorSystem = conf.getBoolean("terminate-actor-system")
-    val exitJvm = conf.getBoolean("exit-jvm")
-    if (terminateActorSystem || exitJvm) {
-      coord.addTask(PhaseActorSystemTerminate, "terminate-system") { () ⇒
-        val exitCode = readExitCodeFromConf(conf, coord.shutdownReason())
-        if (exitJvm && terminateActorSystem) {
-          // In case ActorSystem shutdown takes longer than the phase timeout,
-          // exit the JVM forcefully anyway.
-          // We must spawn a separate thread to not block current thread,
-          // since that would have blocked the shutdown of the ActorSystem.
-          val timeout = coord.timeout(PhaseActorSystemTerminate)
-          val t = new Thread {
-            override def run(): Unit = {
-              if (Try(Await.ready(system.whenTerminated, timeout)).isFailure && !runningJvmHook)
-                System.exit(exitCode)
-            }
-          }
-          t.setName("CoordinatedShutdown-exit")
-          t.start()
-        }
+    coord.addTask(PhaseActorSystemTerminate, "terminate-system") { () ⇒
+      val terminateActorSystem = readTerminateActorSystem(conf, coord.shutdownReason())
+      val exitJvm = readExitJvm(conf, coord.shutdownReason())
+      val exitCode = readExitCode(conf, coord.shutdownReason())
 
-        if (terminateActorSystem) {
-          system.terminate().map { _ ⇒
-            if (exitJvm && !runningJvmHook) System.exit(exitCode)
-            Done
-          }(ExecutionContexts.sameThreadExecutionContext)
-        } else if (exitJvm) {
-          System.exit(exitCode)
-          Future.successful(Done)
-        } else
-          Future.successful(Done)
+      if (exitJvm && terminateActorSystem) {
+        // In case ActorSystem shutdown takes longer than the phase timeout,
+        // exit the JVM forcefully anyway.
+        // We must spawn a separate thread to not block current thread,
+        // since that would have blocked the shutdown of the ActorSystem.
+        val timeout = coord.timeout(PhaseActorSystemTerminate)
+        val t = new Thread {
+          override def run(): Unit = {
+            if (Try(Await.ready(system.whenTerminated, timeout)).isFailure && !runningJvmHook)
+              System.exit(exitCode)
+          }
+        }
+        t.setName("CoordinatedShutdown-exit")
+        t.start()
       }
+
+      if (terminateActorSystem) {
+        system.terminate().map { _ ⇒
+          if (exitJvm && !runningJvmHook) System.exit(exitCode)
+          Done
+        }(ExecutionContexts.sameThreadExecutionContext)
+      } else if (exitJvm) {
+        System.exit(exitCode)
+        Future.successful(Done)
+      } else
+        Future.successful(Done)
     }
   }
 
