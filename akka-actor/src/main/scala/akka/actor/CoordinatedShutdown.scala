@@ -156,8 +156,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   override def createExtension(system: ExtendedActorSystem): CoordinatedShutdown = {
     val conf = system.settings.config.getConfig("akka.coordinated-shutdown")
     val phases = phasesFromConfig(conf)
-    val exitStatus = conf.getInt("exit-status")
-    val coord = new CoordinatedShutdown(system, phases, exitStatus)
+    val coord = new CoordinatedShutdown(system, phases)
     initPhaseActorSystemTerminate(system, conf, coord)
     initJvmHook(system, conf, coord)
     // Avoid leaking actor system references when system is terminated before JVM is #23384
@@ -172,11 +171,22 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     coord
   }
 
+  private[akka] def readExitCodeFromConf(conf: Config, reason: Option[Reason]) = {
+    reason.flatMap {
+      r ⇒
+        val path = s"""reason-overrides."${r.getClass.getCanonicalName}".exit-code"""
+        if (conf.hasPath(path)) Option(conf.getInt(path)) else None
+    }.getOrElse(
+      conf.getInt("exit-code")
+    )
+  }
+
   private def initPhaseActorSystemTerminate(system: ActorSystem, conf: Config, coord: CoordinatedShutdown): Unit = {
     val terminateActorSystem = conf.getBoolean("terminate-actor-system")
     val exitJvm = conf.getBoolean("exit-jvm")
     if (terminateActorSystem || exitJvm) {
       coord.addTask(PhaseActorSystemTerminate, "terminate-system") { () ⇒
+        val exitCode = readExitCodeFromConf(conf, coord.shutdownReason())
         if (exitJvm && terminateActorSystem) {
           // In case ActorSystem shutdown takes longer than the phase timeout,
           // exit the JVM forcefully anyway.
@@ -186,7 +196,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
           val t = new Thread {
             override def run(): Unit = {
               if (Try(Await.ready(system.whenTerminated, timeout)).isFailure && !runningJvmHook)
-                System.exit(coord.exitStatus)
+                System.exit(exitCode)
             }
           }
           t.setName("CoordinatedShutdown-exit")
@@ -195,11 +205,11 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
 
         if (terminateActorSystem) {
           system.terminate().map { _ ⇒
-            if (exitJvm && !runningJvmHook) System.exit(coord.exitStatus)
+            if (exitJvm && !runningJvmHook) System.exit(exitCode)
             Done
           }(ExecutionContexts.sameThreadExecutionContext)
         } else if (exitJvm) {
-          System.exit(coord.exitStatus)
+          System.exit(exitCode)
           Future.successful(Done)
         } else
           Future.successful(Done)
@@ -294,9 +304,8 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
 }
 
 final class CoordinatedShutdown private[akka] (
-  system:                       ExtendedActorSystem,
-  phases:                       Map[String, CoordinatedShutdown.Phase],
-  private[akka] val exitStatus: Int) extends Extension {
+  system: ExtendedActorSystem,
+  phases: Map[String, CoordinatedShutdown.Phase]) extends Extension {
   import CoordinatedShutdown.Reason
   import CoordinatedShutdown.UnknownReason
 
