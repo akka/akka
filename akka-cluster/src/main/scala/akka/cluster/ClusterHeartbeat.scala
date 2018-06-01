@@ -26,10 +26,14 @@ private[cluster] final class ClusterHeartbeatReceiver extends Actor with ActorLo
 
   // Important - don't use Cluster(context.system) in constructor because that would
   // cause deadlock. See startup sequence in ClusterDaemon.
-  lazy val selfHeartbeatRsp = HeartbeatRsp(Cluster(context.system).selfUniqueAddress)
+  lazy val cluster = Cluster(context.system)
+  lazy val selfHeartbeatRsp = HeartbeatRsp(cluster.selfUniqueAddress)
+  lazy val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
 
   def receive = {
-    case Heartbeat(from) ⇒ sender() ! selfHeartbeatRsp
+    case Heartbeat(from) ⇒
+      if (verboseHeartbeat) log.debug("Cluster Node [{}] - Heartbeat from [{}]", cluster.selfAddress, from)
+      sender() ! selfHeartbeatRsp
   }
 
 }
