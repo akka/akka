@@ -17,6 +17,9 @@ import java.util.Set;
 
 public class BasicPersistentBehaviorsTest {
 
+  public final static Effect someEffectFromCommand = null;
+  public final static State newStateAfterEvent = null;
+
   //#structure
   public interface Command {}
   public interface Event {}
@@ -35,12 +38,12 @@ public class BasicPersistentBehaviorsTest {
 
     @Override
     public CommandHandler<Command, Event, State> commandHandler() {
-      return (ctx, state, command) -> Effect().none();
+      return (ctx, state, command) -> someEffectFromCommand;
     }
 
     @Override
     public EventHandler<Event, State> eventHandler() {
-      return (state, event) -> state;
+      return (state, event) -> newStateAfterEvent;
     }
 
     //#recovery

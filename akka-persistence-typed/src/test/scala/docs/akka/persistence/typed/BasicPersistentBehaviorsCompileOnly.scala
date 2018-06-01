@@ -10,6 +10,10 @@ import akka.persistence.typed.scaladsl.PersistentBehaviors
 
 object BasicPersistentBehaviorsCompileOnly {
 
+  def someEffectFromCommand = ???
+  def newStateAfterEvent = ???
+  def someSideEffect() = ()
+
   //#structure
   sealed trait Command
   sealed trait Event
@@ -19,8 +23,8 @@ object BasicPersistentBehaviorsCompileOnly {
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
       emptyState = State(),
-      commandHandler = (ctx, state, cmd) ⇒ ???,
-      eventHandler = (state, evt) ⇒ ???)
+      commandHandler = (ctx, state, cmd) ⇒ someEffectFromCommand,
+      eventHandler = (state, evt) ⇒ newStateAfterEvent)
   //#structure
 
   //#recovery
@@ -28,10 +32,10 @@ object BasicPersistentBehaviorsCompileOnly {
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
       emptyState = State(),
-      commandHandler = (ctx, state, cmd) ⇒ ???,
-      eventHandler = (state, evt) ⇒ ???)
+      commandHandler = (ctx, state, cmd) ⇒ someEffectFromCommand,
+      eventHandler = (state, evt) ⇒ newStateAfterEvent)
       .onRecoveryCompleted { (ctx, state) ⇒
-        ???
+        someSideEffect()
       }
   //#recovery
 
@@ -40,8 +44,8 @@ object BasicPersistentBehaviorsCompileOnly {
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
       emptyState = State(),
-      commandHandler = (ctx, state, cmd) ⇒ ???,
-      eventHandler = (state, evt) ⇒ ???
+      commandHandler = (ctx, state, cmd) ⇒ someEffectFromCommand,
+      eventHandler = (state, evt) ⇒ newStateAfterEvent
     ).withTagger(_ ⇒ Set("tag1", "tag2"))
 
   //#tagging
@@ -50,10 +54,10 @@ object BasicPersistentBehaviorsCompileOnly {
   val samplePersistentBehavior = PersistentBehaviors.receive[Command, Event, State](
     persistenceId = "abc",
     emptyState = State(),
-    commandHandler = (ctx, state, cmd) ⇒ ???,
-    eventHandler = (state, evt) ⇒ ???)
+    commandHandler = (ctx, state, cmd) ⇒ someEffectFromCommand,
+    eventHandler = (state, evt) ⇒ newStateAfterEvent)
     .onRecoveryCompleted { (ctx, state) ⇒
-      ???
+      someSideEffect()
     }
 
   val debugAlwaysSnapshot: Behavior[Command] = Behaviors.setup {
