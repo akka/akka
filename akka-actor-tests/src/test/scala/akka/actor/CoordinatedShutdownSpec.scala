@@ -138,7 +138,7 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
         "a" → emptyPhase,
         "b" → phase("a"),
         "c" → phase("b", "a"))
-      val co = new CoordinatedShutdown(extSys, phases)
+      val co = new CoordinatedShutdown(extSys, phases, 0)
       co.addTask("a", "a1") { () ⇒
         testActor ! "A"
         Future.successful(Done)
@@ -168,7 +168,7 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
         "a" → emptyPhase,
         "b" → phase("a"),
         "c" → phase("b", "a"))
-      val co = new CoordinatedShutdown(extSys, phases)
+      val co = new CoordinatedShutdown(extSys, phases, 0)
       co.addTask("a", "a1") { () ⇒
         testActor ! "A"
         Future.successful(Done)
@@ -188,7 +188,7 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "only run once" in {
       val phases = Map("a" → emptyPhase)
-      val co = new CoordinatedShutdown(extSys, phases)
+      val co = new CoordinatedShutdown(extSys, phases, 0)
       co.addTask("a", "a1") { () ⇒
         testActor ! "A"
         Future.successful(Done)
@@ -209,7 +209,7 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
         "a" → emptyPhase,
         "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = true, enabled = true),
         "c" → phase("b", "a"))
-      val co = new CoordinatedShutdown(extSys, phases)
+      val co = new CoordinatedShutdown(extSys, phases, 0)
       co.addTask("a", "a1") { () ⇒
         testActor ! "A"
         Future.failed(new RuntimeException("boom"))
@@ -246,7 +246,7 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
         "a" → emptyPhase,
         "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = true),
         "c" → phase("b", "a"))
-      val co = new CoordinatedShutdown(extSys, phases)
+      val co = new CoordinatedShutdown(extSys, phases, 0)
       co.addTask("b", "b1") { () ⇒
         testActor ! "B"
         Promise[Done]().future // never completed
@@ -268,7 +268,7 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
         "a" → emptyPhase,
         "b" → Phase(dependsOn = Set("a"), timeout = 100.millis, recover = false, enabled = false),
         "c" → phase("b", "a"))
-      val co = new CoordinatedShutdown(extSys, phases)
+      val co = new CoordinatedShutdown(extSys, phases, 0)
       co.addTask("b", "b1") { () ⇒
         testActor ! "B"
         Future.failed(new RuntimeException("Was expected to not be executed"))
@@ -288,7 +288,7 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
       val phases = Map(
         "a" → emptyPhase,
         "b" → phase("a"))
-      val co = new CoordinatedShutdown(extSys, phases)
+      val co = new CoordinatedShutdown(extSys, phases, 0)
       co.addTask("a", "a1") { () ⇒
         testActor ! "A"
         co.addTask("b", "b1") { () ⇒
@@ -321,6 +321,10 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
         "a" → Phase(dependsOn = Set.empty, timeout = 10.seconds, recover = true, enabled = true),
         "b" → Phase(dependsOn = Set("a"), timeout = 15.seconds, recover = true, enabled = true),
         "c" → Phase(dependsOn = Set("a", "b"), timeout = 10.seconds, recover = false, enabled = true)))
+    }
+
+    "default exit status code to 0" in {
+      CoordinatedShutdown(system).exitStatus should ===(0)
     }
 
     // this must be the last test, since it terminates the ActorSystem

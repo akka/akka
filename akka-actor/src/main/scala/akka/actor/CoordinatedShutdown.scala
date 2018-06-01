@@ -156,7 +156,8 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   override def createExtension(system: ExtendedActorSystem): CoordinatedShutdown = {
     val conf = system.settings.config.getConfig("akka.coordinated-shutdown")
     val phases = phasesFromConfig(conf)
-    val coord = new CoordinatedShutdown(system, phases)
+    val exitStatus = conf.getInt("exit-status")
+    val coord = new CoordinatedShutdown(system, phases, exitStatus)
     initPhaseActorSystemTerminate(system, conf, coord)
     initJvmHook(system, conf, coord)
     // Avoid leaking actor system references when system is terminated before JVM is #23384
@@ -185,7 +186,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
           val t = new Thread {
             override def run(): Unit = {
               if (Try(Await.ready(system.whenTerminated, timeout)).isFailure && !runningJvmHook)
-                System.exit(0)
+                System.exit(coord.exitStatus)
             }
           }
           t.setName("CoordinatedShutdown-exit")
@@ -194,11 +195,11 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
 
         if (terminateActorSystem) {
           system.terminate().map { _ ⇒
-            if (exitJvm && !runningJvmHook) System.exit(0)
+            if (exitJvm && !runningJvmHook) System.exit(coord.exitStatus)
             Done
           }(ExecutionContexts.sameThreadExecutionContext)
         } else if (exitJvm) {
-          System.exit(0)
+          System.exit(coord.exitStatus)
           Future.successful(Done)
         } else
           Future.successful(Done)
@@ -293,8 +294,9 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
 }
 
 final class CoordinatedShutdown private[akka] (
-  system: ExtendedActorSystem,
-  phases: Map[String, CoordinatedShutdown.Phase]) extends Extension {
+  system:                       ExtendedActorSystem,
+  phases:                       Map[String, CoordinatedShutdown.Phase],
+  private[akka] val exitStatus: Int) extends Extension {
   import CoordinatedShutdown.Reason
   import CoordinatedShutdown.UnknownReason
 
