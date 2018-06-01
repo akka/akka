@@ -36,7 +36,7 @@ class ChaosJournal extends InmemJournal {
 
 object PersistentBehaviorFailureSpec {
 
-  val config = ConfigFactory.parseString(
+  val conf = ConfigFactory.parseString(
     s"""
       akka.loglevel = DEBUG
       akka.persistence.journal.plugin = "failure-journal"
@@ -51,25 +51,21 @@ class PersistentBehaviorFailureSpec extends ActorTestKit with TypedAkkaSpecWithS
 
   import PersistentBehaviorSpec._
 
-  override lazy val config: Config = PersistentBehaviorFailureSpec.config
+  override lazy val config: Config = PersistentBehaviorFailureSpec.conf
 
   implicit val testSettings = TestKitSettings(system)
 
-  val pidCounter = new AtomicInteger(0)
-  private def nextPid(): String = s"c${pidCounter.incrementAndGet()}"
-
   "A typed persistent actor (failures)" must {
     "restart with backoff" in {
-      val supervisedBehavior = Behaviors.supervise(counter(nextPid))
-        .onFailure[PersistFailedException](SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1))
+      val behav = counter("fail").onPersistFailure(SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1))
 
-      val c: ActorRef[Command] = spawn(supervisedBehavior)
+      val c: ActorRef[Command] = spawn(behav)
       // fail
       c ! Increment
-      Thread.sleep(10)
+      Thread.sleep(50)
       // fail
       c ! Increment
-      Thread.sleep(10)
+      Thread.sleep(50)
       // work!
       c ! Increment
       val probe = TestProbe[State]

@@ -4,10 +4,14 @@
 
 package akka.persistence.typed
 
+import akka.annotation.InternalApi
+
 /**
- * Thrown by PersistentBehaviors if a persist calls failed.
- * Can be used in supervision strategies to handle journal outages.
+ * INTERNAL API
+ *
+ * Used for journal failures. Private to akka as only internal supervision strategies should use it.
  */
-case class PersistFailedException(persistenceId: String, sequenceNr: Long, eventType: String, cause: Throwable)
+@InternalApi
+private[akka] case class PersistFailedException(persistenceId: String, sequenceNr: Long, eventType: String, cause: Throwable)
   extends RuntimeException(s"Failed to persist event type $eventType with sequence number $sequenceNr for persistenceId [$persistenceId]", cause) {
 }

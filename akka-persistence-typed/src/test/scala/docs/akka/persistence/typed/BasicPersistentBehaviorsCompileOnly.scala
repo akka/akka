@@ -88,8 +88,8 @@ object BasicPersistentBehaviorsCompileOnly {
   //#wrapPersistentBehavior
 
   //#supervision
-  val supervisedBehavior = Behaviors.supervise(samplePersistentBehavior)
-    .onFailure[PersistFailedException](SupervisorStrategy.restartWithBackoff(
+  val supervisedBehavior = samplePersistentBehavior.onPersistFailure(
+    SupervisorStrategy.restartWithBackoff(
       minBackoff = 10.seconds,
       maxBackoff = 60.seconds,
       randomFactor = 0.1

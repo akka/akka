@@ -273,9 +273,9 @@ Java
 
 ## Journal failures
 
-If an exception is thrown from the journal when persisting an event it is wrapped in a `PersistFailedException`
-that can be matched against in
-a supervision strategy. It is recommended to use a back off strategy to give the journal time to recover.
+By default a `PersistentBehavior` will stop if an exception is thrown from the journal. It is possible to override this with
+any `BackoffSupervisorStrategy`. It is not possible to use the normal supervision wrapping for this as it isn't valid to
+`resume` a behavior on a journal failure as it is not known if the event was persisted.
 
 
 Scala
