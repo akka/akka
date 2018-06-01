@@ -171,28 +171,22 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     coord
   }
 
-  // decide what sub-config to use depending on the reason and the existence of an override
-  private[akka] def locatePath(settingName: String, conf: Config, reason: Option[Reason]): Config = {
+  // locate reason-specifi overrides and merge with defaults.
+  private[akka] def confWithOverrides(conf: Config, reason: Option[Reason]): Config = {
     reason.flatMap { r ⇒
       val basePath = s"""reason-overrides."${r.getClass.getCanonicalName}""""
-      val path = s"$basePath.$settingName"
-      if (conf.hasPath(path)) Some(conf.getConfig(basePath)) else None
+      if (conf.hasPath(basePath)) Some(conf.getConfig(basePath).withFallback(conf)) else None
     }.getOrElse(
       conf
     )
   }
-  private[akka] def readExitCode(conf: Config, reason: Option[Reason]): Int =
-    locatePath("exit-code", conf, reason).getInt("exit-code")
-  private[akka] def readTerminateActorSystem(conf: Config, reason: Option[Reason]): Boolean =
-    locatePath("terminate-actor-system", conf, reason).getBoolean("terminate-actor-system")
-  private[akka] def readExitJvm(conf: Config, reason: Option[Reason]): Boolean =
-    locatePath("exit-jvm", conf, reason).getBoolean("exit-jvm")
 
   private def initPhaseActorSystemTerminate(system: ActorSystem, conf: Config, coord: CoordinatedShutdown): Unit = {
     coord.addTask(PhaseActorSystemTerminate, "terminate-system") { () ⇒
-      val terminateActorSystem = readTerminateActorSystem(conf, coord.shutdownReason())
-      val exitJvm = readExitJvm(conf, coord.shutdownReason())
-      val exitCode = readExitCode(conf, coord.shutdownReason())
+      val confForReason = confWithOverrides(conf, coord.shutdownReason())
+      val terminateActorSystem = confForReason.getBoolean("terminate-actor-system")
+      val exitJvm = confForReason.getBoolean("exit-jvm")
+      val exitCode = confForReason.getInt("exit-code")
 
       if (exitJvm && terminateActorSystem) {
         // In case ActorSystem shutdown takes longer than the phase timeout,

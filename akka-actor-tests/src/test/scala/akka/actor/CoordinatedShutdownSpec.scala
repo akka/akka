@@ -325,12 +325,14 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
 
     "default exit code to 0" in {
       lazy val conf = ConfigFactory.load().getConfig("akka.coordinated-shutdown")
-      CoordinatedShutdown.readExitCode(conf, None) should ===(0)
+      val confWithOverrides = CoordinatedShutdown.confWithOverrides(conf, None)
+      confWithOverrides.getInt("exit-code") should ===(0)
     }
 
     "default exit code to -1 when the Reason is ClusterDowning" in {
       lazy val conf = ConfigFactory.load().getConfig("akka.coordinated-shutdown")
-      CoordinatedShutdown.readExitCode(conf, Some(CoordinatedShutdown.ClusterDowningReason)) should ===(-1)
+      val confWithOverrides = CoordinatedShutdown.confWithOverrides(conf, Some(CoordinatedShutdown.ClusterDowningReason))
+      confWithOverrides.getInt("exit-code") should ===(-1)
     }
 
     // this must be the last test, since it terminates the ActorSystem
