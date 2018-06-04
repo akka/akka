@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
 import java.util.Optional
 
+import akka.annotation.InternalApi
 import akka.util.OptionVal
 
 object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with ExtensionIdProvider {
@@ -172,9 +173,9 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   }
 
   // locate reason-specifi overrides and merge with defaults.
-  private[akka] def confWithOverrides(conf: Config, reason: Option[Reason]): Config = {
+  @InternalApi private[akka] def confWithOverrides(conf: Config, reason: Option[Reason]): Config = {
     reason.flatMap { r ⇒
-      val basePath = s"""reason-overrides."${r.getClass.getCanonicalName}""""
+      val basePath = s"""reason-overrides."${r.getClass.getName}""""
       if (conf.hasPath(basePath)) Some(conf.getConfig(basePath).withFallback(conf)) else None
     }.getOrElse(
       conf
