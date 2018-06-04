@@ -639,11 +639,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
         new TestKit(system) {{
             ActorRef persistentActor = system.actorOf(Props.create(PFSMwithLog.class));
             persistentActor.tell("check", getRef());
-<<<<<<< HEAD
             expectMsg(Duration.ofSeconds(1), "started");
-=======
-            expectMsg(Duration.ofMillis(1000), "started");
->>>>>>> 3e60b1b3bd... add java.time.Duration support for jdocs java files #24646
         }};
     }
 }
