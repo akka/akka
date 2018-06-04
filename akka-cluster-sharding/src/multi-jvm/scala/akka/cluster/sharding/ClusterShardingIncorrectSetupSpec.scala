@@ -55,8 +55,8 @@ abstract class ClusterShardingIncorrectSetupSpec extends MultiNodeSpec(ClusterSh
             extractEntityId = extractEntityId,
             extractShardId = extractShardId)
         }
-        enterBarrier("helpful error message logged")
       }
+      enterBarrier("helpful error message logged")
     }
   }
 }
