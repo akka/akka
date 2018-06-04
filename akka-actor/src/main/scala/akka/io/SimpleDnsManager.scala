@@ -6,8 +6,9 @@ package akka.io
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{ ActorLogging, Actor, Deploy, Props }
+import akka.actor.{ Actor, ActorLogging, Deploy, Props }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.event.Logging
 import akka.routing.FromConfig
 
 import scala.concurrent.duration.Duration
@@ -34,6 +35,16 @@ class SimpleDnsManager(val ext: DnsExt) extends Actor with RequiresMessageQueue[
     case SimpleDnsManager.CacheCleanup ⇒
       for (c ← cacheCleanup)
         c.cleanup()
+
+    case m: dns.DnsProtocol.Protocol ⇒
+      val legacyDnsResolver = classOf[InetAddressDnsResolver]
+      if (ext.provider.actorClass == legacyDnsResolver) {
+        // FIXME technically we COULD adopt the protocol here, but not sure we should...
+        log.warning(
+          "Message of [akka.io.dns.DnsProtocol.Protocol] received ({}), while the legacy {} was configured! Dropping DNS resolve request." +
+            "Please use [akka.io.dns.DnsProtocol.resolve] to create resolution requests for the Async DNS resolver.",
+          Logging.simpleName(m), Logging.simpleName(legacyDnsResolver))
+      } else resolver.forward(m)
   }
 
   override def postStop(): Unit = {
