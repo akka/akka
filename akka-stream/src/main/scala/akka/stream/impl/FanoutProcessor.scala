@@ -145,12 +145,12 @@ import org.reactivestreams.Subscriber
       import StreamSubscriptionTimeoutTerminationMode._
       if (!primaryOutputs.subscribed) {
         settings.subscriptionTimeoutSettings.mode match {
-          case NoopTermination ⇒ // won't happen
           case CancelTermination ⇒
             primaryInputs.cancel()
             context.stop(self)
           case WarnTermination ⇒
             context.system.log.warning("Subscription timeout for {}", this)
+          case NoopTermination ⇒ // won't happen
         }
       }
   }

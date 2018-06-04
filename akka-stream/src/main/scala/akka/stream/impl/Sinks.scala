@@ -89,13 +89,14 @@ import org.reactivestreams.Subscriber
    */
   override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
 
-    val proc = context.materializer match {
+    val proc = new VirtualPublisher[In]
+    context.materializer match {
       case am: ActorMaterializer ⇒
-        val proc = new VirtualPublisher[In](am)
-        am.scheduleOnce(am.settings.subscriptionTimeoutSettings.timeout, proc)
-        proc
-      case mat ⇒ // not possible to setup timeout
-        new VirtualPublisher[In](mat)
+        if (am.settings.subscriptionTimeoutSettings.mode != StreamSubscriptionTimeoutTerminationMode.noop)
+          am.scheduleOnce(am.settings.subscriptionTimeoutSettings.timeout, new Runnable {
+            def run(): Unit = proc.onSubscriptionTimeout(am)
+          })
+      case _ ⇒ // not possible to setup timeout
     }
     (proc, proc)
   }
