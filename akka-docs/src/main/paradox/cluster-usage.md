@@ -15,13 +15,18 @@ To use Akka Cluster, you must add the following dependency in your project:
 ## When and where to use Akka Cluster
 
 An architectural choice you have to make is if you are going to use a microservices architecture or
-a traditional distributed application, also known as a distributed monolith.
+a traditional distributed application, also known as a distributed monolith. This choice will influence how
+you should use Akka Cluster
+
+### Microservices
 
 Microservices has many attractive properties, such as the independent nature of microservices allows for
 multiple smaller and more focused teams that can deliver new functionality more frequently and can
 respond quicker to business opportunities. Reactive Microservices should be isolated, autonomous, and have
 a single responsibility as identified by Jonas Bonér in the book
 [Reactive Microservices Architecture: Design Principles for Distributed Systems](https://info.lightbend.com/COLL-20XX-Reactive-Microservices-Architecture-RES-LP.html).
+
+In a microservices architecture, you should consider communication within a service and between services.
 
 In general we recommend against using Akka Cluster and actor messaging between _different_ services because that
 would result in a too tight code coupling between the services and difficulties deploying these independent of
@@ -34,7 +39,8 @@ for some background on this.
 
 Nodes of a single service (collectively called a cluster) require less decoupling. They share the same code and
 are managed together, as a set, by a single team or individual. For this reason, intra-service communication
-can take advantage of Akka Cluster and actor messaging, which is convenient to use and has great performance.
+can take advantage of Akka Cluster, failure management and actor messaging, which is convenient to use and has great
+performance.
 
 Between different services [Akka HTTP](https://doc.akka.io/docs/akka-http/current) or
 [Akka gRPC](https://developer.lightbend.com/docs/akka-grpc/current/) can be used for synchronous (yet non-blocking)
@@ -43,12 +49,11 @@ communication and [Akka Streams Kafka](https://developer.lightbend.com/docs/alpa
 external systems. All those communication mechanisms work well with streaming of messages with
 end-to-end back-pressure, and the synchronous communication tools can also be used for single request
 response interactions. It is also important to note that when using these tools both sides of the communication
-does not have to be implemented with Akka, or not even Java/Scala.
+do not have to be implemented with Akka, nor does the programming language matter.
 
-We recommend the microservices architectural pattern and Akka Cluster should then be used inside a single service for
-the communication between, and failure management of, the nodes of that service.
+### Traditional distributed application
 
-However, we acknowledge that microservices also introduce many new challenges and it's not the only way to
+We acknowledge that microservices also introduce many new challenges and it's not the only way to
 build applications. A traditional distributed application may have less complexity and work well in many cases.
 For example for a small startup, with a single team, building an application where time to market is everything.
 Akka Cluster can efficiently be used for building such distributed application. Even though it is considered an
