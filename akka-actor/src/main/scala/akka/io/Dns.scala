@@ -51,10 +51,12 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
     }
   }
 
+  // TODO tempted to deprecate this one?
   def cached(name: String)(system: ActorSystem): Option[Resolved] = {
     Dns(system).cache.cached(name)
   }
 
+  // TODO tempted to deprecate this one?
   def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Resolved] = {
     Dns(system).cache.resolve(name)(system, sender)
   }
@@ -73,7 +75,6 @@ class DnsExt(system: ExtendedActorSystem) extends IO.Extension {
   val Settings = new Settings(system.settings.config.getConfig("akka.io.dns"))
 
   class Settings private[DnsExt] (_config: Config) {
-
     import _config._
 
     val Dispatcher: String = getString("dispatcher")
