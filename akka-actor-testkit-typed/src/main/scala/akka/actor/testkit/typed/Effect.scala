@@ -6,8 +6,8 @@ package akka.actor.testkit.typed
 
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.util.JavaDurationConverters._
 
-import scala.compat.java8.DurationConverters._
 import scala.compat.java8.FunctionConverters._
 import scala.concurrent.duration.FiniteDuration
 
@@ -169,7 +169,7 @@ object Effect {
     /**
      * Java API
      */
-    def duration(): java.time.Duration = d.toJava
+    def duration(): java.time.Duration = d.asJava
   }
 
   final case object ReceiveTimeoutCancelled extends ReceiveTimeoutCancelled
@@ -181,7 +181,7 @@ object Effect {
    * FIXME what about events scheduled through the scheduler?
    */
   final case class Scheduled[U](delay: FiniteDuration, target: ActorRef[U], msg: U) extends Effect {
-    def duration(): java.time.Duration = delay.toJava
+    def duration(): java.time.Duration = delay.asJava
   }
 
   /**
