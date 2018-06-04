@@ -454,11 +454,14 @@ import scala.util.control.NonFatal
  * to the `Subscriber` after having hooked it up with the real `Publisher`, hence
  * the use of `Inert.subscriber` as a tombstone.
  */
-@InternalApi private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Publisher[T] {
+@InternalApi private[impl] class VirtualPublisher[T](mat: Materializer)
+  extends AtomicReference[AnyRef] with Publisher[T] with Runnable {
+
   import ReactiveStreamsCompliance._
   import VirtualProcessor.Inert
   override def subscribe(subscriber: Subscriber[_ >: T]): Unit = {
     requireNonNullSubscriber(subscriber)
+    if (VirtualProcessor.Debug) println(s"$this.subscribe: $subscriber")
     @tailrec def rec(): Unit = {
       get() match {
         case null =>
@@ -492,6 +495,27 @@ import scala.util.control.NonFatal
 
       case unexpected =>
         throw new IllegalStateException(s"internal error, unexpected state: $unexpected")
+    }
+  }
+
+  // this is when the subscription timeout hits, implemented like this to
+  // avoid allocating a separate object for that
+  def run(): Unit = {
+    mat match {
+      case am: ActorMaterializer ⇒
+        import StreamSubscriptionTimeoutTerminationMode._
+        get() match {
+          case null | _: Publisher[_] ⇒
+            am.settings.subscriptionTimeoutSettings.mode match {
+              case NoopTermination   ⇒ // we're fine
+              case CancelTermination ⇒ subscribe(new CancellingSubscriber[T])
+              case WarnTermination ⇒
+                am.logger.warning("Subscription timeout for {}", this)
+            }
+
+          case _ ⇒ // we're ok
+        }
+
     }
   }
 

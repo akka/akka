@@ -88,7 +88,15 @@ import org.reactivestreams.Subscriber
    * subscription a VirtualProcessor would perform (and it also saves overhead).
    */
   override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
-    val proc = new VirtualPublisher[In]
+
+    val proc = context.materializer match {
+      case am: ActorMaterializer ⇒
+        val proc = new VirtualPublisher[In](am)
+        am.scheduleOnce(am.settings.subscriptionTimeoutSettings.timeout, proc)
+        proc
+      case mat ⇒ // not possible to setup timeout
+        new VirtualPublisher[In](mat)
+    }
     (proc, proc)
   }
 
