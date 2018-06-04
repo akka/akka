@@ -7,10 +7,13 @@ package akka.actor.testkit.typed.scaladsl
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, Props }
-import akka.actor.testkit.typed.scaladsl.Effects.{ NoEffects, Spawned, SpawnedAdapter, SpawnedAnonymous, SpawnedAnonymousAdapter, Watched, Unwatched }
+import akka.actor.testkit.typed.Effect
+import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Father }
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Father._
 import org.scalatest.{ Matchers, WordSpec }
+
+import scala.reflect.ClassTag
 
 object BehaviorTestKitSpec {
   object Father {
@@ -25,6 +28,7 @@ object BehaviorTestKitSpec {
     case class SpawnAnonymousWithProps(numberOfChildren: Int, props: Props) extends Command
     case object SpawnAdapter extends Command
     case class SpawnAdapterWithName(name: String) extends Command
+    case class CreateMessageAdapter[U](messageClass: Class[U], f: U ⇒ Command) extends Command
     case class SpawnAndWatchUnwatch(name: String) extends Command
     case class SpawnAndWatchWith(name: String) extends Command
     case class SpawnSession(replyTo: ActorRef[ActorRef[String]], sessionHandler: ActorRef[String]) extends Command
@@ -82,6 +86,10 @@ object BehaviorTestKitSpec {
           ctx.stop(session)
           replyTo ! Done
           Behaviors.same
+        case CreateMessageAdapter(messageClass, f) ⇒
+          ctx.messageAdapter(f)(ClassTag(messageClass))
+          Behaviors.same
+
       }
     }
   }
@@ -103,14 +111,14 @@ object BehaviorTestKitSpec {
 
 class BehaviorTestKitSpec extends WordSpec with Matchers {
 
-  private val props = Props.empty
+  private val props = Props.empty.withDispatcherFromConfig("cat")
 
   "BehaviorTestKit" must {
 
     "allow assertions on effect type" in {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnAnonymous(1))
-      val spawnAnonymous = testkit.expectEffectType[Effects.SpawnedAnonymous[_]]
+      val spawnAnonymous = testkit.expectEffectType[Effect.SpawnedAnonymous[_]]
       spawnAnonymous.props should ===(Props.empty)
     }
 
@@ -209,6 +217,14 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
     }
   }
 
+  "BehaviorTestkit's messageAdapter" must {
+    "create message adapters and record effects" in {
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      testkit.run(CreateMessageAdapter(classOf[String], (_: String) ⇒ SpawnChildren(1)))
+      testkit.expectEffectType[MessageAdapter[String, Command]]
+    }
+  }
+
   "BehaviorTestkit's run" can {
     "run behaviors with messages without canonicalization" in {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
@@ -224,9 +240,9 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       testkit.run(SpawnAndWatchUnwatch("hello"))
       val child = testkit.childInbox("hello").ref
       testkit.retrieveAllEffects() should be(Seq(
-        Spawned(Child.initial, "hello", Props.empty),
-        Watched(child),
-        Unwatched(child)
+        Effects.spawned(Child.initial, "hello", Props.empty),
+        Effects.watched(child),
+        Effects.unwatched(child)
       ))
     }
 
@@ -235,8 +251,8 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       testkit.run(SpawnAndWatchWith("hello"))
       val child = testkit.childInbox("hello").ref
       testkit.retrieveAllEffects() should be(Seq(
-        Spawned(Child.initial, "hello", Props.empty),
-        Watched(child)
+        Effects.spawned(Child.initial, "hello", Props.empty),
+        Effects.watched(child)
       ))
     }
   }
@@ -250,7 +266,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
 
       val sessionRef = i.receiveMessage()
       i.hasMessages shouldBe false
-      val (s: SpawnedAnonymous[_]) :: Nil = testkit.retrieveAllEffects()
+      val s = testkit.expectEffectType[SpawnedAnonymous[_]]
       // must be able to get the created ref, even without explicit reply
       s.ref shouldBe sessionRef
 
@@ -262,6 +278,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       testkit.run(KillSession(sessionRef, d.ref))
 
       d.receiveAll shouldBe Seq(Done)
+      testkit.expectEffectType[Stopped]
     }
   }
 }
