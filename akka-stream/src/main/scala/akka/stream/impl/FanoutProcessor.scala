@@ -6,7 +6,7 @@ package akka.stream.impl
 
 import akka.actor.{ Actor, ActorRef, Deploy, Props }
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.stream.{ ActorMaterializerSettings, Attributes }
+import akka.stream.{ ActorMaterializerSettings, Attributes, StreamSubscriptionTimeoutTerminationMode }
 import org.reactivestreams.Subscriber
 
 /**
@@ -16,13 +16,16 @@ import org.reactivestreams.Subscriber
     val maxBufferSize: Int,
     val initialBufferSize: Int,
     self: ActorRef,
-    val pump: Pump)
+    val pump: Pump,
+    var subscribed: Boolean = false)
     extends DefaultOutputTransferStates
     with SubscriberManagement[Any] {
 
   override type S = ActorSubscriptionWithCursor[_ >: Any]
-  override def createSubscription(subscriber: Subscriber[_ >: Any]): S =
+  override def createSubscription(subscriber: Subscriber[_ >: Any]): S = {
+    subscribed = true
     new ActorSubscriptionWithCursor(self, subscriber)
+  }
 
   protected var exposedPublisher: ActorPublisher[Any] = _
 
@@ -111,6 +114,12 @@ import org.reactivestreams.Subscriber
 @InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes, _settings: ActorMaterializerSettings)
     extends ActorProcessorImpl(attributes, _settings) {
 
+  if (settings.subscriptionTimeoutSettings.mode != StreamSubscriptionTimeoutTerminationMode.noop) {
+    import context.dispatcher
+    context.system.scheduler
+      .scheduleOnce(_settings.subscriptionTimeoutSettings.timeout, self, ActorProcessorImpl.SubscriptionTimeout)
+  }
+
   override val primaryOutputs: FanoutOutputs = {
     val inputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer]
     new FanoutOutputs(inputBuffer.max, inputBuffer.initial, self, this) {
@@ -130,4 +139,19 @@ import org.reactivestreams.Subscriber
   def afterFlush(): Unit = context.stop(self)
 
   initialPhase(1, running)
+
+  def subTimeoutHandling: Receive = {
+    case ActorProcessorImpl.SubscriptionTimeout ⇒
+      import StreamSubscriptionTimeoutTerminationMode._
+      if (!primaryOutputs.subscribed) {
+        settings.subscriptionTimeoutSettings.mode match {
+          case NoopTermination ⇒ // won't happen
+          case CancelTermination ⇒
+            primaryInputs.cancel()
+            context.stop(self)
+          case WarnTermination ⇒
+            context.system.log.warning("Subscription timeout for {}", this)
+        }
+      }
+  }
 }

@@ -118,8 +118,8 @@ import org.reactivestreams.Subscriber
       context,
       FanoutProcessorImpl.props(context.effectiveAttributes, actorMaterializer.settings))
     val fanoutProcessor = new ActorProcessor[In, In](impl)
-    impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
     // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
+    impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
     (fanoutProcessor, fanoutProcessor)
   }
 
