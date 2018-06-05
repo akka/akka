@@ -646,5 +646,31 @@ class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       probe.expectMessage(Started)
     }
 
+    "replace supervision when new returned behavior catches same exception" in {
+      val probe = TestProbe[AnyRef]("probeMcProbeFace")
+      val behv = supervise[String](Behaviors.receiveMessage {
+        case "boom" ⇒ throw TE("boom indeed")
+        case "switch" ⇒
+          supervise[String](Behaviors.receiveMessage {
+            case "boom" ⇒ throw TE("boom indeed")
+            case "ping" ⇒
+              probe.ref ! "pong"
+              Behaviors.same
+            case "give me stacktrace" ⇒
+              probe.ref ! new RuntimeException().getStackTrace.toVector
+              Behaviors.stopped
+          }).onFailure[RuntimeException](SupervisorStrategy.resume)
+      }).onFailure[RuntimeException](SupervisorStrategy.stop)
+
+      val actor = spawn(behv)
+      actor ! "switch"
+      actor ! "ping"
+      probe.expectMessage("pong")
+
+      actor ! "give me stacktrace"
+      val stacktrace = probe.expectMessageType[Vector[StackTraceElement]]
+      stacktrace.count(_.toString.startsWith("akka.actor.typed.internal.Supervisor.receive")) should ===(1)
+    }
+
   }
 }
