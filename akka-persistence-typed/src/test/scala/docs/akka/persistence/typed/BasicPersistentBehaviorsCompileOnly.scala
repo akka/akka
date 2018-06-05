@@ -19,8 +19,13 @@ object BasicPersistentBehaviorsCompileOnly {
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
       emptyState = State(),
-      commandHandler = (ctx, state, cmd) ⇒ ???,
-      eventHandler = (state, evt) ⇒ ???)
+      commandHandler =
+        (ctx, state, cmd) ⇒
+          throw new RuntimeException("TODO: process the command & return an Effect"),
+      eventHandler =
+        (state, evt) ⇒
+          throw new RuntimeException("TODO: process the event return the next state")
+    )
   //#structure
 
   //#recovery
@@ -28,10 +33,14 @@ object BasicPersistentBehaviorsCompileOnly {
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
       emptyState = State(),
-      commandHandler = (ctx, state, cmd) ⇒ ???,
-      eventHandler = (state, evt) ⇒ ???)
-      .onRecoveryCompleted { (ctx, state) ⇒
-        ???
+      commandHandler =
+        (ctx, state, cmd) ⇒
+          throw new RuntimeException("TODO: process the command & return an Effect"),
+      eventHandler =
+        (state, evt) ⇒
+          throw new RuntimeException("TODO: process the event return the next state")
+    ).onRecoveryCompleted { (ctx, state) ⇒
+        throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
       }
   //#recovery
 
@@ -40,8 +49,12 @@ object BasicPersistentBehaviorsCompileOnly {
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = "abc",
       emptyState = State(),
-      commandHandler = (ctx, state, cmd) ⇒ ???,
-      eventHandler = (state, evt) ⇒ ???
+      commandHandler =
+        (ctx, state, cmd) ⇒
+          throw new RuntimeException("TODO: process the command & return an Effect"),
+      eventHandler =
+        (state, evt) ⇒
+          throw new RuntimeException("TODO: process the event return the next state")
     ).withTagger(_ ⇒ Set("tag1", "tag2"))
 
   //#tagging
@@ -50,10 +63,14 @@ object BasicPersistentBehaviorsCompileOnly {
   val samplePersistentBehavior = PersistentBehaviors.receive[Command, Event, State](
     persistenceId = "abc",
     emptyState = State(),
-    commandHandler = (ctx, state, cmd) ⇒ ???,
-    eventHandler = (state, evt) ⇒ ???)
-    .onRecoveryCompleted { (ctx, state) ⇒
-      ???
+    commandHandler =
+      (ctx, state, cmd) ⇒
+        throw new RuntimeException("TODO: process the command & return an Effect"),
+    eventHandler =
+      (state, evt) ⇒
+        throw new RuntimeException("TODO: process the event return the next state")
+  ).onRecoveryCompleted { (ctx, state) ⇒
+      throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
     }
 
   val debugAlwaysSnapshot: Behavior[Command] = Behaviors.setup {
