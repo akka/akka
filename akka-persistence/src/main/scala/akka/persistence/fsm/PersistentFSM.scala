@@ -363,7 +363,7 @@ object PersistentFSM {
     }
 
     /**
-     * Modify state transition descriptor to include a state timeout for the
+     * Java API: Modify state transition descriptor to include a state timeout for the
      * next state. This timeout overrides any default timeout set for the next
      * state.
      *

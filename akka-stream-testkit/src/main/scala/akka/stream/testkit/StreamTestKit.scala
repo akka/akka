@@ -601,9 +601,7 @@ object TestSubscriber {
     }
 
     /**
-     * Fluent DSL
-     *
-     * Assert that no message is received for the specified time.
+     * Java API: Assert that no message is received for the specified time.
      */
     def expectNoMessage(remaining: java.time.Duration): Self = {
       import JavaDurationConverters._

@@ -181,9 +181,7 @@ object FSM {
     // TODO: Can be removed once we can break State#timeout signature to `Option[Duration]`
 
     /**
-     * JAVA API
-     * u
-     * Modify state transition descriptor to include a state timeout for the
+     * JAVA API: Modify state transition descriptor to include a state timeout for the
      * next state. This timeout overrides any default timeout set for the next
      * state.
      *

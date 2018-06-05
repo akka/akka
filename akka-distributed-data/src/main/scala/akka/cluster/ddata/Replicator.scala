@@ -292,13 +292,24 @@ object Replicator {
   final case class ReadFrom(n: Int, timeout: FiniteDuration) extends ReadConsistency {
     require(n >= 2, "ReadFrom n must be >= 2, use ReadLocal for n=1")
 
+    /**
+     * Java API
+     */
     def this(n: Int, timeout: java.time.Duration) = this(n, timeout.asScala)
   }
   final case class ReadMajority(timeout: FiniteDuration, minCap: Int = DefaultMajorityMinCap) extends ReadConsistency {
     def this(timeout: FiniteDuration) = this(timeout, DefaultMajorityMinCap)
+
+    /**
+     * Java API
+     */
     def this(timeout: java.time.Duration) = this(timeout.asScala, DefaultMajorityMinCap)
   }
   final case class ReadAll(timeout: FiniteDuration) extends ReadConsistency {
+
+    /**
+     * Java API
+     */
     def this(timeout: java.time.Duration) = this(timeout.asScala)
   }
 
@@ -311,13 +322,24 @@ object Replicator {
   final case class WriteTo(n: Int, timeout: FiniteDuration) extends WriteConsistency {
     require(n >= 2, "WriteTo n must be >= 2, use WriteLocal for n=1")
 
+    /**
+     * Java API
+     */
     def this(n: Int, timeout: java.time.Duration) = this(n, timeout.asScala)
   }
   final case class WriteMajority(timeout: FiniteDuration, minCap: Int = DefaultMajorityMinCap) extends WriteConsistency {
     def this(timeout: FiniteDuration) = this(timeout, DefaultMajorityMinCap)
+
+    /**
+     * Java API
+     */
     def this(timeout: java.time.Duration) = this(timeout.asScala, DefaultMajorityMinCap)
   }
   final case class WriteAll(timeout: FiniteDuration) extends WriteConsistency {
+
+    /**
+     * Java API
+     */
     def this(timeout: java.time.Duration) = this(timeout.asScala)
   }
 
