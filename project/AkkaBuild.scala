@@ -92,7 +92,7 @@ object AkkaBuild {
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
       // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
-      javacOptions in compile ++= DefaultJavacOptions ++ Seq("-source", "8", "-target", "8", "-bootclasspath", "/usr/lib/jvm/java-8-openjdk/jre/lib/rt.jar"),
+      javacOptions in compile ++= DefaultJavacOptions ++ Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.discoveredJavaHomes.value("8") + "/jre/lib/rt.jar"),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
 
@@ -187,7 +187,8 @@ object AkkaBuild {
       // show full stack traces and test case durations
       testOptions in Test += Tests.Argument("-oDF")) ++
       mavenLocalResolverSettings ++
-      docLintingSettings
+      docLintingSettings ++
+      CrossJava.crossJavaSettings
 
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),
