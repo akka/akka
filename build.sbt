@@ -91,7 +91,7 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
       actor,
       stream, streamTests,
       persistence, persistenceTyped,
-      distributedData,
+      distributedData, clusterTyped,
       testkit
     ).map(_ % "compile->compile;compile->test"): _*
   )
