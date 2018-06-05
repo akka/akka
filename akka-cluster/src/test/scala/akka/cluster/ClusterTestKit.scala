@@ -37,7 +37,7 @@ trait ClusterTestKit extends TestKitBase {
     /**
      * Register an [[ActorSystem]].
      *
-     * The [ActorSystem]] will be prepended to list and be considered the first node
+     * The [[ActorSystem]] will be prepended to list and be considered the first node
      */
     def registerAsFirst(actorSystem: ActorSystem) = {
       actorSystems = actorSystem +: actorSystems
@@ -102,7 +102,7 @@ trait ClusterTestKit extends TestKitBase {
      * Force the passed [[ActorSystem]] to quit the cluster and shutdown.
      * Once original system is removed, a new [[ActorSystem]] is started using the same address.
      */
-    def quitAndRestart(actorSystem: ActorSystem, config: Config) = {
+    def quitAndRestart(actorSystem: ActorSystem, config: Config): ActorSystem = {
       require(isRegistered(actorSystem), "Unknown actor system")
 
       // is this first seed node?
@@ -113,7 +113,7 @@ trait ClusterTestKit extends TestKitBase {
 
       // remove old before starting the new one
       cluster.leave(cluster.readView.selfAddress)
-      awaitCond(cluster.readView.status == Removed, message = s"awaiting node [${cluster.readView.selfAddress}] to be 'Removed'")
+      awaitCond(cluster.readView.status == Removed, message = s"awaiting node [${cluster.readView.selfAddress}] to be 'Removed'. Current status: [${cluster.readView.status}]")
 
       shutdown(actorSystem)
       awaitCond(cluster.isTerminated)
@@ -130,9 +130,6 @@ trait ClusterTestKit extends TestKitBase {
 
       if (firstSeedNode) newActorSystemAsFirst(newConfig)
       else newActorSystem(newConfig)
-
     }
-
   }
-
 }

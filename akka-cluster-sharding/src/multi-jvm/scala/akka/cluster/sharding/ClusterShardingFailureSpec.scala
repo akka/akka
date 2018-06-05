@@ -5,13 +5,14 @@
 package akka.cluster.sharding
 
 import java.io.File
+
 import akka.cluster.sharding.ShardRegion.Passivate
 
 import scala.concurrent.duration._
 import org.apache.commons.io.FileUtils
 import com.typesafe.config.ConfigFactory
 import akka.actor._
-import akka.cluster.Cluster
+import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.SharedLeveldbJournal
 import akka.persistence.journal.leveldb.SharedLeveldbStore
@@ -21,7 +22,6 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import akka.cluster.MemberStatus
 
 object ClusterShardingFailureSpec {
   case class Get(id: String)
@@ -79,7 +79,7 @@ abstract class ClusterShardingFailureSpecConfig(val mode: String) extends MultiN
       dir = target/ClusterShardingFailureSpec/sharding-ddata
       map-size = 10 MiB
     }
-    """))
+    """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 }
