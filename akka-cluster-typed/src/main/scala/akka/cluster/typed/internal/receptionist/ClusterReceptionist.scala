@@ -66,7 +66,6 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     val replicatorMessageAdapter: ActorRef[Replicator.ReplicatorMessage] =
       ctx.messageAdapter[Replicator.ReplicatorMessage] {
         case changed: Replicator.Changed[_] @unchecked ⇒
-          // FIXME couldn't think of a cleaner way to do this ;(
           ChangeFromReplicator(
             changed.key.asInstanceOf[DDataKey],
             changed.dataValue.asInstanceOf[ORMultiMap[ServiceKey[_], Entry]])
@@ -126,7 +125,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         })
 
       def notifySubscribersFor(key: AbstractServiceKey, state: ServiceRegistry): Unit = {
-        val msg = ReceptionistMessages.Listing(key.asServiceKey, state.getActorRefsFor(key))
+        val msg = ReceptionistMessages.Listing(key.asServiceKey, state.actorRefsFor(key))
         subscriptions.get(key).foreach(_ ! msg)
       }
 
@@ -153,13 +152,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
                 }.mkString(","))
 
             // shard changes over the ddata keys they belong to
-            val removalsPerDdataKey =
-              removals.foldLeft(Map.empty[DDataKey, Map[AbstractServiceKey, Set[Entry]]]) {
-                case (acc, (key, entries)) ⇒
-                  val ddataKey = registry.ddataKeyFor(key.asServiceKey)
-                  val updated = acc.getOrElse(ddataKey, Map.empty) + (key -> entries)
-                  acc + (ddataKey -> updated)
-              }
+            val removalsPerDdataKey = registry.entriesPerDdataKey(removals)
 
             removalsPerDdataKey.foreach {
               case (ddataKey, removalForKey) ⇒
@@ -189,14 +182,14 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           Behaviors.same
 
         case ReceptionistMessages.Find(key, replyTo) ⇒
-          replyTo ! ReceptionistMessages.Listing(key.asServiceKey, registry.getActorRefsFor(key))
+          replyTo ! ReceptionistMessages.Listing(key.asServiceKey, registry.actorRefsFor(key))
           Behaviors.same
 
         case ReceptionistMessages.Subscribe(key, subscriber) ⇒
           watchWith(ctx, subscriber, SubscriberTerminated(key, subscriber))
 
           // immediately reply with initial listings to the new subscriber
-          subscriber ! ReceptionistMessages.Listing(key.asServiceKey, registry.getActorRefsFor(key))
+          subscriber ! ReceptionistMessages.Listing(key.asServiceKey, registry.actorRefsFor(key))
 
           next(newSubscriptions = subscriptions.inserted(key)(subscriber))
       }
@@ -224,9 +217,9 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             if (ctx.log.isDebugEnabled) {
               ctx.log.debug(
                 "Change from replicator: [{}], changes: [{}]",
-                newState.map.entries,
+                newState.entries.entries,
                 changedKeys.map(key ⇒
-                  key.asServiceKey.id -> newState.getEntriesFor(key).mkString("[", ", ", "]")
+                  key.asServiceKey.id -> newState.entriesFor(key).mkString("[", ", ", "]")
                 ).mkString(", "))
             }
             changedKeys.foreach(notifySubscribersFor(_, newState))
