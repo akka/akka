@@ -11,7 +11,6 @@ import akka.Done;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import org.junit.ClassRule;
 import org.scalatest.junit.JUnitSuite;
-import scala.concurrent.duration.Duration;
 import akka.util.Timeout;
 import org.junit.Test;
 
@@ -41,8 +40,7 @@ public class WatchTest extends JUnitSuite {
   static final class CustomTerminationMessage implements Message {
   }
 
-  // final FiniteDuration fiveSeconds = FiniteDuration.create(5, TimeUnit.SECONDS);
-  final Timeout timeout = new Timeout(Duration.create(5, TimeUnit.SECONDS));
+  final Timeout timeout = new Timeout(scala.concurrent.duration.Duration.create(5, TimeUnit.SECONDS));
 
   final Behavior<Stop> exitingActor = receive((ctx, msg) -> {
     System.out.println("Stopping!");

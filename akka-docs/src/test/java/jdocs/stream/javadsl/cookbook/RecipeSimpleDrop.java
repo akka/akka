@@ -20,7 +20,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
 
@@ -67,7 +66,7 @@ public class RecipeSimpleDrop extends RecipeTest {
         pub.sendNext(new Message("2"));
         pub.sendNext(new Message("3"));
         
-        Await.ready(latch, Duration.create(1, TimeUnit.SECONDS));
+        Await.ready(latch, scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS));
         
         sub.requestNext(new Message("3"));
 
