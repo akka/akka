@@ -15,8 +15,7 @@ To use Akka Cluster, you must add the following dependency in your project:
 ## When and where to use Akka Cluster
 
 An architectural choice you have to make is if you are going to use a microservices architecture or
-a traditional distributed application, also known as a distributed monolith. This choice will influence how
-you should use Akka Cluster
+a traditional distributed application. This choice will influence how you should use Akka Cluster.
 
 ### Microservices
 
@@ -24,7 +23,7 @@ Microservices has many attractive properties, such as the independent nature of 
 multiple smaller and more focused teams that can deliver new functionality more frequently and can
 respond quicker to business opportunities. Reactive Microservices should be isolated, autonomous, and have
 a single responsibility as identified by Jonas Bonér in the book
-[Reactive Microservices Architecture: Design Principles for Distributed Systems](https://info.lightbend.com/COLL-20XX-Reactive-Microservices-Architecture-RES-LP.html).
+[Reactive Microservices: The Evolution of Microservices at Scale](https://info.lightbend.com/ebook-reactive-microservices-the-evolution-of-microservices-at-scale-register.html).
 
 In a microservices architecture, you should consider communication within a service and between services.
 
@@ -44,12 +43,12 @@ performance.
 
 Between different services [Akka HTTP](https://doc.akka.io/docs/akka-http/current) or
 [Akka gRPC](https://developer.lightbend.com/docs/akka-grpc/current/) can be used for synchronous (yet non-blocking)
-communication and [Akka Streams Kafka](https://developer.lightbend.com/docs/alpakka/current/) for asynchronous communication.
-[Alpakka](https://developer.lightbend.com/docs/alpakka/current/) provides many connectors for integration with
-external systems. All those communication mechanisms work well with streaming of messages with
-end-to-end back-pressure, and the synchronous communication tools can also be used for single request
-response interactions. It is also important to note that when using these tools both sides of the communication
-do not have to be implemented with Akka, nor does the programming language matter.
+communication and [Akka Streams Kafka](https://doc.akka.io/docs/akka-stream-kafka/current/home.html) or other
+[Alpakka](https://developer.lightbend.com/docs/alpakka/current/) connectors for integration asynchronous communication.
+All those communication mechanisms work well with streaming of messages with end-to-end back-pressure, and the
+synchronous communication tools can also be used for single request response interactions. It is also important
+to note that when using these tools both sides of the communication do not have to be implemented with Akka,
+nor does the programming language matter.
 
 ### Traditional distributed application
 
