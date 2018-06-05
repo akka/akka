@@ -90,7 +90,9 @@ object AkkaBuild {
     TestExtras.Filter.settings ++
     Protobuf.settings ++ Seq[Setting[_]](
       // compile options
-      scalacOptions in Compile ++= DefaultScalacOptions ++ Seq("-release", "8"),
+      scalacOptions in Compile ++= DefaultScalacOptions,
+      // We should make sure to always build scala 2.11 artifacts with JDK8
+      scalacOptions in Compile ++= (if (scalaBinaryVersion.value == "2.11") Seq() else Seq("-release", "8")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
