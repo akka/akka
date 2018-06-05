@@ -263,7 +263,7 @@ and make it unusable.
 Finally, even if you don't use features such as Persistence, Sharding, or Singletons, 
 auto-downing can lead the system to form multiple small clusters. These small
 clusters will be independent from each other. They will be unable to communicate
-and as a result you may experience performance degredation. Once this condition
+and as a result you may experience performance degradation. Once this condition
 occurs, it will require manual intervention in order to reform the cluster.
 
 Because of these issues, auto-downing should **never** be used in a production environment.
