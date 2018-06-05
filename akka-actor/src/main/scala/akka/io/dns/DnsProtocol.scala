@@ -4,9 +4,13 @@
 
 package akka.io.dns
 
-import akka.io.dns.protocol.{ DnsRecordType, DnsResourceRecord }
+import java.util
+
+import akka.actor.NoSerializationVerificationNeeded
+import akka.annotation.ApiMayChange
 
 import scala.collection.immutable
+import scala.collection.JavaConverters._
 
 /**
  * Supersedes [[akka.io.Dns]] protocol.
@@ -15,26 +19,54 @@ import scala.collection.immutable
  *
  * Allows for more detailed lookups, by specifying which records should be checked,
  * and responses can more information than plain IP addresses (e.g. ports for SRV records).
+ *
  */
+@ApiMayChange
 object DnsProtocol {
 
-  def resolve(name: String): Resolve =
-    Resolve(name, NormalLookupRecordTypes)
+  @ApiMayChange
+  sealed trait RequestType
+  final case class Ip(ipv4: Boolean = true, ipv6: Boolean = true) extends RequestType
+  final case object Srv extends RequestType
 
-  def resolve(name: String, recordTypes: Set[DnsRecordType]): Resolve =
-    Resolve(name, recordTypes)
+  /**
+   * Java API
+   */
+  def ipRequestType(ipv4: Boolean, ipv6: Boolean): RequestType = Ip(ipv4, ipv6)
 
-  sealed trait Protocol
-  private[akka] final case class Resolve(name: String, mode: Set[DnsRecordType]) extends Protocol
+  /**
+   * Java API
+   */
+  def ipRequestType(): RequestType = Ip(ipv4 = true, ipv6 = true)
 
-  final case class Resolved(name: String, results: immutable.Seq[DnsResourceRecord]) extends Protocol
+  /**
+   * Java API
+   */
+  def srvRequestType(): RequestType = Srv
 
-  import DnsRecordType._
-  /** The default set of record types most applications are interested in: A, AAAA and CNAME */
-  final val NormalLookupRecordTypes = Set(A, AAAA, CNAME)
+  final case class Resolve(name: String, requestType: RequestType)
 
-  /** Request lookups of `SRV` records */
-  final val ServiceRecordTypes = Set(SRV)
+  object Resolve {
+    def apply(name: String): Resolve = Resolve(name, Ip())
+
+    /**
+     * Java API
+     */
+    def create(name: String): Resolve = Resolve(name, Ip())
+
+    /**
+     * Java API
+     */
+    def create(name: String, requestType: RequestType): Resolve = Resolve(name, requestType)
+  }
+
+  @ApiMayChange
+  final case class Resolved(name: String, results: immutable.Seq[ResourceRecord]) extends NoSerializationVerificationNeeded {
+    /**
+     * Java API
+     */
+    def getResults(): util.List[ResourceRecord] = results.asJava
+  }
 
 }
 

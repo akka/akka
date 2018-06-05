@@ -51,12 +51,10 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
     }
   }
 
-  // TODO tempted to deprecate this one?
   def cached(name: String)(system: ActorSystem): Option[Resolved] = {
     Dns(system).cache.cached(name)
   }
 
-  // TODO tempted to deprecate this one?
   def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Resolved] = {
     Dns(system).cache.resolve(name)(system, sender)
   }
@@ -71,7 +69,8 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): DnsExt = super.get(system)
 }
 
-class DnsExt(system: ExtendedActorSystem) extends IO.Extension {
+class DnsExt(val system: ExtendedActorSystem) extends IO.Extension {
+
   val Settings = new Settings(system.settings.config.getConfig("akka.io.dns"))
 
   class Settings private[DnsExt] (_config: Config) {
@@ -81,6 +80,8 @@ class DnsExt(system: ExtendedActorSystem) extends IO.Extension {
     val Resolver: String = getString("resolver")
     val ResolverConfig: Config = getConfig(Resolver)
     val ProviderObjectName: String = ResolverConfig.getString("provider-object")
+
+    override def toString = s"Settings($Dispatcher, $Resolver, $ResolverConfig, $ProviderObjectName)"
   }
 
   val provider: DnsProvider = system.dynamicAccess.getClassFor[DnsProvider](Settings.ProviderObjectName).get.newInstance()

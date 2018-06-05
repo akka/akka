@@ -17,7 +17,11 @@ class SimpleDnsManager(val ext: DnsExt) extends Actor with RequiresMessageQueue[
 
   import context._
 
-  private val resolver = actorOf(FromConfig.props(Props(ext.provider.actorClass, ext.cache, ext.Settings.ResolverConfig).withDeploy(Deploy.local).withDispatcher(ext.Settings.Dispatcher)), ext.Settings.Resolver)
+  private val resolver = actorOf(FromConfig.props(Props(ext.provider.actorClass, ext.cache, ext.Settings.ResolverConfig)
+    .withDeploy(Deploy.local).withDispatcher(ext.Settings.Dispatcher)), ext.Settings.Resolver)
+
+  private val inetDnsEnabled = ext.provider.actorClass == classOf[InetAddressDnsResolver]
+
   private val cacheCleanup = ext.cache match {
     case cleanup: PeriodicCacheCleanup ⇒ Some(cleanup)
     case _                             ⇒ None
@@ -28,27 +32,25 @@ class SimpleDnsManager(val ext: DnsExt) extends Actor with RequiresMessageQueue[
     system.scheduler.schedule(interval, interval, self, SimpleDnsManager.CacheCleanup)
   }
 
-  override def receive = {
+  override def receive: Receive = {
     case r @ Dns.Resolve(name) ⇒
       log.debug("Resolution request for {} from {}", name, sender())
       resolver.forward(r)
-    case SimpleDnsManager.CacheCleanup ⇒
-      for (c ← cacheCleanup)
-        c.cleanup()
 
-    case m: dns.DnsProtocol.Protocol ⇒
-      val legacyDnsResolver = classOf[InetAddressDnsResolver]
-      if (ext.provider.actorClass == legacyDnsResolver) {
-        // FIXME technically we COULD adopt the protocol here, but not sure we should...
-        log.warning(
-          "Message of [akka.io.dns.DnsProtocol.Protocol] received ({}), while the legacy {} was configured! Dropping DNS resolve request." +
-            "Please use [akka.io.dns.DnsProtocol.resolve] to create resolution requests for the Async DNS resolver.",
-          Logging.simpleName(m), Logging.simpleName(legacyDnsResolver))
+    case SimpleDnsManager.CacheCleanup ⇒
+      cacheCleanup.foreach(_.cleanup())
+
+    case m: dns.DnsProtocol.Resolve ⇒
+      if (inetDnsEnabled) {
+        log.error(
+          "Message of [akka.io.dns.DnsProtocol.Protocol] received ({}) while inet-address dns was configured. Dropping DNS resolve request." +
+            "Only use [akka.io.dns.DnsProtocol.resolve] to create resolution requests for the Async DNS resolver.",
+          Logging.simpleName(m))
       } else resolver.forward(m)
   }
 
   override def postStop(): Unit = {
-    for (t ← cleanupTimer) t.cancel()
+    cleanupTimer.foreach(_.cancel())
   }
 }
 
