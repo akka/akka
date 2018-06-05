@@ -172,7 +172,7 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     coord
   }
 
-  // locate reason-specifi overrides and merge with defaults.
+  // locate reason-specific overrides and merge with defaults.
   @InternalApi private[akka] def confWithOverrides(conf: Config, reason: Option[Reason]): Config = {
     reason.flatMap { r ⇒
       val basePath = s"""reason-overrides."${r.getClass.getName}""""
