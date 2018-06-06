@@ -84,6 +84,8 @@ object AkkaBuild {
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
   final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint")
+
+  // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
 
   lazy val defaultSettings = resolverSettings ++
@@ -92,12 +94,12 @@ object AkkaBuild {
       // compile options
       scalacOptions in Compile ++= DefaultScalacOptions,
       // We should make sure to always build scala 2.11 artifacts with JDK8
-      scalacOptions in Compile ++= (if (scalaBinaryVersion.value == "2.11") Seq() else Seq("-release", "8")),
+      scalacOptions in Compile ++= (if (scalaBinaryVersion.value == "2.11") Seq("-target:jvm-1.8") else Seq("-release", "8")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-      // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
       javacOptions in compile ++= DefaultJavacOptions ++ Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.discoveredJavaHomes.value("8") + "/jre/lib/rt.jar"),
+      javacOptions in test ++= DefaultJavacOptions ++ Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.discoveredJavaHomes.value("8") + "/jre/lib/rt.jar"),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
 
