@@ -22,7 +22,7 @@ so create one per logical application.
 
 Like in an economic organization, actors naturally form hierarchies. One actor,
 which is to oversee a certain function in the program might want to split up
-its task into smaller, more manageable pieces. For this purpose it starts child
+its task into smaller, more manageable pieces. For this purpose, it starts child
 actors which it supervises. While the details of supervision are explained
 @ref:[here](supervision.md), we shall concentrate on the underlying concepts in
 this section. The only prerequisite is to know that each actor has exactly one
@@ -52,7 +52,7 @@ the manager knows which kind of failures are expected and how to handle
 them.
  * If one actor carries very important data (i.e. its state shall not be lost
 if avoidable), this actor should source out any possibly dangerous sub-tasks
-to children it supervises and handle failures of these children as
+to children it supervises and handles failures of these children as
 appropriate. Depending on the nature of the requests, it may be best to
 create a new child for each request, which simplifies state management for
 collecting the replies. This is known as the “Error Kernel Pattern” from
@@ -71,7 +71,7 @@ follow the rules or break them, you should always have a reason.
 
 The actor system as a collaborating ensemble of actors is the natural unit for
 managing shared facilities like scheduling services, configuration, logging,
-etc. Several actor systems with different configuration may co-exist within the
+etc. Several actor systems with different configurations may co-exist within the
 same JVM without problems, there is no global shared state within Akka itself.
 Couple this with the transparent communication between actor systems—within one
 node or across a network connection—to see that actor systems themselves can be
