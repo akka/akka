@@ -93,8 +93,11 @@ object AkkaBuild {
     Protobuf.settings ++ Seq[Setting[_]](
       // compile options
       scalacOptions in Compile ++= DefaultScalacOptions,
-      // We should make sure to always build scala 2.11 artifacts with JDK8
-      scalacOptions in Compile ++= (if (scalaBinaryVersion.value == "2.11") Seq("-target:jvm-1.8") else Seq("-release", "8")),
+      // Makes sure that, even when compiling with a jdk version greater than 8, the resulting jar will not refer to
+      // methods not found in jdk8. To test whether this has the desired effect, compile akka-remote and check the
+      // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
+      // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
+      scalacOptions in Compile ++= (if (scalaBinaryVersion.value == "2.11") Seq("-target:jvm-1.8", "-javabootclasspath", CrossJava.Keys.discoveredJavaHomes.value("8") + "/jre/lib/rt.jar") else Seq("-release", "8")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
