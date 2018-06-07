@@ -297,8 +297,7 @@ lazy val persistenceTck = akkaModule("akka-persistence-tck")
   .settings(AutomaticModuleName.settings("akka.persistence.tck"))
 //.settings(OSGi.persistenceTck) TODO: we do need to export this as OSGi bundle too?
   .settings(
-    fork in Test := true,
-    publishArtifact in (Compile, packageDoc) := false,
+    fork in Test := true
   )
   .disablePlugins(MimaPlugin)
 
