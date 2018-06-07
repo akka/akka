@@ -344,6 +344,7 @@ final class CoordinatedShutdown private[akka] (
       knownPhases(phase),
       s"Unknown phase [$phase], known phases [$knownPhases]. " +
         "All phases (along with their optional dependencies) must be defined in configuration")
+    require(!taskName.isEmpty)
     val current = tasks.get(phase)
     if (current == null) {
       if (tasks.putIfAbsent(phase, Vector(taskName → task)) != null)
