@@ -94,6 +94,12 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
     copy(recoveryCompleted = callback)
 
   /**
+   * Change the recovery strategy
+   */
+  override def withRecovery(recovery: Recovery): PersistentBehavior[Command, Event, State] =
+    copy(recovery = recovery)
+
+  /**
    * Initiates a snapshot if the given function returns true.
    * When persisting multiple events at once the snapshot is triggered after all the events have
    * been persisted.

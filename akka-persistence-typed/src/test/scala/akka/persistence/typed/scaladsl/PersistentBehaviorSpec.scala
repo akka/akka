@@ -14,7 +14,7 @@ import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.typed.EventAdapter
-import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
+import akka.persistence.{ Recovery, SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.actor.testkit.typed.TestKitSettings
@@ -93,6 +93,9 @@ object PersistentBehaviorSpec {
   def counter(persistenceId: String)(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
     counter(persistenceId, loggingActor = TestProbe[String].ref, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
 
+  def counter(persistenceId: String, recovery: Recovery)(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+    counter(persistenceId, loggingActor = TestProbe[String].ref, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref, recovery)
+
   def counter(persistenceId: String, logging: ActorRef[String])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
     counter(persistenceId, loggingActor = logging, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
 
@@ -106,7 +109,8 @@ object PersistentBehaviorSpec {
     persistenceId: String,
     loggingActor:  ActorRef[String],
     probe:         ActorRef[(State, Event)],
-    snapshotProbe: ActorRef[Try[Done]]): PersistentBehavior[Command, Event, State] = {
+    snapshotProbe: ActorRef[Try[Done]],
+    recovery:      Recovery                 = Recovery.create()): PersistentBehavior[Command, Event, State] = {
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
       emptyState = State(0, Vector.empty),
@@ -198,7 +202,7 @@ object PersistentBehaviorSpec {
       .onSnapshot {
         case (_, _, result) ⇒
           snapshotProbe ! result
-      }
+      }.withRecovery(recovery)
   }
 
 }
@@ -248,6 +252,25 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       c2 ! Increment
       c2 ! GetValue(probe.ref)
       probe.expectMessage(State(4, Vector(0, 1, 2, 3)))
+    }
+
+    "not replay stored events when recovery is disabled" in {
+      val pid = nextPid
+      val c = spawn(counter(pid, Recovery.none))
+
+      val probe = TestProbe[State]
+      c ! Increment
+      c ! Increment
+      c ! Increment
+      c ! GetValue(probe.ref)
+      probe.expectMessage(10.seconds, State(3, Vector(0, 1, 2)))
+
+      val c2 = spawn(counter(pid, Recovery.none))
+      c2 ! GetValue(probe.ref)
+      probe.expectMessage(State(0, Vector()))
+      c2 ! Increment
+      c2 ! GetValue(probe.ref)
+      probe.expectMessage(State(1, Vector(0)))
     }
 
     "handle Terminated signal" in {

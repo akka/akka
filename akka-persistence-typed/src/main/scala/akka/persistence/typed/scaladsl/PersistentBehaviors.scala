@@ -99,6 +99,11 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
   def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
   /**
+   * Change the recovery strategy
+   */
+  def withRecovery(recovery: Recovery): PersistentBehavior[Command, Event, State]
+
+  /**
    * The `callback` function is called to notify when a snapshot is complete.
    */
   def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
