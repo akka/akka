@@ -246,9 +246,9 @@ Java
 :   @@snip [RecipeAdhocSourceTest.scala]($code$/java/jdocs/stream/javadsl/cookbook/RecipeAdhocSourceTest.java) { #adhoc-source }
 
 
-## Working with Graphs
+## Working with Operators
 
-In this collection we show recipes that use stream graph elements to achieve various goals.
+In this collection we show recipes that use stream operators to achieve various goals.
 
 ### Triggering the flow of elements programmatically
 
@@ -284,9 +284,9 @@ that automatically balances incoming jobs to available workers, then merges the 
 
 We will express our solution as a function that takes a worker flow and the number of workers to be allocated and gives
 a flow that internally contains a pool of these workers. To achieve the desired result we will create a `Flow`
-from a graph.
+from an operator.
 
-The graph consists of a `Balance` node which is a special fan-out operation that tries to route elements to available
+The operator consists of a `Balance` node which is a special fan-out operation that tries to route elements to available
 downstream consumers. In a `for` loop we wire all of our desired workers as outputs of this balancer element, then
 we wire the outputs of these workers to a `Merge` element that will collect the results from the workers.
 
@@ -327,7 +327,7 @@ similar to a `fold`.
 
 ### Dropping broadcast
 
-**Situation:** The default `Broadcast` graph element is properly backpressured, but that means that a slow downstream
+**Situation:** The default `Broadcast` operator is properly backpressured, but that means that a slow downstream
 consumer can hold back the other downstream consumers resulting in lowered throughput. In other words the rate of
 `Broadcast` is the rate of its slowest downstream consumer. In certain cases it is desirable to allow faster consumers
 to progress independently of their slower siblings by dropping elements if necessary.

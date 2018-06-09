@@ -259,7 +259,7 @@ Java
 :   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweet-source }
 
 Streams always start flowing from a @scala[`Source[Out,M1]`]@java[`Source<Out,M1>`] then can continue through @scala[`Flow[In,Out,M2]`]@java[`Flow<In,Out,M2>`] elements or
-more advanced graph elements to finally be consumed by a @scala[`Sink[In,M3]`]@java[`Sink<In,M3>`] @scala[(ignore the type parameters `M1`, `M2`
+more advanced operators to finally be consumed by a @scala[`Sink[In,M3]`]@java[`Sink<In,M3>`] @scala[(ignore the type parameters `M1`, `M2`
 and `M3` for now, they are not relevant to the types of the elements produced/consumed by these classes – they are
 "materialized types", which we'll talk about [below](#materialized-values-quick))]@java[. The first type parameter—`Tweet` in this case—designates the kind of elements produced
 by the source while the `M` type parameters describe the object that is created during
@@ -362,7 +362,7 @@ by importing `GraphDSL.Implicits._`]@java[we use graph builder `b` to construct 
 `GraphDSL.create` returns a `Graph`, in this example a @scala[`Graph[ClosedShape, NotUsed]`]@java[`Graph<ClosedShape,NotUsed>`] where
 `ClosedShape` means that it is *a fully connected graph* or "closed" - there are no unconnected inputs or outputs.
 Since it is closed it is possible to transform the graph into a `RunnableGraph` using `RunnableGraph.fromGraph`.
-The runnable graph can then be `run()` to materialize a stream out of it.
+The `RunnableGraph` can then be `run()` to materialize a stream out of it.
 
 Both `Graph` and `RunnableGraph` are *immutable, thread-safe, and freely shareable*.
 

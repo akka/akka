@@ -116,7 +116,7 @@ Java
 ## Composing complex systems
 
 In the previous section we explored the possibility of composition, and hierarchy, but we stayed away from non-linear,
-generalized graph components. There is nothing in Akka Streams though that enforces that stream processing layouts
+generalized operators. There is nothing in Akka Streams though that enforces that stream processing layouts
 can only be linear. The DSL for `Source` and friends is optimized for creating such linear chains, as they are
 the most common in practice. There is a more advanced DSL for building complex graphs, that can be used if more
 flexibility is needed. We will see that the difference between the two DSLs is only on the surface: the concepts they
@@ -162,7 +162,7 @@ Scala
 Java
 :   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #partial-graph }
 
-The only new addition is the return value of the builder block, which is a `Shape`. All graphs (including
+The only new addition is the return value of the builder block, which is a `Shape`. All operators (including
 `Source`, `BidiFlow`, etc) have a shape, which encodes the *typed* ports of the module. In our example
 there is exactly one input and output port left, so we can declare it to have a `FlowShape` by returning an
 instance of it. While it is possible to create new `Shape` types, it is usually recommended to use one of the
@@ -183,7 +183,7 @@ Java
 
 It is not possible to use it as a `Flow` yet, though (i.e. we cannot call `.filter()` on it), but `Flow`
 has a `fromGraph()` method that adds the DSL to a `FlowShape`. There are similar methods on `Source`,
-`Sink` and `BidiShape`, so it is easy to get back to the simpler DSL if a graph has the right shape.
+`Sink` and `BidiShape`, so it is easy to get back to the simpler DSL if an operator has the right shape.
 For convenience, it is also possible to skip the partial graph creation, and use one of the convenience creator methods.
 To demonstrate this, we will create the following graph:
 
