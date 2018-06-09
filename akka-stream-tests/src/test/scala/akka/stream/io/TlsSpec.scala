@@ -57,7 +57,7 @@ object TlsSpec {
   def initSslContext(): SSLContext = initWithTrust("/truststore")
 
   /**
-   * This is a stage that fires a TimeoutException failure 2 seconds after it was started,
+   * This is an operator that fires a TimeoutException failure 2 seconds after it was started,
    * independent of the traffic going through. The purpose is to include the last seen
    * element in the exception message to help in figuring out what went wrong.
    */

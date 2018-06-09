@@ -16,7 +16,7 @@ import akka.stream.MaterializerLoggingProvider
  * Note, abiding to [[akka.stream.ActorAttributes.logLevels]] has to be done manually,
  * the logger itself is configured based on the logSource provided to it. Also, the `log`
  * itself would not know if you're calling it from a "on element" context or not, which is why
- * these decisions have to be handled by the stage itself.
+ * these decisions have to be handled by the operator itself.
  */
 trait StageLogging { self: GraphStageLogic ⇒
   private[this] var _log: LoggingAdapter = _
