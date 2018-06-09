@@ -56,12 +56,12 @@ abstract class Materializer {
    * can be used by parts of the flow to submit processing jobs for execution,
    * run Future callbacks, etc.
    *
-   * Note that this is not necessarily the same execution context the stream stage itself is running on.
+   * Note that this is not necessarily the same execution context the stream operator itself is running on.
    */
   implicit def executionContext: ExecutionContextExecutor
 
   /**
-   * Interface for stages that need timer services for their functionality. Schedules a
+   * Interface for operators that need timer services for their functionality. Schedules a
    * single task with the given delay.
    *
    * @return A [[akka.actor.Cancellable]] that allows cancelling the timer. Cancelling is best effort, if the event
@@ -70,7 +70,7 @@ abstract class Materializer {
   def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable
 
   /**
-   * Interface for stages that need timer services for their functionality. Schedules a
+   * Interface for operators that need timer services for their functionality. Schedules a
    * repeated task with the given interval between invocations.
    *
    * @return A [[akka.actor.Cancellable]] that allows cancelling the timer. Cancelling is best effort, if the event

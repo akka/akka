@@ -25,7 +25,7 @@ object GraphStageMessages {
   case object DownstreamFinish extends StageMessage with NoSerializationVerificationNeeded
 
   /**
-   * Sent to the probe when the stage callback threw an exception
+   * Sent to the probe when the operator callback threw an exception
    * @param operation The operation that failed
    */
   case class StageFailure(operation: StageMessage, exception: Throwable)
@@ -35,7 +35,7 @@ object TestSinkStage {
 
   /**
    * Creates a sink out of the `stageUnderTest` that will inform the `probe`
-   * of graph stage events and callbacks by sending it the various messages found under
+   * of operator events and callbacks by sending it the various messages found under
    * [[GraphStageMessages]].
    *
    * This allows for creation of a "normal" stream ending with the sink while still being
@@ -100,7 +100,7 @@ object TestSourceStage {
 
   /**
    * Creates a source out of the `stageUnderTest` that will inform the `probe`
-   * of graph stage events and callbacks by sending it the various messages found under
+   * of operator events and callbacks by sending it the various messages found under
    * [[GraphStageMessages]].
    *
    * This allows for creation of a "normal" stream starting with the source while still being

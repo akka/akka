@@ -11,9 +11,9 @@ package akka.stream
  *    for composing streams. These DSLs are a thin wrappers around the internal [[akka.stream.impl.TraversalBuilder]]
  *    builder classes. There are Java alternatives of these DSLs in [[javadsl]] which basically wrap their scala
  *    counterpart, delegating method calls.
- *  * The [[akka.stream.stage.GraphStage]] API is the user facing API for creating new stream processing stages. These
+ *  * The [[akka.stream.stage.GraphStage]] API is the user facing API for creating new stream operators. These
  *    classes are used by the [[akka.stream.impl.fusing.GraphInterpreter]] which executes islands (subgraphs) of these
- *    stages
+ *    operators
  *  * The high level DSLs use the [[akka.stream.impl.TraversalBuilder]] classes to build instances of
  *    [[akka.stream.impl.Traversal]] which are the representation of a materializable stream description. These builders
  *    are immutable and safely shareable. Unlike the top-level DSLs, these are untyped, i.e. elements are treated as
@@ -22,7 +22,7 @@ package akka.stream
  *    can be materialized. The builders exists solely for the purpose of producing a traversal in the end.
  *  * The [[akka.stream.impl.PhasedFusingActorMaterializer]] is the class that is responsible for traversing and
  *    interpreting a [[akka.stream.impl.Traversal]]. It delegates the actual task of creating executable entities
- *    and Publishers/Producers to [[akka.stream.impl.PhaseIsland]]s which are plugins that understand atomic stages
+ *    and Publishers/Producers to [[akka.stream.impl.PhaseIsland]]s which are plugins that understand atomic operators
  *    in the graph and able to turn them into executable entities.
  *  * The [[akka.stream.impl.fusing.GraphInterpreter]] and its actor backed wrapper [[akka.stream.impl.fusing.ActorGraphInterpreter]]
  *    are used to execute synchronous islands (subgraphs) of [[akka.stream.stage.GraphStage]]s.
@@ -45,7 +45,7 @@ package akka.stream
  *     * materialization should not pay the price of island tracking if there is only a single island
  *     * assume that the number of islands is low in general
  *     * avoid "copiedModule" i.e. wrappers that exist solely for the purpose of establishing new port identities
- *       for stages that are used multiple times in the same graph.
+ *       for operators that are used multiple times in the same graph.
  *   * Avoid hashmaps and prefer direct array lookup wherever possible
  *
  * Semantically, a traversal is a list of commands that the materializer must execute to turn the description to a
@@ -71,10 +71,10 @@ package akka.stream
  *      the result back on the top of the stack
  *    * [[akka.stream.impl.Compose]] take the top two values of the stack, invoke the provided function with these
  *      values as arguments, then put the calculated value on the top of the stack
- *    * Materialized values of atomic stages when visiting a [[akka.stream.impl.MaterializeAtomic]] must be
+ *    * Materialized values of atomic operators when visiting a [[akka.stream.impl.MaterializeAtomic]] must be
  *      pushed to the stack automatically. There are no explicit PUSH commands for this
  *  * Attributes calculation. These also are a stack language, although much simpler than the materialized value
- *     commands. For any materialized stage, the top of the attributes stack should be provided as the current
+ *     commands. For any materialized operator, the top of the attributes stack should be provided as the current
  *     effective attributes.
  *    * [[akka.stream.impl.PushAttributes]] combines the attributes on the top of the stack with the given ones and
  *      puts the result on the attributes stack
@@ -86,7 +86,7 @@ package akka.stream
  *    as exiting a "hole" means returning to the parent, enclosing island and continuing where left.
  *     * [[akka.stream.impl.EnterIsland]] instructs the materializer that the following commands will belong to
  *       the materialization of a new island (a subgraph). The [[akka.stream.impl.IslandTag]] signals to
- *       the materializer which [[akka.stream.impl.PhaseIsland]] should be used to turn stages of this island into
+ *       the materializer which [[akka.stream.impl.PhaseIsland]] should be used to turn operators of this island into
  *       executable entities.
  *     * [[akka.stream.impl.ExitIsland]] instructs the materializer that the current island is done and the parent
  *       island is now the active one again.
@@ -101,7 +101,7 @@ package akka.stream
  *
  *  As a mental model, the wiring part of the Traversal (i.e. excluding the stack based sub-commands tracking
  *  materialized values, attributes, islands, i.e. things that don't contribute to the wiring structure of the graph)
- *  translates everything to a single, global, contiguous Array. Every input and output port of each stage is mapped
+ *  translates everything to a single, global, contiguous Array. Every input and output port of each operator is mapped
  *  to exactly one slot of this "mental array". Input and output ports that are considered wired together simply map
  *  to the same slot. (In practice, these slots might not be mapped to an actual global array, but multiple local arrays
  *  using some translation logic, but we will explain this later)
@@ -109,15 +109,15 @@ package akka.stream
  *  Input ports are mapped simply to contiguous numbers in the order they are visited. Take for example a simple
  *  traversal:
  *
- *    Stage1[in1, in2, out] - Stage2[out] - Stage3[in]
+ *    Operator1[in1, in2, out] - Operator2[out] - Operator3[in]
  *
  *  This results in the following slot assignments:
  *
- *    * Stage1.in1 -> 0
- *    * Stage1.in2 -> 1
- *    * Stage3.in  -> 2
+ *    * Operator1.in1 -> 0
+ *    * Operator1.in2 -> 1
+ *    * Operator3.in  -> 2
  *
- *  The materializer simply visits Stage1, Stage2, Stage3 in order, visiting the input ports of each stage in order.
+ *  The materializer simply visits Stage1, Stage2, Stage3 in order, visiting the input ports of each operator in order.
  *  It then simply assigns numbers from a counter that is incremented after visiting an input port.
  *  (Please note that all [[akka.stream.impl.StreamLayout.AtomicModule]]s maintain a stable order of their ports, so
  *  this global ordering is well defined)
@@ -189,7 +189,7 @@ package akka.stream
  *  builders are their approach to port mapping.
  *
  *  The simpler case is the [[akka.stream.impl.LinearTraversalBuilder]]. This builder only allows building linear
- *  chains of stages, hence, it can only have at most one [[OutPort]] and [[InPort]] unwired. Since there is no
+ *  chains of operators, hence, it can only have at most one [[OutPort]] and [[InPort]] unwired. Since there is no
  *  possible ambiguity between these two port types, there is no need for port mapping for these. Conversely,
  *  for those internal ports that are already wired, there is no need for port mapping as their relative wiring
  *  is not ambiguous (see previous section). As a result, the [[akka.stream.impl.LinearTraversalBuilder]] does not

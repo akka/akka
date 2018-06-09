@@ -17,12 +17,12 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 /**
  * INTERNAL API
  *
- * Various stages for controlling timeouts on IO related streams (although not necessarily).
+ * Various operators for controlling timeouts on IO related streams (although not necessarily).
  *
- * The common theme among the processing stages here that
+ * The common theme among the processing operators here that
  *  - they wait for certain event or events to happen
  *  - they have a timer that may fire before these events
- *  - if the timer fires before the event happens, these stages all fail the stream
+ *  - if the timer fires before the event happens, these operators all fail the stream
  *  - otherwise, these streams do not interfere with the element flow, ordinary completion or failure
  */
 @InternalApi private[akka] object Timers {
