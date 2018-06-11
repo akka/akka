@@ -2,11 +2,11 @@
  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package doc.akka.cluster.sharding.typed
+package docs.akka.cluster.sharding.typed
 
+import scala.concurrent.duration._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.typed.{ ClusterSingleton, ClusterSingletonSettings }
 import docs.akka.persistence.typed.InDepthPersistentBehaviorSpec
 import docs.akka.persistence.typed.InDepthPersistentBehaviorSpec.{ BlogCommand, PassivatePost }
 
@@ -24,26 +24,32 @@ object ShardingCompileOnlySpec {
   val sharding = ClusterSharding(system)
   //#sharding-extension
 
-  //#counter
+  //#counter-messages
   trait CounterCommand
   case object Increment extends CounterCommand
   final case class GetValue(replyTo: ActorRef[Int]) extends CounterCommand
   case object GoodByeCounter extends CounterCommand
+  //#counter-messages
 
-  def counter(entityId: String, value: Int): Behavior[CounterCommand] = Behaviors.receiveMessage[CounterCommand] {
-    case Increment ⇒
-      counter(entityId, value + 1)
-    case GetValue(replyTo) ⇒
-      replyTo ! value
-      Behaviors.same
-  }
+  //#counter
+
+  def counter(entityId: String, value: Int): Behavior[CounterCommand] =
+    Behaviors.receiveMessage[CounterCommand] {
+      case Increment ⇒
+        counter(entityId, value + 1)
+      case GetValue(replyTo) ⇒
+        replyTo ! value
+        Behaviors.same
+      case GoodByeCounter ⇒
+        Behaviors.stopped
+    }
   //#counter
 
   //#spawn
   val TypeKey = EntityTypeKey[CounterCommand]("Counter")
   // if a extractor is defined then the type would be ActorRef[BasicCommand]
   val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] = sharding.spawn(
-    behavior = entityId ⇒ counter(entityId, 0),
+    behavior = (shard, entityId) ⇒ counter(entityId, 0),
     props = Props.empty,
     typeKey = TypeKey,
     settings = ClusterShardingSettings(system),
@@ -60,10 +66,11 @@ object ShardingCompileOnlySpec {
   shardRegion ! ShardingEnvelope("counter-1", Increment)
   //#send
 
+  import InDepthPersistentBehaviorSpec.behavior
   //#persistence
   val ShardingTypeName = EntityTypeKey[BlogCommand]("BlogPost")
   ClusterSharding(system).spawn[BlogCommand](
-    behavior = entityId ⇒ InDepthPersistentBehaviorSpec.behavior(entityId),
+    behavior = (shard, entityId) ⇒ behavior(entityId),
     props = Props.empty,
     typeKey = ShardingTypeName,
     settings = ClusterShardingSettings(system),
@@ -71,20 +78,33 @@ object ShardingCompileOnlySpec {
     handOffStopMessage = PassivatePost)
   //#persistence
 
-  // as a singleton
+  //#counter-passivate
 
-  //#singleton
-  val singletonManager = ClusterSingleton(system)
-  // Start if needed and provide a proxy to a named singleton
-  val proxy: ActorRef[CounterCommand] = singletonManager.spawn(
-    behavior = counter("TheCounter", 0),
-    "GlobalCounter",
-    Props.empty,
-    ClusterSingletonSettings(system),
-    terminationMessage = GoodByeCounter
-  )
+  case object Idle extends CounterCommand
 
-  proxy ! Increment
-  //#singleton
+  def counter2(shard: ActorRef[ClusterSharding.ShardCommand], entityId: String): Behavior[CounterCommand] = {
+    Behaviors.setup { ctx ⇒
+
+      def become(value: Int): Behavior[CounterCommand] =
+        Behaviors.receiveMessage[CounterCommand] {
+          case Increment ⇒
+            become(value + 1)
+          case GetValue(replyTo) ⇒
+            replyTo ! value
+            Behaviors.same
+          case Idle ⇒
+            // after receive timeout
+            shard ! ClusterSharding.Passivate(ctx.self)
+            Behaviors.same
+          case GoodByeCounter ⇒
+            // the handOffStopMessage, used for rebalance and passivate
+            Behaviors.stopped
+        }
+
+      ctx.setReceiveTimeout(30.seconds, Idle)
+      become(0)
+    }
+  }
+  //#counter-passivate
 
 }
