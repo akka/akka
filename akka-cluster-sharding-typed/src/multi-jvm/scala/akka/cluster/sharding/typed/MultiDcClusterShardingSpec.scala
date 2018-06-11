@@ -67,7 +67,7 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
     "start sharding" in {
       val sharding = ClusterSharding(typedSystem)
       val shardRegion: ActorRef[ShardingEnvelope[PingProtocol]] = sharding.spawn(
-        _ ⇒ multiDcPinger,
+        (_, _) ⇒ multiDcPinger,
         Props.empty,
         typeKey = typeKey,
         ClusterShardingSettings(typedSystem),
@@ -100,7 +100,7 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
   "be able to message cross dc via proxy" in {
     runOn(first, second) {
       val proxy: ActorRef[ShardingEnvelope[PingProtocol]] = ClusterSharding(typedSystem).spawn(
-        _ ⇒ multiDcPinger,
+        (_, _) ⇒ multiDcPinger,
         Props.empty,
         typeKey = typeKey,
         ClusterShardingSettings(typedSystem).withDataCenter("dc2"),
