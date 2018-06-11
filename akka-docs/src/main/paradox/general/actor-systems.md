@@ -52,7 +52,7 @@ the manager knows which kind of failures are expected and how to handle
 them.
  * If one actor carries very important data (i.e. its state shall not be lost
 if avoidable), this actor should source out any possibly dangerous sub-tasks
-to children it supervises and handles failures of these children as
+to children it supervises and handle failures of these children as
 appropriate. Depending on the nature of the requests, it may be best to
 create a new child for each request, which simplifies state management for
 collecting the replies. This is known as the “Error Kernel Pattern” from
