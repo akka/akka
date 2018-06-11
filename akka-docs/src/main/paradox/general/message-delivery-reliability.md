@@ -47,7 +47,7 @@ When it comes to describing the semantics of a delivery mechanism, there are
 three basic categories:
 
  * **at-most-once** delivery means that for each message handed to the
-mechanism, that message is delivered zero or one time; in more casual terms
+mechanism, that message is delivered once or not at all; in more casual terms
 it means that messages may be lost.
  * **at-least-once** delivery means that for each message handed to the
 mechanism potentially multiple attempts are made at delivering it, such that
