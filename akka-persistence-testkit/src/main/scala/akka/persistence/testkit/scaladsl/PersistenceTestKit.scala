@@ -4,12 +4,9 @@
 
 package akka.persistence.testkit.scaladsl
 
-import java.util.UUID
-
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId }
 import akka.persistence.testkit.scaladsl.InMemStorageEmulator.{ JournalPolicies, JournalPolicy }
-import akka.persistence.testkit.scaladsl.ProcessingPolicy.{ FailNextN, PassAll, RejectNextN }
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.Config
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -17,25 +14,18 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
 trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
+
   import PersistenceTestKit._
   import scala.concurrent.duration._
 
-  implicit lazy val system = {
-    //todo probably implement method for setting plugin in Persistence for testing purposes
-    ActorSystem(
-      s"persistence-testkit-${UUID.randomUUID()}",
-      PersistenceTestKitPlugin.PersitenceTestkitJournalConfig
-        .withFallback(PersistenceTestKitSnapshotPlugin.PersitenceTestkitSnapshotStoreConfig)
-        .withFallback(ConfigFactory.defaultApplication()))
-  }
+  def system: ActorSystem
 
-  implicit val ec = system.dispatcher
+  implicit lazy val ec = system.dispatcher
 
-  private final lazy val storage = system.extension(InMemStorageExtension)
-  private final val settings = SettingsExtension(system)
+  private final lazy val storage = InMemStorageExtension(system)
+  private final lazy val settings = SettingsExtension(system)
 
   //todo needs to be thread safe (atomic read-increment-write) for parallel tests?
-  @volatile
   private var nextIndexByPersistenceId: immutable.Map[String, Int] = Map.empty
 
   override def expectNextPersisted(persistenceId: String, msg: Any): Unit = {
@@ -51,9 +41,17 @@ trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
 
   }
 
-  override def rejectNextPersisted(persistenceId: String): Unit = ???
+  override def rejectNextPersisted(persistenceId: String): Unit = {
+    val current = storage.currentWritingPolicy
+    val pol = new InMemStorageEmulator.JournalPolicies.RejectNextNCond(1, ExpectedRejection, (pid, _) ⇒ pid == persistenceId, withWritingPolicy(current))
+    withWritingPolicy(pol)
+  }
 
-  override def failNextPersisted(persistenceId: String): Unit = ???
+  override def failNextPersisted(persistenceId: String): Unit = {
+    val current = storage.currentWritingPolicy
+    val pol = new InMemStorageEmulator.JournalPolicies.FailNextNCond(1, ExpectedFailure, (pid, _) ⇒ pid == persistenceId, withWritingPolicy(current))
+    withWritingPolicy(pol)
+  }
 
   override def persistForRecovery(persistenceId: String, msgs: immutable.Seq[Any]): Unit = {
     storage.addAny(persistenceId, msgs)
@@ -80,28 +78,20 @@ trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
 
   }
 
-  def withRecoveryPolicy(policy: JournalPolicy) = storage.setRecoveryPolicy(policy)
+  def withRecoveryPolicy(policy: JournalPolicy) = storage.setReadingPolicy(policy)
 
   def withWritingPolicy(policy: JournalPolicy) = storage.setWritingPolicy(policy)
 
-  def rejectNextPersisted() = new JournalPolicies.RejectNextN(1, ExpectedRejection) {
-
-    override def tryProcess(batch: immutable.Seq[Any]): ProcessingPolicy.ProcessingResult = {
-      val r = super.tryProcess(batch)
-      withWritingPolicy(JournalPolicies.PassAll)
-      r
-    }
-
+  def rejectNextPersisted() = {
+    val current = storage.currentWritingPolicy
+    val pol = new JournalPolicies.RejectNextN(1, ExpectedRejection, withWritingPolicy(current))
+    withWritingPolicy(pol)
   }
 
-  def failNextPersisted() = new JournalPolicies.FailNextN(1, ExpectedFailure) {
-
-    override def tryProcess(batch: immutable.Seq[Any]): ProcessingPolicy.ProcessingResult = {
-      val r = super.tryProcess(batch)
-      withWritingPolicy(JournalPolicies.PassAll)
-      r
-    }
-
+  def failNextPersisted() = {
+    val current = storage.currentWritingPolicy
+    val pol = new JournalPolicies.FailNextN(1, ExpectedFailure, withWritingPolicy(current))
+    withWritingPolicy(pol)
   }
 
   override def clearAll(): Unit = storage.clearAll()

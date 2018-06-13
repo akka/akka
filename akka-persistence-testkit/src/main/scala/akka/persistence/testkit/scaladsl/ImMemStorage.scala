@@ -5,13 +5,16 @@
 package akka.persistence.testkit.scaladsl
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 import java.util.function.{ BiFunction, Consumer }
 
 import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
-import akka.persistence.testkit.scaladsl.ProcessingPolicy.{ BasicPolicies, ProcessingSuccess, Reject, StorageFailure }
+import akka.persistence.testkit.scaladsl.InMemStorageEmulator.{ JournalPolicies, JournalPolicy }
+import akka.persistence.testkit.scaladsl.ProcessingPolicy._
+import akka.persistence.testkit.scaladsl.SnapShotStorageEmulator.{ SnapshotReadPolicies, SnapshotReadPolicy, SnapshotWritePolicies, SnapshotWritePolicy }
 import akka.persistence.{ PersistentRepr, SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 
-import scala.annotation.{ meta, tailrec }
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 
@@ -167,20 +170,56 @@ trait ReprInMemStorage extends HighestSeqNumberSupport[String, PersistentRepr] {
 
 }
 
-trait InMemStorageEmulator extends ReprInMemStorage {
-  import InMemStorageEmulator._
+trait PolicyOps[W <: ProcessingPolicy[_], R <: ProcessingPolicy[_]] {
 
-  @volatile
-  private var writingPolicy: JournalPolicy = JournalPolicies.PassAll
-  @volatile
-  private var recoveryPolicy: JournalPolicy = JournalPolicies.PassAll
+  protected val DefaultWritePolicy: W
+
+  protected val DefaultReadPolicy: R
+
+  private lazy val writingPolicy: AtomicReference[W] = new AtomicReference(DefaultWritePolicy)
+
+  private lazy val readingPolicy: AtomicReference[R] = new AtomicReference(DefaultReadPolicy)
+
+  def currentWritingPolicy = writingPolicy.get()
+
+  def currentReadingPolicy = readingPolicy.get()
+
+  def setWritingPolicy(policy: W) = writingPolicy.set(policy)
+
+  def compareAndSetWritingPolicy(previousPolicy: W, newPolicy: W) = writingPolicy.compareAndSet(previousPolicy, newPolicy)
+
+  def setReadingPolicy(policy: R) = readingPolicy.set(policy)
+
+  def compareAndSetReadingPolicy(previousPolicy: R, newPolicy: R) = readingPolicy.compareAndSet(previousPolicy, newPolicy)
+
+}
+
+trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalPolicy, JournalPolicy] {
+
+  override protected val DefaultReadPolicy = JournalPolicies.PassAll
+
+  override protected val DefaultWritePolicy = JournalPolicies.PassAll
 
   /**
    *
    * @throws Exception from StorageFailure in the current writing policy
    */
   def tryAdd(elems: immutable.Seq[PersistentRepr]): Try[Unit] = {
-    writingPolicy.tryProcess(elems.map(_.payload)) match {
+    val grouped = elems.groupBy(_.persistenceId)
+
+    val processed = grouped.map {
+      case (pid, els) ⇒ currentWritingPolicy.tryProcess(pid, els.map(_.payload))
+    }
+
+    val reduced: ProcessingResult = processed.foldLeft[ProcessingResult](ProcessingSuccess)((left: ProcessingResult, right: ProcessingResult) ⇒ (left, right) match {
+      case (ProcessingSuccess, ProcessingSuccess) ⇒ ProcessingSuccess
+      case (f: StorageFailure, _)                 ⇒ f
+      case (_, f: StorageFailure)                 ⇒ f
+      case (r: Reject, _)                         ⇒ r
+      case (_, r: Reject)                         ⇒ r
+    })
+
+    reduced match {
       case ProcessingSuccess ⇒
         add(elems)
         Success(())
@@ -191,16 +230,12 @@ trait InMemStorageEmulator extends ReprInMemStorage {
 
   def tryRead(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long): immutable.Seq[PersistentRepr] = {
     val batch = read(persistenceId, fromSequenceNr, toSequenceNr, max)
-    recoveryPolicy.tryProcess(batch) match {
+    currentReadingPolicy.tryProcess(persistenceId, batch) match {
       case ProcessingSuccess  ⇒ batch
       case Reject(ex)         ⇒ throw ex
       case StorageFailure(ex) ⇒ throw ex
     }
   }
-
-  def setWritingPolicy(policy: JournalPolicy) = writingPolicy = policy
-
-  def setRecoveryPolicy(policy: JournalPolicy) = recoveryPolicy = policy
 
 }
 
@@ -223,16 +258,14 @@ trait SnapshotInMemStorage extends HighestSeqNumberSupport[String, (SnapshotMeta
 
 }
 
-trait SnapShotStorageEmulator extends SnapshotInMemStorage {
-  import SnapShotStorageEmulator._
+trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[SnapshotWritePolicy, SnapshotReadPolicy] {
 
-  @volatile
-  private var writingPolicy: SnapshotWritePolicy = SnapshotWritePolicies.PassAll
-  @volatile
-  private var recoveryPolicy: SnapshotReadPolicy = SnapshotReadPolicies.PassAll
+  override protected val DefaultReadPolicy = SnapshotReadPolicies.PassAll
+
+  override protected val DefaultWritePolicy = SnapshotWritePolicies.PassAll
 
   def tryAdd(meta: SnapshotMetadata, payload: Any): Unit = {
-    writingPolicy.tryProcess(payload) match {
+    currentWritingPolicy.tryProcess(meta.persistenceId, payload) match {
       case ProcessingSuccess ⇒
         add(meta.persistenceId, (meta, payload))
         Success(())
@@ -246,16 +279,12 @@ trait SnapShotStorageEmulator extends SnapshotInMemStorage {
       read(persistenceId)
         .flatMap(_.reverseIterator.find(v ⇒ criteria.matches(v._1))
           .map(v ⇒ SelectedSnapshot(v._1, v._2)))
-    recoveryPolicy.tryProcess(selectedSnapshot.map(_.snapshot)) match {
+    currentReadingPolicy.tryProcess(persistenceId, selectedSnapshot.map(_.snapshot)) match {
       case ProcessingSuccess ⇒ selectedSnapshot
       case StorageFailure(e) ⇒ throw e
       case Reject(e)         ⇒ throw e
     }
   }
-
-  def setWritingPolicy(policy: SnapshotWritePolicy) = writingPolicy = policy
-
-  def setRecoveryPolicy(policy: SnapshotReadPolicy) = recoveryPolicy = policy
 
 }
 

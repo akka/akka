@@ -8,58 +8,59 @@ trait ProcessingPolicy[U] {
 
   import ProcessingPolicy._
 
-  def tryProcess(processingUnit: U): ProcessingResult
+  def tryProcess(persistenceId: String, processingUnit: U): ProcessingResult
 
 }
 
 object ProcessingPolicy {
 
-  trait PassAll[U] extends ProcessingPolicy[U] {
+  abstract class ReturnAfterNextNCond[U](returnOnTrigger: ⇒ ProcessingResult, returnNonTrigger: ⇒ ProcessingResult, cond: (String, U) ⇒ Boolean) extends ProcessingPolicy[U] {
 
-    override def tryProcess(processingUnit: U): ProcessingResult = ProcessingSuccess
-
-  }
-
-  abstract class RejectNextN[U](numberToReject: Int, rejectionException: Throwable) extends ProcessingPolicy[U] {
-
-    private var rejected = 0
-
-    private val rejection = Reject(rejectionException)
-
-    override def tryProcess(processingUnit: U): ProcessingResult = {
-      if (rejected < numberToReject) {
-        rejected += 1
-        rejection
+    override def tryProcess(persistenceId: String, processingUnit: U): ProcessingResult = {
+      if (cond(persistenceId, processingUnit)) {
+        returnOnTrigger
       } else {
-        ProcessingSuccess
-      }
-    }
-  }
-
-  abstract class FailNextN[U](numberToFail: Int, failureException: Throwable) extends ProcessingPolicy[U] {
-
-    private var failed = 0
-
-    private val failure = StorageFailure(failureException)
-
-    override def tryProcess(batch: U): ProcessingResult = {
-      if (failed < numberToFail) {
-        failed += 1
-        failure
-      } else {
-        ProcessingSuccess
+        returnNonTrigger
       }
     }
 
   }
+
+  abstract class CountNextNCond[U](numberToReject: Int, returnOnTrigger: ⇒ ProcessingResult, returnNonTrigger: ⇒ ProcessingResult, cond: (String, U) ⇒ Boolean, onLimitExceed: ⇒ Unit) extends ReturnAfterNextNCond[U](returnOnTrigger, returnNonTrigger, new Function2[String, U, Boolean] {
+
+    var counter = 0
+
+    override def apply(persistenceId: String, v1: U): Boolean = {
+      val intRes = cond(persistenceId, v1)
+      if (intRes && counter < numberToReject) {
+        counter += 1
+        if (counter == numberToReject) onLimitExceed
+        intRes
+      } else {
+        false
+      }
+    }
+  })
+
+  abstract class RejectNextN[U](numberToReject: Int, rejectionException: Throwable, onLimitExceed: ⇒ Unit) extends CountNextNCond[U](numberToReject, Reject(rejectionException), ProcessingSuccess, (_, _) ⇒ true, onLimitExceed)
+
+  abstract class FailNextN[U](numberToFail: Int, failureException: Throwable, onLimitExceed: ⇒ Unit) extends CountNextNCond[U](numberToFail, StorageFailure(failureException), ProcessingSuccess, (_, _) ⇒ true, onLimitExceed)
 
   trait BasicPolicies[U] {
 
-    object PassAll extends ProcessingPolicy.PassAll[U]
+    object PassAll extends ProcessingPolicy[U] {
 
-    class FailNextN(_numberToFail: Int, _failureException: Throwable) extends ProcessingPolicy.FailNextN[U](_numberToFail, _failureException)
+      override def tryProcess(persistenceId: String, processingUnit: U): ProcessingResult = ProcessingSuccess
 
-    class RejectNextN(_numberToReject: Int, _rejectionException: Throwable) extends ProcessingPolicy.RejectNextN[U](_numberToReject, _rejectionException)
+    }
+
+    class RejectNextNCond(_numberToFail: Int, _failureException: Throwable, cond: (String, U) ⇒ Boolean, onLimitExceed: ⇒ Unit = ()) extends ProcessingPolicy.CountNextNCond[U](_numberToFail, Reject(_failureException), ProcessingSuccess, cond, onLimitExceed)
+
+    class FailNextNCond(_numberToFail: Int, _failureException: Throwable, cond: (String, U) ⇒ Boolean, onLimitExceed: ⇒ Unit = ()) extends ProcessingPolicy.CountNextNCond[U](_numberToFail, StorageFailure(_failureException), ProcessingSuccess, cond, onLimitExceed)
+
+    class FailNextN(_numberToFail: Int, _failureException: Throwable, onLimitExceed: ⇒ Unit = ()) extends ProcessingPolicy.FailNextN[U](_numberToFail, _failureException, onLimitExceed)
+
+    class RejectNextN(_numberToReject: Int, _rejectionException: Throwable, onLimitExceed: ⇒ Unit = ()) extends ProcessingPolicy.RejectNextN[U](_numberToReject, _rejectionException, onLimitExceed)
 
   }
 

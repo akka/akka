@@ -4,12 +4,24 @@
 
 package akka.persistence.testkit.scaladsl
 
-import akka.actor.Props
+import java.util.UUID
+
+import akka.actor.{ActorSystem, Props}
 import akka.persistence.PersistentActor
-import akka.testkit.ImplicitSender
+import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 class TestKitSpec extends PersistenceTestKit with WordSpecLike {
+
+  override lazy val system = {
+    //todo probably implement method for setting plugin in Persistence for testing purposes
+    ActorSystem(
+      s"persistence-testkit-${UUID.randomUUID()}",
+      PersistenceTestKitPlugin.PersitenceTestkitJournalConfig
+        .withFallback(PersistenceTestKitSnapshotPlugin.PersitenceTestkitSnapshotStoreConfig)
+        .withFallback(ConfigFactory.defaultApplication()))
+
+  }
 
   "PersistenceTestkit" should {
 
@@ -48,6 +60,25 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike {
       a ! B(1)
 
       expectPersistedInAnyOrder("333", List(B(1), B(2)))
+
+    }
+
+    "reject next persisted" in {
+
+      val a = system.actorOf(Props(classOf[A], "111"))
+
+      rejectNextPersisted()
+
+      a ! B(1)
+
+      assertThrows[AssertionError] {
+        expectNextPersisted("111", B(1))
+      }
+
+       a ! B(1)
+
+      expectNextPersisted("111", B(1))
+
 
     }
 

@@ -19,7 +19,7 @@ class PersistenceTestkitJournalCompatSpec extends JournalSpec(config = Persisten
   override def beforeAll(): Unit = {
     super.beforeAll()
     InMemStorageExtension(system).setWritingPolicy(new JournalPolicy {
-      override def tryProcess(batch: immutable.Seq[Any]): ProcessingPolicy.ProcessingResult = {
+      override def tryProcess(persistenceId: String, batch: immutable.Seq[Any]): ProcessingPolicy.ProcessingResult = {
         val allSerializable =
           batch
             .filter(_.isInstanceOf[AnyRef])
