@@ -6,7 +6,11 @@ package jdocs.akka.persistence.typed;
 
 import akka.Done;
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.Behavior;
+import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.javadsl.CommandHandler;
+import akka.persistence.typed.javadsl.CommandHandlerBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.PersistentBehavior;
 
@@ -47,27 +51,41 @@ public class InDepthPersistentBehaviorTest {
   //#event
 
   //#state
-  public static class BlogState {
-    final Optional<PostContent> postContent;
+  interface BlogState {}
+
+  public static class BlankState implements BlogState {}
+
+  public static class DraftState implements BlogState {
+    final PostContent postContent;
     final boolean published;
 
-    BlogState(Optional<PostContent> postContent, boolean published) {
+    DraftState(PostContent postContent, boolean published) {
       this.postContent = postContent;
       this.published = published;
     }
 
-    public BlogState withContent(PostContent newContent) {
-      return new BlogState(Optional.of(newContent), this.published);
-    }
-
-    public boolean isEmpty() {
-      return postContent.isPresent();
+    public DraftState withContent(PostContent newContent) {
+      return new DraftState(newContent, this.published);
     }
 
     public String postId() {
-      return postContent.orElseGet(() -> {
-        throw new IllegalStateException("postId unknown before post is created");
-      }).postId;
+      return postContent.postId;
+    }
+  }
+
+  public static class PublishedState implements BlogState {
+    final PostContent postContent;
+
+    PublishedState(PostContent postContent) {
+      this.postContent = postContent;
+    }
+
+    public PublishedState withContent(PostContent newContent) {
+      return new PublishedState(newContent);
+    }
+
+    public String postId() {
+      return postContent.postId;
     }
   }
   //#state
@@ -132,69 +150,105 @@ public class InDepthPersistentBehaviorTest {
 
   //#behavior
   public static class BlogBehavior extends PersistentBehavior<BlogCommand, BlogEvent, BlogState> {
+    //#behavior
 
-    //#initial-command-handler
-    private CommandHandler<BlogCommand, BlogEvent, BlogState> initialCommandHandler = commandHandlerBuilder()
-      .matchCommand(AddPost.class, (ctx, state, cmd) -> {
-        PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
-        return Effect().persist(event)
-          .andThen(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
-      })
-      .matchCommand(PassivatePost.class, (ctx, state, cmd) -> Effect().stop())
-      .build();
-    //#initial-command-handler
+    private final ActorContext<BlogCommand> ctx;
 
-    //#post-added-command-handler
-    private CommandHandler<BlogCommand, BlogEvent, BlogState> postCommandHandler = commandHandlerBuilder()
-      .matchCommand(ChangeBody.class, (ctx, state, cmd) -> {
-        BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
-        return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
-      })
-      .matchCommand(Publish.class, (ctx, state, cmd) -> Effect()
-        .persist(new Published(state.postId())).andThen(() -> {
-          System.out.println("Blog post published: " + state.postId());
-          cmd.replyTo.tell(Done.getInstance());
-        }))
-      .matchCommand(GetPost.class, (ctx, state, cmd) -> {
-        cmd.replyTo.tell(state.postContent.get());
-        return Effect().none();
-      })
-      .matchCommand(AddPost.class, (ctx, state, cmd) -> Effect().unhandled())
-      .matchCommand(PassivatePost.class, (ctx, state, cmd) -> Effect().stop())
-      .build();
-    //#post-added-command-handler
-
-
-    public BlogBehavior(String persistenceId) {
+    public BlogBehavior(String persistenceId, ActorContext<BlogCommand> ctx) {
       super(persistenceId);
+      this.ctx = ctx;
     }
 
-    @Override
-    public BlogState emptyState() {
-      return new BlogState(Optional.empty(), false);
+    //#initial-command-handler
+    private CommandHandlerBuilder<BlogCommand, BlogEvent, BlankState, BlogState> initialCommandHandler() {
+      return commandHandlerBuilder(BlankState.class)
+          .matchCommand(AddPost.class, (state, cmd) -> {
+            PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
+            return Effect().persist(event)
+                .andThen(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
+          });
+    }
+    //#initial-command-handler
+
+    //#post-added-command-handler
+    private CommandHandlerBuilder<BlogCommand, BlogEvent, DraftState, BlogState> draftCommandHandler() {
+      return commandHandlerBuilder(DraftState.class)
+          .matchCommand(ChangeBody.class, (state, cmd) -> {
+            BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
+            return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
+          })
+          .matchCommand(Publish.class, (state, cmd) -> Effect()
+              .persist(new Published(state.postId())).andThen(() -> {
+                System.out.println("Blog post published: " + state.postId());
+                cmd.replyTo.tell(Done.getInstance());
+              }))
+          .matchCommand(GetPost.class, (state, cmd) -> {
+            cmd.replyTo.tell(state.postContent);
+            return Effect().none();
+          });
     }
 
-    //#by-state-command-handler
+    private CommandHandlerBuilder<BlogCommand, BlogEvent, PublishedState, BlogState> publishedCommandHandler() {
+      return commandHandlerBuilder(PublishedState.class)
+          .matchCommand(ChangeBody.class, (state, cmd) -> {
+            BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
+            return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
+          })
+          .matchCommand(GetPost.class, (state, cmd) -> {
+            cmd.replyTo.tell(state.postContent);
+            return Effect().none();
+          });
+    }
+
+    private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState> commonCommandHandler() {
+      return commandHandlerBuilder(BlogState.class)
+          .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled())
+          .matchCommand(PassivatePost.class, (state, cmd) -> Effect().stop());
+    }
+    //#post-added-command-handler
+
+
+    //#command-handler
     @Override
     public CommandHandler<BlogCommand, BlogEvent, BlogState> commandHandler() {
-      return byStateCommandHandlerBuilder()
-        .matchState(BlogState.class, (state) -> !state.postContent.isPresent(), initialCommandHandler)
-        .matchState(BlogState.class, (state) -> state.postContent.isPresent(), postCommandHandler)
-        .build();
+      return
+          initialCommandHandler()
+              .orElse(draftCommandHandler())
+              .orElse(publishedCommandHandler())
+              .orElse(commonCommandHandler())
+              .build();
     }
-    //#by-state-command-handler
+    //#command-handler
 
     //#event-handler
     @Override
     public EventHandler<BlogEvent, BlogState> eventHandler() {
       return eventHandlerBuilder()
-        .matchEvent(PostAdded.class, (state, event) -> state.withContent(event.content))
-        .matchEvent(BodyChanged.class, (state, newBody) ->
-          new BlogState(state.postContent.map(pc -> new PostContent(pc.postId, pc.title, newBody.newBody)), state.published))
-        .matchEvent(Published.class, (state, event) -> new BlogState(state.postContent, true))
-        .build();
+          .matchEvent(PostAdded.class, (state, event) ->
+              new DraftState(event.content, false))
+          .matchEvent(BodyChanged.class, DraftState.class, (state, chg) ->
+              state.withContent(new PostContent(state.postId(), state.postContent.title, chg.newBody)))
+          .matchEvent(BodyChanged.class, PublishedState.class, (state, chg) ->
+              state.withContent(new PostContent(state.postId(), state.postContent.title, chg.newBody)))
+          .matchEvent(Published.class, DraftState.class, (state, event) ->
+              new PublishedState(state.postContent))
+          .build();
     }
     //#event-handler
+
+    //#behavior
+    public static Behavior<BlogCommand> behavior(String entityId) {
+      return Behaviors.setup(ctx ->
+          new BlogBehavior("Blog-" + entityId, ctx)
+      );
+    }
+
+    @Override
+    public BlogState emptyState() {
+      return new BlankState();
+    }
+
+    // commandHandler, eventHandler as in above snippets
   }
   //#behavior
 }

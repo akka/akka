@@ -50,7 +50,8 @@ Next we'll discuss each of these in detail.
 
 ### Command handler
 
-The command handler is a function with 3 parameters for the `ActorContext`, current `State`, and `Command`.
+The command handler is a function with @java[2 parameters for]@scala[3 parameters for the `ActorContext`,]
+current `State`, and `Command`.
 
 A command handler returns an `Effect` directive that defines what event or events, if any, to persist. 
 @java[Effects are created using a factory that is returned via the `Effect()` method]
@@ -123,6 +124,8 @@ Java
 
 The `PersistentBehavior` can then be run as with any plain typed actor as described in [typed actors documentation](actors-typed.md).
 
+@java[The `ActorContext` can be obtained with `Behaviors.setup` and be passed as a constructor parameter]
+
 ## Larger example
 
 After processing a message, plain typed actors are able to return the `Behavior` that is used
@@ -158,16 +161,18 @@ Scala
 Java
 :  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #commands }
 
-The command handler to process each command is decided by a `CommandHandler.byState` command handler,
-which is a function from `State => CommandHandler`:
+@java[The commandler handler to process each command is decided by the state class (or state predicate) that is
+given to the `commandHandlerBuilder` and the match cases in the builders. Several builders can be composed with `orElse`:]
+@scala[The command handler to process each command is decided by a `CommandHandler.byState` command handler,
+which is a function from `State => CommandHandler`:]
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #by-state-command-handler }
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #by-state-command-handler }
+:  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #command-handler }
 
-This can refer to many other `CommandHandler`s e.g one for a post that hasn't been started:
+The @java[`CommandHandlerBuilder`]@scala[`CommandHandler`] for a post that hasn't been initialized with content:
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #initial-command-handler }
@@ -175,7 +180,7 @@ Scala
 Java
 :  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #initial-command-handler }
 
-And a different `CommandHandler` for after the post has been added:
+And a different @java[`CommandHandlerBuilder`]@scala[`CommandHandler`] for after the post content has been added:
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #post-added-command-handler }
@@ -193,7 +198,7 @@ Scala
 Java
 :  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #event-handler }
 
-And finally the behavior is created from the `byState` command handler:
+And finally the behavior is created @scala[from the `PersistentBehaviors.receive`]:
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #behavior }
@@ -219,7 +224,7 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #recovery }
 
-The `onRecoveryCompleted` takes on an `ActorContext` and the current `State`,
+The `onRecoveryCompleted` takes @scala[an `ActorContext` and] the current `State`,
 and doesn't return anything.
 
 ## Tagging
