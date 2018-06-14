@@ -45,7 +45,7 @@ trait InMemStorage[K, T] {
 
   /**
    *
-   * Note! `elems` is call by name to preserve thread safety in case of use of mapping with `def mapAny`
+   * Note! `elems` is call by name to preserve atomicity in case of use of mapping with `def mapAny`
    *
    * @param key
    * @param elems elements to insert
