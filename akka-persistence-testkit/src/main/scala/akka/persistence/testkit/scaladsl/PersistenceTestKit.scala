@@ -13,10 +13,10 @@ import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
-trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
+trait PersistenceTestKit extends PersistentTestKitOps {
 
   import PersistenceTestKit._
-  import scala.concurrent.duration._
+  import UtilityAssertions._
 
   def system: ActorSystem
 
@@ -98,9 +98,6 @@ trait PersistenceTestKit extends PersistentTestKitOps with UtilityAssertions {
 
   override def clearByPersistenceId(persistenceId: String): Unit = storage.removeKey(persistenceId)
 
-  private def awaitAssert[A](a: ⇒ A): A =
-    awaitAssert(a, settings.assertTimeout, 100.millis)
-
 }
 
 object PersistenceTestKit {
@@ -162,7 +159,7 @@ trait UtilityAssertions {
 
   protected def now: FiniteDuration = System.nanoTime.nanos
 
-  protected def awaitAssert[A](a: ⇒ A, max: FiniteDuration, interval: Duration = 100.millis): A = {
+  def awaitAssert[A](a: ⇒ A, max: FiniteDuration, interval: Duration = 100.millis): A = {
     val stop = now + max
 
     @tailrec
@@ -193,3 +190,5 @@ trait UtilityAssertions {
   }
 
 }
+
+object UtilityAssertions extends UtilityAssertions

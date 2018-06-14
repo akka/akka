@@ -8,10 +8,11 @@ import java.util.UUID
 
 import akka.actor.{ActorSystem, Props}
 import akka.persistence.PersistentActor
+import akka.testkit.TestKitBase
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
-class TestKitSpec extends PersistenceTestKit with WordSpecLike {
+class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase {
 
   override lazy val system = {
     //todo probably implement method for setting plugin in Persistence for testing purposes
@@ -67,6 +68,9 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike {
 
       val a = system.actorOf(Props(classOf[A], "111"))
 
+
+      //consecutive calls should stack
+      rejectNextPersisted()
       rejectNextPersisted()
 
       a ! B(1)
@@ -77,8 +81,26 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike {
 
        a ! B(1)
 
+      assertThrows[AssertionError] {
+        expectNextPersisted("111", B(1))
+      }
+
+      a ! B(1)
+
       expectNextPersisted("111", B(1))
 
+    }
+
+    "fail next persisted" in {
+
+      val a = system.actorOf(Props(classOf[A], "111"))
+
+      failNextPersisted()
+
+      a ! B(1)
+
+      watch(a)
+      expectTerminated(a)
 
     }
 
