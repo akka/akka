@@ -397,6 +397,9 @@ private[akka] class ShardRegion(
 
   import context.dispatcher
   val retryTask = context.system.scheduler.schedule(retryInterval, retryInterval, self, Retry)
+  var registrationTask: Option[Cancellable] = None
+  val initRegistrationDelay: FiniteDuration = 0.1 seconds
+  var nextRegistrationDelay = initRegistrationDelay
   var retryCount = 0
 
   // for CoordinatedShutdown
@@ -415,6 +418,7 @@ private[akka] class ShardRegion(
   // subscribe to MemberEvent, re-subscribe when restart
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
+    startRegistration()
   }
 
   override def postStop(): Unit = {
@@ -422,6 +426,7 @@ private[akka] class ShardRegion(
     cluster.unsubscribe(self)
     gracefulShutdownProgress.trySuccess(Done)
     retryTask.cancel()
+    finishRegistration()
   }
 
   // when using proxy the data center can be different from the own data center
@@ -455,6 +460,7 @@ private[akka] class ShardRegion(
         log.debug("Coordinator moved from [{}] to [{}]", before.map(_.address).getOrElse(""), after.map(_.address).getOrElse(""))
       coordinator = None
       register()
+      startRegistration()
     }
   }
 
@@ -535,6 +541,7 @@ private[akka] class ShardRegion(
     case RegisterAck(coord) ⇒
       context.watch(coord)
       coordinator = Some(coord)
+      finishRegistration()
       requestShardBufferHomes()
 
     case BeginHandOff(shard) ⇒
@@ -573,9 +580,10 @@ private[akka] class ShardRegion(
     case Retry ⇒
       if (shardBuffers.nonEmpty)
         retryCount += 1
-      if (coordinator.isEmpty)
+      if (coordinator.isEmpty) {
         register()
-      else {
+        scheduleNextRegistration()
+      } else {
         sendGracefulShutdownToCoordinator()
         requestShardBufferHomes()
         tryCompleteGracefulShutdown()
@@ -610,9 +618,11 @@ private[akka] class ShardRegion(
   }
 
   def receiveTerminated(ref: ActorRef): Unit = {
-    if (coordinator.contains(ref))
+    if (coordinator.contains(ref)) {
       coordinator = None
-    else if (regions.contains(ref)) {
+      register()
+      startRegistration()
+    } else if (regions.contains(ref)) {
       val shards = regions(ref)
       regionByShard --= shards
       regions -= ref
@@ -670,6 +680,20 @@ private[akka] class ShardRegion(
     if (gracefulShutdownInProgress && shards.isEmpty && shardBuffers.isEmpty) {
       context.stop(self) // all shards have been rebalanced, complete graceful shutdown
     }
+
+  def startRegistration(): Unit = {
+    nextRegistrationDelay = initRegistrationDelay
+    scheduleNextRegistration()
+  }
+
+  def scheduleNextRegistration(): Unit = {
+    registrationTask = Some(context.system.scheduler.scheduleOnce(nextRegistrationDelay, self, Retry))
+    nextRegistrationDelay *= 2
+  }
+
+  def finishRegistration(): Unit = {
+    registrationTask.foreach(_.cancel())
+  }
 
   def register(): Unit = {
     coordinatorSelection.foreach(_ ! registrationMessage)
