@@ -499,45 +499,53 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   override def associate(remoteAddress: Address): Future[AssociationHandle] = {
     if (!serverChannel.isBound) Future.failed(new NettyTransportException("Transport is not bound"))
     else {
+      log.debug("connection-issue: associate [{}]", remoteAddress)
       val bootstrap: ClientBootstrap = outboundBootstrap(remoteAddress)
 
-      (for {
-        socketAddress ← addressToSocketAddress(remoteAddress)
-        readyChannel ← NettyFutureBridge(bootstrap.connect(socketAddress)) map {
-          channel ⇒
-            if (EnableSsl)
-              blocking {
-                channel.getPipeline.get(classOf[SslHandler]).handshake().awaitUninterruptibly()
-              }
-            if (!isDatagram) channel.setReadable(false)
-            channel
-        }
-        handle ← if (isDatagram)
-          Future {
-            readyChannel.getRemoteAddress match {
-              case address: InetSocketAddress ⇒
-                val handle = new UdpAssociationHandle(localAddress, remoteAddress, readyChannel, NettyTransport.this)
-                handle.readHandlerPromise.future.foreach {
-                  listener ⇒ udpConnectionTable.put(address, listener)
+      val result =
+        (for {
+          socketAddress ← addressToSocketAddress(remoteAddress)
+          readyChannel ← NettyFutureBridge(bootstrap.connect(socketAddress)) map {
+            channel ⇒
+              if (EnableSsl)
+                blocking {
+                  channel.getPipeline.get(classOf[SslHandler]).handshake().awaitUninterruptibly()
                 }
-                handle
-              case unknown ⇒ throw new NettyTransportException(s"Unknown outbound remote address type [${unknown.getClass.getName}]")
-            }
+              if (!isDatagram) channel.setReadable(false)
+              channel
           }
-        else
-          readyChannel.getPipeline.get(classOf[ClientHandler]).statusFuture
-      } yield handle) recover {
-        case c: CancellationException ⇒ throw new NettyTransportExceptionNoStack("Connection was cancelled")
-        case NonFatal(t) ⇒
-          val msg =
-            if (t.getCause == null)
-              t.getMessage
-            else if (t.getCause.getCause == null)
-              s"${t.getMessage}, caused by: ${t.getCause}"
-            else
-              s"${t.getMessage}, caused by: ${t.getCause}, caused by: ${t.getCause.getCause}"
-          throw new NettyTransportExceptionNoStack(msg, t.getCause)
+          handle ← if (isDatagram)
+            Future {
+              readyChannel.getRemoteAddress match {
+                case address: InetSocketAddress ⇒
+                  val handle = new UdpAssociationHandle(localAddress, remoteAddress, readyChannel, NettyTransport.this)
+                  handle.readHandlerPromise.future.foreach {
+                    listener ⇒ udpConnectionTable.put(address, listener)
+                  }
+                  handle
+                case unknown ⇒ throw new NettyTransportException(s"Unknown outbound remote address type [${unknown.getClass.getName}]")
+              }
+            }
+          else
+            readyChannel.getPipeline.get(classOf[ClientHandler]).statusFuture
+        } yield handle) recover {
+          case c: CancellationException ⇒ throw new NettyTransportExceptionNoStack("Connection was cancelled")
+          case NonFatal(t) ⇒
+            val msg =
+              if (t.getCause == null)
+                t.getMessage
+              else if (t.getCause.getCause == null)
+                s"${t.getMessage}, caused by: ${t.getCause}"
+              else
+                s"${t.getMessage}, caused by: ${t.getCause}, caused by: ${t.getCause.getCause}"
+            throw new NettyTransportExceptionNoStack(msg, t.getCause)
+        }
+
+      result.onComplete { handle ⇒
+        log.debug("connection-issue: associate [{}] completed [{}]", remoteAddress, handle)
       }
+
+      result
     }
   }
 

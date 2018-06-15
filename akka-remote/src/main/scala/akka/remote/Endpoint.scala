@@ -271,7 +271,11 @@ private[remote] class ReliableDeliverySupervisor(
       new IllegalStateException(
         s"The remote system [$remoteAddress] has a UID [${uid.get}] that has been quarantined. Association aborted."))
 
+  log.debug("connection-issue: ReliableDeliverySupervisor [{}] created", remoteAddress)
+
   override def postStop(): Unit = {
+    log.debug("connection-issue: ReliableDeliverySupervisor [{}] postStop", remoteAddress)
+
     // All remaining messages in the buffer has to be delivered to dead letters. It is important to clear the sequence
     // number otherwise deadLetters will ignore it to avoid reporting system messages as dead letters while they are
     // still possibly retransmitted.
@@ -329,6 +333,7 @@ private[remote] class ReliableDeliverySupervisor(
       resendAll()
 
     case s: EndpointWriter.StopReading ⇒
+      log.debug("connection-issue: ReliableDeliverySupervisor [{}] StopReading", remoteAddress)
       writer forward s
 
     case Ungate ⇒ // ok, not gated
@@ -364,6 +369,7 @@ private[remote] class ReliableDeliverySupervisor(
     case s: Send                               ⇒ context.system.deadLetters ! s
     case EndpointWriter.FlushAndStop           ⇒ context.stop(self)
     case EndpointWriter.StopReading(w, replyTo) ⇒
+      log.debug("connection-issue: ReliableDeliverySupervisor [{}] StopReading gated", remoteAddress)
       replyTo ! EndpointWriter.StoppedReading(w)
       sender() ! EndpointWriter.StoppedReading(w)
   }
@@ -387,6 +393,7 @@ private[remote] class ReliableDeliverySupervisor(
           s"(more than ${settings.QuarantineSilentSystemTimeout.toUnit(TimeUnit.HOURS)} hours)"))
     case EndpointWriter.FlushAndStop ⇒ context.stop(self)
     case EndpointWriter.StopReading(w, replyTo) ⇒
+      log.debug("connection-issue: ReliableDeliverySupervisor [{}] StopReading", remoteAddress)
       replyTo ! EndpointWriter.StoppedReading(w)
     case Ungate ⇒ // ok, not gated
   }
@@ -585,6 +592,8 @@ private[remote] class EndpointWriter(
     context.system.scheduler.schedule(interval, interval, self, AckIdleCheckTimer)
   }
 
+  log.debug("connection-issue: EndpointWriter [{}] created", remoteAddress)
+
   override def preStart(): Unit = {
     handle match {
       case Some(h) ⇒
@@ -598,6 +607,7 @@ private[remote] class EndpointWriter(
     throw new IllegalStateException("EndpointWriter must not be restarted")
 
   override def postStop(): Unit = {
+    log.debug("connection-issue: EndpointWriter [{}] postStop", remoteAddress)
     ackIdleTimer.cancel()
     while (!prioBuffer.isEmpty)
       extendedSystem.deadLetters ! prioBuffer.poll
@@ -765,6 +775,7 @@ private[remote] class EndpointWriter(
   val writing: Receive = {
     case s: Send ⇒
       if (!writeSend(s)) {
+        log.debug("connection-issue: EndpointWriter [{}] writeSend failed, buffering", remoteAddress)
         enqueueInBuffer(s)
         scheduleBackoffTimer()
         context.become(buffering)
@@ -886,6 +897,8 @@ private[remote] class EndpointWriter(
       if (h.write(codec.constructPureAck(ack))) {
         ackDeadline = newAckDeadline
         lastAck = None
+      } else {
+        log.debug("connection-issue: EndpointWriter [{}] trySendPureAck failed", remoteAddress)
       }
     }
 
@@ -951,6 +964,8 @@ private[remote] class EndpointReader(
   val provider = RARP(context.system).provider
   var ackedReceiveBuffer = new AckedReceiveBuffer[Message]
 
+  log.debug("connection-issue: EndpointReader [{}] created", remoteAddress)
+
   override def preStart(): Unit = {
     receiveBuffers.get(Link(localAddress, remoteAddress)) match {
       case null ⇒
@@ -961,7 +976,10 @@ private[remote] class EndpointReader(
     }
   }
 
-  override def postStop(): Unit = saveState()
+  override def postStop(): Unit = {
+    log.debug("connection-issue: EndpointReader [{}] postStop", remoteAddress)
+    saveState()
+  }
 
   def saveState(): Unit = {
     def merge(currentState: ResendState, oldState: ResendState): ResendState =
@@ -1053,13 +1071,16 @@ private[remote] class EndpointReader(
 
   private def handleDisassociated(info: DisassociateInfo): Unit = info match {
     case AssociationHandle.Unknown ⇒
+      log.debug("connection-issue: EndpointReader [{}] handleDisassociated Unknown [{}]", remoteAddress, info)
       context.stop(self)
     case AssociationHandle.Shutdown ⇒
+      log.debug("connection-issue: EndpointReader [{}] handleDisassociated Shutdown [{}]", remoteAddress, info)
       throw ShutDownAssociation(
         localAddress,
         remoteAddress,
         InvalidAssociationException("The remote system terminated the association because it is shutting down."))
     case AssociationHandle.Quarantined ⇒
+      log.debug("connection-issue: EndpointReader [{}] handleDisassociated Quarantined [{}]", remoteAddress, info)
       throw InvalidAssociation(
         localAddress,
         remoteAddress,
@@ -1082,6 +1103,8 @@ private[remote] class EndpointReader(
   private def tryDecodeMessageAndAck(pdu: ByteString): (Option[Ack], Option[Message]) = try {
     codec.decodeMessage(pdu, provider, localAddress)
   } catch {
-    case NonFatal(e) ⇒ throw new EndpointException("Error while decoding incoming Akka PDU", e)
+    case NonFatal(e) ⇒
+      log.debug("connection-issue: EndpointReader [{}] Error while decoding incoming Akka PDU: {}", remoteAddress, e)
+      throw new EndpointException("Error while decoding incoming Akka PDU", e)
   }
 }

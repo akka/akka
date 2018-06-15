@@ -327,10 +327,12 @@ private[transport] class ProtocolStateActor(
 
   initialData match {
     case d: OutboundUnassociated ⇒
+      log.debug("connection-issue: outbound ProtocolStateActor created [{}]", d.remoteAddress)
       d.transport.associate(d.remoteAddress).map(Handle(_)) pipeTo self
       startWith(Closed, d)
 
     case d: InboundUnassociated ⇒
+      log.debug("connection-issue: inbound ProtocolStateActor created")
       d.wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(self))
       initHandshakeTimer()
       startWith(WaitHandshake, d)
@@ -342,28 +344,33 @@ private[transport] class ProtocolStateActor(
 
     // Transport layer events for outbound associations
     case Event(Status.Failure(e), OutboundUnassociated(_, statusPromise, _)) ⇒
+      log.debug("connection-issue: ProtocolStateActor [{}] error [{}]", stateName, e)
       statusPromise.failure(e)
       stop()
 
     case Event(Handle(wrappedHandle), OutboundUnassociated(_, statusPromise, _)) ⇒
       wrappedHandle.readHandlerPromise.trySuccess(ActorHandleEventListener(self))
       if (sendAssociate(wrappedHandle, localHandshakeInfo)) {
+        log.debug("connection-issue: ProtocolStateActor [{}] sendAssociate", stateName)
         failureDetector.heartbeat()
         initHeartbeatTimer()
         goto(WaitHandshake) using OutboundUnderlyingAssociated(statusPromise, wrappedHandle)
 
       } else {
+        log.debug("connection-issue: ProtocolStateActor [{}] associate retry", stateName)
         // Underlying transport was busy -- Associate could not be sent
         setTimer("associate-retry", Handle(wrappedHandle), RARP(context.system).provider.remoteSettings.BackoffPeriod, repeat = false)
         stay()
       }
 
     case Event(DisassociateUnderlying(_), _) ⇒
+      log.debug("connection-issue: ProtocolStateActor [{}] DisassociateUnderlying", stateName)
       stop()
 
     case Event(HandshakeTimer, OutboundUnassociated(_, statusPromise, _)) ⇒
       val errMsg = "No response from remote for outbound association. Associate timed out after " +
         s"[${settings.HandshakeTimeout.toMillis} ms]."
+      log.debug("connection-issue: ProtocolStateActor [{}] error: {}", stateName, errMsg)
       statusPromise.failure(new TimeoutException(errMsg))
       stop(FSM.Failure(TimeoutReason(errMsg)))
 
@@ -374,6 +381,7 @@ private[transport] class ProtocolStateActor(
   // Timeout of this state is handled by the HandshakeTimer
   when(WaitHandshake) {
     case Event(Disassociated(info), _) ⇒
+      log.debug("connection-issue: ProtocolStateActor [{}] Disassociated [{}]", stateName, info)
       stop(FSM.Failure(info))
 
     case Event(InboundPayload(p), OutboundUnderlyingAssociated(statusPromise, wrappedHandle)) ⇒
@@ -391,6 +399,7 @@ private[transport] class ProtocolStateActor(
             immutable.Queue.empty)
 
         case Disassociate(info) ⇒
+          log.debug("connection-issue: ProtocolStateActor [{}] outbound InboundPayload Disassociate [{}]", stateName, info)
           // After receiving Disassociate we MUST NOT send back a Disassociate (loop)
           stop(FSM.Failure(info))
 
@@ -398,7 +407,7 @@ private[transport] class ProtocolStateActor(
           // Expected handshake to be finished, dropping connection
           if (log.isDebugEnabled)
             log.debug(
-              "Sending disassociate to [{}] because unexpected message of type [{}] was received during handshake",
+              "connection-issue: Sending disassociate to [{}] because unexpected message of type [{}] was received during handshake",
               wrappedHandle, msg.getClass.getName)
           sendDisassociate(wrappedHandle, Unknown)
           stop()
@@ -411,7 +420,9 @@ private[transport] class ProtocolStateActor(
     case Event(InboundPayload(p), InboundUnassociated(associationHandler, wrappedHandle)) ⇒
       decodePdu(p) match {
         // After receiving Disassociate we MUST NOT send back a Disassociate (loop)
-        case Disassociate(info) ⇒ stop(FSM.Failure(info))
+        case Disassociate(info) ⇒
+          log.debug("connection-issue: ProtocolStateActor [{}] inbound InboundPayload Disassociate [{}]", stateName, info)
+          stop(FSM.Failure(info))
 
         // Incoming association -- implicitly ACK by a heartbeat
         case Associate(info) ⇒
@@ -427,7 +438,7 @@ private[transport] class ProtocolStateActor(
           } else {
             if (log.isDebugEnabled)
               log.warning(
-                s"Association attempt with mismatching cookie from [{}]. Expected [{}] but received [{}].",
+                s"connection-issue: Association attempt with mismatching cookie from [{}]. Expected [{}] but received [{}].",
                 info.origin, localHandshakeInfo.cookie.getOrElse(""), info.cookie.getOrElse(""))
             else
               markerLog.warning(LogMarker.Security, s"Association attempt with mismatching cookie from [{}].", info.origin)
@@ -438,7 +449,7 @@ private[transport] class ProtocolStateActor(
         case msg ⇒
           if (log.isDebugEnabled)
             log.debug(
-              "Sending disassociate to [{}] because unexpected message of type [{}] was received while unassociated",
+              "connection-issue: Sending disassociate to [{}] because unexpected message of type [{}] was received while unassociated",
               wrappedHandle, msg.getClass.getName)
           sendDisassociate(wrappedHandle, Unknown)
           stop()
@@ -448,7 +459,7 @@ private[transport] class ProtocolStateActor(
     case Event(HandshakeTimer, OutboundUnderlyingAssociated(_, wrappedHandle)) ⇒
       if (log.isDebugEnabled)
         log.debug(
-          "Sending disassociate to [{}] because handshake timed out for outbound association after [{}] ms.",
+          "connection-issue: Sending disassociate to [{}] because handshake timed out for outbound association after [{}] ms.",
           wrappedHandle, settings.HandshakeTimeout.toMillis)
 
       sendDisassociate(wrappedHandle, Unknown)
@@ -458,7 +469,7 @@ private[transport] class ProtocolStateActor(
     case Event(HandshakeTimer, InboundUnassociated(_, wrappedHandle)) ⇒
       if (log.isDebugEnabled)
         log.debug(
-          "Sending disassociate to [{}] because handshake timed out for inbound association after [{}] ms.",
+          "connection-issue: Sending disassociate to [{}] because handshake timed out for inbound association after [{}] ms.",
           wrappedHandle, settings.HandshakeTimeout.toMillis)
 
       sendDisassociate(wrappedHandle, Unknown)
@@ -469,6 +480,7 @@ private[transport] class ProtocolStateActor(
 
   when(Open) {
     case Event(Disassociated(info), _) ⇒
+      log.debug("connection-issue: ProtocolStateActor [{}] Disassociated [{}]", stateName, info)
       stop(FSM.Failure(info))
 
     case Event(InboundPayload(p), _) ⇒
@@ -491,6 +503,7 @@ private[transport] class ProtocolStateActor(
               listener notify InboundPayload(payload)
               stay()
             case msg ⇒
+              log.debug("connection-issue: ProtocolStateActor [{}] InboundPayload unhandled message [{}]", stateName, safeClassName(msg))
               throw new AkkaProtocolException(s"unhandled message in state Open(InboundPayload) with type [${safeClassName(msg)}]")
           }
 
@@ -505,6 +518,7 @@ private[transport] class ProtocolStateActor(
         case ListenerReady(_, wrappedHandle)            ⇒ wrappedHandle
         case AssociatedWaitHandler(_, wrappedHandle, _) ⇒ wrappedHandle
         case msg ⇒
+          log.debug("connection-issue: ProtocolStateActor [{}] DisassociateUnderlying unhandled message [{}]", stateName, safeClassName(msg))
           throw new AkkaProtocolException(s"unhandled message in state Open(DisassociateUnderlying) with type [${safeClassName(msg)}]")
       }
       // No debug logging here as sending DisassociateUnderlying(Unknown) should have been logged from where
@@ -533,7 +547,7 @@ private[transport] class ProtocolStateActor(
     } else {
       if (log.isDebugEnabled)
         log.debug(
-          "Sending disassociate to [{}] because failure detector triggered in state [{}]",
+          "connection-issue: Sending disassociate to [{}] because failure detector triggered in state [{}]",
           wrappedHandle, stateName)
 
       // send disassociate just to be sure
@@ -549,18 +563,21 @@ private[transport] class ProtocolStateActor(
   }
 
   override def postStop(): Unit = {
+    log.debug("connection-issue: ProtocolStateActor [{}] postStop [{}]", stateName, initialData)
     cancelTimer("heartbeat-timer")
     super.postStop() // Pass to onTermination
   }
 
   onTermination {
     case StopEvent(reason, _, OutboundUnassociated(remoteAddress, statusPromise, transport)) ⇒
+      log.debug("connection-issue: ProtocolStateActor [{}] onTermination [{}] [{}]", stateName, reason, remoteAddress)
       statusPromise.tryFailure(reason match {
         case FSM.Failure(info: DisassociateInfo) ⇒ disassociateException(info)
         case _                                   ⇒ new AkkaProtocolException("Transport disassociated before handshake finished")
       })
 
     case StopEvent(reason, _, OutboundUnderlyingAssociated(statusPromise, wrappedHandle)) ⇒
+      log.debug("connection-issue: ProtocolStateActor [{}] onTermination [{}] [{}]", stateName, reason, initialData)
       statusPromise.tryFailure(reason match {
         case FSM.Failure(TimeoutReason(errorMessage)) ⇒
           new AkkaProtocolException(errorMessage)
@@ -574,6 +591,7 @@ private[transport] class ProtocolStateActor(
       wrappedHandle.disassociate(disassociationReason(reason), log)
 
     case StopEvent(reason, _, AssociatedWaitHandler(handlerFuture, wrappedHandle, _)) ⇒
+      log.debug("connection-issue: ProtocolStateActor [{}] onTermination [{}] [{}]", stateName, reason, initialData)
       // Invalidate exposed but still unfinished promise. The underlying association disappeared, so after
       // registration immediately signal a disassociate
       val disassociateNotification = reason match {
@@ -584,6 +602,7 @@ private[transport] class ProtocolStateActor(
       wrappedHandle.disassociate(disassociationReason(reason), log)
 
     case StopEvent(reason, _, ListenerReady(handler, wrappedHandle)) ⇒
+      log.debug("connection-issue: ProtocolStateActor [{}] onTermination [{}] [{}]", stateName, reason, initialData)
       val disassociateNotification = reason match {
         case FSM.Failure(info: DisassociateInfo) ⇒ Disassociated(info)
         case _                                   ⇒ Disassociated(Unknown)
@@ -592,6 +611,7 @@ private[transport] class ProtocolStateActor(
       wrappedHandle.disassociate(disassociationReason(reason), log)
 
     case StopEvent(reason, _, InboundUnassociated(_, wrappedHandle)) ⇒
+      log.debug("connection-issue: ProtocolStateActor [{}] onTermination [{}] [{}]", stateName, reason, initialData)
       wrappedHandle.disassociate(disassociationReason(reason), log)
 
   }
@@ -663,18 +683,24 @@ private[transport] class ProtocolStateActor(
   //  - Missing heartbeats are not critical
   //  - Disassociate messages are not guaranteed anyway
   private def sendHeartbeat(wrappedHandle: AssociationHandle): Boolean = try wrappedHandle.write(codec.constructHeartbeat) catch {
-    case NonFatal(e) ⇒ throw new AkkaProtocolException("Error writing HEARTBEAT to transport", e)
+    case NonFatal(e) ⇒
+      log.debug("connection-issue: ProtocolStateActor [{}] Error writing HEARTBEAT to transport [{}]", stateName, e)
+      throw new AkkaProtocolException("Error writing HEARTBEAT to transport", e)
   }
 
   private def sendDisassociate(wrappedHandle: AssociationHandle, info: DisassociateInfo): Unit =
     try wrappedHandle.write(codec.constructDisassociate(info)) catch {
-      case NonFatal(e) ⇒ throw new AkkaProtocolException("Error writing DISASSOCIATE to transport", e)
+      case NonFatal(e) ⇒
+        log.debug("connection-issue: ProtocolStateActor [{}] Error writing DISASSOCIATE to transport [{}]", stateName, e)
+        throw new AkkaProtocolException("Error writing DISASSOCIATE to transport", e)
     }
 
   private def sendAssociate(wrappedHandle: AssociationHandle, info: HandshakeInfo): Boolean = try {
     wrappedHandle.write(codec.constructAssociate(info))
   } catch {
-    case NonFatal(e) ⇒ throw new AkkaProtocolException("Error writing ASSOCIATE to transport", e)
+    case NonFatal(e) ⇒
+      log.debug("connection-issue: ProtocolStateActor [{}] Error writing ASSOCIATE to transport [{}]", stateName, e)
+      throw new AkkaProtocolException("Error writing ASSOCIATE to transport", e)
   }
 
   private def disassociationReason(reason: FSM.Reason): String = reason match {
