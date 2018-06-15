@@ -15,6 +15,7 @@ import akka.stream.impl.io.InputStreamSinkStage
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.scaladsl.{ Keep, Source, StreamConverters }
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit._
 import akka.testkit.TestProbe

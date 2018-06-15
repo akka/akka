@@ -90,6 +90,8 @@ public class TcpTest extends StreamTest {
     for (int i = 0; i < testInput.size(); i ++) {
       assertEquals(testInput.get(i).head(), result[i]);
     }
+
+    b.unbind();
   }
 
   @Test
@@ -111,6 +113,7 @@ public class TcpTest extends StreamTest {
           if (e.getCause() instanceof BindFailedException) {} // all good
           else throw new AssertionError("failed", e);
           // expected
+          b.unbind();
         } catch (Exception e) {
           throw new AssertionError("failed", e);
         }

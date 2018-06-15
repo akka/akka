@@ -10,6 +10,7 @@ import java.util.concurrent.CountDownLatch
 import akka.stream.scaladsl.{ Sink, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.util.ByteString

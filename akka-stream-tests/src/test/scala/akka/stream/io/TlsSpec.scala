@@ -24,6 +24,7 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ByteString
 import javax.net.ssl._
 

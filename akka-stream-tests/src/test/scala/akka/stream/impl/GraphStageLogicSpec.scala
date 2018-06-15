@@ -10,7 +10,7 @@ import akka.stream.testkit.StreamSpec
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage._
-import akka.stream.testkit.Utils.assertAllStagesStopped
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.impl.fusing._
 import org.scalatest.concurrent.ScalaFutures

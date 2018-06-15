@@ -4,6 +4,9 @@
 
 package akka.stream;
 
+import akka.stream.testkit.javadsl.StreamTestKit;
+import org.junit.After;
+import org.junit.Before;
 import org.scalatest.junit.JUnitSuite;
 
 import akka.actor.ActorSystem;
@@ -11,11 +14,23 @@ import akka.testkit.AkkaJUnitActorSystemResource;
 
 public abstract class StreamTest extends JUnitSuite {
     final protected ActorSystem system;
-    final protected ActorMaterializer materializer;
+    final private ActorMaterializerSettings settings;
+
+    protected ActorMaterializer materializer;
 
     protected StreamTest(AkkaJUnitActorSystemResource actorSystemResource) {
         system = actorSystemResource.getSystem();
-        ActorMaterializerSettings settings = ActorMaterializerSettings.create(system);
+        settings = ActorMaterializerSettings.create(system);
+    }
+
+    @Before
+    public void setUp() {
         materializer = ActorMaterializer.create(settings, system);
+    }
+
+    @After
+    public void tearDown() {
+        StreamTestKit.assertAllStagesStopped(materializer);
+        materializer.shutdown();
     }
 }

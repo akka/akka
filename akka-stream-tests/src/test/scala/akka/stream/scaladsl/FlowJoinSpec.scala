@@ -7,6 +7,7 @@ package akka.stream.scaladsl
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, FlowShape, OverflowStrategy }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.time._
