@@ -95,7 +95,7 @@ object MultiNodeClusterSpec {
 
 trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with FlightRecordingSupport { self: MultiNodeSpec ⇒
 
-  override def initialParticipants = roles.size
+  final override def initialParticipants = roles.size
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
 
@@ -240,14 +240,14 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     def memberInState(member: Address, status: Seq[MemberStatus]): Boolean =
       clusterView.members.exists { m ⇒ (m.address == member) && status.contains(m.status) }
 
-    cluster join joinNode
+    cluster.join(joinNode)
     awaitCond({
       clusterView.refreshCurrentState()
       if (memberInState(joinNode, List(MemberStatus.up)) &&
         memberInState(myself, List(MemberStatus.Joining, MemberStatus.Up)))
         true
       else {
-        cluster join joinNode
+        cluster.join(joinNode)
         false
       }
     }, max, interval)
