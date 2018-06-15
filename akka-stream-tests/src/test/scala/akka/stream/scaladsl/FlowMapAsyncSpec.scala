@@ -12,6 +12,7 @@ import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.{ TestLatch, TestProbe }

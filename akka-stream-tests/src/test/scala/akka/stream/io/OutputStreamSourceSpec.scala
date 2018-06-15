@@ -16,6 +16,7 @@ import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.OutputStreamSourceStage
 import akka.stream.scaladsl.{ Keep, Sink, StreamConverters }
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe

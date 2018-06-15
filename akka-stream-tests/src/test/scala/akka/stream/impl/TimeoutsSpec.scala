@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException
 import akka.Done
 import akka.stream.scaladsl._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream._
 import org.scalatest.{ Matchers, WordSpecLike }

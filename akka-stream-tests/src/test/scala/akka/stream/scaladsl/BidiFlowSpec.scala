@@ -7,6 +7,7 @@ package akka.stream.scaladsl
 import akka.NotUsed
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ByteString
 import akka.stream._
 import scala.concurrent.Await

@@ -7,6 +7,7 @@ package akka.stream.scaladsl
 import akka.Done
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 
 import scala.concurrent.duration._
