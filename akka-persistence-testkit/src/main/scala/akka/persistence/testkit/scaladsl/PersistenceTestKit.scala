@@ -28,6 +28,18 @@ trait PersistenceTestKit extends PersistentTestKitOps {
   //todo needs to be thread safe (atomic read-increment-write) for parallel tests?
   private var nextIndexByPersistenceId: immutable.Map[String, Int] = Map.empty
 
+  override def failNextNRecoveries(n: Int): Unit = {
+    val current = storage.currentReadingPolicy
+    val pol = new JournalPolicies.FailNextN(n, ExpectedFailure, withRecoveryPolicy(current))
+    withRecoveryPolicy(pol)
+  }
+
+  override def failNextNRecoveries(persistenceId: String, n: Int): Unit = {
+    val current = storage.currentReadingPolicy
+    val pol = new InMemStorageEmulator.JournalPolicies.FailNextNCond(n, ExpectedFailure, (pid, _) ⇒ pid == persistenceId, withRecoveryPolicy(current))
+    withRecoveryPolicy(pol)
+  }
+
   override def expectNextPersisted[A](persistenceId: String, msg: A): A = expectNextPersisted(persistenceId, msg, settings.assertTimeout)
 
   override def expectNextPersisted[A](persistenceId: String, msg: A, max: FiniteDuration): A = {
@@ -200,6 +212,14 @@ trait PersistentTestKitOps {
   def failNextNPersisted(n: Int): Unit
 
   def failNextPersisted(): Unit = failNextNPersisted(1)
+
+  def failNextRecovery(): Unit = failNextNRecoveries(1)
+
+  def failNextNRecoveries(n: Int): Unit
+
+  def failNextRecovery(persistenceId: String): Unit = failNextNRecoveries(persistenceId, 1)
+
+  def failNextNRecoveries(persistenceId: String, n: Int): Unit
 
   def persistForRecovery(persistenceId: String, msgs: immutable.Seq[Any]): Unit
 

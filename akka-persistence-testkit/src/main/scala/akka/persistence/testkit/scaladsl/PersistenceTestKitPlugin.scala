@@ -27,12 +27,11 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
     Future.fromTry(Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(recoveryCallback)))
 
-  override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = {
-    //todo should we emulate exception on readSeqNumber?
-    val found = storage.reloadHighestSequenceNum(persistenceId)
-    val sn = if (found < fromSequenceNr) fromSequenceNr else found
-    Future.successful(sn)
-  }
+  override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
+    Future.fromTry(Try {
+      val found = storage.tryReadSeqNumber(persistenceId)
+      if (found < fromSequenceNr) fromSequenceNr else found
+    })
 
 }
 

@@ -239,6 +239,14 @@ trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalPolicy
     }
   }
 
+  def tryReadSeqNumber(persistenceId: String): Long = {
+    currentReadingPolicy.tryProcess(persistenceId, immutable.Seq.empty) match {
+      case ProcessingSuccess  ⇒ reloadHighestSequenceNum(persistenceId)
+      case Reject(ex)         ⇒ throw ex
+      case StorageFailure(ex) ⇒ throw ex
+    }
+  }
+
 }
 
 object InMemStorageEmulator {

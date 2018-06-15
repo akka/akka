@@ -149,6 +149,24 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
 
     }
 
+    "fail recovery" in {
+
+      val pid = randomPid()
+
+      failNextRecovery()
+
+      val a = system.actorOf(Props(classOf[A], pid, None))
+
+      watch(a)
+
+      expectTerminated(a)
+
+      system.actorOf(Props(classOf[A], pid, Some(testActor)))
+
+      expectMsg(List.empty)
+
+    }
+
     "recover persisted messages" in {
 
       val preload = List(B(1), B(2), B(3))
@@ -177,7 +195,9 @@ class A(pid: String, respondOnRecover: Option[ActorRef]) extends PersistentActor
   var recovered = immutable.List.empty[Any]
 
   override def receiveRecover = {
-    case RecoveryCompleted => respondOnRecover.foreach(_  ! recovered)
+    case RecoveryCompleted =>
+      println("Recovered")
+      respondOnRecover.foreach(_  ! recovered)
     case s ⇒ recovered :+= s
   }
 
