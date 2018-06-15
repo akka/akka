@@ -20,9 +20,11 @@ import scala.util.{ Failure, Success, Try }
 
 trait InMemStorage[K, T] {
 
+  private val parallelism = Runtime.getRuntime.availableProcessors()
+
   private final val eventsMap: ConcurrentHashMap[K, Vector[T]] = new ConcurrentHashMap()
 
-  def forEachKey(f: K ⇒ Unit) = eventsMap.forEachKey(Runtime.getRuntime.availableProcessors(), f)
+  def forEachKey(f: K ⇒ Unit) = eventsMap.forEachKey(parallelism, f)
 
   def findMany(key: K, fromInclusive: Int, maxNum: Int): Option[Vector[T]] =
     read(key)

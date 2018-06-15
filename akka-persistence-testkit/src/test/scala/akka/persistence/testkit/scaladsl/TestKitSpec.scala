@@ -34,6 +34,11 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
       a ! B(2)
 
       expectNextPersisted("111", B(1))
+
+      assertThrows[AssertionError] {
+        expectNextPersisted("111", B(3))
+      }
+
       expectNextPersisted("111", B(2))
 
       assertThrows[AssertionError] {
@@ -49,6 +54,10 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
       a ! B(1)
       a ! B(2)
 
+      assertThrows[AssertionError]{
+        expectPersistedInOrder("222", List(B(2), B(1)))
+      }
+
       expectPersistedInOrder("222", List(B(1), B(2)))
 
     }
@@ -59,6 +68,10 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
 
       a ! B(2)
       a ! B(1)
+
+      assertThrows[AssertionError]{
+        expectPersistedInAnyOrder("333", List(B(3), B(2)))
+      }
 
       expectPersistedInAnyOrder("333", List(B(1), B(2)))
 
@@ -79,7 +92,7 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
         expectNextPersisted("111", B(1))
       }
 
-       a ! B(1)
+      a ! B(1)
 
       assertThrows[AssertionError] {
         expectNextPersisted("111", B(1))
@@ -101,6 +114,34 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
 
       watch(a)
       expectTerminated(a)
+
+      val b = system.actorOf(Props(classOf[A], "111"))
+
+      b ! B(1)
+
+      expectNextPersisted("111", B(1))
+
+    }
+
+    "expect no message persisted" in {
+
+      val start = System.currentTimeMillis()
+      expectNoMessagePersisted("111")
+      val dur = System.currentTimeMillis() - start
+      println(dur)
+
+
+      val a = system.actorOf(Props(classOf[A], "111"))
+
+      a ! B(1)
+
+      val start2 = System.currentTimeMillis()
+      assertThrows[AssertionError]{
+        expectNoMessagePersisted("111")
+      }
+      val dur2 = System.currentTimeMillis() - start2
+      println(dur2)
+
 
     }
 

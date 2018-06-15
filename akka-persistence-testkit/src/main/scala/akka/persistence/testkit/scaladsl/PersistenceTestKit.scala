@@ -28,28 +28,55 @@ trait PersistenceTestKit extends PersistentTestKitOps {
   //todo needs to be thread safe (atomic read-increment-write) for parallel tests?
   private var nextIndexByPersistenceId: immutable.Map[String, Int] = Map.empty
 
-  override def expectNextPersisted(persistenceId: String, msg: Any): Unit = {
+  override def expectNextPersisted[A](persistenceId: String, msg: A): A = expectNextPersisted(persistenceId, msg, settings.assertTimeout)
 
+  override def expectNextPersisted[A](persistenceId: String, msg: A, max: FiniteDuration): A = {
     val nextInd = nextIndexByPersistenceId.getOrElse(persistenceId, 0)
     val expected = Some(msg)
-    awaitAssert({
+    val res = awaitAssert({
       val actual = storage.findOneByIndex(persistenceId, nextInd).map(_.payload)
       assert(actual == expected, s"Failed to persist $msg, got $actual instead")
-    }, max = settings.assertTimeout)
+      actual
+    }, max = max, interval = settings.pollInterval)
 
     nextIndexByPersistenceId += (persistenceId -> (nextInd + 1))
-
+    res.get.asInstanceOf[A]
   }
 
-  override def rejectNextPersisted(persistenceId: String): Unit = {
+  override def expectNoMessagePersisted(persistenceId: String): Unit =
+    expectNoMessagePersisted(persistenceId, settings.noMessagePersistedTimeout)
+
+  override def expectNoMessagePersisted(persistenceId: String, max: FiniteDuration): Unit = {
+    val nextInd = nextIndexByPersistenceId.getOrElse(persistenceId, 0)
+    assertCondition({
+      val actual = storage.findOneByIndex(persistenceId, nextInd).map(_.payload)
+      val res = actual.isEmpty
+      assert(res, s"Found persisted message $actual, but expected None instead")
+      res
+    }, max = max, interval = settings.pollInterval)
+  }
+
+  override def rejectNextNPersisted(persistenceId: String, n: Int): Unit = {
     val current = storage.currentWritingPolicy
-    val pol = new InMemStorageEmulator.JournalPolicies.RejectNextNCond(1, ExpectedRejection, (pid, _) ⇒ pid == persistenceId, withWritingPolicy(current))
+    val pol = new InMemStorageEmulator.JournalPolicies.RejectNextNCond(n, ExpectedRejection, (pid, _) ⇒ pid == persistenceId, withWritingPolicy(current))
     withWritingPolicy(pol)
   }
 
-  override def failNextPersisted(persistenceId: String): Unit = {
+  override def failNextNPersisted(persistenceId: String, n: Int): Unit = {
     val current = storage.currentWritingPolicy
-    val pol = new InMemStorageEmulator.JournalPolicies.FailNextNCond(1, ExpectedFailure, (pid, _) ⇒ pid == persistenceId, withWritingPolicy(current))
+    val pol = new InMemStorageEmulator.JournalPolicies.FailNextNCond(n, ExpectedFailure, (pid, _) ⇒ pid == persistenceId, withWritingPolicy(current))
+    withWritingPolicy(pol)
+  }
+
+  override def rejectNextNPersisted(n: Int): Unit = {
+    val current = storage.currentWritingPolicy
+    val pol = new JournalPolicies.RejectNextN(n, ExpectedRejection, withWritingPolicy(current))
+    withWritingPolicy(pol)
+  }
+
+  override def failNextNPersisted(n: Int): Unit = {
+    val current = storage.currentWritingPolicy
+    val pol = new JournalPolicies.FailNextN(n, ExpectedFailure, withWritingPolicy(current))
     withWritingPolicy(pol)
   }
 
@@ -58,13 +85,30 @@ trait PersistenceTestKit extends PersistentTestKitOps {
     nextIndexByPersistenceId += persistenceId -> (nextIndexByPersistenceId.getOrElse(persistenceId, 0) + msgs.size)
   }
 
-  override def expectPersistedInOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit =
-    msgs.foreach(expectNextPersisted(persistenceId, _))
+  override def expectPersistedInOrder[A](persistenceId: String, msgs: immutable.Seq[A], max: FiniteDuration): immutable.Seq[A] = {
+    val nextInd = nextIndexByPersistenceId.getOrElse(persistenceId, 0)
+    val res = awaitAssert({
+      val actual = storage.findMany(persistenceId, nextInd, msgs.size)
+      actual match {
+        case Some(reprs) ⇒
+          val ls = reprs.map(_.payload)
+          assert(ls.size == msgs.size && ls.zip(msgs).forall(e ⇒ e._1 == e._2), "Persisted messages do not correspond to expected ones")
+        case None ⇒ assert(false, "No messages were persisted")
+      }
+      actual.get.map(_.payload)
+    }, max = max, interval = settings.pollInterval)
 
-  override def expectPersistedInAnyOrder(persistenceId: String, msgs: immutable.Seq[Any]): Unit = {
+    nextIndexByPersistenceId += (persistenceId -> (nextInd + msgs.size))
+    res.asInstanceOf[immutable.Seq[A]]
+  }
+
+  override def expectPersistedInOrder[A](persistenceId: String, msgs: immutable.Seq[A]): immutable.Seq[A] =
+    expectPersistedInOrder(persistenceId, msgs, settings.assertTimeout)
+
+  override def expectPersistedInAnyOrder[A](persistenceId: String, msgs: immutable.Seq[A], max: FiniteDuration): immutable.Seq[A] = {
 
     val nextInd = nextIndexByPersistenceId.getOrElse(persistenceId, 0)
-    awaitAssert({
+    val res = awaitAssert({
       val actual = storage.findMany(persistenceId, nextInd, msgs.size)
       actual match {
         case Some(reprs) ⇒
@@ -72,27 +116,19 @@ trait PersistenceTestKit extends PersistentTestKitOps {
           assert(ls.size == msgs.size && ls.diff(msgs).isEmpty, "Persisted messages do not correspond to expected ones")
         case None ⇒ assert(false, "No messages were persisted")
       }
-    }, max = settings.assertTimeout)
+      actual.get.map(_.payload)
+    }, max = max, interval = settings.pollInterval)
 
     nextIndexByPersistenceId += (persistenceId -> (nextInd + msgs.size))
-
+    res.asInstanceOf[immutable.Seq[A]]
   }
+
+  override def expectPersistedInAnyOrder[A](persistenceId: String, msgs: immutable.Seq[A]): immutable.Seq[A] =
+    expectPersistedInAnyOrder(persistenceId, msgs, settings.assertTimeout)
 
   def withRecoveryPolicy(policy: JournalPolicy) = storage.setReadingPolicy(policy)
 
   def withWritingPolicy(policy: JournalPolicy) = storage.setWritingPolicy(policy)
-
-  def rejectNextPersisted() = {
-    val current = storage.currentWritingPolicy
-    val pol = new JournalPolicies.RejectNextN(1, ExpectedRejection, withWritingPolicy(current))
-    withWritingPolicy(pol)
-  }
-
-  def failNextPersisted() = {
-    val current = storage.currentWritingPolicy
-    val pol = new JournalPolicies.FailNextN(1, ExpectedFailure, withWritingPolicy(current))
-    withWritingPolicy(pol)
-  }
 
   override def clearAll(): Unit = storage.clearAll()
 
@@ -115,7 +151,9 @@ object PersistenceTestKit {
 
     import akka.util.Helpers._
 
-    val assertTimeout: FiniteDuration = config.getMillisDuration("timeout")
+    val assertTimeout: FiniteDuration = config.getMillisDuration("assert-timeout")
+    val noMessagePersistedTimeout: FiniteDuration = config.getMillisDuration("assert-no-message-timeout")
+    val pollInterval: FiniteDuration = config.getMillisDuration("assert-poll-interval")
 
   }
 
@@ -131,25 +169,43 @@ object PersistenceTestKit {
 
 trait PersistentTestKitOps {
 
-  def expectNextPersisted(persistenceId: String, msg: Any): Any
+  def expectNoMessagePersisted(persistenceId: String): Unit
 
-  def expectPersistedInOrder(persistenceId: String, msgs: immutable.Seq[Any])
+  def expectNoMessagePersisted(persistenceId: String, max: FiniteDuration): Unit
 
-  def expectPersistedInAnyOrder(persistenceId: String, msgs: immutable.Seq[Any])
+  def expectNextPersisted[A](persistenceId: String, msg: A): A
 
-  def rejectNextPersisted(persistenceId: String): Unit
+  def expectNextPersisted[A](persistenceId: String, msg: A, max: FiniteDuration): A
 
-  def rejectNextPersisted(): Unit
+  def expectPersistedInOrder[A](persistenceId: String, msgs: immutable.Seq[A]): immutable.Seq[A]
 
-  def failNextPersisted(persistenceId: String): Unit
+  def expectPersistedInOrder[A](persistenceId: String, msgs: immutable.Seq[A], max: FiniteDuration): immutable.Seq[A]
 
-  def failNextPersisted(): Unit
+  def expectPersistedInAnyOrder[A](persistenceId: String, msgs: immutable.Seq[A]): immutable.Seq[A]
+
+  def expectPersistedInAnyOrder[A](persistenceId: String, msgs: immutable.Seq[A], max: FiniteDuration): immutable.Seq[A]
+
+  def rejectNextNPersisted(pesistenceId: String, n: Int): Unit
+
+  def rejectNextPersisted(persistenceId: String): Unit = rejectNextNPersisted(persistenceId, 1)
+
+  def rejectNextNPersisted(n: Int): Unit
+
+  def rejectNextPersisted(): Unit = rejectNextNPersisted(1)
+
+  def failNextNPersisted(persistenceId: String, n: Int): Unit
+
+  def failNextPersisted(persistenceId: String): Unit = failNextNPersisted(persistenceId, 1)
+
+  def failNextNPersisted(n: Int): Unit
+
+  def failNextPersisted(): Unit = failNextNPersisted(1)
 
   def persistForRecovery(persistenceId: String, msgs: immutable.Seq[Any]): Unit
 
   def clearAll(): Unit
 
-  def clearByPersistenceId(persistenceId: String)
+  def clearByPersistenceId(persistenceId: String): Unit
 
 }
 
@@ -183,6 +239,27 @@ trait UtilityAssertions {
       else {
         Thread.sleep(t.toMillis)
         poll((stop - now) min interval)
+      }
+    }
+
+    poll(max min interval)
+  }
+
+  def assertCondition(a: ⇒ Boolean, max: FiniteDuration, interval: Duration = 100.millis): Unit = {
+    val stop = now + max
+
+    @tailrec
+    def poll(t: Duration): Unit = {
+      // cannot use null-ness of result as signal it failed
+      // because Java API and not wanting to return a value will be "return null"
+      val result: Boolean = a
+      val instantNow = now
+
+      if (result && instantNow < stop) {
+        Thread.sleep(t.toMillis)
+        poll((stop - now) min interval)
+      } else if (!result) {
+        throw new AssertionError("Assert condition failed")
       }
     }
 
