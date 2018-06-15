@@ -6,8 +6,8 @@ package akka.persistence.testkit.scaladsl
 
 import java.util.UUID
 
-import akka.actor.{ActorSystem, Props}
-import akka.persistence.PersistentActor
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.persistence.{PersistentActor, RecoveryCompleted}
 import akka.testkit.TestKitBase
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -19,7 +19,7 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
     ActorSystem(
       s"persistence-testkit-${UUID.randomUUID()}",
       PersistenceTestKitPlugin.PersitenceTestkitJournalConfig
-        .withFallback(PersistenceTestKitSnapshotPlugin.PersitenceTestkitSnapshotStoreConfig)
+        //.withFallback(PersistenceTestKitSnapshotPlugin.PersitenceTestkitSnapshotStoreConfig)
         .withFallback(ConfigFactory.defaultApplication()))
 
   }
@@ -28,58 +28,66 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
 
     "expect next valid message" in {
 
-      val a = system.actorOf(Props(classOf[A], "111"))
+      val pid = randomPid()
+
+      val a = system.actorOf(Props(classOf[A], pid, None))
 
       a ! B(1)
       a ! B(2)
 
-      expectNextPersisted("111", B(1))
+      expectNextPersisted(pid, B(1))
 
       assertThrows[AssertionError] {
-        expectNextPersisted("111", B(3))
+        expectNextPersisted(pid, B(3))
       }
 
-      expectNextPersisted("111", B(2))
+      expectNextPersisted(pid, B(2))
 
       assertThrows[AssertionError] {
-        expectNextPersisted("111", B(3))
+        expectNextPersisted(pid, B(3))
       }
 
     }
 
     "expect next N valid messages in order" in {
 
-      val a = system.actorOf(Props(classOf[A], "222"))
+      val pid = randomPid()
+
+      val a = system.actorOf(Props(classOf[A], pid, None))
 
       a ! B(1)
       a ! B(2)
 
       assertThrows[AssertionError]{
-        expectPersistedInOrder("222", List(B(2), B(1)))
+        expectPersistedInOrder(pid, List(B(2), B(1)))
       }
 
-      expectPersistedInOrder("222", List(B(1), B(2)))
+      expectPersistedInOrder(pid, List(B(1), B(2)))
 
     }
 
     "expect next N valid messages in any order" in {
 
-      val a = system.actorOf(Props(classOf[A], "333"))
+      val pid = randomPid()
+
+      val a = system.actorOf(Props(classOf[A], pid, None))
 
       a ! B(2)
       a ! B(1)
 
       assertThrows[AssertionError]{
-        expectPersistedInAnyOrder("333", List(B(3), B(2)))
+        expectPersistedInAnyOrder(pid, List(B(3), B(2)))
       }
 
-      expectPersistedInAnyOrder("333", List(B(1), B(2)))
+      expectPersistedInAnyOrder(pid, List(B(1), B(2)))
 
     }
 
     "reject next persisted" in {
 
-      val a = system.actorOf(Props(classOf[A], "111"))
+      val pid = randomPid()
+
+      val a = system.actorOf(Props(classOf[A], pid, None))
 
 
       //consecutive calls should stack
@@ -89,24 +97,26 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
       a ! B(1)
 
       assertThrows[AssertionError] {
-        expectNextPersisted("111", B(1))
+        expectNextPersisted(pid, B(1))
       }
 
       a ! B(1)
 
       assertThrows[AssertionError] {
-        expectNextPersisted("111", B(1))
+        expectNextPersisted(pid, B(1))
       }
 
       a ! B(1)
 
-      expectNextPersisted("111", B(1))
+      expectNextPersisted(pid, B(1))
 
     }
 
     "fail next persisted" in {
 
-      val a = system.actorOf(Props(classOf[A], "111"))
+      val pid = randomPid()
+
+      val a = system.actorOf(Props(classOf[A], pid, None))
 
       failNextPersisted()
 
@@ -115,45 +125,60 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
       watch(a)
       expectTerminated(a)
 
-      val b = system.actorOf(Props(classOf[A], "111"))
+      val b = system.actorOf(Props(classOf[A], pid, None))
 
       b ! B(1)
 
-      expectNextPersisted("111", B(1))
+      expectNextPersisted(pid, B(1))
 
     }
 
     "expect no message persisted" in {
 
-      val start = System.currentTimeMillis()
-      expectNoMessagePersisted("111")
-      val dur = System.currentTimeMillis() - start
-      println(dur)
+      val pid = randomPid()
 
+      expectNoMessagePersisted(pid)
 
-      val a = system.actorOf(Props(classOf[A], "111"))
+      val a = system.actorOf(Props(classOf[A], pid, None))
 
       a ! B(1)
 
-      val start2 = System.currentTimeMillis()
       assertThrows[AssertionError]{
-        expectNoMessagePersisted("111")
+        expectNoMessagePersisted(pid)
       }
-      val dur2 = System.currentTimeMillis() - start2
-      println(dur2)
+
+    }
+
+    "recover persisted messages" in {
+
+      val preload = List(B(1), B(2), B(3))
+      val pid = randomPid()
+
+      persistForRecovery(pid, preload)
+
+      system.actorOf(Props(classOf[A], pid, Some(testActor)))
+
+      expectMsg(preload)
 
 
     }
 
   }
 
+  private def randomPid() = UUID.randomUUID().toString
+
 }
 
 case class B(i: Int)
 
-class A(pid: String) extends PersistentActor {
+class A(pid: String, respondOnRecover: Option[ActorRef]) extends PersistentActor {
+  import scala.collection.immutable
+
+  var recovered = immutable.List.empty[Any]
+
   override def receiveRecover = {
-    case s ⇒ println(s)
+    case RecoveryCompleted => respondOnRecover.foreach(_  ! recovered)
+    case s ⇒ recovered :+= s
   }
 
   override def receiveCommand = {

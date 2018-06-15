@@ -159,7 +159,7 @@ trait HighestSeqNumberSupport[K, V] extends InMemStorage[K, V] {
 trait ReprInMemStorage extends HighestSeqNumberSupport[String, PersistentRepr] {
 
   override def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {
-    val sn = reloadHighestSequenceNum(key)
+    val sn = reloadHighestSequenceNum(key) + 1
     elems.zipWithIndex.map(p ⇒ PersistentRepr(p._1, p._2 + sn, key))
   }
 
