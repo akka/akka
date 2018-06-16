@@ -49,7 +49,7 @@ private[remote] trait InboundCompressions {
  * INTERNAL API
  *
  * One per incoming Aeron stream, actual compression tables are kept per-originUid and created on demand.
- * All access is via the Decoder operator.
+ * All access is via the Decoder stage.
  */
 private[remote] final class InboundCompressionsImpl(
   system:         ActorSystem,

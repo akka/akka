@@ -17,27 +17,27 @@ import scala.collection.{ Map ⇒ SMap }
 object GraphInterpreterSpecKit {
 
   /**
-   * Create logics and enumerate operators and ports
+   * Create logics and enumerate stages and ports
    *
-   * @param operators Operators to "materialize" into operator logic instances
-   * @param upstreams Upstream boundary logics that are already instances of operator logic and should be
-   *                  part of the graph, is placed before the rest of the operators
-   * @param downstreams Downstream boundary logics, is placed after the other operators
-   * @param attributes Optional set of attributes to pass to the operators when creating the logics
+   * @param stages Stages to "materialize" into graph stage logic instances
+   * @param upstreams Upstream boundary logics that are already instances of graph stage logic and should be
+   *                  part of the graph, is placed before the rest of the stages
+   * @param downstreams Downstream boundary logics, is placed after the other stages
+   * @param attributes Optional set of attributes to pass to the stages when creating the logics
    * @return Created logics and the maps of all inlets respective outlets to those logics
    */
   private[stream] def createLogics(
-    operators:   Array[GraphStageWithMaterializedValue[_ <: Shape, _]],
+    stages:      Array[GraphStageWithMaterializedValue[_ <: Shape, _]],
     upstreams:   Array[UpstreamBoundaryStageLogic[_]],
     downstreams: Array[DownstreamBoundaryStageLogic[_]],
     attributes:  Array[Attributes]                                     = Array.empty): (Array[GraphStageLogic], SMap[Inlet[_], GraphStageLogic], SMap[Outlet[_], GraphStageLogic]) = {
-    if (attributes.nonEmpty && attributes.length != operators.length)
+    if (attributes.nonEmpty && attributes.length != stages.length)
       throw new IllegalArgumentException("Attributes must be either empty or one per stage")
 
     var inOwners = SMap.empty[Inlet[_], GraphStageLogic]
     var outOwners = SMap.empty[Outlet[_], GraphStageLogic]
 
-    val logics = new Array[GraphStageLogic](upstreams.length + operators.length + downstreams.length)
+    val logics = new Array[GraphStageLogic](upstreams.length + stages.length + downstreams.length)
     var idx = 0
 
     while (idx < upstreams.length) {
@@ -50,8 +50,8 @@ object GraphInterpreterSpecKit {
     }
 
     var stageIdx = 0
-    while (stageIdx < operators.length) {
-      val stage = operators(stageIdx)
+    while (stageIdx < stages.length) {
+      val stage = stages(stageIdx)
       setPortIds(stage.shape)
 
       val stageAttributes =
