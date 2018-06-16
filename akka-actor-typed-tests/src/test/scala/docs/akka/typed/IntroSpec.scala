@@ -7,7 +7,7 @@ package docs.akka.typed
 //#imports
 import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Terminated }
 //#imports
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
@@ -67,6 +67,29 @@ object IntroSpec {
       }
   }
   //#hello-world-main
+
+  object CustomDispatchersExample {
+    import HelloWorldMain.Start
+    import akka.actor.typed.Props
+
+    //#hello-world-main-with-dispatchers
+    val main: Behavior[Start] =
+      Behaviors.setup { context ⇒
+        val dispatcherPath = "akka.actor.default-blocking-io-dispatcher"
+
+        val greeterProps = Props.empty.withDispatcherFromConfig(dispatcherPath)
+        val greeter = context.spawn(HelloWorld.greeter, "greeter", greeterProps)
+
+        Behaviors.receiveMessage { msg ⇒
+          val botProps = DispatcherSelector.fromConfig(dispatcherPath)
+          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name, botProps)
+
+          greeter ! HelloWorld.Greet(msg.name, replyTo)
+          Behaviors.same
+        }
+      }
+    //#hello-world-main-with-dispatchers
+  }
 
   //#chatroom-actor
   object ChatRoom {

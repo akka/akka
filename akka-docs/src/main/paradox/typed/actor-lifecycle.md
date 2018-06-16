@@ -16,7 +16,40 @@ TODO intro
 
 ## Creating Actors
 
-TODO
+Actor hierarchy consists of two kinds of actors – a root actor and its children. While there is only one root actor per
+@unidoc[akka.actor.typed.ActorSystem], the root actor can create, or _spawn_, arbitrary number of child actors which can
+in turn spawn child actors of their own.
+
+The root actor, also called the guardian actor, is created along with the `ActorSystem`. Messages sent to the actor system are directed to the root actor.
+The root actor is defined by the behavior used to create the `ActorSystem`, named `HelloWorldMain.main` in the example below:
+
+Scala
+:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world }
+
+Java
+:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
+
+
+Child actors are spawned with @unidoc[akka.actor.typed.ActorContext]'s `spawn`. In the example below, when the root actor
+is started, it spawns a child actor described by the behavior `HelloWorld.greeter`. Additionally, when the root actor receives a
+`Start` message, it creates a child actor defined by the behavior `HelloWorldBot.bot`:
+
+Scala
+:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main }
+
+Java
+:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main }
+
+By default, child actors will use the same dispatcher as their parent actor. Actor dispatcher can be customized
+through @unidoc[akka.actor.typed.Props] or @unidoc[DispatcherSelector]:
+
+Scala
+:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main-with-dispatchers }
+
+Java
+:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main-with-dispatchers }
+
+Refer to @ref:[Actors](actors.md#introduction) for a walk-through of the above examples.
 
 ## Stopping Actors
 
