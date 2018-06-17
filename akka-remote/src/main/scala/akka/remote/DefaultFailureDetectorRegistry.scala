@@ -47,6 +47,13 @@ class DefaultFailureDetectorRegistry[A](detectorFactory: () ⇒ FailureDetector)
               failureDetector.heartbeat()
             case None ⇒
               val newDetector: FailureDetector = detectorFactory()
+
+              // FIXME: fix this binary compatibility hack in 2.6
+              newDetector match {
+                case phi: PhiAccrualFailureDetector ⇒ phi.address = resource.toString
+                case _                              ⇒
+              }
+
               newDetector.heartbeat()
               resourceToFailureDetector.set(oldTable + (resource → newDetector))
           }
