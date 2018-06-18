@@ -12,6 +12,8 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 
 import scala.concurrent._
 import scala.concurrent.duration._
+
+import akka.stream.impl.fusing.GraphStages
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import org.scalatest.exceptions.TestFailedException
 import akka.stream.testkit.scaladsl.TestSink
@@ -208,6 +210,13 @@ class FlowFlattenMergeSpec extends StreamSpec {
       attributes should contain(Attributes.Name("inner"))
       attributes should contain(Attributes.Name("outer"))
       attributes.indexOf(Attributes.Name("inner")) < attributes.indexOf(Attributes.Name("outer")) should be(true)
+    }
+
+    "work with flatMapConcat optimized GraphStages.SingleSource" in assertAllStagesStopped {
+      Source(0 to 3)
+        .flatMapConcat(elem ⇒ new GraphStages.SingleSource(elem))
+        .runWith(toSeq)
+        .futureValue should ===(0 to 3)
     }
 
   }

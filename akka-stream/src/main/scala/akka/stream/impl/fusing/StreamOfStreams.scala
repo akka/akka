@@ -16,14 +16,15 @@ import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.stage._
 import akka.stream.scaladsl._
 import akka.stream.actor.ActorSubscriberMessage
-
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.annotation.tailrec
-import akka.stream.impl.{ Buffer ⇒ BufferImpl }
 
+import akka.stream.impl.{ Buffer ⇒ BufferImpl }
 import scala.collection.JavaConverters._
+
+import akka.stream.impl.fusing.GraphStages.SingleSource
 
 /**
  * INTERNAL API
@@ -72,22 +73,27 @@ import scala.collection.JavaConverters._
     }
 
     def addSource(source: Graph[SourceShape[T], M]): Unit = {
-      val sinkIn = new SubSinkInlet[T]("FlattenMergeSink")
-      sinkIn.setHandler(new InHandler {
-        override def onPush(): Unit = {
-          if (isAvailable(out)) {
-            push(out, sinkIn.grab())
-            sinkIn.pull()
-          } else {
-            q.enqueue(sinkIn)
-          }
-        }
-        override def onUpstreamFinish(): Unit = if (!sinkIn.isAvailable) removeSource(sinkIn)
-      })
-      sinkIn.pull()
-      sources += sinkIn
-      val graph = Source.fromGraph(source).to(sinkIn.sink)
-      interpreter.subFusingMaterializer.materialize(graph, defaultAttributes = enclosingAttributes)
+      source match {
+        case single: SingleSource[T] if isAvailable(out) ⇒
+          push(out, single.elem)
+        case _ ⇒
+          val sinkIn = new SubSinkInlet[T]("FlattenMergeSink")
+          sinkIn.setHandler(new InHandler {
+            override def onPush(): Unit = {
+              if (isAvailable(out)) {
+                push(out, sinkIn.grab())
+                sinkIn.pull()
+              } else {
+                q.enqueue(sinkIn)
+              }
+            }
+            override def onUpstreamFinish(): Unit = if (!sinkIn.isAvailable) removeSource(sinkIn)
+          })
+          sinkIn.pull()
+          sources += sinkIn
+          val graph = Source.fromGraph(source).to(sinkIn.sink)
+          interpreter.subFusingMaterializer.materialize(graph, defaultAttributes = enclosingAttributes)
+      }
     }
 
     def removeSource(src: SubSinkInlet[T]): Unit = {
