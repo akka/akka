@@ -232,7 +232,7 @@ object Sink {
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
    *
    * If `fanout` is `true`, the materialized `Publisher` will support multiple `Subscriber`s and
-   * the size of the `inputBuffer` configured for this stage becomes the maximum number of elements that
+   * the size of the `inputBuffer` configured for this operator becomes the maximum number of elements that
    * the fastest [[org.reactivestreams.Subscriber]] can be ahead of the slowest one before slowing
    * the processing down due to back pressure.
    *
@@ -325,7 +325,7 @@ object Sink {
    * if there is a failure signaled in the stream.
    *
    * If the stream is empty (i.e. completes before signalling any elements),
-   * the reduce stage will fail its downstream with a [[NoSuchElementException]],
+   * the reduce operator will fail its downstream with a [[NoSuchElementException]],
    * which is semantically in-line with that Scala's standard library collections
    * do in such situations.
    *
@@ -396,7 +396,7 @@ object Sink {
    * i.e. if the actor is not consuming the messages fast enough the mailbox
    * of the actor will grow. For potentially slow consumer actors it is recommended
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
-   * limiting stage in front of this `Sink`.
+   * limiting operator in front of this `Sink`.
    */
   @InternalApi private[akka] def actorRef[T](ref: ActorRef, onCompleteMessage: Any, onFailureMessage: Throwable ⇒ Any): Sink[T, NotUsed] =
     fromGraph(new ActorRefSink(ref, onCompleteMessage, onFailureMessage,
@@ -415,7 +415,7 @@ object Sink {
    * i.e. if the actor is not consuming the messages fast enough the mailbox
    * of the actor will grow. For potentially slow consumer actors it is recommended
    * to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
-   * limiting stage in front of this `Sink`.
+   * limiting operator in front of this `Sink`.
    */
   def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] =
     fromGraph(new ActorRefSink(ref, onCompleteMessage, t ⇒ Status.Failure(t),
