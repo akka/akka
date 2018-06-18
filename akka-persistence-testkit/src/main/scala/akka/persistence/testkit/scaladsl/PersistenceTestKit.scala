@@ -4,8 +4,8 @@
 
 package akka.persistence.testkit.scaladsl
 
-import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId }
-import akka.persistence.testkit.scaladsl.InMemStorageEmulator.{ JournalPolicies, JournalPolicy }
+import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId}
+import akka.persistence.testkit.scaladsl.InMemStorageEmulator.{JournalPolicies, JournalPolicy}
 import com.typesafe.config.Config
 
 import scala.annotation.tailrec
@@ -180,6 +180,35 @@ object PersistenceTestKit {
 
 }
 
+
+trait PersistentSnapshotTestKit extends SnapshotTestKitOps {
+
+  def system(): ActorSystem
+
+  override def expectNoSnapshots(persistenceId: String): Unit = ???
+
+  override def expectNoSnapshots(persistenceId: String, max: FiniteDuration): Unit = ???
+
+  override def expectNextSnapshot[A](persistenceId: String, msg: A): A = ???
+
+  override def expectNextSnapshot[A](persistenceId: String, snapshot: A, max: FiniteDuration): A = ???
+
+  override def failNextNWrites(persistenceId: String, n: Int): Unit = ???
+
+  override def failNextNWrites(n: Int): Unit = ???
+
+  override def failNextNRecoveries(n: Int): Unit = ???
+
+  override def failNextNRecoveries(persistenceId: String, n: Int): Unit = ???
+
+  override def persistSnapshot(persistenceId: String, snapshot: Any): Unit = ???
+
+  override def clearAll(): Unit = ???
+
+  override def clearByPersistenceId(persistenceId: String): Unit = ???
+
+}
+
 trait PersistentTestKitOps {
 
   def expectNoMessagePersisted(persistenceId: String): Unit
@@ -223,6 +252,40 @@ trait PersistentTestKitOps {
   def failNextNRecoveries(persistenceId: String, n: Int): Unit
 
   def persistForRecovery(persistenceId: String, msgs: immutable.Seq[Any]): Unit
+
+  def clearAll(): Unit
+
+  def clearByPersistenceId(persistenceId: String): Unit
+
+}
+
+trait SnapshotTestKitOps {
+
+  def expectNoSnapshots(persistenceId: String): Unit
+
+  def expectNoSnapshots(persistenceId: String, max: FiniteDuration): Unit
+
+  def expectNextSnapshot[A](persistenceId: String, msg: A): A
+
+  def expectNextSnapshot[A](persistenceId: String, snapshot: A, max: FiniteDuration): A
+
+  def failNextNWrites(persistenceId: String, n: Int): Unit
+
+  def failNextWrite(persistenceId: String): Unit = failNextNWrites(persistenceId, 1)
+
+  def failNextNWrites(n: Int): Unit
+
+  def failNextWrite(): Unit = failNextNWrites(1)
+
+  def failNextRecovery(): Unit = failNextNRecoveries(1)
+
+  def failNextNRecoveries(n: Int): Unit
+
+  def failNextRecovery(persistenceId: String): Unit = failNextNRecoveries(persistenceId, 1)
+
+  def failNextNRecoveries(persistenceId: String, n: Int): Unit
+
+  def persistSnapshot(persistenceId: String, snapshot: Any): Unit
 
   def clearAll(): Unit
 
