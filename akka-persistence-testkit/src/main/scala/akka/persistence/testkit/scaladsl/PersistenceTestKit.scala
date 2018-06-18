@@ -29,15 +29,15 @@ trait PersistenceTestKit extends PersistentTestKitOps {
   private var nextIndexByPersistenceId: immutable.Map[String, Int] = Map.empty
 
   override def failNextNRecoveries(n: Int): Unit = {
-    val current = storage.currentReadingPolicy
-    val pol = new JournalPolicies.FailNextN(n, ExpectedFailure, withRecoveryPolicy(current))
-    withRecoveryPolicy(pol)
+    val current = storage.currentPolicy
+    val pol = new JournalPolicies.FailNextN(n, ExpectedFailure, withPolicy(current))
+    withPolicy(pol)
   }
 
   override def failNextNRecoveries(persistenceId: String, n: Int): Unit = {
-    val current = storage.currentReadingPolicy
-    val pol = new InMemStorageEmulator.JournalPolicies.FailNextNCond(n, ExpectedFailure, (pid, _) ⇒ pid == persistenceId, withRecoveryPolicy(current))
-    withRecoveryPolicy(pol)
+    val current = storage.currentPolicy
+    val pol = new InMemStorageEmulator.JournalPolicies.FailNextNCond(n, ExpectedFailure, (pid, _) ⇒ pid == persistenceId, withPolicy(current))
+    withPolicy(pol)
   }
 
   override def expectNextPersisted[A](persistenceId: String, msg: A): A = expectNextPersisted(persistenceId, msg, settings.assertTimeout)
@@ -69,27 +69,27 @@ trait PersistenceTestKit extends PersistentTestKitOps {
   }
 
   override def rejectNextNPersisted(persistenceId: String, n: Int): Unit = {
-    val current = storage.currentWritingPolicy
-    val pol = new InMemStorageEmulator.JournalPolicies.RejectNextNCond(n, ExpectedRejection, (pid, _) ⇒ pid == persistenceId, withWritingPolicy(current))
-    withWritingPolicy(pol)
+    val current = storage.currentPolicy
+    val pol = new InMemStorageEmulator.JournalPolicies.RejectNextNCond(n, ExpectedRejection, (pid, _) ⇒ pid == persistenceId, withPolicy(current))
+    withPolicy(pol)
   }
 
   override def failNextNPersisted(persistenceId: String, n: Int): Unit = {
-    val current = storage.currentWritingPolicy
-    val pol = new InMemStorageEmulator.JournalPolicies.FailNextNCond(n, ExpectedFailure, (pid, _) ⇒ pid == persistenceId, withWritingPolicy(current))
-    withWritingPolicy(pol)
+    val current = storage.currentPolicy
+    val pol = new InMemStorageEmulator.JournalPolicies.FailNextNCond(n, ExpectedFailure, (pid, _) ⇒ pid == persistenceId, withPolicy(current))
+    withPolicy(pol)
   }
 
   override def rejectNextNPersisted(n: Int): Unit = {
-    val current = storage.currentWritingPolicy
-    val pol = new JournalPolicies.RejectNextN(n, ExpectedRejection, withWritingPolicy(current))
-    withWritingPolicy(pol)
+    val current = storage.currentPolicy
+    val pol = new JournalPolicies.RejectNextN(n, ExpectedRejection, withPolicy(current))
+    withPolicy(pol)
   }
 
   override def failNextNPersisted(n: Int): Unit = {
-    val current = storage.currentWritingPolicy
-    val pol = new JournalPolicies.FailNextN(n, ExpectedFailure, withWritingPolicy(current))
-    withWritingPolicy(pol)
+    val current = storage.currentPolicy
+    val pol = new JournalPolicies.FailNextN(n, ExpectedFailure, withPolicy(current))
+    withPolicy(pol)
   }
 
   override def persistForRecovery(persistenceId: String, msgs: immutable.Seq[Any]): Unit = {
@@ -138,9 +138,10 @@ trait PersistenceTestKit extends PersistentTestKitOps {
   override def expectPersistedInAnyOrder[A](persistenceId: String, msgs: immutable.Seq[A]): immutable.Seq[A] =
     expectPersistedInAnyOrder(persistenceId, msgs, settings.assertTimeout)
 
-  def withRecoveryPolicy(policy: JournalPolicy) = storage.setReadingPolicy(policy)
-
-  def withWritingPolicy(policy: JournalPolicy) = storage.setWritingPolicy(policy)
+  def withPolicy(policy: JournalPolicy): this.type = {
+    storage.setPolicy(policy)
+    this
+  }
 
   override def clearAll(): Unit = storage.clearAll()
 

@@ -9,9 +9,9 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.function.{ BiFunction, Consumer }
 
 import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
-import akka.persistence.testkit.scaladsl.InMemStorageEmulator.{ JournalPolicies, JournalPolicy }
+import akka.persistence.testkit.scaladsl.InMemStorageEmulator.JournalPolicy
 import akka.persistence.testkit.scaladsl.ProcessingPolicy._
-import akka.persistence.testkit.scaladsl.SnapShotStorageEmulator.{ SnapshotReadPolicies, SnapshotReadPolicy, SnapshotWritePolicies, SnapshotWritePolicy }
+import akka.persistence.testkit.scaladsl.SnapShotStorageEmulator._
 import akka.persistence.{ PersistentRepr, SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 
 import scala.annotation.tailrec
@@ -172,35 +172,24 @@ trait ReprInMemStorage extends HighestSeqNumberSupport[String, PersistentRepr] {
 
 }
 
-trait PolicyOps[W <: ProcessingPolicy[_], R <: ProcessingPolicy[_]] {
+trait PolicyOps[P <: ProcessingPolicy[_]] {
 
-  protected val DefaultWritePolicy: W
+  protected val DefaultPolicy: P
 
-  protected val DefaultReadPolicy: R
+  private lazy val _processingPolicy: AtomicReference[P] = new AtomicReference(DefaultPolicy)
 
-  private lazy val writingPolicy: AtomicReference[W] = new AtomicReference(DefaultWritePolicy)
+  def currentPolicy = _processingPolicy.get()
 
-  private lazy val readingPolicy: AtomicReference[R] = new AtomicReference(DefaultReadPolicy)
+  def setPolicy(policy: P) = _processingPolicy.set(policy)
 
-  def currentWritingPolicy = writingPolicy.get()
-
-  def currentReadingPolicy = readingPolicy.get()
-
-  def setWritingPolicy(policy: W) = writingPolicy.set(policy)
-
-  def compareAndSetWritingPolicy(previousPolicy: W, newPolicy: W) = writingPolicy.compareAndSet(previousPolicy, newPolicy)
-
-  def setReadingPolicy(policy: R) = readingPolicy.set(policy)
-
-  def compareAndSetReadingPolicy(previousPolicy: R, newPolicy: R) = readingPolicy.compareAndSet(previousPolicy, newPolicy)
+  def compareAndSetWritingPolicy(previousPolicy: P, newPolicy: P) = _processingPolicy.compareAndSet(previousPolicy, newPolicy)
 
 }
 
-trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalPolicy, JournalPolicy] {
+trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalPolicy] {
+  import InMemStorageEmulator._
 
-  override protected val DefaultReadPolicy = JournalPolicies.PassAll
-
-  override protected val DefaultWritePolicy = JournalPolicies.PassAll
+  override protected val DefaultPolicy = JournalPolicies.PassAll
 
   /**
    *
@@ -210,7 +199,7 @@ trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalPolicy
     val grouped = elems.groupBy(_.persistenceId)
 
     val processed = grouped.map {
-      case (pid, els) ⇒ currentWritingPolicy.tryProcess(pid, els.map(_.payload))
+      case (pid, els) ⇒ currentPolicy.tryProcess(pid, Write(els.map(_.payload)))
     }
 
     val reduced: ProcessingResult = processed.foldLeft[ProcessingResult](ProcessingSuccess)((left: ProcessingResult, right: ProcessingResult) ⇒ (left, right) match {
@@ -232,7 +221,7 @@ trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalPolicy
 
   def tryRead(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long): immutable.Seq[PersistentRepr] = {
     val batch = read(persistenceId, fromSequenceNr, toSequenceNr, max)
-    currentReadingPolicy.tryProcess(persistenceId, batch) match {
+    currentPolicy.tryProcess(persistenceId, Read(batch)) match {
       case ProcessingSuccess  ⇒ batch
       case Reject(ex)         ⇒ throw ex
       case StorageFailure(ex) ⇒ throw ex
@@ -240,7 +229,7 @@ trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalPolicy
   }
 
   def tryReadSeqNumber(persistenceId: String): Long = {
-    currentReadingPolicy.tryProcess(persistenceId, immutable.Seq.empty) match {
+    currentPolicy.tryProcess(persistenceId, ReadSeqNum) match {
       case ProcessingSuccess  ⇒ reloadHighestSequenceNum(persistenceId)
       case Reject(ex)         ⇒ throw ex
       case StorageFailure(ex) ⇒ throw ex
@@ -251,9 +240,19 @@ trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalPolicy
 
 object InMemStorageEmulator {
 
-  type JournalPolicy = ProcessingPolicy[immutable.Seq[Any]]
+  trait JournalOperation
 
-  object JournalPolicies extends BasicPolicies[immutable.Seq[Any]]
+  case class Read(batch: immutable.Seq[Any]) extends JournalOperation
+
+  case class Write(batch: immutable.Seq[Any]) extends JournalOperation
+
+  case object ReadSeqNum extends JournalOperation
+
+  case class Delete(toSeqNumber: Long) extends JournalOperation
+
+  type JournalPolicy = ProcessingPolicy[JournalOperation]
+
+  object JournalPolicies extends BasicPolicies[JournalOperation]
 
 }
 
@@ -268,14 +267,13 @@ trait SnapshotInMemStorage extends HighestSeqNumberSupport[String, (SnapshotMeta
 
 }
 
-trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[SnapshotWritePolicy, SnapshotReadPolicy] {
+trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[SnapshotPolicy] {
+  import SnapShotStorageEmulator._
 
-  override protected val DefaultReadPolicy = SnapshotReadPolicies.PassAll
-
-  override protected val DefaultWritePolicy = SnapshotWritePolicies.PassAll
+  override protected val DefaultPolicy = SnapshotPolicies.PassAll
 
   def tryAdd(meta: SnapshotMetadata, payload: Any): Unit = {
-    currentWritingPolicy.tryProcess(meta.persistenceId, payload) match {
+    currentPolicy.tryProcess(meta.persistenceId, Write(payload)) match {
       case ProcessingSuccess ⇒
         add(meta.persistenceId, (meta, payload))
         Success(())
@@ -289,7 +287,7 @@ trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[Snapsh
       read(persistenceId)
         .flatMap(_.reverseIterator.find(v ⇒ criteria.matches(v._1))
           .map(v ⇒ SelectedSnapshot(v._1, v._2)))
-    currentReadingPolicy.tryProcess(persistenceId, selectedSnapshot.map(_.snapshot)) match {
+    currentPolicy.tryProcess(persistenceId, Read(selectedSnapshot.map(_.snapshot))) match {
       case ProcessingSuccess ⇒ selectedSnapshot
       case StorageFailure(e) ⇒ throw e
       case Reject(e)         ⇒ throw e
@@ -300,13 +298,21 @@ trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[Snapsh
 
 object SnapShotStorageEmulator {
 
-  type SnapshotWritePolicy = ProcessingPolicy[Any]
+  trait SnapshotOperation
 
-  type SnapshotReadPolicy = ProcessingPolicy[Option[Any]]
+  case class Read(snapshot: Option[Any]) extends SnapshotOperation
 
-  object SnapshotWritePolicies extends BasicPolicies[Any]
+  case class Write(snapshot: Any) extends SnapshotOperation
 
-  object SnapshotReadPolicies extends BasicPolicies[Option[Any]]
+  abstract class Delete extends SnapshotOperation
+
+  case class DeleteByCriteria(persistenceId: String, criteria: SnapshotSelectionCriteria) extends Delete
+
+  case class DeleteSnapshot(metadata: SnapshotMetadata) extends Delete
+
+  type SnapshotPolicy = ProcessingPolicy[SnapshotOperation]
+
+  object SnapshotPolicies extends BasicPolicies[SnapshotOperation]
 
 }
 
