@@ -21,8 +21,7 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
     Future.fromTry(Try(messages.map(aw ⇒ storage.tryAdd(aw.payload))))
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
-    //todo should we emulate exception on delete?
-    Future.successful(storage.deleteToSeqNumber(persistenceId, toSequenceNr))
+    Future.fromTry(Try(storage.tryDelete(persistenceId, toSequenceNr)))
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
     Future.fromTry(Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(recoveryCallback)))
@@ -61,12 +60,10 @@ class PersistenceTestKitSnapshotPlugin extends SnapshotStore {
     Future.fromTry(Try(storage.tryAdd(metadata, snapshot)))
 
   override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] =
-    //todo do we need to emulate delete failure?
-    Future.successful(storage.delete(metadata.persistenceId, _._1.sequenceNr == metadata.sequenceNr))
+    Future.fromTry(Try(storage.tryDelete(metadata)))
 
   override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] =
-    //todo do we need to emulate delete failure?
-    Future.successful(storage.delete(persistenceId, v ⇒ criteria.matches(v._1)))
+    Future.successful(Try(storage.tryDelete(persistenceId, criteria)))
 
 }
 

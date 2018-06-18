@@ -236,6 +236,15 @@ trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalPolicy
     }
   }
 
+
+  def tryDelete(persistenceId: String, toSeqNumber: Long): Unit = {
+    currentPolicy.tryProcess(persistenceId, Delete(toSeqNumber)) match {
+      case ProcessingSuccess => deleteToSeqNumber(persistenceId, toSeqNumber)
+      case Reject(ex) => throw ex
+      case StorageFailure(ex) => throw ex
+    }
+  }
+
 }
 
 object InMemStorageEmulator {
@@ -294,6 +303,23 @@ trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[Snapsh
     }
   }
 
+  def tryDelete(persistenceId: String, selectionCriteria: SnapshotSelectionCriteria): Unit = {
+    currentPolicy.tryProcess(persistenceId, DeleteByCriteria(selectionCriteria)) match {
+      case ProcessingSuccess => delete(persistenceId, v ⇒ selectionCriteria.matches(v._1))
+      case Reject(ex) => throw ex
+      case StorageFailure(ex) => throw ex
+    }
+  }
+
+
+  def tryDelete(meta: SnapshotMetadata): Unit = {
+    currentPolicy.tryProcess(meta.persistenceId, DeleteSnapshot(meta)) match {
+      case ProcessingSuccess => delete(meta.persistenceId, _._1.sequenceNr == meta.sequenceNr)
+      case Reject(ex) => throw ex
+      case StorageFailure(ex) => throw ex
+    }
+  }
+
 }
 
 object SnapShotStorageEmulator {
@@ -306,7 +332,7 @@ object SnapShotStorageEmulator {
 
   abstract class Delete extends SnapshotOperation
 
-  case class DeleteByCriteria(persistenceId: String, criteria: SnapshotSelectionCriteria) extends Delete
+  case class DeleteByCriteria(criteria: SnapshotSelectionCriteria) extends Delete
 
   case class DeleteSnapshot(metadata: SnapshotMetadata) extends Delete
 
