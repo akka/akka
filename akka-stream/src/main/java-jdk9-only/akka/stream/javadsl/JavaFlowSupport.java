@@ -129,7 +129,7 @@ public final class JavaFlowSupport {
      * A `Sink` that materializes into a {@link java.util.concurrent.Flow.Publisher}.
      * <p>
      * If {@code fanout} is {@code WITH_FANOUT}, the materialized {@code Publisher} will support multiple {@code Subscriber}s and
-     * the size of the {@code inputBuffer} configured for this stage becomes the maximum number of elements that
+     * the size of the {@code inputBuffer} configured for this operator becomes the maximum number of elements that
      * the fastest {@link java.util.concurrent.Flow.Subscriber} can be ahead of the slowest one before slowing
      * the processing down due to back pressure.
      * <p>

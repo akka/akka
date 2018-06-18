@@ -45,14 +45,14 @@ import akka.util.OptionVal
 
   /**
    * Sent when an incarnation of an Association is quarantined. Consumed by the
-   * SystemMessageDelivery stage on the sending side, i.e. not sent to remote system.
-   * The SystemMessageDelivery stage will clear the sequence number and other state associated
-   * with that incarnation.
+   * SystemMessageDelivery operator on the sending side, i.e. not sent to remote system.
+   * The SystemMessageDelivery operator will clear the sequence number and other state associated
+   * operator
    *
    * The incarnation counter is bumped when the handshake is completed, so a new incarnation
    * corresponds to a new UID of the remote system.
    *
-   * The SystemMessageDelivery stage also detects that the incarnation has changed when sending or resending
+   * The SystemMessageDelivery operator also detects that the incarnation has changed when sending or resending
    * system messages.
    */
   final case class ClearSystemMessageDelivery(incarnation: Int)

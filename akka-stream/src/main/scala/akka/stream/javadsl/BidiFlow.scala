@@ -78,7 +78,7 @@ object BidiFlow {
 
   /**
    * Create a BidiFlow where the top and bottom flows are just one simple mapping
-   * stage each, expressed by the two functions.
+   * operator each, expressed by the two functions.
    */
   def fromFunctions[I1, O1, I2, O2](top: function.Function[I1, O1], bottom: function.Function[I2, O2]): BidiFlow[I1, O1, I2, O2, NotUsed] =
     new BidiFlow(scaladsl.BidiFlow.fromFunctions(top.apply _, bottom.apply _))
@@ -87,9 +87,9 @@ object BidiFlow {
    * If the time between two processed elements *in any direction* exceed the provided timeout, the stream is failed
    * with a [[java.util.concurrent.TimeoutException]].
    *
-   * There is a difference between this stage and having two idleTimeout Flows assembled into a BidiStage.
-   * If the timeout is configured to be 1 seconds, then this stage will not fail even though there are elements flowing
-   * every second in one direction, but no elements are flowing in the other direction. I.e. this stage considers
+   * There is a difference between this operator and having two idleTimeout Flows assembled into a BidiStage.
+   * If the timeout is configured to be 1 seconds, then this operator will not fail even though there are elements flowing
+   * every second in one direction, but no elements are flowing in the other direction. I.e. this operator considers
    * the *joint* frequencies of the elements in both directions.
    */
   @Deprecated
@@ -101,9 +101,9 @@ object BidiFlow {
    * If the time between two processed elements *in any direction* exceed the provided timeout, the stream is failed
    * with a [[java.util.concurrent.TimeoutException]].
    *
-   * There is a difference between this stage and having two idleTimeout Flows assembled into a BidiStage.
-   * If the timeout is configured to be 1 seconds, then this stage will not fail even though there are elements flowing
-   * every second in one direction, but no elements are flowing in the other direction. I.e. this stage considers
+   * There is a difference between this operator and having two idleTimeout Flows assembled into a BidiStage.
+   * If the timeout is configured to be 1 seconds, then this operator will not fail even though there are elements flowing
+   * every second in one direction, but no elements are flowing in the other direction. I.e. this operator considers
    * the *joint* frequencies of the elements in both directions.
    */
   def bidirectionalIdleTimeout[I, O](timeout: java.time.Duration): BidiFlow[I, I, O, O, NotUsed] = {
@@ -221,7 +221,7 @@ final class BidiFlow[I1, O1, I2, O2, Mat](delegate: scaladsl.BidiFlow[I1, O1, I2
    * of attributes. This means that further calls will not be able to remove these
    * attributes, but instead add new ones. Note that this
    * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * only to the contained processing operators).
    */
   override def withAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
     new BidiFlow(delegate.withAttributes(attr))
@@ -230,7 +230,7 @@ final class BidiFlow[I1, O1, I2, O2, Mat](delegate: scaladsl.BidiFlow[I1, O1, I2
    * Add the given attributes to this Source. Further calls to `withAttributes`
    * will not remove these attributes. Note that this
    * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * only to the contained processing operators).
    */
   override def addAttributes(attr: Attributes): BidiFlow[I1, O1, I2, O2, Mat] =
     new BidiFlow(delegate.addAttributes(attr))
