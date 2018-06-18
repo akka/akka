@@ -1,0 +1,1 @@
+<script type="text/javascript" src="assets/js/warnOldDocs.js"></script>
