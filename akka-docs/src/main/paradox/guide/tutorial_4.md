@@ -134,7 +134,7 @@ We are done with registration support at the device level, now we have to implem
 
 A device group actor must either forward the request to an existing child, or it should create one. To look up child actors by their device IDs we will use a @scala[`Map[String, ActorRef]`]@java[`Map<String, ActorRef>`].
 
-We also want to keep the the ID of the original sender of the request so that our device actor can reply directly. This is possible by using `forward` instead of the @scala[`!`] @java[`tell`] operator. The only difference between the two is that `forward` keeps the original
+We also want to keep the ID of the original sender of the request so that our device actor can reply directly. This is possible by using `forward` instead of the @scala[`!`] @java[`tell`] operator. The only difference between the two is that `forward` keeps the original
 sender while @scala[`!`] @java[`tell`] sets the sender to be the current actor. Just like with our device actor, we ensure that we don't respond to wrong group IDs. Add the following to your source file:
 
 Scala
