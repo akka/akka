@@ -40,8 +40,6 @@ class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec)
 
   import ClusterClientHandoverSpec._
 
-  override def initialParticipants: Int = 3
-
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
       Cluster(system) join node(to).address
