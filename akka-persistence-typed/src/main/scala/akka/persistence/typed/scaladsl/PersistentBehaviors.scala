@@ -40,7 +40,7 @@ object PersistentBehaviors {
   def receive[Command, Event, State](
     persistenceId:  String,
     emptyState:     State,
-    commandHandler: (ActorContext[Command], State, Command) ⇒ Effect[Event, State],
+    commandHandler: (PAC[Command], State, Command) ⇒ Effect[Event, State],
     eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     PersistentBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
 
@@ -49,7 +49,7 @@ object PersistentBehaviors {
    * a function:
    *
    * {{{
-   *   (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
+   *   (PersistentActorContext[Command], State, Command) ⇒ Effect[Event, State]
    * }}}
    *
    * Note that you can have different command handlers based on current state by using
@@ -65,14 +65,14 @@ object PersistentBehaviors {
      *
      * @see [[Effect]] for possible effects of a command.
      */
-    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): (ActorContext[Command], State, Command) ⇒ Effect[Event, State] =
+    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): (PAC[Command], State, Command) ⇒ Effect[Event, State] =
       (_, _, cmd) ⇒ commandHandler(cmd)
 
     /**
      * Select different command handlers based on current state.
      */
     def byState[Command, Event, State](
-      choice: State ⇒ (ActorContext[Command], State, Command) ⇒ Effect[Event, State]): (ActorContext[Command], State, Command) ⇒ Effect[Event, State] = {
+      choice: State ⇒ (PAC[Command], State, Command) ⇒ Effect[Event, State]): (PAC[Command], State, Command) ⇒ Effect[Event, State] = {
       new ByStateCommandHandler(choice)
     }
 
@@ -101,7 +101,7 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
   /**
    * The `callback` function is called to notify when a snapshot is complete.
    */
-  def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
+  def onSnapshot(callback: (PAC[Command], SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
   /**
    * Initiates a snapshot if the given function returns true.

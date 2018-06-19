@@ -10,8 +10,9 @@ import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.ApiMayChange
 import akka.persistence.SnapshotMetadata
+import akka.persistence.typed._
 import akka.persistence.typed.internal._
 
 import scala.util.{ Failure, Success }

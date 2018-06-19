@@ -5,11 +5,9 @@
 package docs.akka.persistence.typed
 
 import akka.Done
-import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.{ ActorRef, Behavior }
-import akka.persistence.typed.scaladsl.PersistentBehaviors
+import akka.persistence.typed.scaladsl.{ Effect, PersistentActorContext, PersistentBehaviors }
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
-import akka.persistence.typed.scaladsl.Effect
 
 object InDepthPersistentBehaviorSpec {
 
@@ -53,7 +51,7 @@ object InDepthPersistentBehaviorSpec {
   //#commands
 
   //#initial-command-handler
-  private val initial: (ActorContext[BlogCommand], BlogState, BlogCommand) ⇒ Effect[BlogEvent, BlogState] =
+  private val initial: (PersistentActorContext[BlogCommand], BlogState, BlogCommand) ⇒ Effect[BlogEvent, BlogState] =
     (ctx, state, cmd) ⇒
       cmd match {
         case AddPost(content, replyTo) ⇒
@@ -70,7 +68,7 @@ object InDepthPersistentBehaviorSpec {
   //#initial-command-handler
 
   //#post-added-command-handler
-  private val postAdded: (ActorContext[BlogCommand], BlogState, BlogCommand) ⇒ Effect[BlogEvent, BlogState] = {
+  private val postAdded: (PersistentActorContext[BlogCommand], BlogState, BlogCommand) ⇒ Effect[BlogEvent, BlogState] = {
     (ctx, state, cmd) ⇒
       cmd match {
         case ChangeBody(newBody, replyTo) ⇒
@@ -96,7 +94,7 @@ object InDepthPersistentBehaviorSpec {
   //#post-added-command-handler
 
   //#by-state-command-handler
-  private val commandHandler: (ActorContext[BlogCommand], BlogState, BlogCommand) ⇒ Effect[BlogEvent, BlogState] =
+  private val commandHandler: (PersistentActorContext[BlogCommand], BlogState, BlogCommand) ⇒ Effect[BlogEvent, BlogState] =
     CommandHandler.byState {
       case state if state.isEmpty  ⇒ initial
       case state if !state.isEmpty ⇒ postAdded

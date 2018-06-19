@@ -272,10 +272,10 @@ private[akka] object EventsourcedRunning {
     outer:    Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
     response match {
       case SaveSnapshotSuccess(meta) ⇒
-        setup.onSnapshot(commandContext, meta, Success(Done))
+        setup.onSnapshot(commandContext(meta.sequenceNr), meta, Success(Done))
         outer
       case SaveSnapshotFailure(meta, ex) ⇒
-        setup.onSnapshot(commandContext, meta, Failure(ex))
+        setup.onSnapshot(commandContext(meta.sequenceNr), meta, Failure(ex))
         outer
 
       // FIXME not implemented
