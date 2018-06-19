@@ -1554,6 +1554,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
+   * Note that the `zero` value must be immutable.
+   *
    * '''Emits when''' the function scanning the element returns a new element
    *
    * '''Backpressures when''' downstream backpressures
@@ -1581,6 +1583,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
+   * Note that the `zero` value must be immutable.
+   *
    * '''Emits when''' the future returned by f` completes
    *
    * '''Backpressures when''' downstream backpressures
@@ -1593,6 +1597,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def scanAsync[T](zero: T)(f: function.Function2[T, Out, CompletionStage[T]]): javadsl.Source[T, Mat] =
     new Source(delegate.scanAsync(zero) { (out, in) ⇒ f(out, in).toScala })
+
   /**
    * Similar to `scan` but only emits its result when the upstream completes,
    * after which it also completes. Applies the given function `f` towards its current and next value,
@@ -1603,6 +1608,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * If the function `f` throws an exception and the supervision decision is
    * [[akka.stream.Supervision#restart]] current value starts at `zero` again
    * the stream will continue.
+   *
+   * Note that the `zero` value must be immutable.
    *
    * '''Emits when''' upstream completes
    *
@@ -1625,6 +1632,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * If the function `f` returns a failure and the supervision decision is
    * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
    * the stream will continue.
+   *
+   * Note that the `zero` value must be immutable.
    *
    * '''Emits when''' upstream completes
    *
