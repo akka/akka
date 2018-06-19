@@ -23,7 +23,7 @@ import scala.collection.immutable
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.remote.DefaultFailureDetectorRegistry
-import akka.cluster.ClusterEvent.{ CurrentClusterState, MemberEvent, MemberExited, MemberRemoved }
+import akka.cluster.ClusterEvent.{ MemberEvent, MemberRemoved }
 
 import scala.concurrent.Await
 
@@ -240,14 +240,14 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     def memberInState(member: Address, status: Seq[MemberStatus]): Boolean =
       clusterView.members.exists { m ⇒ (m.address == member) && status.contains(m.status) }
 
-    cluster join joinNode
+    cluster.join(joinNode)
     awaitCond({
       clusterView.refreshCurrentState()
       if (memberInState(joinNode, List(MemberStatus.up)) &&
         memberInState(myself, List(MemberStatus.Joining, MemberStatus.Up)))
         true
       else {
-        cluster join joinNode
+        cluster.join(joinNode)
         false
       }
     }, max, interval)

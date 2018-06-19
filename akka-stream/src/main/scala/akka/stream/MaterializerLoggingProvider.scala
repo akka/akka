@@ -8,7 +8,7 @@ import akka.event.LoggingAdapter
 
 /**
  * SPI intended only to be extended by custom [[Materializer]] implementations,
- * that also want to provide stages they materialize with specialized [[akka.event.LoggingAdapter]] instances.
+ * that also want to provide operators they materialize with specialized [[akka.event.LoggingAdapter]] instances.
  */
 trait MaterializerLoggingProvider { this: Materializer ⇒
 

@@ -716,7 +716,7 @@ object Partition {
   case class PartitionOutOfBoundsException(msg: String) extends IndexOutOfBoundsException(msg) with NoStackTrace
 
   /**
-   * Create a new `Partition` stage with the specified input type. This method sets `eagerCancel` to `false`.
+   * Create a new `Partition` operator with the specified input type. This method sets `eagerCancel` to `false`.
    * To specify a different value for the `eagerCancel` parameter, then instantiate Partition using the constructor.
    *
    * If `eagerCancel` is true, partition cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
@@ -1196,9 +1196,9 @@ object OrElse {
  * Takes two streams and passes the first through, the secondary stream is only passed
  * through if the primary stream completes without passing any elements through. When
  * the first element is passed through from the primary the secondary is cancelled.
- * Both incoming streams are materialized when the stage is materialized.
+ * Both incoming streams are materialized when the operator is materialized.
  *
- * On errors the stage is failed regardless of source of the error.
+ * On errors the operator is failed regardless of source of the error.
  *
  * '''Emits when''' element is available from primary stream or the primary stream closed without emitting any elements and an element
  *                  is available from the secondary stream
@@ -1365,7 +1365,7 @@ object GraphDSL extends GraphApply {
      * It is possible to call this method multiple times to get multiple [[Outlet]] instances if necessary. All of
      * the outlets will emit the materialized value.
      *
-     * Be careful to not to feed the result of this outlet to a stage that produces the materialized value itself (for
+     * Be careful to not to feed the result of this outlet to an operator that produces the materialized value itself (for
      * example to a [[Sink#fold]] that contributes to the materialized value) since that might lead to an unresolvable
      * dependency cycle.
      *

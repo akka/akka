@@ -108,7 +108,7 @@ Java
 :   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #transform-source }
 
 First we use the `scan` operator to run a computation over the whole
-stream: starting with the number 1 (@scala[`BigInt(1)`]@java[`BigInteger.ONE`]) we multiple by each of
+stream: starting with the number 1 (@scala[`BigInt(1)`]@java[`BigInteger.ONE`]) we multiply by each of
 the incoming numbers, one after the other; the scan operation emits the initial
 value and then every calculation result. This yields the series of factorial
 numbers which we stash away as a `Source` for later reuse—it is

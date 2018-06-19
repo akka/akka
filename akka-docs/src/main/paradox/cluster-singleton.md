@@ -30,8 +30,8 @@ instance will eventually be started.
 
 The cluster singleton pattern is implemented by `akka.cluster.singleton.ClusterSingletonManager`.
 It manages one singleton actor instance among all cluster nodes or a group of nodes tagged with
-a specific role. `ClusterSingletonManager` is an actor that is supposed to be started on
-all nodes, or all nodes with specified role, in the cluster. The actual singleton actor is
+a specific role. `ClusterSingletonManager` is an actor that is supposed to be started as early as possible
+on all nodes, or all nodes with specified role, in the cluster. The actual singleton actor is
 started by the `ClusterSingletonManager` on the oldest node by creating a child actor from
 supplied `Props`. `ClusterSingletonManager` makes sure that at most one singleton instance
 is running at any point in time.

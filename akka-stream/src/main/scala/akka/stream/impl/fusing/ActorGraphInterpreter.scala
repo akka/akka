@@ -455,7 +455,7 @@ import scala.util.control.NonFatal
 
   /**
    * @param promise Will be completed upon processing the event, or failed if processing the event throws
-   *                if the event isn't ever processed the promise (the stage stops) is failed elsewhere
+   *                if the event isn't ever processed the promise (the operator stops) is failed elsewhere
    */
   final case class AsyncInput(
     shell:   GraphInterpreterShell,
