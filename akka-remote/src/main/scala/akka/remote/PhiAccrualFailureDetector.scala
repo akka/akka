@@ -104,7 +104,7 @@ class PhiAccrualFailureDetector(
 
   private val acceptableHeartbeatPauseMillis = acceptableHeartbeatPause.toMillis
 
-  // FIXME: fix this binary compatibility hack in 2.6
+  // address below was introduced as a var because of binary compatibility constraints
   private[akka] var address: String = "N/A"
 
   /**

@@ -48,7 +48,7 @@ class DefaultFailureDetectorRegistry[A](detectorFactory: () ⇒ FailureDetector)
             case None ⇒
               val newDetector: FailureDetector = detectorFactory()
 
-              // FIXME: fix this binary compatibility hack in 2.6
+              // address below was introduced as a var because of binary compatibility constraints
               newDetector match {
                 case phi: PhiAccrualFailureDetector ⇒ phi.address = resource.toString
                 case _                              ⇒
