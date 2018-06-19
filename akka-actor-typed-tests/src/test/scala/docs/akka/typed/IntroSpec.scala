@@ -70,19 +70,17 @@ object IntroSpec {
 
   object CustomDispatchersExample {
     import HelloWorldMain.Start
-    import akka.actor.typed.Props
 
     //#hello-world-main-with-dispatchers
     val main: Behavior[Start] =
       Behaviors.setup { context ⇒
         val dispatcherPath = "akka.actor.default-blocking-io-dispatcher"
 
-        val greeterProps = Props.empty.withDispatcherFromConfig(dispatcherPath)
-        val greeter = context.spawn(HelloWorld.greeter, "greeter", greeterProps)
+        val props = DispatcherSelector.fromConfig(dispatcherPath)
+        val greeter = context.spawn(HelloWorld.greeter, "greeter", props)
 
         Behaviors.receiveMessage { msg ⇒
-          val botProps = DispatcherSelector.fromConfig(dispatcherPath)
-          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name, botProps)
+          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name)
 
           greeter ! HelloWorld.Greet(msg.name, replyTo)
           Behaviors.same

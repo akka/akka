@@ -16,9 +16,10 @@ TODO intro
 
 ## Creating Actors
 
-Actor hierarchy consists of two kinds of actors – a root actor and its children. While there is only one root actor per
-@unidoc[akka.actor.typed.ActorSystem], the root actor can create, or _spawn_, arbitrary number of child actors which can
-in turn spawn child actors of their own.
+An actor can create, or _spawn_, an arbitrary number of child actors, which in turn can spawn children of their own, thus
+forming an actor hierarchy. @unidoc[akka.actor.typed.ActorSystem] hosts the hierarchy and there can be only one _root actor_,
+actor at the top of the hierarchy, per `ActorSystem`. The lifecycle of a child actor is tied to the parent -- a child
+can stop itself or be stopped at any time but it can never outlive its parent.
 
 The root actor, also called the guardian actor, is created along with the `ActorSystem`. Messages sent to the actor system are directed to the root actor.
 The root actor is defined by the behavior used to create the `ActorSystem`, named `HelloWorldMain.main` in the example below:
@@ -40,8 +41,8 @@ Scala
 Java
 :  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main }
 
-By default, child actors will use the same dispatcher as their parent actor. Actor dispatcher can be customized
-through @unidoc[akka.actor.typed.Props] or @unidoc[DispatcherSelector]:
+To specify a dispatcher when spawning an actor use @unidoc[DispatcherSelector]. If not specified, the actor will
+use the default dispatcher, see @ref:[Default dispatcher](../dispatchers.md#default-dispatcher) for details.
 
 Scala
 :  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main-with-dispatchers }
