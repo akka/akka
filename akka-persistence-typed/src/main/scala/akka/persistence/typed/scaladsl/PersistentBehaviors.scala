@@ -4,31 +4,59 @@
 
 package akka.persistence.typed.scaladsl
 
+import akka.Done
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.internal._
 import akka.persistence.typed.scaladsl.{ PersistentActorContext ⇒ PAC }
+
+import scala.util.Try
+
 object PersistentBehaviors {
 
-  // we use this type internally, however it's easier for users to understand the function, so we use it in external api
+  /**
+   * Type alias for the command handler function for reacting on events having been persisted.
+   *
+   * The type alias is not used in API signatures because it's easier to see (in IDE) what is needed
+   * when full function type is used. When defining the handler as a separate function value it can
+   * be useful to use the alias for shorter type signature.
+   */
   type CommandHandler[Command, Event, State] = (PAC[Command], State, Command) ⇒ Effect[Event, State]
+
+  /**
+   * Type alias for the event handler function defines how to act on commands.
+   *
+   * The type alias is not used in API signatures because it's easier to see (in IDE) what is needed
+   * when full function type is used. When defining the handler as a separate function value it can
+   * be useful to use the alias for shorter type signature.
+   */
+  type EventHandler[State, Event] = (State, Event) ⇒ State
 
   /**
    * Create a `Behavior` for a persistent actor.
    */
   def receive[Command, Event, State](
     persistenceId:  String,
-    initialState:   State,
-    commandHandler: CommandHandler[Command, Event, State],
+    emptyState:     State,
+    commandHandler: (ActorContext[Command], State, Command) ⇒ Effect[Event, State],
     eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
-    PersistentBehaviorImpl(persistenceId, initialState, commandHandler, eventHandler)
+    PersistentBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
 
   /**
-   * The `CommandHandler` defines how to act on commands.
+   * The `CommandHandler` defines how to act on commands. A `CommandHandler` is
+   * a function:
+   *
+   * {{{
+   *   (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
+   * }}}
    *
    * Note that you can have different command handlers based on current state by using
    * [[CommandHandler#byState]].
+   *
+   * The [[CommandHandler#command]] is useful for simple commands that don't need the state
+   * and context.
    */
   object CommandHandler {
 
@@ -37,14 +65,16 @@ object PersistentBehaviors {
      *
      * @see [[Effect]] for possible effects of a command.
      */
-    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): CommandHandler[Command, Event, State] =
+    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): (ActorContext[Command], State, Command) ⇒ Effect[Event, State] =
       (_, _, cmd) ⇒ commandHandler(cmd)
 
     /**
      * Select different command handlers based on current state.
      */
-    def byState[Command, Event, State](choice: State ⇒ CommandHandler[Command, Event, State]): CommandHandler[Command, Event, State] =
+    def byState[Command, Event, State](
+      choice: State ⇒ (ActorContext[Command], State, Command) ⇒ Effect[Event, State]): (ActorContext[Command], State, Command) ⇒ Effect[Event, State] = {
       new ByStateCommandHandler(choice)
+    }
 
   }
 
@@ -67,6 +97,11 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * is finished.
    */
   def onRecoveryCompleted(callback: (PAC[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State]
+
+  /**
+   * The `callback` function is called to notify when a snapshot is complete.
+   */
+  def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
   /**
    * Initiates a snapshot if the given function returns true.
@@ -107,4 +142,11 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * The `tagger` function should give event tags, which will be used in persistence query
    */
   def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State]
+
+  /**
+   * Transform the event in another type before giving to the journal. Can be used to wrap events
+   * in types Journals understand but is of a different type than `Event`.
+   */
+  def eventAdapter(adapter: EventAdapter[Event, _]): PersistentBehavior[Command, Event, State]
 }
+

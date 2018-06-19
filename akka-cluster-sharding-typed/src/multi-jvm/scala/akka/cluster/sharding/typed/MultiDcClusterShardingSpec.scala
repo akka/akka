@@ -24,6 +24,10 @@ object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
     ConfigFactory.parseString(
       """
         akka.loglevel = DEBUG
+        akka.cluster.sharding {
+          # First is likely to be ignored as shard coordinator not ready
+          retry-interval = 0.2s
+        }
       """).withFallback(
         MultiNodeTypedClusterSpec.clusterConfig))
 

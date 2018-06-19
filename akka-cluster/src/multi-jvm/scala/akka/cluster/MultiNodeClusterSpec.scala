@@ -23,7 +23,7 @@ import scala.collection.immutable
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.remote.DefaultFailureDetectorRegistry
-import akka.cluster.ClusterEvent.{ CurrentClusterState, MemberEvent, MemberExited, MemberRemoved }
+import akka.cluster.ClusterEvent.{ MemberEvent, MemberRemoved }
 
 import scala.concurrent.Await
 
@@ -47,8 +47,11 @@ object MultiNodeClusterSpec {
       periodic-tasks-initial-delay        = 300 ms
       publish-stats-interval              = 0 s # always, when it happens
       failure-detector.heartbeat-interval = 500 ms
-
       run-coordinated-shutdown-when-down = off
+
+      sharding {
+        retry-interval = 200ms
+      }
     }
     akka.loglevel = INFO
     akka.log-dead-letters = off
@@ -237,14 +240,14 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     def memberInState(member: Address, status: Seq[MemberStatus]): Boolean =
       clusterView.members.exists { m ⇒ (m.address == member) && status.contains(m.status) }
 
-    cluster join joinNode
+    cluster.join(joinNode)
     awaitCond({
       clusterView.refreshCurrentState()
       if (memberInState(joinNode, List(MemberStatus.up)) &&
         memberInState(myself, List(MemberStatus.Joining, MemberStatus.Up)))
         true
       else {
-        cluster join joinNode
+        cluster.join(joinNode)
         false
       }
     }, max, interval)

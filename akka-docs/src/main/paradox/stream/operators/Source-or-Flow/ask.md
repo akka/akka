@@ -18,7 +18,7 @@ If any of the asks times out it will fail the stream with a [[akka.pattern.AskTi
 The `mapTo` class parameter is used to cast the incoming responses to the expected response type.
 
 Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
-An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+An `akka.util.Status#Failure` will cause the operator to fail with the cause carried in the `Failure` message.
 
 Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
 

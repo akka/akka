@@ -45,7 +45,7 @@ object ClusterShardingPersistenceSpec {
   def persistentActor(entityId: String): Behavior[Command] =
     PersistentBehaviors.receive[Command, String, String](
       entityId,
-      initialState = "",
+      emptyState = "",
       commandHandler = (_, state, cmd) ⇒ cmd match {
         case Add(s) ⇒ Effect.persist(s)
         case Get(replyTo) ⇒

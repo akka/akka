@@ -13,7 +13,7 @@ To use Akka Streams, add the module to your project:
 ## Introduction
 
 While the processing vocabulary of Akka Streams is quite rich (see the @ref:[Streams Cookbook](stream-cookbook.md) for examples) it
-is sometimes necessary to define new transformation stages either because some functionality is missing from the
+is sometimes necessary to define new transformation operators either because some functionality is missing from the
 stock operations, or for performance reasons. In this part we show how to build custom operators and graph
 junctions of various kinds.
 
@@ -30,11 +30,11 @@ might be easy to make with a custom @ref[`GraphStage`](stream-customize.md)
 
 The `GraphStage` abstraction can be used to create arbitrary operators with any number of input
 or output ports. It is a counterpart of the `GraphDSL.create()` method which creates new stream processing
-stages by composing others. Where `GraphStage` differs is that it creates a stage that is itself not divisible into
+operators by composing others. Where `GraphStage` differs is that it creates an operator that is itself not divisible into
 smaller ones, and allows state to be maintained inside it in a safe way.
 
 As a first motivating example, we will build a new `Source` that will emit numbers from 1 until it is
-cancelled. To start, we need to define the "interface" of our stage, which is called *shape* in Akka Streams terminology
+cancelled. To start, we need to define the "interface" of our operator, which is called *shape* in Akka Streams terminology
 (this is explained in more detail in the section @ref:[Modularity, Composition and Hierarchy](stream-composition.md)). This is how this looks like:
 
 Scala
@@ -43,8 +43,8 @@ Scala
 Java
 :   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #simple-source }
 
-As you see, in itself the `GraphStage` only defines the ports of this stage and a shape that contains the ports.
-It also has, a currently unimplemented method called `createLogic`. If you recall, stages are reusable in multiple
+As you see, in itself the `GraphStage` only defines the ports of this operator and a shape that contains the ports.
+It also has, a currently unimplemented method called `createLogic`. If you recall, operators are reusable in multiple
 materializations, each resulting in a different executing entity. In the case of `GraphStage` the actual running
 logic is modeled as an instance of a `GraphStageLogic` which will be created by the materializer by calling
 the `createLogic` method. In other words, all we need to do is to create a suitable logic that will emit the
@@ -62,7 +62,7 @@ To receive the necessary events one needs to register a subclass of @scala[`OutH
 (`Outlet`). This handler will receive events related to the lifecycle of the port. In our case we need to
 override `onPull()` which indicates that we are free to emit a single element. There is another callback,
 `onDownstreamFinish()` which is called if the downstream cancelled. Since the default behavior of that callback is
-to stop the stage, we don't need to override it. In the `onPull` callback we will emit the next number. This
+to stop the operator, we don't need to override it. In the `onPull` callback we will emit the next number. This
 is how it looks like in the end:
 
 Scala
@@ -80,8 +80,8 @@ Scala
 Java
 :   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #simple-source-usage }
 
-Similarly, to create a custom `Sink` one can register a subclass `InHandler` with the stage `Inlet`.
-The `onPush()` callback is used to signal the handler a new element has been pushed to the stage,
+Similarly, to create a custom `Sink` one can register a subclass `InHandler` with the operator `Inlet`.
+The `onPush()` callback is used to signal the handler a new element has been pushed to the operator,
 and can hence be grabbed and used. `onPush()` can be overridden to provide custom behavior.
 Please note, most Sinks would need to request upstream elements as soon as they are created: this can be
 done by calling `pull(inlet)` in the `preStart()` callback.
@@ -95,7 +95,7 @@ Java
 
 ### Port states, @scala[InHandler] @java[AbstractInHandler] and @scala[OutHandler] @java[AbstractOutHandler]
 
-In order to interact with a port (`Inlet` or `Outlet`) of the stage we need to be able to receive events
+In order to interact with a port (`Inlet` or `Outlet`) of the operator we need to be able to receive events
 and generate new events belonging to the port. From the `GraphStageLogic` the following operations are available
 on an output port:
 
@@ -109,7 +109,7 @@ output port using `setHandler(out,handler)`. This handler has two callbacks:
  * `onPull()` is called when the output port is ready to emit the next element, `push(out, elem)` is now allowed
 to be called on this port.
  * `onDownstreamFinish()` is called once the downstream has cancelled and no longer allows messages to be pushed to it.
-No more `onPull()` will arrive after this event. If not overridden this will default to stopping the stage.
+No more `onPull()` will arrive after this event. If not overridden this will default to stopping the operator.
 
 Also, there are two query methods available for output ports:
 
@@ -137,9 +137,9 @@ input port using `setHandler(in, handler)`. This handler has three callbacks:
 `grab(in)` and/or call `pull(in)` on the port to request the next element. It is not mandatory to grab the
 element, but if it is pulled while the element has not been grabbed it will drop the buffered element.
  * `onUpstreamFinish()` is called once the upstream has completed and no longer can be pulled for new elements.
-No more `onPush()` will arrive after this event. If not overridden this will default to stopping the stage.
+No more `onPush()` will arrive after this event. If not overridden this will default to stopping the operator.
  * `onUpstreamFailure()` is called if the upstream failed with an exception and no longer can be pulled for new elements.
-No more `onPush()` will arrive after this event. If not overridden this will default to failing the stage.
+No more `onPush()` will arrive after this event. If not overridden this will default to failing the operator.
 
 Also, there are three query methods available for input ports:
 
@@ -154,7 +154,7 @@ in that state.
 
 ![inport_transitions.png](../images/inport_transitions.png)
 
-Finally, there are two methods available for convenience to complete the stage and all of its ports:
+Finally, there are two methods available for convenience to complete the operator and all of its ports:
 
  * `completeStage()` is equivalent to closing all output ports and cancelling all input ports.
  * `failStage(exception)` is equivalent to failing all output ports and cancelling all input ports.
@@ -173,19 +173,19 @@ one or more elements when there is demand, and then reinstalls the current handl
 more elements as they are pushed and allows the handler to react once the requested number of elements has been read.
  * `abortEmitting()` and `abortReading()` which will cancel an ongoing emit or read
 
-Note that since the above methods are implemented by temporarily replacing the handlers of the stage you should never
+Note that since the above methods are implemented by temporarily replacing the handlers of the operator you should never
 call `setHandler` while they are running `emit` or `read` as that interferes with how they are implemented.
 The following methods are safe to call after invoking `emit` and `read` (and will lead to actually running the
 operation when those are done): `complete(out)`, `completeStage()`, `emit`, `emitMultiple`, `abortEmitting()`
 and `abortReading()`
 
-An example of how this API simplifies a stage can be found below in the second version of the `Duplicator`.
+An example of how this API simplifies an operator can be found below in the second version of the `Duplicator`.
 
 ### Custom linear operators using GraphStage
 
 To define custom linear operators, you should extend `GraphStage` using `FlowShape` which has one input and one output.
 
-Such a stage can be illustrated as a box with two flows as it is
+Such an operator can be illustrated as a box with two flows as it is
 seen in the illustration below. Demand flowing upstream leading to elements
 flowing downstream.
 
@@ -207,7 +207,7 @@ Java
 Map is a typical example of a one-to-one transformation of a stream where
 demand is passed along upstream elements passed on downstream.
 
-To demonstrate a many-to-one stage we will implement
+To demonstrate a many-to-one operator we will implement
 filter. The conceptual wiring of `Filter` looks like this:
 
 ![graph_stage_filter.png](../images/graph_stage_filter.png)
@@ -223,12 +223,12 @@ Scala
 Java
 :   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #many-to-one }
 
-To complete the picture we define a one-to-many transformation as the next step. We chose a straightforward example stage
-that emits every upstream element twice downstream. The conceptual wiring of this stage looks like this:
+To complete the picture we define a one-to-many transformation as the next step. We chose a straightforward example operator
+that emits every upstream element twice downstream. The conceptual wiring of this operator looks like this:
 
 ![graph_stage_duplicate.png](../images/graph_stage_duplicate.png)
 
-This is a stage that has state: an option with the last element it has seen indicating if it
+This is an operator that has state: an option with the last element it has seen indicating if it
 has duplicated this last element already or not. We must also make sure to emit the extra element
 if the upstream completes.
 
@@ -238,10 +238,10 @@ Scala
 Java
 :   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #one-to-many }
 
-In this case a pull from downstream might be consumed by the stage itself rather
-than passed along upstream as the stage might contain an element it wants to
+In this case a pull from downstream might be consumed by the operator itself rather
+than passed along upstream as the operator might contain an element it wants to
 push. Note that we also need to handle the case where the upstream closes while
-the stage still has elements it wants to push downstream. This is done by
+the operator still has elements it wants to push downstream. This is done by
 overriding *onUpstreamFinish* in the @scala[*InHandler*] @java[*AbstractInHandler*] and provide custom logic
 that should happen when the upstream has been finished.
 
@@ -255,21 +255,21 @@ Scala
 Java
 :   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #simpler-one-to-many }
 
-Finally, to demonstrate all of the stages above, we put them together into a processing chain,
+Finally, to demonstrate all of the operators above, we put them together into a processing chain,
 which conceptually would correspond to the following structure:
 
 ![graph_stage_chain.png](../images/graph_stage_chain.png)
 
-In code this is only a few lines, using the `via` use our custom stages in a stream:
+In code this is only a few lines, using the `via` use our custom operators in a stream:
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #graph-stage-chain }
+:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #graph-operator-chain }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #graph-stage-chain }
+:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #graph-operator-chain }
 
 If we attempt to draw the sequence of events, it shows that there is one "event token"
-in circulation in a potential chain of stages, just like our conceptual "railroad tracks" representation predicts.
+in circulation in a potential chain of operators, just like our conceptual "railroad tracks" representation predicts.
 
 ![graph_stage_tracks_1.png](../images/graph_stage_tracks_1.png)
 
@@ -278,22 +278,22 @@ in circulation in a potential chain of stages, just like our conceptual "railroa
 Completion handling usually (but not exclusively) comes into the picture when operators need to emit
 a few more elements after their upstream source has been completed. We have seen an example of this in our
 first `Duplicator` implementation where the last element needs to be doubled even after the upstream neighbor
-stage has been completed. This can be done by overriding the `onUpstreamFinish` method in @scala[`InHandler`]@java[`AbstractInHandler`].
+operator has been completed. This can be done by overriding the `onUpstreamFinish` method in @scala[`InHandler`]@java[`AbstractInHandler`].
 
-Stages by default automatically stop once all of their ports (input and output) have been closed externally or internally.
-It is possible to opt out from this behavior by invoking `setKeepGoing(true)` (which is not supported from the stage’s
-constructor and usually done in `preStart`). In this case the stage **must** be explicitly closed by calling `completeStage()`
+Operators by default automatically stop once all of their ports (input and output) have been closed externally or internally.
+It is possible to opt out from this behavior by invoking `setKeepGoing(true)` (which is not supported from the operator’s
+constructor and usually done in `preStart`). In this case the operator **must** be explicitly closed by calling `completeStage()`
 or `failStage(exception)`. This feature carries the risk of leaking streams and actors, therefore it should be used
 with care.
 
 ### Logging inside GraphStages
 
-Logging debug or other important information in your stages is often a very good idea, especially when developing
-more advanced stages which may need to be debugged at some point.
+Logging debug or other important information in your operators is often a very good idea, especially when developing
+more advanced operators which may need to be debugged at some point.
 
 @@@ div { .group-scala }
 
-The helper trait `akka.stream.stage.StageLogging` is provided to enable you to obtain a `LoggingAdapter`
+The helper trait `akka.stream.operator.StageLogging` is provided to enable you to obtain a `LoggingAdapter`
 inside of a `GraphStage` as long as the `Materializer` you're using is able to provide you with a logger.
 In that sense, it serves a very similar purpose as `ActorLogging` does for Actors. 
 
@@ -301,27 +301,27 @@ In that sense, it serves a very similar purpose as `ActorLogging` does for Actor
 
 @@@ div { .group-java }
 
-You can extend the `akka.stream.stage.GraphStageWithLogging` or `akka.strea.stage.TimerGraphStageWithLogging` classes
-instead of the usual `GraphStage` to enable you to obtain a `LoggingAdapter` inside your stage as long as 
+You can extend the @unidoc[GraphStageLogicWithLogging] or @unidoc[TimerGraphStageLogicWithLogging] classes
+instead of the usual `GraphStageLogic` to enable you to obtain a `LoggingAdapter` inside your operator as long as 
 the `Materializer` you're using is able to provide you with a logger.
 
 @@@
 
 @@@ note
 
-Please note that you can always use a logging library directly inside a Stage.
-Make sure to use an asynchronous appender however, to not accidentally block the stage when writing to files etc.
+Please note that you can always use a logging library directly inside an operator.
+Make sure to use an asynchronous appender however, to not accidentally block the operator when writing to files etc.
 See @ref:[Using the SLF4J API directly](../logging.md#slf4j-directly) for more details on setting up async appenders in SLF4J.
 
 @@@
 
-The stage then gets access to the `log` field which it can safely use from any `GraphStage` callbacks:
+The operator then gets access to the `log` field which it can safely use from any `GraphStage` callbacks:
 
 Scala
-:   @@snip [GraphStageLoggingDocSpec.scala]($code$/scala/docs/stream/GraphStageLoggingDocSpec.scala) { #stage-with-logging }
+:   @@snip [GraphStageLoggingDocSpec.scala]($code$/scala/docs/stream/GraphStageLoggingDocSpec.scala) { #operator-with-logging }
 
 Java
-:   @@snip [GraphStageLoggingDocTest.java]($code$/java/jdocs/stream/GraphStageLoggingDocTest.java) { #stage-with-logging }
+:   @@snip [GraphStageLoggingDocTest.java]($code$/java/jdocs/stream/GraphStageLoggingDocTest.java) { #operator-with-logging }
 
 @@@ note
 
@@ -337,13 +337,13 @@ the returned logic. Timers can be scheduled by calling one of `scheduleOnce(key,
 `schedulePeriodicallyWithInitialDelay(key,delay,period)` and passing an object as a key for that timer (can be any object, for example
 a `String`). The `onTimer(key)` method needs to be overridden and it will be called once the timer of `key`
 fires. It is possible to cancel a timer using `cancelTimer(key)` and check the status of a timer with
-`isTimerActive(key)`. Timers will be automatically cleaned up when the stage completes.
+`isTimerActive(key)`. Timers will be automatically cleaned up when the operator completes.
 
 Timers can not be scheduled from the constructor of the logic, but it is possible to schedule them from the
 `preStart()` lifecycle hook.
 
-In this sample the stage toggles between open and closed, where open means no elements are passed through. The
-stage starts out as closed but as soon as an element is pushed downstream the gate becomes open for a duration
+In this sample the operator toggles between open and closed, where open means no elements are passed through. The
+operator starts out as closed but as soon as an element is pushed downstream the gate becomes open for a duration
 of time during which it will consume and drop upstream messages:
 
 Scala
@@ -356,7 +356,7 @@ Java
 
 In order to receive asynchronous events that are not arriving as stream elements (for example a completion of a future
 or a callback from a 3rd party API) one must acquire a `AsyncCallback` by calling `getAsyncCallback()` from the
-stage logic. The method `getAsyncCallback` takes as a parameter a callback that will be called once the asynchronous
+operator logic. The method `getAsyncCallback` takes as a parameter a callback that will be called once the asynchronous
 event fires. It is important to **not call the callback directly**, instead, the external API must call the
 `invoke(event)` method on the returned `AsyncCallback`. The execution engine will take care of calling the
 provided callback in a thread-safe way. The callback can safely access the state of the `GraphStageLogic`
@@ -379,8 +379,8 @@ Java
 **This section is a stub and will be extended in the next release**
 **This is a @ref:[may change](../common/may-change.md) feature***
 
-It is possible to acquire an ActorRef that can be addressed from the outside of the stage, similarly how
-`AsyncCallback` allows injecting asynchronous events into a stage logic. This reference can be obtained
+It is possible to acquire an ActorRef that can be addressed from the outside of the operator, similarly how
+`AsyncCallback` allows injecting asynchronous events into an operator logic. This reference can be obtained
 by calling `getStageActor(receive)` passing in a function that takes a `Pair` of the sender
 `ActorRef` and the received message. This reference can be used to watch other actors by calling its `watch(ref)`
 or `unwatch(ref)` methods. The reference can be also watched by external actors. The current limitations of this
@@ -393,10 +393,10 @@ or `unwatch(ref)` methods. The reference can be also watched by external actors.
 
 ### Custom materialized values
 
-Custom stages can return materialized values instead of `NotUsed` by inheriting from `GraphStageWithMaterializedValue`
+Custom operators can return materialized values instead of `NotUsed` by inheriting from `GraphStageWithMaterializedValue`
 instead of the simpler `GraphStage`. The difference is that in this case the method
 `createLogicAndMaterializedValue(inheritedAttributes)` needs to be overridden, and in addition to the
-stage logic the materialized value must be provided
+operator logic the materialized value must be provided
 
 @@@ warning
 
@@ -414,20 +414,20 @@ Scala
 Java
 :   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #materialized }
 
-### Using attributes to affect the behavior of a stage
+### Using attributes to affect the behavior of an operator
 
 **This section is a stub and will be extended in the next release**
 
-Stages can access the `Attributes` object created by the materializer. This contains all the applied (inherited)
-attributes applying to the stage, ordered from least specific (outermost) towards the most specific (innermost)
-attribute. It is the responsibility of the stage to decide how to reconcile this inheritance chain to a final effective
+Operators can access the `Attributes` object created by the materializer. This contains all the applied (inherited)
+attributes applying to the operator, ordered from least specific (outermost) towards the most specific (innermost)
+attribute. It is the responsibility of the operator to decide how to reconcile this inheritance chain to a final effective
 decision.
 
 See @ref:[Modularity, Composition and Hierarchy](stream-composition.md) for an explanation on how attributes work.
 
 ### Rate decoupled operators
 
-Sometimes it is desirable to *decouple* the rate of the upstream and downstream of a stage, synchronizing only
+Sometimes it is desirable to *decouple* the rate of the upstream and downstream of an operator, synchronizing only
 when needed.
 
 This is achieved in the model by representing a `GraphStage` as a *boundary* between two regions where the
@@ -436,7 +436,7 @@ difference is that an `onPush` call does not always lead to calling `push` and a
 lead to calling `pull`.
 
 One of the important use-case for this is to build buffer-like entities, that allow independent progress
-of upstream and downstream stages when the buffer is not full or empty, and slowing down the appropriate side if the
+of upstream and downstream operators when the buffer is not full or empty, and slowing down the appropriate side if the
 buffer becomes empty or full.
 
 The next diagram illustrates the event sequence for a buffer with capacity of two elements in a setting where
@@ -446,11 +446,11 @@ is seen from downstream.
 ![graph_stage_detached_tracks_1.png](../images/graph_stage_detached_tracks_1.png)
 
 Another scenario would be where the demand from downstream starts coming in before any element is pushed
-into the buffer stage.
+into the buffer operator.
 
 ![graph_stage_detached_tracks_2.png](../images/graph_stage_detached_tracks_2.png)
 
-The first difference we can notice is that our `Buffer` stage is automatically pulling its upstream on
+The first difference we can notice is that our `Buffer` operator is automatically pulling its upstream on
 initialization. The buffer has demand for up to two elements without any downstream demand.
 
 The following code example demonstrates a buffer class corresponding to the message sequence chart above.
@@ -463,7 +463,7 @@ Java
 
 ## Thread safety of custom operators
 
-All of the above custom stages (linear or graph) provide a few simple guarantees that implementors can rely on.
+All of the above custom operators (linear or graph) provide a few simple guarantees that implementors can rely on.
 : 
  * The callbacks exposed by all of these classes are never called concurrently.
  * The state encapsulated by these classes can be safely modified from the provided callbacks, without any further
@@ -471,25 +471,25 @@ synchronization.
 
 
 In essence, the above guarantees are similar to what `Actor` s provide, if one thinks of the state of a custom
-stage as state of an actor, and the callbacks as the `receive` block of the actor.
+operator as state of an actor, and the callbacks as the `receive` block of the actor.
 
 @@@ warning
 
-It is **not safe** to access the state of any custom stage outside of the callbacks that it provides, just like it
+It is **not safe** to access the state of any custom operator outside of the callbacks that it provides, just like it
 is unsafe to access the state of an actor from the outside. This means that Future callbacks should **not close over**
-internal state of custom stages because such access can be concurrent with the provided callbacks, leading to undefined
+internal state of custom operators because such access can be concurrent with the provided callbacks, leading to undefined
 behavior.
 
 @@@
 
-## Resources and the stage lifecycle
+## Resources and the operator lifecycle
 
-If a stage manages a resource with a lifecycle, for example objects that need to be shutdown when they are not
-used anymore it is important to make sure this will happen in all circumstances when the stage shuts down.
+If an operator manages a resource with a lifecycle, for example objects that need to be shutdown when they are not
+used anymore it is important to make sure this will happen in all circumstances when the operator shuts down.
 
 Cleaning up resources should be done in `GraphStageLogic.postStop` and not in the `InHandler` and `OutHandler`
-callbacks. The reason for this is that when the stage itself completes or is failed there is no signal from the upstreams
-or the downstreams. Even for stages that do not complete or fail in this manner, this can happen when the
+callbacks. The reason for this is that when the operator itself completes or is failed there is no signal from the upstreams
+or the downstreams. Even for operators that do not complete or fail in this manner, this can happen when the
 `Materializer` is shutdown or the `ActorSystem` is terminated while a stream is still running, what is called an
 "abrupt termination".
 

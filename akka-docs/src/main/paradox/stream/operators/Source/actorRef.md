@@ -2,7 +2,7 @@
 
 Materialize an `ActorRef`, sending messages to it will emit them on the stream. 
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@ div { .group-scala }
 ## Signature

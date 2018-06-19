@@ -108,7 +108,7 @@ Java
 :   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #transform-source }
 
 First we use the `scan` operator to run a computation over the whole
-stream: starting with the number 1 (@scala[`BigInt(1)`]@java[`BigInteger.ONE`]) we multiple by each of
+stream: starting with the number 1 (@scala[`BigInt(1)`]@java[`BigInteger.ONE`]) we multiply by each of
 the incoming numbers, one after the other; the scan operation emits the initial
 value and then every calculation result. This yields the series of factorial
 numbers which we stash away as a `Source` for later reuse—it is
@@ -247,7 +247,7 @@ Java
 :   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #materializer-setup }
 
 The `ActorMaterializer` can optionally take `ActorMaterializerSettings` which can be used to define
-materialization properties, such as default buffer sizes (see also @ref:[Buffers for asynchronous stages](stream-rate.md#async-stream-buffers)), the dispatcher to
+materialization properties, such as default buffer sizes (see also @ref:[Buffers for asynchronous operators](stream-rate.md#async-stream-buffers)), the dispatcher to
 be used by the pipeline etc. These can be overridden with `withAttributes` on `Flow`, `Source`, `Sink` and `Graph`.
 
 Let's assume we have a stream of tweets readily available. In Akka this is expressed as a @scala[`Source[Out, M]`]@java[`Source<Out, M>`]:
@@ -423,7 +423,7 @@ into an integer value `1`.  Finally we connect the Flow to the previously prepar
 Remember those mysterious `Mat` type parameters on @scala[`Source[+Out, +Mat]`, `Flow[-In, +Out, +Mat]` and `Sink[-In, +Mat]`]@java[`Source<Out, Mat>`, `Flow<In, Out, Mat>` and `Sink<In, Mat>`]?
 They represent the type of values these processing parts return when materialized. When you chain these together,
 you can explicitly combine their materialized values. In our example we used the @scala[`Keep.right`]@java[`Keep.right()`] predefined function,
-which tells the implementation to only care about the materialized type of the stage currently appended to the right.
+which tells the implementation to only care about the materialized type of the operator currently appended to the right.
 The materialized type of `sumSink` is @scala[`Future[Int]`]@java[`CompletionStage<Integer>`] and because of using @scala[`Keep.right`]@java[`Keep.right()`], the resulting `RunnableGraph`
 has also a type parameter of @scala[`Future[Int]`]@java[`CompletionStage<Integer>`].
 
@@ -457,7 +457,7 @@ Java
 
 @@@ note
 
-`runWith()` is a convenience method that automatically ignores the materialized value of any other stages except
+`runWith()` is a convenience method that automatically ignores the materialized value of any other operators except
 those appended by the `runWith()` itself. In the above example it translates to using @scala[`Keep.right`]@java[`Keep.right()`] as the combiner
 for materialized values.
 

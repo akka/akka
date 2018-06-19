@@ -5,14 +5,17 @@
 package akka.actor.testkit.typed.internal
 
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.function
 
-import akka.actor.{ Cancellable, ActorPath }
+import akka.actor.{ ActorPath, Cancellable }
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.annotation.InternalApi
 import akka.actor.testkit.typed.Effect
-import akka.actor.testkit.typed.scaladsl.Effects._
+import akka.actor.testkit.typed.Effect._
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.reflect.ClassTag
+import scala.compat.java8.FunctionConverters._
 
 /**
  * INTERNAL API
@@ -26,16 +29,24 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
     effectQueue.offer(new SpawnedAnonymous(behavior, props, ref))
     ref
   }
-
   override def spawnMessageAdapter[U](f: U ⇒ T): ActorRef[U] = {
     val ref = super.spawnMessageAdapter(f)
     effectQueue.offer(new SpawnedAnonymousAdapter(ref))
     ref
   }
-
   override def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] = {
     val ref = super.spawnMessageAdapter(f, name)
     effectQueue.offer(new SpawnedAdapter(name, ref))
+    ref
+  }
+  override def messageAdapter[U: ClassTag](f: U ⇒ T): ActorRef[U] = {
+    val ref = super.messageAdapter(f)
+    effectQueue.offer(MessageAdapter(implicitly[ClassTag[U]].runtimeClass.asInstanceOf[Class[U]], f))
+    ref
+  }
+  override def messageAdapter[U](messageClass: Class[U], f: function.Function[U, T]): ActorRef[U] = {
+    val ref = super.messageAdapter(messageClass, f)
+    effectQueue.offer(MessageAdapter[U, T](messageClass, f.asScala))
     ref
   }
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
@@ -64,7 +75,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
     super.setReceiveTimeout(d, msg)
   }
   override def cancelReceiveTimeout(): Unit = {
-    effectQueue.offer(ReceiveTimeoutSet(Duration.Undefined, null))
+    effectQueue.offer(ReceiveTimeoutCancelled)
     super.cancelReceiveTimeout()
   }
   override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): Cancellable = {

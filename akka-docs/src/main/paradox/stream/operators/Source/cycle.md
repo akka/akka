@@ -2,7 +2,7 @@
 
 Stream iterator in cycled manner.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

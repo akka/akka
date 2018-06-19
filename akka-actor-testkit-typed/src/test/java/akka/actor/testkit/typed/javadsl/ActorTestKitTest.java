@@ -13,11 +13,9 @@ import org.scalatest.junit.JUnitSuite;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import static akka.Done.done;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <http://www.lightbend.com>
- */
 public class ActorTestKitTest extends JUnitSuite {
 
   @ClassRule
@@ -32,7 +30,7 @@ public class ActorTestKitTest extends JUnitSuite {
   public void testKitShouldSpawnActor() throws Exception {
     final CompletableFuture<Done> started = new CompletableFuture<>();
     testKit.spawn(Behaviors.setup((ctx) -> {
-      started.complete(Done.getInstance());
+      started.complete(done());
       return Behaviors.same();
     }));
     started.get(3, TimeUnit.SECONDS);

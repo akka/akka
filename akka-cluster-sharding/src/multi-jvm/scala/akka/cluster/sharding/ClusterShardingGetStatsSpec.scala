@@ -5,11 +5,11 @@
 package akka.cluster.sharding
 
 import akka.actor._
-import akka.cluster.{ MemberStatus, Cluster }
+import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
-import akka.testkit.{ TestProbe, TestDuration }
+import akka.testkit.{ TestDuration, TestProbe }
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
@@ -62,7 +62,7 @@ object ClusterShardingGetStatsSpecConfig extends MultiNodeConfig {
       map-size = 10 MiB
     }
     akka.actor.warn-about-java-serializer-usage=false
-    """))
+    """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second, third)(ConfigFactory.parseString(
     """akka.cluster.roles=["shard"]"""))

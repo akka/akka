@@ -2,7 +2,7 @@
 
 Streams the elements of the given future source once it successfully completes.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

@@ -2,7 +2,7 @@
 
 Send the single value of the `CompletionStage` when it completes and there is demand.
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

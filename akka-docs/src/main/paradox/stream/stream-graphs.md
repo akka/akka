@@ -175,7 +175,7 @@ In fact, these concepts can be expressed as special cases of a partially connect
  * `Flow` is a partial graph with *exactly one* input and *exactly one* output, that is it returns a `FlowShape`.
 
 Being able to hide complex graphs inside of simple elements such as Sink / Source / Flow enables you to create one
-complex element and from there on treat it as simple compound stage for linear computations.
+complex element and from there on treat it as simple compound operator for linear computations.
 
 In order to create a Source from a graph the method `Source.fromGraph` is used, to use it we must have a
 @scala[`Graph[SourceShape, T]`]@java[`Graph` with a `SourceShape`]. This is constructed using
@@ -291,10 +291,10 @@ Scala
 ## Bidirectional Flows
 
 A graph topology that is often useful is that of two flows going in opposite
-directions. Take for example a codec stage that serializes outgoing messages
-and deserializes incoming octet streams. Another such stage could add a framing
+directions. Take for example a codec operator that serializes outgoing messages
+and deserializes incoming octet streams. Another such operator could add a framing
 protocol that attaches a length header to outgoing data and parses incoming
-frames back into the original octet stream chunks. These two stages are meant
+frames back into the original octet stream chunks. These two operators are meant
 to be composed, applying one atop the other as part of a protocol stack. For
 this purpose exists the special type `BidiFlow` which is a graph that
 has exactly two open inlets and two open outlets. The corresponding shape is
@@ -328,7 +328,7 @@ Java
 In this way you can integrate any other serialization library that
 turns an object into a sequence of bytes.
 
-The other stage that we talked about is a little more involved since reversing
+The other operator that we talked about is a little more involved since reversing
 a framing protocol means that any received chunk of bytes may correspond to
 zero or more messages. This is best implemented using @ref[`GraphStage`](stream-customize.md)
 (see also @ref[Custom processing with GraphStage](stream-customize.md#graphstage)).
@@ -440,8 +440,8 @@ of initial elements from `source`.
 @@@ note
 
 What we see here is that in certain cases we need to choose between boundedness and liveness. Our first example would
-not deadlock if there would be an infinite buffer in the loop, or vice versa, if the elements in the cycle would
-be balanced (as many elements are removed as many are injected) then there would be no deadlock.
+not deadlock if there were an infinite buffer in the loop, or vice versa, if the elements in the cycle were 
+balanced (as many elements are removed as many are injected) then there would be no deadlock.
 
 @@@
 

@@ -4,14 +4,12 @@
 
 package akka.actor.typed;
 
-import akka.actor.*;
 import akka.actor.setup.ActorSystemSetup;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
-import java.util.Optional;
 import java.util.function.Function;
 
 import static junit.framework.TestCase.assertSame;
@@ -106,6 +104,5 @@ public class ExtensionsTest extends JUnitSuite {
       system.terminate();
     }
   }
-
 
 }

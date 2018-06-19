@@ -19,6 +19,9 @@ private[akka] object ActorTestKitGuardian {
   sealed trait TestKitCommand
   final case class SpawnActor[T](name: String, behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
   final case class SpawnActorAnonymous[T](behavior: Behavior[T], replyTo: ActorRef[ActorRef[T]], props: Props) extends TestKitCommand
+  final case class StopActor[T](ref: ActorRef[T], replyTo: ActorRef[Ack.type]) extends TestKitCommand
+
+  final case object Ack
 
   val testKitGuardian: Behavior[TestKitCommand] = Behaviors.receive[TestKitCommand] {
     case (ctx, SpawnActor(name, behavior, reply, props)) ⇒
@@ -26,6 +29,10 @@ private[akka] object ActorTestKitGuardian {
       Behaviors.same
     case (ctx, SpawnActorAnonymous(behavior, reply, props)) ⇒
       reply ! ctx.spawnAnonymous(behavior, props)
+      Behaviors.same
+    case (ctx, StopActor(ref, reply)) ⇒
+      ctx.stop(ref)
+      reply ! Ack
       Behaviors.same
   }
 }
@@ -43,7 +50,7 @@ private[akka] object TestKitUtils {
     val startFrom = classToStartFrom.getName
     val filteredStack = Thread.currentThread.getStackTrace.toIterator
       .map(_.getClassName)
-      // drop until we find the first occurence of classToStartFrom
+      // drop until we find the first occurrence of classToStartFrom
       .dropWhile(!_.startsWith(startFrom))
       // then continue to the next entry after classToStartFrom that makes sense
       .dropWhile {

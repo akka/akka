@@ -52,6 +52,15 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     } yield (xs, from, until)
   }
 
+  case class ByteStringGrouped(bs: ByteString, size: Int)
+
+  implicit val arbitraryByteStringGrouped = Arbitrary {
+    for {
+      xs ← arbitraryByteString.arbitrary
+      size ← Gen.choose(1, 1 max xs.length)
+    } yield ByteStringGrouped(xs, size)
+  }
+
   type ArraySlice[A] = (Array[A], Int, Int)
 
   def arbSlice[A](arbArray: Arbitrary[Array[A]]): Arbitrary[ArraySlice[A]] = Arbitrary {
@@ -611,7 +620,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       "dropping" in { check((a: ByteString, b: ByteString) ⇒ (a ++ b).drop(b.size).size == a.size) }
       "taking" in { check((a: ByteString, b: ByteString) ⇒ (a ++ b).take(a.size) == a) }
       "takingRight" in { check((a: ByteString, b: ByteString) ⇒ (a ++ b).takeRight(b.size) == b) }
-      "droppnig then taking" in { check((a: ByteString, b: ByteString) ⇒ (b ++ a ++ b).drop(b.size).take(a.size) == a) }
+      "dropping then taking" in { check((a: ByteString, b: ByteString) ⇒ (b ++ a ++ b).drop(b.size).take(a.size) == a) }
       "droppingRight" in { check((a: ByteString, b: ByteString) ⇒ (b ++ a ++ b).drop(b.size).dropRight(b.size) == a) }
     }
 
@@ -726,6 +735,14 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
             case (xs, from, until) ⇒ likeVector(xs)({
               _.drop(from).take(until - from)
             })
+          }
+        }
+      }
+
+      "calling grouped" in {
+        check { grouped: ByteStringGrouped ⇒
+          likeVector(grouped.bs) {
+            _.grouped(grouped.size).toIndexedSeq
           }
         }
       }
@@ -894,6 +911,15 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
           buffer.get(array)
           bytes == array.toSeq
         }
+      }
+
+      "copying chunks to an array" in {
+        val iterator = (ByteString("123") ++ ByteString("456")).iterator
+        val array = Array.ofDim[Byte](6)
+        iterator.copyToArray(array, 0, 2)
+        iterator.copyToArray(array, 2, 2)
+        iterator.copyToArray(array, 4, 2)
+        assert(new String(array) === "123456")
       }
     }
 

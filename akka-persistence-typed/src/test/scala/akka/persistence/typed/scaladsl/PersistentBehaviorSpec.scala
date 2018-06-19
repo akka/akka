@@ -4,12 +4,19 @@
 
 package akka.persistence.typed.scaladsl
 
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
+import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
+import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.snapshot.SnapshotStore
+import akka.persistence.typed.EventAdapter
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Sink
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -17,8 +24,17 @@ import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.{ Success, Try }
 
 object PersistentBehaviorSpec {
+
+  //#event-wrapper
+  case class Wrapper[T](t: T)
+  class WrapperEventAdapter[T] extends EventAdapter[T, Wrapper[T]] {
+    override def toJournal(e: T): Wrapper[T] = Wrapper(e)
+    override def fromJournal(p: Wrapper[T]): T = p.t
+  }
+  //#event-wrapper
 
   class InMemorySnapshotStore extends SnapshotStore {
 
@@ -38,14 +54,14 @@ object PersistentBehaviorSpec {
   }
 
   // also used from PersistentActorTest
-  val conf: Config = ConfigFactory.parseString(
+  def conf: Config = ConfigFactory.parseString(
     s"""
     akka.loglevel = INFO
     # akka.persistence.typed.log-stashing = INFO
-
-    akka.persistence.snapshot-store.inmem.class = "akka.persistence.typed.scaladsl.PersistentBehaviorSpec$$InMemorySnapshotStore"
-    akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.inmem"
+    akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
+    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
+    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+    akka.persistence.snapshot-store.local.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
 
     """)
 
@@ -75,35 +91,39 @@ object PersistentBehaviorSpec {
   val secondLogging = "second logging"
 
   def counter(persistenceId: String)(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
-    counter(persistenceId, loggingActor = TestProbe[String].ref, probe = TestProbe[(State, Event)].ref)
+    counter(persistenceId, loggingActor = TestProbe[String].ref, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
 
   def counter(persistenceId: String, logging: ActorRef[String])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
-    counter(persistenceId, loggingActor = logging, probe = TestProbe[(State, Event)].ref)
+    counter(persistenceId, loggingActor = logging, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
 
   def counterWithProbe(persistenceId: String, probe: ActorRef[(State, Event)])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
-    counter(persistenceId, TestProbe[String].ref, probe)
+    counter(persistenceId, TestProbe[String].ref, probe, TestProbe[Try[Done]].ref)
+
+  def counterWithSnapshotProbe(persistenceId: String, probe: ActorRef[Try[Done]])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+    counter(persistenceId, TestProbe[String].ref, TestProbe[(State, Event)].ref, snapshotProbe = probe)
 
   def counter(
     persistenceId: String,
     loggingActor:  ActorRef[String],
-    probe:         ActorRef[(State, Event)]): PersistentBehavior[Command, Event, State] = {
+    probe:         ActorRef[(State, Event)],
+    snapshotProbe: ActorRef[Try[Done]]): PersistentBehavior[Command, Event, State] = {
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
-      initialState = State(0, Vector.empty),
+      emptyState = State(0, Vector.empty),
       commandHandler = (ctx, state, cmd) ⇒ cmd match {
         case Increment ⇒
           Effect.persist(Incremented(1))
 
         case IncrementThenLogThenStop ⇒
           Effect.persist(Incremented(1))
-            .andThen {
+            .andThen { (_: State) ⇒
               loggingActor ! firstLogging
             }
             .andThenStop
 
         case IncrementTwiceThenLogThenStop ⇒
           Effect.persist(Incremented(1), Incremented(2))
-            .andThen {
+            .andThen { (_: State) ⇒
               loggingActor ! firstLogging
             }
             .andThenStop
@@ -140,30 +160,30 @@ object PersistentBehaviorSpec {
         case IncrementTwiceAndThenLog ⇒
           Effect
             .persist(Incremented(1), Incremented(1))
-            .andThen {
+            .andThen { (_: State) ⇒
               loggingActor ! firstLogging
             }
-            .andThen {
+            .andThen { _ ⇒
               loggingActor ! secondLogging
             }
 
         case EmptyEventsListAndThenLog ⇒
           Effect
             .persist(List.empty) // send empty list of events
-            .andThen {
+            .andThen { _ ⇒
               loggingActor ! firstLogging
             }
 
         case DoNothingAndThenLog ⇒
           Effect
             .none
-            .andThen {
+            .andThen { _ ⇒
               loggingActor ! firstLogging
             }
 
         case LogThenStop ⇒
-          Effect.none
-            .andThen {
+          Effect.none[Event, State]
+            .andThen { _ ⇒
               loggingActor ! firstLogging
             }
             .andThenStop
@@ -172,17 +192,30 @@ object PersistentBehaviorSpec {
         case Incremented(delta) ⇒
           probe ! ((state, evt))
           State(state.value + delta, state.history :+ state.value)
-      })
+      }).onRecoveryCompleted {
+        case (_, _) ⇒
+      }
+      .onSnapshot {
+        case (_, _, result) ⇒
+          snapshotProbe ! result
+      }
   }
 
 }
 
 class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
+
   import PersistentBehaviorSpec._
 
-  override def config: Config = PersistentBehaviorSpec.conf
+  override lazy val config: Config = PersistentBehaviorSpec.conf
 
   implicit val testSettings = TestKitSettings(system)
+
+  import akka.actor.typed.scaladsl.adapter._
+
+  implicit val materializer = ActorMaterializer()(system.toUntyped)
+  val queries: LeveldbReadJournal = PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](
+    LeveldbReadJournal.Identifier)
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): String = s"c${pidCounter.incrementAndGet()}"
@@ -326,16 +359,17 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
     "snapshot via predicate" in {
       val pid = nextPid
+      val snapshotProbe = TestProbe[Try[Done]]
       val alwaysSnapshot: Behavior[Command] =
         Behaviors.setup { _ ⇒
-          counter(pid).snapshotWhen { (_, _, _) ⇒ true }
+          counterWithSnapshotProbe(pid, snapshotProbe.ref).snapshotWhen { (_, _, _) ⇒ true }
         }
-
       val c = spawn(alwaysSnapshot)
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()
 
       c ! Increment
+      snapshotProbe.expectMessage(Success(Done))
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
       c ! LogThenStop
@@ -344,6 +378,7 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val probe = TestProbe[(State, Event)]()
       val c2 = spawn(counterWithProbe(pid, probe.ref))
       // state should be rebuilt from snapshot, no events replayed
+      // Fails as snapshot is async (i think)
       probe.expectNoMessage()
       c2 ! Increment
       c2 ! GetValue(replyProbe.ref)
@@ -352,14 +387,17 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
     "check all events for snapshot in PersistAll" in {
       val pid = nextPid
-      val snapshotAtTwo = counter(pid).snapshotWhen { (s, _, _) ⇒ s.value == 2 }
+      val snapshotProbe = TestProbe[Try[Done]]
+      val snapshotAtTwo = counterWithSnapshotProbe(pid, snapshotProbe.ref).snapshotWhen { (s, _, _) ⇒ s.value == 2 }
       val c: ActorRef[Command] = spawn(snapshotAtTwo)
       val watchProbe = watcher(c)
       val replyProbe = TestProbe[State]()
 
       c ! IncrementWithPersistAll(3)
+
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(3, Vector(0, 1, 2)))
+      snapshotProbe.expectMessage(Success(Done))
       c ! LogThenStop
       watchProbe.expectMessage("Terminated")
 
@@ -432,6 +470,83 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
       probe.expectMessage("msg received")
+    }
+
+    "tag events" in {
+      val pid = nextPid
+      val c = spawn(counter(pid).withTagger(_ ⇒ Set("tag1", "tag2")))
+      val replyProbe = TestProbe[State]()
+
+      c ! Increment
+      c ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(1, Vector(0)))
+
+      val events = queries.currentEventsByTag("tag1").runWith(Sink.seq).futureValue
+      events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Incremented(1)))
+    }
+
+    "adapt events" in {
+      val pid = nextPid
+      val persistentBehavior = counter(pid)
+      val c = spawn(
+        //#install-event-adapter
+        persistentBehavior.eventAdapter(new WrapperEventAdapter[Event]))
+      //#install-event-adapter
+      val replyProbe = TestProbe[State]()
+
+      c ! Increment
+      c ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(1, Vector(0)))
+
+      val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
+      events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
+
+      val c2 = spawn(counter(pid).eventAdapter(new WrapperEventAdapter[Event]))
+      c2 ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(1, Vector(0)))
+
+    }
+
+    "adapter multiple events with persist all" in {
+      val pid = nextPid
+      val c = spawn(counter(pid).eventAdapter(new WrapperEventAdapter[Event]))
+      val replyProbe = TestProbe[State]()
+
+      c ! IncrementWithPersistAll(2)
+      c ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(2, Vector(0, 1)))
+
+      val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
+      events shouldEqual List(
+        EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))),
+        EventEnvelope(Sequence(2), pid, 2, Wrapper(Incremented(1)))
+      )
+
+      val c2 = spawn(counter(pid).eventAdapter(new WrapperEventAdapter[Event]))
+      c2 ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(2, Vector(0, 1)))
+    }
+
+    "adapt and tag events" in {
+      val pid = nextPid
+      val c = spawn(counter(pid)
+        .withTagger(_ ⇒ Set("tag99"))
+        .eventAdapter(new WrapperEventAdapter[Event]))
+      val replyProbe = TestProbe[State]()
+
+      c ! Increment
+      c ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(1, Vector(0)))
+
+      val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
+      events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
+
+      val c2 = spawn(counter(pid).eventAdapter(new WrapperEventAdapter[Event]))
+      c2 ! GetValue(replyProbe.ref)
+      replyProbe.expectMessage(State(1, Vector(0)))
+
+      val taggedEvents = queries.currentEventsByTag("tag99").runWith(Sink.seq).futureValue
+      taggedEvents shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
     }
 
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {

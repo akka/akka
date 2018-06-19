@@ -2,7 +2,7 @@
 
 Transform each input element into a `Source` whose elements are then flattened into the output stream through concatenation.
 
-@ref[Nesting and flattening stages](../index.md#nesting-and-flattening-stages)
+@ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
 @@@div { .group-scala }
 

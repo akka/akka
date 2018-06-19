@@ -330,7 +330,6 @@ object ByteString {
       val copyLength = Math.min(buffer.remaining, length)
       if (copyLength > 0) {
         buffer.put(bytes, startIndex, copyLength)
-        drop(copyLength)
       }
       copyLength
     }
@@ -701,6 +700,16 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
 
   // optimized in subclasses
   override def indexOf[B >: Byte](elem: B): Int = indexOf(elem, 0)
+
+  override def grouped(size: Int): Iterator[ByteString] = {
+    if (size <= 0) {
+      throw new IllegalArgumentException(s"size=$size must be positive")
+    }
+
+    Iterator.iterate(this)(_.drop(size))
+      .takeWhile(_.nonEmpty)
+      .map(_.take(size))
+  }
 
   override def toString(): String = {
     val maxSize = 100

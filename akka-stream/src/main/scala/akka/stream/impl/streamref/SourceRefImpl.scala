@@ -25,7 +25,7 @@ private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) e
 }
 
 /**
- * INTERNAL API: Actual stage implementation backing [[SourceRef]]s.
+ * INTERNAL API: Actual operator implementation backing [[SourceRef]]s.
  *
  * If initialPartnerRef is set, then the remote side is already set up.
  * If it is none, then we are the side creating the ref.

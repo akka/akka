@@ -117,7 +117,7 @@ object Flow {
 
   /**
    * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
-   * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two operators.
    *
    * The resulting flow can be visualized as:
    * {{{
@@ -180,7 +180,7 @@ object Flow {
 
   /**
    * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
-   * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two stages.
+   * Similar to [[Flow.fromSinkAndSource]] however couples the termination of these two operators.
    *
    * The resulting flow can be visualized as:
    * {{{
@@ -492,11 +492,11 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * This operation is useful for inspecting the passed through element, usually by means of side-effecting
    * operations (such as `println`, or emitting metrics), for each element without having to modify it.
    *
-   * For logging signals (elements, completion, error) consider using the [[log]] stage instead,
+   * For logging signals (elements, completion, error) consider using the [[log]] operator instead,
    * along with appropriate `ActorAttributes.logLevels`.
    *
    * '''Emits when''' upstream emits an element; the same element will be passed to the attached function,
-   *                  as well as to the downstream stage
+   *                  as well as to the downstream operator
    *
    * '''Backpressures when''' downstream backpressures
    *
@@ -637,13 +637,13 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * The `mapTo` class parameter is used to cast the incoming responses to the expected response type.
    *
    * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
-   * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+   * An `akka.util.Status#Failure` will cause the operator to fail with the cause carried in the `Failure` message.
    *
    * Defaults to parallelism of 2 messages in flight, since while one ask message may be being worked on, the second one
    * still be in the mailbox, so defaulting to sending the second one a bit earlier than when first ask has replied maintains
    * a slightly healthier throughput.
    *
-   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   * The operator fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
@@ -667,13 +667,13 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * The `mapTo` class parameter is used to cast the incoming responses to the expected response type.
    *
    * Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
-   * An `akka.util.Status#Failure` will cause the stage to fail with the cause carried in the `Failure` message.
+   * An `akka.util.Status#Failure` will cause the operator to fail with the cause carried in the `Failure` message.
    *
    * Parallelism limits the number of how many asks can be "in flight" at the same time.
-   * Please note that the elements emitted by this stage are in-order with regards to the asks being issued
+   * Please note that the elements emitted by this operator are in-order with regards to the asks being issued
    * (i.e. same behaviour as mapAsync).
    *
-   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   * The operator fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
@@ -691,7 +691,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     new Flow(delegate.ask[S](parallelism)(ref)(timeout, ClassTag(mapTo)))
 
   /**
-   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
+   * The operator fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated.
    *
    * '''Emits when''' upstream emits
    *
@@ -968,7 +968,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * yielding the next current value.
    *
    * If the stream is empty (i.e. completes before signalling any elements),
-   * the reduce stage will fail its downstream with a [[NoSuchElementException]],
+   * the reduce operator will fail its downstream with a [[NoSuchElementException]],
    * which is semantically in-line with that Scala's standard library collections
    * do in such situations.
    *
@@ -1256,7 +1256,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * See also [[Flow.limit]], [[Flow.limitWeighted]]
    */
-  def takeWhile(p: function.Predicate[Out], inclusive: Boolean = false): javadsl.Flow[In, Out, Mat] = new Flow(delegate.takeWhile(p.test, inclusive))
+  def takeWhile(p: function.Predicate[Out], inclusive: Boolean): javadsl.Flow[In, Out, Mat] = new Flow(delegate.takeWhile(p.test, inclusive))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
@@ -1298,7 +1298,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   /**
    * Recover allows to send last element on failure and gracefully complete the stream
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
    * Throwing an exception inside `recover` _will_ be logged on ERROR level automatically.
    *
@@ -1316,7 +1316,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   /**
    * Recover allows to send last element on failure and gracefully complete the stream
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
    * Throwing an exception inside `recover` _will_ be logged on ERROR level automatically.
    *
@@ -1334,12 +1334,12 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     }
 
   /**
-   * While similar to [[recover]] this stage can be used to transform an error signal to a different one *without* logging
+   * While similar to [[recover]] this operator can be used to transform an error signal to a different one *without* logging
    * it as an error in the process. So in that sense it is NOT exactly equivalent to `recover(t => throw t2)` since recover
    * would log the `t2` error.
    *
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
    * Similarily to [[recover]] throwing an exception inside `mapError` _will_ be logged.
    *
@@ -1361,7 +1361,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * Source may be materialized.
    *
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
    * Throwing an exception inside `recoverWith` _will_ be logged on ERROR level automatically.
    *
@@ -1384,7 +1384,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * Source may be materialized.
    *
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
    * Throwing an exception inside `recoverWith` _will_ be logged on ERROR level automatically.
    *
@@ -1412,7 +1412,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * A negative `attempts` number is interpreted as "infinite", which results in the exact same behavior as `recoverWith`.
    *
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
    * Throwing an exception inside `recoverWithRetries` _will_ be logged on ERROR level automatically.
    *
@@ -1440,7 +1440,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * A negative `attempts` number is interpreted as "infinite", which results in the exact same behavior as `recoverWith`.
    *
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
    * Throwing an exception inside `recoverWithRetries` _will_ be logged on ERROR level automatically.
    *
@@ -1786,7 +1786,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * a new substream is opened and subsequently fed with all elements belonging to
    * that key.
    *
-   * WARNING: If `allowClosedSubstreamRecreation` is set to `false` (default behavior) the stage
+   * WARNING: If `allowClosedSubstreamRecreation` is set to `false` (default behavior) the operator
    * keeps track of all keys of streams that have already been closed. If you expect an infinite
    * number of keys this can cause memory issues. Elements belonging to those keys are drained
    * directly and not send to the substream.
@@ -1842,7 +1842,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * a new substream is opened and subsequently fed with all elements belonging to
    * that key.
    *
-   * WARNING: The stage keeps track of all keys of streams that have already been closed.
+   * WARNING: The operator keeps track of all keys of streams that have already been closed.
    * If you expect an infinite number of keys this can cause memory issues. Elements belonging
    * to those keys are drained directly and not send to the substream.
    *
@@ -2095,7 +2095,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * from producing elements by asserting back-pressure until its time comes or it gets
    * cancelled.
    *
-   * On errors the stage is failed regardless of source of the error.
+   * On errors the operator is failed regardless of source of the error.
    *
    * '''Emits when''' element is available from first stream or first stream closed without emitting any elements and an element
    *                  is available from the second stream
@@ -2249,7 +2249,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * then repeat process.
    *
    * If eagerClose is false and one of the upstreams complete the elements from the other upstream will continue passing
-   * through the interleave stage. If eagerClose is true and one of the upstream complete interleave will cancel the
+   * through the interleave operator. If eagerClose is true and one of the upstream complete interleave will cancel the
    * other upstream and complete itself.
    *
    * If this [[Flow]] or [[Source]] gets upstream error - stream completes with failure.
@@ -2290,7 +2290,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * then repeat process.
    *
    * If eagerClose is false and one of the upstreams complete the elements from the other upstream will continue passing
-   * through the interleave stage. If eagerClose is true and one of the upstream complete interleave will cancel the
+   * through the interleave operator. If eagerClose is true and one of the upstream complete interleave will cancel the
    * other upstream and complete itself.
    *
    * If this [[Flow]] or [[Source]] gets upstream error - stream completes with failure.
@@ -2480,7 +2480,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     new Flow(delegate.zipWithIndex.map { case (elem, index) ⇒ Pair[Out, java.lang.Long](elem, index) })
 
   /**
-   * If the first element has not passed through this stage before the provided timeout, the stream is failed
+   * If the first element has not passed through this operator before the provided timeout, the stream is failed
    * with a [[java.util.concurrent.TimeoutException]].
    *
    * '''Emits when''' upstream emits an element
@@ -2497,7 +2497,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     new Flow(delegate.initialTimeout(timeout))
 
   /**
-   * If the first element has not passed through this stage before the provided timeout, the stream is failed
+   * If the first element has not passed through this operator before the provided timeout, the stream is failed
    * with a [[java.util.concurrent.TimeoutException]].
    *
    * '''Emits when''' upstream emits an element
@@ -2613,7 +2613,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
 
   /**
    * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
-   * stage attempts to maintains a base rate of emitted elements towards the downstream.
+   * operator attempts to maintains a base rate of emitted elements towards the downstream.
    *
    * If the downstream backpressures then no element is injected until downstream demand arrives. Injected elements
    * do not accumulate during this period.
@@ -2635,7 +2635,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
 
   /**
    * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
-   * stage attempts to maintains a base rate of emitted elements towards the downstream.
+   * operator attempts to maintains a base rate of emitted elements towards the downstream.
    *
    * If the downstream backpressures then no element is injected until downstream demand arrives. Injected elements
    * do not accumulate during this period.
@@ -2654,7 +2654,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     keepAlive(maxIdle.asScala, injectedElem)
 
   /**
-   * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
+   * Sends elements downstream with speed limited to `elements/per`. In other words, this operator set the maximum rate
    * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
@@ -2687,7 +2687,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     new Flow(delegate.throttle(elements, per.asScala))
 
   /**
-   * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
+   * Sends elements downstream with speed limited to `elements/per`. In other words, this operator set the maximum rate
    * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
@@ -2729,7 +2729,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     new Flow(delegate.throttle(elements, per, maximumBurst, mode))
 
   /**
-   * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
+   * Sends elements downstream with speed limited to `elements/per`. In other words, this operator set the maximum rate
    * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
@@ -3022,7 +3022,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * set directly on the individual graphs of the composite.
    *
    * Note that this operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * only to the contained processing operators).
    */
   override def withAttributes(attr: Attributes): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.withAttributes(attr))

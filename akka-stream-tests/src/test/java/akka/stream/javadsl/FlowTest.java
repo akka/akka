@@ -22,8 +22,6 @@ import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
 import java.util.*;
@@ -34,7 +32,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
+import java.time.Duration;
 
+import static akka.Done.done;
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static org.junit.Assert.*;
 
@@ -190,9 +190,9 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals(0);
     probe.expectMsgEquals(1);
 
-    FiniteDuration duration = Duration.apply(200, TimeUnit.MILLISECONDS);
+    Duration duration = Duration.ofMillis(200);
 
-    probe.expectNoMsg(duration);
+    probe.expectNoMessage(duration);
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
@@ -596,7 +596,7 @@ public class FlowTest extends StreamTest {
             .watchTermination(Keep.right())
             .to(Sink.ignore()).run(materializer);
 
-    assertEquals(Done.getInstance(), future.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(done(), future.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   @Test
@@ -1013,7 +1013,7 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseInitialTimeout() throws Throwable {
     try {
       try {
-        Source.<Integer> maybe().via(Flow.of(Integer.class).initialTimeout(Duration.create(1, "second")))
+        Source.<Integer> maybe().via(Flow.of(Integer.class).initialTimeout(Duration.ofSeconds(1)))
             .runWith(Sink.<Integer> head(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
@@ -1029,7 +1029,7 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseCompletionTimeout() throws Throwable {
     try {
       try {
-        Source.<Integer> maybe().via(Flow.of(Integer.class).completionTimeout(Duration.create(1, "second")))
+        Source.<Integer> maybe().via(Flow.of(Integer.class).completionTimeout(Duration.ofSeconds(1)))
             .runWith(Sink.<Integer> head(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
@@ -1044,7 +1044,7 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseIdleTimeout() throws Throwable {
     try {
       try {
-        Source.<Integer> maybe().via(Flow.of(Integer.class).idleTimeout(Duration.create(1, "second")))
+        Source.<Integer> maybe().via(Flow.of(Integer.class).idleTimeout(Duration.ofSeconds(1)))
             .runWith(Sink.<Integer> head(), materializer).toCompletableFuture().get(3, TimeUnit.SECONDS);
         org.junit.Assert.fail("A TimeoutException was expected");
       } catch (ExecutionException e) {
@@ -1060,9 +1060,9 @@ public class FlowTest extends StreamTest {
     Integer result =
         Source.<Integer>maybe()
             .via(Flow.of(Integer.class)
-              .keepAlive(Duration.create(1, "second"), (Creator<Integer>) () -> 0)
+              .keepAlive(Duration.ofSeconds(1), (Creator<Integer>) () -> 0)
             )
-            .takeWithin(Duration.create(1500, "milliseconds"))
+            .takeWithin(Duration.ofMillis(1500))
             .runWith(Sink.<Integer>head(), materializer)
             .toCompletableFuture().get(3, TimeUnit.SECONDS);
 

@@ -1,0 +1,5 @@
+# #25175 eliminate extraneous takeWhile$default$2 method in Java DSL
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Flow.takeWhile$default$2")
+
+# Wrong return type of FlowMonitorState.finished #24885
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.FlowMonitorState.finished")

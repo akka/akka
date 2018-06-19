@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import java.io.File
 
 import akka.actor._
-import akka.cluster.Cluster
+import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
 import akka.cluster.sharding.ShardRegion.GracefulShutdown
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
@@ -21,7 +21,6 @@ import org.apache.commons.io.FileUtils
 import scala.concurrent.duration._
 import akka.cluster.sharding.ShardRegion.GetClusterShardingStats
 import akka.cluster.sharding.ShardRegion.ClusterShardingStats
-import akka.cluster.MemberStatus
 
 object ClusterShardingMinMembersSpec {
   case object StopEntity
@@ -62,7 +61,7 @@ abstract class ClusterShardingMinMembersSpecConfig(val mode: String) extends Mul
       map-size = 10 MiB
     }
     akka.cluster.min-nr-of-members = 3
-    """))
+    """).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 object PersistentClusterShardingMinMembersSpecConfig extends ClusterShardingMinMembersSpecConfig("persistence")

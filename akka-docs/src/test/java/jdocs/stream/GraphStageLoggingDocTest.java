@@ -28,7 +28,7 @@ public class GraphStageLoggingDocTest extends AbstractJavaTest {
   @Test
   public void compileOnlyTestClass() throws Exception { }
 
-  //#stage-with-logging
+  //#operator-with-logging
   public class RandomLettersSource extends GraphStage<SourceShape<String>> {
     public final Outlet<String> out = Outlet.create("RandomLettersSource.in");
 
@@ -65,6 +65,6 @@ public class GraphStageLoggingDocTest extends AbstractJavaTest {
       };
     }
   }
-  //#stage-with-logging
+  //#operator-with-logging
 
 }

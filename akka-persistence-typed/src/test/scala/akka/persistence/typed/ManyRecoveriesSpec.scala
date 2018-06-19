@@ -29,7 +29,7 @@ object ManyRecoveriesSpec {
     latch: Option[TestLatch]): PersistentBehavior[Cmd, Evt, String] =
     PersistentBehaviors.receive[Cmd, Evt, String](
       persistenceId = name,
-      initialState = "",
+      emptyState = "",
       commandHandler = CommandHandler.command {
         case Cmd(s) ⇒ Effect.persist(Evt(s)).andThen(_ ⇒ probe.ref ! s"$name-$s")
       },

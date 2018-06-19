@@ -7,7 +7,7 @@ package akka.cluster.sharding
 import java.io.File
 
 import akka.actor._
-import akka.cluster.{ Cluster, MemberStatus }
+import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testconductor.RoleName
@@ -76,7 +76,7 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: S
       dir = target/ShardingRememberEntitiesNewExtractorSpec/sharding-ddata
       map-size = 10 MiB
     }
-    """))
+    """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   val roleConfig = ConfigFactory.parseString(
     """

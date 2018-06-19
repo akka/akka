@@ -2,7 +2,7 @@
 
 Prepends the given source to the flow, consuming it until completion before the original source is consumed.
 
-@ref[Fan-in stages](../index.md#fan-in-stages)
+@ref[Fan-in operators](../index.md#fan-in-operators)
 
 @@@div { .group-scala }
 

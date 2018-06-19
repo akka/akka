@@ -2,7 +2,7 @@
 
 Chunk up this stream into groups of elements received within a time window, or limited by the number of the elements, whatever happens first.
 
-@ref[Timer driven stages](../index.md#timer-driven-stages)
+@ref[Timer driven operators](../index.md#timer-driven-operators)
 
 @@@div { .group-scala }
 

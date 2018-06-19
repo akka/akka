@@ -2,7 +2,7 @@
 
 Just like `unfold` but the fold function returns a @scala[`Future`] @java[`CompletionStage`].
 
-@ref[Source stages](../index.md#source-stages)
+@ref[Source operators](../index.md#source-operators)
 
 @@@div { .group-scala }
 

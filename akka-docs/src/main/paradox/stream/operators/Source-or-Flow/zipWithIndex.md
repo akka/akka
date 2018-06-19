@@ -2,7 +2,7 @@
 
 Zips elements of current flow with its indices.
 
-@ref[Fan-in stages](../index.md#fan-in-stages)
+@ref[Fan-in operators](../index.md#fan-in-operators)
 
 @@@div { .group-scala }
 

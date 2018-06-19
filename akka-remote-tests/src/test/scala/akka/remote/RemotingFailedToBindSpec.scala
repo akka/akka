@@ -14,7 +14,7 @@ class RemotingFailedToBindSpec extends WordSpec with Matchers {
 
   "an ActorSystem" must {
     "not start if port is taken" in {
-      val port = SocketUtil.temporaryLocalPort(true)
+      val port = SocketUtil.temporaryLocalPort()
       val config = ConfigFactory.parseString(
         s"""
            |akka {

@@ -20,7 +20,7 @@ import akka.persistence.typed.internal.EventsourcedBehavior._
  *
  * In this behavior the recovery process is initiated.
  * We try to obtain a snapshot from the configured snapshot store,
- * and if it exists, we use it instead of the `initialState`.
+ * and if it exists, we use it instead of the initial `emptyState`.
  *
  * Once snapshot recovery is done (or no snapshot was selected),
  * recovery of events continues in [[EventsourcedReplayingEvents]].
@@ -96,7 +96,7 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
   def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
     response match {
       case LoadSnapshotResult(sso, toSnr) ⇒
-        var state: S = setup.initialState
+        var state: S = setup.emptyState
 
         val seqNr: Long = sso match {
           case Some(SelectedSnapshot(metadata, snapshot)) ⇒

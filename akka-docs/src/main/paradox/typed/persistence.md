@@ -30,7 +30,7 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 Let's start with a simple example. The minimum required for a `PersistentBehavior` is:
 
 Scala
-:  @@snip [BasicPersistentBehaviorsSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #structure }
+:  @@snip [BasicPersistentBehaviorsCompileOnly.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #structure }
 
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #structure }
@@ -41,10 +41,10 @@ The event and state are only used internally.
 
 The components that make up a PersistentBehavior are:
 
-* `persistenceId` is the unique identifier for the persistent actor.
-* `initialState` defines the `State` when the entity is first created e.g. a Counter would start with 0 as state.
-* `commandHandler` defines how to handle command, resulting in Effects e.g. persisting events, stopping the persistent actor.
-* `eventHandler` updates the current state when an event has been persisted.
+* `persistenceId` is the stable unique identifier for the persistent actor.
+* `emptyState` defines the `State` when the entity is first created e.g. a Counter would start with 0 as state.
+* `commandHandler` defines how to handle command by producing Effects e.g. persisting events, stopping the persistent actor.
+* `eventHandler` returns the new state given the current state when an event has been persisted.
 
 Next we'll discuss each of these in detail.
 
@@ -62,8 +62,7 @@ and can be used to create various effects such as:
 * `none` no events are to be persisted, for example a read-only command
 * `unhandled` the command is unhandled (not supported) in current state
 
-External side effects can be performed after successful persist with the `andThen` function e.g 
-@scala[`Effect.persist(..).andThen`]@java[`Effect().persist(..).andThen`].
+External side effects are to be performed after successful persist which is achieved with the `andThen` function e.g @scala[`Effect.persist(..).andThen`]@java[`Effect().persist(..).andThen`].
 
 In the example below a reply is sent to the `replyTo` ActorRef. Note that the new state after applying 
 the event is passed as parameter to the `andThen` function. All `andThen*` registered callbacks
@@ -71,8 +70,7 @@ are executed after successful execution of the persist statement (or immediately
 
 ### Event handler
 
-When an event has been persisted successfully the current state is updated by applying the
-event to the current state with the `eventHandler`.
+When an event has been persisted successfully the new state is created by applying the event to the current state with the `eventHandler`.
 
 The event handler returns the new state, which must be immutable so you return a new instance of the state.
 The same event handler is also used when the entity is started up to recover its state from the stored events.
@@ -123,11 +121,11 @@ Scala
 Java
 :  @@snip [PersistentActorCompileOnyTest.java]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #behavior }
 
-The behavior can then be run as with any normal typed actor as described in [typed actors documentation](actors-typed.md).
+The `PersistentBehavior` can then be run as with any plain typed actor as described in [typed actors documentation](actors-typed.md).
 
 ## Larger example
 
-After processing a message plain typed actors are able to return the `Behavior` that is used
+After processing a message, plain typed actors are able to return the `Behavior` that is used
 for next message.
 
 As you can see in the above examples this is not supported by typed persistent actors. Instead, the state is
@@ -136,7 +134,7 @@ state and must also carefully be reconstructed during recovery. If it would have
 that the behavior must be restored when replaying events and also encoded in the state anyway when snapshots are used.
 That would be very prone to mistakes and thus not allowed in Typed Persistence.
 
-For simple actors you can use the same set of command handlers independent of what state the entity is in,
+For basic actors you can use the same set of command handlers independent of what state the entity is in,
 as shown in above example. For more complex actors it's useful to be able to change the behavior in the sense
 that different functions for processing commands may be defined depending on what state the actor is in. This is useful when implementing finite state machine (FSM) like entities.
 
@@ -152,7 +150,7 @@ Scala
 Java
 :  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #state }
 
-The commands (only a subset are valid depending on state):
+The commands, of which only a subset are valid depending on the state:
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #commands }
@@ -186,8 +184,8 @@ Java
 :  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #post-added-command-handler }
 
 The event handler is always the same independent of state. The main reason for not making the event handler
-part of the `CommandHandler` is that all events must be handled and that is typically independent of what the
-current state is. The event handler can still decide what to do based on the state if that is needed.
+part of the `CommandHandler` is that contrary to Commands, all events must be handled and that is typically independent of what the
+current state is. The event handler can still decide what to do based on the state, if that is needed.
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #event-handler }
@@ -212,34 +210,57 @@ Strategies for that can be found in the @ref:[schema evolution](../persistence-s
 
 ## Recovery
 
-Since it is strongly discouraged to perform side effects in applyEvent,
-side effects should be performed once recovery has completed @scala[in the `onRecoveryCompleted` callback.] @java[by overriding `onRecoveryCompleted`]
+It is strongly discouraged to perform side effects in `applyEvent`,
+so side effects should be performed once recovery has completed @scala[in the `onRecoveryCompleted` callback.] @java[by overriding `onRecoveryCompleted`]
 
 Scala
-:  @@snip [BasicPersistentBehaviorsSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #recovery }
+:  @@snip [BasicPersistentBehaviorsCompileOnly.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #recovery }
 
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #recovery }
 
-The `onRecoveryCompleted` takes on a `PersistentActorContext` and the current `State`.
+The `onRecoveryCompleted` takes on a `PersistentActorContext` and the current `State`,
+and doesn't return anything.
 
 ## Tagging
 
 Persistence typed allows you to use event tags without using @ref[`EventAdapter`](../persistence.md#event-adapters):
 
 Scala
-:  @@snip [BasicPersistentActorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #tagging }
+:  @@snip [BasicPersistentActorCompileOnly.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #tagging }
 
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #tagging }
 
+## Event adapters
+
+Event adapters can be programmatically added to your `PersistentBehavior`s that can convert from your `Event` type
+to another type that is then passed to the journal.
+
+Defining an event adapter is done by extending an EventAdapter:
+
+Scala
+:  @@snip [x]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentBehaviorSpec.scala) { #event-wrapper }
+
+Java
+:  @@snip [x]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #event-wrapper }
+
+Then install it on a persistent behavior:
+
+Scala
+:  @@snip [x]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentBehaviorSpec.scala) { #install-event-adapter }
+
+Java
+:  @@snip [x]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #install-event-adapter }
+
 ## Wrapping Persistent Behaviors
+
 When creating a `PersistentBehavior`, it is possible to wrap `PersistentBehavior` in
 other behaviors such as `Behaviors.setup` in order to access the `ActorContext` object. For instance
 to access the actor logging upon taking snapshots for debug purpose.
 
 Scala
-:  @@snip [BasicPersistentActorSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsSpec.scala) { #wrapPersistentBehavior }
+:  @@snip [BasicPersistentActorCompileOnly.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #wrapPersistentBehavior }
 
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #wrapPersistentBehavior }

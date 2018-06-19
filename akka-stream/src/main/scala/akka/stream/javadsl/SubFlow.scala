@@ -69,7 +69,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * Flatten the sub-flows back into the super-flow by concatenating them.
    * This is usually a bad idea when combined with `groupBy` since it can
    * easily lead to deadlock—the concatenation does not consume from the second
-   * substream until the first has finished and the `groupBy` stage will get
+   * substream until the first has finished and the `groupBy` operator will get
    * back-pressure from the second stream.
    *
    * This is identical in effect to `mergeSubstreamsWithParallelism(1)`.
@@ -147,11 +147,11 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * This operation is useful for inspecting the passed through element, usually by means of side-effecting
    * operations (such as `println`, or emitting metrics), for each element without having to modify it.
    *
-   * For logging signals (elements, completion, error) consider using the [[log]] stage instead,
+   * For logging signals (elements, completion, error) consider using the [[log]] operator instead,
    * along with appropriate `ActorAttributes.logLevels`.
    *
    * '''Emits when''' upstream emits an element; the same element will be passed to the attached function,
-   *                  as well as to the downstream stage
+   *                  as well as to the downstream operator
    *
    * '''Backpressures when''' downstream backpressures
    *
@@ -869,7 +869,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
   /**
    * Recover allows to send last element on failure and gracefully complete the stream
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
    * Throwing an exception inside `recover` _will_ be logged on ERROR level automatically.
    *
@@ -891,7 +891,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * Source may be materialized.
    *
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
    * Throwing an exception inside ``recoverWith`` _will_ be logged on ERROR level automatically.
    *
@@ -918,7 +918,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * A negative `attempts` number is interpreted as "infinite", which results in the exact same behavior as `recoverWith`.
    *
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
    * Throwing an exception inside `recoverWithRetries` _will_ be logged on ERROR level automatically.
    *
@@ -936,12 +936,12 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
     new SubFlow(delegate.recoverWithRetries(attempts, pf))
 
   /**
-   * While similar to [[recover]] this stage can be used to transform an error signal to a different one *without* logging
+   * While similar to [[recover]] this operator can be used to transform an error signal to a different one *without* logging
    * it as an error in the process. So in that sense it is NOT exactly equivalent to `recover(t => throw t2)` since recover
    * would log the `t2` error.
    *
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
-   * This stage can recover the failure signal, but not the skipped elements, which will be dropped.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
    * Similarily to [[recover]] throwing an exception inside `mapError` _will_ be logged.
    *
@@ -1353,7 +1353,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * from producing elements by asserting back-pressure until its time comes or it gets
    * cancelled.
    *
-   * On errors the stage is failed regardless of source of the error.
+   * On errors the operator is failed regardless of source of the error.
    *
    * '''Emits when''' element is available from first stream or first stream closed without emitting any elements and an element
    *                  is available from the second stream
@@ -1522,7 +1522,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
     new SubFlow(delegate.zipWithIndex.map { case (elem, index) ⇒ akka.japi.Pair[Out, java.lang.Long](elem, index) })
 
   /**
-   * If the first element has not passed through this stage before the provided timeout, the stream is failed
+   * If the first element has not passed through this operator before the provided timeout, the stream is failed
    * with a [[java.util.concurrent.TimeoutException]].
    *
    * '''Emits when''' upstream emits an element
@@ -1539,7 +1539,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
     new SubFlow(delegate.initialTimeout(timeout))
 
   /**
-   * If the first element has not passed through this stage before the provided timeout, the stream is failed
+   * If the first element has not passed through this operator before the provided timeout, the stream is failed
    * with a [[java.util.concurrent.TimeoutException]].
    *
    * '''Emits when''' upstream emits an element
@@ -1655,7 +1655,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
 
   /**
    * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
-   * stage attempts to maintains a base rate of emitted elements towards the downstream.
+   * operator attempts to maintains a base rate of emitted elements towards the downstream.
    *
    * If the downstream backpressures then no element is injected until downstream demand arrives. Injected elements
    * do not accumulate during this period.
@@ -1677,7 +1677,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
 
   /**
    * Injects additional elements if upstream does not emit for a configured amount of time. In other words, this
-   * stage attempts to maintains a base rate of emitted elements towards the downstream.
+   * operator attempts to maintains a base rate of emitted elements towards the downstream.
    *
    * If the downstream backpressures then no element is injected until downstream demand arrives. Injected elements
    * do not accumulate during this period.
@@ -1696,7 +1696,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
     keepAlive(maxIdle.asScala, injectedElem)
 
   /**
-   * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
+   * Sends elements downstream with speed limited to `elements/per`. In other words, this operator set the maximum rate
    * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size).
@@ -1729,7 +1729,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
     new SubFlow(delegate.throttle(elements, per.asScala))
 
   /**
-   * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
+   * Sends elements downstream with speed limited to `elements/per`. In other words, this operator set the maximum rate
    * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
@@ -1771,7 +1771,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
     new SubFlow(delegate.throttle(elements, per, maximumBurst, mode))
 
   /**
-   * Sends elements downstream with speed limited to `elements/per`. In other words, this stage set the maximum rate
+   * Sends elements downstream with speed limited to `elements/per`. In other words, this operator set the maximum rate
    * for emitting messages. This operator works for streams where all elements have the same cost or length.
    *
    * Throttle implements the token bucket model. There is a bucket with a given token capacity (burst size or maximumBurst).
@@ -2045,7 +2045,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * of attributes. This means that further calls will not be able to remove these
    * attributes, but instead add new ones. Note that this
    * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * only to the contained processing operators).
    */
   def withAttributes(attr: Attributes): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.withAttributes(attr))
@@ -2054,7 +2054,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * Add the given attributes to this Source. Further calls to `withAttributes`
    * will not remove these attributes. Note that this
    * operation has no effect on an empty Flow (because the attributes apply
-   * only to the contained processing stages).
+   * only to the contained processing operators).
    */
   def addAttributes(attr: Attributes): SubFlow[In, Out, Mat] =
     new SubFlow(delegate.addAttributes(attr))

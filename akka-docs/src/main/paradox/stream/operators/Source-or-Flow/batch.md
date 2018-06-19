@@ -2,7 +2,7 @@
 
 Allow for a slower downstream by passing incoming elements and a summary into an aggregate function as long as there is backpressure and a maximum number of batched elements is not yet reached.
 
-@ref[Backpressure aware stages](../index.md#backpressure-aware-stages)
+@ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
 @@@ div { .group-scala }
 ## Signature

@@ -17,6 +17,7 @@ import org.junit.Test;
 
 import akka.actor.typed.*;
 
+import static akka.Done.done;
 import static akka.actor.typed.javadsl.Behaviors.*;
 
 public class WatchTest extends JUnitSuite {
@@ -53,7 +54,7 @@ public class WatchTest extends JUnitSuite {
       (ctx, msg) -> unhandled(),
       (ctx, sig) -> {
         if (sig instanceof Terminated) {
-          replyWhenTerminated.tell(Done.getInstance());
+          replyWhenTerminated.tell(done());
         }
         return same();
       }
@@ -64,7 +65,7 @@ public class WatchTest extends JUnitSuite {
     return receive(
       (ctx, msg) -> {
         if (msg instanceof CustomTerminationMessage) {
-          replyWhenReceived.tell(Done.getInstance());
+          replyWhenReceived.tell(done());
           return same();
         } else {
           return unhandled();

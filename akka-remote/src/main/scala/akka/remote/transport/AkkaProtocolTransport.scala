@@ -573,7 +573,7 @@ private[transport] class ProtocolStateActor(
       })
       wrappedHandle.disassociate(disassociationReason(reason), log)
 
-    case StopEvent(reason, _, AssociatedWaitHandler(handlerFuture, wrappedHandle, queue)) ⇒
+    case StopEvent(reason, _, AssociatedWaitHandler(handlerFuture, wrappedHandle, _)) ⇒
       // Invalidate exposed but still unfinished promise. The underlying association disappeared, so after
       // registration immediately signal a disassociate
       val disassociateNotification = reason match {

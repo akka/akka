@@ -280,7 +280,7 @@ private[stream] object Collect {
 /**
  * Maps error with the provided function if it is defined for an error or, otherwise, passes it on unchanged.
  *
- * While similar to [[Recover]] this stage can be used to transform an error signal to a different one *without* logging
+ * While similar to [[Recover]] this operator can be used to transform an error signal to a different one *without* logging
  * it as an error in the process. So in that sense it is NOT exactly equivalent to `recover(t => throw t2)` since recover
  * would log the `t2` error.
  */
@@ -427,7 +427,7 @@ private[stream] object Collect {
     new GraphStageLogic(shape) with InHandler with OutHandler { self ⇒
 
       private var current: Out = zero
-      private var eventualCurrent: Future[Out] = Future.successful(current)
+      private var elementHandled: Boolean = false
 
       private def ec = ExecutionContexts.sameThreadExecutionContext
 
@@ -438,6 +438,7 @@ private[stream] object Collect {
           throw new IllegalStateException("No push should happen before zero value has been consumed")
 
         override def onPull(): Unit = {
+          elementHandled = true
           push(out, current)
           setHandlers(in, out, self)
         }
@@ -452,21 +453,22 @@ private[stream] object Collect {
 
       private def onRestart(t: Throwable): Unit = {
         current = zero
+        elementHandled = false
       }
 
       private def safePull(): Unit = {
-        if (!hasBeenPulled(in)) {
-          tryPull(in)
+        if (isClosed(in)) {
+          completeStage()
+        } else if (isAvailable(out)) {
+          if (!hasBeenPulled(in)) {
+            tryPull(in)
+          }
         }
       }
 
       private def pushAndPullOrFinish(update: Out): Unit = {
         push(out, update)
-        if (isClosed(in)) {
-          completeStage()
-        } else if (isAvailable(out)) {
-          safePull()
-        }
+        safePull()
       }
 
       private def doSupervision(t: Throwable): Unit = {
@@ -477,12 +479,14 @@ private[stream] object Collect {
             onRestart(t)
             safePull()
         }
+        elementHandled = true
       }
 
       private val futureCB = getAsyncCallback[Try[Out]] {
         case Success(next) if next != null ⇒
           current = next
           pushAndPullOrFinish(next)
+          elementHandled = true
         case Success(null) ⇒ doSupervision(ReactiveStreamsCompliance.elementMustNotBeNullException)
         case Failure(t)    ⇒ doSupervision(t)
       }.invoke _
@@ -493,7 +497,9 @@ private[stream] object Collect {
 
       def onPush(): Unit = {
         try {
-          eventualCurrent = f(current, grab(in))
+          elementHandled = false
+
+          val eventualCurrent = f(current, grab(in))
 
           eventualCurrent.value match {
             case Some(result) ⇒ futureCB(result)
@@ -507,21 +513,17 @@ private[stream] object Collect {
               case Supervision.Resume  ⇒ ()
             }
             tryPull(in)
+            elementHandled = true
         }
       }
 
       override def onUpstreamFinish(): Unit = {
-        if (current == zero) {
-          eventualCurrent.value match {
-            case Some(Success(`zero`)) ⇒
-              // #24036 upstream completed without emitting anything but after zero was emitted downstream
-              completeStage()
-            case _ ⇒ // in all other cases we will get a complete when the future completes
-          }
+        if (elementHandled) {
+          completeStage()
         }
       }
 
-      override val toString: String = s"ScanAsync.Logic(completed=${eventualCurrent.isCompleted})"
+      override val toString: String = s"ScanAsync.Logic(completed=$elementHandled)"
     }
 }
 

@@ -17,4 +17,11 @@ case object NotUsed extends NotUsed {
    * Java API: the singleton instance
    */
   def getInstance(): NotUsed = this
+
+  /**
+   * Java API: the singleton instance
+   *
+   * This is equivalent to [[NotUsed#getInstance()]], but can be used with static import.
+   */
+  def notUsed(): NotUsed = this
 }
