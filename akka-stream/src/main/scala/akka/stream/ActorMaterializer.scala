@@ -182,8 +182,8 @@ abstract class ActorMaterializer extends Materializer with MaterializerLoggingPr
   def settings: ActorMaterializerSettings
 
   /**
-   * Shuts down this materializer and all the stages that have been materialized through this materializer. After
-   * having shut down, this materializer cannot be used again. Any attempt to materialize stages after having
+   * Shuts down this materializer and all the operators that have been materialized through this materializer. After
+   * having shut down, this materializer cannot be used again. Any attempt to materialize operators after having
    * shut down will result in an IllegalStateException being thrown at materialization time.
    */
   def shutdown(): Unit
@@ -230,7 +230,7 @@ final case class AbruptTerminationException(actor: ActorRef)
   extends RuntimeException(s"Processor actor [$actor] terminated abruptly") with NoStackTrace
 
 /**
- * Signal that the stage was abruptly terminated, usually seen as a call to `postStop` of the `GraphStageLogic` without
+ * Signal that the operator was abruptly terminated, usually seen as a call to `postStop` of the `GraphStageLogic` without
  * any of the handler callbacks seeing completion or failure from upstream or cancellation from downstream. This can happen when
  * the actor running the graph is killed, which happens when the materializer or actor system is terminated.
  */
@@ -478,8 +478,8 @@ final class ActorMaterializerSettings @InternalApi private (
    * overridden for specific flows of the stream operations with
    * [[akka.stream.Attributes#supervisionStrategy]].
    *
-   * Note that supervision in streams are implemented on a per stage basis and is not supported
-   * by every stage.
+   * Note that supervision in streams are implemented on a per operator basis and is not supported
+   * by every operator.
    */
   def withSupervisionStrategy(decider: Supervision.Decider): ActorMaterializerSettings = {
     if (decider eq this.supervisionDecider) this
@@ -491,8 +491,8 @@ final class ActorMaterializerSettings @InternalApi private (
    * overridden for specific flows of the stream operations with
    * [[akka.stream.Attributes#supervisionStrategy]].
    *
-   * Note that supervision in streams are implemented on a per stage basis and is not supported
-   * by every stage.
+   * Note that supervision in streams are implemented on a per operator basis and is not supported
+   * by every operator.
    */
   def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): ActorMaterializerSettings = {
     import Supervision._

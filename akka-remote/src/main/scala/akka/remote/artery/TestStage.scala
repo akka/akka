@@ -25,7 +25,7 @@ object TestManagementCommands {
 
 /**
  * INTERNAL API: Thread safe mutable state that is shared among
- * the test stages.
+ * the test operators.
  */
 private[remote] class SharedTestState {
 

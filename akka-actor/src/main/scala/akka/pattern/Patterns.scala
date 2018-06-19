@@ -218,7 +218,7 @@ object Patterns {
    *   final Future<Object> f = Patterns.ask(worker, request, timeout);
    *   // apply some transformation (i.e. enrich with request info)
    *   final Future<Object> transformed = f.map(new akka.japi.Function<Object, Object>() { ... });
-   *   // send it on to the next stage
+   *   // send it on to the next operator
    *   Patterns.pipe(transformed, context).to(nextActor);
    * }}}
    */
@@ -334,7 +334,7 @@ object PatternsCS {
    *
    * @param actor          the actor to be asked
    * @param messageFactory function taking an actor ref and returning the message to be sent
-   * @param timeout        the timeout for the response before failing the returned completion stage
+   * @param timeout        the timeout for the response before failing the returned completion operator
    */
   def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeout: Timeout): CompletionStage[AnyRef] =
     extended.ask(actor, messageFactory.apply _)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
@@ -380,7 +380,7 @@ object PatternsCS {
    *
    * @param actor          the actor to be asked
    * @param messageFactory function taking an actor ref to reply to and returning the message to be sent
-   * @param timeoutMillis  the timeout for the response before failing the returned completion stage
+   * @param timeoutMillis  the timeout for the response before failing the returned completion operator
    */
   def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
     askWithReplyTo(actor, messageFactory, Timeout(timeoutMillis.millis))
@@ -468,7 +468,7 @@ object PatternsCS {
    *   final CompletionStage<Object> f = PatternsCS.ask(worker, request, timeout);
    *   // apply some transformation (i.e. enrich with request info)
    *   final CompletionStage<Object> transformed = f.thenApply(result -> { ... });
-   *   // send it on to the next stage
+   *   // send it on to the next operator
    *   PatternsCS.pipe(transformed, context).to(nextActor);
    * }}}
    */
@@ -568,7 +568,7 @@ object PatternsCS {
    * Returns an internally retrying [[java.util.concurrent.CompletionStage]]
    * The first attempt will be made immediately, and each subsequent attempt will be made after 'delay'.
    * A scheduler (eg context.system.scheduler) must be provided to delay each retry
-   * If attempts are exhausted the returned completion stage is simply the result of invoking attempt.
+   * If attempts are exhausted the returned completion operator is simply the result of invoking attempt.
    * Note that the attempt function will be invoked on the given execution context for subsequent tries
    * and therefore must be thread safe (not touch unsafe mutable state).
    */

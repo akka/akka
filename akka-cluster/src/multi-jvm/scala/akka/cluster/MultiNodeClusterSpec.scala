@@ -23,7 +23,7 @@ import scala.collection.immutable
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.remote.DefaultFailureDetectorRegistry
-import akka.cluster.ClusterEvent.{ CurrentClusterState, MemberEvent, MemberExited, MemberRemoved }
+import akka.cluster.ClusterEvent.{ MemberEvent, MemberRemoved }
 
 import scala.concurrent.Await
 
@@ -95,7 +95,7 @@ object MultiNodeClusterSpec {
 
 trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with FlightRecordingSupport { self: MultiNodeSpec ⇒
 
-  final override def initialParticipants = roles.size
+  override def initialParticipants = roles.size
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
 

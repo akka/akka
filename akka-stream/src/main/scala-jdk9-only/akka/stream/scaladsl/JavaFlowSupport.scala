@@ -100,7 +100,7 @@ object JavaFlowSupport {
      * A `Sink` that materializes into a [[java.util.concurrent.Flow.Publisher]].
      *
      * If `fanout` is `WITH_FANOUT`, the materialized `Publisher` will support multiple `Subscriber`s and
-     * the size of the `inputBuffer` configured for this stage becomes the maximum number of elements that
+     * the size of the `inputBuffer` configured for this operator becomes the maximum number of elements that
      * the fastest [[java.util.concurrent.Flow.Subscriber]] can be ahead of the slowest one before slowing
      * the processing down due to back pressure.
      *

@@ -136,7 +136,7 @@ case object IgnoreBoth extends IgnoreBoth
 object TLSProtocol {
 
   /**
-   * This is the supertype of all messages that the SslTls stage emits on the
+   * This is the supertype of all messages that the SslTls operator emits on the
    * plaintext side.
    */
   sealed trait SslTlsInbound
@@ -166,7 +166,7 @@ object TLSProtocol {
   final case class SessionBytes(session: SSLSession, bytes: ByteString) extends SslTlsInbound with scaladsl.ScalaSessionAPI
 
   /**
-   * This is the supertype of all messages that the SslTls stage accepts on its
+   * This is the supertype of all messages that the SslTls operator accepts on its
    * plaintext side.
    */
   sealed trait SslTlsOutbound

@@ -33,7 +33,7 @@ trait SourceQueue[T] {
 
   /**
    * Method returns a [[CompletionStage]] that will be completed if the stream completes,
-   * or will be failed when the stage faces an internal failure.
+   * or will be failed when the operator faces an internal failure.
    */
   def watchCompletion(): CompletionStage[Done]
 }
@@ -56,7 +56,7 @@ trait SourceQueueWithComplete[T] extends SourceQueue[T] {
 
   /**
    * Method returns a [[Future]] that will be completed if the stream completes,
-   * or will be failed when the stage faces an internal failure or the the [[SourceQueueWithComplete.fail]] method is invoked.
+   * or will be failed when the operator faces an internal failure or the the [[SourceQueueWithComplete.fail]] method is invoked.
    */
   override def watchCompletion(): CompletionStage[Done]
 }
