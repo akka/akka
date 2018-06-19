@@ -275,8 +275,7 @@ object MultiNodeWithPrValidation extends AutoPlugin {
   override def requires = ValidatePullRequest && MultiNode
   override lazy val projectSettings =
     if (MultiNode.multiNodeTestInTest) Seq(additionalTasks in ValidatePR += MultiNode.multiTest)
-    // let's at least compile the multi node sources even if not running the tests
-    else Seq(additionalTasks in ValidatePR += compile in MultiJvm)
+    else Seq.empty
 }
 
 /**
