@@ -16,6 +16,7 @@ import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.stage._
 import akka.stream.scaladsl._
 import akka.stream.actor.ActorSubscriberMessage
+import akka.util.OptionVal
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
@@ -24,7 +25,7 @@ import scala.annotation.tailrec
 import akka.stream.impl.{ Buffer ⇒ BufferImpl }
 import scala.collection.JavaConverters._
 
-import akka.stream.impl.fusing.GraphStages.SingleSource
+import akka.stream.impl.TraversalBuilder
 
 /**
  * INTERNAL API
@@ -73,9 +74,11 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
     }
 
     def addSource(source: Graph[SourceShape[T], M]): Unit = {
-      source match {
-        case single: SingleSource[T] if isAvailable(out) ⇒
-          push(out, single.elem)
+      // If it's a SingleSource or wrapped such we can push the element directly instead of materializing it.
+      // Have to use AnyRef because of OptionVal null value.
+      TraversalBuilder.getSingleSourceValue(source.asInstanceOf[Graph[SourceShape[AnyRef], M]]) match {
+        case OptionVal.Some(singleElem) if isAvailable(out) ⇒
+          push(out, singleElem.asInstanceOf[T])
         case _ ⇒
           val sinkIn = new SubSinkInlet[T]("FlattenMergeSink")
           sinkIn.setHandler(new InHandler {

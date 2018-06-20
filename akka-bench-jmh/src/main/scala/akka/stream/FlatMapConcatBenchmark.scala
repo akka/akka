@@ -64,7 +64,7 @@ class FlatMapConcatBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OperationsPerInvocation)
-  def single(): Unit = {
+  def sourceDotSingle(): Unit = {
     val latch = new CountDownLatch(1)
 
     testSource
@@ -76,11 +76,23 @@ class FlatMapConcatBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(OperationsPerInvocation)
-  def optimizedSingle(): Unit = {
+  def internalSingleSource(): Unit = {
     val latch = new CountDownLatch(1)
 
     testSource
       .flatMapConcat(elem ⇒ new GraphStages.SingleSource(elem))
+      .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
+
+    awaitLatch(latch)
+  }
+
+  @Benchmark
+  @OperationsPerInvocation(OperationsPerInvocation)
+  def oneElementList(): Unit = {
+    val latch = new CountDownLatch(1)
+
+    testSource
+      .flatMapConcat(n ⇒ Source(n :: Nil))
       .runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
 
     awaitLatch(latch)

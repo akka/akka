@@ -13,11 +13,14 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import scala.concurrent._
 import scala.concurrent.duration._
 
+import akka.stream.impl.TraversalBuilder
 import akka.stream.impl.fusing.GraphStages
+import akka.stream.impl.fusing.GraphStages.SingleSource
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import org.scalatest.exceptions.TestFailedException
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestLatch
+import akka.util.OptionVal
 
 class FlowFlattenMergeSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
@@ -212,11 +215,17 @@ class FlowFlattenMergeSpec extends StreamSpec {
       attributes.indexOf(Attributes.Name("inner")) < attributes.indexOf(Attributes.Name("outer")) should be(true)
     }
 
-    "work with flatMapConcat optimized GraphStages.SingleSource" in assertAllStagesStopped {
+    "work with optimized Source.single" in assertAllStagesStopped {
       Source(0 to 3)
-        .flatMapConcat(elem ⇒ new GraphStages.SingleSource(elem))
+        .flatMapConcat(Source.single)
         .runWith(toSeq)
         .futureValue should ===(0 to 3)
+    }
+
+    "find Source.single element via TraversalBuilder" in assertAllStagesStopped {
+      TraversalBuilder.getSingleSourceValue(Source.single("a")) should ===(OptionVal.Some("a"))
+      TraversalBuilder.getSingleSourceValue(Source(List("a", "b"))).isEmpty should ===(true)
+      TraversalBuilder.getSingleSourceValue(new SingleSource("a")) should ===(OptionVal.Some("a"))
     }
 
   }

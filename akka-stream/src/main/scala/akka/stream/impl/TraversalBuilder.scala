@@ -10,9 +10,11 @@ import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.TraversalBuilder.{ AnyFunction1, AnyFunction2 }
 import akka.stream.scaladsl.Keep
 import akka.util.OptionVal
-
 import scala.language.existentials
 import scala.collection.immutable.Map.Map1
+
+import akka.stream.impl.fusing.GraphStageModule
+import akka.stream.impl.fusing.GraphStages.SingleSource
 
 /**
  * INTERNAL API
@@ -333,6 +335,33 @@ import scala.collection.immutable.Map.Map1
       current = nextStep
     }
     slot
+  }
+
+  /**
+   * Try to find the element of SingleSource or wrapped such. This is used as a
+   * performance optimization in FlattenMerge and possibly other places.
+   */
+  def getSingleSourceValue[A >: Null](graph: Graph[SourceShape[A], _]): OptionVal[A] = {
+    graph match {
+      case single: SingleSource[A] @unchecked ⇒ OptionVal.Some(single.elem)
+      case _ ⇒
+        graph.traversalBuilder match {
+          case l: LinearTraversalBuilder ⇒
+            l.pendingBuilder match {
+              case OptionVal.Some(a: AtomicTraversalBuilder) ⇒
+                a.module match {
+                  case m: GraphStageModule[_, _] ⇒
+                    m.stage match {
+                      case single: SingleSource[A] @unchecked ⇒ OptionVal.Some(single.elem)
+                      case _                                  ⇒ OptionVal.None
+                    }
+                  case _ ⇒ OptionVal.None
+                }
+              case _ ⇒ OptionVal.None
+            }
+          case _ ⇒ OptionVal.None
+        }
+    }
   }
 }
 
