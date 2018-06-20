@@ -222,10 +222,74 @@ class FlowFlattenMergeSpec extends StreamSpec {
         .futureValue should ===(0 to 3)
     }
 
-    "find Source.single element via TraversalBuilder" in assertAllStagesStopped {
-      TraversalBuilder.getSingleSourceValue(Source.single("a")) should ===(OptionVal.Some("a"))
-      TraversalBuilder.getSingleSourceValue(Source(List("a", "b"))).isEmpty should ===(true)
-      TraversalBuilder.getSingleSourceValue(new SingleSource("a")) should ===(OptionVal.Some("a"))
+    "work with optimized Source.single when slow demand" in assertAllStagesStopped {
+      val probe = Source(0 to 4)
+        .flatMapConcat(Source.single)
+        .runWith(TestSink.probe)
+
+      probe.request(3)
+      probe.expectNext(0)
+      probe.expectNext(1)
+      probe.expectNext(2)
+      probe.expectNoMessage(100.millis)
+
+      probe.request(10)
+      probe.expectNext(3)
+      probe.expectNext(4)
+      probe.expectComplete()
+    }
+
+    "work with mix of Source.single and other sources when slow demand" in assertAllStagesStopped {
+      val sources: Source[Source[Int, NotUsed], NotUsed] = Source(List(
+        Source.single(0),
+        Source.single(1),
+        Source(2 to 4),
+        Source.single(5),
+        Source(6 to 6),
+        Source.single(7),
+        Source(8 to 10),
+        Source.single(11)
+      ))
+
+      val probe =
+        sources
+          .flatMapConcat(identity)
+          .runWith(TestSink.probe)
+
+      probe.request(3)
+      probe.expectNext(0)
+      probe.expectNext(1)
+      probe.expectNext(2)
+      probe.expectNoMessage(100.millis)
+
+      probe.request(1)
+      probe.expectNext(3)
+      probe.expectNoMessage(100.millis)
+
+      probe.request(1)
+      probe.expectNext(4)
+      probe.expectNoMessage(100.millis)
+
+      probe.request(3)
+      probe.expectNext(5)
+      probe.expectNext(6)
+      probe.expectNext(7)
+      probe.expectNoMessage(100.millis)
+
+      probe.request(10)
+      probe.expectNext(8)
+      probe.expectNext(9)
+      probe.expectNext(10)
+      probe.expectNext(11)
+      probe.expectComplete()
+    }
+
+    "find Source.single via TraversalBuilder" in assertAllStagesStopped {
+      TraversalBuilder.getSingleSource(Source.single("a")).get.elem should ===("a")
+      TraversalBuilder.getSingleSource(Source(List("a", "b"))) should be(OptionVal.None)
+
+      val singleSourceA = new SingleSource("a")
+      TraversalBuilder.getSingleSource(singleSourceA) should be(OptionVal.Some(singleSourceA))
     }
 
   }

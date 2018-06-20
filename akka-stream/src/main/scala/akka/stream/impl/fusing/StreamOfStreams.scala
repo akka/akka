@@ -26,6 +26,7 @@ import akka.stream.impl.{ Buffer ⇒ BufferImpl }
 import scala.collection.JavaConverters._
 
 import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.fusing.GraphStages.SingleSource
 
 /**
  * INTERNAL API
@@ -39,17 +40,25 @@ import akka.stream.impl.TraversalBuilder
 
   override def createLogic(enclosingAttributes: Attributes) = new GraphStageLogic(shape) {
     var sources = Set.empty[SubSinkInlet[T]]
-    def activeSources = sources.size
+    var pendingSingleSources = 0
+    def activeSources = sources.size + pendingSingleSources
 
-    var q: BufferImpl[SubSinkInlet[T]] = _
+    // To be able to optimize for SingleSource without materializing them the queue may hold either
+    // SubSinkInlet[T] or SingleSource
+    var queue: BufferImpl[AnyRef] = _
 
-    override def preStart(): Unit = q = BufferImpl(breadth, materializer)
+    override def preStart(): Unit = queue = BufferImpl(breadth, materializer)
 
     def pushOut(): Unit = {
-      val src = q.dequeue()
-      push(out, src.grab())
-      if (!src.isClosed) src.pull()
-      else removeSource(src)
+      queue.dequeue() match {
+        case src: SubSinkInlet[T] @unchecked ⇒
+          push(out, src.grab())
+          if (!src.isClosed) src.pull()
+          else removeSource(src)
+        case single: SingleSource[T] @unchecked ⇒
+          push(out, single.elem)
+          removeSource(single)
+      }
     }
 
     setHandler(in, new InHandler {
@@ -70,15 +79,20 @@ import akka.stream.impl.TraversalBuilder
 
     val outHandler = new OutHandler {
       // could be unavailable due to async input having been executed before this notification
-      override def onPull(): Unit = if (q.nonEmpty && isAvailable(out)) pushOut()
+      override def onPull(): Unit = if (queue.nonEmpty && isAvailable(out)) pushOut()
     }
 
     def addSource(source: Graph[SourceShape[T], M]): Unit = {
       // If it's a SingleSource or wrapped such we can push the element directly instead of materializing it.
       // Have to use AnyRef because of OptionVal null value.
-      TraversalBuilder.getSingleSourceValue(source.asInstanceOf[Graph[SourceShape[AnyRef], M]]) match {
-        case OptionVal.Some(singleElem) if isAvailable(out) ⇒
-          push(out, singleElem.asInstanceOf[T])
+      TraversalBuilder.getSingleSource(source.asInstanceOf[Graph[SourceShape[AnyRef], M]]) match {
+        case OptionVal.Some(single) ⇒
+          if (isAvailable(out) && queue.isEmpty) {
+            push(out, single.elem.asInstanceOf[T])
+          } else {
+            queue.enqueue(single)
+            pendingSingleSources += 1
+          }
         case _ ⇒
           val sinkIn = new SubSinkInlet[T]("FlattenMergeSink")
           sinkIn.setHandler(new InHandler {
@@ -87,7 +101,7 @@ import akka.stream.impl.TraversalBuilder
                 push(out, sinkIn.grab())
                 sinkIn.pull()
               } else {
-                q.enqueue(sinkIn)
+                queue.enqueue(sinkIn)
               }
             }
             override def onUpstreamFinish(): Unit = if (!sinkIn.isAvailable) removeSource(sinkIn)
@@ -99,9 +113,14 @@ import akka.stream.impl.TraversalBuilder
       }
     }
 
-    def removeSource(src: SubSinkInlet[T]): Unit = {
+    def removeSource(src: AnyRef): Unit = {
       val pullSuppressed = activeSources == breadth
-      sources -= src
+      src match {
+        case sub: SubSinkInlet[T] @unchecked ⇒
+          sources -= sub
+        case _: SingleSource[_] ⇒
+          pendingSingleSources -= 1
+      }
       if (pullSuppressed) tryPull(in)
       if (activeSources == 0 && isClosed(in)) completeStage()
     }

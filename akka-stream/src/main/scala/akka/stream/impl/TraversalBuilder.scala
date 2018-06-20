@@ -338,12 +338,12 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   }
 
   /**
-   * Try to find the element of SingleSource or wrapped such. This is used as a
+   * Try to find `SingleSource` or wrapped such. This is used as a
    * performance optimization in FlattenMerge and possibly other places.
    */
-  def getSingleSourceValue[A >: Null](graph: Graph[SourceShape[A], _]): OptionVal[A] = {
+  def getSingleSource[A >: Null](graph: Graph[SourceShape[A], _]): OptionVal[SingleSource[A]] = {
     graph match {
-      case single: SingleSource[A] @unchecked ⇒ OptionVal.Some(single.elem)
+      case single: SingleSource[A] @unchecked ⇒ OptionVal.Some(single)
       case _ ⇒
         graph.traversalBuilder match {
           case l: LinearTraversalBuilder ⇒
@@ -352,7 +352,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
                 a.module match {
                   case m: GraphStageModule[_, _] ⇒
                     m.stage match {
-                      case single: SingleSource[A] @unchecked ⇒ OptionVal.Some(single.elem)
+                      case single: SingleSource[A] @unchecked ⇒ OptionVal.Some(single)
                       case _                                  ⇒ OptionVal.None
                     }
                   case _ ⇒ OptionVal.None
