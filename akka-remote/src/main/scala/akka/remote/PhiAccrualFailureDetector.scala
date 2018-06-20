@@ -134,7 +134,7 @@ class PhiAccrualFailureDetector(
         val interval = timestamp - latestTimestamp
         // don't use the first heartbeat after failure for the history, since a long pause will skew the stats
         if (isAvailable(timestamp)) {
-          if (interval >= (acceptableHeartbeatPauseMillis / 2) && eventStream.isDefined)
+          if (interval >= (acceptableHeartbeatPauseMillis / 3 * 2) && eventStream.isDefined)
             eventStream.get.publish(Warning(this.toString, getClass, s"heartbeat interval is growing too large: $interval millis"))
           oldState.history :+ interval
         } else oldState.history
