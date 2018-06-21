@@ -1,6 +1,6 @@
 # scan
 
-Emit its current value which starts at `zero` and then applies the current and next value to the given function emitting the next current value.
+Emit its current value, which starts at `zero`, and then apply the current and next value to the given function, emitting the next current value.
 
 @ref[Simple operators](../index.md#simple-operators)
 
@@ -14,11 +14,11 @@ Emit its current value which starts at `zero` and then applies the current and n
 
 ## Description
 
-Emit its current value which starts at `zero` and then applies the current and next value to the given function
-emitting the next current value.
+Emit its current value, which starts at `zero`, and then apply the current and next value to the given function,
+emitting the next current value. This means that `scan` emits one element downstream before, and upstream elements
+will not be requested until, the second element is required from downstream.
 
-Note that this means that scan emits one element downstream before and upstream elements will not be requested until
-the second element is required from downstream.
+Note that the `zero` value must be immutable.
 
 
 @@@div { .callout }

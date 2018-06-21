@@ -18,7 +18,7 @@ This operator is included in:
 
 ## Signature
 
-@@signature []($akka$/akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorFlow.scala) { #ask }
+@@signature [ActorFlow.scala]($akka$/akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorFlow.scala) { #ask }
 
 @@@
 
