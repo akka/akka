@@ -8,6 +8,7 @@ scala:
 
 jdk:
   - oraclejdk8
+  - oraclejdk10
 
 addons:
   apt:
