@@ -13,6 +13,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 
+import scala.annotation.tailrec
 import scala.concurrent.duration.{ Deadline, FiniteDuration }
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
@@ -44,12 +45,45 @@ import scala.util.control.NonFatal
       supervisor.init(ctx)
     }
 
+  // find supervision that is superflous by having the same exception handled closer to the behavior
+  // and remove those instances. Needs to be called in the wrap method of all supervisor classes
+  def deduplicate[T, Thr <: Throwable: ClassTag](supervisor: Supervisor[T, Thr]): Supervisor[T, Thr] = {
+
+    // side effecting to avoid allocating a tuple per loop
+    var seenSupervised = Set.empty[Class[_]]
+
+    // can't be tailrec, but should be ok since hierarchies shouldn't be _that_ deep given that they
+    // are deduplicated for every wrap
+    def loop(behavior: Behavior[T]): Behavior[T] = {
+      behavior match {
+        case s: Supervisor[T, _] ⇒
+          val inner = loop(s.behavior)
+          if (seenSupervised.contains(s.throwableClass))
+            // the exception this supervision cover is already covered closer to
+            // the actual behavior so s will never be invoked, lets' remove it
+            inner
+          else {
+            seenSupervised += s.throwableClass
+            if (inner.eq(s.behavior)) s
+            else s.wrap(inner, false)
+          }
+        case b ⇒ b
+      }
+    }
+
+    // we know that the result is either the original outermost or another outermost supervision
+    // but the type system doesn't
+    loop(supervisor).asInstanceOf[Supervisor[T, Thr]]
+  }
+
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] abstract class Supervisor[T, Thr <: Throwable: ClassTag] extends ExtensibleBehavior[T] {
+
+  private[akka] def throwableClass = implicitly[ClassTag[Thr]].runtimeClass
 
   protected def loggingEnabled: Boolean
 
@@ -120,7 +154,7 @@ import scala.util.control.NonFatal
   }
 
   override protected def wrap(nextBehavior: Behavior[T], afterException: Boolean): Supervisor[T, Thr] =
-    new Resumer[T, Thr](nextBehavior, loggingEnabled)
+    Supervisor.deduplicate(new Resumer[T, Thr](nextBehavior, loggingEnabled))
 
 }
 
@@ -140,7 +174,7 @@ import scala.util.control.NonFatal
   }
 
   override protected def wrap(nextBehavior: Behavior[T], afterException: Boolean): Supervisor[T, Thr] =
-    new Stopper[T, Thr](nextBehavior, loggingEnabled)
+    Supervisor.deduplicate(new Stopper[T, Thr](nextBehavior, loggingEnabled))
 
 }
 
@@ -162,7 +196,7 @@ import scala.util.control.NonFatal
   }
 
   override protected def wrap(nextBehavior: Behavior[T], afterException: Boolean): Supervisor[T, Thr] =
-    new Restarter[T, Thr](initialBehavior, nextBehavior, loggingEnabled)
+    Supervisor.deduplicate(new Restarter[T, Thr](initialBehavior, nextBehavior, loggingEnabled))
 }
 
 /**
@@ -200,13 +234,15 @@ import scala.util.control.NonFatal
   }
 
   override protected def wrap(nextBehavior: Behavior[T], afterException: Boolean): Supervisor[T, Thr] = {
-    if (afterException) {
+    val restarter = if (afterException) {
       val timeLeft = deadlineHasTimeLeft
       val newRetries = if (timeLeft) retries + 1 else 1
       val newDeadline = if (deadline.isDefined && timeLeft) deadline else OptionVal.Some(Deadline.now + strategy.withinTimeRange)
       new LimitedRestarter[T, Thr](initialBehavior, nextBehavior, strategy, newRetries, newDeadline)
     } else
       new LimitedRestarter[T, Thr](initialBehavior, nextBehavior, strategy, retries, deadline)
+
+    Supervisor.deduplicate(restarter)
   }
 }
 
@@ -308,7 +344,7 @@ import scala.util.control.NonFatal
     if (afterException)
       throw new IllegalStateException("wrap not expected afterException in BackoffRestarter")
     else
-      new BackoffRestarter[T, Thr](initialBehavior, nextBehavior, strategy, restartCount, blackhole)
+      Supervisor.deduplicate(new BackoffRestarter[T, Thr](initialBehavior, nextBehavior, strategy, restartCount, blackhole))
   }
 }
 
