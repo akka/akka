@@ -21,15 +21,20 @@ object Dependencies {
   val aeronVersion = "1.9.1"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.12", "2.12.6"),
+    crossScalaVersions := Seq("2.13.0-M4"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 12 ⇒ "1.13.5" // does not work for 2.11
-        case _                       ⇒ "1.13.2"
+        case Some((2, n)) if n >= 12 ⇒ "1.14.0"
+        case _                       ⇒ "1.13.2" // anything later does not work for 2.11
       }),
-    scalaTestVersion := "3.0.4",
+    scalaTestVersion := {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n >= 13 => "3.0.6-SNAP1"
+        case _ => "3.0.4"
+      }
+    },
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 13 ⇒ "0.9.0"
@@ -181,7 +186,7 @@ object Dependencies {
 
   lazy val stream = l ++= Seq[sbt.ModuleID](
     reactiveStreams,
-    sslConfigCore,
+    //sslConfigCore,
     Test.scalatest.value)
 
   lazy val streamTestkit = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit)
