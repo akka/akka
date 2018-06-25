@@ -11,7 +11,7 @@ import akka.actor.DeadLetterSuppression
 import akka.actor.typed.SupervisorStrategy._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.util.OptionVal
+import akka.util.{ OptionVal, PrettyDuration }
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.{ Deadline, FiniteDuration }
@@ -64,7 +64,7 @@ import scala.util.control.NonFatal
             inner
           else {
             seenSupervised += s.throwableClass
-            if (inner.eq(s.behavior)) s
+            if (inner eq s.behavior) s
             else s.wrap(inner, false)
           }
         case b ⇒ b
@@ -250,7 +250,7 @@ import scala.util.control.NonFatal
     Supervisor.deduplicate(restarter)
   }
 
-  override def toString = s"restartWithLimit(${strategy.maxNrOfRetries}, ${strategy.withinTimeRange})"
+  override def toString = s"restartWithLimit(${strategy.maxNrOfRetries}, ${PrettyDuration.format(strategy.withinTimeRange)})"
 }
 
 /**
@@ -354,6 +354,6 @@ import scala.util.control.NonFatal
       Supervisor.deduplicate(new BackoffRestarter[T, Thr](initialBehavior, nextBehavior, strategy, restartCount, blackhole))
   }
 
-  override def toString = s"restartWithBackoff(${strategy.minBackoff}, ${strategy.maxBackoff}, ${strategy.randomFactor})"
+  override def toString = s"restartWithBackoff(${PrettyDuration.format(strategy.minBackoff)}, ${PrettyDuration.format(strategy.maxBackoff)}, ${strategy.randomFactor})"
 }
 
