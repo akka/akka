@@ -1,6 +1,6 @@
 # fold
 
-Start with current value `zero` and then apply the current and next value to the given function, when upstream complete the current value is emitted downstream.
+Start with current value `zero` and then apply the current and next value to the given function. When upstream completes, the current value is emitted downstream.
 
 @ref[Simple operators](../index.md#simple-operators)
 
@@ -14,8 +14,10 @@ Start with current value `zero` and then apply the current and next value to the
 
 ## Description
 
-Start with current value `zero` and then apply the current and next value to the given function, when upstream
-complete the current value is emitted downstream.
+Start with current value `zero` and then apply the current and next value to the given function. When upstream
+completes, the current value is emitted downstream.
+
+Note that the `zero` value must be immutable.
 
 
 @@@div { .callout }

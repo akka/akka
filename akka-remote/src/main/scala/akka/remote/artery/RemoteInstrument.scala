@@ -20,7 +20,7 @@ import scala.util.control.NonFatal
  * Multiple instruments are automatically handled, however they MUST NOT overlap in their idenfitiers.
  *
  * Instances of `RemoteInstrument` are created from configuration. A new instance of RemoteInstrument
- * will be created for each encoder and decoder. It's only called from the stage, so if it doesn't
+ * will be created for each encoder and decoder. It's only called from the operator, so if it doesn't
  * delegate to any shared instance it doesn't have to be thread-safe.
  */
 abstract class RemoteInstrument {

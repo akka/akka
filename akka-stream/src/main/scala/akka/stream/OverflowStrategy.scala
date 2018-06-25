@@ -8,7 +8,7 @@ import OverflowStrategies._
 import akka.annotation.DoNotInherit
 
 /**
- * Represents a strategy that decides how to deal with a buffer of time based stage
+ * Represents a strategy that decides how to deal with a buffer of time based operator
  * that is full but is about to receive a new element.
  */
 @DoNotInherit

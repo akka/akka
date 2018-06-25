@@ -5,7 +5,7 @@
 package akka.actor.typed
 package internal
 
-import akka.actor.Cancellable
+import akka.actor.{ Cancellable, NotInfluenceReceiveTimeout }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.actor.typed.ActorRef.ActorRefOps
@@ -21,8 +21,16 @@ import scala.reflect.ClassTag
  * INTERNAL API
  */
 @InternalApi private[akka] object TimerSchedulerImpl {
+  sealed trait TimerMsg {
+    def key: Any
+    def generation: Int
+    def owner: AnyRef
+  }
+
   final case class Timer[T](key: Any, msg: T, repeat: Boolean, generation: Int, task: Cancellable)
-  final case class TimerMsg(key: Any, generation: Int, owner: AnyRef)
+  final case class InfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: AnyRef) extends TimerMsg
+  final case class NotInfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: AnyRef)
+    extends TimerMsg with NotInfluenceReceiveTimeout
 
   def withTimers[T](factory: TimerSchedulerImpl[T] ⇒ Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
@@ -68,7 +76,12 @@ import scala.reflect.ClassTag
     }
     val nextGen = timerGen.next()
 
-    val timerMsg = TimerMsg(key, nextGen, this)
+    val timerMsg =
+      if (msg.isInstanceOf[NotInfluenceReceiveTimeout])
+        NotInfluenceReceiveTimeoutTimerMsg(key, nextGen, this)
+      else
+        InfluenceReceiveTimeoutTimerMsg(key, nextGen, this)
+
     val task =
       if (repeat)
         ctx.system.scheduler.schedule(timeout, timeout) {

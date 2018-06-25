@@ -58,7 +58,7 @@ object Effect {
  * Not for user extension.
  */
 @DoNotInherit
-trait Effect[+Event, State] extends akka.persistence.typed.javadsl.Effect[Event, State] { self: EffectImpl[Event, State] ⇒
+trait Effect[+Event, State] { self: EffectImpl[Event, State] ⇒
   /* All events that will be persisted in this effect */
   def events: im.Seq[Event]
 
@@ -67,10 +67,6 @@ trait Effect[+Event, State] extends akka.persistence.typed.javadsl.Effect[Event,
   /** Convenience method to register a side effect with just a callback function */
   final def andThen(callback: State ⇒ Unit): Effect[Event, State] =
     CompositeEffect(this, SideEffect[Event, State](callback))
-
-  /** Convenience method to register a side effect with just a lazy expression */
-  final def andThen(callback: ⇒ Unit): Effect[Event, State] =
-    CompositeEffect(this, SideEffect[Event, State]((_: State) ⇒ callback))
 
   /** The side effect is to stop the actor */
   def andThenStop: Effect[Event, State] =

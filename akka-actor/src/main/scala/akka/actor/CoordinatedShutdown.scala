@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
 import java.util.Optional
 
+import akka.annotation.InternalApi
 import akka.util.OptionVal
 
 object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with ExtensionIdProvider {
@@ -171,38 +172,49 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     coord
   }
 
-  private def initPhaseActorSystemTerminate(system: ActorSystem, conf: Config, coord: CoordinatedShutdown): Unit = {
-    val terminateActorSystem = conf.getBoolean("terminate-actor-system")
-    val exitJvm = conf.getBoolean("exit-jvm")
-    if (terminateActorSystem || exitJvm) {
-      coord.addTask(PhaseActorSystemTerminate, "terminate-system") { () ⇒
-        if (exitJvm && terminateActorSystem) {
-          // In case ActorSystem shutdown takes longer than the phase timeout,
-          // exit the JVM forcefully anyway.
-          // We must spawn a separate thread to not block current thread,
-          // since that would have blocked the shutdown of the ActorSystem.
-          val timeout = coord.timeout(PhaseActorSystemTerminate)
-          val t = new Thread {
-            override def run(): Unit = {
-              if (Try(Await.ready(system.whenTerminated, timeout)).isFailure && !runningJvmHook)
-                System.exit(0)
-            }
-          }
-          t.setName("CoordinatedShutdown-exit")
-          t.start()
-        }
+  // locate reason-specific overrides and merge with defaults.
+  @InternalApi private[akka] def confWithOverrides(conf: Config, reason: Option[Reason]): Config = {
+    reason.flatMap { r ⇒
+      val basePath = s"""reason-overrides."${r.getClass.getName}""""
+      if (conf.hasPath(basePath)) Some(conf.getConfig(basePath).withFallback(conf)) else None
+    }.getOrElse(
+      conf
+    )
+  }
 
-        if (terminateActorSystem) {
-          system.terminate().map { _ ⇒
-            if (exitJvm && !runningJvmHook) System.exit(0)
-            Done
-          }(ExecutionContexts.sameThreadExecutionContext)
-        } else if (exitJvm) {
-          System.exit(0)
-          Future.successful(Done)
-        } else
-          Future.successful(Done)
+  private def initPhaseActorSystemTerminate(system: ActorSystem, conf: Config, coord: CoordinatedShutdown): Unit = {
+    coord.addTask(PhaseActorSystemTerminate, "terminate-system") { () ⇒
+      val confForReason = confWithOverrides(conf, coord.shutdownReason())
+      val terminateActorSystem = confForReason.getBoolean("terminate-actor-system")
+      val exitJvm = confForReason.getBoolean("exit-jvm")
+      val exitCode = confForReason.getInt("exit-code")
+
+      if (exitJvm && terminateActorSystem) {
+        // In case ActorSystem shutdown takes longer than the phase timeout,
+        // exit the JVM forcefully anyway.
+        // We must spawn a separate thread to not block current thread,
+        // since that would have blocked the shutdown of the ActorSystem.
+        val timeout = coord.timeout(PhaseActorSystemTerminate)
+        val t = new Thread {
+          override def run(): Unit = {
+            if (Try(Await.ready(system.whenTerminated, timeout)).isFailure && !runningJvmHook)
+              System.exit(exitCode)
+          }
+        }
+        t.setName("CoordinatedShutdown-exit")
+        t.start()
       }
+
+      if (terminateActorSystem) {
+        system.terminate().map { _ ⇒
+          if (exitJvm && !runningJvmHook) System.exit(exitCode)
+          Done
+        }(ExecutionContexts.sameThreadExecutionContext)
+      } else if (exitJvm) {
+        System.exit(exitCode)
+        Future.successful(Done)
+      } else
+        Future.successful(Done)
     }
   }
 
@@ -332,6 +344,8 @@ final class CoordinatedShutdown private[akka] (
       knownPhases(phase),
       s"Unknown phase [$phase], known phases [$knownPhases]. " +
         "All phases (along with their optional dependencies) must be defined in configuration")
+    require(taskName.nonEmpty, "Set a task name when adding tasks to the Coordinated Shutdown. " +
+      "Try to use unique, self-explanatory names.")
     val current = tasks.get(phase)
     if (current == null) {
       if (tasks.putIfAbsent(phase, Vector(taskName → task)) != null)

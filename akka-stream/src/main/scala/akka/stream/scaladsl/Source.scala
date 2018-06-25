@@ -132,7 +132,7 @@ final class Source[+Out, +Mat](
    * if there is a failure signaled in the stream.
    *
    * If the stream is empty (i.e. completes before signalling any elements),
-   * the reduce stage will fail its downstream with a [[NoSuchElementException]],
+   * the reduce operator will fail its downstream with a [[NoSuchElementException]],
    * which is semantically in-line with that Scala's standard library collections
    * do in such situations.
    */
@@ -321,7 +321,7 @@ object Source {
   def fromFutureSource[T, M](future: Future[Graph[SourceShape[T], M]]): Source[T, Future[M]] = fromGraph(new FutureFlattenSource(future))
 
   /**
-   * Streams the elements of an asynchronous source once its given `completion` stage completes.
+   * Streams the elements of an asynchronous source once its given `completion` operator completes.
    * If the [[CompletionStage]] fails the stream is failed with the exception from the future.
    * If downstream cancels before the stream completes the materialized `Future` will be failed
    * with a [[StreamDetachedException]]

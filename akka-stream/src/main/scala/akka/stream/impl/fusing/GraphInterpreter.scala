@@ -72,8 +72,8 @@ import akka.stream.Attributes.LogLevels
    * between an output and input ports.
    *
    * @param id Identifier of the connection.
-   * @param inOwner The stage logic that corresponds to the input side of the connection.
-   * @param outOwner The stage logic that corresponds to the output side of the connection.
+   * @param inOwner The operator logic that corresponds to the input side of the connection.
+   * @param outOwner The operator logic that corresponds to the output side of the connection.
    * @param inHandler The handler that contains the callback for input events.
    * @param outHandler The handler that contains the callback for output events.
    */
@@ -128,7 +128,7 @@ import akka.stream.Attributes.LogLevels
  *
  * The [[execute()]] method of the interpreter accepts an upper bound on the events it will process. After this limit
  * is reached or there are no more pending events to be processed, the call returns. It is possible to inspect
- * if there are unprocessed events left via the [[isSuspended]] method. [[isCompleted]] returns true once all stages
+ * if there are unprocessed events left via the [[isSuspended]] method. [[isCompleted]] returns true once all operators
  * reported completion inside the interpreter.
  *
  * The internal architecture of the interpreter is based on the usage of arrays and optimized for reducing allocations
@@ -176,7 +176,7 @@ import akka.stream.Attributes.LogLevels
  *                                         is a failure
  *
  * Sending an event is usually the following sequence:
- *  - An action is requested by a stage logic (push, pull, complete, etc.)
+ *  - An action is requested by an operator logic (push, pull, complete, etc.)
  *  - the state machine in portStates is transitioned from a ready state to a pending event
  *  - the affected Connection is enqueued
  *
@@ -184,7 +184,7 @@ import akka.stream.Attributes.LogLevels
  *  - the Connection to be processed is dequeued
  *  - the type of the event is determined from the bits set on portStates
  *  - the state machine in portStates is transitioned to a ready state
- *  - using the inHandlers/outHandlers table the corresponding callback is called on the stage logic.
+ *  - using the inHandlers/outHandlers table the corresponding callback is called on the operator logic.
  *
  * Because of the FIFO construction of the queue the interpreter is fair, i.e. a pending event is always executed
  * after a bounded number of other events. This property, together with suspendability means that even infinite cycles can
@@ -273,14 +273,14 @@ import akka.stream.Attributes.LogLevels
   def isSuspended: Boolean = queueHead != queueTail
 
   /**
-   * Returns true if there are no more running stages and pending events.
+   * Returns true if there are no more running operators and pending events.
    */
   def isCompleted: Boolean = runningStages == 0 && !isSuspended
 
   /**
-   * Initializes the states of all the stage logics by calling preStart().
+   * Initializes the states of all the operator logics by calling preStart().
    * The passed-in materializer is intended to be a SubFusingActorMaterializer
-   * that avoids creating new Actors when stages materialize sub-flows. If no
+   * that avoids creating new Actors when operators materialize sub-flows. If no
    * such materializer is available, passing in `null` will reuse the normal
    * materializer for the GraphInterpreter—fusing is only an optimization.
    */
@@ -304,7 +304,7 @@ import akka.stream.Attributes.LogLevels
   }
 
   /**
-   * Finalizes the state of all stages by calling postStop() (if necessary).
+   * Finalizes the state of all operators by calling postStop() (if necessary).
    */
   def finish(): Unit = {
     var i = 0

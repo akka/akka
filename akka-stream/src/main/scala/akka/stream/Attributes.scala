@@ -30,7 +30,7 @@ import scala.concurrent.duration.FiniteDuration
  * The ``attributeList`` is ordered with the most specific attribute first, least specific last.
  * Note that the order was the opposite in Akka 2.4.x.
  *
- * Stages should in general not access the `attributeList` but instead use `get` to get the expected
+ * Operators should in general not access the `attributeList` but instead use `get` to get the expected
  * value of an attribute.
  */
 final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
@@ -54,10 +54,10 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * Java API: Get the most specific attribute value for a given Attribute type or subclass thereof.
    * If no such attribute exists, return a `default` value.
    *
-   * The most specific value is the value that was added closest to the graph or stage itself or if
+   * The most specific value is the value that was added closest to the graph or operator itself or if
    * the same attribute was added multiple times to the same graph, the last to be added.
    *
-   * This is the expected way for stages to access attributes.
+   * This is the expected way for operators to access attributes.
    */
   def getAttribute[T <: Attribute](c: Class[T], default: T): T =
     getAttribute(c).orElse(default)
@@ -65,10 +65,10 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * Java API: Get the most specific attribute value for a given Attribute type or subclass thereof.
    *
-   * The most specific value is the value that was added closest to the graph or stage itself or if
+   * The most specific value is the value that was added closest to the graph or operator itself or if
    * the same attribute was added multiple times to the same graph, the last to be added.
    *
-   * This is the expected way for stages to access attributes.
+   * This is the expected way for operators to access attributes.
    */
   def getAttribute[T <: Attribute](c: Class[T]): Optional[T] =
     attributeList.collectFirst { case attr if c.isInstance(attr) ⇒ c.cast(attr) }.asJava
@@ -77,10 +77,10 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * Scala API: Get the most specific attribute value for a given Attribute type or subclass thereof or
    * if no such attribute exists, return a default value.
    *
-   * The most specific value is the value that was added closest to the graph or stage itself or if
+   * The most specific value is the value that was added closest to the graph or operator itself or if
    * the same attribute was added multiple times to the same graph, the last to be added.
    *
-   * This is the expected way for stages to access attributes.
+   * This is the expected way for operators to access attributes.
    */
   def get[T <: Attribute: ClassTag](default: T): T =
     get[T] match {
@@ -91,10 +91,10 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * Scala API: Get the most specific attribute value for a given Attribute type or subclass thereof.
    *
-   * The most specific value is the value that was added closest to the graph or stage itself or if
+   * The most specific value is the value that was added closest to the graph or operator itself or if
    * the same attribute was added multiple times to the same graph, the last to be added.
    *
-   * This is the expected way for stages to access attributes.
+   * This is the expected way for operators to access attributes.
    *
    * @see [[Attributes#get()]] For providing a default value if the attribute was not set
    */
@@ -187,7 +187,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * Test whether the given attribute is contained within this attributes list.
    *
-   * Note that stages in general should not inspect the whole hierarchy but instead use
+   * Note that operators in general should not inspect the whole hierarchy but instead use
    * `get` to get the most specific attribute value.
    */
   def contains(attr: Attribute): Boolean = attributeList.contains(attr)
@@ -198,7 +198,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * The list is ordered with the most specific attribute first, least specific last.
    * Note that the order was the opposite in Akka 2.4.x.
    *
-   * Note that stages in general should not inspect the whole hierarchy but instead use
+   * Note that operators in general should not inspect the whole hierarchy but instead use
    * `get` to get the most specific attribute value.
    */
   def getAttributeList(): java.util.List[Attribute] = {
@@ -213,7 +213,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    * The list is ordered with the most specific attribute first, least specific last.
    * Note that the order was the opposite in Akka 2.4.x.
    *
-   * Note that stages in general should not inspect the whole hierarchy but instead use
+   * Note that operators in general should not inspect the whole hierarchy but instead use
    * `get` to get the most specific attribute value.
    */
   def getAttributeList[T <: Attribute](c: Class[T]): java.util.List[T] =
@@ -230,7 +230,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * Scala API: Get all attributes of a given type (or subtypes thereof).
    *
-   * Note that stages in general should not inspect the whole hierarchy but instead use
+   * Note that operators in general should not inspect the whole hierarchy but instead use
    * `get` to get the most specific attribute value.
    *
    * The list is ordered with the most specific attribute first, least specific last.
@@ -328,7 +328,7 @@ object Attributes {
   /**
    * Java API
    *
-   * Configures `log()` stage log-levels to be used when logging.
+   * Configures `log()` operator log-levels to be used when logging.
    * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
    *
    * Passing in null as any of the arguments sets the level to its default value, which is:
@@ -341,7 +341,7 @@ object Attributes {
       onFailure = Option(onFailure).getOrElse(Logging.ErrorLevel))
 
   /**
-   * Configures `log()` stage log-levels to be used when logging.
+   * Configures `log()` operator log-levels to be used when logging.
    * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
    *
    * See [[Attributes.createLogLevels]] for Java API
@@ -402,7 +402,7 @@ object ActorAttributes {
   /**
    * Scala API: Decides how exceptions from user are to be handled.
    *
-   * Stages supporting supervision strategies explicitly document that they do so. If a stage does not document
+   * Operators supporting supervision strategies explicitly document that they do so. If a operator does not document
    * support for these, it should be assumed it does not support supervision.
    */
   def supervisionStrategy(decider: Supervision.Decider): Attributes =
@@ -411,7 +411,7 @@ object ActorAttributes {
   /**
    * Java API: Decides how exceptions from application code are to be handled.
    *
-   * Stages supporting supervision strategies explicitly document that they do so. If a stage does not document
+   * Operators supporting supervision strategies explicitly document that they do so. If a operator does not document
    * support for these, it should be assumed it does not support supervision.
    */
   def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): Attributes =
@@ -420,7 +420,7 @@ object ActorAttributes {
   /**
    * Java API
    *
-   * Configures `log()` stage log-levels to be used when logging.
+   * Configures `log()` operator log-levels to be used when logging.
    * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
    *
    * Passing in null as any of the arguments sets the level to its default value, which is:
@@ -433,7 +433,7 @@ object ActorAttributes {
       onFailure = Option(onFailure).getOrElse(Logging.ErrorLevel))
 
   /**
-   * Configures `log()` stage log-levels to be used when logging.
+   * Configures `log()` operator log-levels to be used when logging.
    * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
    *
    * See [[Attributes.createLogLevels]] for Java API
