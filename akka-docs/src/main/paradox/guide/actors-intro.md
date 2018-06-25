@@ -72,7 +72,7 @@ This is a very simple model and it solves the issues enumerated previously:
  * There is no need for locks. Modifying the internal state of an actor is only possible via messages, which are
    processed one at a time eliminating races when trying to keep invariants.
  * There are no locks used anywhere, and senders are not blocked. Millions of actors can be efficiently scheduled on a
-   dozen of threads reaching the full potential of modern CPUs. Task delegation is the natural mode of operation for actors.
+   dozen threads reaching the full potential of modern CPUs. Task delegation is the natural mode of operation for actors.
  * State of actors is local and not shared, changes and data is propagated via messages, which maps to how modern
    memory hierarchy actually works.    In many cases, this means transferring over only the cache lines that contain the data in the message while keeping local state and data cached at the original core. The same model maps exactly to remote communication where the state is kept in the RAM of machines and changes/data is propagated over the network as packets.
 
