@@ -455,11 +455,14 @@ private[akka] trait RememberingShard { selfType: Shard ⇒
     context.child(name) match {
       case Some(actor) ⇒
         actor.tell(payload, snd)
-
       case None ⇒
-        //Note; we only do this if remembering, otherwise the buffer is an overhead
-        messageBuffers.append(id, msg, snd)
-        processChange(EntityStarted(id))(sendMsgBuffer)
+        if (state.entities.contains(id)) {
+          getEntity(id).tell(payload, snd)
+        } else {
+          //Note; we only do this if remembering, otherwise the buffer is an overhead
+          messageBuffers.append(id, msg, snd)
+          processChange(EntityStarted(id))(sendMsgBuffer)
+        }
     }
   }
 
