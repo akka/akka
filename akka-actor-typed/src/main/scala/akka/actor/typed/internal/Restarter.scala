@@ -133,7 +133,7 @@ import scala.util.control.NonFatal
 
   protected def log(ctx: ActorContext[T], ex: Thr): Unit = {
     if (loggingEnabled)
-      ctx.asScala.log.error(ex, ex.getMessage)
+      ctx.asScala.log.error(ex, "Supervisor [{}] saw failure: {}", this, ex.getMessage)
   }
 }
 
@@ -156,6 +156,7 @@ import scala.util.control.NonFatal
   override protected def wrap(nextBehavior: Behavior[T], afterException: Boolean): Supervisor[T, Thr] =
     Supervisor.deduplicate(new Resumer[T, Thr](nextBehavior, loggingEnabled))
 
+  override def toString = "resume"
 }
 
 /**
@@ -175,6 +176,8 @@ import scala.util.control.NonFatal
 
   override protected def wrap(nextBehavior: Behavior[T], afterException: Boolean): Supervisor[T, Thr] =
     Supervisor.deduplicate(new Stopper[T, Thr](nextBehavior, loggingEnabled))
+
+  override def toString = "stop"
 
 }
 
@@ -197,6 +200,8 @@ import scala.util.control.NonFatal
 
   override protected def wrap(nextBehavior: Behavior[T], afterException: Boolean): Supervisor[T, Thr] =
     Supervisor.deduplicate(new Restarter[T, Thr](initialBehavior, nextBehavior, loggingEnabled))
+
+  override def toString = "restart"
 }
 
 /**
@@ -244,6 +249,8 @@ import scala.util.control.NonFatal
 
     Supervisor.deduplicate(restarter)
   }
+
+  override def toString = s"restartWithLimit(${strategy.maxNrOfRetries}, ${strategy.withinTimeRange}"
 }
 
 /**
@@ -346,5 +353,7 @@ import scala.util.control.NonFatal
     else
       Supervisor.deduplicate(new BackoffRestarter[T, Thr](initialBehavior, nextBehavior, strategy, restartCount, blackhole))
   }
+
+  override def toString = s"restartWithBackoff(${strategy.minBackoff}, ${strategy.maxBackoff}, ${strategy.randomFactor})"
 }
 
