@@ -38,11 +38,12 @@ public class FSMDocTest {
     static
     //#simple-events
     final class Timeout implements Event {}
+    final static Timeout TIMEOUT = new Timeout();
     //#simple-events
 
     //#simple-events
     public enum Flush implements Event {
-        Flush
+        FLUSH
     }
     //#simple-events
 
@@ -170,13 +171,17 @@ public class FSMDocTest {
     private static Behavior<Event> active(Todo data) {
         return Behaviors.withTimers(timers -> {
             // State timeouts done with withTimers
-            timers.startSingleTimer(new Timeout(), new Timeout(), Duration.ofSeconds(1));
+            timers.startSingleTimer("Timeout", TIMEOUT, Duration.ofSeconds(1));
             return Behaviors.receive(Event.class)
+                    .onMessage(Queue.class, (ctx, msg) -> active(data.addElement(msg)))
                     .onMessage(Flush.class, (ctx, msg) -> {
                         data.getTarget().tell(new Batch(data.queue));
                        return idle(data.copy(new ArrayList<>()));
                     })
-                    .build();
+                    .onMessage(Timeout.class, (ctx, msg) -> {
+                        data.getTarget().tell(new Batch(data.queue));
+                        return idle(data.copy(new ArrayList<>()));
+                    }).build();
         });
     }
     //#simple-state
