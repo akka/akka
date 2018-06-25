@@ -6,6 +6,7 @@ package akka.io
 
 import java.lang.{ Iterable ⇒ JIterable }
 import java.net.InetSocketAddress
+import scala.collection.compat._
 import scala.collection.immutable
 import akka.io.Inet.SocketOption
 import akka.io.Udp.UdpSettings
@@ -248,6 +249,6 @@ object UdpConnectedMessage {
 
   implicit private def fromJava[T](coll: JIterable[T]): immutable.Traversable[T] = {
     import scala.collection.JavaConverters._
-    coll.asScala.to[immutable.Traversable]
+    coll.asScala.to(immutable.Traversable)
   }
 }

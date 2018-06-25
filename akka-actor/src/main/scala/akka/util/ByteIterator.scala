@@ -8,6 +8,7 @@ import java.nio.{ ByteBuffer, ByteOrder }
 
 import scala.annotation.tailrec
 import scala.collection.LinearSeq
+import scala.collection.compat._
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
 
@@ -33,7 +34,7 @@ object ByteIterator {
     @inline final def head: Byte = array(from)
 
     final def next(): Byte = {
-      if (!hasNext) Iterator.empty.next
+      if (!hasNext) Iterator.empty.next()
       else { val i = from; from = from + 1; array(i) }
     }
 
@@ -106,7 +107,7 @@ object ByteIterator {
       if (n <= this.len) {
         Array.copy(this.array, this.from, xs, offset, n)
         this.drop(n)
-      } else Iterator.empty.next
+      } else Iterator.empty.next()
     }
 
     private def wrappedByteBuffer: ByteBuffer = ByteBuffer.wrap(array, from, len).asReadOnlyBuffer
@@ -229,7 +230,7 @@ object ByteIterator {
     }
 
     final override def clone: MultiByteArrayIterator = {
-      val clonedIterators: List[ByteArrayIterator] = iterators.map(_.clone)(collection.breakOut)
+      val clonedIterators: List[ByteArrayIterator] = iterators.map(_.clone).to(List)
       new MultiByteArrayIterator(clonedIterators)
     }
 
@@ -443,9 +444,9 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
     if (found) index else -1
   }
 
-  def indexOf(elem: Byte): Int = indexWhere { _ == elem }
+  def indexOf(elem: Byte): Int = indexWhere { (_: Byte) == elem }
 
-  override def indexOf[B >: Byte](elem: B): Int = indexWhere { _ == elem }
+  override def indexOf[B >: Byte](elem: B): Int = indexWhere { (_: Byte) == elem }
 
   def toByteString: ByteString
 

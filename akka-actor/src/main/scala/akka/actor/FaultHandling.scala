@@ -9,6 +9,7 @@ import language.implicitConversions
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.concurrent.TimeUnit
 import akka.japi.Util.immutableSeq
+import scala.collection.compat._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
@@ -234,7 +235,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
         case x  ⇒ buf insert (x, ca)
       }
       buf
-    }.to[immutable.IndexedSeq]
+    }.to(immutable.IndexedSeq)
 
   private[akka] def withinTimeRangeOption(withinTimeRange: Duration): Option[Duration] =
     if (withinTimeRange.isFinite && withinTimeRange >= Duration.Zero) Some(withinTimeRange) else None

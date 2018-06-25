@@ -9,6 +9,7 @@ import akka.actor._
 import akka.event.{ LogMarker, Logging, LoggingAdapter }
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.collection.compat._
 import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
 
@@ -400,7 +401,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   private val serializers: Map[String, Serializer] = {
     val fromConfig = for ((k: String, v: String) ← settings.Serializers) yield k → serializerOf(v).get
     val result = fromConfig ++ serializerDetails.map(d ⇒ d.alias → d.serializer)
-    ensureOnlyAllowedSerializers(result.map { case (_, ser) ⇒ ser }(collection.breakOut))
+    ensureOnlyAllowedSerializers(result.map { case (_, ser) ⇒ ser }.iterator)
     result
   }
 
@@ -419,7 +420,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     }
 
     val result = sort(fromConfig ++ fromSettings)
-    ensureOnlyAllowedSerializers(result.map { case (_, ser) ⇒ ser }(collection.breakOut))
+    ensureOnlyAllowedSerializers(result.map { case (_, ser) ⇒ ser }.iterator)
     result
   }
 
@@ -447,7 +448,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
         case x  ⇒ buf insert (x, ca)
       }
       buf
-    }).to[immutable.Seq]
+    }).to(immutable.Seq)
 
   /**
    * serializerMap is a Map whose keys is the class that is serializable and values is the serializer

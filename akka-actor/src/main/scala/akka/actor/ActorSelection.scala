@@ -10,6 +10,7 @@ import java.util.concurrent.CompletionStage
 import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.collection.compat._
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -194,7 +195,7 @@ object ActorSelection {
         if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
         else if (x == "..") SelectParent
         else SelectChildName(x)
-    })(scala.collection.breakOut)
+    }).to(immutable.IndexedSeq)
     new ActorSelection with ScalaActorSelection {
       override val anchor = anchorRef
       override val path = compiled

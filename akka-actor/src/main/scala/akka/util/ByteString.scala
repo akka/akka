@@ -10,6 +10,7 @@ import java.lang.{ Iterable ⇒ JIterable }
 
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.IndexedSeqOptimized
+import scala.collection.compat._
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.immutable
 import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
@@ -145,8 +146,8 @@ object ByteString {
 
   implicit val canBuildFrom: CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] =
     new CanBuildFrom[TraversableOnce[Byte], Byte, ByteString] {
-      def apply(ignore: TraversableOnce[Byte]): ByteStringBuilder = newBuilder
-      def apply(): ByteStringBuilder = newBuilder
+      def apply(ignore: TraversableOnce[Byte]): ByteStringBuilder = new ByteStringBuilder
+      def apply(): ByteStringBuilder = new ByteStringBuilder
     }
 
   private[akka] object ByteString1C extends Companion {
@@ -844,7 +845,7 @@ object CompactByteString {
    */
   def apply[T](bytes: T*)(implicit num: Integral[T]): CompactByteString = {
     if (bytes.isEmpty) empty
-    else ByteString.ByteString1C(bytes.map(x ⇒ num.toInt(x).toByte)(collection.breakOut))
+    else ByteString.ByteString1C(bytes.map(x ⇒ num.toInt(x).toByte).to(Array))
   }
 
   /**
@@ -997,14 +998,14 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
         putByteArrayUnsafe(xs.array.clone)
       case seq: collection.IndexedSeq[Byte] if shouldResizeTempFor(seq.length) ⇒
         val copied = new Array[Byte](seq.length)
-        seq.copyToArray(copied)
+        xs.copyToArray(copied, 0)
 
         clearTemp()
         _builder += ByteString.ByteString1(copied)
         _length += seq.length
-      case seq: collection.IndexedSeq[_] ⇒
-        ensureTempSize(_tempLength + xs.size)
-        xs.copyToArray(_temp, _tempLength)
+      case seq: collection.IndexedSeq[Byte] ⇒
+        ensureTempSize(_tempLength + seq.size)
+        seq.copyToArray(_temp, _tempLength)
         _tempLength += seq.length
         _length += seq.length
       case _ ⇒

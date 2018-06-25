@@ -5,6 +5,7 @@
 package akka.util
 
 import scala.collection.immutable
+import scala.collection.compat._
 
 /**
  * Typeclass which describes a classification hierarchy. Observe the contract between `isEqual` and `isSubclass`!
@@ -211,5 +212,5 @@ private[akka] class SubclassifiedIndex[K, V] private (protected var values: Set[
   private def mergeChangesByKey(changes: Changes): Changes =
     (emptyMergeMap[K, V] /: changes) {
       case (m, (k, s)) ⇒ m.updated(k, m(k) ++ s)
-    }.to[immutable.Seq]
+    }.to(immutable.Seq)
 }

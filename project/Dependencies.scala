@@ -15,7 +15,8 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
-  val sslConfigVersion = "0.2.3"
+  // from https://github.com/lightbend/ssl-config/pull/83
+  val sslConfigVersion = "0.2.4-SNAPSHOT"
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
   val aeronVersion = "1.9.1"
@@ -81,6 +82,9 @@ object Dependencies {
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
+
+    val collectionCompat = "org.scala-lang.modules" %% "scala-collection-compat" % "0.1.1" // BSD New
+
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.3" % "test"
       val gson = "com.google.code.gson" % "gson" % "2.8.2" % "test"
@@ -137,7 +141,7 @@ object Dependencies {
   // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
 
-  val actor = l ++= Seq(config, java8Compat.value)
+  val actor = l ++= Seq(config, collectionCompat, java8Compat.value)
 
   val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
@@ -186,7 +190,7 @@ object Dependencies {
 
   lazy val stream = l ++= Seq[sbt.ModuleID](
     reactiveStreams,
-    //sslConfigCore,
+    sslConfigCore,
     Test.scalatest.value)
 
   lazy val streamTestkit = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit)

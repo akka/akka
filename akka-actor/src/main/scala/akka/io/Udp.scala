@@ -7,6 +7,7 @@ package akka.io
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
 import com.typesafe.config.Config
+import scala.collection.compat._
 import scala.collection.immutable
 import akka.io.Inet.{ SoJavaFactories, SocketOption }
 import akka.util.Helpers.Requiring
