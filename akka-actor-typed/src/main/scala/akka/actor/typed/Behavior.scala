@@ -107,7 +107,7 @@ object Behavior {
      * receive[String] { (ctx, msg) => println(msg); same }.widen[Number] {
      *   case b: BigDecimal => s"BigDecimal(&dollar;b)"
      *   case i: BigInteger => s"BigInteger(&dollar;i)"
-     *   // drop all other kinds of Number
+     *   // all other kinds of Number will be `unhandled`
      * }
      * }}}
      */

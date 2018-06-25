@@ -52,7 +52,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
     def unbind(): CompletionStage[Unit] = delegate.unbind().toJava
 
     /**
-     * @return A completion stage that is completed when manually unbound, or failed if the server fails
+     * @return A completion operator that is completed when manually unbound, or failed if the server fails
      */
     def whenUnbound(): CompletionStage[Done] = delegate.whenUnbound.toJava
   }
@@ -165,7 +165,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Note that the ByteString chunk boundaries are not retained across the network,
    * to achieve application level chunks you have to introduce explicit framing in your streams,
-   * for example using the [[Framing]] stages.
+   * for example using the [[Framing]] operators.
    *
    * @param remoteAddress The remote address to connect to
    * @param localAddress  Optional local address for the connection
@@ -196,7 +196,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Note that the ByteString chunk boundaries are not retained across the network,
    * to achieve application level chunks you have to introduce explicit framing in your streams,
-   * for example using the [[Framing]] stages.
+   * for example using the [[Framing]] operators.
    */
   def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]] =
     Flow.fromGraph(delegate.outgoingConnection(new InetSocketAddress(host, port))

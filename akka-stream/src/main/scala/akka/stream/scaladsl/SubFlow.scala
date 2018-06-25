@@ -50,7 +50,7 @@ trait SubFlow[+Out, +Mat, +F[+_], C] extends FlowOps[Out, Mat] {
    * Flatten the sub-flows back into the super-flow by concatenating them.
    * This is usually a bad idea when combined with `groupBy` since it can
    * easily lead to deadlock—the concatenation does not consume from the second
-   * substream until the first has finished and the `groupBy` stage will get
+   * substream until the first has finished and the `groupBy` operator will get
    * back-pressure from the second stream.
    *
    * This is identical in effect to `mergeSubstreamsWithParallelism(1)`.

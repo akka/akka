@@ -442,7 +442,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
 
   /**
    * @param out The permanent outlet
-   * @return A sub sink inlet that's sink is attached to the wrapped stage
+   * @return A sub sink inlet that's sink is attached to the wrapped operator
    */
   protected final def createSubInlet[T](out: Outlet[T]): SubSinkInlet[T] = {
     val sinkIn = new SubSinkInlet[T](s"RestartWithBackoff$name.subIn")
@@ -482,7 +482,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   }
 
   /**
-   * @param in The permanent inlet for this stage
+   * @param in The permanent inlet for this operator
    * @return Temporary SubSourceOutlet for this "restart"
    */
   protected final def createSubOutlet[T](in: Inlet[T]): SubSourceOutlet[T] = {

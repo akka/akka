@@ -25,7 +25,7 @@ private[stream] final case class SinkRefImpl[In](initialPartnerRef: ActorRef) ex
 }
 
 /**
- * INTERNAL API: Actual stage implementation backing [[SinkRef]]s.
+ * INTERNAL API: Actual operator implementation backing [[SinkRef]]s.
  *
  * If initialPartnerRef is set, then the remote side is already set up. If it is none, then we are the side creating
  * the ref.

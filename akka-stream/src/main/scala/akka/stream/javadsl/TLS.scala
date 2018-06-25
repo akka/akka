@@ -40,17 +40,17 @@ import scala.util.Try
  * The TLS specification does not permit half-closing of the user data session
  * that it transports—to be precise a half-close will always promptly lead to a
  * full close. This means that canceling the plaintext output or completing the
- * plaintext input of the SslTls stage will lead to full termination of the
+ * plaintext input of the SslTls operator will lead to full termination of the
  * secure connection without regard to whether bytes are remaining to be sent or
  * received, respectively. Especially for a client the common idiom of attaching
  * a finite Source to the plaintext input and transforming the plaintext response
  * bytes coming out will not work out of the box due to early termination of the
  * connection. For this reason there is a parameter that determines whether the
- * SslTls stage shall ignore completion and/or cancellation events, and the
+ * SslTls operator shall ignore completion and/or cancellation events, and the
  * default is to ignore completion (in view of the client–server scenario). In
  * order to terminate the connection the client will then need to cancel the
  * plaintext output as soon as all expected bytes have been received. When
- * ignoring both types of events the stage will shut down once both events have
+ * ignoring both types of events the operator will shut down once both events have
  * been received. See also [[TLSClosing]].
  */
 object TLS {
