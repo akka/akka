@@ -250,7 +250,7 @@ import scala.util.control.NonFatal
     Supervisor.deduplicate(restarter)
   }
 
-  override def toString = s"restartWithLimit(${strategy.maxNrOfRetries}, ${strategy.withinTimeRange}"
+  override def toString = s"restartWithLimit(${strategy.maxNrOfRetries}, ${strategy.withinTimeRange})"
 }
 
 /**
