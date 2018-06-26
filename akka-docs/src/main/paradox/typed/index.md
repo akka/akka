@@ -17,6 +17,7 @@
 * [cluster-singleton](cluster-singleton.md)
 * [cluster-sharding](cluster-sharding.md)
 * [persistence](persistence.md)
+* [fsm](fsm.md)
 * [testing](testing.md)
 
 @@@
