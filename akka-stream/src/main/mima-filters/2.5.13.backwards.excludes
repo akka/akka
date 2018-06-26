@@ -3,3 +3,10 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Flow.tak
 
 # Wrong return type of FlowMonitorState.finished #24885
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.FlowMonitorState.finished")
+
+# JsonObjectParser.Whitespace removal #25260
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.JsonObjectParser.Whitespace")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.Tab")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.Space")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.LineBreak2")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.LineBreak")
