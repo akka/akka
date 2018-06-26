@@ -8,6 +8,7 @@ import java.io.File
 
 import sbt._
 
+import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
 
 case class JavaVersion(numbers: Vector[Long], vendor: Option[String]) {
@@ -73,15 +74,36 @@ object CrossJava {
     def javaHomes: Vector[(String, File)]
   }
 
+  // Sort version strings, considering 1.8.0 < 1.8.0_45 < 1.8.0_121
+  @tailrec
+  def versionOrder(left: String, right: String): Boolean = {
+    val Pattern = """.*?([0-9]+)(.*)""".r
+    left match {
+      case Pattern(leftNumber, leftRest) =>
+        right match {
+          case Pattern(rightNumber, rightRest) =>
+            if (Integer.parseInt(leftNumber) < Integer.parseInt(rightNumber)) true
+            else if (Integer.parseInt(leftNumber) > Integer.parseInt(rightNumber)) false
+            else versionOrder(leftRest, rightRest)
+          case _ =>
+            false
+        }
+      case _ =>
+        true
+    }
+  }
+
   object JavaDiscoverConfig {
     val linux = new JavaDiscoverConf {
       val base: File = file("/usr") / "lib" / "jvm"
       val JavaHomeDir = """java-([0-9]+)-.*""".r
 
       def javaHomes: Vector[(String, File)] =
-        wrapNull(base.list()).collect {
-          case dir@JavaHomeDir(ver) => JavaVersion(ver).toString -> (base / dir)
-        }
+        wrapNull(base.list())
+          .sortWith(versionOrder)
+          .collect {
+            case dir@JavaHomeDir(ver) => JavaVersion(ver).toString -> (base / dir)
+          }
     }
 
     val macOS = new JavaDiscoverConf {
@@ -89,10 +111,12 @@ object CrossJava {
       val JavaHomeDir = """jdk-?(1\.)?([0-9]+).*""".r
 
       def javaHomes: Vector[(String, File)] =
-        wrapNull(base.list()).collect {
-          case dir@JavaHomeDir(m, n) =>
-            JavaVersion(nullBlank(m) + n).toString -> (base / dir / "Contents" / "Home")
-        }
+        wrapNull(base.list())
+          .sortWith(versionOrder)
+          .collect {
+            case dir@JavaHomeDir(m, n) =>
+              JavaVersion(nullBlank(m) + n).toString -> (base / dir / "Contents" / "Home")
+            }
     }
 
     // See https://github.com/shyiko/jabba
@@ -101,12 +125,14 @@ object CrossJava {
       val JavaHomeDir = """([\w\-]+)\@(1\.)?([0-9]+).*""".r
 
       def javaHomes: Vector[(String, File)] =
-        wrapNull(base.list()).collect {
-          case dir@JavaHomeDir(vendor, m, n) =>
-            val v = JavaVersion(nullBlank(m) + n).withVendor(vendor).toString
-            if ((base / dir / "Contents" / "Home").exists) v -> (base / dir / "Contents" / "Home")
-            else v -> (base / dir)
-        }
+        wrapNull(base.list())
+          .sortWith(versionOrder)
+          .collect {
+            case dir@JavaHomeDir(vendor, m, n) =>
+              val v = JavaVersion(nullBlank(m) + n).withVendor(vendor).toString
+              if ((base / dir / "Contents" / "Home").exists) v -> (base / dir / "Contents" / "Home")
+              else v -> (base / dir)
+          }
     }
   }
 
