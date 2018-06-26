@@ -9,6 +9,7 @@ import akka.annotation.InternalApi
 import akka.persistence.fsm.PersistentFSM.FSMState
 import akka.persistence.serialization.Message
 import akka.persistence.{ PersistentActor, RecoveryCompleted, SnapshotOffer }
+import akka.util.JavaDurationConverters
 import com.typesafe.config.Config
 
 import scala.annotation.varargs
@@ -359,6 +360,18 @@ object PersistentFSM {
     def forMax(timeout: Duration): State[S, D, E] = timeout match {
       case f: FiniteDuration ⇒ copy(timeout = Some(f))
       case _                 ⇒ copy(timeout = PersistentFSM.SomeMaxFiniteDuration) // we need to differentiate "not set" from disabled
+    }
+
+    /**
+     * Java API: Modify state transition descriptor to include a state timeout for the
+     * next state. This timeout overrides any default timeout set for the next
+     * state.
+     *
+     * Use Duration.Inf to deactivate an existing timeout.
+     */
+    def forMax(timeout: java.time.Duration): State[S, D, E] = {
+      import JavaDurationConverters._
+      forMax(timeout.asScala)
     }
 
     /**
