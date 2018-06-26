@@ -19,7 +19,7 @@ dive into the multiple ways of constructing and re-using graphs, as well as expl
 
 Graphs are needed whenever you want to perform any kind of fan-in ("multiple inputs") or fan-out ("multiple outputs") operations.
 Considering linear Flows to be like roads, we can picture graph operations as junctions: multiple flows being connected at a single point.
-Some graph operations which are common enough and fit the linear style of Flows, such as `concat` (which concatenates two
+Some operators which are common enough and fit the linear style of Flows, such as `concat` (which concatenates two
 streams, such that the second one is consumed after the first one has completed), may have shorthand methods defined on
 `Flow` or `Source` themselves, however you should keep in mind that those are also implemented as graph junctions.
 
@@ -80,7 +80,7 @@ By looking at the snippets above, it should be apparent that the @scala[`GraphDS
 @scala[It is used (implicitly) by the `~>` operator, also making it a mutable operation as well.]
 The reason for this design choice is to enable simpler creation of complex graphs, which may even contain cycles.
 Once the GraphDSL has been constructed though, the @scala[`GraphDSL`]@java[`RunnableGraph`] instance *is immutable, thread-safe, and freely shareable*.
-The same is true of all graph pieces—sources, sinks, and flows—once they are constructed.
+The same is true of all operators—sources, sinks, and flows—once they are constructed.
 This means that you can safely re-use one given Flow or junction in multiple places in a processing graph.
 
 We have seen examples of such re-use already above: the merge and broadcast junctions were imported

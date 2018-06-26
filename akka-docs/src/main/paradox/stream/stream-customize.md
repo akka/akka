@@ -19,7 +19,7 @@ junctions of various kinds.
 
 @@@ note
 
-A custom operator should not be the first tool you reach for, defining graphs using flows
+A custom operator should not be the first tool you reach for, defining operators using flows
 and the graph DSL is in general easier and does to a larger extent protect you from mistakes that
 might be easy to make with a custom @ref[`GraphStage`](stream-customize.md)
 
@@ -71,7 +71,7 @@ Scala
 Instances of the above `GraphStage` are subclasses of @scala[`Graph[SourceShape[Int],NotUsed]`] @java[`Graph<SourceShape<Integer>,NotUsed>`] which means
 that they are already usable in many situations, but do not provide the DSL methods we usually have for other
 `Source` s. In order to convert this `Graph` to a proper `Source` we need to wrap it using
-`Source.fromGraph` (see @ref:[Modularity, Composition and Hierarchy](stream-composition.md) for more details about graphs and DSLs). Now we can use the
+`Source.fromGraph` (see @ref:[Modularity, Composition and Hierarchy](stream-composition.md) for more details about operators and DSLs). Now we can use the
 source as any other built-in one:
 
 Scala
@@ -498,7 +498,7 @@ or the downstreams. Even for operators that do not complete or fail in this mann
 ## Extending Flow Operators with Custom Operators
 
 The most general way of extending any `Source`, `Flow` or `SubFlow` (e.g. from `groupBy`) is
-demonstrated above: create a graph of flow-shape like the `Duplicator` example given above and use the `.via(...)`
+demonstrated above: create a operator of flow-shape like the `Duplicator` example given above and use the `.via(...)`
 operator to integrate it into your stream topology. This works with all `FlowOps` sub-types, including the
 ports that you connect with the graph DSL.
 
