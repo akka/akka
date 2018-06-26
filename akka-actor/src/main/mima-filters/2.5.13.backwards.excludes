@@ -1,0 +1,3 @@
+# Fix NotInfluenceReceiveTimeout behavior when used with Timers trait (#24989)
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.actor.TimerSchedulerImpl$TimerMsg")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.TimerSchedulerImpl$TimerMsg$")
