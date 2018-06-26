@@ -22,7 +22,7 @@ so create one per logical application.
 
 Like in an economic organization, actors naturally form hierarchies. One actor,
 which is to oversee a certain function in the program might want to split up
-its task into smaller, more manageable pieces. For this purpose it starts child
+its task into smaller, more manageable pieces. For this purpose, it starts child
 actors which it supervises. While the details of supervision are explained
 @ref:[here](supervision.md), we shall concentrate on the underlying concepts in
 this section. The only prerequisite is to know that each actor has exactly one
@@ -71,7 +71,7 @@ follow the rules or break them, you should always have a reason.
 
 The actor system as a collaborating ensemble of actors is the natural unit for
 managing shared facilities like scheduling services, configuration, logging,
-etc. Several actor systems with different configuration may co-exist within the
+etc. Several actor systems with different configurations may co-exist within the
 same JVM without problems, there is no global shared state within Akka itself.
 Couple this with the transparent communication between actor systems—within one
 node or across a network connection—to see that actor systems themselves can be
