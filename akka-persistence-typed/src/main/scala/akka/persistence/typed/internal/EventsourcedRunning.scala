@@ -12,7 +12,7 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
-import akka.persistence.typed.PersistFailedException
+import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, MDC }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
 
@@ -228,13 +228,12 @@ private[akka] object EventsourcedRunning {
 
         case WriteMessageRejected(p, cause, id) ⇒
           if (id == setup.writerIdentity.instanceId) {
-            onPersistRejected(cause, p.payload, p.sequenceNr) // does not stop (by design)
-            onWriteResponse(p)
+            throw EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
         case WriteMessageFailure(p, cause, id) ⇒
           if (id == setup.writerIdentity.instanceId)
-            throw PersistFailedException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
+            throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           else this
 
         case WriteMessagesSuccessful ⇒
@@ -249,13 +248,6 @@ private[akka] object EventsourcedRunning {
           // ignore all other messages, since they relate to recovery handling which we're not dealing with in Running phase
           Behaviors.unhandled
       }
-    }
-
-    private def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
-      setup.log.error(
-        cause,
-        "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
-        event.getClass.getName, seqNr, setup.persistenceId, cause.getMessage)
     }
 
   }

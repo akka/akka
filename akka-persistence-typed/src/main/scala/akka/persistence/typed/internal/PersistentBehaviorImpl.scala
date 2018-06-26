@@ -10,7 +10,7 @@ import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, SupervisorStrateg
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.persistence._
-import akka.persistence.typed.{ EventAdapter, NoOpEventAdapter, PersistFailedException }
+import akka.persistence.typed.{ EventAdapter, NoOpEventAdapter }
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
@@ -32,19 +32,19 @@ private[akka] object PersistentBehaviorImpl {
 
 @InternalApi
 private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
-  persistenceId:     String,
-  emptyState:        State,
-  commandHandler:    PersistentBehaviors.CommandHandler[Command, Event, State],
-  eventHandler:      PersistentBehaviors.EventHandler[State, Event],
-  journalPluginId:   Option[String]                                              = None,
-  snapshotPluginId:  Option[String]                                              = None,
-  recoveryCompleted: (ActorContext[Command], State) ⇒ Unit                       = ConstantFun.scalaAnyTwoToUnit,
-  tagger:            Event ⇒ Set[String]                                         = (_: Event) ⇒ Set.empty[String],
-  eventAdapter:      EventAdapter[Event, _]                                      = NoOpEventAdapter.instance[Event],
-  snapshotWhen:      (State, Event, Long) ⇒ Boolean                              = ConstantFun.scalaAnyThreeToFalse,
-  recovery:          Recovery                                                    = Recovery(),
+  persistenceId:       String,
+  emptyState:          State,
+  commandHandler:      PersistentBehaviors.CommandHandler[Command, Event, State],
+  eventHandler:        PersistentBehaviors.EventHandler[State, Event],
+  journalPluginId:     Option[String]                                              = None,
+  snapshotPluginId:    Option[String]                                              = None,
+  recoveryCompleted:   (ActorContext[Command], State) ⇒ Unit                       = ConstantFun.scalaAnyTwoToUnit,
+  tagger:              Event ⇒ Set[String]                                         = (_: Event) ⇒ Set.empty[String],
+  eventAdapter:        EventAdapter[Event, _]                                      = NoOpEventAdapter.instance[Event],
+  snapshotWhen:        (State, Event, Long) ⇒ Boolean                              = ConstantFun.scalaAnyThreeToFalse,
+  recovery:            Recovery                                                    = Recovery(),
   supervisionStrategy: SupervisorStrategy                                          = SupervisorStrategy.stop,
-  onSnapshot:          (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit = PersistentBehaviorImpl.defaultOnSnapshot[Command]
+  onSnapshot:          (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit = PersistentBehaviorImpl.defaultOnSnapshot[Command] _
 ) extends PersistentBehavior[Command, Event, State] with EventsourcedStashReferenceManagement {
 
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
@@ -84,7 +84,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
         case res: SnapshotProtocol.Response          ⇒ InternalProtocol.SnapshotterResponse(res)
         case RecoveryPermitter.RecoveryPermitGranted ⇒ InternalProtocol.RecoveryPermitGranted
         case cmd: Command @unchecked                 ⇒ InternalProtocol.IncomingCommand(cmd)
-      }.narrow[Command]).onFailure[PersistFailedException](supervisionStrategy)
+      }.narrow[Command]).onFailure[JournalFailureException](supervisionStrategy)
   }
 
   /**

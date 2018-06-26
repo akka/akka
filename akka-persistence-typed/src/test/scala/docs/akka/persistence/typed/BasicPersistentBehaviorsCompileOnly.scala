@@ -6,7 +6,6 @@ package docs.akka.persistence.typed
 
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.typed.PersistFailedException
 import akka.persistence.typed.scaladsl.PersistentBehaviors
 
 import scala.concurrent.duration._

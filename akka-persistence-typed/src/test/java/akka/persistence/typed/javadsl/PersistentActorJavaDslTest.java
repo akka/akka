@@ -100,7 +100,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   public static class Incremented implements Serializable {
-    private final int delta;
+    final int delta;
 
     public Incremented(int delta) {
       this.delta = delta;
@@ -129,8 +129,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   public static class State implements Serializable {
-    private final int value;
-    private final List<Integer> history;
+    final int value;
+    final List<Integer> history;
 
     public State(int value, List<Integer> history) {
       this.value = value;
