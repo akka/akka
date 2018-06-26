@@ -260,7 +260,7 @@ this mode of operation is referred to as pull-based back-pressure.
 ## Stream Materialization
 
 When constructing flows and graphs in Akka Streams think of them as preparing a blueprint, an execution plan.
-Stream materialization is the process of taking a stream description (the graph) and allocating all the necessary resources
+Stream materialization is the process of taking a stream description (`RunnableGraph`) and allocating all the necessary resources
 it needs in order to run. In the case of Akka Streams this often means starting up Actors which power the processing,
 but is not restricted to that—it could also mean opening files or socket connections etc.—depending on what the stream needs.
 
@@ -285,7 +285,7 @@ yet will materialize that operator multiple times.
 ### Operator Fusion
 
 By default Akka Streams will fuse the stream operators. This means that the processing steps of a flow or
-stream graph can be executed within the same Actor and has two consequences:
+stream can be executed within the same Actor and has two consequences:
 
  * passing elements from one operator to the next is a lot faster between fused
 operators due to avoiding the asynchronous messaging overhead
@@ -293,8 +293,8 @@ operators due to avoiding the asynchronous messaging overhead
 only up to one CPU core is used for each fused part
 
 To allow for parallel processing you will have to insert asynchronous boundaries manually into your flows and
-graphs by way of adding `Attributes.asyncBoundary` using the method `async` on `Source`, `Sink` and `Flow`
-to pieces that shall communicate with the rest of the graph in an asynchronous fashion.
+operators by way of adding `Attributes.asyncBoundary` using the method `async` on `Source`, `Sink` and `Flow`
+to operators that shall communicate with the downstream of the graph in an asynchronous fashion.
 
 Scala
 :   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-async }
@@ -341,7 +341,7 @@ Java
 
 @@@ note
 
-In Graphs it is possible to access the materialized value from inside the stream processing graph. For details see @ref:[Accessing the materialized value inside the Graph](stream-graphs.md#graph-matvalue).
+In Graphs it is possible to access the materialized value from inside the stream. For details see @ref:[Accessing the materialized value inside the Graph](stream-graphs.md#graph-matvalue).
 
 @@@
 
