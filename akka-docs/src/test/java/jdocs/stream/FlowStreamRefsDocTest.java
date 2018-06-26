@@ -10,22 +10,15 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.pattern.PatternsCS;
-import akka.remote.WireFormats;
 import akka.stream.*;
 import akka.stream.javadsl.*;
-import akka.testkit.TestProbe;
 import akka.testkit.javadsl.TestKit;
 import jdocs.AbstractJavaTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.CompletionStage;
-
-import static org.junit.Assert.assertEquals;
 
 public class FlowStreamRefsDocTest extends AbstractJavaTest {
 

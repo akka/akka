@@ -14,10 +14,9 @@ import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
+
+import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 public class InitializationDocTest extends AbstractJavaTest {
 
@@ -29,8 +28,8 @@ public class InitializationDocTest extends AbstractJavaTest {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
-    Await.ready(system.terminate(), Duration.create("5 seconds"));
+  public static void afterClass() {
+    TestKit.shutdownActorSystem(system);
   }
   
   static public class PreStartInitExample extends AbstractActor {
@@ -141,7 +140,7 @@ public class InitializationDocTest extends AbstractJavaTest {
       String msg = "U OK?";
 
       testactor.tell(msg, getRef());
-      expectNoMsg(Duration.create(1, TimeUnit.SECONDS));
+      expectNoMessage(Duration.ofSeconds(1));
 
       testactor.tell("init", getRef());
       testactor.tell(msg, getRef());
