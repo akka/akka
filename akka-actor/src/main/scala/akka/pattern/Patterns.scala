@@ -322,6 +322,34 @@ object PatternsCS {
     scalaAsk(actor, message)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
+   * <i>Java API for `akka.pattern.ask`:</i>
+   * Sends a message asynchronously and returns a [[java.util.concurrent.CompletionStage]]
+   * holding the eventual reply message; this means that the target actor
+   * needs to send the result to the `sender` reference provided. The CompletionStage
+   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * given timeout has expired; this is independent from any timeout applied
+   * while awaiting a result for this future (i.e. in
+   * `Await.result(..., timeout)`).
+   *
+   * <b>Warning:</b>
+   * When using future callbacks, inside actors you need to carefully avoid closing over
+   * the containing actor’s object, i.e. do not call methods or access mutable state
+   * on the enclosing actor from within the callback. This would break the actor
+   * encapsulation and may introduce synchronization bugs and race conditions because
+   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
+   * there is not yet a way to detect these illegal accesses at compile time.
+   *
+   * <b>Recommended usage:</b>
+   *
+   * {{{
+   *   final CompletionStage<Object> f = PatternsCS.ask(worker, request, duration);
+   *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
+   * }}}
+   */
+  def ask(actor: ActorRef, message: Any, duration: java.time.Duration): CompletionStage[AnyRef] =
+    ask(actor, message, Timeout.create(duration))
+
+  /**
    * A variation of ask which allows to implement "replyTo" pattern by including
    * sender reference in message.
    *
@@ -338,6 +366,24 @@ object PatternsCS {
    */
   def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeout: Timeout): CompletionStage[AnyRef] =
     extended.ask(actor, messageFactory.apply _)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
+
+  /**
+   * A variation of ask which allows to implement "replyTo" pattern by including
+   * sender reference in message.
+   *
+   * {{{
+   * final CompletionStage<Object> f = PatternsCS.askWithReplyTo(
+   *   worker,
+   *   askSender -> new Request(askSender),
+   *   timeout);
+   * }}}
+   *
+   * @param actor          the actor to be asked
+   * @param messageFactory function taking an actor ref and returning the message to be sent
+   * @param duration        the timeout for the response before failing the returned completion stage
+   */
+  def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], duration: java.time.Duration): CompletionStage[AnyRef] =
+    askWithReplyTo(actor, messageFactory, Timeout.create(duration))
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -412,6 +458,34 @@ object PatternsCS {
    */
   def ask(selection: ActorSelection, message: Any, timeout: Timeout): CompletionStage[AnyRef] =
     scalaAsk(selection, message)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
+
+  /**
+   * <i>Java API for `akka.pattern.ask`:</i>
+   * Sends a message asynchronously and returns a [[java.util.concurrent.CompletionStage]]
+   * holding the eventual reply message; this means that the target [[akka.actor.ActorSelection]]
+   * needs to send the result to the `sender` reference provided. The CompletionStage
+   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * given timeout has expired; this is independent from any timeout applied
+   * while awaiting a result for this future (i.e. in
+   * `Await.result(..., timeout)`).
+   *
+   * <b>Warning:</b>
+   * When using future callbacks, inside actors you need to carefully avoid closing over
+   * the containing actor’s object, i.e. do not call methods or access mutable state
+   * on the enclosing actor from within the callback. This would break the actor
+   * encapsulation and may introduce synchronization bugs and race conditions because
+   * the callback will be scheduled concurrently to the enclosing actor. Unfortunately
+   * there is not yet a way to detect these illegal accesses at compile time.
+   *
+   * <b>Recommended usage:</b>
+   *
+   * {{{
+   *   final CompletionStage<Object> f = PatternsCS.ask(selection, request, duration);
+   *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
+   * }}}
+   */
+  def ask(selection: ActorSelection, message: Any, duration: java.time.Duration): CompletionStage[AnyRef] =
+    ask(selection, message, Timeout.create(duration))
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>

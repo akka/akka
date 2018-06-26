@@ -522,6 +522,16 @@ class TestKit(system: ActorSystem) {
   }
 
   /**
+   * Receive one message from the test actor and assert that the given
+   * partial function accepts it. Wait time is bounded by the given duration,
+   * with an AssertionFailure being thrown in case of timeout.
+   *
+   * Use this variant to implement more complicated or conditional
+   * processing.
+   */
+  def expectMsgPF[T](max: java.time.Duration, hint: String, f: JFunction[Any, T]): T = expectMsgPF(max.asScala, hint, f)
+
+  /**
    * Same as `expectMsgClass(remainingOrDefault, c)`, but correctly treating the timeFactor.
    */
   def expectMsgClass[T](c: Class[T]): T = tp.expectMsgClass(c)
