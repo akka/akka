@@ -708,11 +708,12 @@ where resilience is important so that if a node crashes the persistent actors ar
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a 
 cluster and address them by id.
 
-Akka Persistence is based on the single-writer principle which means that it is important to avoid running the same
-entity at multiple locations at the same time with a shared data store. That would result in corrupt data since the
-events stored by different instances may be interleaved and would be interpreted differently in a later replay.
-Cluster Sharding solves that within one data center and for multiple data centers Lightbend's [Multi-DC Persistence](https://developer.lightbend.com/docs/akka-commercial-addons/current/persistence-dc/index.html)
-supports active-active persistent entities.
+Akka Persistence is based on the single-writer principle. For a particular `persistenceId` only one `PersistentActor`
+instance should be active at one time. If multiple instances were to persist events at the same time, the events would
+be interleaved and might not be interpreted correctly on replay. Cluster Sharding ensures that there is only one
+active entity (`PersistentActor`) for each id within a data center. Lightbend's
+[Multi-DC Persistence](https://developer.lightbend.com/docs/akka-commercial-addons/current/persistence-dc/index.html)
+supports active-active persistent entities across data centers.
 
 The [Lagom framework](https://www.lagom-framework.com), which is built on top of Akka encodes many of the best practices 
 around this. For more details see @java[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/java/ES_CQRS.html)]
