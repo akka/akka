@@ -47,7 +47,7 @@ When it comes to describing the semantics of a delivery mechanism, there are
 three basic categories:
 
  * **at-most-once** delivery means that for each message handed to the
-mechanism, that message is delivered zero or one times; in more casual terms
+mechanism, that message is delivered once or not at all; in more casual terms
 it means that messages may be lost.
  * **at-least-once** delivery means that for each message handed to the
 mechanism potentially multiple attempts are made at delivering it, such that
@@ -177,8 +177,8 @@ particular:
 >
 > Parent actor `P` might receive the two events either in order `M`, `F` or `F`, `M`
 
-The reason for this is that internal system messages has their own mailboxes therefore the ordering of enqueue calls of
-a user and system message cannot guarantee the ordering of their dequeue times.
+The reason for this is that internal system messages have their own mailboxes therefore the ordering of enqueue calls of
+a user and system messages cannot guarantee the ordering of their dequeue times.
 
 ## The Rules for In-JVM (Local) Message Sends
 
@@ -262,7 +262,7 @@ for `M2` to "travel" to node-3 via node-2.
 ## Higher-level abstractions
 
 Based on a small and consistent tool set in Akka's core, Akka also provides
-powerful, higher-level abstractions on top it.
+powerful, higher-level abstractions on top of it.
 
 ### Messaging Patterns
 

@@ -49,10 +49,10 @@ This means that `Sink.asPublisher(true)` (for enabling fan-out support) must be 
 
 We expect libraries to be built on top of Akka Streams, in fact Akka HTTP is one such example that lives within the Akka project itself. In order to allow users to profit from the principles that are described for Akka Streams above, the following rules are established:
 
- * libraries shall provide their users with reusable pieces, i.e. expose factories that return graphs, allowing full compositionality
- * libraries may optionally and additionally provide facilities that consume and materialize graphs
+ * libraries shall provide their users with reusable pieces, i.e. expose factories that return operators, allowing full compositionality
+ * libraries may optionally and additionally provide facilities that consume and materialize operators
 
-The reasoning behind the first rule is that compositionality would be destroyed if different libraries only accepted graphs and expected to materialize them: using two of these together would be impossible because materialization can only happen once. As a consequence, the functionality of a library must be expressed such that materialization can be done by the user, outside of the library’s control.
+The reasoning behind the first rule is that compositionality would be destroyed if different libraries only accepted operators and expected to materialize them: using two of these together would be impossible because materialization can only happen once. As a consequence, the functionality of a library must be expressed such that materialization can be done by the user, outside of the library’s control.
 
 The second rule allows a library to additionally provide nice sugar for the common case, an example of which is the Akka HTTP API that provides a `handleWith` method for convenient materialization.
 

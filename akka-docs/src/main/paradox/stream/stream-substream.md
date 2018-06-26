@@ -16,7 +16,7 @@ Substreams are represented as `SubSource` or `SubFlow` instances, on which you c
 into a stream of streams.
 
 SubFlows cannot contribute to the super-flow’s materialized value since they are materialized later,
-during the runtime of the flow graph processing.
+during the runtime of the stream processing.
 
 operators that create substreams are listed on @ref[Nesting and flattening operators](operators/index.md#nesting-and-flattening-operators)
 

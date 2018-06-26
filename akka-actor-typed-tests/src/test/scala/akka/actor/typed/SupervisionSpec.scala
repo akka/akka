@@ -18,6 +18,7 @@ import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+import scala.concurrent.duration._
 
 object SupervisionSpec {
 
@@ -644,6 +645,48 @@ class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
       spawn(beh)
       probe.expectMessage(Started)
+    }
+
+    "replace supervision when new returned behavior catches same exception" in {
+      val probe = TestProbe[AnyRef]("probeMcProbeFace")
+      val behv = supervise[String](Behaviors.receiveMessage {
+        case "boom" ⇒ throw TE("boom indeed")
+        case "switch" ⇒
+          supervise[String](
+            supervise[String](
+              supervise[String](
+                supervise[String](
+                  supervise[String](
+                    Behaviors.receiveMessage {
+                      case "boom" ⇒ throw TE("boom indeed")
+                      case "ping" ⇒
+                        probe.ref ! "pong"
+                        Behaviors.same
+                      case "give me stacktrace" ⇒
+                        probe.ref ! new RuntimeException().getStackTrace.toVector
+                        Behaviors.stopped
+                    }).onFailure[RuntimeException](SupervisorStrategy.resume)
+                ).onFailure[RuntimeException](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 23D))
+              ).onFailure[RuntimeException](SupervisorStrategy.restartWithLimit(23, 10.seconds))
+            ).onFailure[IllegalArgumentException](SupervisorStrategy.restart)
+          ).onFailure[RuntimeException](SupervisorStrategy.restart)
+      }).onFailure[RuntimeException](SupervisorStrategy.stop)
+
+      val actor = spawn(behv)
+      actor ! "switch"
+      actor ! "ping"
+      probe.expectMessage("pong")
+
+      EventFilter[RuntimeException](occurrences = 1).intercept {
+        // Should be supervised as resume
+        actor ! "boom"
+      }
+
+      actor ! "give me stacktrace"
+      val stacktrace = probe.expectMessageType[Vector[StackTraceElement]]
+      // supervisor receive is used for every supervision instance, only wrapped in one supervisor for RuntimeException
+      // and then the IllegalArgument one is kept since it has a different throwable
+      stacktrace.count(_.toString.startsWith("akka.actor.typed.internal.Supervisor.receive")) should ===(2)
     }
 
   }
