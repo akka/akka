@@ -5,7 +5,7 @@
 package akka.cluster.sharding
 
 import akka.actor._
-import akka.cluster.Cluster
+import akka.cluster.{ Cluster, MultiNodeClusterSpec }
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
@@ -59,7 +59,7 @@ object ClusterShardingGetStateSpecConfig extends MultiNodeConfig {
       dir = target/ClusterShardingGetStateSpec/sharding-ddata
       map-size = 10 MiB
     }
-    """))
+    """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString(
     """akka.cluster.roles=["shard"]"""))

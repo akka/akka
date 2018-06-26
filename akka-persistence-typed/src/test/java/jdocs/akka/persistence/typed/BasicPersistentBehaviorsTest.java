@@ -35,26 +35,29 @@ public class BasicPersistentBehaviorsTest {
 
     @Override
     public CommandHandler<Command, Event, State> commandHandler() {
-      return (ctx, state, command) -> Effect().none();
+      return (ctx, state, command) -> {
+        throw new RuntimeException("TODO: process the command & return an Effect");
+      };
     }
 
     @Override
     public EventHandler<Event, State> eventHandler() {
-      return (state, event) -> state;
+      return (state, event) -> {
+        throw new RuntimeException("TODO: process the event return the next state");
+      };
     }
 
     //#recovery
     @Override
     public void onRecoveryCompleted(ActorContext<Command> ctx, State state) {
-      // called once recovery is completed
+      throw new RuntimeException("TODO: add some end-of-recovery side-effect here");
     }
     //#recovery
 
     //#tagging
     @Override
     public Set<String> tagsFor(Event event) {
-      // inspect the event and decide if it should be tagged
-      return Collections.emptySet();
+      throw new RuntimeException("TODO: inspect the event and return any tags it should have");
     }
     //#tagging
   }

@@ -711,7 +711,7 @@ that will be serialized and stored. The risk of losing writes if the JVM crashes
 data is typically replicated to other nodes immediately according to the given `WriteConsistency`.
 
 ```
-akka.cluster.distributed-data.lmdb.write-behind-interval = 200 ms
+akka.cluster.distributed-data.durable.lmdb.write-behind-interval = 200 ms
 ```
 
 Note that you should be prepared to receive `WriteFailure` as reply to an `Update` of a

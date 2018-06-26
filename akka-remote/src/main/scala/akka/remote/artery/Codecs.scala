@@ -207,15 +207,15 @@ private[remote] object Decoder {
 
   private object Tick
 
-  /** Materialized value of [[Encoder]] which allows safely calling into the stage to interfact with compression tables. */
+  /** Materialized value of [[Encoder]] which allows safely calling into the operator to interfact with compression tables. */
   private[remote] trait InboundCompressionAccess {
     def confirmActorRefCompressionAdvertisementAck(ack: ActorRefCompressionAdvertisementAck): Future[Done]
     def confirmClassManifestCompressionAdvertisementAck(ack: ClassManifestCompressionAdvertisementAck): Future[Done]
     def closeCompressionFor(originUid: Long): Future[Done]
 
-    /** For testing purposes, usually triggered by timer from within Decoder stage. */
+    /** For testing purposes, usually triggered by timer from within Decoder operator. */
     def runNextActorRefAdvertisement(): Unit
-    /** For testing purposes, usually triggered by timer from within Decoder stage. */
+    /** For testing purposes, usually triggered by timer from within Decoder operator. */
     def runNextClassManifestAdvertisement(): Unit
     /** For testing purposes */
     def currentCompressionOriginUids: Future[Set[Long]]
@@ -642,7 +642,7 @@ private[remote] class Deserializer(
 /**
  * INTERNAL API: The HandshakeReq message must be passed in each inbound lane to
  * ensure that it arrives before any application message. Otherwise there is a risk
- * that an application message arrives in the InboundHandshake stage before the
+ * that an application message arrives in the InboundHandshake operator before the
  * handshake is completed and then it would be dropped.
  */
 private[remote] class DuplicateHandshakeReq(

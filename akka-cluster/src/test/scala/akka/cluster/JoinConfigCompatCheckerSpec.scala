@@ -15,7 +15,7 @@ object JoinConfigCompatCheckerSpec {
 
 }
 
-class JoinConfigCompatCheckerSpec extends AkkaSpec() with ClusterTestKit {
+class JoinConfigCompatCheckerSpec extends AkkaSpec with ClusterTestKit {
 
   "A Joining Node" must {
 
