@@ -869,7 +869,9 @@ trait FlowOps[+Out, +Mat] {
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def mapAsync[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T] = via(MapAsync(parallelism, f))
+  def mapAsync[T](parallelism: Int)(f: Out ⇒ Future[T]): Repr[T] =
+    if (parallelism == 1) mapAsyncUnordered[T](parallelism = 1)(f) // optimization for parallelism 1
+    else via(MapAsync(parallelism, f))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -1227,6 +1229,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
+   * Note that the `zero` value must be immutable.
+   *
    * '''Emits when''' the function scanning the element returns a new element
    *
    * '''Backpressures when''' downstream backpressures
@@ -1255,6 +1259,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
+   * Note that the `zero` value must be immutable.
+   *
    * '''Emits when''' the future returned by f` completes
    *
    * '''Backpressures when''' downstream backpressures
@@ -1278,6 +1284,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
    *
+   * Note that the `zero` value must be immutable.
+   *
    * '''Emits when''' upstream completes
    *
    * '''Backpressures when''' downstream backpressures
@@ -1300,6 +1308,8 @@ trait FlowOps[+Out, +Mat] {
    * If the function `f` returns a failure and the supervision decision is
    * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
    * the stream will continue.
+   *
+   * Note that the `zero` value must be immutable.
    *
    * '''Emits when''' upstream completes
    *

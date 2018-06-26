@@ -13,21 +13,21 @@ To use Akka Streams, add the module to your project:
 ## Introduction
 
 <a id="kill-switch"></a>
-## Controlling graph completion with KillSwitch
+## Controlling stream completion with KillSwitch
 
-A `KillSwitch` allows the completion of graphs of `FlowShape` from the outside. It consists of a flow element that
-can be linked to a graph of `FlowShape` needing completion control.
+A `KillSwitch` allows the completion of operators of `FlowShape` from the outside. It consists of a flow element that
+can be linked to an operator of `FlowShape` needing completion control.
 The `KillSwitch` @scala[trait] @java[interface] allows to:
  
- * complete the graph(s) via `shutdown()`
- * fail the graph(s) via `abort(Throwable error)`
+ * complete the stream(s) via `shutdown()`
+ * fail the stream(s) via `abort(Throwable error)`
 
 
 Scala
 :   @@snip [KillSwitch.scala]($akka$/akka-stream/src/main/scala/akka/stream/KillSwitch.scala) { #kill-switch }
 
 After the first call to either `shutdown` or `abort`, all subsequent calls to any of these methods will be ignored.
-Graph completion is performed by both
+Stream completion is performed by both
 
  * cancelling its upstream.
  * completing (in case of `shutdown`) or failing (in case of `abort`) its downstream
@@ -59,8 +59,8 @@ Java
 <a id="shared-kill-switch"></a>
 ### SharedKillSwitch
 
-A `SharedKillSwitch` allows to control the completion of an arbitrary number graphs of `FlowShape`. It can be
-materialized multiple times via its `flow` method, and all materialized graphs linked to it are controlled by the switch.
+A `SharedKillSwitch` allows to control the completion of an arbitrary number operators of `FlowShape`. It can be
+materialized multiple times via its `flow` method, and all materialized operators linked to it are controlled by the switch.
 Refer to the below for usage examples.
 
  * **Shutdown**

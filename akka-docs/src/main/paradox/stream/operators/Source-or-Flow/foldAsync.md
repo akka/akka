@@ -1,6 +1,6 @@
 # foldAsync
 
-Just like `fold` but receiving a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.
+Just like `fold` but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.
 
 @ref[Simple operators](../index.md#simple-operators)
 
@@ -14,7 +14,9 @@ Just like `fold` but receiving a function that results in a @scala[`Future`] @ja
 
 ## Description
 
-Just like `fold` but receiving a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.
+Just like `fold` but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.
+
+Note that the `zero` value must be immutable.
 
 
 @@@div { .callout }
