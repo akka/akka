@@ -104,6 +104,9 @@ class PhiAccrualFailureDetector(
 
   private val acceptableHeartbeatPauseMillis = acceptableHeartbeatPause.toMillis
 
+  // address below was introduced as a var because of binary compatibility constraints
+  private[akka] var address: String = "N/A"
+
   /**
    * Implement using optimistic lockless concurrency, all state is represented
    * by this immutable case class and managed by an AtomicReference.
@@ -135,7 +138,7 @@ class PhiAccrualFailureDetector(
         // don't use the first heartbeat after failure for the history, since a long pause will skew the stats
         if (isAvailable(timestamp)) {
           if (interval >= (acceptableHeartbeatPauseMillis / 3 * 2) && eventStream.isDefined)
-            eventStream.get.publish(Warning(this.toString, getClass, s"heartbeat interval is growing too large: $interval millis"))
+            eventStream.get.publish(Warning(this.toString, getClass, s"heartbeat interval is growing too large for address $address: $interval millis"))
           oldState.history :+ interval
         } else oldState.history
     }
