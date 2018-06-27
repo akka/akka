@@ -457,6 +457,7 @@ private[akka] trait RememberingShard { selfType: Shard ⇒
         actor.tell(payload, snd)
       case None ⇒
         if (state.entities.contains(id)) {
+          require(!messageBuffers.contains(id))
           getEntity(id).tell(payload, snd)
         } else {
           //Note; we only do this if remembering, otherwise the buffer is an overhead
