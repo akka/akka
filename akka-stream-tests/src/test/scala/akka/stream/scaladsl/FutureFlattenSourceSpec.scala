@@ -8,8 +8,9 @@ import java.util.concurrent.{ CompletableFuture, TimeUnit }
 
 import akka.stream._
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue }
-import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
+import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestLatch
 
 import scala.concurrent.{ Await, Future, Promise }

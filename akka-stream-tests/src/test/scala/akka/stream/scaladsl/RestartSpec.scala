@@ -8,8 +8,9 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.stream.scaladsl.RestartWithBackoffFlow.Delay
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
+import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.{ ActorMaterializer, Attributes, OverflowStrategy }
 import akka.testkit.{ DefaultTimeout, TestDuration }
 import akka.{ Done, NotUsed }

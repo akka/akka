@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.time.Duration;
 
 import akka.persistence.fsm.PersistentFSM.CurrentState;
@@ -511,8 +510,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 matchEvent(AddItem.class,
                     (event, data) ->
                         goTo(UserState.SHOPPING).applying(new ItemAdded(event.getItem()))
-                            .forMax(scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS))
-                )
+                            .forMax(Duration.ofSeconds(1)))
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
             );
 
@@ -520,7 +518,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 matchEvent(AddItem.class,
                     (event, data) ->
                         stay().applying(new ItemAdded(event.getItem()))
-                           .forMax(scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS)))
+                           .forMax(Duration.ofSeconds(1)))
                 .event(Buy.class,
                     //#customer-andthen-example
                     (event, data) ->
@@ -544,7 +542,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
                 .event(StateTimeout$.class,
                     (event, data) ->
-                        goTo(UserState.INACTIVE).forMax(scala.concurrent.duration.Duration.create(2, TimeUnit.SECONDS)))
+                        goTo(UserState.INACTIVE).forMax(Duration.ofSeconds(2)))
             );
 
 
@@ -552,7 +550,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 matchEvent(AddItem.class,
                     (event, data) ->
                         goTo(UserState.SHOPPING).applying(new ItemAdded(event.getItem()))
-                            .forMax(scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS)))
+                            .forMax(Duration.ofSeconds(1)))
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
                 .event(StateTimeout$.class,
                     (event, data) ->

@@ -270,12 +270,12 @@ object ValidatePullRequest extends AutoPlugin {
 */
 object MultiNodeWithPrValidation extends AutoPlugin {
   import ValidatePullRequest._
-
+  import com.typesafe.sbt.MultiJvmPlugin.MultiJvmKeys.MultiJvm
   override def trigger = allRequirements
   override def requires = ValidatePullRequest && MultiNode
   override lazy val projectSettings =
     if (MultiNode.multiNodeTestInTest) Seq(additionalTasks in ValidatePR += MultiNode.multiTest)
-    else Nil
+    else Seq.empty
 }
 
 /**

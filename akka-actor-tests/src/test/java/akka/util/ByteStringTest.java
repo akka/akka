@@ -6,8 +6,6 @@ package akka.util;
 
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
-import org.scalatest.junit.JUnitSuiteLike;
-import scala.concurrent.duration.Duration;
 
 import static junit.framework.TestCase.assertEquals;
 

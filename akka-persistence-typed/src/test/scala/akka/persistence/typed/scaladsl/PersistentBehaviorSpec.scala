@@ -116,14 +116,14 @@ object PersistentBehaviorSpec {
 
         case IncrementThenLogThenStop ⇒
           Effect.persist(Incremented(1))
-            .andThen {
+            .andThen { (_: State) ⇒
               loggingActor ! firstLogging
             }
             .andThenStop
 
         case IncrementTwiceThenLogThenStop ⇒
           Effect.persist(Incremented(1), Incremented(2))
-            .andThen {
+            .andThen { (_: State) ⇒
               loggingActor ! firstLogging
             }
             .andThenStop
@@ -160,30 +160,30 @@ object PersistentBehaviorSpec {
         case IncrementTwiceAndThenLog ⇒
           Effect
             .persist(Incremented(1), Incremented(1))
-            .andThen {
+            .andThen { (_: State) ⇒
               loggingActor ! firstLogging
             }
-            .andThen {
+            .andThen { _ ⇒
               loggingActor ! secondLogging
             }
 
         case EmptyEventsListAndThenLog ⇒
           Effect
             .persist(List.empty) // send empty list of events
-            .andThen {
+            .andThen { _ ⇒
               loggingActor ! firstLogging
             }
 
         case DoNothingAndThenLog ⇒
           Effect
             .none
-            .andThen {
+            .andThen { _ ⇒
               loggingActor ! firstLogging
             }
 
         case LogThenStop ⇒
-          Effect.none
-            .andThen {
+          Effect.none[Event, State]
+            .andThen { _ ⇒
               loggingActor ! firstLogging
             }
             .andThenStop

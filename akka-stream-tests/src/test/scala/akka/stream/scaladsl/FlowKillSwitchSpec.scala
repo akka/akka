@@ -8,7 +8,8 @@ import akka.Done
 import akka.stream.testkit.StreamSpec
 import akka.stream.{ ActorMaterializer, ClosedShape, KillSwitches }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.Utils.TE
 
 import scala.concurrent.duration._
 

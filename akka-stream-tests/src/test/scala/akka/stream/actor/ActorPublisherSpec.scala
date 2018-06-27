@@ -9,6 +9,7 @@ import akka.stream.{ ClosedShape, ActorMaterializer, ActorMaterializerSettings, 
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.testkit.TestEvent.Mute
 import akka.testkit.{ EventFilter, ImplicitSender, TestProbe }
@@ -410,7 +411,7 @@ class ActorPublisherSpec extends StreamSpec(ActorPublisherSpec.config) with Impl
 
     "be able to define a subscription-timeout, after which it should shut down" in {
       implicit val materializer = ActorMaterializer()
-      Utils.assertAllStagesStopped {
+      assertAllStagesStopped {
         val timeout = 150.millis
         val a = system.actorOf(timeoutingProps(testActor, timeout))
         val pub = ActorPublisher(a)

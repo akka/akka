@@ -10,6 +10,7 @@ import akka.NotUsed
 import akka.actor._
 import akka.stream.impl._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.stream._
 import akka.testkit.TestDuration

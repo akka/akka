@@ -23,15 +23,18 @@ import scala.annotation.switch
   final val Backslash = '\\'.toByte
   final val Comma = ','.toByte
 
-  final val LineBreak = '\n'.toByte
-  final val LineBreak2 = '\r'.toByte
-  final val Tab = '\t'.toByte
-  final val Space = ' '.toByte
+  final val LineBreak = 10 // '\n'
+  final val LineBreak2 = 13 // '\r'
+  final val Tab = 9 // '\t'
+  final val Space = 32 // ' '
 
-  final val Whitespace = Set(LineBreak, LineBreak2, Tab, Space)
-
-  def isWhitespace(input: Byte): Boolean =
-    Whitespace.contains(input)
+  def isWhitespace(b: Byte): Boolean = (b: @switch) match {
+    case Space      ⇒ true
+    case LineBreak  ⇒ true
+    case LineBreak2 ⇒ true
+    case Tab        ⇒ true
+    case _          ⇒ false
+  }
 
 }
 

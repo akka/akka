@@ -41,7 +41,7 @@ object ActorFlow {
    * still be in the mailbox, so defaulting to sending the second one a bit earlier than when first ask has replied maintains
    * a slightly healthier throughput.
    *
-   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated,
+   * The operator fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated,
    * or with an [[java.util.concurrent.TimeoutException]] in case the ask exceeds the timeout passed in.
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
@@ -79,7 +79,7 @@ object ActorFlow {
    *
    * otherwise `Nothing` will be assumed, which is most likely not what you want.
    *
-   * The stage fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated,
+   * The operator fails with an [[akka.stream.WatchedActorTerminatedException]] if the target actor is terminated,
    * or with an [[java.util.concurrent.TimeoutException]] in case the ask exceeds the timeout passed in.
    *
    * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.

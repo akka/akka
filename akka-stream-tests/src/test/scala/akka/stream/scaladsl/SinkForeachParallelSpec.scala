@@ -11,6 +11,7 @@ import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.{ TestLatch, TestProbe }
 
 import scala.concurrent.Await

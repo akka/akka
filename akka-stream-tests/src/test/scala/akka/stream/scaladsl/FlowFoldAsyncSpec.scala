@@ -10,6 +10,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.Supervision.{ restartingDecider, resumingDecider }
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 

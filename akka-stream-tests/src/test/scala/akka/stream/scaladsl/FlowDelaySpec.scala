@@ -8,6 +8,7 @@ import akka.Done
 import akka.stream.Attributes._
 import akka.stream.OverflowStrategies.EmitEarly
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream._
