@@ -38,17 +38,17 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     override def toString = ref.path.toString + "#" + ref.path.uid
   }
 
-  sealed trait InternalCommand
-  final case class RegisteredActorTerminated[T](key: ServiceKey[T], ref: ActorRef[T]) extends InternalCommand
-  final case class SubscriberTerminated[T](key: ServiceKey[T], ref: ActorRef[ReceptionistMessages.Listing[T]]) extends InternalCommand
-  final case class NodeRemoved(addresses: UniqueAddress) extends InternalCommand
-  final case class ChangeFromReplicator(
-    key:   ORMultiMapKey[ServiceKey[_], Entry],
+  private sealed trait InternalCommand extends Command
+  private final case class RegisteredActorTerminated[T](key: ServiceKey[T], ref: ActorRef[T]) extends InternalCommand
+  private final case class SubscriberTerminated[T](key: ServiceKey[T], ref: ActorRef[ReceptionistMessages.Listing[T]]) extends InternalCommand
+  private final case class NodeRemoved(addresses: UniqueAddress) extends InternalCommand
+  private final case class ChangeFromReplicator(
+    key:   DDataKey,
     value: ORMultiMap[ServiceKey[_], Entry]) extends InternalCommand
-  case object RemoveTick extends InternalCommand
+  private case object RemoveTick extends InternalCommand
 
   // captures setup/dependencies so we can avoid doing it over and over again
-  final class Setup(ctx: ActorContext[Any]) {
+  final class Setup(ctx: ActorContext[Command]) {
     val untypedSystem = ctx.system.toUntyped
     val settings = ClusterReceptionistSettings(ctx.system)
     val replicator = DistributedData(untypedSystem).replicator
@@ -57,10 +57,10 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     def selfUniqueAddress: UniqueAddress = cluster.selfUniqueAddress
   }
 
-  override def behavior: Behavior[Command] = Behaviors.setup[Any] { ctx ⇒
+  override def behavior: Behavior[Command] = Behaviors.setup { ctx ⇒
 
     val setup = new Setup(ctx)
-    val registry = SuperServiceRegistry(setup.settings.distributedKeyCount)
+    val registry = ShardedServiceRegistry(setup.settings.distributedKeyCount)
 
     // subscribe to changes from other nodes
     val replicatorMessageAdapter: ActorRef[Replicator.ReplicatorMessage] =
@@ -90,7 +90,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       registry,
       TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV]
     )
-  }.narrow[Command]
+  }
 
   /**
    * @param registry The last seen state from the replicator - only updated when we get an update from th replicator
@@ -98,22 +98,22 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
    */
   def behavior(
     setup:         Setup,
-    registry:      SuperServiceRegistry,
-    subscriptions: SubscriptionRegistry): Behavior[Any] =
-    Behaviors.setup[Any] { ctx ⇒
+    registry:      ShardedServiceRegistry,
+    subscriptions: SubscriptionRegistry): Behavior[Command] =
+    Behaviors.setup { ctx ⇒
       import setup._
 
       // Helper to create new behavior
       def next(
-        newState:         SuperServiceRegistry = registry,
-        newSubscriptions: SubscriptionRegistry = subscriptions) =
+        newState:         ShardedServiceRegistry = registry,
+        newSubscriptions: SubscriptionRegistry   = subscriptions) =
         behavior(setup, newState, newSubscriptions)
 
       /*
        * Hack to allow multiple termination notifications per target
        * FIXME: replace by simple map in our state
        */
-      def watchWith(ctx: ActorContext[Any], target: ActorRef[_], msg: InternalCommand): Unit =
+      def watchWith(ctx: ActorContext[Command], target: ActorRef[_], msg: InternalCommand): Unit =
         ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx ⇒
           innerCtx.watch(target)
           Behaviors.receive[Nothing]((_, _) ⇒ Behaviors.same)
@@ -129,7 +129,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         subscriptions.get(key).foreach(_ ! msg)
       }
 
-      def nodesRemoved(addresses: Set[UniqueAddress]): Behavior[Any] = {
+      def nodesRemoved(addresses: Set[UniqueAddress]): Behavior[Command] = {
         // ok to update from several nodes but more efficient to try to do it from one node
         if (cluster.state.leader.contains(cluster.selfAddress) && addresses.nonEmpty) {
           def isOnRemovedNode(entry: Entry): Boolean = addresses(entry.uniqueAddress(setup.selfUniqueAddress))
@@ -166,7 +166,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         } else Behaviors.same
       }
 
-      def onCommand(cmd: Command): Behavior[Any] = cmd match {
+      def onCommand(cmd: Command): Behavior[Command] = cmd match {
         case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) ⇒
           val entry = Entry(serviceInstance, setup.selfSystemUid)
           ctx.log.debug("Actor was registered: [{}] [{}]", key, entry)
@@ -194,7 +194,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           next(newSubscriptions = subscriptions.inserted(key)(subscriber))
       }
 
-      def onInternalCommand(cmd: InternalCommand): Behavior[Any] = cmd match {
+      def onInternalCommand(cmd: InternalCommand): Behavior[Command] = cmd match {
 
         case SubscriberTerminated(key, subscriber) ⇒
           next(newSubscriptions = subscriptions.removed(key)(subscriber))
@@ -252,11 +252,11 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             Behavior.same
       }
 
-      Behaviors.receive[Any] { (ctx, msg) ⇒
+      Behaviors.receive[Command] { (ctx, msg) ⇒
         msg match {
           // support two heterogenous types of messages without union types
-          case cmd: Command         ⇒ onCommand(cmd)
           case cmd: InternalCommand ⇒ onInternalCommand(cmd)
+          case cmd: Command         ⇒ onCommand(cmd)
           case _                    ⇒ Behaviors.unhandled
         }
       }
