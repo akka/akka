@@ -20,6 +20,7 @@ import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.fusing.GroupBy
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import org.reactivestreams.Publisher
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import akka.stream.testkit.scaladsl.TestSource

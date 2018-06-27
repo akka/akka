@@ -5,7 +5,8 @@
 package akka.stream.scaladsl
 
 import akka.stream.{ AbruptStageTerminationException, ActorMaterializer }
-import akka.stream.testkit.{ StreamSpec, TestSubscriber, Utils }
+import akka.stream.testkit.{ StreamSpec, TestSubscriber }
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.DefaultTimeout
 
 import scala.concurrent.duration._
@@ -17,7 +18,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
 
   "The Maybe Source" must {
 
-    "complete materialized future with None when stream cancels" in Utils.assertAllStagesStopped {
+    "complete materialized future with None when stream cancels" in assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
       val pubSink = Sink.asPublisher[Int](false)
 
@@ -34,7 +35,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
       f.future.futureValue shouldEqual None
     }
 
-    "allow external triggering of empty completion" in Utils.assertAllStagesStopped {
+    "allow external triggering of empty completion" in assertAllStagesStopped {
       val neverSource = Source.maybe[Int].filter(_ ⇒ false)
       val counterSink = Sink.fold[Int, Int](0) { (acc, _) ⇒ acc + 1 }
 
@@ -46,7 +47,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
       counterFuture.futureValue shouldEqual 0
     }
 
-    "allow external triggering of empty completion when there was no demand" in Utils.assertAllStagesStopped {
+    "allow external triggering of empty completion when there was no demand" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
       val promise = Source.maybe[Int].to(Sink.fromSubscriber(probe)).run()
 
@@ -56,7 +57,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
       probe.expectComplete()
     }
 
-    "allow external triggering of non-empty completion" in Utils.assertAllStagesStopped {
+    "allow external triggering of non-empty completion" in assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
       val counterSink = Sink.head[Int]
 
@@ -68,7 +69,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
       counterFuture.futureValue shouldEqual 6
     }
 
-    "allow external triggering of onError" in Utils.assertAllStagesStopped {
+    "allow external triggering of onError" in assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
       val counterSink = Sink.fold[Int, Int](0) { (acc, _) ⇒ acc + 1 }
 
@@ -80,7 +81,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
       counterFuture.failed.futureValue.getMessage should include("Boom")
     }
 
-    "complete materialized future when materializer is shutdown" in Utils.assertAllStagesStopped {
+    "complete materialized future when materializer is shutdown" in assertAllStagesStopped {
       val mat = ActorMaterializer()
       val neverSource = Source.maybe[Int]
       val pubSink = Sink.asPublisher[Int](false)
