@@ -15,6 +15,7 @@ import akka.stream._
 import akka.stream.scaladsl.Tcp.{ IncomingConnection, ServerBinding }
 import akka.stream.scaladsl.{ Flow, _ }
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.testkit.{ EventFilter, TestKit, TestLatch, TestProbe }
 import akka.testkit.SocketUtil.temporaryServerAddress

@@ -9,6 +9,7 @@ import akka.stream._
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import org.scalatest.concurrent.ScalaFutures

@@ -7,7 +7,7 @@ package akka.stream.testkit
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.TestPublisher._
 import akka.stream.testkit.TestSubscriber._
-import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import org.reactivestreams.Subscription
 import akka.testkit.AkkaSpec

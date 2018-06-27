@@ -9,6 +9,7 @@ import akka.stream.{ Attributes, ActorMaterializer, OverflowStrategy }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.actor.PoisonPill
 import akka.actor.Status
 

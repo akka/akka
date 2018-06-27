@@ -9,6 +9,7 @@ import scala.concurrent.{ Promise }
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class GraphConcatSpec extends TwoStreamsSetup {
 

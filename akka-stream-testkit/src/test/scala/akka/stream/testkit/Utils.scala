@@ -20,32 +20,6 @@ object Utils {
 
   case class TE(message: String) extends RuntimeException(message) with NoStackTrace
 
-  def assertAllStagesStopped[T](block: ⇒ T)(implicit materializer: Materializer): T =
-    materializer match {
-      case impl: PhasedFusingActorMaterializer ⇒
-        val probe = TestProbe()(impl.system)
-        probe.send(impl.supervisor, StreamSupervisor.StopChildren)
-        probe.expectMsg(StreamSupervisor.StoppedChildren)
-        val result = block
-        probe.within(5.seconds) {
-          var children = Set.empty[ActorRef]
-          try probe.awaitAssert {
-            impl.supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
-            children = probe.expectMsgType[StreamSupervisor.Children].children
-            assert(
-              children.isEmpty,
-              s"expected no StreamSupervisor children, but got [${children.mkString(", ")}]")
-          }
-          catch {
-            case ex: Throwable ⇒
-              children.foreach(_ ! StreamSupervisor.PrintDebugDump)
-              throw ex
-          }
-        }
-        result
-      case _ ⇒ block
-    }
-
   def assertDispatcher(ref: ActorRef, dispatcher: String): Unit = ref match {
     case r: ActorRefWithCell ⇒
       if (r.underlying.props.dispatcher != dispatcher)
