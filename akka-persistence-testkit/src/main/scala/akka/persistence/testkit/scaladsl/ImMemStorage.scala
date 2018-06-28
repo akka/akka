@@ -6,17 +6,17 @@ package akka.persistence.testkit.scaladsl
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-import java.util.function.{ BiFunction, Consumer }
+import java.util.function.{BiFunction, Consumer}
 
-import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
-import akka.persistence.testkit.scaladsl.InMemStorageEmulator.JournalPolicy
+import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.persistence.testkit.scaladsl.InMemStorageEmulator.JournalOperation
 import akka.persistence.testkit.scaladsl.ProcessingPolicy._
 import akka.persistence.testkit.scaladsl.SnapShotStorageEmulator._
-import akka.persistence.{ PersistentRepr, SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
+import akka.persistence.{PersistentRepr, SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria}
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 trait InMemStorage[K, T] {
 
@@ -172,21 +172,23 @@ trait ReprInMemStorage extends HighestSeqNumberSupport[String, PersistentRepr] {
 
 }
 
-trait PolicyOps[P <: ProcessingPolicy[_]] {
+trait PolicyOps[U] {
 
-  protected val DefaultPolicy: P
+  type Policy = ProcessingPolicy[U]
 
-  private lazy val _processingPolicy: AtomicReference[P] = new AtomicReference(DefaultPolicy)
+  protected val DefaultPolicy: Policy
+
+  private lazy val _processingPolicy: AtomicReference[Policy] = new AtomicReference(DefaultPolicy)
 
   def currentPolicy = _processingPolicy.get()
 
-  def setPolicy(policy: P) = _processingPolicy.set(policy)
+  def setPolicy(policy: Policy) = _processingPolicy.set(policy)
 
-  def compareAndSetWritingPolicy(previousPolicy: P, newPolicy: P) = _processingPolicy.compareAndSet(previousPolicy, newPolicy)
+  def compareAndSetWritingPolicy(previousPolicy: Policy, newPolicy: Policy) = _processingPolicy.compareAndSet(previousPolicy, newPolicy)
 
 }
 
-trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalPolicy] {
+trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalOperation] {
   import InMemStorageEmulator._
 
   override protected val DefaultPolicy = JournalPolicies.PassAll
@@ -259,9 +261,7 @@ object InMemStorageEmulator {
 
   case class Delete(toSeqNumber: Long) extends JournalOperation
 
-  type JournalPolicy = ProcessingPolicy[JournalOperation]
-
-  object JournalPolicies extends BasicPolicies[JournalOperation]
+  object JournalPolicies extends DefaultPolicies[JournalOperation]
 
 }
 
@@ -276,7 +276,7 @@ trait SnapshotInMemStorage extends HighestSeqNumberSupport[String, (SnapshotMeta
 
 }
 
-trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[SnapshotPolicy] {
+trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[SnapshotOperation] {
   import SnapShotStorageEmulator._
 
   override protected val DefaultPolicy = SnapshotPolicies.PassAll
@@ -286,8 +286,8 @@ trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[Snapsh
       case ProcessingSuccess ⇒
         add(meta.persistenceId, (meta, payload))
         Success(())
-      case StorageFailure(e) ⇒ throw e
-      case Reject(e)         ⇒ throw e
+      case f: ProcessingFailure ⇒ throw f.error
+
     }
   }
 
@@ -298,16 +298,14 @@ trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[Snapsh
           .map(v ⇒ SelectedSnapshot(v._1, v._2)))
     currentPolicy.tryProcess(persistenceId, Read(selectedSnapshot.map(_.snapshot))) match {
       case ProcessingSuccess ⇒ selectedSnapshot
-      case StorageFailure(e) ⇒ throw e
-      case Reject(e)         ⇒ throw e
+      case f: ProcessingFailure ⇒ throw f.error
     }
   }
 
   def tryDelete(persistenceId: String, selectionCriteria: SnapshotSelectionCriteria): Unit = {
     currentPolicy.tryProcess(persistenceId, DeleteByCriteria(selectionCriteria)) match {
       case ProcessingSuccess => delete(persistenceId, v ⇒ selectionCriteria.matches(v._1))
-      case Reject(ex) => throw ex
-      case StorageFailure(ex) => throw ex
+      case f: ProcessingFailure ⇒ throw f.error
     }
   }
 
@@ -315,8 +313,7 @@ trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[Snapsh
   def tryDelete(meta: SnapshotMetadata): Unit = {
     currentPolicy.tryProcess(meta.persistenceId, DeleteSnapshot(meta)) match {
       case ProcessingSuccess => delete(meta.persistenceId, _._1.sequenceNr == meta.sequenceNr)
-      case Reject(ex) => throw ex
-      case StorageFailure(ex) => throw ex
+      case f: ProcessingFailure ⇒ throw f.error
     }
   }
 
@@ -338,7 +335,7 @@ object SnapShotStorageEmulator {
 
   type SnapshotPolicy = ProcessingPolicy[SnapshotOperation]
 
-  object SnapshotPolicies extends BasicPolicies[SnapshotOperation]
+  object SnapshotPolicies extends DefaultPolicies[SnapshotOperation]
 
 }
 

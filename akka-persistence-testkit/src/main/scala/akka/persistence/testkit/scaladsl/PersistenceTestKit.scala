@@ -5,7 +5,9 @@
 package akka.persistence.testkit.scaladsl
 
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId}
-import akka.persistence.testkit.scaladsl.InMemStorageEmulator.{JournalPolicies, JournalPolicy}
+import akka.persistence.testkit.scaladsl.InMemStorageEmulator.JournalOperation
+import akka.persistence.testkit.scaladsl.PersistenceTestKit.{ExpectedFailure, ExpectedRejection}
+import akka.persistence.testkit.scaladsl.ProcessingPolicy.DefaultPolicies
 import com.typesafe.config.Config
 
 import scala.annotation.tailrec
@@ -22,23 +24,14 @@ trait PersistenceTestKit extends PersistentTestKitOps {
 
   implicit lazy val ec = system.dispatcher
 
-  private final lazy val storage = InMemStorageExtension(system)
+  protected final lazy val storage = InMemStorageExtension(system)
   private final lazy val settings = SettingsExtension(system)
 
   //todo needs to be thread safe (atomic read-increment-write) for parallel tests?
   private var nextIndexByPersistenceId: immutable.Map[String, Int] = Map.empty
 
-  override def failNextNRecoveries(n: Int): Unit = {
-    val current = storage.currentPolicy
-    val pol = new JournalPolicies.FailNextN(n, ExpectedFailure, withPolicy(current))
-    withPolicy(pol)
-  }
-
-  override def failNextNRecoveries(persistenceId: String, n: Int): Unit = {
-    val current = storage.currentPolicy
-    val pol = new InMemStorageEmulator.JournalPolicies.FailNextNCond(n, ExpectedFailure, (pid, _) ⇒ pid == persistenceId, withPolicy(current))
-    withPolicy(pol)
-  }
+  override def persistedMessages(persistenceId: String): immutable.Seq[Any] =
+    storage.read(persistenceId).getOrElse(List.empty).map(_.payload)
 
   override def expectNextPersisted[A](persistenceId: String, msg: A): A = expectNextPersisted(persistenceId, msg, settings.assertTimeout)
 
@@ -66,30 +59,6 @@ trait PersistenceTestKit extends PersistentTestKitOps {
       assert(res, s"Found persisted message $actual, but expected None instead")
       res
     }, max = max, interval = settings.pollInterval)
-  }
-
-  override def rejectNextNPersisted(persistenceId: String, n: Int): Unit = {
-    val current = storage.currentPolicy
-    val pol = new InMemStorageEmulator.JournalPolicies.RejectNextNCond(n, ExpectedRejection, (pid, _) ⇒ pid == persistenceId, withPolicy(current))
-    withPolicy(pol)
-  }
-
-  override def failNextNPersisted(persistenceId: String, n: Int): Unit = {
-    val current = storage.currentPolicy
-    val pol = new InMemStorageEmulator.JournalPolicies.FailNextNCond(n, ExpectedFailure, (pid, _) ⇒ pid == persistenceId, withPolicy(current))
-    withPolicy(pol)
-  }
-
-  override def rejectNextNPersisted(n: Int): Unit = {
-    val current = storage.currentPolicy
-    val pol = new JournalPolicies.RejectNextN(n, ExpectedRejection, withPolicy(current))
-    withPolicy(pol)
-  }
-
-  override def failNextNPersisted(n: Int): Unit = {
-    val current = storage.currentPolicy
-    val pol = new JournalPolicies.FailNextN(n, ExpectedFailure, withPolicy(current))
-    withPolicy(pol)
   }
 
   override def persistForRecovery(persistenceId: String, msgs: immutable.Seq[Any]): Unit = {
@@ -138,14 +107,13 @@ trait PersistenceTestKit extends PersistentTestKitOps {
   override def expectPersistedInAnyOrder[A](persistenceId: String, msgs: immutable.Seq[A]): immutable.Seq[A] =
     expectPersistedInAnyOrder(persistenceId, msgs, settings.assertTimeout)
 
-  def withPolicy(policy: JournalPolicy): this.type = {
-    storage.setPolicy(policy)
-    this
-  }
-
   override def clearAll(): Unit = storage.clearAll()
 
   override def clearByPersistenceId(persistenceId: String): Unit = storage.removeKey(persistenceId)
+
+  override def clearAllPreservingSeqNumbers(): Unit = storage.clearAllPreservingSeqNumbers()
+
+  override def clearByPersistenceIdPreservingSeqNumbers(persistenceId: String): Unit = storage.removePreservingSeqNumber(persistenceId)
 
 }
 
@@ -180,36 +148,51 @@ object PersistenceTestKit {
 
 }
 
+trait RejectSupport[U] { this: PolicyOpsTestKit[U] =>
 
-trait PersistentSnapshotTestKit extends SnapshotTestKitOps {
+  def rejectNextNOpsCond(cond: (String, U) => Boolean, n: Int): Unit = {
+    val current = storage.currentPolicy
+    val pol = new RejectNextNCond(n, ExpectedRejection, cond, withPolicy(current))
+    withPolicy(pol)
+  }
 
-  def system(): ActorSystem
-
-  override def expectNoSnapshots(persistenceId: String): Unit = ???
-
-  override def expectNoSnapshots(persistenceId: String, max: FiniteDuration): Unit = ???
-
-  override def expectNextSnapshot[A](persistenceId: String, msg: A): A = ???
-
-  override def expectNextSnapshot[A](persistenceId: String, snapshot: A, max: FiniteDuration): A = ???
-
-  override def failNextNWrites(persistenceId: String, n: Int): Unit = ???
-
-  override def failNextNWrites(n: Int): Unit = ???
-
-  override def failNextNRecoveries(n: Int): Unit = ???
-
-  override def failNextNRecoveries(persistenceId: String, n: Int): Unit = ???
-
-  override def persistSnapshot(persistenceId: String, snapshot: Any): Unit = ???
-
-  override def clearAll(): Unit = ???
-
-  override def clearByPersistenceId(persistenceId: String): Unit = ???
+  def rejectNextNOps(n: Int): Unit = {
+    val current = storage.currentPolicy
+    val pol = new RejectNextN(n, ExpectedRejection, withPolicy(current))
+    withPolicy(pol)
+  }
 
 }
 
-trait PersistentTestKitOps {
+
+trait PolicyOpsTestKit[U] extends DefaultPolicies[U] {
+
+  protected def storage: PolicyOps[U]
+
+  def failNextNOpsCond(cond: (String, U) => Boolean, n: Int): Unit = {
+    val current = storage.currentPolicy
+    val pol = new FailNextNCond(n, ExpectedFailure, cond: (String, U) => Boolean, withPolicy(current))
+    withPolicy(pol)
+  }
+
+
+
+  def failNextNOps(n: Int): Unit = {
+    val current = storage.currentPolicy
+    val pol = new FailNextN(n, ExpectedFailure, withPolicy(current))
+    withPolicy(pol)
+  }
+
+
+  def withPolicy(policy: PolicyType): this.type = {
+    storage.setPolicy(policy)
+    this
+  }
+
+}
+
+trait PersistentTestKitOps extends PolicyOpsTestKit[JournalOperation] with RejectSupport[JournalOperation]{
+  import InMemStorageEmulator._
 
   def expectNoMessagePersisted(persistenceId: String): Unit
 
@@ -227,39 +210,52 @@ trait PersistentTestKitOps {
 
   def expectPersistedInAnyOrder[A](persistenceId: String, msgs: immutable.Seq[A], max: FiniteDuration): immutable.Seq[A]
 
-  def rejectNextNPersisted(pesistenceId: String, n: Int): Unit
+  def rejectNextNPersisted(persistenceId: String, n: Int): Unit =
+    rejectNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[Write], n)
 
   def rejectNextPersisted(persistenceId: String): Unit = rejectNextNPersisted(persistenceId, 1)
 
-  def rejectNextNPersisted(n: Int): Unit
+  def rejectNextNPersisted(n: Int): Unit =
+    rejectNextNOpsCond((_, op) =>  op.isInstanceOf[Write], n)
 
   def rejectNextPersisted(): Unit = rejectNextNPersisted(1)
 
-  def failNextNPersisted(persistenceId: String, n: Int): Unit
+  def failNextNPersisted(persistenceId: String, n: Int): Unit =
+    failNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[Write], n)
 
   def failNextPersisted(persistenceId: String): Unit = failNextNPersisted(persistenceId, 1)
 
-  def failNextNPersisted(n: Int): Unit
+  def failNextNPersisted(n: Int): Unit =
+    failNextNOpsCond((_, op) => op.isInstanceOf[Write], n)
 
   def failNextPersisted(): Unit = failNextNPersisted(1)
 
-  def failNextRecovery(): Unit = failNextNRecoveries(1)
+  def failNextRead(): Unit = failNextNReads(1)
 
-  def failNextNRecoveries(n: Int): Unit
+  def failNextNReads(n: Int): Unit =
+    failNextNOpsCond((_, op) => op.isInstanceOf[Read], n)
 
-  def failNextRecovery(persistenceId: String): Unit = failNextNRecoveries(persistenceId, 1)
+  def failNextRead(persistenceId: String): Unit = failNextNReads(persistenceId, 1)
 
-  def failNextNRecoveries(persistenceId: String, n: Int): Unit
+  def failNextNReads(persistenceId: String, n: Int): Unit =
+    failNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[Read],n)
 
   def persistForRecovery(persistenceId: String, msgs: immutable.Seq[Any]): Unit
+
+  def persistedMessages(persistenceId: String): immutable.Seq[Any]
 
   def clearAll(): Unit
 
   def clearByPersistenceId(persistenceId: String): Unit
 
+  def clearAllPreservingSeqNumbers(): Unit
+
+  def clearByPersistenceIdPreservingSeqNumbers(persistenceId: String): Unit
+
 }
 
-trait SnapshotTestKitOps {
+trait SnapshotTestKitOps extends PolicyOpsTestKit[JournalOperation]{
+  import SnapShotStorageEmulator._
 
   def expectNoSnapshots(persistenceId: String): Unit
 
@@ -269,27 +265,47 @@ trait SnapshotTestKitOps {
 
   def expectNextSnapshot[A](persistenceId: String, snapshot: A, max: FiniteDuration): A
 
-  def failNextNWrites(persistenceId: String, n: Int): Unit
+  def failNextNWrites(persistenceId: String, n: Int): Unit =
+    failNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[Write],n)
 
   def failNextWrite(persistenceId: String): Unit = failNextNWrites(persistenceId, 1)
 
-  def failNextNWrites(n: Int): Unit
+  def failNextNWrites(n: Int): Unit =
+    failNextNOpsCond((_, op) => op.isInstanceOf[Write], n)
 
   def failNextWrite(): Unit = failNextNWrites(1)
 
-  def failNextRecovery(): Unit = failNextNRecoveries(1)
+  def failNextRead(): Unit = failNextNReads(1)
 
-  def failNextNRecoveries(n: Int): Unit
+  def failNextNReads(n: Int): Unit =
+    failNextNOpsCond((_, op) => op.isInstanceOf[Read], n)
 
-  def failNextRecovery(persistenceId: String): Unit = failNextNRecoveries(persistenceId, 1)
+  def failNextRead(persistenceId: String): Unit = failNextNReads(persistenceId, 1)
 
-  def failNextNRecoveries(persistenceId: String, n: Int): Unit
+  def failNextNReads(persistenceId: String, n: Int): Unit =
+    failNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[Read],n)
+
+  def failNextDelete(): Unit = failNextNDeletes(1)
+
+  def failNextNDeletes(n: Int): Unit =
+    failNextNOpsCond((_, op) => op.isInstanceOf[Delete], n)
+
+  def failNextDelete(persistenceId: String): Unit = failNextNDeletes(persistenceId, 1)
+
+  def failNextNDeletes(persistenceId: String, n: Int): Unit =
+    failNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[Delete],n)
 
   def persistSnapshot(persistenceId: String, snapshot: Any): Unit
 
   def clearAll(): Unit
 
   def clearByPersistenceId(persistenceId: String): Unit
+
+  def clearAllPreservingSeqNumbers(): Unit
+
+  def clearByPersistenceIdPreservingSeqNumbers(persistenceId: String): Unit
+
+  def persistedSnapshots(persistenceId: String): immutable.Seq[Any]
 
 }
 

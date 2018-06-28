@@ -153,7 +153,7 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
 
       val pid = randomPid()
 
-      failNextRecovery()
+      failNextNOps(1)
 
       val a = system.actorOf(Props(classOf[A], pid, None))
 
