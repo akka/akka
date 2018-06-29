@@ -29,7 +29,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
   /**
    * Given a timeout computes how often the check should be run without causing
-   * excessive load or loosing timeout precision.
+   * excessive load or losing timeout precision.
    */
   private[akka] def timeoutCheckInterval(timeout: FiniteDuration): FiniteDuration = {
     import scala.concurrent.duration._
