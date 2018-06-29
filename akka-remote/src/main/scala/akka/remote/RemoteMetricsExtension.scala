@@ -5,7 +5,7 @@
 package akka.remote
 
 import java.util.concurrent.ConcurrentHashMap
-import scala.annotation.tailrec
+
 import akka.actor.ActorSelectionMessage
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
@@ -14,6 +14,9 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.event.Logging
 import akka.routing.RouterEnvelope
+
+import scala.annotation.tailrec
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -56,35 +59,48 @@ private[akka] class RemoteMetricsOff extends RemoteMetrics {
  */
 private[akka] class RemoteMetricsOn(system: ExtendedActorSystem) extends RemoteMetrics {
 
-  private val logFrameSizeExceeding: Int = system.settings.config.getBytes(
-    "akka.remote.log-frame-size-exceeding").toInt
   private val log = Logging(system, this.getClass)
+
+  private val logFrameSizeExceeding: Try[Int] = Try(
+    system.settings.config.getBytes("akka.remote.log-frame-size-exceeding").toInt
+  )
+
+  logFrameSizeExceeding.failed.foreach { e ⇒
+    val value = system.settings.config.getAnyRef("akka.remote.log-frame-size-exceeding")
+    val msg = "Caught exception of type \"" + e.getClass.getSimpleName + "\" " +
+              "while parsing \"akka.remote.log-frame-size-exceeding\". Expected a value in bytes, " +
+              "got: \"" + value + "\". For reference, check https://github.com/lightbend/config/blob/master/HOCON.md"
+    log.warning(msg)
+  }
+
   private val maxPayloadBytes: ConcurrentHashMap[Class[_], Integer] = new ConcurrentHashMap
 
   override def logPayloadBytes(msg: Any, payloadBytes: Int): Unit =
-    if (payloadBytes >= logFrameSizeExceeding) {
-      val clazz = msg match {
-        case x: ActorSelectionMessage ⇒ x.msg.getClass
-        case x: RouterEnvelope        ⇒ x.message.getClass
-        case _                        ⇒ msg.getClass
-      }
-
-      // 10% threshold until next log
-      def newMax = (payloadBytes * 1.1).toInt
-
-      @tailrec def check(): Unit = {
-        val max = maxPayloadBytes.get(clazz)
-        if (max eq null) {
-          if (maxPayloadBytes.putIfAbsent(clazz, newMax) eq null)
-            log.info("Payload size for [{}] is [{}] bytes", clazz.getName, payloadBytes)
-          else check()
-        } else if (payloadBytes > max) {
-          if (maxPayloadBytes.replace(clazz, max, newMax))
-            log.info("New maximum payload size for [{}] is [{}] bytes", clazz.getName, payloadBytes)
-          else check()
+    logFrameSizeExceeding.foreach { frameSize ⇒
+      if (payloadBytes >= frameSize) {
+        val clazz = msg match {
+          case x: ActorSelectionMessage ⇒ x.msg.getClass
+          case x: RouterEnvelope        ⇒ x.message.getClass
+          case _                        ⇒ msg.getClass
         }
+
+        // 10% threshold until next log
+        def newMax = (payloadBytes * 1.1).toInt
+
+        @tailrec def check(): Unit = {
+          val max = maxPayloadBytes.get(clazz)
+          if (max eq null) {
+            if (maxPayloadBytes.putIfAbsent(clazz, newMax) eq null)
+              log.info("Payload size for [{}] is [{}] bytes", clazz.getName, payloadBytes)
+            else check()
+          } else if (payloadBytes > max) {
+            if (maxPayloadBytes.replace(clazz, max, newMax))
+              log.info("New maximum payload size for [{}] is [{}] bytes", clazz.getName, payloadBytes)
+            else check()
+          }
+        }
+        check()
       }
-      check()
     }
 }
 
