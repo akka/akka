@@ -294,9 +294,28 @@ object Attributes {
   final case object AsyncBoundary extends Attribute
 
   object LogLevels {
-    /** Use to disable logging on certain operations when configuring [[Attributes.LogLevels]] */
+    /** Use to disable logging on certain operations when configuring [[Attributes#logLevels]] */
     final val Off: Logging.LogLevel = Logging.levelFor("off").get
+    /** Use to enable logging at ERROR level for certain operations when configuring [[Attributes#logLevels]] */
+    final val Error: Logging.LogLevel = Logging.ErrorLevel
+    /** Use to enable logging at WARNING level for certain operations when configuring [[Attributes#logLevels]] */
+    final val Warning: Logging.LogLevel = Logging.WarningLevel
+    /** Use to enable logging at INFO level for certain operations when configuring [[Attributes#logLevels]] */
+    final val Info: Logging.LogLevel = Logging.InfoLevel
+    /** Use to enable logging at DEBUG level for certain operations when configuring [[Attributes#logLevels]] */
+    final val Debug: Logging.LogLevel = Logging.DebugLevel
   }
+
+  /** Java API: Use to disable logging on certain operations when configuring [[Attributes#createLogLevels]] */
+  def logLevelOff: Logging.LogLevel = LogLevels.Off
+  /** Use to enable logging at ERROR level for certain operations when configuring [[Attributes#createLogLevels]] */
+  def logLevelError: Logging.LogLevel = LogLevels.Error
+  /** Use to enable logging at WARNING level for certain operations when configuring [[Attributes#createLogLevels]] */
+  def logLevelWarning: Logging.LogLevel = LogLevels.Warning
+  /** Use to enable logging at INFO level for certain operations when configuring [[Attributes#createLogLevels]] */
+  def logLevelInfo: Logging.LogLevel = LogLevels.Info
+  /** Use to enable logging at DEBUG level for certain operations when configuring [[Attributes#createLogLevels]] */
+  def logLevelDebug: Logging.LogLevel = LogLevels.Debug
 
   /**
    * INTERNAL API
@@ -342,7 +361,7 @@ object Attributes {
 
   /**
    * Configures `log()` operator log-levels to be used when logging.
-   * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
+   * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
    *
    * See [[Attributes.createLogLevels]] for Java API
    */
