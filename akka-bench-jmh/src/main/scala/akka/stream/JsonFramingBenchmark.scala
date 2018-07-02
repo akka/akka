@@ -15,48 +15,47 @@ import org.openjdk.jmh.annotations._
 @BenchmarkMode(Array(Mode.Throughput))
 class JsonFramingBenchmark {
 
-  /*
-    Benchmark                                 Mode  Cnt      Score      Error  Units
-    // old
-    JsonFramingBenchmark.collecting_1        thrpt   20     81.476 ±   14.793  ops/s
-    JsonFramingBenchmark.collecting_offer_5  thrpt   20     20.187 ±    2.291  ops/s
-
-    // new
-    JsonFramingBenchmark.counting_1          thrpt   20  10766.738 ± 1278.300  ops/s
-    JsonFramingBenchmark.counting_offer_5    thrpt   20  28798.255 ± 2670.163  ops/s
-   */
-
   val json =
     ByteString(
+      """{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false}"""
+    )
+
+  val json5 =
+    ByteString(
       """|{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false},
-        |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
-        |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
-        |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
-        |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
-        |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
-        |{"fname":"Hank","name":"Smith","age":42,"id":1337,"boardMember":false}""".stripMargin
+         |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
+         |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
+         |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
+         |{"fname":"Hank","name":"Smith","age":42,"id":1337,"boardMember":false}""".stripMargin
+    )
+
+  val jsonLong =
+    ByteString(
+      s"""{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false,"description":"${"a" * 1000000}"}"""
     )
 
   val bracket = new JsonObjectParser
 
-  @Setup(Level.Invocation)
-  def init(): Unit = {
-    bracket.offer(json)
-  }
-
   @Benchmark
-  def counting_1: ByteString =
+  def counting_1: ByteString = {
+    bracket.offer(json)
     bracket.poll().get
+  }
 
   @Benchmark
   @OperationsPerInvocation(5)
   def counting_offer_5: ByteString = {
-    bracket.offer(json)
+    bracket.offer(json5)
     bracket.poll().get
     bracket.poll().get
     bracket.poll().get
     bracket.poll().get
     bracket.poll().get
+  }
+
+  @Benchmark
+  def counting_long_document: ByteString = {
+    bracket.offer(jsonLong)
     bracket.poll().get
   }
 

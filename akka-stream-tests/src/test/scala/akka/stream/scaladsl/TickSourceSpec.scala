@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 import akka.stream.{ ClosedShape, ActorMaterializer }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TimingTest
 
 class TickSourceSpec extends StreamSpec {

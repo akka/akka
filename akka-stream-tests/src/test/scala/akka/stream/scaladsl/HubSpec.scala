@@ -6,8 +6,9 @@ package akka.stream.scaladsl
 
 import akka.stream.{ ActorMaterializer, KillSwitches, ThrottleMode }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
+import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.EventFilter
 
 import scala.collection.immutable

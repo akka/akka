@@ -9,7 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.Done
 import akka.stream.impl.LazySource
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
-import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.{ ActorMaterializer, Attributes, Outlet, SourceShape }
 import akka.testkit.DefaultTimeout

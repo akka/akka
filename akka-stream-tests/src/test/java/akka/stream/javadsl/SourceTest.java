@@ -8,6 +8,7 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
+import akka.actor.Status;
 import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
@@ -446,6 +447,7 @@ public class SourceTest extends StreamTest {
     probe.expectNoMessage(Duration.ofMillis(200));
     probe.expectMsgEquals("tick");
     probe.expectNoMessage(Duration.ofMillis(200));
+    cancellable.cancel();
   }
 
   @Test
@@ -547,6 +549,7 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals(1);
     ref.tell(2, ActorRef.noSender());
     probe.expectMsgEquals(2);
+    ref.tell(new Status.Success("ok"), ActorRef.noSender());
   }
 
   @Test
