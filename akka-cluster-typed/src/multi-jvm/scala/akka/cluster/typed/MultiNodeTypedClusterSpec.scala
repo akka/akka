@@ -20,41 +20,6 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 
-object MultiNodeTypedClusterSpec {
-  def clusterConfig: Config = ConfigFactory.parseString(
-    s"""
-    akka.actor.provider = cluster
-    akka.actor.warn-about-java-serializer-usage = off
-    akka.cluster {
-      jmx.enabled                         = off
-      gossip-interval                     = 200 ms
-      leader-actions-interval             = 200 ms
-      unreachable-nodes-reaper-interval   = 500 ms
-      periodic-tasks-initial-delay        = 300 ms
-      publish-stats-interval              = 0 s # always, when it happens
-      failure-detector.heartbeat-interval = 500 ms
-
-      run-coordinated-shutdown-when-down = off
-    }
-    akka.loglevel = INFO
-    akka.log-dead-letters = off
-    akka.log-dead-letters-during-shutdown = off
-    akka.remote {
-      log-remote-lifecycle-events = off
-      artery.advanced.flight-recorder {
-        enabled=on
-        destination=target/flight-recorder-${UUID.randomUUID().toString}.afr
-      }
-    }
-    akka.loggers = ["akka.testkit.TestEventListener"]
-    akka.test {
-      single-expect-default = 10 s
-    }
-
-    """)
-
-}
-
 trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with FlightRecordingSupport with Matchers {
   self: MultiNodeSpec ⇒
 
