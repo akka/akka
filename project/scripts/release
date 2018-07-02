@@ -162,7 +162,9 @@ fi
 declare -r version=$1
 declare -r publish_path="${release_server}:${release_path}"
 
-[[ `java -version 2>&1 | grep -E "java version|openjdk version" | cut -d ' ' -f3 | cut -d '.' -f2` -eq 8 ]] || fail "Java version is not 1.8"
+JAVA_VERSION=`java -version 2>&1 | grep -E "java version|openjdk version" | cut -d '"' -f2 | cut -d '.' -f1`
+
+[[ $JAVA_VERSION -ge 9 ]] || fail "Java version is not at least 9"
 
 # check for a git command
 type -P git &> /dev/null || fail "git command not found"
