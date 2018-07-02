@@ -32,7 +32,9 @@ private[cluster] final class ClusterHeartbeatReceiver extends Actor with ActorLo
 
   def receive = {
     case Heartbeat(from) ⇒
+      // Add this logging also...
       if (verboseHeartbeat) log.debug("Cluster Node [{}] - Heartbeat from [{}]", cluster.selfAddress, from)
+      // ... end of additional logging
       sender() ! selfHeartbeatRsp
   }
 

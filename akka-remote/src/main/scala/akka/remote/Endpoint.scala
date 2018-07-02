@@ -30,6 +30,8 @@ import scala.util.control.NonFatal
 import java.util.concurrent.locks.LockSupport
 
 import scala.concurrent.Future
+
+import akka.remote.transport.netty.TcpAssociationHandle
 import akka.util.OptionVal
 import akka.util.OptionVal
 
@@ -661,6 +663,9 @@ private[remote] class EndpointWriter(
       sendBufferedMessages()
     }
 
+  var writeSendCount = 0
+  var writeSendOkCount = 0
+
   var writeCount = 0
   var maxWriteCount = MaxWriteCount
   var adaptiveBackoffNanos = 1000000L // 1 ms
@@ -686,9 +691,26 @@ private[remote] class EndpointWriter(
 
   def sendBufferedMessages(): Unit = {
 
+    def debugWriteSend(s: Send): Boolean = {
+      val ok = writeSend(s)
+      writeSendCount += 1
+      if (ok)
+        writeSendOkCount += 1
+      if (writeSendCount % 100 == 0 && log.isDebugEnabled) {
+
+        log.debug(
+          "connection-issue: EndpointWriter [{}] Still buffering after [{}] writeSend attempts, " +
+            "buffer size [{}], writeSendOkCount [{}] " +
+            s"fullBackoffCount: $fullBackoffCount" +
+            s", smallBackoffCount: $smallBackoffCount, noBackoffCount: $noBackoffCount ",
+          remoteAddress, writeSendCount, buffer.size, writeSendOkCount)
+      }
+      ok
+    }
+
     def delegate(msg: Any): Boolean = msg match {
       case s: Send ⇒
-        writeSend(s)
+        debugWriteSend(s)
       case FlushAndStop ⇒
         flushAndStop()
         false
@@ -708,7 +730,7 @@ private[remote] class EndpointWriter(
 
     @tailrec def writePrioLoop(): Boolean =
       if (prioBuffer.isEmpty) true
-      else writeSend(prioBuffer.peek) && { prioBuffer.removeFirst(); writePrioLoop() }
+      else debugWriteSend(prioBuffer.peek) && { prioBuffer.removeFirst(); writePrioLoop() }
 
     val size = buffer.size
 
@@ -716,15 +738,23 @@ private[remote] class EndpointWriter(
     if (buffer.isEmpty && prioBuffer.isEmpty) {
       // FIXME remove this when testing/tuning is completed
       if (log.isDebugEnabled)
-        log.debug(s"Drained buffer with maxWriteCount: $maxWriteCount, fullBackoffCount: $fullBackoffCount" +
-          s", smallBackoffCount: $smallBackoffCount, noBackoffCount: $noBackoffCount " +
-          s", adaptiveBackoff: ${adaptiveBackoffNanos / 1000}")
+        log.debug(
+          s"connection-issue: EndpointWriter [{}] Drained buffer with " +
+            s"maxWriteCount: $maxWriteCount, fullBackoffCount: $fullBackoffCount" +
+            s", smallBackoffCount: $smallBackoffCount, noBackoffCount: $noBackoffCount " +
+            s", adaptiveBackoff: ${adaptiveBackoffNanos / 1000} " +
+            s", writeSendCount: $writeSendCount ",
+          remoteAddress)
       fullBackoffCount = 1
       smallBackoffCount = 0
       noBackoffCount = 0
 
       writeCount = 0
       maxWriteCount = MaxWriteCount
+
+      writeSendCount = 0
+      writeSendOkCount = 0
+
       context.become(writing)
     } else if (ok) {
       noBackoffCount += 1
@@ -758,16 +788,25 @@ private[remote] class EndpointWriter(
       val s = self
       val backoffDeadlinelineNanoTime = System.nanoTime + adaptiveBackoffNanos
       Future {
-        @tailrec def backoff(): Unit = {
-          val backoffNanos = backoffDeadlinelineNanoTime - System.nanoTime
-          if (backoffNanos > 0) {
-            LockSupport.parkNanos(backoffNanos)
-            // parkNanos allows for spurious wake-up, check again
-            backoff()
+        try {
+          @tailrec def backoff(): Unit = {
+            val backoffNanos = backoffDeadlinelineNanoTime - System.nanoTime
+            if (backoffNanos > 0) {
+              LockSupport.parkNanos(backoffNanos)
+              // parkNanos allows for spurious wake-up, check again
+              backoff()
+            }
           }
+
+          backoff()
+          s.tell(BackoffTimer, ActorRef.noSender)
+        } catch {
+          case e: Throwable ⇒
+            log.error(
+              "connection-issue: EndpointWriter [{}] Unexpected exception in small backoff: {}",
+              remoteAddress, e)
+            throw e
         }
-        backoff()
-        s.tell(BackoffTimer, ActorRef.noSender)
       }(backoffDispatcher)
     }
   }
