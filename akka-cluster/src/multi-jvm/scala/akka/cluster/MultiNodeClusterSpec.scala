@@ -51,6 +51,7 @@ object MultiNodeClusterSpec {
 
       sharding {
         retry-interval = 200ms
+        waiting-for-state-timeout = 200ms
       }
     }
     akka.loglevel = INFO
