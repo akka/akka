@@ -845,7 +845,7 @@ object CompactByteString {
    */
   def apply[T](bytes: T*)(implicit num: Integral[T]): CompactByteString = {
     if (bytes.isEmpty) empty
-    else ByteString.ByteString1C(bytes.map(x ⇒ num.toInt(x).toByte).to(Array))
+    else ByteString.ByteString1C(bytes.iterator.map(x ⇒ num.toInt(x).toByte).to(Array))
   }
 
   /**
