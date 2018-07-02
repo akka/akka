@@ -32,6 +32,8 @@ object ClusterApiSpec {
       }
       # generous timeout for cluster forming probes
       akka.actor.testkit.typed.default-timeout = 10s
+      # disable this or we cannot be sure to observe node end state on the leaving side
+      akka.cluster.run-coordinated-shutdown-when-down = off
     """)
 }
 
@@ -93,6 +95,7 @@ class ClusterApiSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Sc
 
         // selfMember updated and self removed event gotten
         node2Probe.awaitAssert(clusterNode2.selfMember.status should ===(MemberStatus.Removed))
+
         node2Probe.expectMessage(SelfRemoved(MemberStatus.Exiting))
 
         // subscribing to SelfRemoved when already removed yields immediate message back
