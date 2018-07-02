@@ -6,7 +6,6 @@ package akka.actor.testkit.typed.scaladsl
 
 //#manual-scheduling-simple
 import akka.actor.typed.scaladsl.Behaviors
-import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 
