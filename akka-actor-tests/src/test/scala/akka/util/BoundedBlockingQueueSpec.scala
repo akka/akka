@@ -6,20 +6,20 @@ package akka.util
 
 import java.util
 import java.util.concurrent._
-import java.util.concurrent.locks.{Condition, LockSupport, ReentrantLock}
+import java.util.concurrent.locks.{ Condition, LockSupport, ReentrantLock }
 
 import akka.util.DefaultExecutionContext._
 import org.scalactic.source.Position
-import org.scalatest.concurrent.{Signaler, ThreadSignaler}
+import org.scalatest.concurrent.{ Signaler, ThreadSignaler }
 import org.scalatest.exceptions.TestFailedDueToTimeoutException
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.{ MatchResult, Matcher }
 import org.scalatest.time.Span
 import org.scalatest.time.SpanSugar._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
 import scala.util.control.Exception
 
 class BoundedBlockingQueueSpec
