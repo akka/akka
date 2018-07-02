@@ -4,7 +4,6 @@
 
 package akka.actor.typed
 
-import scala.concurrent.ExecutionContext
 import akka.{ actor ⇒ a }
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
@@ -16,7 +15,6 @@ import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, PropsAdapter }
 import akka.util.Timeout
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
-import java.util.Optional
 
 import akka.actor.BootstrapSetup
 import akka.actor.typed.internal.adapter.GuardianActorAdapter
