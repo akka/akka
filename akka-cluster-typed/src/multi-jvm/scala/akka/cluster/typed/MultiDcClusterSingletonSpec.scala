@@ -6,7 +6,7 @@ package akka.cluster.typed
 
 import akka.actor.typed.Props
 import akka.actor.typed.scaladsl.adapter._
-import akka.cluster.MemberStatus
+import akka.cluster.{ MemberStatus, MultiNodeClusterSpec }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -24,7 +24,7 @@ object MultiDcClusterSingletonSpecConfig extends MultiNodeConfig {
       """
         akka.loglevel = DEBUG
       """).withFallback(
-        MultiNodeTypedClusterSpec.clusterConfig))
+        MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first)(ConfigFactory.parseString(
     """
