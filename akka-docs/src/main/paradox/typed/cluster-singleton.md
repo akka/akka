@@ -48,7 +48,7 @@ Java
 :  @@snip [ShardingCompileOnlyTest.java]($akka$/akka-cluster-sharding-typed/src/test/java/jdoc/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #counter }
 
 Then on every node in the cluster, or every node with a given role, use the `ClusterSingleton` extension
-to spawn the singleton. An instance will per data centre of the cluster:
+to spawn the singleton. An instance will spawn per data centre of the cluster:
 
 
 Scala
