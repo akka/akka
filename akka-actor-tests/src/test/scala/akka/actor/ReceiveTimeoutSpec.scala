@@ -131,5 +131,29 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
       system.stop(timeoutActor)
     }
+
+    "get timeout while receiving NotInfluenceReceiveTimeout messages scheduled with Timers" taggedAs TimingTest in {
+      val timeoutLatch = TestLatch()
+      val count = new AtomicInteger(0)
+
+      class ActorWithTimer() extends Actor with Timers {
+        timers.startPeriodicTimer("transparentTick", TransperentTick, 100.millis)
+        timers.startPeriodicTimer("identifyTick", Identify(None), 100.millis)
+
+        context.setReceiveTimeout(1 second)
+        def receive: Receive = {
+          case ReceiveTimeout ⇒
+            timeoutLatch.open
+          case TransperentTick ⇒
+            count.incrementAndGet()
+        }
+      }
+
+      val timeoutActor = system.actorOf(Props(new ActorWithTimer()))
+
+      Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
+      count.get() should be > 0
+      system.stop(timeoutActor)
+    }
   }
 }

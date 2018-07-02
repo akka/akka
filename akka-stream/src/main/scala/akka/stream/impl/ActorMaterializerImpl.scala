@@ -89,7 +89,7 @@ import scala.concurrent.{ Await, ExecutionContextExecutor }
 }
 
 /**
- * This materializer replaces the default phase with one that will fuse stages into an existing interpreter (via `registerShell`),
+ * This materializer replaces the default phase with one that will fuse operators into an existing interpreter (via `registerShell`),
  * rather than start a new actor for each of them.
  *
  * The default phases are left in-tact since we still respect `.async` and other tags that were marked within a sub-fused graph.

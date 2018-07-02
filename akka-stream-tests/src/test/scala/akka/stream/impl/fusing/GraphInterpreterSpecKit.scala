@@ -215,7 +215,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
       override def toString = "Downstream"
     }
 
-    class AssemblyBuilder(stages: Seq[GraphStageWithMaterializedValue[_ <: Shape, _]]) {
+    class AssemblyBuilder(operators: Seq[GraphStageWithMaterializedValue[_ <: Shape, _]]) {
       private var upstreams = Vector.empty[UpstreamBoundaryStageLogic[_]]
       private var downstreams = Vector.empty[DownstreamBoundaryStageLogic[_]]
       private var connectedPorts = Vector.empty[(Outlet[_], Inlet[_])]
@@ -238,7 +238,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
       }
 
       def init(): Unit = {
-        val (logics, inOwners, outOwners) = createLogics(stages.toArray, upstreams.toArray, downstreams.toArray)
+        val (logics, inOwners, outOwners) = createLogics(operators.toArray, upstreams.toArray, downstreams.toArray)
         val conns = createConnections(logics, connectedPorts, inOwners, outOwners)
 
         manualInit(logics.toArray, conns)
@@ -257,8 +257,8 @@ trait GraphInterpreterSpecKit extends StreamSpec {
       _interpreter.init(null)
     }
 
-    def builder(stages: GraphStageWithMaterializedValue[_ <: Shape, _]*): AssemblyBuilder =
-      new AssemblyBuilder(stages.toVector)
+    def builder(operators: GraphStageWithMaterializedValue[_ <: Shape, _]*): AssemblyBuilder =
+      new AssemblyBuilder(operators.toVector)
 
   }
 

@@ -4,13 +4,11 @@
 
 package jdocs.ddata;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -39,9 +37,9 @@ public class ShoppingCart extends AbstractActor {
 
   //#read-write-majority
   private final WriteConsistency writeMajority = 
-      new WriteMajority(Duration.create(3, SECONDS));
+      new WriteMajority(Duration.ofSeconds(3));
   private final static ReadConsistency readMajority = 
-      new ReadMajority(Duration.create(3, SECONDS));
+      new ReadMajority(Duration.ofSeconds(3));
   //#read-write-majority
 
   public static final String GET_CART = "getCart";

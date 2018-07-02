@@ -34,18 +34,18 @@ object Supervision {
   def resume = Resume
 
   /**
-   * Scala API: The element is dropped and the stream continues after restarting the stage
+   * Scala API: The element is dropped and the stream continues after restarting the operator
    * if application code for processing an element throws an exception.
-   * Restarting a stage means that any accumulated state is cleared. This is typically
-   * performed by creating a new instance of the stage.
+   * Restarting an operator means that any accumulated state is cleared. This is typically
+   * performed by creating a new instance of the operator.
    */
   case object Restart extends Directive
 
   /**
-   * Java API: The element is dropped and the stream continues after restarting the stage
+   * Java API: The element is dropped and the stream continues after restarting the operator
    * if application code for processing an element throws an exception.
-   * Restarting a stage means that any accumulated state is cleared. This is typically
-   * performed by creating a new instance of the stage.
+   * Restarting an operator means that any accumulated state is cleared. This is typically
+   * performed by creating a new instance of the operator.
    */
   def restart = Restart
 

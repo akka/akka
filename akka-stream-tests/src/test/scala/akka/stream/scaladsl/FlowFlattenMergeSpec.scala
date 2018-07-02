@@ -7,7 +7,8 @@ package akka.stream.scaladsl
 import akka.NotUsed
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 import akka.stream._
-import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 import scala.concurrent._
 import scala.concurrent.duration._

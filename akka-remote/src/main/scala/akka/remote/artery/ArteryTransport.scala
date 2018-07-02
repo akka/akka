@@ -61,7 +61,7 @@ import akka.util.WildcardIndex
 
 /**
  * INTERNAL API
- * Inbound API that is used by the stream stages.
+ * Inbound API that is used by the stream operators.
  * Separate trait to facilitate testing without real transport.
  */
 private[remote] trait InboundContext {
@@ -71,7 +71,7 @@ private[remote] trait InboundContext {
   def localAddress: UniqueAddress
 
   /**
-   * An inbound stage can send control message, e.g. a reply, to the origin
+   * An inbound operator can send control message, e.g. a reply, to the origin
    * address with this method. It will be sent over the control sub-channel.
    */
   def sendControl(to: Address, message: ControlMessage): Unit
@@ -188,7 +188,7 @@ private[remote] final class AssociationState(
 
 /**
  * INTERNAL API
- * Outbound association API that is used by the stream stages.
+ * Outbound association API that is used by the stream operators.
  * Separate trait to facilitate testing without real transport.
  */
 private[remote] trait OutboundContext {
@@ -207,7 +207,7 @@ private[remote] trait OutboundContext {
   def quarantine(reason: String): Unit
 
   /**
-   * An inbound stage can send control message, e.g. a HandshakeReq, to the remote
+   * An inbound operator can send control message, e.g. a HandshakeReq, to the remote
    * address of this association. It will be sent over the control sub-channel.
    */
   def sendControl(message: ControlMessage): Unit
@@ -218,7 +218,7 @@ private[remote] trait OutboundContext {
   def isOrdinaryMessageStreamActive(): Boolean
 
   /**
-   * An outbound stage can listen to control messages
+   * An outbound operator can listen to control messages
    * via this observer subject.
    */
   def controlSubject: ControlMessageSubject
@@ -321,7 +321,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   /**
    * Compression tables must be created once, such that inbound lane restarts don't cause dropping of the tables.
-   * However are the InboundCompressions are owned by the Decoder stage, and any call into them must be looped through the Decoder!
+   * However are the InboundCompressions are owned by the Decoder operator, and any call into them must be looped through the Decoder!
    *
    * Use `inboundCompressionAccess` (provided by the materialized `Decoder`) to call into the compression infrastructure.
    */

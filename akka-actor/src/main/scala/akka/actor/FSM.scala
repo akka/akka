@@ -8,9 +8,11 @@ import language.implicitConversions
 import scala.concurrent.duration.Duration
 import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
+
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 import akka.annotation.InternalApi
+import akka.util.JavaDurationConverters
 
 object FSM {
 
@@ -177,6 +179,18 @@ object FSM {
       case _                 ⇒ copy(timeout = None) // that means "cancel stateTimeout". This marker is needed
     } // so we do not have to break source/binary compat.
     // TODO: Can be removed once we can break State#timeout signature to `Option[Duration]`
+
+    /**
+     * JAVA API: Modify state transition descriptor to include a state timeout for the
+     * next state. This timeout overrides any default timeout set for the next
+     * state.
+     *
+     * Use Duration.Inf to deactivate an existing timeout.
+     */
+    def forMax(timeout: java.time.Duration): State[S, D] = {
+      import JavaDurationConverters._
+      forMax(timeout.asScala)
+    }
 
     /**
      * Send reply to sender of the current message, if available.

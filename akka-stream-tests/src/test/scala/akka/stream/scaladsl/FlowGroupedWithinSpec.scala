@@ -11,6 +11,7 @@ import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, ThrottleMode }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 import akka.testkit.TimingTest
 import akka.util.ConstantFun

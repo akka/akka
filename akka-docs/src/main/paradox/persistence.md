@@ -32,6 +32,17 @@ changes to these actors from which they can rebuild internal state. This can be 
 or starting from a snapshot which can dramatically reduce recovery times. Akka persistence also provides point-to-point
 communication with at-least-once message delivery semantics.
 
+@@@ note
+
+The General Data Protection Regulation (GDPR) requires that personal information must be deleted at the request of users.
+Deleting or modifying events that carry personal information would be difficult. Data shredding can be used to forget
+information instead of deleting or modifying it. This is achieved by encrypting the data with a key for a given data
+subject id (person) and deleting the key when that data subject is to be forgotten. Lightbend's
+[GDPR for Akka Persistence](https://developer.lightbend.com/docs/akka-commercial-addons/current/gdpr/index.html)
+provides tools to facilitate in building GDPR capable systems.
+
+@@@
+
 Akka persistence is inspired by and the official replacement of the [eventsourced](https://github.com/eligosource/eventsourced) library. It follows the same
 concepts and architecture of [eventsourced](https://github.com/eligosource/eventsourced) but significantly differs on API and implementation level. See also
 @ref:[migration-eventsourced-2.3](project/migration-guide-eventsourced-2.3.x.md)
@@ -696,6 +707,13 @@ In a use case where the number of persistent actors needed are higher than what 
 where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a 
 cluster and address them by id.
+
+Akka Persistence is based on the single-writer principle. For a particular `persistenceId` only one `PersistentActor`
+instance should be active at one time. If multiple instances were to persist events at the same time, the events would
+be interleaved and might not be interpreted correctly on replay. Cluster Sharding ensures that there is only one
+active entity (`PersistentActor`) for each id within a data center. Lightbend's
+[Multi-DC Persistence](https://developer.lightbend.com/docs/akka-commercial-addons/current/persistence-dc/index.html)
+supports active-active persistent entities across data centers.
 
 The [Lagom framework](https://www.lagom-framework.com), which is built on top of Akka encodes many of the best practices 
 around this. For more details see @java[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/java/ES_CQRS.html)]

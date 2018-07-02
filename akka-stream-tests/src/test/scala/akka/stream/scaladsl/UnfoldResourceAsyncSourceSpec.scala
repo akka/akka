@@ -11,6 +11,7 @@ import akka.actor.ActorSystem
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.{ ActorMaterializer, _ }
 import akka.testkit.TestLatch

@@ -11,6 +11,7 @@ import akka.stream._
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSource
 import akka.util.ByteString
@@ -43,13 +44,13 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
       javaSource.count() should ===(0)
     }
 
-    "work with endless stream" in Utils.assertAllStagesStopped {
+    "work with endless stream" in assertAllStagesStopped {
       val javaSource = Source.repeat(1).runWith(StreamConverters.asJavaStream())
       javaSource.limit(10).count() should ===(10)
       javaSource.close()
     }
 
-    "allow overriding the dispatcher using Attributes" in Utils.assertAllStagesStopped {
+    "allow overriding the dispatcher using Attributes" in assertAllStagesStopped {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
 
@@ -62,7 +63,7 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
       } finally shutdown(sys)
     }
 
-    "work in separate IO dispatcher" in Utils.assertAllStagesStopped {
+    "work in separate IO dispatcher" in assertAllStagesStopped {
       val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
       val materializer = ActorMaterializer()(sys)
 

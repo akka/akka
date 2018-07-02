@@ -16,6 +16,7 @@ import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.io.FileSourceSpec.Settings
 import akka.stream.scaladsl.{ FileIO, Keep, Sink }
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestDuration

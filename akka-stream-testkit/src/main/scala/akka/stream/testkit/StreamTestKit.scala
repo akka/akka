@@ -18,6 +18,7 @@ import java.io.PrintWriter
 import java.util.concurrent.CountDownLatch
 
 import akka.testkit.TestActor.AutoPilot
+import akka.util.JavaDurationConverters
 
 /**
  * Provides factory methods for various Publishers.
@@ -596,6 +597,15 @@ object TestSubscriber {
      */
     def expectNoMessage(remaining: FiniteDuration): Self = {
       probe.expectNoMessage(remaining)
+      self
+    }
+
+    /**
+     * Java API: Assert that no message is received for the specified time.
+     */
+    def expectNoMessage(remaining: java.time.Duration): Self = {
+      import JavaDurationConverters._
+      probe.expectNoMessage(remaining.asScala)
       self
     }
 
