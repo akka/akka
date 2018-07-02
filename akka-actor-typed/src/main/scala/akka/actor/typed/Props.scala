@@ -148,19 +148,19 @@ sealed abstract class DispatcherSelector extends Props
  * on the options.
  *
  * The default configuration if none of these options are present is to run
- * the actor on the same executor as its parent.
+ * the actor on the default [[ActorSystem]] executor.
  */
 object DispatcherSelector {
 
   /**
    * Scala API:
-   * Run the actor on the same executor as its parent.
+   * Run the actor on the default [[ActorSystem]] executor.
    */
   def default(): DispatcherSelector = DispatcherDefault()
 
   /**
    * Java API:
-   * Run the actor on the same executor as its parent.
+   * Run the actor on the default [[ActorSystem]] executor.
    */
   def defaultDispatcher(): DispatcherSelector = default()
 
