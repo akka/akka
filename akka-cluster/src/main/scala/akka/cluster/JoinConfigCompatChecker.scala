@@ -74,7 +74,7 @@ object JoinConfigCompatChecker {
       val incompatibleKeys =
         toCheck.entrySet().asScala
           .collect {
-            case entry if requiredKeys.contains(entry.getKey) && !checkCompat(entry) ⇒ s"[${entry.getKey}] is incompatible"
+            case entry if requiredKeys.contains(entry.getKey) && !checkCompat(entry) ⇒ s"${entry.getKey} is incompatible"
           }
 
       if (incompatibleKeys.isEmpty) Valid
