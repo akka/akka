@@ -69,6 +69,7 @@ class ManualTimerExampleSpec extends AbstractActorSpec {
       case class SlowThenBump(nextCount: Int) extends Command
       sealed trait Event
       case class Tock(n: Int) extends Event
+      case object SlowThenBumpAck extends Event
 
       val probe = TestProbe[Event]("evt")
       val interval = 10.millis
@@ -83,21 +84,22 @@ class ManualTimerExampleSpec extends AbstractActorSpec {
             case SlowThenBump(nextCount) ⇒
               manualTime.timePasses(interval)
               timer.startPeriodicTimer("T", Tick(nextCount), interval)
+              probe.ref ! SlowThenBumpAck
               Behaviors.same
           }
         }
       }
 
       val ref = spawn(behavior)
-
       manualTime.timePasses(11.millis)
       probe.expectMessage(Tock(1))
 
-      // next Tock(1) enqueued in mailboxed, but should be discarded because of new timer
+      // next Tock(1) enqueued in mailbox, but should be discarded because of new timer
       ref ! SlowThenBump(2)
-      manualTime.expectNoMessageFor(interval, probe)
+      probe.expectMessage(SlowThenBumpAck)
+      manualTime.expectNoMessageFor(9.millis, probe)
 
-      manualTime.timePasses(interval)
+      manualTime.timePasses(2.millis)
       probe.expectMessage(Tock(2))
     }
 
