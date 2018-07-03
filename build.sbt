@@ -409,7 +409,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
   .dependsOn(
     actorTyped,
-    cluster % "compile->compile;test->test",
+    cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
     clusterTools,
     distributedData,
     persistence % "test->test",
