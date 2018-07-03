@@ -5,9 +5,9 @@
 package akka.persistence.typed.javadsl
 
 import java.util.function.BiFunction
+import java.util.function.Predicate
 
 import akka.annotation.InternalApi
-import akka.japi.pf.FI
 import akka.persistence.typed.internal._
 import akka.util.OptionVal
 
@@ -23,11 +23,11 @@ trait CommandHandler[Command, Event, State] {
 
 object CommandHandlerBuilder {
 
-  private val _trueStatePredicate: FI.TypedPredicate[Any] = new FI.TypedPredicate[Any] {
-    override def defined(t: Any): Boolean = true
+  private val _trueStatePredicate: Predicate[Any] = new Predicate[Any] {
+    override def test(t: Any): Boolean = true
   }
 
-  private def trueStatePredicate[S]: FI.TypedPredicate[S] = _trueStatePredicate.asInstanceOf[FI.TypedPredicate[S]]
+  private def trueStatePredicate[S]: Predicate[S] = _trueStatePredicate.asInstanceOf[Predicate[S]]
 
   /**
    * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
@@ -41,7 +41,7 @@ object CommandHandlerBuilder {
    *                       useful for example when state type is an Optional
    * @return A new, mutable, command handler builder
    */
-  def builder[Command, Event, State](statePredicate: FI.TypedPredicate[State]): CommandHandlerBuilder[Command, Event, State, State] =
+  def builder[Command, Event, State](statePredicate: Predicate[State]): CommandHandlerBuilder[Command, Event, State, State] =
     new CommandHandlerBuilder(classOf[Any].asInstanceOf[Class[State]], statePredicate)
 
   /**
@@ -54,7 +54,7 @@ object CommandHandlerBuilder {
 }
 
 final class CommandHandlerBuilder[Command, Event, S <: State, State] @InternalApi private[persistence] (
-  val stateClass: Class[S], val statePredicate: FI.TypedPredicate[S]) {
+  val stateClass: Class[S], val statePredicate: Predicate[S]) {
   import CommandHandlerBuilder.CommandHandlerCase
 
   private var cases: List[CommandHandlerCase[Command, Event, State]] = Nil
@@ -62,15 +62,15 @@ final class CommandHandlerBuilder[Command, Event, S <: State, State] @InternalAp
   private def addCase(predicate: Command ⇒ Boolean, handler: BiFunction[S, Command, Effect[Event, State]]): Unit = {
     cases = CommandHandlerCase[Command, Event, State](
       commandPredicate = predicate,
-      statePredicate = state ⇒ stateClass.isAssignableFrom(state.getClass) && statePredicate.defined(state.asInstanceOf[S]),
+      statePredicate = state ⇒ stateClass.isAssignableFrom(state.getClass) && statePredicate.test(state.asInstanceOf[S]),
       handler.asInstanceOf[BiFunction[State, Command, Effect[Event, State]]]) :: cases
   }
 
   /**
    * Match any command which the given `predicate` returns true for
    */
-  def matchCommand(predicate: FI.TypedPredicate[Command], handler: BiFunction[S, Command, Effect[Event, State]]): CommandHandlerBuilder[Command, Event, S, State] = {
-    addCase(cmd ⇒ predicate.defined(cmd), handler)
+  def matchCommand(predicate: Predicate[Command], handler: BiFunction[S, Command, Effect[Event, State]]): CommandHandlerBuilder[Command, Event, S, State] = {
+    addCase(cmd ⇒ predicate.test(cmd), handler)
     this
   }
 

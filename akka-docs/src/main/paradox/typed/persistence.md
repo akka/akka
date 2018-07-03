@@ -51,7 +51,7 @@ Next we'll discuss each of these in detail.
 ### Command handler
 
 The command handler is a function with @java[2 parameters for]@scala[3 parameters for the `ActorContext`,]
-current `State`, and `Command`.
+current `State` and `Command`.
 
 A command handler returns an `Effect` directive that defines what event or events, if any, to persist. 
 @java[Effects are created using a factory that is returned via the `Effect()` method]
@@ -124,7 +124,7 @@ Java
 
 The `PersistentBehavior` can then be run as with any plain typed actor as described in [typed actors documentation](actors-typed.md).
 
-@java[The `ActorContext` can be obtained with `Behaviors.setup` and be passed as a constructor parameter]
+@java[The `ActorContext` can be obtained with `Behaviors.setup` and be passed as a constructor parameter.]
 
 ## Larger example
 

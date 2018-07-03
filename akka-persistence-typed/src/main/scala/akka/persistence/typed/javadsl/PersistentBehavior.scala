@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.javadsl
 
+import java.util.function.Predicate
 import java.util.{ Collections, Optional }
 
 import akka.actor.typed
@@ -70,7 +71,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
    *                       *                       useful for example when state type is an Optional
    * @return A new, mutable, command handler builder
    */
-  protected final def commandHandlerBuilder(statePredicate: FI.TypedPredicate[State]): CommandHandlerBuilder[Command, Event, State, State] =
+  protected final def commandHandlerBuilder(statePredicate: Predicate[State]): CommandHandlerBuilder[Command, Event, State, State] =
     CommandHandlerBuilder.builder[Command, Event, State](statePredicate)
 
   /**
