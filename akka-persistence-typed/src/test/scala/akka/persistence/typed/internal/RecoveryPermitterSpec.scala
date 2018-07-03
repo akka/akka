@@ -5,6 +5,7 @@
 package akka.persistence.typed.internal
 
 import akka.actor.PoisonPill
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps }
 import akka.actor.typed.{ ActorRef, Behavior, TypedAkkaSpecWithShutdown }
@@ -12,7 +13,7 @@ import akka.persistence.Persistence
 import akka.persistence.RecoveryPermitter.{ RecoveryPermitGranted, RequestRecoveryPermit, ReturnRecoveryPermit }
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.testkit.EventFilter
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.Eventually
 
@@ -71,9 +72,11 @@ class RecoveryPermitterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
         akka.persistence.max-concurrent-recoveries = 3
         akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
         akka.actor.warn-about-java-serializer-usage = off
+        akka.loggers = ["akka.testkit.TestEventListener"]
       """)
+  implicit val untypedSystem = system.toUntyped
 
-  private val permitter = Persistence(system.toUntyped).recoveryPermitter
+  private val permitter = Persistence(untypedSystem).recoveryPermitter
 
   def requestPermit(p: TestProbe[Any]): Unit = {
     permitter.tell(RequestRecoveryPermit, p.ref.toUntyped)
@@ -183,22 +186,24 @@ class RecoveryPermitterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
       requestPermit(p2)
 
       val stopProbe = TestProbe[ActorRef[Command]]()
-      val parent = spawn(
-        Behaviors.setup[Command](ctx ⇒ {
-          val persistentActor =
-            ctx.spawnAnonymous(persistentBehavior("p3", p3, p3, throwOnRecovery = true))
-          ctx.watch(persistentActor)
-          Behaviors.receive[Command] {
-            case (_, StopActor) ⇒
-              stopProbe.ref ! persistentActor
-              ctx.stop(persistentActor)
-              Behavior.same
-            case (_, message) ⇒
-              persistentActor ! message
-              Behaviors.same
-          }
-        })
-      )
+      val parent =
+        EventFilter.error(occurrences = 1, start = "Exception during recovery.").intercept {
+          spawn(
+            Behaviors.setup[Command](ctx ⇒ {
+              val persistentActor =
+                ctx.spawnAnonymous(persistentBehavior("p3", p3, p3, throwOnRecovery = true))
+              Behaviors.receive[Command] {
+                case (_, StopActor) ⇒
+                  stopProbe.ref ! persistentActor
+                  ctx.stop(persistentActor)
+                  Behavior.same
+                case (_, message) ⇒
+                  persistentActor ! message
+                  Behaviors.same
+              }
+            })
+          )
+        }
       p3.expectMessage(Recovered)
       // stop it
       parent ! StopActor
