@@ -326,10 +326,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   var joinSeedNodesDeadline: Option[Deadline] = None
   var leaderActionCounter = 0
 
-  // to be able to accept a Welcome from previously attempted to join nodes
-  // even if we already started a new seedNodeProcess
-  var allowWelcomeFromJoiningSeedNodeProcesses: Set[Address] = Set.empty
-
   var exitingTasksInProgress = false
   val selfExiting = Promise[Done]()
   val coordShutdown = CoordinatedShutdown(context.system)
@@ -419,13 +415,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     case msg: SubscriptionMessage ⇒
       publisher forward msg
     case Welcome(from, gossip) ⇒
-      // this can happen if a previous joinSeedNodes was replied to, yet before that we started another joinSeedNodes
-      if (allowWelcomeFromJoiningSeedNodeProcesses.contains(from.address)) {
-        log.info("Accepting Welcome message from previous joinSeedNodeProcess initiated Join, from: [{}]", from)
-        welcome(from.address, from, gossip)
-      } else {
-        log.warning("Received unexpected Welcome message from [{}], the address seems not to be one we attempted to join, ignoring.")
-      }
+      welcome(from.address, from, gossip)
     case _: Tick ⇒
       if (joinSeedNodesDeadline.exists(_.isOverdue))
         joinSeedNodesWasUnsuccessful()
@@ -433,7 +423,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   def tryingToJoin(joinWith: Address, deadline: Option[Deadline]): Actor.Receive = ({
     case Welcome(from, gossip) ⇒
-      require(from.address == joinWith, "joinWith should be the same as the welcome replied from right?")
       welcome(joinWith, from, gossip)
     case InitJoin ⇒
       logInfo("Received InitJoin message from [{}], but this node is not a member yet", sender())
@@ -575,10 +564,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     if (newSeedNodes.nonEmpty) {
       stopSeedNodeProcess()
 
-      // we keep addresses that we initiate joinSeedNodes for, as they may reply with Welcome
-      // even when we restart the joinSeedNodes process, and we should accept such welcome then.
-      allowWelcomeFromJoiningSeedNodeProcesses = allowWelcomeFromJoiningSeedNodeProcesses union newSeedNodes.toSet
-
       seedNodes = newSeedNodes // keep them for retry
       seedNodeProcess =
         if (newSeedNodes == immutable.IndexedSeq(selfAddress)) {
@@ -718,7 +703,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     if (joinWith != from.address)
       logInfo("Ignoring welcome from [{}] when trying to join with [{}]", from.address, joinWith)
     else {
-      allowWelcomeFromJoiningSeedNodeProcesses = Set.empty // we won't be needing those anymore
       membershipState = membershipState.copy(latestGossip = gossip).seen()
       logInfo("Welcome from [{}]", from.address)
       assertLatestGossip()
