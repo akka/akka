@@ -186,7 +186,7 @@ public class DeviceGroupQueryTest extends JUnitSuite {
             actorToDeviceId,
             1L,
             requester.getRef(),
-            new FiniteDuration(3, TimeUnit.SECONDS)));
+            new FiniteDuration(1, TimeUnit.SECONDS)));
 
     assertEquals(0L, device1.expectMsgClass(Device.ReadTemperature.class).requestId);
     assertEquals(0L, device2.expectMsgClass(Device.ReadTemperature.class).requestId);
