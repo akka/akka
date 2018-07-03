@@ -6,7 +6,7 @@ To use Remoting (codename Artery), you must add the following dependency in your
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-remote_$scala.major_version$
+  artifact=akka-remote_$scala.binary_version$
   version=$akka.version$
 }
 
