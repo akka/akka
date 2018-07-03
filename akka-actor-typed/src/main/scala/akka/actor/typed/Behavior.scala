@@ -323,11 +323,11 @@ object Behavior {
   def interpretSignal[T](behavior: Behavior[T], ctx: ActorContext[T], signal: Signal): Behavior[T] = {
     val result = interpret(behavior, ctx, signal)
     // we need to throw here to allow supervision of deathpact exception
-    if (signal.isInstanceOf[Terminated] && result == UnhandledBehavior)
-      // FIXME how do we provide more useful context here?
-      throw new DeathPactException(null)
-    else
-      result
+    signal match {
+      case Terminated(ref) if result == UnhandledBehavior=>
+        throw DeathPactException(signal.asInstanceOf[Terminated].ref)
+      case _ => result
+    }
   }
 
   private def interpret[T](behavior: Behavior[T], ctx: ActorContext[T], msg: Any): Behavior[T] = {
