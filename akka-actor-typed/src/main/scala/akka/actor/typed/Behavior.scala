@@ -324,9 +324,8 @@ object Behavior {
     val result = interpret(behavior, ctx, signal)
     // we need to throw here to allow supervision of deathpact exception
     signal match {
-      case Terminated(ref) if result == UnhandledBehavior=>
-        throw DeathPactException(ref)
-      case _ => result
+      case Terminated(ref) if result == UnhandledBehavior ⇒ throw DeathPactException(ref)
+      case _ ⇒ result
     }
   }
 
