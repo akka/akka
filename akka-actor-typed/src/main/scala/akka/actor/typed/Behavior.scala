@@ -325,7 +325,7 @@ object Behavior {
     // we need to throw here to allow supervision of deathpact exception
     signal match {
       case Terminated(ref) if result == UnhandledBehavior=>
-        throw DeathPactException(signal.asInstanceOf[Terminated].ref)
+        throw DeathPactException(ref)
       case _ => result
     }
   }
