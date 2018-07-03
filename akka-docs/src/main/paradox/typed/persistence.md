@@ -287,6 +287,6 @@ Java
 ## Journal rejections
 
 Journals can reject events. The difference from a failure is that the journal must decide to reject an event before
-trying to persist it so if an event is rejected it definitely won't be in the journal. This is signalled to
-a `PersistentBehavior` via a `EventRejectedException` and can be handled with a @ref[supervisor](fault-tolerance.md). 
+trying to persist it e.g. because of a serialization exception. If an event is rejected it definitely won't be in the journal. 
+This is signalled to a `PersistentBehavior` via a `EventRejectedException` and can be handled with a @ref[supervisor](fault-tolerance.md). 
 

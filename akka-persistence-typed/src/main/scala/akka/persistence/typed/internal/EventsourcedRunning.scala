@@ -228,7 +228,7 @@ private[akka] object EventsourcedRunning {
 
         case WriteMessageRejected(p, cause, id) ⇒
           if (id == setup.writerIdentity.instanceId) {
-            throw EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
+            throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
         case WriteMessageFailure(p, cause, id) ⇒

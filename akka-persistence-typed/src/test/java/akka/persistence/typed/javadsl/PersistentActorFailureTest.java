@@ -30,7 +30,7 @@ class FailingPersistentActor extends PersistentBehavior<String, String, String> 
     }
 
     @Override
-    public void onRecoveryCompleted(ActorContext<String> ctx, String s) {
+    public void onRecoveryCompleted(String s) {
         probe.tell("starting");
     }
 
@@ -41,7 +41,7 @@ class FailingPersistentActor extends PersistentBehavior<String, String, String> 
 
     @Override
     public CommandHandler<String, String, String> commandHandler() {
-        return (ctx, state, command) -> {
+        return (state, command) -> {
             probe.tell("persisting");
             return Effect().persist(command);
         };
