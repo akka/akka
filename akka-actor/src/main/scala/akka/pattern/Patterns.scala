@@ -318,6 +318,7 @@ object PatternsCS {
    *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def ask(actor: ActorRef, message: Any, timeout: Timeout): CompletionStage[AnyRef] =
     scalaAsk(actor, message)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
@@ -364,6 +365,7 @@ object PatternsCS {
    * @param messageFactory function taking an actor ref and returning the message to be sent
    * @param timeout        the timeout for the response before failing the returned completion operator
    */
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeout: Timeout): CompletionStage[AnyRef] =
     extended.ask(actor, messageFactory.apply _)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
@@ -456,6 +458,7 @@ object PatternsCS {
    *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def ask(selection: ActorSelection, message: Any, timeout: Timeout): CompletionStage[AnyRef] =
     scalaAsk(selection, message)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
