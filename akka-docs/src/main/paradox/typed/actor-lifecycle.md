@@ -52,6 +52,38 @@ Java
 
 Refer to @ref:[Actors](actors.md#introduction) for a walk-through of the above examples.
 
+### SpawnProtocol
+
+The guardian actor should be responsible for initialization of tasks and create the initial actors of the application,
+but sometimes you might want to spawn new actors from the outside of the guardian actor. For example creating an actor
+that handles a HTTP request.
+
+That is not difficult to implement in your behavior, but since this is a common pattern there is a predefined
+message protocol and implementation of a behavior for this. It can be used as the guardian actor of the `ActorSystem`,
+possibly combined with `Behaviors.setup` to start some initial tasks or actors. Child actors can then be started from
+the outside by telling or asking `SpawnProtocol.Spawn` to the actor reference of the system. When using `ask` this is
+similar to how `ActorSystem.actorOf` can be used in untyped actors with the difference that a
+@scala[`Future`]@java[`CompletionStage`] of the `ActorRef` is returned.
+
+The guardian behavior can be defined as:
+
+Scala
+:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/SpawnProtocolDocSpec.scala) { #imports1 #main }
+
+Java
+:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/SpawnProtocolDocTest.java) { #imports1 #main }
+
+and the `ActorSystem` can be created with that `main` behavior and asked to spawn other actors:
+
+Scala
+:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/SpawnProtocolDocSpec.scala) { #imports2 #system-spawn }
+
+Java
+:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/SpawnProtocolDocTest.java) { #imports2 #system-spawn }
+
+The `SpawnProtocol` can also be used at other places in the actor hierarchy. It doesn't have to be the root
+guardian actor.
+
 ## Stopping Actors
 
 An actor can stop itself by returning `Behaviors.stopped` as the next behavior.
