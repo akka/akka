@@ -65,9 +65,7 @@ object CrossJava {
   }
 
   def discoverJavaHomes: ListMap[String, File] = {
-    import JavaDiscoverConfig._
-    val configs = Vector(jabba, linux, macOS)
-    ListMap(configs flatMap { _.javaHomes }: _*)
+    ListMap(JavaDiscoverConfig.configs flatMap { _.javaHomes }: _*)
   }
 
   sealed trait JavaDiscoverConf {
@@ -94,19 +92,19 @@ object CrossJava {
   }
 
   object JavaDiscoverConfig {
-    val linux = new JavaDiscoverConf {
+    class LinuxDiscoverConfig extends JavaDiscoverConf {
       val base: File = file("/usr") / "lib" / "jvm"
-      val JavaHomeDir = """java-([0-9]+)-.*""".r
+      val JavaHomeDir = """(java-|jdk)(1\.)?([0-9]+).*""".r
 
       def javaHomes: Vector[(String, File)] =
         wrapNull(base.list())
           .sortWith(versionOrder)
           .collect {
-            case dir@JavaHomeDir(ver) => JavaVersion(ver).toString -> (base / dir)
+            case dir@JavaHomeDir(_, m, n) => JavaVersion(nullBlank(m) + n).toString -> (base / dir)
           }
     }
 
-    val macOS = new JavaDiscoverConf {
+    class MacOsDiscoverConfig extends JavaDiscoverConf {
       val base: File = file("/Library") / "Java" / "JavaVirtualMachines"
       val JavaHomeDir = """jdk-?(1\.)?([0-9]+).*""".r
 
@@ -120,7 +118,7 @@ object CrossJava {
     }
 
     // See https://github.com/shyiko/jabba
-    val jabba = new JavaDiscoverConf {
+    class JabbaDiscoverConfig extends JavaDiscoverConf {
       val base: File = Path.userHome / ".jabba" / "jdk"
       val JavaHomeDir = """([\w\-]+)\@(1\.)?([0-9]+).*""".r
 
@@ -134,6 +132,8 @@ object CrossJava {
               else v -> (base / dir)
           }
     }
+
+    val configs = Vector(new JabbaDiscoverConfig, new LinuxDiscoverConfig, new MacOsDiscoverConfig)
   }
 
     def nullBlank(s: String): String =
