@@ -92,7 +92,7 @@ public class IntroTest {
     }
 
     public static final Behavior<Start> main =
-      Behaviors.setup( context -> {
+      Behaviors.setup(context -> {
         final ActorRef<HelloWorld.Greet> greeter =
             context.spawn(HelloWorld.greeter, "greeter");
 
@@ -120,7 +120,7 @@ public class IntroTest {
 
     //#hello-world-main-with-dispatchers
     public static final Behavior<Start> main =
-      Behaviors.setup( context -> {
+      Behaviors.setup(context -> {
         final String dispatcherPath = "akka.actor.default-blocking-io-dispatcher";
 
         Props props = DispatcherSelector.fromConfig(dispatcherPath);
