@@ -20,7 +20,6 @@ object PromiseRefSpec {
 
 class PromiseRefSpec extends AkkaSpec with ImplicitSender {
   import PromiseRefSpec._
-  import akka.pattern._
 
   "The PromiseRef" must {
     "complete promise with received message" in {

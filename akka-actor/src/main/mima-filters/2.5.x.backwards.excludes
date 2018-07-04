@@ -82,3 +82,6 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.pattern.CircuitBreaker
 
 # streamref serialization #27304
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.DynamicAccess.classIsOnClasspath")
+
+# #25040 Don't clear context
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.clearActorFields")
