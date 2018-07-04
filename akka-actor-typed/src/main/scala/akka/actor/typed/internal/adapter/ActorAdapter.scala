@@ -6,6 +6,9 @@ package akka.actor.typed
 package internal
 package adapter
 
+import akka.actor.InternalMessage
+import akka.actor.typed.Behavior.{ isAlive, validateAsInitial }
+
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
@@ -19,12 +22,14 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor with a.ActorLogging {
+@InternalApi private[typed] abstract class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor with a.ActorLogging {
+
   import Behavior._
 
   protected var behavior: Behavior[T] = _initialBehavior
 
   private var _ctx: ActorContextAdapter[T] = _
+
   def ctx: ActorContextAdapter[T] =
     if (_ctx ne null) _ctx
     else throw new IllegalStateException("Context was accessed before typed actor was started.")
@@ -35,9 +40,7 @@ import scala.util.control.NonFatal
    */
   private var failures: Map[a.ActorRef, Throwable] = Map.empty
 
-  def receive = running
-
-  def running: Receive = {
+  protected final def handleInternalMessage(msg: InternalMessage): Unit = msg match {
     case a.Terminated(ref) ⇒
       val msg =
         if (failures contains ref) {
@@ -48,45 +51,41 @@ import scala.util.control.NonFatal
       next(Behavior.interpretSignal(behavior, ctx, msg), msg)
     case a.ReceiveTimeout ⇒
       next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
-    case wrapped: AskResponse[Any, T] @unchecked ⇒
+    case wrapped: AskResponse[Any, T]@unchecked ⇒
       withSafelyAdapted(() ⇒ wrapped.adapt())(handleMessage)
-    case wrapped: AdaptMessage[Any, T] @unchecked ⇒
+    case wrapped: AdaptMessage[Any, T]@unchecked ⇒
       withSafelyAdapted(() ⇒ wrapped.adapt()) {
         case AdaptWithRegisteredMessageAdapter(msg) ⇒
           adaptAndHandle(msg)
-        case msg: T @unchecked ⇒
+        case msg: T@unchecked ⇒
           handleMessage(msg)
       }
     case AdaptWithRegisteredMessageAdapter(msg) ⇒
       adaptAndHandle(msg)
-    case msg: T @unchecked ⇒
-      handleMessage(msg)
   }
 
-  private def handleMessage(msg: T): Unit = {
+  protected final def handleMessage(msg: T): Unit = {
     next(Behavior.interpretMessage(behavior, ctx, msg), msg)
   }
 
   private def next(b: Behavior[T], msg: Any): Unit = {
-    if (Behavior.isUnhandled(b)) unhandled(msg)
-    else {
-      b match {
-        case s: StoppedBehavior[T] ⇒
-          // use StoppedBehavior with previous behavior or an explicitly given `postStop` behavior
-          // until Terminate is received, i.e until postStop is invoked, and there PostStop
-          // will be signaled to the previous/postStop behavior
-          s.postStop match {
-            case OptionVal.None ⇒
-              // use previous as the postStop behavior
-              behavior = new Behavior.StoppedBehavior(OptionVal.Some(behavior))
-            case OptionVal.Some(postStop) ⇒
-              // use the given postStop behavior, but canonicalize it
-              behavior = new Behavior.StoppedBehavior(OptionVal.Some(Behavior.canonicalize(postStop, behavior, ctx)))
-          }
-          context.stop(self)
-        case _ ⇒
-          behavior = Behavior.canonicalize(b, behavior, ctx)
-      }
+    b match {
+      case _: UnhandledBehavior.type ⇒ unhandled(msg)
+      case s: StoppedBehavior[T] ⇒
+        // use StoppedBehavior with previous behavior or an explicitly given `postStop` behavior
+        // until Terminate is received, i.e until postStop is invoked, and there PostStop
+        // will be signaled to the previous/postStop behavior
+        s.postStop match {
+          case OptionVal.None ⇒
+            // use previous as the postStop behavior
+            behavior = new Behavior.StoppedBehavior(OptionVal.Some(behavior))
+          case OptionVal.Some(postStop) ⇒
+            // use the given postStop behavior, but canonicalize it
+            behavior = new Behavior.StoppedBehavior(OptionVal.Some(Behavior.canonicalize(postStop, behavior, ctx)))
+        }
+        context.stop(self)
+      case _ ⇒
+        behavior = Behavior.canonicalize(b, behavior, ctx)
     }
   }
 
@@ -103,6 +102,7 @@ import scala.util.control.NonFatal
             handle(tail) // recursive
       }
     }
+
     handle(ctx.messageAdapters)
   }
 
@@ -117,9 +117,9 @@ import scala.util.control.NonFatal
   }
 
   override def unhandled(msg: Any): Unit = msg match {
-    case t @ Terminated(ref) ⇒ throw DeathPactException(ref)
-    case msg: Signal         ⇒ // that's ok
-    case other               ⇒ super.unhandled(other)
+    case t@Terminated(ref) ⇒ throw DeathPactException(ref)
+    case msg: Signal ⇒ // that's ok
+    case other ⇒ super.unhandled(other)
   }
 
   override val supervisorStrategy = a.OneForOneStrategy() {
@@ -181,18 +181,57 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  *
+ * Optimized adapter for running typed behaviors
+ */
+@InternalApi
+private[typed] final class OptimizedActorAdapter[T](_initialBehavior: Behavior[T]) extends ActorAdapter[T](_initialBehavior) {
+  override def receive: Receive = null // optimization: not used
+
+  override def preStart(): Unit = {
+    initializeContext()
+    if (!isAlive(behavior)) context.stop(self)
+    else start()
+  }
+
+  private def start(): Unit = {
+    behavior = validateAsInitial(Behavior.start(behavior, ctx))
+    if (!isAlive(behavior)) context.stop(self)
+  }
+
+  override protected[akka] def aroundReceive(receive: Receive, msg: Any): Unit = {
+    // as we know we never become in "normal" typed actors, it is just the behavior
+    // that changes, we can avoid the partial function/behavior stack entirely
+    // we also know that the receive should be total, so we can avoid the orElse part as well
+    msg match {
+      // optimization, minimize type matches that has to be done for every message
+      case internal: InternalMessage ⇒ handleInternalMessage(internal)
+      case msg: T @unchecked         ⇒ handleMessage(msg)
+    }
+  }
+}
+
+/**
+ * INTERNAL API
+ *
  * A special adapter for the guardian which will defer processing until a special `Start` signal has been received.
  * That will allow to defer typed processing until the untyped ActorSystem has completely started up.
  */
 @InternalApi
-private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) extends ActorAdapter[T](_initialBehavior) {
+private[typed] final class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) extends ActorAdapter[T](_initialBehavior) {
   import Behavior._
 
+  def receive: Receive = waitingForStart(Nil)
+
+  def running: Receive = {
+    // optimization, minimize type matches that has to be done for every message
+    case internal: InternalMessage ⇒
+      handleInternalMessage(internal)
+    case msg: T @unchecked ⇒
+      handleMessage(msg)
+  }
+
   override def preStart(): Unit =
-    if (!isAlive(behavior))
-      context.stop(self)
-    else
-      context.become(waitingForStart(Nil))
+    if (!isAlive(behavior)) context.stop(self)
 
   def waitingForStart(stashed: List[Any]): Receive = {
     case GuardianActorAdapter.Start ⇒
@@ -204,6 +243,13 @@ private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) exte
       context.become(waitingForStart(other :: stashed))
   }
 
+  protected def start(): Unit = {
+    context.become(running)
+    initializeContext()
+    behavior = validateAsInitial(Behavior.start(behavior, ctx))
+    if (!isAlive(behavior)) context.stop(self)
+  }
+
   override def postRestart(reason: Throwable): Unit = {
     initializeContext()
 
@@ -212,7 +258,6 @@ private[typed] class GuardianActorAdapter[T](_initialBehavior: Behavior[T]) exte
 
   override def postStop(): Unit = {
     initializeContext()
-
     super.postStop()
   }
 }

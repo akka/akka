@@ -115,7 +115,7 @@ final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
 final case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
   @BeanProperty val existenceConfirmed: Boolean,
   @BeanProperty val addressTerminated:  Boolean)
-  extends AutoReceivedMessage with PossiblyHarmful with DeadLetterSuppression
+  extends AutoReceivedMessage with PossiblyHarmful with DeadLetterSuppression with InternalMessage
   with NoSerializationVerificationNeeded // local message, the remote one is DeathWatchNotification
 
 /**
@@ -138,7 +138,7 @@ abstract class ReceiveTimeout extends PossiblyHarmful
  * to the Actor when there hasn't been any message for that long.
  */
 @SerialVersionUID(1L)
-case object ReceiveTimeout extends ReceiveTimeout {
+case object ReceiveTimeout extends ReceiveTimeout with InternalMessage {
   /**
    * Java API: get the singleton instance
    */

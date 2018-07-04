@@ -59,10 +59,10 @@ import scala.reflect.ClassTag
     onSignal:      PartialFunction[(SAC[T], Signal), Behavior[T]] = Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
     extends ExtensibleBehavior[T] {
 
-    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
+    final override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
       onSignal.applyOrElse((ctx.asScala, msg), Behavior.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
 
-    override def receive(ctx: AC[T], msg: T) = onMessage(ctx.asScala, msg)
+    final override def receive(ctx: AC[T], msg: T) = onMessage(ctx.asScala, msg)
 
     override def toString = s"Receive(${LineNumbers(onMessage)})"
   }
