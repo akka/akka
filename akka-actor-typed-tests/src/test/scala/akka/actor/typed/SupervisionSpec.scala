@@ -5,9 +5,9 @@
 package akka.actor.typed
 
 import java.io.IOException
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 
-import akka.actor.ActorInitializationException
+import akka.actor.{ ActorInitializationException, typed }
 import akka.actor.typed.scaladsl.{ Behaviors, MutableBehavior }
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.testkit.EventFilter
@@ -15,10 +15,11 @@ import akka.actor.testkit.typed.scaladsl._
 import akka.actor.testkit.typed._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
-
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
+
+import akka.actor.typed.SupervisorStrategy.Resume
 
 object SupervisionSpec {
 
@@ -689,5 +690,62 @@ class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       stacktrace.count(_.toString.startsWith("akka.actor.typed.internal.Supervisor.receive")) should ===(2)
     }
 
+  }
+
+  val allStrategies = Seq(
+    SupervisorStrategy.stop,
+    SupervisorStrategy.restart,
+    SupervisorStrategy.resume,
+    SupervisorStrategy.restartWithBackoff(1.millis, 100.millis, 2D),
+    SupervisorStrategy.restartWithLimit(1, 100.millis)
+  )
+
+  allStrategies.foreach { strategy ⇒
+
+    s"Supervision with the strategy $strategy" should {
+
+      "that is initially stopped should be stopped" in {
+        val actor = spawn(
+          Behaviors.supervise(Behaviors.stopped[Command])
+            .onFailure(strategy)
+        )
+        TestProbe().expectTerminated(actor, 3.second)
+      }
+
+      "that is stopped after setup should be stopped" in {
+        val actor = spawn(
+          Behaviors.supervise[Command](
+            Behaviors.setup(_ ⇒
+              Behaviors.stopped)
+          ).onFailure(strategy)
+        )
+        TestProbe().expectTerminated(actor, 3.second)
+      }
+
+      // this test doesn't make sense for Resume since there will be no second setup
+      if (!strategy.isInstanceOf[Resume]) {
+        "that is stopped after restart should be stopped" in {
+          val stopInSetup = new AtomicBoolean(false)
+          val actor = spawn(
+            Behaviors.supervise[String](
+              Behaviors.setup { _ ⇒
+                if (stopInSetup.get()) {
+                  Behaviors.stopped
+                } else {
+                  stopInSetup.set(true)
+                  Behaviors.receiveMessage {
+                    case "boom" ⇒ throw TE("boom")
+                  }
+                }
+              }).onFailure[TE](strategy)
+          )
+
+          EventFilter[TE](occurrences = 1).intercept {
+            actor ! "boom"
+          }
+          TestProbe().expectTerminated(actor, 3.second)
+        }
+      }
+    }
   }
 }
