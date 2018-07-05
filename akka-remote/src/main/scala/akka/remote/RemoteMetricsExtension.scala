@@ -86,7 +86,7 @@ private[akka] class RemoteMetricsOn(system: ExtendedActorSystem) extends RemoteM
   private val maxPayloadBytes: ConcurrentHashMap[Class[_], Integer] = new ConcurrentHashMap
 
   override def logPayloadBytes(msg: Any, payloadBytes: Int): Unit =
-    if (payloadBytes >= logFrameSizeExceeding) {
+    if (logFrameSizeExceeding != Int.MaxValue && payloadBytes >= logFrameSizeExceeding) {
       val clazz = msg match {
         case x: ActorSelectionMessage ⇒ x.msg.getClass
         case x: RouterEnvelope        ⇒ x.message.getClass
