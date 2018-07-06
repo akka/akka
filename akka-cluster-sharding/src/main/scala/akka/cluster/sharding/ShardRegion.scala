@@ -588,7 +588,7 @@ private[akka] class ShardRegion(
         tryCompleteGracefulShutdown()
       }
 
-    case RegisterRetry =>
+    case RegisterRetry ⇒
       if (coordinator.isEmpty) {
         register()
         scheduleNextRegistration()
@@ -626,8 +626,7 @@ private[akka] class ShardRegion(
     if (coordinator.contains(ref)) {
       coordinator = None
       startRegistration()
-    }
-    else if (regions.contains(ref)) {
+    } else if (regions.contains(ref)) {
       val shards = regions(ref)
       regionByShard --= shards
       regions -= ref
@@ -697,8 +696,8 @@ private[akka] class ShardRegion(
     timers.startSingleTimer(RegisterRetry, RegisterRetry, nextRegistrationDelay)
     nextRegistrationDelay *= 2
 
-    if(nextRegistrationDelay >= retryInterval)
-      finishRegistration()  // normal Retry msg will try to register
+    if (nextRegistrationDelay >= retryInterval)
+      finishRegistration() // normal Retry msg will try to register
   }
 
   def finishRegistration(): Unit = {
