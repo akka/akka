@@ -23,6 +23,7 @@ import scala.concurrent.Promise
 import akka.Done
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
+import akka.actor.Timers
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -304,6 +305,8 @@ object ShardRegion {
 
   private case object Retry extends ShardRegionCommand
 
+  private case object RegisterRetry extends ShardRegionCommand
+
   /**
    * When an remembering entities and the shard stops unexpected (e.g. persist failure), we
    * restart it after a back off using this message.
@@ -372,7 +375,7 @@ private[akka] class ShardRegion(
   extractShardId:     ShardRegion.ExtractShardId,
   handOffStopMessage: Any,
   replicator:         ActorRef,
-  majorityMinCap:     Int) extends Actor with ActorLogging {
+  majorityMinCap:     Int) extends Actor with ActorLogging with Timers {
 
   import ShardCoordinator.Internal._
   import ShardRegion._
@@ -396,11 +399,9 @@ private[akka] class ShardRegion(
   var gracefulShutdownInProgress = false
 
   import context.dispatcher
-  val retryTask = context.system.scheduler.schedule(retryInterval, retryInterval, self, Retry)
-  var registrationTask: Option[Cancellable] = None
+  var retryCount = 0
   val initRegistrationDelay: FiniteDuration = 0.1 seconds
   var nextRegistrationDelay = initRegistrationDelay
-  var retryCount = 0
 
   // for CoordinatedShutdown
   val gracefulShutdownProgress = Promise[Done]()
@@ -418,6 +419,7 @@ private[akka] class ShardRegion(
   // subscribe to MemberEvent, re-subscribe when restart
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
+    timers.startPeriodicTimer(Retry, Retry, retryInterval)
     startRegistration()
   }
 
@@ -425,7 +427,6 @@ private[akka] class ShardRegion(
     super.postStop()
     cluster.unsubscribe(self)
     gracefulShutdownProgress.trySuccess(Done)
-    retryTask.cancel()
     finishRegistration()
   }
 
@@ -459,7 +460,6 @@ private[akka] class ShardRegion(
       if (log.isDebugEnabled)
         log.debug("Coordinator moved from [{}] to [{}]", before.map(_.address).getOrElse(""), after.map(_.address).getOrElse(""))
       coordinator = None
-      register()
       startRegistration()
     }
   }
@@ -580,13 +580,18 @@ private[akka] class ShardRegion(
     case Retry ⇒
       if (shardBuffers.nonEmpty)
         retryCount += 1
-      if (coordinator.isEmpty) {
+      if (coordinator.isEmpty)
         register()
-        scheduleNextRegistration()
-      } else {
+      else {
         sendGracefulShutdownToCoordinator()
         requestShardBufferHomes()
         tryCompleteGracefulShutdown()
+      }
+
+    case RegisterRetry =>
+      if (coordinator.isEmpty) {
+        register()
+        scheduleNextRegistration()
       }
 
     case GracefulShutdown ⇒
@@ -620,9 +625,9 @@ private[akka] class ShardRegion(
   def receiveTerminated(ref: ActorRef): Unit = {
     if (coordinator.contains(ref)) {
       coordinator = None
-      register()
       startRegistration()
-    } else if (regions.contains(ref)) {
+    }
+    else if (regions.contains(ref)) {
       val shards = regions(ref)
       regionByShard --= shards
       regions -= ref
@@ -683,16 +688,21 @@ private[akka] class ShardRegion(
 
   def startRegistration(): Unit = {
     nextRegistrationDelay = initRegistrationDelay
+
+    register()
     scheduleNextRegistration()
   }
 
   def scheduleNextRegistration(): Unit = {
-    registrationTask = Some(context.system.scheduler.scheduleOnce(nextRegistrationDelay, self, Retry))
+    timers.startSingleTimer(RegisterRetry, RegisterRetry, nextRegistrationDelay)
     nextRegistrationDelay *= 2
+
+    if(nextRegistrationDelay >= retryInterval)
+      finishRegistration()  // normal Retry msg will try to register
   }
 
   def finishRegistration(): Unit = {
-    registrationTask.foreach(_.cancel())
+    timers.cancel(RegisterRetry)
   }
 
   def register(): Unit = {
