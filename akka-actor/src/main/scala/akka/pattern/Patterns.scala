@@ -318,7 +318,7 @@ object PatternsCS {
    *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
-  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.14")
   def ask(actor: ActorRef, message: Any, timeout: Timeout): CompletionStage[AnyRef] =
     scalaAsk(actor, message)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
@@ -347,8 +347,8 @@ object PatternsCS {
    *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
-  def ask(actor: ActorRef, message: Any, duration: java.time.Duration): CompletionStage[AnyRef] =
-    ask(actor, message, Timeout.create(duration))
+  def ask(actor: ActorRef, message: Any, timeout: java.time.Duration): CompletionStage[AnyRef] =
+    ask(actor, message, Timeout.create(timeout))
 
   /**
    * A variation of ask which allows to implement "replyTo" pattern by including
@@ -365,7 +365,7 @@ object PatternsCS {
    * @param messageFactory function taking an actor ref and returning the message to be sent
    * @param timeout        the timeout for the response before failing the returned completion operator
    */
-  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
+  @deprecated("Use the overloaded one which accepts java.time.Duration and java.util.function.Function instead.", since = "2.5.14")
   def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeout: Timeout): CompletionStage[AnyRef] =
     extended.ask(actor, messageFactory.apply _)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
@@ -382,10 +382,10 @@ object PatternsCS {
    *
    * @param actor          the actor to be asked
    * @param messageFactory function taking an actor ref and returning the message to be sent
-   * @param duration        the timeout for the response before failing the returned completion stage
+   * @param timeout        the timeout for the response before failing the returned completion stage
    */
-  def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], duration: java.time.Duration): CompletionStage[AnyRef] =
-    askWithReplyTo(actor, messageFactory, Timeout.create(duration))
+  def askWithReplyTo(actor: ActorRef, messageFactory: java.util.function.Function[ActorRef, Any], timeout: java.time.Duration): CompletionStage[AnyRef] =
+    extended.ask(actor, messageFactory.apply _)(Timeout.create(timeout)).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -430,8 +430,27 @@ object PatternsCS {
    * @param messageFactory function taking an actor ref to reply to and returning the message to be sent
    * @param timeoutMillis  the timeout for the response before failing the returned completion operator
    */
+  @deprecated("Use the overloaded one which accepts java.util.function.Function instead.", since = "2.5.14")
   def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
     askWithReplyTo(actor, messageFactory, Timeout(timeoutMillis.millis))
+
+  /**
+   * A variation of ask which allows to implement "replyTo" pattern by including
+   * sender reference in message.
+   *
+   * {{{
+   * final CompletionStage<Object> f = PatternsCS.askWithReplyTo(
+   *   worker,
+   *   replyTo -> new Request(replyTo),
+   *   timeout);
+   * }}}
+   *
+   * @param actor          the actor to be asked
+   * @param messageFactory function taking an actor ref to reply to and returning the message to be sent
+   * @param timeoutMillis  the timeout for the response before failing the returned completion operator
+   */
+  def askWithReplyTo(actor: ActorRef, messageFactory: java.util.function.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
+    extended.ask(actor, messageFactory.apply _)(Timeout.create(java.time.Duration.ofMillis(timeoutMillis))).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -458,7 +477,7 @@ object PatternsCS {
    *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
-  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.14")
   def ask(selection: ActorSelection, message: Any, timeout: Timeout): CompletionStage[AnyRef] =
     scalaAsk(selection, message)(timeout).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
@@ -487,8 +506,8 @@ object PatternsCS {
    *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
-  def ask(selection: ActorSelection, message: Any, duration: java.time.Duration): CompletionStage[AnyRef] =
-    ask(selection, message, Timeout.create(duration))
+  def ask(selection: ActorSelection, message: Any, timeout: java.time.Duration): CompletionStage[AnyRef] =
+    ask(selection, message, Timeout.create(timeout))
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -530,6 +549,20 @@ object PatternsCS {
    * }}}
    */
   def askWithReplyTo(selection: ActorSelection, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
+    extended.ask(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis)).toJava.asInstanceOf[CompletionStage[AnyRef]]
+
+  /**
+   * A variation of ask which allows to implement "replyTo" pattern by including
+   * sender reference in message.
+   *
+   * {{{
+   * final CompletionStage<Object> f = Patterns.askWithReplyTo(
+   *   selection,
+   *   askSender -> new Request(askSender),
+   *   timeout);
+   * }}}
+   */
+  def askWithReplyTo(selection: ActorSelection, messageFactory: java.util.function.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
     extended.ask(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis)).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**

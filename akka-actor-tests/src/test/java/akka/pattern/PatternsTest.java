@@ -20,6 +20,7 @@ import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.concurrent.*;
+import java.util.function.Function;
 import java.time.Duration;
 
 import static akka.pattern.Patterns.ask;
@@ -114,12 +115,10 @@ public class PatternsTest extends JUnitSuite {
     public void testCSAskWithReplyToTimeout() throws Exception {
         final String expected = "hello";
 
+        Function<ActorRef, Object> messageFactory = replyTo -> new ExplicitAskTestActor.Message(expected, replyTo);
         final ActorRef echo = system.actorOf(Props.create(ExplicitAskTestActor.class));
         final CompletionStage<String> response = PatternsCS
-                .askWithReplyTo(
-                        echo,
-                        replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
-                        Timeout.apply(3, SECONDS))
+                .askWithReplyTo(echo, messageFactory, Duration.ofSeconds(3))
                 .thenApply(o -> (String)o);
 
         final String actual = response.toCompletableFuture().get(3, SECONDS);
@@ -131,12 +130,10 @@ public class PatternsTest extends JUnitSuite {
     public void testCSAskWithReplyToTimeoutMillis() throws Exception {
         final String expected = "hello";
 
+        Function<ActorRef, Object> messageFactory = replyTo -> new ExplicitAskTestActor.Message(expected, replyTo);
         final ActorRef echo = system.actorOf(Props.create(ExplicitAskTestActor.class));
         final CompletionStage<String> response = PatternsCS
-                .askWithReplyTo(
-                        echo,
-                        replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
-                        3000)
+                .askWithReplyTo(echo, messageFactory, 3000)
                 .thenApply(o -> (String)o);
 
         final String actual = response.toCompletableFuture().get(3, SECONDS);
@@ -147,13 +144,11 @@ public class PatternsTest extends JUnitSuite {
     public void testCSAskSelectionWithReplyToTimeoutMillis() throws Exception {
         final String expected = "hello";
 
+        akka.japi.Function<ActorRef, Object> messageFactory = replyTo -> new ExplicitAskTestActor.Message(expected, replyTo);
         final ActorRef echo = system.actorOf(Props.create(ExplicitAskTestActor.class));
         final ActorSelection selection = system.actorSelection(echo.path());
         final CompletionStage<String> response = PatternsCS
-                .askWithReplyTo(
-                        selection,
-                        replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
-                        3000)
+                .askWithReplyTo(selection, messageFactory, 3000)
                 .thenApply(o -> (String)o);
 
         final String actual = response.toCompletableFuture().get(3, SECONDS);
