@@ -110,6 +110,9 @@ object Behavior {
      *   // all other kinds of Number will be `unhandled`
      * }
      * }}}
+     *
+     * Scheduled messages via [[akka.actor.typed.scaladsl.TimerScheduler]] can currently
+     * not be used together with `widen`, see issue #25318.
      */
     def widen[U](matcher: PartialFunction[U, T]): Behavior[U] =
       BehaviorImpl.widened(behavior, matcher)
