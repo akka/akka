@@ -8,7 +8,7 @@ import akka.NotUsed
 import akka.stream._
 import akka.stream.testkit.TwoStreamsSetup
 import com.github.ghik.silencer.silent
-import org.scalacheck.{Gen, Shrink}
+import org.scalacheck.{ Gen, Shrink }
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalacheck.Shrink
 
@@ -65,7 +65,6 @@ class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyC
       val leftSource: Source[Int, NotUsed] = Source(List(0, 2))
       val rightSource: Source[Int, NotUsed] = Source(List(1))
 
-
       val underTest: Source[Int, NotUsed] = Source.mergeSortedN(List(leftSource, rightSource))
 
       val grouped: Source[immutable.Seq[Int], NotUsed] = underTest
@@ -76,8 +75,7 @@ class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyC
         .runWith(Sink.head)
         .futureValue
 
-
-      sortedResult shouldBe List(0,1,2)
+      sortedResult shouldBe List(0, 1, 2)
     }
 
     commonTests()

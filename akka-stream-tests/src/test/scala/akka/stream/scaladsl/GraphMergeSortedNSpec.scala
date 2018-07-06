@@ -147,7 +147,7 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup {
 
     "work with one delayed completed and one nonempty publisher" in assertAllStagesStopped {
       val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher(1 to 4))
-      
+
       subscriber1.requestNext(1)
       subscriber1.requestNext(2)
       subscriber1.requestNext(3)

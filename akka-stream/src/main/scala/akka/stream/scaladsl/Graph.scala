@@ -571,8 +571,8 @@ final class MergeSorted[T: Ordering] extends GraphStage[FanInShape2[T, T, T]] {
 
 object MergeSortedN {
   /**
-    * Create a new `MergeSortedN`.
-    */
+   * Create a new `MergeSortedN`.
+   */
   def apply[A: Ordering](n: Int) = new MergeSortedN[A](n)
 }
 

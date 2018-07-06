@@ -35,6 +35,7 @@ These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] 
 |Source|<a name="lazysingle"></a>@ref[lazySingle](Source/lazySingle.md)|Defers creation of a single element source until there is demand.|
 |Source|<a name="lazysource"></a>@ref[lazySource](Source/lazySource.md)|Defers creation and materialization of a `Source` until there is demand.|
 |Source|<a name="maybe"></a>@ref[maybe](Source/maybe.md)|Create a source that emits once the materialized @scala[`Promise`] @java[`CompletableFuture`] is completed with a value.|
+|Source|<a name="mergesortedn"></a>@ref[mergeSortedN](Source/mergeSortedN.md)|Combine the elements of multiple pre-sorted streams into a single sorted stream.|
 |Source|<a name="queue"></a>@ref[queue](Source/queue.md)|Materialize a `SourceQueue` onto which elements can be pushed for emitting from the source. |
 |Source|<a name="range"></a>@ref[range](Source/range.md)|Emit each integer in a range, with an option to take bigger steps than 1.|
 |Source|<a name="repeat"></a>@ref[repeat](Source/repeat.md)|Stream a single object repeatedly|
@@ -369,6 +370,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [actorRefWithBackpressure](Source/actorRefWithBackpressure.md)
 * [zipN](Source/zipN.md)
 * [zipWithN](Source/zipWithN.md)
+* [mergeSortedN](Source/mergeSortedN.md)
 * [queue](Source/queue.md)
 * [unfoldResource](Source/unfoldResource.md)
 * [unfoldResourceAsync](Source/unfoldResourceAsync.md)
