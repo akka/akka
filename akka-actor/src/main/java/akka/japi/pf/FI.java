@@ -55,7 +55,8 @@ public final class FI {
   /**
    * Functional interface for a predicate.
    *
-   * This class is kept for compatibility, but for future API's please prefer {@link akka.japi.function.Predicate}.
+   * This class is kept for compatibility, but for future API's please prefer {@link java.util.function.Predicate}
+   * or {@link akka.japi.function.Predicate}.
    *
    * @param <T> the type that the predicate will operate on.
    */
@@ -171,7 +172,8 @@ public final class FI {
   /**
    * Package scoped functional interface for a predicate. Used internally to match against arbitrary types.
    *
-   * This class is kept for compatibility, but for future API's please prefer {@link akka.japi.function.Predicate}.
+   * This class is kept for compatibility, but for future API's please prefer {@link java.util.function.Predicate}
+   * or {@link akka.japi.function.Predicate}.
    */
   static interface Predicate {
     /**

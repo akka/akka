@@ -5,6 +5,7 @@
 package akka.persistence.typed.javadsl;
 
 import akka.actor.Scheduler;
+import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.ActorRef;
 import akka.persistence.typed.EventAdapter;
 import akka.actor.testkit.typed.javadsl.TestInbox;
@@ -96,7 +97,7 @@ public class PersistentActorCompileOnlyTest {
       //#command-handler
       @Override
       public CommandHandler<SimpleCommand, SimpleEvent, SimpleState> commandHandler() {
-        return (ctx, state, cmd) -> Effect().persist(new SimpleEvent(cmd.data));
+        return (state, cmd) -> Effect().persist(new SimpleEvent(cmd.data));
       }
       //#command-handler
 
@@ -156,8 +157,8 @@ public class PersistentActorCompileOnlyTest {
 
       @Override
       public CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler() {
-        return commandHandlerBuilder()
-          .matchCommand(Cmd.class, (ctx, state, cmd) -> Effect().persist(new Evt(cmd.data))
+        return commandHandlerBuilder(ExampleState.class)
+          .matchCommand(Cmd.class, (state, cmd) -> Effect().persist(new Evt(cmd.data))
             .andThen(() -> cmd.sender.tell(new Ack())))
           .build();
       }
@@ -254,8 +255,11 @@ public class PersistentActorCompileOnlyTest {
     }
 
     class MyPersistentBehavior extends PersistentBehavior<Command, Event, RecoveryComplete.EventsInFlight> {
-      public MyPersistentBehavior(String persistenceId) {
+      private final ActorContext<Command> ctx;
+
+      public MyPersistentBehavior(String persistenceId, ActorContext<Command> ctx) {
         super(persistenceId);
+        this.ctx = ctx;
       }
 
       @Override
@@ -265,11 +269,11 @@ public class PersistentActorCompileOnlyTest {
 
       @Override
       public CommandHandler<Command, Event, EventsInFlight> commandHandler() {
-        return commandHandlerBuilder()
+        return commandHandlerBuilder(EventsInFlight.class)
           .matchCommand(DoSideEffect.class,
-            (ctx, state, cmd) -> Effect().persist(new IntentRecord(state.nextCorrelationId, cmd.data))
+            (state, cmd) -> Effect().persist(new IntentRecord(state.nextCorrelationId, cmd.data))
               .andThen(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data, ctx.getSystem().scheduler())))
-          .matchCommand(AcknowledgeSideEffect.class, (ctx, state, command) -> Effect().persist(new SideEffectAcknowledged(command.correlationId)))
+          .matchCommand(AcknowledgeSideEffect.class, (state, command) -> Effect().persist(new SideEffectAcknowledged(command.correlationId)))
           .build();
       }
 
