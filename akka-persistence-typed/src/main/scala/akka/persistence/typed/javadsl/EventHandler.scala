@@ -6,6 +6,7 @@ package akka.persistence.typed.javadsl
 
 import java.util.function.BiFunction
 
+import akka.annotation.InternalApi
 import akka.util.OptionVal
 
 /**
@@ -21,16 +22,23 @@ trait EventHandler[Event, State] {
 object EventHandlerBuilder {
   def builder[Event, State >: Null](): EventHandlerBuilder[Event, State] =
     new EventHandlerBuilder[Event, State]()
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private final case class EventHandlerCase[Event, State](
+    eventPredicate: Event ⇒ Boolean,
+    statePredicate: State ⇒ Boolean,
+    handler:        BiFunction[State, Event, State])
 }
 
 final class EventHandlerBuilder[Event, State >: Null]() {
+  import EventHandlerBuilder.EventHandlerCase
 
-  private final case class EventHandlerCase(predicate: Event ⇒ Boolean, handler: BiFunction[State, Event, State])
-
-  private var cases: List[EventHandlerCase] = Nil
+  private var cases: List[EventHandlerCase[Event, State]] = Nil
 
   private def addCase(predicate: Event ⇒ Boolean, handler: BiFunction[State, Event, State]): Unit = {
-    cases = EventHandlerCase(predicate, handler) :: cases
+    cases = EventHandlerCase[Event, State](predicate, _ ⇒ true, handler) :: cases
   }
 
   /**
@@ -38,6 +46,16 @@ final class EventHandlerBuilder[Event, State >: Null]() {
    */
   def matchEvent[E <: Event](eventClass: Class[E], biFunction: BiFunction[State, E, State]): EventHandlerBuilder[Event, State] = {
     addCase(e ⇒ eventClass.isAssignableFrom(e.getClass), biFunction.asInstanceOf[BiFunction[State, Event, State]])
+    this
+  }
+
+  def matchEvent[E <: Event, S <: State](eventClass: Class[E], stateClass: Class[S],
+                                         biFunction: BiFunction[S, E, State]): EventHandlerBuilder[Event, State] = {
+
+    cases = EventHandlerCase[Event, State](
+      eventPredicate = e ⇒ eventClass.isAssignableFrom(e.getClass),
+      statePredicate = s ⇒ stateClass.isAssignableFrom(s.getClass),
+      biFunction.asInstanceOf[BiFunction[State, Event, State]]) :: cases
     this
   }
 
@@ -49,6 +67,17 @@ final class EventHandlerBuilder[Event, State >: Null]() {
   def matchAny(biFunction: BiFunction[State, Event, State]): EventHandler[Event, State] = {
     addCase(_ ⇒ true, biFunction.asInstanceOf[BiFunction[State, Event, State]])
     build()
+  }
+
+  /**
+   * Compose this builder with another builder. The handlers in this builder will be tried first followed
+   * by the handlers in `other`.
+   */
+  def orElse(other: EventHandlerBuilder[Event, State]): EventHandlerBuilder[Event, State] = {
+    val newBuilder = new EventHandlerBuilder[Event, State]
+    // problem with overloaded constructor with `cases` as parameter
+    newBuilder.cases = other.cases ::: cases
+    newBuilder
   }
 
   /**
@@ -66,7 +95,7 @@ final class EventHandlerBuilder[Event, State >: Null]() {
         var idx = 0
         while (idx < builtCases.length && result.isEmpty) {
           val curr = builtCases(idx)
-          if (curr.predicate(event)) {
+          if (curr.statePredicate(state) && curr.eventPredicate(event)) {
             result = OptionVal.Some[State](curr.handler.apply(state, event))
           }
           idx += 1

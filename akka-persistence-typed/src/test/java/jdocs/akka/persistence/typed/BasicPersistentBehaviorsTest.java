@@ -35,7 +35,7 @@ public class BasicPersistentBehaviorsTest {
 
     @Override
     public CommandHandler<Command, Event, State> commandHandler() {
-      return (ctx, state, command) -> {
+      return (state, command) -> {
         throw new RuntimeException("TODO: process the command & return an Effect");
       };
     }
@@ -49,7 +49,7 @@ public class BasicPersistentBehaviorsTest {
 
     //#recovery
     @Override
-    public void onRecoveryCompleted(ActorContext<Command> ctx, State state) {
+    public void onRecoveryCompleted(State state) {
       throw new RuntimeException("TODO: add some end-of-recovery side-effect here");
     }
     //#recovery
