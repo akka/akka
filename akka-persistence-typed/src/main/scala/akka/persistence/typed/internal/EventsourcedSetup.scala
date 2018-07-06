@@ -4,6 +4,8 @@
 
 package akka.persistence.typed.internal
 
+import scala.concurrent.ExecutionContext
+
 import akka.Done
 import akka.actor.typed.Logger
 import akka.actor.{ ActorRef, ExtendedActorSystem }
@@ -16,8 +18,10 @@ import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, 
 import akka.persistence.typed.scaladsl.PersistentBehaviors
 import akka.util.Collections.EmptyImmutableSeq
 import akka.util.OptionVal
-
 import scala.util.Try
+
+import akka.actor.Cancellable
+import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol.RecoveryTickEvent
 
 /**
  * INTERNAL API: Carry state for the Persistent behavior implementation behaviors
@@ -25,7 +29,6 @@ import scala.util.Try
 @InternalApi
 private[persistence] final class EventsourcedSetup[C, E, S](
   val context:               ActorContext[InternalProtocol],
-  val timers:                TimerScheduler[InternalProtocol],
   val persistenceId:         String,
   val emptyState:            S,
   val commandHandler:        PersistentBehaviors.CommandHandler[C, E, S],
@@ -81,6 +84,29 @@ private[persistence] final class EventsourcedSetup[C, E, S](
   def setMdc(phaseName: String): EventsourcedSetup[C, E, S] = {
     setMdc(MDC.create(persistenceId, phaseName))
     this
+  }
+
+  private var recoveryTimer: OptionVal[Cancellable] = OptionVal.None
+
+  def startRecoveryTimer(snapshot: Boolean): Unit = {
+    cancelRecoveryTimer()
+    implicit val ec: ExecutionContext = context.executionContext
+    val timer =
+      if (snapshot)
+        context.system.scheduler.scheduleOnce(settings.recoveryEventTimeout, context.self.toUntyped,
+          RecoveryTickEvent(snapshot = true))
+      else
+        context.system.scheduler.schedule(settings.recoveryEventTimeout, settings.recoveryEventTimeout,
+          context.self.toUntyped, RecoveryTickEvent(snapshot = false))
+    recoveryTimer = OptionVal.Some(timer)
+  }
+
+  def cancelRecoveryTimer(): Unit = {
+    recoveryTimer match {
+      case OptionVal.Some(t) ⇒ t.cancel()
+      case OptionVal.None    ⇒
+    }
+    recoveryTimer = OptionVal.None
   }
 
 }
