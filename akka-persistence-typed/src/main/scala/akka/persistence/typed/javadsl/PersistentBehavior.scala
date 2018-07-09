@@ -8,7 +8,7 @@ import java.util.function.Predicate
 import java.util.{ Collections, Optional }
 
 import akka.actor.typed
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, SupervisorStrategy }
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.{ ApiMayChange, InternalApi }
@@ -21,7 +21,15 @@ import akka.japi.pf.FI
 
 /** Java API */
 @ApiMayChange
-abstract class PersistentBehavior[Command, Event, State >: Null](val persistenceId: String) extends DeferredBehavior[Command] {
+abstract class PersistentBehavior[Command, Event, State >: Null] private (val persistenceId: String, supervisorStrategy: Option[BackoffSupervisorStrategy]) extends DeferredBehavior[Command] {
+
+  def this(persistenceId: String) = {
+    this(persistenceId, None)
+  }
+
+  def this(persistenceId: String, backoffSupervisorStrategy: BackoffSupervisorStrategy) = {
+    this(persistenceId, Some(backoffSupervisorStrategy))
+  }
 
   /**
    * Factory of effects.
@@ -142,7 +150,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
       else tags.asScala.toSet
     }
 
-    scaladsl.PersistentBehaviors.receive[Command, Event, State](
+    val behavior = scaladsl.PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
       emptyState,
       (c, state, cmd) ⇒ commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
@@ -163,6 +171,11 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
           case Failure(t) ⇒ Optional.of(t)
         })
       }).eventAdapter(eventAdapter())
+
+    if (supervisorStrategy.isDefined)
+      behavior.onPersistFailure(supervisorStrategy.get)
+    else
+      behavior
   }
 
 }

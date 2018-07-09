@@ -227,7 +227,6 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
     "persist an event" in {
       val c = spawn(counter(nextPid))
-
       val probe = TestProbe[State]
       c ! Increment
       c ! GetValue(probe.ref)

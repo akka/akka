@@ -4,10 +4,7 @@
 
 package akka.persistence.typed.javadsl;
 
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.Signal;
-import akka.actor.typed.SupervisorStrategy;
+import akka.actor.typed.*;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
@@ -103,7 +100,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   public static class Incremented implements Serializable {
-    private final int delta;
+    final int delta;
 
     public Incremented(int delta) {
       this.delta = delta;
@@ -132,8 +129,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   public static class State implements Serializable {
-    private final int value;
-    private final List<Integer> history;
+    final int value;
+    final List<Integer> history;
 
     public State(int value, List<Integer> history) {
       this.value = value;
@@ -240,7 +237,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     );
   }
 
-  private <A> Behavior<Command> counter(
+  private static <A> Behavior<Command> counter(
     String persistentId,
     ActorRef<Pair<State, Incremented>> eventProbe,
     ActorRef<String> loggingProbe,
@@ -250,7 +247,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     EventAdapter<Incremented, A> transformer) {
 
     return Behaviors.setup(ctx -> {
-      return new PersistentBehavior<Command, Incremented, State>(persistentId) {
+      return new PersistentBehavior<Command, Incremented, State>(persistentId, SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1)) {
         @Override
         public CommandHandler<Command, Incremented, State> commandHandler() {
           return commandHandlerBuilder(State.class)
@@ -479,7 +476,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
       .runWith(Sink.seq(), materializer).toCompletableFuture().get();
     assertEquals(Lists.newArrayList(
       new EventEnvelope(new Sequence(1), "transform", 1, new Wrapper<>(new Incremented(1)))
-        ), events);
+    ), events);
 
     ActorRef<Command> c2 = testKit.spawn(counter("transform", eventProbe.ref(), new WrapperEventAdapter()));
     c2.tell(new GetValue(stateProbe.ref()));
@@ -487,7 +484,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   //event-wrapper
-  class WrapperEventAdapter extends EventAdapter<Incremented,Wrapper> {
+  class WrapperEventAdapter extends EventAdapter<Incremented, Wrapper> {
     @Override
     public Wrapper toJournal(Incremented incremented) {
       return new Wrapper<>(incremented);

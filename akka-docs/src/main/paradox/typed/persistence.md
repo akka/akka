@@ -269,3 +269,24 @@ Scala
 
 Java
 :  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #wrapPersistentBehavior }
+
+
+## Journal failures
+
+By default a `PersistentBehavior` will stop if an exception is thrown from the journal. It is possible to override this with
+any `BackoffSupervisorStrategy`. It is not possible to use the normal supervision wrapping for this as it isn't valid to
+`resume` a behavior on a journal failure as it is not known if the event was persisted.
+
+
+Scala
+:  @@snip [BasicPersistentBehaviorsSpec.scala]($akka$/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #supervision }
+
+Java
+:  @@snip [BasicPersistentBehaviorsTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #supervision }
+
+## Journal rejections
+
+Journals can reject events. The difference from a failure is that the journal must decide to reject an event before
+trying to persist it e.g. because of a serialization exception. If an event is rejected it definitely won't be in the journal. 
+This is signalled to a `PersistentBehavior` via a `EventRejectedException` and can be handled with a @ref[supervisor](fault-tolerance.md). 
+

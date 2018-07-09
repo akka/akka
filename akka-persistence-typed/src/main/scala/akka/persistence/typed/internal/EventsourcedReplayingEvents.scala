@@ -121,7 +121,7 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
       } else {
         cancelRecoveryTimer(setup.timers)
         val msg = s"Replay timed out, didn't get event within ]${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.seqNr}]"
-        onRecoveryFailure(new RecoveryTimedOut(msg), state.seqNr, None) // TODO allow users to hook into this?
+        onRecoveryFailure(new RecoveryTimedOut(msg), state.seqNr, None)
       }
     } else {
       // snapshot timeout, but we're already in the events recovery phase
@@ -145,14 +145,14 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
     cancelRecoveryTimer(setup.timers)
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
 
-    message match {
+    val msg = message match {
       case Some(evt) ⇒
-        setup.log.error(cause, "Exception during recovery while handling [{}] with sequence number [{}].", evt.getClass.getName, sequenceNr)
+        s"Exception during recovery while handling [${evt.getClass.getName}] with sequence number [$sequenceNr]. PersistenceId: [${setup.persistence}]"
       case None ⇒
-        setup.log.error(cause, "Exception during recovery.  Last known sequence number [{}]", setup.persistenceId, sequenceNr)
+        s"Exception during recovery.  Last known sequence number [$sequenceNr]. PersistenceId: [${setup.persistenceId}]"
     }
 
-    Behaviors.stopped
+    throw new JournalFailureException(msg, cause)
   }
 
   protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] = try {
