@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.ActorInitializationException
 import akka.actor.typed.scaladsl.{ Behaviors, MutableBehavior }
 import akka.actor.typed.scaladsl.Behaviors._
-import akka.testkit.EventFilter
+import akka.testkit.{ ErrorFilter, EventFilter }
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.testkit.typed._
 import com.typesafe.config.ConfigFactory
@@ -687,6 +687,37 @@ class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       // supervisor receive is used for every supervision instance, only wrapped in one supervisor for RuntimeException
       // and then the IllegalArgument one is kept since it has a different throwable
       stacktrace.count(_.toString.startsWith("akka.actor.typed.internal.Supervisor.receive")) should ===(2)
+    }
+
+    "be able to recover from a DeathPactException" in {
+      val probe = TestProbe[AnyRef]()
+      val actor = spawn(Behaviors.supervise(Behaviors.setup[String] { ctx ⇒
+        val child = ctx.spawnAnonymous(Behaviors.receive[String] { (ctx, msg) ⇒
+          msg match {
+            case "boom" ⇒
+              probe.ref ! ctx.self
+              Behaviors.stopped
+          }
+        })
+        ctx.watch(child)
+
+        Behaviors.receiveMessage {
+          case "boom" ⇒
+            child ! "boom"
+            Behaviors.same
+          case "ping" ⇒
+            probe.ref ! "pong"
+            Behaviors.same
+        }
+      }).onFailure[DeathPactException](SupervisorStrategy.restart))
+
+      EventFilter[DeathPactException](occurrences = 1).intercept {
+        actor ! "boom"
+        val child = probe.expectMessageType[ActorRef[_]]
+        probe.expectTerminated(child, 3.seconds)
+      }
+      actor ! "ping"
+      probe.expectMessage("pong")
     }
 
   }
