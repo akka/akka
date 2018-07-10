@@ -4,6 +4,8 @@
 
 package akka.actor.typed
 
+import scala.annotation.tailrec
+
 import akka.actor.typed.scaladsl.Behaviors
 
 object SpawnProtocol {
@@ -21,11 +23,14 @@ object SpawnProtocol {
    * `replyTo` destination.
    *
    * If `name` is an empty string an anonymous actor (with automatically generated name) will be created.
+   *
+   * If the `name` is already taken of an existing actor a unique name will be used by appending a suffix
+   * to the the `name`. The exact format or value of the suffix is an implementation detail that is
+   * undefined. This means that reusing the same name for several actors will not result in
+   * `InvalidActorNameException`, but it's better to use unique names to begin with.
    */
   final case class Spawn[T](behavior: Behavior[T], name: String, props: Props, replyTo: ActorRef[ActorRef[T]])
-    extends SpawnProtocol {
-
-  }
+    extends SpawnProtocol
 
   /**
    * Behavior implementing the [[SpawnProtocol]].
@@ -37,8 +42,18 @@ object SpawnProtocol {
           val ref =
             if (name == null || name.equals(""))
               ctx.spawnAnonymous(bhvr, props)
-            else
-              ctx.spawn(bhvr, name, props)
+            else {
+
+              @tailrec def spawnWithUniqueName(c: Int): ActorRef[Any] = {
+                val nameSuggestion = if (c == 0) name else s"$name-$c"
+                ctx.child(nameSuggestion) match {
+                  case Some(_) ⇒ spawnWithUniqueName(c + 1) // already taken, try next
+                  case None    ⇒ ctx.spawn(bhvr, nameSuggestion, props)
+                }
+              }
+
+              spawnWithUniqueName(0)
+            }
           replyTo ! ref
           Behaviors.same
       }

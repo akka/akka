@@ -55,8 +55,8 @@ Refer to @ref:[Actors](actors.md#introduction) for a walk-through of the above e
 ### SpawnProtocol
 
 The guardian actor should be responsible for initialization of tasks and create the initial actors of the application,
-but sometimes you might want to spawn new actors from the outside of the guardian actor. For example creating an actor
-that handles a HTTP request.
+but sometimes you might want to spawn new actors from the outside of the guardian actor. For example creating one actor
+per HTTP request.
 
 That is not difficult to implement in your behavior, but since this is a common pattern there is a predefined
 message protocol and implementation of a behavior for this. It can be used as the guardian actor of the `ActorSystem`,

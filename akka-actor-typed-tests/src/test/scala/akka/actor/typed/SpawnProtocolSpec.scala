@@ -67,6 +67,29 @@ class SpawnProtocolSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
         ActorTestKit.shutdown(sys)
       }
     }
+
+    "spawn with unique name when given name is taken" in {
+      val parentReply = TestProbe[ActorRef[Message]]()
+      val parent = spawn(SpawnProtocol.behavior, "parent3")
+
+      parent ! SpawnProtocol.Spawn(target, "child", Props.empty, parentReply.ref)
+      val child0 = parentReply.expectMessageType[ActorRef[Message]]
+      child0.path.name should ===("child")
+
+      parent ! SpawnProtocol.Spawn(target, "child", Props.empty, parentReply.ref)
+      val child1 = parentReply.expectMessageType[ActorRef[Message]]
+      child1.path.name should ===("child-1")
+
+      // take the generated name
+      parent ! SpawnProtocol.Spawn(target, "child-2", Props.empty, parentReply.ref)
+      val child2 = parentReply.expectMessageType[ActorRef[Message]]
+      child2.path.name should ===("child-2")
+
+      // "child" is taken, and also "child-1" and "child-2"
+      parent ! SpawnProtocol.Spawn(target, "child", Props.empty, parentReply.ref)
+      val child3 = parentReply.expectMessageType[ActorRef[Message]]
+      child3.path.name should ===("child-3")
+    }
   }
 }
 
