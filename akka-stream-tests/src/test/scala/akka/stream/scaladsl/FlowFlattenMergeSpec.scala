@@ -290,6 +290,9 @@ class FlowFlattenMergeSpec extends StreamSpec {
 
       val singleSourceA = new SingleSource("a")
       TraversalBuilder.getSingleSource(singleSourceA) should be(OptionVal.Some(singleSourceA))
+
+      TraversalBuilder.getSingleSource(Source.single("c").async) should be(OptionVal.None)
+      TraversalBuilder.getSingleSource(Source.single("d").mapMaterializedValue(_ ⇒ "Mat")) should be(OptionVal.None)
     }
 
   }

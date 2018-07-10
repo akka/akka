@@ -352,8 +352,12 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
                 a.module match {
                   case m: GraphStageModule[_, _] ⇒
                     m.stage match {
-                      case single: SingleSource[A] @unchecked ⇒ OptionVal.Some(single)
-                      case _                                  ⇒ OptionVal.None
+                      case single: SingleSource[A] @unchecked ⇒
+                        // It would be != EmptyTraversal if mapMaterializedValue was used and then we can't optimize.
+                        if ((l.traversalSoFar eq EmptyTraversal) && !l.attributes.isAsync)
+                          OptionVal.Some(single)
+                        else OptionVal.None
+                      case _ ⇒ OptionVal.None
                     }
                   case _ ⇒ OptionVal.None
                 }
