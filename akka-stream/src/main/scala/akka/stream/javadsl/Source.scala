@@ -306,12 +306,17 @@ object Source {
    *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]]
    * (whose content will be ignored) in which case already buffered elements will be signaled before signaling
-   * completion, or by sending [[akka.actor.PoisonPill]] in which case completion will be signaled immediately.
+   * completion.
    *
    * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
    * actor reference. In case the Actor is still draining its internal buffer (after having received
    * a [[akka.actor.Status.Success]]) before signaling completion and it receives a [[akka.actor.Status.Failure]],
    * the failure will be signaled downstream immediately (instead of the completion signal).
+   *
+   * Note that terminating the actor without first completing it, either with a success or a
+   * failure, will prevent the actor triggering downstream completion and the stream will continue
+   * to run even though the source actor is dead. Therefore you should **not** attempt to
+   * manually terminate the actor such as with a [[akka.actor.PoisonPill]].
    *
    * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
