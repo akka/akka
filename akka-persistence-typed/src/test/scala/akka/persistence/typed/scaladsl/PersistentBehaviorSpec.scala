@@ -21,10 +21,12 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.Eventually
-
 import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.{ Success, Try }
+
+import akka.persistence.journal.inmem.InmemJournal
 
 object PersistentBehaviorSpec {
 
@@ -36,12 +38,12 @@ object PersistentBehaviorSpec {
   }
   //#event-wrapper
 
-  class InMemorySnapshotStore extends SnapshotStore {
+  class SlowInMemorySnapshotStore extends SnapshotStore {
 
     private var state = Map.empty[String, (Any, SnapshotMetadata)]
 
     def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
-      Future.successful(state.get(persistenceId).map(r ⇒ SelectedSnapshot(r._2, r._1)))
+      Promise().future // never completed
     }
 
     def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
@@ -63,6 +65,11 @@ object PersistentBehaviorSpec {
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
 
+    slow-snapshot-store.class = "${classOf[SlowInMemorySnapshotStore].getName}"
+    short-recovery-timeout {
+      class = "${classOf[InmemJournal].getName}"
+      recovery-event-timeout = 10 millis
+    }
     """)
 
   sealed trait Command
@@ -554,6 +561,48 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
 
       val taggedEvents = queries.currentEventsByTag("tag99").runWith(Sink.seq).futureValue
       taggedEvents shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
+    }
+
+    "handle scheduled message arriving before recovery completed " in {
+      val c = spawn(Behaviors.withTimers[Command] {
+        timers ⇒
+          timers.startSingleTimer("tick", Increment, 1.millis)
+          Thread.sleep(30) // now it's probably already in the mailbox, and will be stashed
+          counter(nextPid)
+      })
+
+      val probe = TestProbe[State]
+      c ! Increment
+      probe.awaitAssert {
+        c ! GetValue(probe.ref)
+        probe.expectMessage(State(2, Vector(0, 1)))
+      }
+    }
+
+    "handle scheduled message arriving after recovery completed " in {
+      val c = spawn(Behaviors.withTimers[Command] {
+        timers ⇒
+          // probably arrives after recovery completed
+          timers.startSingleTimer("tick", Increment, 200.millis)
+          counter(nextPid)
+      })
+
+      val probe = TestProbe[State]
+      c ! Increment
+      probe.awaitAssert {
+        c ! GetValue(probe.ref)
+        probe.expectMessage(State(2, Vector(0, 1)))
+      }
+    }
+
+    "fail after recovery timeout" in {
+      val c = spawn(counter(nextPid)
+        .withSnapshotPluginId("slow-snapshot-store")
+        .withJournalPluginId("short-recovery-timeout"))
+
+      val probe = TestProbe[State]
+
+      probe.expectTerminated(c, probe.remainingOrDefault)
     }
 
     def watcher(toWatch: ActorRef[_]): TestProbe[String] = {
