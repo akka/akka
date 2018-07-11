@@ -1,0 +1,4 @@
+# NPE when using import context.dispatcher #25040
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.snapshot.SnapshotStore*")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.journal.AsyncWriteProxy*")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.journal.AsyncWriteJournal*")
