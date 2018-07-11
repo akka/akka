@@ -35,7 +35,8 @@ private[akka] object ClusterReceptionistSettings {
     }
     ClusterReceptionistSettings(
       writeConsistency,
-      pruningInterval = config.getDuration("pruning-interval", MILLISECONDS).millis
+      pruningInterval = config.getDuration("pruning-interval", MILLISECONDS).millis,
+      config.getInt("distributed-key-count")
     )
   }
 }
@@ -45,6 +46,7 @@ private[akka] object ClusterReceptionistSettings {
  */
 @InternalApi
 private[akka] case class ClusterReceptionistSettings(
-  writeConsistency: WriteConsistency,
-  pruningInterval:  FiniteDuration)
+  writeConsistency:    WriteConsistency,
+  pruningInterval:     FiniteDuration,
+  distributedKeyCount: Int)
 
