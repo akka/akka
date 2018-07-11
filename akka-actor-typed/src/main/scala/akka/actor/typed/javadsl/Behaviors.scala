@@ -255,6 +255,9 @@ object Behaviors {
    *     );
    * }}}
    *
+   * Scheduled messages via [[TimerScheduler]] can currently not be used
+   * together with `widen`, see issue #25318.
+   *
    * @param behavior
    *          the behavior that will receive the selected messages
    * @param selector
