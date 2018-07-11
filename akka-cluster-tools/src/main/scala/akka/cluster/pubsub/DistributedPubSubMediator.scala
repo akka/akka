@@ -306,7 +306,8 @@ object DistributedPubSubMediator {
     def mkKey(path: ActorPath): String = path.toStringWithoutAddress
 
     trait TopicLike extends Actor {
-      import context.dispatcher
+      import scala.concurrent.ExecutionContext
+      private implicit val ec: ExecutionContext = context.dispatcher
       val pruneInterval: FiniteDuration = emptyTimeToLive / 2
       val pruneTask = context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune)
       var pruneDeadline: Option[Deadline] = None
@@ -524,7 +525,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
   val removedTimeToLiveMillis = removedTimeToLive.toMillis
 
   //Start periodic gossip to random nodes in cluster
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
   val gossipTask = context.system.scheduler.schedule(gossipInterval, gossipInterval, self, GossipTick)
   val pruneInterval: FiniteDuration = removedTimeToLive / 2
   val pruneTask = context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune)

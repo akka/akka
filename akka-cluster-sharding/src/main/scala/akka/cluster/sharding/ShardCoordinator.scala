@@ -366,7 +366,8 @@ object ShardCoordinator {
     regions.foreach(_ ! BeginHandOff(shard))
     var remaining = regions
 
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    private implicit val ec: ExecutionContext = context.dispatcher
     context.system.scheduler.scheduleOnce(handOffTimeout, self, ReceiveTimeout)
 
     def receive = {
@@ -428,7 +429,8 @@ abstract class ShardCoordinator(typeName: String, settings: ClusterShardingSetti
   var aliveRegions = Set.empty[ActorRef]
   var regionTerminationInProgress = Set.empty[ActorRef]
 
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
   val rebalanceTask = context.system.scheduler.schedule(rebalanceInterval, rebalanceInterval, self, RebalanceTick)
 
   cluster.subscribe(self, initialStateMode = InitialStateAsEvents, ClusterShuttingDown.getClass)

@@ -44,7 +44,8 @@ object AkkaProtocolStressTest {
   object ResendFinal
 
   class SequenceVerifier(remote: ActorRef, controller: ActorRef) extends Actor {
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    private implicit val ec: ExecutionContext = context.dispatcher
 
     val limit = 100000
     var nextSeq = 0

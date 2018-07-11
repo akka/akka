@@ -39,7 +39,8 @@ object FlowAskSpec {
   class RandomDelaysReplier extends Actor {
     override def receive: Receive = {
       case msg: Int ⇒
-        import context.dispatcher
+        import scala.concurrent.ExecutionContext
+        implicit val ec: ExecutionContext = context.dispatcher
 
         val replyTo = sender()
         Future {

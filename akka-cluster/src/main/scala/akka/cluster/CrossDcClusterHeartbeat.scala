@@ -38,7 +38,8 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
   import cluster.settings._
   import cluster.{ scheduler, selfAddress, selfDataCenter, selfUniqueAddress }
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   // For inspecting if in active state; allows avoiding "becoming active" when already active
   var activelyMonitoring = false

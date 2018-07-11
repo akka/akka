@@ -216,7 +216,8 @@ final class CircuitBreakerProxy(
   }
 
   def forwardRequest(message: Any, currentSender: ActorRef, state: CircuitBreakerStateData, log: LoggingAdapter) = {
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    implicit val ec: ExecutionContext = context.dispatcher
 
     target.ask(message)(callTimeout).onComplete {
       case Success(response) ⇒

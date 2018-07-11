@@ -713,7 +713,8 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
       currentState = nextState
 
       def scheduleTimeout(d: FiniteDuration): Some[Cancellable] = {
-        import context.dispatcher
+        import scala.concurrent.ExecutionContext
+        implicit val ec: ExecutionContext = context.dispatcher
         Some(context.system.scheduler.scheduleOnce(d, self, TimeoutMarker(generation)))
       }
 

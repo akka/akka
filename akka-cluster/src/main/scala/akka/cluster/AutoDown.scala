@@ -100,7 +100,8 @@ private[cluster] abstract class AutoDownBase(autoDownUnreachableAfter: FiniteDur
 
   def scheduler: Scheduler
 
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   val skipMemberStatus = MembershipState.convergenceSkipUnreachableWithMemberStatus
 

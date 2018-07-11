@@ -257,7 +257,8 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       immutable.SortedMap.empty[Address, CurrentInternalStats]
     }
 
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    private implicit val ec: ExecutionContext = context.dispatcher
 
     def receive = {
       case PhiResult(from, phiValues) ⇒ phiValuesObservedByNode += from → phiValues
@@ -361,7 +362,8 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       case _ ⇒ 0.0
     }
 
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    private implicit val ec: ExecutionContext = context.dispatcher
     val checkPhiTask = context.system.scheduler.schedule(
       1.second, 1.second, self, PhiTick)
 
@@ -463,7 +465,8 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     var outstanding = Map.empty[JobId, JobState]
     var startTime = 0L
 
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    private implicit val ec: ExecutionContext = context.dispatcher
     val resendTask = context.system.scheduler.schedule(3.seconds, 3.seconds, self, RetryTick)
 
     override def postStop(): Unit = {

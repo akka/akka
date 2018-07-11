@@ -65,7 +65,8 @@ object DistributedDataDocSpec {
     val replicator = DistributedData(context.system).replicator
     implicit val node = Cluster(context.system)
 
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    private implicit val ec: ExecutionContext = context.dispatcher
     val tickTask = context.system.scheduler.schedule(5.seconds, 5.seconds, self, Tick)
 
     val DataKey = ORSetKey[String]("key")

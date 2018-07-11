@@ -78,7 +78,8 @@ object SystemMessageDeliveryStressTest {
   }
 
   class SystemMessageSender(val msgCount: Int, val burstSize: Int, val burstDelay: FiniteDuration, val target: ActorRef) extends Actor {
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    private implicit val ec: ExecutionContext = context.dispatcher
 
     var counter = 0
     var burstCounter = 0

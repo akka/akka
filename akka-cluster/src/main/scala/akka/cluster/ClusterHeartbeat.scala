@@ -81,7 +81,8 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
   import cluster.{ selfAddress, selfUniqueAddress, scheduler }
   import cluster.settings._
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   val filterInternalClusterMembers: Member ⇒ Boolean =
     _.dataCenter == cluster.selfDataCenter

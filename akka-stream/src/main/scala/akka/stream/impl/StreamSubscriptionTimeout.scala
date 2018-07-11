@@ -75,7 +75,9 @@ import scala.util.control.NoStackTrace
       case NoopTermination ⇒
         NoopSubscriptionTimeout
       case _ ⇒
-        import context.dispatcher
+        import scala.concurrent.ExecutionContext
+        implicit val ec: ExecutionContext = context.dispatcher
+
         val cancellable = context.system.scheduler.scheduleOnce(subscriptionTimeoutSettings.timeout, actor, message)
         cancellable
     }

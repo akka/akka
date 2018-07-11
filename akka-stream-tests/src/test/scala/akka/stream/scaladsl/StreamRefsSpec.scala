@@ -29,7 +29,8 @@ object StreamRefsSpec {
   }
 
   class DataSourceActor(probe: ActorRef) extends Actor with ActorLogging {
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    private implicit val ec: ExecutionContext = context.dispatcher
     implicit val mat = ActorMaterializer()
 
     def receive = {
@@ -114,7 +115,7 @@ object StreamRefsSpec {
           .toMat(TestSink.probe(context.system))(Keep.both)
           .run()
 
-        import context.dispatcher
+        implicit val ec: ExecutionContext = context.dispatcher
         Future {
           driver.ensureSubscription()
           driver.request(2)

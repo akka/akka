@@ -92,7 +92,9 @@ private[akka] class RemoteWatcher(
   extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import RemoteWatcher._
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
+
   def scheduler = context.system.scheduler
 
   val remoteProvider: RemoteActorRefProvider = RARP(context.system).provider

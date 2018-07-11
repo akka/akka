@@ -23,7 +23,8 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
     case class LogsOffer(streamId: Int, sourceRef: SourceRef[String])
 
     class DataSource extends Actor {
-      import context.dispatcher
+      import scala.concurrent.ExecutionContext
+      private implicit val ec: ExecutionContext = context.dispatcher
       implicit val mat = ActorMaterializer()(context)
 
       def receive = {
@@ -70,7 +71,8 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
 
     class DataReceiver extends Actor {
 
-      import context.dispatcher
+      import scala.concurrent.ExecutionContext
+      private implicit val ec: ExecutionContext = context.dispatcher
       implicit val mat = ActorMaterializer()(context)
 
       def receive = {

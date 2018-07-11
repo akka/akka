@@ -16,7 +16,8 @@ import akka.pattern.pipe
 //#backend
 class FactorialBackend extends Actor with ActorLogging {
 
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   def receive = {
     case (n: Int) ⇒

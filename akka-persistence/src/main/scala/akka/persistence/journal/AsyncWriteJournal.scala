@@ -22,7 +22,8 @@ import akka.pattern.CircuitBreaker
 trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   import AsyncWriteJournal._
   import JournalProtocol._
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   private val extension = Persistence(context.system)
   private val publish = extension.settings.internal.publishPluginCommands

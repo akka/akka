@@ -342,7 +342,8 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
 
   var subscribers = Vector.empty[ActorRef]
 
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
   val heartbeatTask = context.system.scheduler.schedule(
     heartbeatInterval, heartbeatInterval, self, HeartbeatTick)
   var refreshContactsTask: Option[Cancellable] = None

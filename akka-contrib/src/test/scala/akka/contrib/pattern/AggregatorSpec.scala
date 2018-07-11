@@ -150,9 +150,9 @@ class ChainingSample extends Actor with Aggregator {
   }
 
   class MultipleResponseHandler(originalSender: ActorRef, propName: String) {
-
-    import context.dispatcher
     import collection.mutable.ArrayBuffer
+    import scala.concurrent.ExecutionContext
+    private implicit val ec: ExecutionContext = context.dispatcher
 
     val values = ArrayBuffer.empty[String]
 

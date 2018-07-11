@@ -1061,7 +1061,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     s"This cluster member [${selfAddress}] doesn't have all the roles [${roles.mkString(", ")}]")
 
   //Start periodic gossip to random nodes in cluster
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
   val gossipTask = context.system.scheduler.schedule(gossipInterval, gossipInterval, self, GossipTick)
   val notifyTask = context.system.scheduler.schedule(notifySubscribersInterval, notifySubscribersInterval, self, FlushChanges)
   val pruningTask =
@@ -1941,7 +1942,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def unreachable: Set[Address]
   def reachableNodes: Set[Address] = nodes diff unreachable
 
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
   var sendToSecondarySchedule = context.system.scheduler.scheduleOnce(timeout / 5, self, SendToSecondary)
   var timeoutSchedule = context.system.scheduler.scheduleOnce(timeout, self, ReceiveTimeout)
 

@@ -200,7 +200,8 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
    * Discard old singleton ActorRef and send a periodic message to self to identify the singleton.
    */
   def identifySingleton(): Unit = {
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    implicit val ec: ExecutionContext = context.dispatcher
     log.debug("Creating singleton identification timer...")
     identifyCounter += 1
     identifyId = createIdentifyId(identifyCounter)

@@ -35,8 +35,10 @@ class RecipeGlobalRateLimit extends RecipeSpec {
       val tokenRefreshPeriod: FiniteDuration,
       val tokenRefreshAmount: Int) extends Actor {
       import Limiter._
-      import context.dispatcher
+      import scala.concurrent.ExecutionContext
       import akka.actor.Status
+
+      private implicit val ec: ExecutionContext = context.dispatcher
 
       private var waitQueue = immutable.Queue.empty[ActorRef]
       private var permitTokens = maxAvailableTokens

@@ -395,7 +395,9 @@ private[akka] class ShardRegion(
   var handingOff = Set.empty[ActorRef]
   var gracefulShutdownInProgress = false
 
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
+
   val retryTask = context.system.scheduler.schedule(retryInterval, retryInterval, self, Retry)
   var retryCount = 0
 

@@ -92,7 +92,8 @@ class Worker extends Actor with ActorLogging {
   var progressListener: Option[ActorRef] = None
   val counterService = context.actorOf(Props[CounterService], name = "counter")
   val totalCount = 51
-  import context.dispatcher // Use this Actors' Dispatcher as ExecutionContext
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher // Use this Actors' Dispatcher as ExecutionContext
 
   def receive = LoggingReceive {
     case Start if progressListener.isEmpty ⇒
@@ -147,7 +148,8 @@ class CounterService extends Actor {
   var backlog = IndexedSeq.empty[(ActorRef, Any)]
   val MaxBacklog = 10000
 
-  import context.dispatcher // Use this Actors' Dispatcher as ExecutionContext
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher // Use this Actors' Dispatcher as ExecutionContext
 
   override def preStart(): Unit = {
     initStorage()

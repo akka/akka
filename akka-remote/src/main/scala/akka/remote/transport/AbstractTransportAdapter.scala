@@ -197,12 +197,12 @@ abstract class ActorTransportAdapterManager extends Actor
   protected var localAddress: Address = _
   private var uniqueId = 0L
 
+  private implicit val ec: ExecutionContext = context.dispatcher
+
   protected def nextId(): Long = {
     uniqueId += 1
     uniqueId
   }
-
-  import context.dispatcher
 
   def receive: Receive = {
     case ListenUnderlying(listenAddress, upstreamListenerFuture) ⇒

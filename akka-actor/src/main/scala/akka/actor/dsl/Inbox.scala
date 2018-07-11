@@ -136,7 +136,10 @@ trait Inbox { this: ActorDSL.type ⇒
         }
       } else {
         val next = clientsByTimeout.head.deadline
-        import context.dispatcher
+
+        import scala.concurrent.ExecutionContext
+        implicit val ec: ExecutionContext = context.dispatcher
+
         if (currentDeadline.isEmpty) {
           currentDeadline = Some((next, context.system.scheduler.scheduleOnce(next.timeLeft, self, Kick)))
         } else {

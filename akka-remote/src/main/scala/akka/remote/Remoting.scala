@@ -444,7 +444,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import EndpointManager._
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   val settings = new RemoteSettings(conf)
   val extendedSystem = context.system.asInstanceOf[ExtendedActorSystem]

@@ -21,7 +21,8 @@ object CircuitBreakerStressSpec {
   case class Result(doneCount: Int, timeoutCount: Int, failCount: Int, circCount: Int)
 
   class StressActor(breaker: CircuitBreaker) extends Actor with ActorLogging with PipeToSupport {
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    private implicit val ec: ExecutionContext = context.dispatcher
 
     private var doneCount = 0
     private var timeoutCount = 0

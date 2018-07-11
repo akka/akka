@@ -368,7 +368,8 @@ private[akka] class RememberEntityStarter(
   settings:  ClusterShardingSettings,
   requestor: ActorRef) extends Actor with ActorLogging {
 
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
   import RememberEntityStarter.Tick
 
   var waitingForAck = ids
@@ -424,7 +425,8 @@ private[akka] trait RememberingShard { selfType: Shard ⇒
 
   protected def restartRememberedEntities(): Unit = {
     rememberedEntitiesRecoveryStrategy.recoverEntities(state.entities).foreach { scheduledRecovery ⇒
-      import context.dispatcher
+      import scala.concurrent.ExecutionContext
+      implicit val ec: ExecutionContext = context.dispatcher
       scheduledRecovery.filter(_.nonEmpty).map(RestartEntities).pipeTo(self)
     }
   }
@@ -442,7 +444,10 @@ private[akka] trait RememberingShard { selfType: Shard ⇒
     } else {
       if (!passivating.contains(ref)) {
         log.debug("Entity [{}] stopped without passivating, will restart after backoff", id)
-        import context.dispatcher
+
+        import scala.concurrent.ExecutionContext
+        implicit val ec: ExecutionContext = context.dispatcher
+
         context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(id))
       } else processChange(EntityStopped(id))(passivateCompleted)
     }

@@ -21,7 +21,8 @@ import scala.concurrent.Future
  */
 class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
   import AsyncWriteTarget._
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   def this() = this(LeveldbStore.emptyConfig)
 

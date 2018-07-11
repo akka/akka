@@ -17,7 +17,8 @@ import akka.pattern.CircuitBreaker
  */
 trait SnapshotStore extends Actor with ActorLogging {
   import SnapshotProtocol._
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   private val extension = Persistence(context.system)
   private val publish = extension.settings.internal.publishPluginCommands

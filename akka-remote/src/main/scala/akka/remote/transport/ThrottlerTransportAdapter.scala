@@ -211,7 +211,8 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport)
   extends ActorTransportAdapterManager with ActorLogging {
 
   import ThrottlerManager._
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   private var throttlingModes = Map[Address, (ThrottleMode, Direction)]()
   private var handleTable = List[(Address, ThrottlerHandle)]()
@@ -370,7 +371,8 @@ private[transport] class ThrottledAssociation(
   extends Actor with LoggingFSM[ThrottledAssociation.ThrottlerState, ThrottledAssociation.ThrottlerData]
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import ThrottledAssociation._
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   var inboundThrottleMode: ThrottleMode = _
   var throttledMessages = Queue.empty[ByteString]

@@ -116,7 +116,9 @@ private[cluster] class ClusterRemoteWatcher(
         // If new incarnation of same host:port is seen then the quarantine of previous incarnation
         // is triggered earlier.
         pendingDelayedQuarantine += m.uniqueAddress
-        import context.dispatcher
+
+        import scala.concurrent.ExecutionContext
+        implicit val ec: ExecutionContext = context.dispatcher
         context.system.scheduler.scheduleOnce(cluster.settings.QuarantineRemovedNodeAfter, self, DelayedQuarantine(m, previousStatus))
       }
 

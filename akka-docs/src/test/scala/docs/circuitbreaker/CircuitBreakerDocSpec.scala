@@ -19,7 +19,8 @@ class CircuitBreakerDocSpec {}
 
 //#circuit-breaker-initialization
 class DangerousActor extends Actor with ActorLogging {
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   val breaker =
     new CircuitBreaker(
@@ -46,7 +47,8 @@ class DangerousActor extends Actor with ActorLogging {
 }
 
 class TellPatternActor(recipient: ActorRef) extends Actor with ActorLogging {
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   val breaker =
     new CircuitBreaker(
@@ -79,7 +81,8 @@ class TellPatternActor(recipient: ActorRef) extends Actor with ActorLogging {
 }
 
 class EvenNoFailureActor extends Actor {
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
   //#even-no-as-failure
   def luckyNumber(): Future[Int] = {
     val evenNumberAsFailure: Try[Int] ⇒ Boolean = {

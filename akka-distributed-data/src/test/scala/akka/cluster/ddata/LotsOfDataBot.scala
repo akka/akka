@@ -78,7 +78,8 @@ class LotsOfDataBot extends Actor with ActorLogging {
   val replicator = DistributedData(context.system).replicator
   implicit val cluster = Cluster(context.system)
 
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
   val isPassive = context.system.settings.config.getBoolean("passive")
   var tickTask =
     if (isPassive)

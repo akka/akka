@@ -238,7 +238,8 @@ final class BackoffSupervisor(
   extends Actor with HandleBackoff {
 
   import BackoffSupervisor._
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   // to keep binary compatibility with 2.4.1
   override val supervisorStrategy = strategy match {
@@ -293,7 +294,8 @@ private[akka] trait HandleBackoff { this: Actor ⇒
   var restartCount = 0
 
   import BackoffSupervisor._
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   override def preStart(): Unit = startChild()
 

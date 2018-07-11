@@ -296,7 +296,8 @@ private[transport] class ProtocolStateActor(
   private val markerLog = Logging.withMarker(this)
 
   import ProtocolStateActor._
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   // Outbound case
   def this(

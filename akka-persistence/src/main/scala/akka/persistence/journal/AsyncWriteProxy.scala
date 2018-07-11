@@ -23,7 +23,7 @@ import scala.concurrent.duration.Duration
 private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash with ActorLogging {
   import AsyncWriteProxy._
   import AsyncWriteTarget._
-  import context.dispatcher
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   private var isInitialized = false
   private var isInitTimedOut = false

@@ -32,7 +32,9 @@ private[persistence] class LeveldbJournal(cfg: Config) extends AsyncWriteJournal
 
   override def receivePluginInternal: Receive = receiveCompactionInternal orElse {
     case r @ ReplayTaggedMessages(fromSequenceNr, toSequenceNr, max, tag, replyTo) ⇒
-      import context.dispatcher
+      import scala.concurrent.ExecutionContext
+      implicit val ec: ExecutionContext = context.dispatcher
+
       val readHighestSequenceNrFrom = math.max(0L, fromSequenceNr - 1)
       asyncReadHighestSequenceNr(tagAsPersistenceId(tag), readHighestSequenceNrFrom)
         .flatMap { highSeqNr ⇒

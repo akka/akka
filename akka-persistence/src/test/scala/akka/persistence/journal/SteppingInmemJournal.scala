@@ -65,7 +65,8 @@ object SteppingInmemJournal {
 final class SteppingInmemJournal extends InmemJournal {
 
   import SteppingInmemJournal._
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   val instanceId = context.system.settings.config.getString("akka.persistence.journal.stepping-inmem.instance-id")
 

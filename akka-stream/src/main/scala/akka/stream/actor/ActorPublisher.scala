@@ -341,7 +341,8 @@ trait ActorPublisher[T] extends Actor {
    */
   override protected[akka] def aroundPreStart(): Unit = {
     super.aroundPreStart()
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    implicit val ec: ExecutionContext = context.dispatcher
 
     subscriptionTimeout match {
       case timeout: FiniteDuration ⇒

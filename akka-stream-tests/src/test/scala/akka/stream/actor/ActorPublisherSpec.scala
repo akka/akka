@@ -117,7 +117,8 @@ object ActorPublisherSpec {
 
   class TimeoutingPublisher(probe: ActorRef, timeout: FiniteDuration) extends ActorPublisher[Int] {
     import akka.stream.actor.ActorPublisherMessage._
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    implicit val ec: ExecutionContext = context.dispatcher
 
     override def subscriptionTimeout = timeout
 

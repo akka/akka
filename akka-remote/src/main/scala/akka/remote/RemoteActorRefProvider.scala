@@ -46,7 +46,8 @@ private[akka] object RemoteActorRefProvider {
 
   private class RemotingTerminator(systemGuardian: ActorRef) extends Actor with FSM[TerminatorState, Option[Internals]]
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-    import context.dispatcher
+    import scala.concurrent.ExecutionContext
+    private implicit val ec: ExecutionContext = context.dispatcher
 
     startWith(Uninitialized, None)
 

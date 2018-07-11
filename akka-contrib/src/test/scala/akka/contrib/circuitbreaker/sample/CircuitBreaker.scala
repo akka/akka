@@ -29,7 +29,8 @@ class SimpleService extends Actor with ActorLogging {
 
   var messageCount = 0
 
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   context.system.scheduler.schedule(1.second, 1.second, self, ResetCount)
 
@@ -119,7 +120,8 @@ class CircuitBreakerAsk(potentiallyFailingService: ActorRef) extends Actor with 
         .props(potentiallyFailingService),
       "serviceCircuitBreaker")
 
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   override def receive: Receive = {
     case AskFor(requestToForward) ⇒
@@ -155,7 +157,8 @@ class CircuitBreakerAskWithFailure(potentiallyFailingService: ActorRef) extends 
         .props(target = potentiallyFailingService),
       "serviceCircuitBreaker")
 
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   override def receive: Receive = {
     case AskFor(requestToForward) ⇒
@@ -186,7 +189,8 @@ class CircuitBreakerAskWithCircuitBreaker(potentiallyFailingService: ActorRef) e
         .props(target = potentiallyFailingService),
       "serviceCircuitBreaker")
 
-  import context.dispatcher
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
 
   override def receive: Receive = {
     case AskFor(requestToForward) ⇒

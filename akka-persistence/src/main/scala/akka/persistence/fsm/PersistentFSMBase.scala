@@ -496,7 +496,8 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
       if (timeout.isDefined) {
         val t = timeout.get
         if (t.isFinite && t.length >= 0) {
-          import context.dispatcher
+          import scala.concurrent.ExecutionContext
+          implicit val ec: ExecutionContext = context.dispatcher
           timeoutFuture = Some(context.system.scheduler.scheduleOnce(t, self, TimeoutMarker(generation)))
         }
       }

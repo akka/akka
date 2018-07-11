@@ -454,7 +454,7 @@ class FutureDocSpec extends AkkaSpec {
   "demonstrate context.dispatcher" in {
     //#context-dispatcher
     class A extends Actor {
-      import context.dispatcher
+      private implicit val ec: ExecutionContext = context.dispatcher
       val f = Future("hello")
       def receive = {
         //#receive-omitted
