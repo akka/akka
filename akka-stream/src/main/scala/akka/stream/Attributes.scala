@@ -348,7 +348,7 @@ object Attributes {
    * Java API
    *
    * Configures `log()` operator log-levels to be used when logging.
-   * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
+   * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
    *
    */
   def createLogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel): Attributes =
@@ -358,7 +358,7 @@ object Attributes {
    * Java API
    *
    * Configures `log()` operator log-levels to be used when logging onElement.
-   * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
+   * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
    *
    */
   def createLogLevels(onElement: Logging.LogLevel): Attributes =
@@ -366,7 +366,7 @@ object Attributes {
 
   /**
    * Configures `log()` operator log-levels to be used when logging.
-   * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
+   * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
    *
    * See [[Attributes.createLogLevels]] for Java API
    */
@@ -445,7 +445,7 @@ object ActorAttributes {
    * Java API
    *
    * Configures `log()` operator log-levels to be used when logging.
-   * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
+   * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
    *
    */
   def createLogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel): Attributes =
@@ -455,7 +455,7 @@ object ActorAttributes {
    * Java API
    *
    * Configures `log()` operator log-levels to be used when logging onElement.
-   * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
+   * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
    *
    */
   def createLogLevels(onElement: Logging.LogLevel): Attributes =
