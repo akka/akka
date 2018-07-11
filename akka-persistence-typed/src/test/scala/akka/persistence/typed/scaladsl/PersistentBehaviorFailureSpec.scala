@@ -4,13 +4,11 @@
 
 package akka.persistence.typed.scaladsl
 
-import java.util.concurrent.atomic.AtomicInteger
-
-import akka.Done
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy, TypedAkkaSpecWithShutdown }
+import akka.actor.testkit.typed.TE
 import akka.persistence.AtomicWrite
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.EventRejectedException
@@ -30,11 +28,11 @@ class ChaosJournal extends InmemJournal {
     val pid = messages.head.persistenceId
     if (pid == "fail-first-2" && count < 2) {
       count += 1
-      Future.failed(new RuntimeException("database says no"))
+      Future.failed(TE("database says no"))
     } else if (pid == "reject-first" && reject) {
       reject = false
       Future.successful(messages.map(aw ⇒ Try {
-        throw new RuntimeException("I don't like it")
+        throw TE("I don't like it")
       }))
     } else {
       super.asyncWriteMessages(messages)
@@ -44,7 +42,7 @@ class ChaosJournal extends InmemJournal {
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = {
     if (persistenceId == "fail-recovery-once" && failRecovery) {
       failRecovery = false
-      Future.failed(new RuntimeException("Nah"))
+      Future.failed(TE("Nah"))
     } else {
       super.asyncReadHighestSequenceNr(persistenceId, fromSequenceNr)
     }
