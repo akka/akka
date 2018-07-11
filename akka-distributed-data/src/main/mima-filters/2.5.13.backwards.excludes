@@ -1,0 +1,10 @@
+# #23703 Optimized serializer for ORSet[ActorRef]
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages#GSetOrBuilder.getActorRefElementsCount")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages#GSetOrBuilder.getActorRefElementsList")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages#GSetOrBuilder.getActorRefElements")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages#GSetOrBuilder.getActorRefElementsBytes")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages#ORSetOrBuilder.getActorRefElementsCount")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages#ORSetOrBuilder.getActorRefElementsList")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages#ORSetOrBuilder.getActorRefElements")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages#ORSetOrBuilder.getActorRefElementsBytes")
+
