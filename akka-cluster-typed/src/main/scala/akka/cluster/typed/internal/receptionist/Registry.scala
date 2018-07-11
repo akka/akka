@@ -109,7 +109,11 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, 
   def toORMultiMap: ORMultiMap[ServiceKey[_], Entry] = entries
 
 }
-object ServiceRegistry {
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object ServiceRegistry {
   final val Empty = ServiceRegistry(EmptyORMultiMap)
 
   def collectChangedKeys(previousRegistry: ServiceRegistry, newRegistry: ServiceRegistry): Set[AbstractServiceKey] = {
