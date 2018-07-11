@@ -556,7 +556,8 @@ private[remote] class EndpointWriter(
   var lastAck: Option[Ack] = None
 
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
-    case NonFatal(e) ⇒ publishAndThrow(e, Logging.ErrorLevel)
+    case e: ShutDownAssociation ⇒ publishAndThrow(e, Logging.InfoLevel)
+    case NonFatal(e)            ⇒ publishAndThrow(e, Logging.ErrorLevel)
   }
 
   val provider = RARP(extendedSystem).provider
