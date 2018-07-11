@@ -88,7 +88,9 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
               _cachedSelf = e.member
             case _ ⇒
           }
-        case s: CurrentClusterState ⇒ _state = s
+        case s: CurrentClusterState ⇒
+          _state = s
+          _cachedSelf = s.members.find(_.uniqueAddress == cluster.selfUniqueAddress).getOrElse(_cachedSelf)
       }
     }).withDispatcher(cluster.settings.UseDispatcher).withDeploy(Deploy.local), name = "clusterEventBusListener")
   }
