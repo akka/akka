@@ -16,14 +16,18 @@ object Jdk9 extends AutoPlugin {
     case _ => values
   }
 
+  def notOnJdk8[T](values: Seq[T]): Seq[T] =
+    if (System.getProperty("java.version").startsWith("1.")) Seq()
+    else values
+
   val compileJdk9Settings = Seq(
     // following the scala-2.12, scala-sbt-1.0, ... convention
-    unmanagedSourceDirectories := notOnScala211(scalaBinaryVersion.value, Seq(
+    unmanagedSourceDirectories := notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq(
       (Compile / sourceDirectory).value / "scala-jdk-9",
       (Compile / sourceDirectory).value / "java-jdk-9"
-    )),
-    scalacOptions := AkkaBuild.DefaultScalacOptions ++ notOnScala211(scalaBinaryVersion.value, Seq("-release", "9")),
-    javacOptions := AkkaBuild.DefaultJavacOptions ++ notOnScala211(scalaBinaryVersion.value, Seq("--release", "9"))
+    ))),
+    scalacOptions := AkkaBuild.DefaultScalacOptions ++ notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq("-release", "9"))),
+    javacOptions := AkkaBuild.DefaultJavacOptions ++ notOnJdk8(notOnScala211(scalaBinaryVersion.value, Seq("--release", "9")))
   )
 
   val compileSettings = Seq(
