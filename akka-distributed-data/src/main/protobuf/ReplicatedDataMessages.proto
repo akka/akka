@@ -12,6 +12,7 @@ message GSet {
   repeated sint32 intElements = 2 [packed=true];
   repeated sint64 longElements = 3 [packed=true];
   repeated OtherMessage otherElements = 4;
+  repeated string actorRefElements = 5; // added in Akka 2.5.14
 }
 
 message ORSet {
@@ -21,6 +22,7 @@ message ORSet {
   repeated sint32 intElements = 4 [packed=true];
   repeated sint64 longElements = 5 [packed=true];
   repeated OtherMessage otherElements = 6;
+  repeated string actorRefElements = 7; // added in Akka 2.5.14
 }
 
 message ORSetDeltaGroup {

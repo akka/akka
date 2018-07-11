@@ -41,7 +41,8 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
   extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
 
   def createBehavior(): Behavior[InternalProtocol] = {
-    startRecoveryTimer()
+    // protect against snapshot stalling forever because of journal overloaded and such
+    setup.startRecoveryTimer(snapshot = true)
 
     loadSnapshot(setup.recovery.fromSnapshot, setup.recovery.toSequenceNr)
 
@@ -63,7 +64,7 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
    * @param event the event that was processed in `receiveRecover`, if the exception was thrown there
    */
   private def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
-    cancelRecoveryTimer(setup.timers)
+    setup.cancelRecoveryTimer()
 
     event match {
       case Some(evt) ⇒
@@ -108,7 +109,6 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
         becomeReplayingEvents(state, seqNr, toSnr)
 
       case LoadSnapshotFailed(cause) ⇒
-        cancelRecoveryTimer(setup.timers)
         onRecoveryFailure(cause, event = None)
 
       case _ ⇒
@@ -117,18 +117,12 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
   }
 
   private def becomeReplayingEvents(state: S, lastSequenceNr: Long, toSnr: Long): Behavior[InternalProtocol] = {
-    cancelRecoveryTimer(setup.timers)
+    setup.cancelRecoveryTimer()
 
     EventsourcedReplayingEvents[C, E, S](
       setup,
       EventsourcedReplayingEvents.ReplayingState(lastSequenceNr, state, eventSeenInInterval = false, toSnr)
     )
   }
-
-  // protect against snapshot stalling forever because of journal overloaded and such
-  private val SnapRecoveryTickTimerKey = "snapshot-recovery-tick"
-  private def startRecoveryTimer(): Unit =
-    setup.timers.startPeriodicTimer(SnapRecoveryTickTimerKey, RecoveryTickEvent(snapshot = true), setup.settings.recoveryEventTimeout)
-  private def cancelRecoveryTimer(timers: TimerScheduler[_]): Unit = timers.cancel(SnapRecoveryTickTimerKey)
 
 }
