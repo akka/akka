@@ -847,6 +847,7 @@ object Replicator {
           override def zero: DeltaReplicatedData = this
           override def delta: Option[ReplicatedDelta] = None
           override def resetDelta: ReplicatedData = this
+          override def toString: String = "NoDeltaPlaceholder"
         }
     }
     case object DeltaNack extends ReplicatorMessage with DeadLetterSuppression
