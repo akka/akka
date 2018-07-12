@@ -10,12 +10,11 @@ import akka.actor.{ Actor, ActorRef, PoisonPill, Props }
 import akka.stream.ActorAttributes.supervisionStrategy
 import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.Supervision.resumingDecider
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.testkit.{ TestActors, TestProbe }
 
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{ Await, Future, ExecutionContext }
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
@@ -39,7 +38,6 @@ object FlowAskSpec {
   class RandomDelaysReplier extends Actor {
     override def receive: Receive = {
       case msg: Int ⇒
-        import scala.concurrent.ExecutionContext
         implicit val ec: ExecutionContext = context.dispatcher
 
         val replyTo = sender()

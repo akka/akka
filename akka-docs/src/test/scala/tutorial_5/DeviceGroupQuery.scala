@@ -7,6 +7,7 @@ package tutorial_5
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
 
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 
 //#query-full
 //#query-outline
@@ -30,7 +31,7 @@ class DeviceGroupQuery(
   timeout:         FiniteDuration
 ) extends Actor with ActorLogging {
   import DeviceGroupQuery._
-  import scala.concurrent.ExecutionContext
+
   private implicit val ec: ExecutionContext = context.dispatcher
   val queryTimeoutTimer = context.system.scheduler.scheduleOnce(timeout, self, CollectionTimeout)
 

@@ -12,7 +12,7 @@ import scala.util.Failure
 import scala.util.control.NonFatal
 import akka.persistence.AtomicWrite
 import com.typesafe.config.Config
-import scala.concurrent.Future
+import scala.concurrent.{ Future, ExecutionContext }
 
 /**
  * A LevelDB store that can be shared by multiple actor systems. The shared store must be
@@ -21,7 +21,6 @@ import scala.concurrent.Future
  */
 class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
   import AsyncWriteTarget._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   def this() = this(LeveldbStore.emptyConfig)

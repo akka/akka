@@ -7,6 +7,7 @@ package akka.cluster.pubsub
 import scala.collection.immutable
 import scala.collection.immutable.Set
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import java.util.concurrent.ThreadLocalRandom
 import java.net.URLEncoder
 import java.net.URLDecoder
@@ -306,7 +307,6 @@ object DistributedPubSubMediator {
     def mkKey(path: ActorPath): String = path.toStringWithoutAddress
 
     trait TopicLike extends Actor {
-      import scala.concurrent.ExecutionContext
       private implicit val ec: ExecutionContext = context.dispatcher
       val pruneInterval: FiniteDuration = emptyTimeToLive / 2
       val pruneTask = context.system.scheduler.schedule(pruneInterval, pruneInterval, self, Prune)
@@ -525,7 +525,6 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
   val removedTimeToLiveMillis = removedTimeToLive.toMillis
 
   //Start periodic gossip to random nodes in cluster
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
   val gossipTask = context.system.scheduler.schedule(gossipInterval, gossipInterval, self, GossipTick)
   val pruneInterval: FiniteDuration = removedTimeToLive / 2

@@ -5,6 +5,7 @@
 package docs.ddata
 
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import akka.actor.Actor
 import akka.cluster.Cluster
 import akka.cluster.ddata._
@@ -52,7 +53,6 @@ object DistributedDataDocSpec {
   import akka.cluster.ddata.DistributedData
   import akka.cluster.ddata.ORSet
   import akka.cluster.ddata.ORSetKey
-  import akka.cluster.ddata.Replicator
   import akka.cluster.ddata.Replicator._
 
   object DataBot {
@@ -65,7 +65,6 @@ object DistributedDataDocSpec {
     val replicator = DistributedData(context.system).replicator
     implicit val node = Cluster(context.system)
 
-    import scala.concurrent.ExecutionContext
     private implicit val ec: ExecutionContext = context.dispatcher
     val tickTask = context.system.scheduler.schedule(5.seconds, 5.seconds, self, Tick)
 

@@ -5,19 +5,13 @@
 package akka.cluster.ddata
 
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import java.util.concurrent.ThreadLocalRandom
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.cluster.Cluster
-import akka.cluster.ddata.Replicator.Changed
-import akka.cluster.ddata.Replicator.GetKeyIds
-import akka.cluster.ddata.Replicator.GetKeyIdsResult
-import akka.cluster.ddata.Replicator.Subscribe
-import akka.cluster.ddata.Replicator.Update
-import akka.cluster.ddata.Replicator.UpdateResponse
-import akka.cluster.ddata.Replicator.WriteLocal
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -78,7 +72,6 @@ class LotsOfDataBot extends Actor with ActorLogging {
   val replicator = DistributedData(context.system).replicator
   implicit val cluster = Cluster(context.system)
 
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
   val isPassive = context.system.settings.config.getBoolean("passive")
   var tickTask =

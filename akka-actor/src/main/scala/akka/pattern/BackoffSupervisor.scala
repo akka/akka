@@ -19,6 +19,8 @@ import akka.actor.SupervisorStrategy
 import akka.util.JavaDurationConverters._
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.ExecutionContext
+
 import scala.util.Try
 
 object BackoffSupervisor {
@@ -238,7 +240,6 @@ final class BackoffSupervisor(
   extends Actor with HandleBackoff {
 
   import BackoffSupervisor._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   // to keep binary compatibility with 2.4.1
@@ -294,7 +295,6 @@ private[akka] trait HandleBackoff { this: Actor ⇒
   var restartCount = 0
 
   import BackoffSupervisor._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   override def preStart(): Unit = startChild()

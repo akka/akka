@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 import akka.testkit._
 import akka.remote.{ RARP, EndpointException }
 import akka.remote.transport.FailureInjectorTransportAdapter.{ One, Drop }
-import scala.concurrent.Await
+import scala.concurrent.{ Await, ExecutionContext }
 
 object AkkaProtocolStressTest {
   val configA: Config = ConfigFactory parseString ("""
@@ -44,7 +44,6 @@ object AkkaProtocolStressTest {
   object ResendFinal
 
   class SequenceVerifier(remote: ActorRef, controller: ActorRef) extends Actor {
-    import scala.concurrent.ExecutionContext
     private implicit val ec: ExecutionContext = context.dispatcher
 
     val limit = 100000

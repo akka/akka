@@ -5,6 +5,7 @@
 package akka.cluster
 
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext
 
 import akka.actor._
 import akka.cluster.ClusterEvent.CurrentClusterState
@@ -117,7 +118,6 @@ private[cluster] class ClusterRemoteWatcher(
         // is triggered earlier.
         pendingDelayedQuarantine += m.uniqueAddress
 
-        import scala.concurrent.ExecutionContext
         implicit val ec: ExecutionContext = context.dispatcher
         context.system.scheduler.scheduleOnce(cluster.settings.QuarantineRemovedNodeAfter, self, DelayedQuarantine(m, previousStatus))
       }

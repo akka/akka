@@ -21,6 +21,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
 /**
@@ -353,7 +354,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   private def clusterCore(address: Address): ActorSelection =
     context.actorSelection(RootActorPath(address) / "system" / "cluster" / "core" / "daemon")
 
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   // start periodic gossip to random nodes in cluster
@@ -1389,7 +1389,6 @@ private[cluster] final class FirstSeedNodeProcess(seedNodes: immutable.IndexedSe
   var remainingSeedNodes = seedNodes.toSet - selfAddress
 
   // retry until one ack, or all nack, or timeout
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
   val retryTask = cluster.scheduler.schedule(1.second, 1.second, self, JoinSeedNode)
   self ! JoinSeedNode

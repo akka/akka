@@ -4,7 +4,7 @@
 
 package akka.pattern
 
-import scala.concurrent.Promise
+import scala.concurrent.{ Promise, ExecutionContext }
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 import akka.actor.Actor
@@ -21,7 +21,6 @@ object CircuitBreakerStressSpec {
   case class Result(doneCount: Int, timeoutCount: Int, failCount: Int, circCount: Int)
 
   class StressActor(breaker: CircuitBreaker) extends Actor with ActorLogging with PipeToSupport {
-    import scala.concurrent.ExecutionContext
     private implicit val ec: ExecutionContext = context.dispatcher
 
     private var doneCount = 0

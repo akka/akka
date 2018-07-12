@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{ Future, Promise, ExecutionContext }
 import scala.concurrent.duration._
 import scala.math.min
 import scala.util.{ Failure, Success }
@@ -211,7 +211,6 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport)
   extends ActorTransportAdapterManager with ActorLogging {
 
   import ThrottlerManager._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   private var throttlingModes = Map[Address, (ThrottleMode, Direction)]()
@@ -371,7 +370,6 @@ private[transport] class ThrottledAssociation(
   extends Actor with LoggingFSM[ThrottledAssociation.ThrottlerState, ThrottledAssociation.ThrottlerData]
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import ThrottledAssociation._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   var inboundThrottleMode: ThrottleMode = _

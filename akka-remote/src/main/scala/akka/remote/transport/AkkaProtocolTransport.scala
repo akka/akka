@@ -23,7 +23,7 @@ import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{ Future, Promise, ExecutionContext }
 import scala.util.control.NonFatal
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.{ LogMarker, Logging }
@@ -296,7 +296,6 @@ private[transport] class ProtocolStateActor(
   private val markerLog = Logging.withMarker(this)
 
   import ProtocolStateActor._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   // Outbound case

@@ -14,6 +14,7 @@ import akka.actor.RootActorPath
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberExited
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import scala.language.postfixOps
 import com.typesafe.config.Config
 import akka.actor.NoSerializationVerificationNeeded
@@ -200,7 +201,6 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
    * Discard old singleton ActorRef and send a periodic message to self to identify the singleton.
    */
   def identifySingleton(): Unit = {
-    import scala.concurrent.ExecutionContext
     implicit val ec: ExecutionContext = context.dispatcher
     log.debug("Creating singleton identification timer...")
     identifyCounter += 1

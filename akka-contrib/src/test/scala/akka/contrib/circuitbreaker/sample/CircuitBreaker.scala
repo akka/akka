@@ -10,6 +10,7 @@ import akka.contrib.circuitbreaker.sample.CircuitBreaker.AskFor
 import akka.util.Timeout
 
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import scala.util.{ Failure, Success, Random }
 
 //#simple-service
@@ -29,7 +30,6 @@ class SimpleService extends Actor with ActorLogging {
 
   var messageCount = 0
 
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   context.system.scheduler.schedule(1.second, 1.second, self, ResetCount)
@@ -120,7 +120,6 @@ class CircuitBreakerAsk(potentiallyFailingService: ActorRef) extends Actor with 
         .props(potentiallyFailingService),
       "serviceCircuitBreaker")
 
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   override def receive: Receive = {
@@ -157,7 +156,6 @@ class CircuitBreakerAskWithFailure(potentiallyFailingService: ActorRef) extends 
         .props(target = potentiallyFailingService),
       "serviceCircuitBreaker")
 
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   override def receive: Receive = {
@@ -189,7 +187,6 @@ class CircuitBreakerAskWithCircuitBreaker(potentiallyFailingService: ActorRef) e
         .props(target = potentiallyFailingService),
       "serviceCircuitBreaker")
 
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   override def receive: Receive = {

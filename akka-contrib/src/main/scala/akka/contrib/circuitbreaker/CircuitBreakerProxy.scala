@@ -11,6 +11,7 @@ import akka.pattern._
 import akka.util.Timeout
 
 import scala.util.{ Failure, Success }
+import scala.concurrent.ExecutionContext
 
 /**
  * This is an Actor which implements the circuit breaker pattern,
@@ -216,7 +217,6 @@ final class CircuitBreakerProxy(
   }
 
   def forwardRequest(message: Any, currentSender: ActorRef, state: CircuitBreakerStateData, log: LoggingAdapter) = {
-    import scala.concurrent.ExecutionContext
     implicit val ec: ExecutionContext = context.dispatcher
 
     target.ask(message)(callTimeout).onComplete {

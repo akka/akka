@@ -8,7 +8,7 @@ import scala.collection.immutable
 import scala.collection.JavaConverters._
 import akka.persistence._
 import akka.persistence.journal.{ AsyncWriteJournal ⇒ SAsyncWriteJournal }
-import scala.concurrent.Future
+import scala.concurrent.{ Future, ExecutionContext }
 import scala.util.Try
 import scala.util.Failure
 
@@ -17,7 +17,6 @@ import scala.util.Failure
  */
 abstract class AsyncWriteJournal extends AsyncRecovery with SAsyncWriteJournal with AsyncWritePlugin {
   import SAsyncWriteJournal.successUnit
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   final def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =

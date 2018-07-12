@@ -8,13 +8,12 @@ import akka.persistence._
 import akka.persistence.snapshot.{ SnapshotStore ⇒ SSnapshotStore }
 import akka.japi.Util._
 
-import scala.concurrent.Future
+import scala.concurrent.{ Future, ExecutionContext }
 
 /**
  * Java API: abstract snapshot store.
  */
 abstract class SnapshotStore extends SSnapshotStore with SnapshotStorePlugin {
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   override final def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] =

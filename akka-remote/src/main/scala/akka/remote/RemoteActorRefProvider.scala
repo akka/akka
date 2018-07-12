@@ -14,7 +14,7 @@ import scala.util.control.NonFatal
 
 import akka.actor.SystemGuardian.{ RegisterTerminationHook, TerminationHook, TerminationHookDone }
 import scala.util.control.Exception.Catcher
-import scala.concurrent.Future
+import scala.concurrent.{ Future, ExecutionContext }
 
 import akka.ConfigurationException
 import akka.annotation.InternalApi
@@ -46,7 +46,6 @@ private[akka] object RemoteActorRefProvider {
 
   private class RemotingTerminator(systemGuardian: ActorRef) extends Actor with FSM[TerminatorState, Option[Internals]]
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-    import scala.concurrent.ExecutionContext
     private implicit val ec: ExecutionContext = context.dispatcher
 
     startWith(Uninitialized, None)

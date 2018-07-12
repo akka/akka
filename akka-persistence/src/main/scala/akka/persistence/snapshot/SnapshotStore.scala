@@ -6,7 +6,7 @@
 package akka.persistence.snapshot
 
 import scala.concurrent.duration._
-import scala.concurrent.Future
+import scala.concurrent.{ Future, ExecutionContext }
 import akka.actor._
 import akka.pattern.pipe
 import akka.persistence._
@@ -17,7 +17,6 @@ import akka.pattern.CircuitBreaker
  */
 trait SnapshotStore extends Actor with ActorLogging {
   import SnapshotProtocol._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   private val extension = Persistence(context.system)

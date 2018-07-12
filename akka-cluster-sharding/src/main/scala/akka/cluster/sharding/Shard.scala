@@ -12,11 +12,10 @@ import akka.actor.ActorSystem
 import akka.actor.Deploy
 import akka.actor.Props
 import akka.actor.Terminated
-import akka.cluster.sharding.Shard.ShardCommand
 import akka.actor.Actor
 
 import akka.util.MessageBufferMap
-import scala.concurrent.Future
+import scala.concurrent.{ Future, ExecutionContext }
 import scala.concurrent.duration.FiniteDuration
 import akka.cluster.Cluster
 import akka.cluster.ddata.ORSet
@@ -368,7 +367,6 @@ private[akka] class RememberEntityStarter(
   settings:  ClusterShardingSettings,
   requestor: ActorRef) extends Actor with ActorLogging {
 
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
   import RememberEntityStarter.Tick
 
@@ -425,7 +423,6 @@ private[akka] trait RememberingShard { selfType: Shard ⇒
 
   protected def restartRememberedEntities(): Unit = {
     rememberedEntitiesRecoveryStrategy.recoverEntities(state.entities).foreach { scheduledRecovery ⇒
-      import scala.concurrent.ExecutionContext
       implicit val ec: ExecutionContext = context.dispatcher
       scheduledRecovery.filter(_.nonEmpty).map(RestartEntities).pipeTo(self)
     }
@@ -445,7 +442,6 @@ private[akka] trait RememberingShard { selfType: Shard ⇒
       if (!passivating.contains(ref)) {
         log.debug("Entity [{}] stopped without passivating, will restart after backoff", id)
 
-        import scala.concurrent.ExecutionContext
         implicit val ec: ExecutionContext = context.dispatcher
 
         context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(id))

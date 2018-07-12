@@ -12,6 +12,7 @@ import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
 
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext
 
 object MyEventsByTagPublisher {
   def props(tag: String, offset: Long, refreshInterval: FiniteDuration): Props =
@@ -30,7 +31,6 @@ class MyEventsByTagPublisher(tag: String, offset: Long, refreshInterval: FiniteD
   private var currentOffset = offset
   var buf = Vector.empty[EventEnvelope]
 
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
   val continueTask = context.system.scheduler.schedule(
     refreshInterval, refreshInterval, self, Continue)

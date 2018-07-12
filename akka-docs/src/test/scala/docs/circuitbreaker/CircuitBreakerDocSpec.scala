@@ -10,7 +10,7 @@ import akka.pattern.CircuitBreaker
 import akka.pattern.pipe
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 
-import scala.concurrent.Future
+import scala.concurrent.{ Future, ExecutionContext }
 import scala.util.{ Failure, Success, Try }
 
 //#imports1
@@ -19,7 +19,6 @@ class CircuitBreakerDocSpec {}
 
 //#circuit-breaker-initialization
 class DangerousActor extends Actor with ActorLogging {
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   val breaker =
@@ -47,7 +46,6 @@ class DangerousActor extends Actor with ActorLogging {
 }
 
 class TellPatternActor(recipient: ActorRef) extends Actor with ActorLogging {
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   val breaker =
@@ -81,7 +79,6 @@ class TellPatternActor(recipient: ActorRef) extends Actor with ActorLogging {
 }
 
 class EvenNoFailureActor extends Actor {
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
   //#even-no-as-failure
   def luckyNumber(): Future[Int] = {

@@ -13,7 +13,7 @@ import akka.testkit._
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, Future, Promise, ExecutionContext }
 import scala.util.Try
 
 object SteppingInmemJournal {
@@ -65,7 +65,6 @@ object SteppingInmemJournal {
 final class SteppingInmemJournal extends InmemJournal {
 
   import SteppingInmemJournal._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   val instanceId = context.system.settings.config.getString("akka.persistence.journal.stepping-inmem.instance-id")

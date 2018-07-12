@@ -17,7 +17,7 @@ import com.typesafe.config._
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{ Await, Future, ExecutionContext }
 import scala.util.control.NoStackTrace
 
 object StreamRefsSpec {
@@ -29,7 +29,6 @@ object StreamRefsSpec {
   }
 
   class DataSourceActor(probe: ActorRef) extends Actor with ActorLogging {
-    import scala.concurrent.ExecutionContext
     private implicit val ec: ExecutionContext = context.dispatcher
     implicit val mat = ActorMaterializer()
 

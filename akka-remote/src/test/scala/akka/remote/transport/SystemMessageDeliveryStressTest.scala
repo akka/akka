@@ -5,17 +5,13 @@
 package akka.remote.transport
 
 import akka.remote.transport.ThrottlerTransportAdapter._
-import akka.testkit.TimingTest
-import akka.testkit.DefaultTimeout
-import akka.testkit.ImplicitSender
-import akka.testkit.{ TimingTest, DefaultTimeout, ImplicitSender, AkkaSpec }
+import akka.testkit.{ TimingTest, DefaultTimeout, ImplicitSender }
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor._
 import scala.concurrent.duration._
 import akka.testkit._
 import akka.remote.{ QuarantinedEvent, EndpointException, RARP }
-import akka.remote.transport.FailureInjectorTransportAdapter.{ One, Drop }
-import scala.concurrent.Await
+import scala.concurrent.{ Await, ExecutionContext }
 import akka.actor.ActorRef
 import akka.actor.Actor
 import akka.testkit.AkkaSpec
@@ -78,7 +74,6 @@ object SystemMessageDeliveryStressTest {
   }
 
   class SystemMessageSender(val msgCount: Int, val burstSize: Int, val burstDelay: FiniteDuration, val target: ActorRef) extends Actor {
-    import scala.concurrent.ExecutionContext
     private implicit val ec: ExecutionContext = context.dispatcher
 
     var counter = 0

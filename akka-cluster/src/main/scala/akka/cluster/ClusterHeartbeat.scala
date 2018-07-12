@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 
 import akka.actor.{ Actor, ActorLogging, ActorPath, ActorSelection, Address, DeadLetterSuppression, RootActorPath }
 import akka.cluster.ClusterEvent._
@@ -81,7 +82,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
   val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
   import cluster.{ selfAddress, selfUniqueAddress, scheduler }
   import cluster.settings._
-  import scala.concurrent.ExecutionContext
+
   private implicit val ec: ExecutionContext = context.dispatcher
 
   val filterInternalClusterMembers: Member ⇒ Boolean =

@@ -8,6 +8,7 @@ import akka.ConfigurationException
 import akka.actor.{ Actor, ActorSystem, Address, Cancellable, Props, Scheduler }
 
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext
 import akka.cluster.ClusterEvent._
 
 import scala.concurrent.duration.Duration
@@ -100,7 +101,6 @@ private[cluster] abstract class AutoDownBase(autoDownUnreachableAfter: FiniteDur
 
   def scheduler: Scheduler
 
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   val skipMemberStatus = MembershipState.convergenceSkipUnreachableWithMemberStatus

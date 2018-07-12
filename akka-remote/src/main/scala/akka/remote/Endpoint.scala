@@ -29,7 +29,7 @@ import scala.concurrent.duration.Deadline
 import scala.util.control.NonFatal
 import java.util.concurrent.locks.LockSupport
 
-import scala.concurrent.Future
+import scala.concurrent.{ Future, ExecutionContext }
 import akka.util.OptionVal
 import akka.util.OptionVal
 
@@ -214,7 +214,6 @@ private[remote] class ReliableDeliverySupervisor(
   val codec:          AkkaPduCodec,
   val receiveBuffers: ConcurrentHashMap[Link, ResendState]) extends Actor with ActorLogging {
   import ReliableDeliverySupervisor._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   val autoResendTimer = context.system.scheduler.schedule(
@@ -540,7 +539,6 @@ private[remote] class EndpointWriter(
   extends EndpointActor(localAddress, remoteAddress, transport, settings, codec) {
 
   import EndpointWriter._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   private val markLog = Logging.withMarker(this)

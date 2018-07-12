@@ -10,6 +10,7 @@ import org.scalatest.Matchers
 import scala.annotation.tailrec
 import scala.collection._
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import scala.math.BigDecimal.int2bigDecimal
 import akka.actor._
 import org.scalatest.BeforeAndAfterAll
@@ -151,7 +152,6 @@ class ChainingSample extends Actor with Aggregator {
 
   class MultipleResponseHandler(originalSender: ActorRef, propName: String) {
     import collection.mutable.ArrayBuffer
-    import scala.concurrent.ExecutionContext
     private implicit val ec: ExecutionContext = context.dispatcher
 
     val values = ArrayBuffer.empty[String]

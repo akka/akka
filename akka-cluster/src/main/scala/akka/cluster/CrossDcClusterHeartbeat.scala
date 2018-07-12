@@ -12,6 +12,7 @@ import akka.remote.FailureDetectorRegistry
 import akka.util.ConstantFun
 
 import scala.collection.{ SortedSet, breakOut }
+import scala.concurrent.ExecutionContext
 
 /**
  * INTERNAL API
@@ -38,7 +39,7 @@ private[cluster] final class CrossDcHeartbeatSender extends Actor with ActorLogg
   val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
   import cluster.settings._
   import cluster.{ scheduler, selfAddress, selfDataCenter, selfUniqueAddress }
-  import scala.concurrent.ExecutionContext
+
   private implicit val ec: ExecutionContext = context.dispatcher
 
   // For inspecting if in active state; allows avoiding "becoming active" when already active

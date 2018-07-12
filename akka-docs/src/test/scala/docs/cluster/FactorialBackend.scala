@@ -5,7 +5,7 @@
 package scala.docs.cluster
 
 import scala.annotation.tailrec
-import scala.concurrent.Future
+import scala.concurrent.{ Future, ExecutionContext }
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -15,8 +15,6 @@ import akka.pattern.pipe
 
 //#backend
 class FactorialBackend extends Actor with ActorLogging {
-
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   def receive = {

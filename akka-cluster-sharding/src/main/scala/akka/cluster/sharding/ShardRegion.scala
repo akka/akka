@@ -17,7 +17,7 @@ import akka.cluster.MemberStatus
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.Future
+import scala.concurrent.{ Future, ExecutionContext }
 import scala.reflect.ClassTag
 import scala.concurrent.Promise
 import akka.Done
@@ -395,7 +395,6 @@ private[akka] class ShardRegion(
   var handingOff = Set.empty[ActorRef]
   var gracefulShutdownInProgress = false
 
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   val retryTask = context.system.scheduler.schedule(retryInterval, retryInterval, self, Retry)

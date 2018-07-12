@@ -9,6 +9,7 @@ import scala.collection.immutable
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContext
 import java.util.concurrent.ThreadLocalRandom
 import scala.util.Failure
 import scala.util.Success
@@ -1061,7 +1062,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     s"This cluster member [${selfAddress}] doesn't have all the roles [${roles.mkString(", ")}]")
 
   //Start periodic gossip to random nodes in cluster
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
   val gossipTask = context.system.scheduler.schedule(gossipInterval, gossipInterval, self, GossipTick)
   val notifyTask = context.system.scheduler.schedule(notifySubscribersInterval, notifySubscribersInterval, self, FlushChanges)
@@ -1942,7 +1942,6 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def unreachable: Set[Address]
   def reachableNodes: Set[Address] = nodes diff unreachable
 
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
   var sendToSecondarySchedule = context.system.scheduler.scheduleOnce(timeout / 5, self, SendToSecondary)
   var timeoutSchedule = context.system.scheduler.scheduleOnce(timeout, self, ReceiveTimeout)

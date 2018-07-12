@@ -10,7 +10,7 @@ import akka.persistence.journal._
 import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
 import akka.persistence.PersistentRepr
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import akka.persistence.JournalProtocol.RecoverySuccess
 import akka.persistence.JournalProtocol.ReplayMessagesFailure
 import akka.pattern.pipe
@@ -32,7 +32,6 @@ private[persistence] class LeveldbJournal(cfg: Config) extends AsyncWriteJournal
 
   override def receivePluginInternal: Receive = receiveCompactionInternal orElse {
     case r @ ReplayTaggedMessages(fromSequenceNr, toSequenceNr, max, tag, replyTo) ⇒
-      import scala.concurrent.ExecutionContext
       implicit val ec: ExecutionContext = context.dispatcher
 
       val readHighestSequenceNrFrom = math.max(0L, fromSequenceNr - 1)

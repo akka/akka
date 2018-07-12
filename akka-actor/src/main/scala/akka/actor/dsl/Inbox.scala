@@ -8,6 +8,7 @@ import scala.concurrent.Await
 import akka.actor.ActorLogging
 import scala.collection.immutable.TreeSet
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import akka.actor.Cancellable
 import akka.actor.Actor
 import scala.collection.mutable.Queue
@@ -137,7 +138,6 @@ trait Inbox { this: ActorDSL.type ⇒
       } else {
         val next = clientsByTimeout.head.deadline
 
-        import scala.concurrent.ExecutionContext
         implicit val ec: ExecutionContext = context.dispatcher
 
         if (currentDeadline.isEmpty) {

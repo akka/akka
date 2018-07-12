@@ -7,6 +7,7 @@ package akka.cluster.client
 import java.net.URLEncoder
 import scala.collection.immutable
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
@@ -342,7 +343,6 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
 
   var subscribers = Vector.empty[ActorRef]
 
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
   val heartbeatTask = context.system.scheduler.schedule(
     heartbeatInterval, heartbeatInterval, self, HeartbeatTick)

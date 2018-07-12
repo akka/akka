@@ -18,12 +18,12 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
     //#offer-source
     import akka.stream.SourceRef
     import akka.pattern.pipe
+    import scala.concurrent.ExecutionContext
 
     case class RequestLogs(streamId: Int)
     case class LogsOffer(streamId: Int, sourceRef: SourceRef[String])
 
     class DataSource extends Actor {
-      import scala.concurrent.ExecutionContext
       private implicit val ec: ExecutionContext = context.dispatcher
       implicit val mat = ActorMaterializer()(context)
 
@@ -64,14 +64,13 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
   "offer a sink ref" in compileOnlySpec {
     //#offer-sink
     import akka.pattern.pipe
+    import scala.concurrent.ExecutionContext
     import akka.stream.SinkRef
 
     case class PrepareUpload(id: String)
     case class MeasurementsSinkReady(id: String, sinkRef: SinkRef[String])
 
     class DataReceiver extends Actor {
-
-      import scala.concurrent.ExecutionContext
       private implicit val ec: ExecutionContext = context.dispatcher
       implicit val mat = ActorMaterializer()(context)
 

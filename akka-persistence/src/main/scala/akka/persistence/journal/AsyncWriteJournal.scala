@@ -11,7 +11,7 @@ import akka.pattern.pipe
 import akka.persistence._
 import akka.util.Helpers.toRootLowerCase
 import scala.collection.immutable
-import scala.concurrent.Future
+import scala.concurrent.{ Future, ExecutionContext }
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
 import akka.pattern.CircuitBreaker
@@ -22,7 +22,6 @@ import akka.pattern.CircuitBreaker
 trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   import AsyncWriteJournal._
   import JournalProtocol._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   private val extension = Persistence(context.system)

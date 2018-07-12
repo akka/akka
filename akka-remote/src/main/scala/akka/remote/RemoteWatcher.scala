@@ -11,6 +11,7 @@ import akka.event.AddressTerminatedTopic
 import akka.remote.artery.ArteryMessage
 import scala.collection.mutable
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 
 import akka.remote.artery.ArteryTransport
 
@@ -92,7 +93,6 @@ private[akka] class RemoteWatcher(
   extends Actor with ActorLogging with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import RemoteWatcher._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   def scheduler = context.system.scheduler

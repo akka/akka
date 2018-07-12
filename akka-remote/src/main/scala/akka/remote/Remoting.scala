@@ -18,7 +18,7 @@ import java.net.URLEncoder
 import java.util.concurrent.TimeoutException
 import scala.collection.immutable.{ Seq, HashMap }
 import scala.concurrent.duration._
-import scala.concurrent.{ Promise, Await, Future }
+import scala.concurrent.{ Promise, Await, Future, ExecutionContext }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success }
 import akka.remote.transport.AkkaPduCodec.Message
@@ -444,7 +444,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   import EndpointManager._
-  import scala.concurrent.ExecutionContext
   private implicit val ec: ExecutionContext = context.dispatcher
 
   val settings = new RemoteSettings(conf)
