@@ -14,3 +14,7 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.SimpleDnsCache#Ex
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.SimpleDnsCache#ExpiryEntry.this")
 ProblemFilters.exclude[MissingClassProblem]("akka.io.SimpleDnsCache$ExpiryEntryOrdering$")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.SimpleDnsCache#Cache.get")
+
+# NPE when using import context.dispatcher #25040
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.ActorCell.setActorFields")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.clearActorFields")

@@ -694,15 +694,18 @@ private[akka] class ActorCell(
       throw new IllegalArgumentException("ActorCell has no props field")
   }
 
-  final protected def clearActorFields(actorInstance: Actor, recreate: Boolean): Unit = {
-    setActorFields(actorInstance, context = null, self = if (recreate) self else system.deadLetters)
+  final protected def clearActorFields(actorInstance: Actor, recreate: Boolean, context: Option[ActorContext] = Some(null)): Unit = {
+    setActorFields(actorInstance, context = context, self = if (recreate) self else system.deadLetters)
     currentMessage = null
     behaviorStack = emptyBehaviorStack
   }
 
-  final protected def setActorFields(actorInstance: Actor, context: ActorContext, self: ActorRef): Unit =
+  final protected def clearActorFieldsOnTerminate(actorInstance: Actor): Unit =
+    clearActorFields(actorInstance, recreate = false, context = None)
+
+  final protected def setActorFields(actorInstance: Actor, context: Option[ActorContext], self: ActorRef): Unit =
     if (actorInstance ne null) {
-      if (!Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "context", context)
+      if ((context.isDefined && !Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "context", context.get))
         || !Reflect.lookupAndSetField(actorInstance.getClass, actorInstance, "self", self))
         throw IllegalActorStateException(actorInstance.getClass + " is not an Actor since it have not mixed in the 'Actor' trait")
     }
