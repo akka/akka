@@ -83,16 +83,26 @@ object AkkaBuild {
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
+  final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint")
+
+  // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
+  final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
+
   lazy val defaultSettings = resolverSettings ++
     TestExtras.Filter.settings ++
     Protobuf.settings ++ Seq[Setting[_]](
       // compile options
-      scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
+      scalacOptions in Compile ++= DefaultScalacOptions,
+      // Makes sure that, even when compiling with a jdk version greater than 8, the resulting jar will not refer to
+      // methods not found in jdk8. To test whether this has the desired effect, compile akka-remote and check the
+      // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
+      // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
+      scalacOptions in Compile ++= (if (scalaBinaryVersion.value == "2.11" || System.getProperty("java.version").startsWith("1.")) Seq("-target:jvm-1.8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar") else Seq("-release", "8")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-      // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
-      javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked", "-XDignore.symbol.file"),
+      javacOptions in compile ++= DefaultJavacOptions ++ Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar"),
+      javacOptions in test ++= DefaultJavacOptions ++ Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar"),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
 
@@ -187,7 +197,8 @@ object AkkaBuild {
       // show full stack traces and test case durations
       testOptions in Test += Tests.Argument("-oDF")) ++
       mavenLocalResolverSettings ++
-      docLintingSettings
+      docLintingSettings ++
+      CrossJava.crossJavaSettings
 
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),

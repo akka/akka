@@ -12,7 +12,6 @@ import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl,
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.japi.function.{ Procedure2, Function2 ⇒ JapiFunction2 }
 import akka.japi.pf.PFBuilder
-import akka.util.ConstantFun
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 /**
@@ -245,16 +244,19 @@ object Behaviors {
    *
    * Example:
    * {{{
-   * Behavior&lt;String> s = immutable((ctx, msg) -> {
+   * Behavior<String> s = Behaviors.receive((ctx, msg) -> {
    *     System.out.println(msg);
-   *     return same();
+   *     return Behaviors.same();
    *   });
-   * Behavior&lt;Number> n = widened(s, pf -> pf.
+   * Behavior<Number> n = Behaviors.widened(s, pf -> pf.
    *         match(BigInteger.class, i -> "BigInteger(" + i + ")").
    *         match(BigDecimal.class, d -> "BigDecimal(" + d + ")")
    *         // drop all other kinds of Number
    *     );
    * }}}
+   *
+   * Scheduled messages via [[TimerScheduler]] can currently not be used
+   * together with `widen`, see issue #25318.
    *
    * @param behavior
    *          the behavior that will receive the selected messages

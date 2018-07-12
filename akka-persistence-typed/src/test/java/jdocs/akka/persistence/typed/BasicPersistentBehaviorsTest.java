@@ -5,12 +5,13 @@
 package jdocs.akka.persistence.typed;
 
 import akka.actor.typed.Behavior;
+import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.javadsl.CommandHandler;
-import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.PersistentBehavior;
+import java.time.Duration;
 
 import java.util.Collections;
 import java.util.Set;
@@ -22,11 +23,12 @@ public class BasicPersistentBehaviorsTest {
   public interface Event {}
   public static class State {}
 
+  //#supervision
   public static class MyPersistentBehavior extends PersistentBehavior<Command, Event, State> {
-
     public MyPersistentBehavior(String persistenceId) {
-      super(persistenceId);
+      super(persistenceId, SupervisorStrategy.restartWithBackoff(Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2));
     }
+    //#supervision
 
     @Override
     public State emptyState() {
@@ -35,7 +37,7 @@ public class BasicPersistentBehaviorsTest {
 
     @Override
     public CommandHandler<Command, Event, State> commandHandler() {
-      return (ctx, state, command) -> {
+      return (state, command) -> {
         throw new RuntimeException("TODO: process the command & return an Effect");
       };
     }
@@ -49,7 +51,7 @@ public class BasicPersistentBehaviorsTest {
 
     //#recovery
     @Override
-    public void onRecoveryCompleted(ActorContext<Command> ctx, State state) {
+    public void onRecoveryCompleted(State state) {
       throw new RuntimeException("TODO: add some end-of-recovery side-effect here");
     }
     //#recovery
@@ -62,7 +64,7 @@ public class BasicPersistentBehaviorsTest {
     //#tagging
   }
 
-  static Behavior<Command> persistentBehavior = new MyPersistentBehavior("pid");
+  static PersistentBehavior<Command, Event, State> persistentBehavior = new MyPersistentBehavior("pid");
   //#structure
 
   //#wrapPersistentBehavior

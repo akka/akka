@@ -10,6 +10,7 @@ import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.typed.{ MultiDcClusterActors, MultiNodeTypedClusterSpec }
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.cluster.MultiNodeClusterSpec
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
@@ -29,7 +30,7 @@ object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
           retry-interval = 0.2s
         }
       """).withFallback(
-        MultiNodeTypedClusterSpec.clusterConfig))
+        MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString(
     """

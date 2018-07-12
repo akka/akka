@@ -4,22 +4,32 @@
 
 package akka.persistence.typed.javadsl
 
+import java.util.function.Predicate
 import java.util.{ Collections, Optional }
 
 import akka.actor.typed
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, SupervisorStrategy }
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.persistence.SnapshotMetadata
 import akka.persistence.typed.{ EventAdapter, _ }
 import akka.persistence.typed.internal._
-
 import scala.util.{ Failure, Success }
+
+import akka.japi.pf.FI
 
 /** Java API */
 @ApiMayChange
-abstract class PersistentBehavior[Command, Event, State >: Null](val persistenceId: String) extends DeferredBehavior[Command] {
+abstract class PersistentBehavior[Command, Event, State >: Null] private (val persistenceId: String, supervisorStrategy: Option[BackoffSupervisorStrategy]) extends DeferredBehavior[Command] {
+
+  def this(persistenceId: String) = {
+    this(persistenceId, None)
+  }
+
+  def this(persistenceId: String, backoffSupervisorStrategy: BackoffSupervisorStrategy) = {
+    this(persistenceId, Some(backoffSupervisorStrategy))
+  }
 
   /**
    * Factory of effects.
@@ -40,7 +50,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
    * Implement by handling incoming commands and return an `Effect()` to persist or signal other effects
    * of the command handling such as stopping the behavior or others.
    *
-   * This method is only invoked when the actor is running (i.e. not replaying).
+   * The command handlers are only invoked when the actor is running (i.e. not replaying).
    * While the actor is persisting events, the incoming messages are stashed and only
    * delivered to the handler once persisting them has completed.
    */
@@ -49,7 +59,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
   /**
    * Implement by applying the event to the current state in order to return a new state.
    *
-   * This method invoked during recovery as well as running operation of this behavior,
+   * The event handlers are invoked during recovery as well as running operation of this behavior,
    * in order to keep updating the state state.
    *
    * For that reason it is strongly discouraged to perform side-effects in this handler;
@@ -58,43 +68,38 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
   protected def eventHandler(): EventHandler[Event, State]
 
   /**
-   * @return A new, mutable, by state command handler builder
+   * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
+   * @return A new, mutable, command handler builder
    */
-  protected final def commandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] =
-    new CommandHandlerBuilder[Command, Event, State]()
+  protected final def commandHandlerBuilder[S <: State](stateClass: Class[S]): CommandHandlerBuilder[Command, Event, S, State] =
+    CommandHandlerBuilder.builder[Command, Event, S, State](stateClass)
 
   /**
-   * @return A new, mutable, by state command handler builder
+   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
+   *                       *                       useful for example when state type is an Optional
+   * @return A new, mutable, command handler builder
    */
-  protected final def byStateCommandHandlerBuilder(): ByStateCommandHandlerBuilder[Command, Event, State] =
-    new ByStateCommandHandlerBuilder[Command, Event, State]()
+  protected final def commandHandlerBuilder(statePredicate: Predicate[State]): CommandHandlerBuilder[Command, Event, State, State] =
+    CommandHandlerBuilder.builder[Command, Event, State](statePredicate)
 
   /**
    * @return A new, mutable, event handler builder
    */
   protected final def eventHandlerBuilder(): EventHandlerBuilder[Event, State] =
-    new EventHandlerBuilder[Event, State]()
+    EventHandlerBuilder.builder[Event, State]()
 
   /**
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(ctx: ActorContext[Command], state: State): Unit = {}
+  def onRecoveryCompleted(state: State): Unit = ()
 
   /**
    * Override to get notified when a snapshot is finished.
-   * The default implementation logs failures at error and success writes at
-   * debug.
    *
    * @param result None if successful otherwise contains the exception thrown when snapshotting
    */
-  def onSnapshot(ctx: ActorContext[Command], meta: SnapshotMetadata, result: Optional[Throwable]): Unit = {
-    if (result.isPresent) {
-      ctx.getLog.error(result.get(), "Save snapshot failed, snapshot metadata: [{}]", meta)
-    } else {
-      ctx.getLog.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
-    }
-  }
+  def onSnapshot(meta: SnapshotMetadata, result: Optional[Throwable]): Unit = ()
 
   /**
    * Override and define that snapshot should be saved every N events.
@@ -128,7 +133,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
   /**
    * INTERNAL API: DeferredBehavior init
    */
-  override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
+  @InternalApi override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
 
     val snapshotWhen: (State, Event, Long) ⇒ Boolean = { (state, event, seqNr) ⇒
       val n = snapshotEvery()
@@ -145,20 +150,32 @@ abstract class PersistentBehavior[Command, Event, State >: Null](val persistence
       else tags.asScala.toSet
     }
 
-    scaladsl.PersistentBehaviors.receive[Command, Event, State](
+    val behavior = scaladsl.PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
       emptyState,
-      (c, state, cmd) ⇒ commandHandler()(c.asJava, state, cmd).asInstanceOf[EffectImpl[Event, State]],
+      (c, state, cmd) ⇒ commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
       eventHandler()(_, _))
-      .onRecoveryCompleted((ctx, state) ⇒ onRecoveryCompleted(ctx.asJava, state))
+      .onRecoveryCompleted((ctx, state) ⇒ onRecoveryCompleted(state))
       .snapshotWhen(snapshotWhen)
       .withTagger(tagger)
       .onSnapshot((ctx, meta, result) ⇒ {
-        onSnapshot(ctx.asJava, meta, result match {
+        result match {
+          case Success(_) ⇒
+            ctx.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
+          case Failure(e) ⇒
+            ctx.log.error(e, "Save snapshot failed, snapshot metadata: [{}]", meta)
+        }
+
+        onSnapshot(meta, result match {
           case Success(_) ⇒ Optional.empty()
           case Failure(t) ⇒ Optional.of(t)
         })
       }).eventAdapter(eventAdapter())
+
+    if (supervisorStrategy.isDefined)
+      behavior.onPersistFailure(supervisorStrategy.get)
+    else
+      behavior
   }
 
 }

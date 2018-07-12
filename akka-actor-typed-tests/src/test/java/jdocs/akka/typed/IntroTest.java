@@ -10,6 +10,8 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Terminated;
+import akka.actor.typed.Props;
+import akka.actor.typed.DispatcherSelector;
 import akka.actor.typed.javadsl.Behaviors;
 
 //#imports
@@ -90,7 +92,7 @@ public class IntroTest {
     }
 
     public static final Behavior<Start> main =
-      Behaviors.setup( context -> {
+      Behaviors.setup(context -> {
         final ActorRef<HelloWorld.Greet> greeter =
             context.spawn(HelloWorld.greeter, "greeter");
 
@@ -103,6 +105,37 @@ public class IntroTest {
       });
   }
   //#hello-world-main
+
+  public abstract static class CustomDispatchersExample {
+    private CustomDispatchersExample() {
+    }
+
+    public static class Start {
+      public final String name;
+
+      public Start(String name) {
+        this.name = name;
+      }
+    }
+
+    //#hello-world-main-with-dispatchers
+    public static final Behavior<Start> main =
+      Behaviors.setup(context -> {
+        final String dispatcherPath = "akka.actor.default-blocking-io-dispatcher";
+
+        Props props = DispatcherSelector.fromConfig(dispatcherPath);
+        final ActorRef<HelloWorld.Greet> greeter =
+            context.spawn(HelloWorld.greeter, "greeter", props);
+
+        return Behaviors.receiveMessage(msg -> {
+          ActorRef<HelloWorld.Greeted> replyTo =
+              context.spawn(HelloWorldBot.bot(0, 3), msg.name);
+          greeter.tell(new HelloWorld.Greet(msg.name, replyTo));
+          return Behaviors.same();
+        });
+      });
+    //#hello-world-main-with-dispatchers
+  }
 
   public static void main(String[] args) throws Exception {
     //#hello-world

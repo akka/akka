@@ -5,6 +5,7 @@
 package akka.persistence.typed.scaladsl
 
 import akka.Done
+import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
@@ -148,5 +149,15 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * in types Journals understand but is of a different type than `Event`.
    */
   def eventAdapter(adapter: EventAdapter[Event, _]): PersistentBehavior[Command, Event, State]
+
+  /**
+   * Back off strategy for persist failures.
+   *
+   * Specifically BackOff to prevent resume being used. Resume is not allowed as
+   * it will be unknown if the event has been persisted.
+   *
+   * If not specified the actor will be stopped on failure.
+   */
+  def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): PersistentBehavior[Command, Event, State]
 }
 

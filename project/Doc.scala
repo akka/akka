@@ -28,6 +28,8 @@ object Scaladoc extends AutoPlugin {
   override lazy val projectSettings = {
     inTask(doc)(Seq(
       scalacOptions in Compile ++= scaladocOptions(version.value, (baseDirectory in ThisBuild).value),
+      // -release caused build failures when generating javadoc:
+      scalacOptions in Compile --= Seq("-release", "8"),
       autoAPIMappings := CliOptions.scaladocAutoAPI.get)) ++
       Seq(validateDiagrams in Compile := true) ++
       CliOptions.scaladocDiagramsEnabled.ifTrue(doc in Compile := {

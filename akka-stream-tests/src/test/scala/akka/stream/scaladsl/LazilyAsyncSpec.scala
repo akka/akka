@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.Done
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
-import akka.stream.testkit.Utils.assertAllStagesStopped
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.DefaultTimeout
 import org.scalatest.concurrent.ScalaFutures
 

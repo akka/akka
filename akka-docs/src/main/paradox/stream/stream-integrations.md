@@ -12,8 +12,8 @@ To use Akka Streams, add the module to your project:
 
 ## Integrating with Actors
 
-For piping the elements of a stream as messages to an ordinary actor you can use 
-`ask` in a `mapAsync` or use `Sink.actorRefWithAck`. 
+For piping the elements of a stream as messages to an ordinary actor you can use
+`ask` in a `mapAsync` or use `Sink.actorRefWithAck`.
 
 Messages can be sent to a stream with `Source.queue` or via the `ActorRef` that is
 materialized by `Source.actorRef`.
@@ -24,9 +24,9 @@ materialized by `Source.actorRef`.
   See also: @ref[Flow.ask operator reference docs](operators/Source-or-Flow/ask.md), @ref[ActorFlow.ask operator reference docs](operators/ActorFlow/ask.md) for Akka Typed
 @@@
 
-A nice way to delegate some processing of elements in a stream to an actor is to use `ask`. 
-The back-pressure of the stream is maintained by the @scala[`Future`]@java[`CompletionStage`] of 
-the `ask` and the mailbox of the actor will not be filled with more messages than the given 
+A nice way to delegate some processing of elements in a stream to an actor is to use `ask`.
+The back-pressure of the stream is maintained by the @scala[`Future`]@java[`CompletionStage`] of
+the `ask` and the mailbox of the actor will not be filled with more messages than the given
 `parallelism` of the `ask` operator (similarly to how the `mapAsync` operator works).
 
 Scala
@@ -40,7 +40,7 @@ the stream elements, i.e. the `parallelism` does not change the ordering
 of the messages. There is a performance advantage of using parallelism > 1
 even though the actor will only process one message at a time because then there
 is already a message in the mailbox when the actor has completed previous
-message. 
+message.
 
 The actor must reply to the @scala[`sender()`]@java[`getSender()`] for each message from the stream. That
 reply will complete the  @scala[`Future`]@java[`CompletionStage`] of the `ask` and it will be the element that is emitted downstreams.
@@ -56,16 +56,16 @@ Java
 The stream can be completed with failure by sending `akka.actor.Status.Failure` as reply from the actor.
 
 If the `ask` fails due to timeout the stream will be completed with
-`TimeoutException` failure. If that is not desired outcome you can use `recover` 
+`TimeoutException` failure. If that is not desired outcome you can use `recover`
 on the `ask` @scala[`Future`]@java[`CompletionStage`], or use the other "restart" operators to restart it.
 
-If you don't care about the reply values and only use them as back-pressure signals you 
+If you don't care about the reply values and only use them as back-pressure signals you
 can use `Sink.ignore` after the `ask` operator and then actor is effectively a sink
 of the stream.
 
 Note that while you may implement the same concept using `mapAsync`, that style would not be aware of the actor terminating.
- 
-If you are intending to ask multiple actors by using @ref:[Actor routers](../routing.md), then 
+
+If you are intending to ask multiple actors by using @ref:[Actor routers](../routing.md), then
 you should use `mapAsyncUnordered` and perform the ask manually in there, as the ordering of the replies is not important,
 since multiple actors are being asked concurrently to begin with, and no single actor is the one to be watched by the operator.
 
@@ -80,8 +80,8 @@ First element is always *onInitMessage*, then stream is waiting for the given ac
 from the given actor which means that it is ready to process elements. It also requires the given acknowledgement
 message after each stream element to make back-pressure work.
 
-If the target actor terminates the stream will be cancelled. When the stream is completed successfully the 
-given `onCompleteMessage` will be sent to the destination actor. When the stream is completed with 
+If the target actor terminates the stream will be cancelled. When the stream is completed successfully the
+given `onCompleteMessage` will be sent to the destination actor. When the stream is completed with
 failure a `akka.actor.Status.Failure` message will be sent to the destination actor.
 
 Scala
@@ -100,9 +100,9 @@ Java
 
 Note that replying to the sender of the elements (the "stream") is required as lack of those ack signals would be interpreted
 as back-pressure (as intended), and no new elements will be sent into the actor until it acknowledges some elements.
-Handling the other signals while is not required, however is a good practice, to see the state of the streams lifecycle 
+Handling the other signals while is not required, however is a good practice, to see the state of the streams lifecycle
 in the connected actor as well. Technically it is also possible to use multiple sinks targeting the same actor,
-however it is not common practice to do so, and one should rather investigate using a `Merge` operator for this purpose.   
+however it is not common practice to do so, and one should rather investigate using a `Merge` operator for this purpose.
 
 
 @@@ note
@@ -121,11 +121,11 @@ use `Sink.actorRefWithAck` or `ask` in `mapAsync`, though.
 The `offer` method returns a @scala[`Future`]@java[`CompletionStage`], which completes with the result of the enqueue operation.
 
 `Source.queue` can be used for emitting elements to a stream from an actor (or from anything running outside
-the stream). The elements will be buffered until the stream can process them. You can `offer` elements to 
-the queue and they will be emitted to the stream if there is demand from downstream, otherwise they will 
+the stream). The elements will be buffered until the stream can process them. You can `offer` elements to
+the queue and they will be emitted to the stream if there is demand from downstream, otherwise they will
 be buffered until request for demand is received.
 
-Use overflow strategy `akka.stream.OverflowStrategy.backpressure` to avoid dropping of elements if the 
+Use overflow strategy `akka.stream.OverflowStrategy.backpressure` to avoid dropping of elements if the
 buffer is full, instead the returned @scala[`Future`]@java[`CompletionStage`] does not complete until there is space in the
 buffer and `offer` should not be called again until it completes.
 
@@ -136,8 +136,8 @@ will be discarded if downstream is terminated.
 You could combine it with the @ref[`throttle`](operators/Source-or-Flow/throttle.md) operator is used to slow down the stream to `5 element` per `3 seconds` and other patterns.
 
 `SourceQueue.offer` returns @scala[`Future[QueueOfferResult]`]@java[`CompletionStage<QueueOfferResult>`] which completes with `QueueOfferResult.Enqueued`
-if element was added to buffer or sent downstream. It completes with `QueueOfferResult.Dropped` if element 
-was dropped. Can also complete  with `QueueOfferResult.Failure` - when stream failed or 
+if element was added to buffer or sent downstream. It completes with `QueueOfferResult.Dropped` if element
+was dropped. Can also complete  with `QueueOfferResult.Failure` - when stream failed or
 `QueueOfferResult.QueueClosed` when downstream is completed.
 
 Scala
@@ -157,12 +157,11 @@ demand is received.
 
 Depending on the defined `OverflowStrategy` it might drop elements if there is no space
 available in the buffer. The strategy `OverflowStrategy.backpressure` is not supported
-for this Source type, i.e. elements will be dropped if the buffer is filled by sending 
-at a rate that is faster than the stream can consume. You should consider using `Source.queue` 
+for this Source type, i.e. elements will be dropped if the buffer is filled by sending
+at a rate that is faster than the stream can consume. You should consider using `Source.queue`
 if you want a backpressured actor interface.
 
-The stream can be completed successfully by sending `akka.actor.PoisonPill` or
-`akka.actor.Status.Success` to the actor reference.
+The stream can be completed successfully by sending `akka.actor.Status.Success` to the actor reference.
 
 The stream can be completed with failure by sending `akka.actor.Status.Failure` to the
 actor reference.
@@ -549,7 +548,7 @@ Please note that a factory is necessary to achieve reusability of the resulting 
 ### Implementing Reactive Streams Publisher or Subscriber
 
 As described above any Akka Streams `Source` can be exposed as a Reactive Streams `Publisher` and
-any `Sink` can be exposed as a Reactive Streams `Subscriber`. Therefore we recommend that you 
+any `Sink` can be exposed as a Reactive Streams `Subscriber`. Therefore we recommend that you
 implement Reactive Streams integrations with built-in operators or @ref:[custom operators](stream-customize.md).
 
 For historical reasons the `ActorPublisher` and `ActorSubscriber` traits are

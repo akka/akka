@@ -69,17 +69,19 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): DnsExt = super.get(system)
 }
 
-class DnsExt(system: ExtendedActorSystem) extends IO.Extension {
+class DnsExt(val system: ExtendedActorSystem) extends IO.Extension {
+
   val Settings = new Settings(system.settings.config.getConfig("akka.io.dns"))
 
   class Settings private[DnsExt] (_config: Config) {
-
     import _config._
 
     val Dispatcher: String = getString("dispatcher")
     val Resolver: String = getString("resolver")
     val ResolverConfig: Config = getConfig(Resolver)
     val ProviderObjectName: String = ResolverConfig.getString("provider-object")
+
+    override def toString = s"Settings($Dispatcher, $Resolver, $ResolverConfig, $ProviderObjectName)"
   }
 
   val provider: DnsProvider = system.dynamicAccess.getClassFor[DnsProvider](Settings.ProviderObjectName).get.newInstance()

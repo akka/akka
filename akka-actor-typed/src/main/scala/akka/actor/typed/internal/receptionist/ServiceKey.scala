@@ -27,6 +27,7 @@ private[akka] abstract class AbstractServiceKey {
  *
  * Internal API
  */
+@InternalApi
 final case class DefaultServiceKey[T](id: String, typeName: String) extends ServiceKey[T] {
   override def toString: String = s"ServiceKey[$typeName]($id)"
 }

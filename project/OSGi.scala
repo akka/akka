@@ -16,7 +16,7 @@ object OSGi {
   // in the .../bundles directory which makes testing locally published artifacts
   // a pain. Create bundles but publish them to the normal .../jars directory.
   def osgiSettings = defaultOsgiSettings ++ Seq(
-    packagedArtifact in (Compile, packageBin) := ((artifact in (Compile, packageBin)).value, OsgiKeys.bundle.value),
+    Compile / packageBin := OsgiKeys.bundle.value,
     // This will fail the build instead of accidentally removing classes from the resulting artifact.
     // Each package contained in a project MUST be known to be private or exported, if it's undecided we MUST resolve this
     OsgiKeys.failOnUndecidedPackage := true,

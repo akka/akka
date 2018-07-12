@@ -9,6 +9,7 @@ import akka.stream.scaladsl.{ Source, Flow }
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
 import org.reactivestreams.{ Publisher, Subscriber }
 

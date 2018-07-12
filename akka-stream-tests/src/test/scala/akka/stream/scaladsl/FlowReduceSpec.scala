@@ -10,6 +10,7 @@ import scala.concurrent.Await
 import scala.util.control.NoStackTrace
 import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 import scala.concurrent.duration._
 
