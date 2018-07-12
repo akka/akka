@@ -627,6 +627,9 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     for (te ← transitionEvent) { if (te.isDefinedAt(tuple)) te(tuple) }
   }
 
+  import scala.concurrent.ExecutionContext
+  private implicit val ec: ExecutionContext = context.dispatcher
+
   /*
    * *******************************************
    *       Main actor receive() method
@@ -713,8 +716,6 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
       currentState = nextState
 
       def scheduleTimeout(d: FiniteDuration): Some[Cancellable] = {
-        import scala.concurrent.ExecutionContext
-        implicit val ec: ExecutionContext = context.dispatcher
         Some(context.system.scheduler.scheduleOnce(d, self, TimeoutMarker(generation)))
       }
 
