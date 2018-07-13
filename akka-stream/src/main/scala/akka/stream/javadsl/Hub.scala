@@ -69,7 +69,7 @@ object BroadcastHub {
    * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
    * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
    * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
-   * broadcast elements form the ofiginal [[Sink]].
+   * broadcast elements from the original [[Sink]].
    *
    * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own
    * [[Source]] for consuming the [[Sink]] of that materialization.
