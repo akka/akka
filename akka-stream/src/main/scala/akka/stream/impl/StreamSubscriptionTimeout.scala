@@ -60,6 +60,8 @@ import scala.util.control.NoStackTrace
 @InternalApi private[akka] trait StreamSubscriptionTimeoutSupport {
   this: Actor with ActorLogging ⇒
 
+  private implicit val ec: ExecutionContext = context.dispatcher
+
   import StreamSubscriptionTimeoutSupport._
 
   /**
@@ -76,8 +78,6 @@ import scala.util.control.NoStackTrace
       case NoopTermination ⇒
         NoopSubscriptionTimeout
       case _ ⇒
-        implicit val ec: ExecutionContext = context.dispatcher
-
         val cancellable = context.system.scheduler.scheduleOnce(subscriptionTimeoutSettings.timeout, actor, message)
         cancellable
     }

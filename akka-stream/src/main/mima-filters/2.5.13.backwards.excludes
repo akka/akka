@@ -10,3 +10,6 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObje
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.Space")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.LineBreak2")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.LineBreak")
+
+# Do not import context dispatcher #25343
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.StreamSubscriptionTimeoutSupport*")
