@@ -71,10 +71,24 @@ import scala.compat.java8.FutureConverters
 
   import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
 
-  override def terminate(): scala.concurrent.Future[akka.actor.typed.Terminated] =
-    untyped.terminate().map(t ⇒ Terminated(ActorRefAdapter(t.actor))(null))(sameThreadExecutionContext)
-  override lazy val whenTerminated: scala.concurrent.Future[akka.actor.typed.Terminated] =
-    untyped.whenTerminated.map(t ⇒ Terminated(ActorRefAdapter(t.actor))(null))(sameThreadExecutionContext)
+  override def terminate(): scala.concurrent.Future[akka.actor.typed.Terminated] = {
+    untyped.terminate()
+    whenTerminated
+  }
+
+  override lazy val whenTerminated: scala.concurrent.Future[akka.actor.typed.Terminated] = {
+    untyped.settings.setup.get[WhenTerminatedSetup] match {
+      case None ⇒ // untyped actor system _NOT_ created by typed ActorSystem.createInternal
+        untyped.whenTerminated.map(t ⇒ Terminated(ActorRefAdapter(t.actor))(null))(sameThreadExecutionContext)
+      case Some(settings) ⇒ // untyped actor system _IS_ created by typed ActorSystem.createInternal
+        untyped.whenTerminated.flatMap { t1 ⇒
+          settings.whenGuardianTerminated.map { t2 ⇒
+            Terminated(ActorRefAdapter(t1.actor))(t2.failure.orNull)
+          }(sameThreadExecutionContext)
+        }(sameThreadExecutionContext)
+    }
+  }
+
   override lazy val getWhenTerminated: CompletionStage[akka.actor.typed.Terminated] =
     FutureConverters.toJava(whenTerminated)
 
