@@ -348,20 +348,25 @@ object Attributes {
    * Java API
    *
    * Configures `log()` operator log-levels to be used when logging.
-   * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
+   * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
    *
-   * Passing in null as any of the arguments sets the level to its default value, which is:
-   * `Debug` for `onElement` and `onFinish`, and `Error` for `onFailure`.
    */
   def createLogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel): Attributes =
-    logLevels(
-      onElement = Option(onElement).getOrElse(Logging.DebugLevel),
-      onFinish = Option(onFinish).getOrElse(Logging.DebugLevel),
-      onFailure = Option(onFailure).getOrElse(Logging.ErrorLevel))
+    logLevels(onElement, onFinish, onFailure)
+
+  /**
+   * Java API
+   *
+   * Configures `log()` operator log-levels to be used when logging onElement.
+   * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
+   *
+   */
+  def createLogLevels(onElement: Logging.LogLevel): Attributes =
+    logLevels(onElement)
 
   /**
    * Configures `log()` operator log-levels to be used when logging.
-   * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
+   * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
    *
    * See [[Attributes.createLogLevels]] for Java API
    */
@@ -440,16 +445,21 @@ object ActorAttributes {
    * Java API
    *
    * Configures `log()` operator log-levels to be used when logging.
-   * Logging a certain operation can be completely disabled by using [[LogLevels.Off]].
+   * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
    *
-   * Passing in null as any of the arguments sets the level to its default value, which is:
-   * `Debug` for `onElement` and `onFinish`, and `Error` for `onFailure`.
    */
   def createLogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel): Attributes =
-    logLevels(
-      onElement = Option(onElement).getOrElse(Logging.DebugLevel),
-      onFinish = Option(onFinish).getOrElse(Logging.DebugLevel),
-      onFailure = Option(onFailure).getOrElse(Logging.ErrorLevel))
+    logLevels(onElement, onFinish, onFailure)
+
+  /**
+   * Java API
+   *
+   * Configures `log()` operator log-levels to be used when logging onElement.
+   * Logging a certain operation can be completely disabled by using [[Attributes#logLevelOff]].
+   *
+   */
+  def createLogLevels(onElement: Logging.LogLevel): Attributes =
+    logLevels(onElement)
 
   /**
    * Configures `log()` operator log-levels to be used when logging.
