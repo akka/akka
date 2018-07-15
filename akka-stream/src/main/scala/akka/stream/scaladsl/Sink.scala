@@ -188,7 +188,7 @@ object Sink {
    * If the stream completes before signaling at least a single element, the Future will be failed with a [[NoSuchElementException]].
    * If the stream signals an error, the Future will be failed with the stream's exception.
    *
-   * See also [[lastOption]].
+   * See also [[lastOption]], [[takeLast]].
    */
   def last[T]: Sink[T, Future[T]] = Sink.fromGraph(new LastOptionStage[T]).withAttributes(DefaultAttributes.lastSink)
     .mapMaterializedValue(e ⇒ e.map(_.getOrElse(throw new NoSuchElementException("last of empty stream")))(ExecutionContexts.sameThreadExecutionContext))
@@ -198,9 +198,22 @@ object Sink {
    * If the stream completes before signaling at least a single element, the value of the Future will be [[None]].
    * If the stream signals an error, the Future will be failed with the stream's exception.
    *
-   * See also [[last]].
+   * See also [[last]], [[takeLast]].
    */
   def lastOption[T]: Sink[T, Future[Option[T]]] = Sink.fromGraph(new LastOptionStage[T]).withAttributes(DefaultAttributes.lastOptionSink)
+
+  /**
+   * A `Sink` that materializes into a a `Future` of `immutable.Seq[T]` containing the last `n` collected elements.
+   * If the stream completes before signaling at least n elements, the Future will complete with the number
+   * of elements taken at that point.
+   * If the stream never completes, the `Future` will never complete.
+   * If there is a failure signaled in the stream the `Future` will be completed with failure.
+   */
+  def takeLast[T](n: Int): Sink[T, Future[immutable.Seq[T]]] =
+    if (n == 1)
+      lastOption.mapMaterializedValue(fut ⇒ fut.map(_.fold(immutable.Seq.empty[T])(m ⇒ immutable.Seq(m)))(ExecutionContexts.sameThreadExecutionContext))
+    else
+      Sink.fromGraph(new TakeLastStage[T](n)).withAttributes(DefaultAttributes.takeLastSink)
 
   /**
    * A `Sink` that keeps on collecting incoming elements until upstream terminates.
@@ -220,7 +233,7 @@ object Sink {
    * may be used to ensure boundedness.
    * Materializes into a `Future` of `That[T]` containing all the collected elements.
    * `That[T]` is limited to the limitations of the CanBuildFrom associated with it. For example, `Seq` is limited to
-   * `Int.MaxValue` elements. See [The Architecture of Scala Collectionss](https://docs.scala-lang.org/overviews/core/architecture-of-scala-collections.html) for more info.
+   * `Int.MaxValue` elements. See [The Architecture of Scala Collections](https://docs.scala-lang.org/overviews/core/architecture-of-scala-collections.html) for more info.
    * This Sink will cancel the stream after having received that many elements.
    *
    * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
