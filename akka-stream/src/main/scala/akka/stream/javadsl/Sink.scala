@@ -164,6 +164,16 @@ object Sink {
       _.map(_.asJava)(ExecutionContexts.sameThreadExecutionContext).toJava))
 
   /**
+   * A `Sink` that materializes into a a `CompletionStage` of `List<In>` containing the last `n` collected elements.
+   * If the stream completes before signaling at least n elements, the CompletionStage will complete with the number
+   * of elements taken at that point.
+   */
+  def takeLast[In](n: Int): Sink[In, CompletionStage[java.util.List[In]]] = {
+    import scala.collection.JavaConverters._
+    new Sink(scaladsl.Sink.takeLast[In](n).mapMaterializedValue(fut ⇒ fut.map(sq ⇒ sq.asJava)(ExecutionContexts.sameThreadExecutionContext).toJava))
+  }
+
+  /**
    * A `Sink` that keeps on collecting incoming elements until upstream terminates.
    * As upstream may be unbounded, `Flow[T].take` or the stricter `Flow[T].limit` (and their variants)
    * may be used to ensure boundedness.

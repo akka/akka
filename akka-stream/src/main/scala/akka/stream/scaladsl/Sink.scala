@@ -203,6 +203,13 @@ object Sink {
   def lastOption[T]: Sink[T, Future[Option[T]]] = Sink.fromGraph(new LastOptionStage[T]).withAttributes(DefaultAttributes.lastOptionSink)
 
   /**
+   * A `Sink` that materializes into a a `Future` of `Seq[T]` containing the last `n` collected elements.
+   * If the stream completes before signaling at least n elements, the Future will complete with the number
+   * of elements taken at that point.
+   */
+  def takeLast[T](n: Int): Sink[T, Future[immutable.Seq[T]]] = Sink.fromGraph(new TakeLastStage[T](n)).withAttributes(DefaultAttributes.takeLastSink)
+
+  /**
    * A `Sink` that keeps on collecting incoming elements until upstream terminates.
    * As upstream may be unbounded, `Flow[T].take` or the stricter `Flow[T].limit` (and their variants)
    * may be used to ensure boundedness.
