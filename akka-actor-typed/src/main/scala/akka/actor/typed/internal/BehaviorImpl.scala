@@ -9,8 +9,9 @@ import akka.util.{ ConstantFun, LineNumbers }
 import akka.annotation.InternalApi
 import akka.actor.typed.{ ActorContext ⇒ AC }
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
-
 import scala.reflect.ClassTag
+
+import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 
 /**
  * INTERNAL API
@@ -45,11 +46,18 @@ import scala.reflect.ClassTag
     override def receiveSignal(ctx: AC[U], signal: Signal): Behavior[U] =
       widen(Behavior.interpretSignal(behavior, ctx.as[T], signal), ctx.as[T])
 
-    override def receive(ctx: AC[U], msg: U): Behavior[U] =
+    override def receive(ctx: AC[U], msg: U): Behavior[U] = {
+      // widen would wrap the TimerMessage, which would be wrong, see issue #25318
+      msg match {
+        case t: TimerMsg ⇒ throw new IllegalArgumentException(
+          s"Timers and widen can't be used together, [${t.key}]. See issue #25318")
+        case _ ⇒
+      }
       matcher.applyOrElse(msg, any2null) match {
         case null        ⇒ unhandled
         case transformed ⇒ widen(Behavior.interpretMessage(behavior, ctx.as[T], transformed), ctx.as[T])
       }
+    }
 
     override def toString: String = s"${behavior.toString}.widen(${LineNumbers(matcher)})"
   }

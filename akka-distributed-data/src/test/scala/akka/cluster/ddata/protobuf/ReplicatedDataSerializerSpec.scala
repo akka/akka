@@ -6,12 +6,15 @@ package akka.cluster.ddata.protobuf
 
 import java.util.Base64
 
+import akka.actor.ActorIdentity
+import akka.actor.ActorRef
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
+import akka.actor.Identify
 import akka.cluster.ddata._
 import akka.cluster.ddata.Replicator.Internal._
 import akka.testkit.TestKit
@@ -19,10 +22,14 @@ import akka.cluster.UniqueAddress
 import akka.remote.RARP
 import com.typesafe.config.ConfigFactory
 import akka.actor.Props
+import akka.actor.RootActorPath
+import akka.cluster.Cluster
+import akka.testkit.TestActors
 
 class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
   "ReplicatedDataSerializerSpec",
   ConfigFactory.parseString("""
+    akka.loglevel = DEBUG
     akka.actor.provider=cluster
     akka.remote.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
@@ -109,6 +116,35 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
       val s3 = ORSet().add(address1, "a").add(address2, 17).remove(address3, 17)
       val s4 = ORSet().add(address2, 17).remove(address3, 17).add(address1, "a")
       checkSameContent(s3.merge(s4), s4.merge(s3))
+
+      // ORSet with ActorRef
+      checkSerialization(ORSet().add(address1, ref1))
+      checkSerialization(ORSet().add(address1, ref1).add(address1, ref2))
+      checkSerialization(ORSet().add(address1, ref1).add(address1, "a").add(address2, ref2) add (address2, "b"))
+
+      val s5 = ORSet().add(address1, "a").add(address2, ref1)
+      val s6 = ORSet().add(address2, ref1).add(address1, "a")
+      checkSameContent(s5.merge(s6), s6.merge(s5))
+    }
+
+    "serialize ORSet with ActorRef message sent between two systems" in {
+      val system2 = ActorSystem(system.name, system.settings.config)
+      try {
+        val echo1 = system.actorOf(TestActors.echoActorProps, "echo1")
+        system2.actorOf(TestActors.echoActorProps, "echo2")
+
+        system.actorSelection(RootActorPath(Cluster(system2).selfAddress) / "user" / "echo2").tell(
+          Identify("2"), testActor)
+        val echo2 = expectMsgType[ActorIdentity].ref.get
+
+        val msg = ORSet.empty[ActorRef].add(Cluster(system), echo1).add(Cluster(system), echo2)
+        echo2.tell(msg, testActor)
+        val reply = expectMsgType[ORSet[ActorRef]]
+        reply.elements should ===(Set(echo1, echo2))
+
+      } finally {
+        shutdown(system2)
+      }
     }
 
     "serialize ORSet delta" in {

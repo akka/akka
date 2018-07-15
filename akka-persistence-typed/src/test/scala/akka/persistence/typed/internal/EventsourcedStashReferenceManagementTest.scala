@@ -9,8 +9,9 @@ import akka.actor.typed.{ Behavior, Signal, TypedAkkaSpecWithShutdown }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol.{ IncomingCommand, RecoveryPermitGranted }
 import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-
 import scala.concurrent.duration.{ FiniteDuration, _ }
+
+import com.typesafe.config.ConfigFactory
 
 class EventsourcedStashReferenceManagementTest extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
@@ -55,28 +56,20 @@ class EventsourcedStashReferenceManagementTest extends ActorTestKit with TypedAk
           case _: IncomingCommand[_] ⇒ Behaviors.stopped
         }.receiveSignal {
           case (_, signal: Signal) ⇒
-            onSignalCleanup.apply(ctx, signal); Behaviors.stopped[InternalProtocol]
+            clearStashBuffer()
+            Behaviors.stopped[InternalProtocol]
         }
       )
     }
   }
 
-  private def dummySettings(capacity: Int = 42) = new EventsourcedSettings {
+  private def dummySettings(capacity: Int = 42) =
+    EventsourcedSettings(
+      stashCapacity = capacity,
+      stashOverflowStrategyConfigurator = "akka.persistence.ThrowExceptionConfigurator",
+      logOnStashing = false,
+      recoveryEventTimeout = 3.seconds,
+      journalPluginId = "",
+      snapshotPluginId = "")
 
-    override def stashCapacity: Int = capacity
-
-    override def logOnStashing: Boolean = ???
-
-    override def stashOverflowStrategyConfigurator: String = ???
-
-    override def recoveryEventTimeout: FiniteDuration = ???
-
-    override def journalPluginId: String = ???
-
-    override def withJournalPluginId(id: String): EventsourcedSettings = ???
-
-    override def snapshotPluginId: String = ???
-
-    override def withSnapshotPluginId(id: String): EventsourcedSettings = ???
-  }
 }

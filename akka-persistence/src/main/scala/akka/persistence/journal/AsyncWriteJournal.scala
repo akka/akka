@@ -137,7 +137,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         breaker.withCircuitBreaker(asyncReadHighestSequenceNr(persistenceId, readHighestSequenceNrFrom))
           .flatMap { highSeqNr ⇒
             val toSeqNr = math.min(toSequenceNr, highSeqNr)
-            if (highSeqNr == 0L || fromSequenceNr > toSeqNr)
+            if (toSeqNr <= 0L || fromSequenceNr > toSeqNr)
               Future.successful(highSeqNr)
             else {
               // Send replayed messages and replay result to persistentActor directly. No need

@@ -39,7 +39,6 @@ object Release extends ParadoxKeys {
     IO.copyDirectory(japi, release / "japi" / "akka" / releaseVersion)
     IO.copyDirectory(docs, release / "docs" / "akka" / releaseVersion)
 
-    println(repo)
     state3
   }
 

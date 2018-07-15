@@ -46,7 +46,7 @@ import akka.stream.ActorMaterializerSettings
     .orElse(receiveElem)
 
   def receiveComplete: Receive = completionMatcher.andThen { _ ⇒
-    if (bufferSize == 0 || buffer.isEmpty) context.stop(self) // will complete the stream successfully
+    if (bufferSize == 0 || buffer.isEmpty) onCompleteThenStop() // will complete the stream successfully
     else context.become(drainBufferThenComplete)
   }
 
@@ -110,7 +110,7 @@ import akka.stream.ActorMaterializerSettings
       while (totalDemand > 0L && !buffer.isEmpty)
         onNext(buffer.dequeue())
 
-      if (buffer.isEmpty) context.stop(self) // will complete the stream successfully
+      if (buffer.isEmpty) onCompleteThenStop() // will complete the stream successfully
 
     case elem if isActive ⇒
       log.debug("Dropping element because Status.Success received already, " +
