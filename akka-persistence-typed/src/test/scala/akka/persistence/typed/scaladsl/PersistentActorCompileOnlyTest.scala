@@ -342,6 +342,14 @@ object PersistentActorCompileOnlyTest {
       if (currentState == newMood) Effect.none
       else Effect.persist(MoodChanged(newMood))
 
+    //#commonChainedEffects
+    // Example factoring out a chained effect rather than using `andThen`
+    val commonChainedEffects = ChainedEffect[Mood](_ ⇒ println("Command processed"))
+    // Then in a command handler:
+    Effect.persist(Remembered("Yep")) // persist event
+      .andChain(commonChainedEffects) // add on common chained effect
+    //#commonChainedEffects
+
     val commandHandler: CommandHandler[Command, Event, Mood] = { (_, state, cmd) ⇒
       cmd match {
         case Greet(whom) ⇒
@@ -351,14 +359,24 @@ object PersistentActorCompileOnlyTest {
           changeMoodIfNeeded(state, Happy)
             .andThen { _ ⇒
               sender ! Ack
-            }
+            }.andChain(commonChainedEffects)
         case Remember(memory) ⇒
           // A more elaborate example to show we still have full control over the effects
           // if needed (e.g. when some logic is factored out but you want to add more effects)
           val commonEffects: Effect[Event, Mood] = changeMoodIfNeeded(state, Happy)
-          Effect.persist(commonEffects.events :+ Remembered(memory), commonEffects.sideEffects)
-
+          Effect.persist(commonEffects.events :+ Remembered(memory))
+            .andChain(commonChainedEffects)
       }
+
+      /*
+      Should not compile. Have to have an Effect.
+      val commandHandler2: CommandHandler[Command, Event, Mood] = { (_, state, cmd) ⇒
+        cmd match {
+          case Greet(whom) ⇒
+            println(s"Hi there, I'm $state!")
+            ChainedEffect.stop()
+        }
+        */
     }
 
     private val eventHandler: EventHandler[Mood, Event] = {

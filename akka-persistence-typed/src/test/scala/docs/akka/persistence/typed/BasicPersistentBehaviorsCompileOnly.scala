@@ -4,6 +4,7 @@
 
 package docs.akka.persistence.typed
 
+import akka.actor.typed.ActorRef
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.scaladsl.PersistentBehaviors
@@ -29,6 +30,9 @@ object BasicPersistentBehaviorsCompileOnly {
           throw new RuntimeException("TODO: process the event return the next state")
     )
   //#structure
+
+  case class CommandWithSender(reply: ActorRef[String]) extends Command
+  case class VeryImportantEvent() extends Event
 
   //#recovery
   val recoveryBehavior: Behavior[Command] =
@@ -58,7 +62,6 @@ object BasicPersistentBehaviorsCompileOnly {
         (state, evt) ⇒
           throw new RuntimeException("TODO: process the event return the next state")
     ).withTagger(_ ⇒ Set("tag1", "tag2"))
-
   //#tagging
 
   //#wrapPersistentBehavior
@@ -94,4 +97,5 @@ object BasicPersistentBehaviorsCompileOnly {
       randomFactor = 0.1
     ))
   //#supervision
+
 }
