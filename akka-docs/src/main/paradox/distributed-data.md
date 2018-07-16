@@ -776,7 +776,7 @@ data entries, because then the remote message size will be too large.
 
  * [Eventually Consistent Data Structures](https://vimeo.com/43903960)
 talk by Sean Cribbs
- * [Strong Eventual Consistency and Conflict-free Replicated Data Types](https://www.youtube.com/watch?v=oyUHd894w18&feature=youtu.be)
+ * [Strong Eventual Consistency and Conflict-free Replicated Data Types (video)](https://www.youtube.com/watch?v=oyUHd894w18&feature=youtu.be)
 talk by Mark Shapiro
  * [A comprehensive study of Convergent and Commutative Replicated Data Types](http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf)
 paper by Mark Shapiro et. al.
