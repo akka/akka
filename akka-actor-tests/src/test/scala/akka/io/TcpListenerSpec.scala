@@ -145,7 +145,7 @@ class TcpListenerSpec extends AkkaSpec("""
 
     registerCallReceiver.expectMsg(if (pullMode) 0 else OP_ACCEPT)
 
-    def bindListener() {
+    def bindListener(): Unit = {
       listener ! new ChannelRegistration {
         def enableInterest(op: Int): Unit = interestCallReceiver.ref ! op
         def disableInterest(op: Int): Unit = interestCallReceiver.ref ! -op

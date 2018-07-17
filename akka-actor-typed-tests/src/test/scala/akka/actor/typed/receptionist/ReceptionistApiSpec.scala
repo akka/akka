@@ -15,7 +15,7 @@ import scala.util.Success
 
 object ReceptionistApiSpec {
 
-  def compileOnlySpec() {
+  def compileOnlySpec(): Unit = {
     // some dummy prerequisites
     implicit val timeout: Timeout = 3.seconds
     val service: ActorRef[String] = ???

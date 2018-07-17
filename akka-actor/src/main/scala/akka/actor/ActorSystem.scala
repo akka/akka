@@ -840,8 +840,8 @@ private[akka] class ActorSystemImpl(
   }
 
   def start(): this.type = _start
-  def registerOnTermination[T](code: ⇒ T) { registerOnTermination(new Runnable { def run = code }) }
-  def registerOnTermination(code: Runnable) { terminationCallbacks.add(code) }
+  def registerOnTermination[T](code: ⇒ T): Unit = { registerOnTermination(new Runnable { def run = code }) }
+  def registerOnTermination(code: Runnable): Unit = { terminationCallbacks.add(code) }
 
   override def terminate(): Future[Terminated] = {
     if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener foreach stop
@@ -936,7 +936,7 @@ private[akka] class ActorSystemImpl(
 
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean = findExtension(ext) != null
 
-  private def loadExtensions() {
+  private def loadExtensions(): Unit = {
     /**
      * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
      */

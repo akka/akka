@@ -919,7 +919,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
 
   import PersistentActorSpec._
 
-  override protected def beforeEach() {
+  override protected def beforeEach(): Unit = {
     super.beforeEach()
 
     val persistentActor = behavior1PersistentActor

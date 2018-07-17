@@ -41,7 +41,7 @@ object SupervisorHierarchySpec {
       case p: Props ⇒ sender() ! context.actorOf(p)
     }
     // test relies on keeping children around during restart
-    override def preRestart(cause: Throwable, msg: Option[Any]) {}
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {}
     override def postRestart(reason: Throwable) = {
       countDown.countDown()
     }
@@ -135,7 +135,7 @@ object SupervisorHierarchySpec {
     var failed = false
     var suspended = false
 
-    def abort(msg: String) {
+    def abort(msg: String): Unit = {
       listener ! ErrorLog(msg, log)
       log = Vector(Event("log sent", identityHashCode(this)))
       context.parent ! Abort
@@ -150,7 +150,7 @@ object SupervisorHierarchySpec {
 
     def suspendCount = context.asInstanceOf[ActorCell].mailbox.suspendCount
 
-    override def preStart {
+    override def preStart: Unit = {
       log :+= Event("started", identityHashCode(this))
       listener ! Ready(self)
       val s = size - 1 // subtract myself
@@ -221,7 +221,7 @@ object SupervisorHierarchySpec {
         Resume
     })
 
-    override def postRestart(cause: Throwable) {
+    override def postRestart(cause: Throwable): Unit = {
       val state = stateCache.get(self.path)
       log = state.log
       log :+= Event("restarted " + suspendCount + " " + cause, identityHashCode(this))
@@ -244,7 +244,7 @@ object SupervisorHierarchySpec {
       }
     }
 
-    override def postStop {
+    override def postStop: Unit = {
       if (failed || suspended) {
         listener ! ErrorLog("not resumed (" + failed + ", " + suspended + ")", log)
         val state = stateCache.get(self)
@@ -433,15 +433,15 @@ object SupervisorHierarchySpec {
 
     var hierarchy: ActorRef = _
 
-    override def preRestart(cause: Throwable, msg: Option[Any]) {
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
       throw ActorKilledException("I want to DIE")
     }
 
-    override def postRestart(cause: Throwable) {
+    override def postRestart(cause: Throwable): Unit = {
       throw ActorKilledException("I said I wanted to DIE, dammit!")
     }
 
-    override def postStop {
+    override def postStop: Unit = {
       testActor ! "stressTestStopped"
     }
 

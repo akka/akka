@@ -23,7 +23,7 @@ class SupervisorTreeSpec extends AkkaSpec("akka.actor.serialize-messages = off")
             def receive = {
               case p: Props ⇒ sender() ! context.actorOf(p)
             }
-            override def preRestart(cause: Throwable, msg: Option[Any]) { testActor ! self.path }
+            override def preRestart(cause: Throwable, msg: Option[Any]): Unit = { testActor ! self.path }
           })
           val headActor = system.actorOf(p)
           val middleActor = Await.result((headActor ? p).mapTo[ActorRef], timeout.duration)

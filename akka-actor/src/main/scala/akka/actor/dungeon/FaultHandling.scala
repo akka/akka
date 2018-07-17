@@ -139,7 +139,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     }
   }
 
-  protected def terminate() {
+  protected def terminate(): Unit = {
     setReceiveTimeout(Duration.Undefined)
     cancelReceiveTimeout
 
@@ -200,7 +200,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
     }
   }
 
-  private def finishTerminate() {
+  private def finishTerminate(): Unit = {
     val a = actor
     /* The following order is crucial for things to work properly. Only change this if you're very confident and lucky.
      *

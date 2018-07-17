@@ -45,7 +45,7 @@ object Producers {
     class Forwarder(uri: String, target: ActorRef) extends Actor with Producer {
       def endpointUri = uri
 
-      override def routeResponse(msg: Any) { target forward msg }
+      override def routeResponse(msg: Any): Unit = { target forward msg }
     }
     val system = ActorSystem("some-system")
     val receiver = system.actorOf(Props[ResponseReceiver])
