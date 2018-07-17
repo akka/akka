@@ -1,0 +1,3 @@
+# NPE when using import context.dispatcher #25040
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff*")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.FSM*")
