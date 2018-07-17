@@ -91,9 +91,12 @@ import scala.util.control.NonFatal
    * Invoked when the actor is created (or re-created on restart) this is where a restarter implementation
    * can provide logic for dealing with exceptions thrown when running any actor initialization logic (undeferring).
    *
+   * Note that the logic must take care to not wrap StoppedBehavior to avoid creating zombie behaviors that keep
+   * running although stopped.
+   *
    * @return The initial behavior of the actor after undeferring if needed
    */
-  def init(ctx: ActorContext[T]): Supervisor[T, Thr]
+  def init(ctx: ActorContext[T]): Behavior[T]
 
   /**
    * Current behavior
@@ -107,7 +110,7 @@ import scala.util.control.NonFatal
 
   protected def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Behavior[T]]
 
-  protected def restart(ctx: ActorContext[T], initialBehavior: Behavior[T], startedBehavior: Behavior[T]): Supervisor[T, Thr] = {
+  protected def restart(ctx: ActorContext[T], initialBehavior: Behavior[T], startedBehavior: Behavior[T]): Behavior[T] = {
     try Behavior.interpretSignal(startedBehavior, ctx, PreRestart) catch {
       case NonFatal(ex) ⇒ ctx.asScala.log.error(ex, "failure during PreRestart")
     }
@@ -143,9 +146,12 @@ import scala.util.control.NonFatal
 @InternalApi private[akka] final class Resumer[T, Thr <: Throwable: ClassTag](
   override val behavior: Behavior[T], override val loggingEnabled: Boolean) extends Supervisor[T, Thr] {
 
-  def init(ctx: ActorContext[T]) =
+  def init(ctx: ActorContext[T]) = {
     // no handling of errors for Resume as that could lead to infinite restart-loop
-    wrap(Behavior.validateAsInitial(Behavior.start(behavior, ctx)), afterException = false)
+    val started = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
+    if (Behavior.isAlive(started)) wrap(started, afterException = false)
+    else started
+  }
 
   override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Supervisor[T, Thr]] = {
     case NonFatal(ex: Thr) ⇒
@@ -165,8 +171,17 @@ import scala.util.control.NonFatal
 @InternalApi private[akka] final class Stopper[T, Thr <: Throwable: ClassTag](
   override val behavior: Behavior[T], override val loggingEnabled: Boolean) extends Supervisor[T, Thr] {
 
-  def init(ctx: ActorContext[T]): Supervisor[T, Thr] =
-    wrap(Behavior.validateAsInitial(Behavior.start(behavior, ctx)), false)
+  def init(ctx: ActorContext[T]): Behavior[T] = {
+    try {
+      val started = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
+      if (Behavior.isAlive(started)) wrap(started, false)
+      else started
+    } catch {
+      case NonFatal(ex: Thr) ⇒
+        log(ctx, ex)
+        Behavior.stopped
+    }
+  }
 
   override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Behavior[T]] = {
     case NonFatal(ex: Thr) ⇒
@@ -188,11 +203,14 @@ import scala.util.control.NonFatal
   initialBehavior: Behavior[T], override val behavior: Behavior[T],
   override val loggingEnabled: Boolean) extends Supervisor[T, Thr] {
 
-  override def init(ctx: ActorContext[T]) =
+  override def init(ctx: ActorContext[T]) = {
     // no handling of errors for Restart as that could lead to infinite restart-loop
-    wrap(Behavior.validateAsInitial(Behavior.start(behavior, ctx)), afterException = false)
+    val started = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
+    if (Behavior.isAlive(started)) wrap(started, afterException = false)
+    else started
+  }
 
-  override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Supervisor[T, Thr]] = {
+  override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Behavior[T]] = {
     case NonFatal(ex: Thr) ⇒
       log(ctx, ex)
       restart(ctx, initialBehavior, startedBehavior)
@@ -215,7 +233,9 @@ import scala.util.control.NonFatal
 
   override def init(ctx: ActorContext[T]) =
     try {
-      wrap(Behavior.validateAsInitial(Behavior.start(behavior, ctx)), afterException = false)
+      val started = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
+      if (Behavior.isAlive(started)) wrap(started, afterException = false)
+      else started
     } catch {
       case NonFatal(ex: Thr) ⇒
         log(ctx, ex)
@@ -229,7 +249,7 @@ import scala.util.control.NonFatal
     case OptionVal.Some(d) ⇒ d.hasTimeLeft
   }
 
-  override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Supervisor[T, Thr]] = {
+  override def handleException(ctx: ActorContext[T], startedBehavior: Behavior[T]): Catcher[Behavior[T]] = {
     case NonFatal(ex: Thr) ⇒
       log(ctx, ex)
       if (deadlineHasTimeLeft && retries >= strategy.maxNrOfRetries)
@@ -292,10 +312,11 @@ import scala.util.control.NonFatal
 
   override def loggingEnabled: Boolean = strategy.loggingEnabled
 
-  def init(ctx: ActorContext[Any]): Supervisor[Any, Thr] =
+  def init(ctx: ActorContext[Any]) =
     try {
-      val startedBehavior = Behavior.validateAsInitial(Behavior.start(initialBehavior, ctx))
-      new BackoffRestarter(initialBehavior, startedBehavior, strategy, restartCount, blackhole)
+      val started = Behavior.validateAsInitial(Behavior.start(initialBehavior, ctx))
+      if (Behavior.isAlive(started)) new BackoffRestarter(initialBehavior, started, strategy, restartCount, blackhole)
+      else started
     } catch {
       case NonFatal(ex: Thr) ⇒
         log(ctx, ex)

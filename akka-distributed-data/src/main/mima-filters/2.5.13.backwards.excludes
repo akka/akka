@@ -1,3 +1,7 @@
+# #25310 Improve performance of DData delta updates
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.ReadWriteAggregator.secondaryNodes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.ReadWriteAggregator.primaryNodes")
+
 # #23703 Optimized serializer for ORSet[ActorRef]
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages#GSetOrBuilder.getActorRefElementsCount")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages#GSetOrBuilder.getActorRefElementsList")

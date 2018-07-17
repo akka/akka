@@ -27,6 +27,7 @@ object PerformanceSpec extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString(s"""
     akka.loglevel = ERROR
     akka.stdout-loglevel = ERROR
+    akka.loggers = ["akka.event.Logging$$DefaultLogger"]
     akka.actor.provider = "cluster"
     akka.log-dead-letters = off
     akka.log-dead-letters-during-shutdown = off
@@ -81,21 +82,28 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
     enterBarrier(from.name + "-joined")
   }
 
-  def repeat(description: String, keys: Iterable[ORSetKey[Int]], n: Int, expectedAfterReplication: Option[Set[Int]] = None)(
+  def repeat(description: String, keys: Iterable[ORSetKey[Int]], n: Int,
+             expectedAfterReplication: Option[Set[Int]] = None, oneByOne: Boolean = false)(
     block: (ORSetKey[Int], Int, ActorRef) ⇒ Unit, afterEachKey: ORSetKey[Int] ⇒ Unit = _ ⇒ ()): Unit = {
 
     keys.foreach { key ⇒
       val startTime = System.nanoTime()
       runOn(n1) {
         val latch = TestLatch(n)
-        val replyTo = system.actorOf(countDownProps(latch))
+        val oneByOneProbe = TestProbe()
+        val replyTo =
+          if (oneByOne) oneByOneProbe.ref
+          else system.actorOf(countDownProps(latch))
 
         var i = 0
         while (i < n) {
           block(key, i, replyTo)
           i += 1
+          if (oneByOne)
+            oneByOneProbe.receiveOne(timeout)
         }
-        Await.ready(latch, 10.seconds + (2.second * factor))
+        if (!oneByOne)
+          Await.ready(latch, 10.seconds + (2.second * factor))
       }
       expectedAfterReplication.foreach { expected ⇒
         enterBarrier("repeat-" + key + "-before-awaitReplicated")
@@ -232,6 +240,26 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
       }
 
       enterBarrier("after-6")
+    }
+
+    "be good for ORSet one-by-one deltas" taggedAs PerformanceTest in {
+      val keys = (1 to repeatCount).map(n ⇒ ORSetKey[Int]("E" + n))
+      val n = 300 * factor
+      val writeMajority = WriteMajority(timeout)
+      repeat("ORSet Update one-by-one deltas", keys, n, oneByOne = true) { (key, i, replyTo) ⇒
+        replicator.tell(Update(key, ORSet(), writeMajority)(_ + i), replyTo)
+      }
+      enterBarrier("after-7")
+    }
+
+    "be good for ORSet deltas" taggedAs PerformanceTest in {
+      val keys = (1 to repeatCount).map(n ⇒ ORSetKey[Int]("F" + n))
+      val n = 200 * factor
+      val writeMajority = WriteMajority(timeout)
+      repeat("ORSet Update deltas", keys, n, oneByOne = false) { (key, i, replyTo) ⇒
+        replicator.tell(Update(key, ORSet(), writeMajority)(_ + i), replyTo)
+      }
+      enterBarrier("after-8")
     }
 
   }

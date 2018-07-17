@@ -17,15 +17,16 @@ import akka.stream.{ Outlet, SourceShape, _ }
 import akka.util.ConstantFun
 import akka.{ Done, NotUsed }
 import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
-import akka.stream.stage.GraphStageWithMaterializedValue
 
+import akka.stream.stage.GraphStageWithMaterializedValue
 import scala.compat.java8.FutureConverters._
+
+import akka.stream.impl.fusing.GraphStageModule
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise

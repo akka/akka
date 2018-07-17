@@ -774,11 +774,9 @@ data entries, because then the remote message size will be too large.
 
 ## Learn More about CRDTs
 
- * [The Final Causal Frontier](http://www.ustream.tv/recorded/61448875)
-talk by Sean Cribbs
  * [Eventually Consistent Data Structures](https://vimeo.com/43903960)
 talk by Sean Cribbs
- * [Strong Eventual Consistency and Conflict-free Replicated Data Types](http://research.microsoft.com/apps/video/default.aspx?id=153540&r=1)
+ * [Strong Eventual Consistency and Conflict-free Replicated Data Types (video)](https://www.youtube.com/watch?v=oyUHd894w18&feature=youtu.be)
 talk by Mark Shapiro
  * [A comprehensive study of Convergent and Commutative Replicated Data Types](http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf)
 paper by Mark Shapiro et. al.

@@ -56,7 +56,8 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
 
   def createBehavior(state: ReplayingState[S]): Behavior[InternalProtocol] = {
     Behaviors.setup { _ ⇒
-      startRecoveryTimer(setup.timers, setup.settings.recoveryEventTimeout)
+      // protect against event recovery stalling forever because of journal overloaded and such
+      setup.startRecoveryTimer(snapshot = false)
 
       replayEvents(state.seqNr + 1L, state.toSeqNr)
 
@@ -92,8 +93,6 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
           }
         case RecoverySuccess(highestSeqNr) ⇒
           setup.log.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
-          cancelRecoveryTimer(setup.timers)
-
           onRecoveryCompleted(state)
 
         case ReplayMessagesFailure(cause) ⇒
@@ -119,7 +118,6 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
       if (state.eventSeenInInterval) {
         stay(state.copy(eventSeenInInterval = false))
       } else {
-        cancelRecoveryTimer(setup.timers)
         val msg = s"Replay timed out, didn't get event within ]${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.seqNr}]"
         onRecoveryFailure(new RecoveryTimedOut(msg), state.seqNr, None)
       }
@@ -142,7 +140,7 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
    * @param message the message that was being processed when the exception was thrown
    */
   protected def onRecoveryFailure(cause: Throwable, sequenceNr: Long, message: Option[Any]): Behavior[InternalProtocol] = {
-    cancelRecoveryTimer(setup.timers)
+    setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
 
     val msg = message match {
@@ -166,14 +164,8 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
 
     tryUnstash(running)
   } finally {
-    cancelRecoveryTimer(setup.timers)
+    setup.cancelRecoveryTimer()
   }
-
-  // protect against event recovery stalling forever because of journal overloaded and such
-  private val EventRecoveryTickTimerKey = "event-recovery-tick"
-  private def startRecoveryTimer(timers: TimerScheduler[InternalProtocol], timeout: FiniteDuration): Unit =
-    timers.startPeriodicTimer(EventRecoveryTickTimerKey, RecoveryTickEvent(snapshot = false), timeout)
-  private def cancelRecoveryTimer(timers: TimerScheduler[InternalProtocol]): Unit = timers.cancel(EventRecoveryTickTimerKey)
 
 }
 
