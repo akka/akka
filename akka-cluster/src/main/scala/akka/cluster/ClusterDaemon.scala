@@ -683,12 +683,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
           updateLatestGossip(newGossip)
 
-          logInfo("Node [{}] is JOINING, roles [{}]", joiningNode.address, roles.mkString(", "))
           if (joiningNode == selfUniqueAddress) {
+            logInfo("Node [{}] is JOINING itself (with roles [{}]) and forming new cluster", joiningNode.address, roles.mkString(", "))
             if (localMembers.isEmpty)
               leaderActions() // important for deterministic oldest when bootstrapping
-          } else
+          } else {
+            logInfo("Node [{}] is JOINING, roles [{}]", joiningNode.address, roles.mkString(", "))
             sender() ! Welcome(selfUniqueAddress, latestGossip)
+          }
 
           publishMembershipState()
       }
