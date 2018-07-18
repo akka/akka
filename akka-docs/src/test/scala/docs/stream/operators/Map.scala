@@ -10,7 +10,7 @@ object Map {
 
   //#map
   def mapExample: Source[String, NotUsed] = {
-    val source = Source(1 to 10)
+    val source: Source[Int, NotUsed] = Source(1 to 10)
     source.map(elem => elem.toString)
   }
   //#map
