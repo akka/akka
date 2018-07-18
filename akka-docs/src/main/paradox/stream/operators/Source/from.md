@@ -4,10 +4,16 @@ Stream the values of an `Iterable`.
 
 @ref[Source operators](../index.md#source-operators)
 
+
+## Signature
+
+@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/javadsl/Source.scala) { #from }
+
+
 ## Description
 
 Stream the values of an `Iterable`. Make sure the `Iterable` is immutable or at least not modified after being used
-as a source.
+as a source. Otherwise the stream may fail with `ConcurrentModificationException` or other more subtle errors may occur.
 
 @@@div { .callout }
 
@@ -17,3 +23,8 @@ as a source.
 
 @@@
 
+
+## Examples
+
+Java
+:  @@snip [from.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceTest.java) { #source-from-example }
