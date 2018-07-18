@@ -335,7 +335,8 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseSingle() throws Exception {
     //#source-single
     CompletionStage<List<String>> future = Source.single("A").runWith(Sink.seq(), materializer);
-    List<String> result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    CompletableFuture<List<String>> completableFuture = future.toCompletableFuture();
+    List<String> result = completableFuture.get();
     ///result will contain exactly one element "A"
 
     //#source-single
