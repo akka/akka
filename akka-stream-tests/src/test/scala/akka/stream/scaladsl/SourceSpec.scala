@@ -115,7 +115,6 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val out = TestSubscriber.manualProbe[Int]
 
       Source.combine(source(0), source(1), source(2))(Merge(_)).to(Sink.fromSubscriber(out)).run()
-
       val sub = out.expectSubscription()
       sub.request(3)
 
@@ -151,6 +150,20 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val gotten = for (_ ← 0 to 1) yield out.expectNext()
       gotten.toSet should ===(Set(0, 1))
       out.expectComplete()
+    }
+
+    "combine using Concat strategy two inputs with simplified API" in {
+      //#combine
+      val sources = immutable.Seq(
+        Source(List(1, 2, 3)),
+        Source(List(10, 20, 30)))
+
+      Source.combine(sources(0), sources(1))(Concat(_))
+        .runWith(Sink.seq)
+        // This will produce the Seq(1, 2, 3, 10, 20, 30)
+        //#combine
+        .futureValue should ===(immutable.Seq(1, 2, 3, 10, 20, 30))
+
     }
 
     "combine from two inputs with combinedMat and take a materialized value" in {
