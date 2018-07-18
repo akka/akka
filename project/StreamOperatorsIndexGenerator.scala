@@ -35,7 +35,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     // TODO these don't show up as def's yet so don't show up in the index..
 //    "Fan-out operators",
     "Watching status operators",
-    "Actor interop operators"
+    "Actor interop operators",
+    "Compression operators"
   )
 
   def categoryId(name: String): String = name.toLowerCase.replace(' ', '-')

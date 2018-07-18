@@ -2,7 +2,7 @@
 
 Creates a Flow that decompresses gzip-compressed stream of data.
 
-@ref[Actor interop operators](../index.md#actor-interop-operators)
+@ref[Compression operators](../index.md#compression-operators)
 
 @@@div { .group-scala }
 
@@ -25,7 +25,3 @@ This operator is included in:
 ## Description
 
 Creates a Flow that decompresses gzip-compressed stream of data.
-
-## Examples
-
-TODO (in progress)

@@ -2,7 +2,7 @@
 
 Creates a flow that gzip-compresses a stream of ByteStrings.
 
-@ref[Actor interop operators](../index.md#actor-interop-operators)
+@ref[Compression operators](../index.md#compression-operators)
 
 @@@div { .group-scala }
 
@@ -28,7 +28,3 @@ Creates a flow that gzip-compresses a stream of ByteStrings. Note that the compr
 will SYNC_FLUSH after every `ByteString` so that it is guaranteed that every `ByteString`
 coming out of the flow can be fully decompressed without waiting for additional data. This may
 come at a compression performance cost for very small chunks.
-
-## Examples
-
-TODO (in progress)
