@@ -8,7 +8,10 @@ import akka.testkit.DefaultTimeout
 import org.scalatest.time.{ Span, Millis }
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+//#imports
 import akka.stream._
+
+//#imports
 import akka.stream.testkit._
 import akka.NotUsed
 import akka.testkit.EventFilter
@@ -23,8 +26,17 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
   implicit val materializer = ActorMaterializer()
   implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
-  "Single Source" must {
-    "produce element" in {
+   "Single Source" must {
+
+     "produce exactly one element" in  {
+       //#source-single
+       val s: Future[immutable.Seq[Int]] = Source.single(1).runWith(Sink.seq)
+       s.futureValue should ===(immutable.Seq(1))
+
+       //#source-single
+     }
+
+     "produce element" in {
       val p = Source.single(1).runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
@@ -32,7 +44,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       sub.request(1)
       c.expectNext(1)
       c.expectComplete()
-    }
+     }
 
     "reject later subscriber" in {
       val p = Source.single(1).runWith(Sink.asPublisher(false))

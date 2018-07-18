@@ -12,7 +12,10 @@ import akka.actor.Status;
 import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
+//#imports
 import akka.stream.*;
+
+//#imports
 import akka.stream.scaladsl.FlowSpec;
 import akka.util.ConstantFun;
 import akka.stream.stage.*;
@@ -326,6 +329,19 @@ public class SourceTest extends StreamTest {
     CompletionStage<String> future = Source.from(input).runWith(Sink.<String>head(), materializer);
     String result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals("A", result);
+  }
+
+  @Test
+  public void mustBeAbleToUseSingle() throws Exception {
+    //#source-single
+    CompletionStage<List<String>> future = Source.single("A").runWith(Sink.seq(), materializer);
+    List<String> result = future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    ///result will contain exactly one element "A"
+
+    //#source-single
+    assertEquals(1, result.size());
+    assertEquals("A", result.get(0));
+
   }
 
   @Test
