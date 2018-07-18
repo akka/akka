@@ -23,3 +23,11 @@ Combine several sources, using a given strategy such as merge or concat, into on
 @@@
 
 
+## Examples
+
+
+Scala
+:  @@snip [combine.scala]($akka$/akka-stream-tests/src/test/scala/akka/stream/scaladsl/SourceSpec.scala) { #imports #combine }
+
+
+
