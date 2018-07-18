@@ -67,10 +67,8 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseSimpleOperators() {
     final TestKit probe = new TestKit(system);
     final String[] lookup = {"a", "b", "c", "d", "e", "f"};
-    //#source-from-example
     final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
     final Source<Integer, NotUsed> ints = Source.from(input);
-    //#source-from-example
 
     ints
       .drop(2)

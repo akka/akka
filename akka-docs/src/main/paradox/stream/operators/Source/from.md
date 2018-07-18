@@ -5,10 +5,13 @@ Stream the values of an `Iterable`.
 @ref[Source operators](../index.md#source-operators)
 
 
+@@@div { .group-scala }
+
 ## Signature
 
 @@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/javadsl/Source.scala) { #from }
 
+@@@
 
 ## Description
 
@@ -27,4 +30,4 @@ as a source. Otherwise the stream may fail with `ConcurrentModificationException
 ## Examples
 
 Java
-:  @@snip [from.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceTest.java) { #source-from-example }
+:  @@snip [from.java]($akka$/akka-docs/src/test/java/jdocs/stream/operators/SourceDocExamples.java) { #imports #source-from-example }
