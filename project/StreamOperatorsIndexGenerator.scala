@@ -146,6 +146,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
         "akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala",
         "akka-stream/src/main/scala/akka/stream/javadsl/Sink.scala",
         "akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala",
+        "akka-stream/src/main/scala/akka/stream/javadsl/Compression.scala",
+        "akka-stream/src/main/scala/akka/stream/scaladsl/Compression.scala",
         "akka-stream/src/main/scala/akka/stream/javadsl/StreamConverters.scala",
         "akka-stream/src/main/scala/akka/stream/scaladsl/FileIO.scala",
         "akka-stream/src/main/scala/akka/stream/javadsl/FileIO.scala",

@@ -261,6 +261,10 @@ Operators meant for inter-operating between Akka Streams and Actors:
 |--|--|--|
 |ActorSink|<a name="actorref"></a>@ref[actorRef](ActorSink/actorRef.md)|Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`].|
 |ActorFlow|<a name="ask"></a>@ref[ask](ActorFlow/ask.md)|Use the `AskPattern` to send each element as an `ask` to the target actor, and expect a reply back that will be sent further downstream.|
+|Compression|<a name="deflate"></a>@ref[deflate](Compression/deflate.md)|Creates a flow that deflate-compresses a stream of ByteString.|
+|Compression|<a name="gunzip"></a>@ref[gunzip](Compression/gunzip.md)|Creates a Flow that decompresses gzip-compressed stream of data.|
+|Compression|<a name="gzip"></a>@ref[gzip](Compression/gzip.md)|Creates a flow that gzip-compresses a stream of ByteStrings.|
+|Compression|<a name="inflate"></a>@ref[inflate](Compression/inflate.md)|Creates a Flow that decompresses deflate-compressed stream of data.|
 
 @@@ index
 
@@ -392,6 +396,10 @@ Operators meant for inter-operating between Akka Streams and Actors:
 * [javaCollectorParallelUnordered](StreamConverters/javaCollectorParallelUnordered.md)
 * [asJavaStream](StreamConverters/asJavaStream.md)
 * [fromJavaStream](StreamConverters/fromJavaStream.md)
+* [gzip](Compression/gzip.md)
+* [gunzip](Compression/gunzip.md)
+* [deflate](Compression/deflate.md)
+* [inflate](Compression/inflate.md)
 * [fromPath](FileIO/fromPath.md)
 * [toPath](FileIO/toPath.md)
 * [ask](ActorFlow/ask.md)
