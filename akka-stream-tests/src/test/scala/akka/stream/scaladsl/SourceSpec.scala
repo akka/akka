@@ -26,17 +26,17 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
   implicit val materializer = ActorMaterializer()
   implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
-   "Single Source" must {
+  "Single Source" must {
 
-     "produce exactly one element" in  {
-       //#source-single
-       val s: Future[immutable.Seq[Int]] = Source.single(1).runWith(Sink.seq)
-       s.futureValue should ===(immutable.Seq(1))
+    "produce exactly one element" in {
+      //#source-single
+      val s: Future[immutable.Seq[Int]] = Source.single(1).runWith(Sink.seq)
+      s.futureValue should ===(immutable.Seq(1))
 
-       //#source-single
-     }
+      //#source-single
+    }
 
-     "produce element" in {
+    "produce element" in {
       val p = Source.single(1).runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[Int]()
       p.subscribe(c)
@@ -44,7 +44,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       sub.request(1)
       c.expectNext(1)
       c.expectComplete()
-     }
+    }
 
     "reject later subscriber" in {
       val p = Source.single(1).runWith(Sink.asPublisher(false))
