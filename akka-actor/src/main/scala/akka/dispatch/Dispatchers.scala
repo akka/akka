@@ -195,7 +195,7 @@ class Dispatchers(val settings: ActorSystem.Settings, val prerequisites: Dispatc
 
 /**
  * Configurator for creating [[akka.dispatch.Dispatcher]].
- * Returns the same dispatcher instance for for each invocation
+ * Returns the same dispatcher instance for each invocation
  * of the `dispatcher()` method.
  */
 class DispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
@@ -228,7 +228,7 @@ private[akka] object BalancingDispatcherConfigurator {
 
 /**
  * Configurator for creating [[akka.dispatch.BalancingDispatcher]].
- * Returns the same dispatcher instance for for each invocation
+ * Returns the same dispatcher instance for each invocation
  * of the `dispatcher()` method.
  */
 class BalancingDispatcherConfigurator(_config: Config, _prerequisites: DispatcherPrerequisites)
@@ -278,7 +278,7 @@ class BalancingDispatcherConfigurator(_config: Config, _prerequisites: Dispatche
 
 /**
  * Configurator for creating [[akka.dispatch.PinnedDispatcher]].
- * Returns new dispatcher instance for for each invocation
+ * Returns new dispatcher instance for each invocation
  * of the `dispatcher()` method.
  */
 class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrerequisites)
