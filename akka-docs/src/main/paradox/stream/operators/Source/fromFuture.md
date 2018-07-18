@@ -26,3 +26,7 @@ If the future fails the stream is failed with that exception.
 
 @@@
 
+## Example
+Scala
+:  @@snip [SourceFromFuture.scala]($akka$/akka-docs/src/test/scala/docs/stream/operators/SourceFromFuture.scala) { #sourceFromFuture }
+
