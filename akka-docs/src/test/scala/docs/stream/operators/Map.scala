@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.stream.operators
 
 //#imports
@@ -9,9 +13,7 @@ import akka.stream.scaladsl._
 object Map {
 
   //#map
-  def mapExample: Source[String, NotUsed] = {
-    val source: Source[Int, NotUsed] = Source(1 to 10)
-    source.map(elem => elem.toString)
-  }
+  val source: Source[Int, NotUsed] = Source(1 to 10)
+  val mapped: Source[String, NotUsed] = source.map(elem ⇒ elem.toString)
   //#map
 }
