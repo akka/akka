@@ -207,7 +207,7 @@ object SSLEngineProviderSetup {
 }
 
 /**
- * Setup for for defining a `SSLEngineProvider` that is passed in when ActorSystem
+ * Setup for defining a `SSLEngineProvider` that is passed in when ActorSystem
  * is created rather than creating one from configured class name. That is useful
  * when the SSLEngineProvider implementation require other external constructor parameters
  * or is created before the ActorSystem is created.
