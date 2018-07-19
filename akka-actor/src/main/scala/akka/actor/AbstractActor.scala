@@ -12,6 +12,7 @@ import java.util.Optional
 
 import akka.util.JavaDurationConverters
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 
 /**
@@ -185,6 +186,22 @@ abstract class AbstractActor extends Actor {
    * AbstractActor.
    */
   def getContext(): AbstractActor.ActorContext = context.asInstanceOf[AbstractActor.ActorContext]
+
+  /**
+    * It is a convenience method that returns system scheduler.
+    * <p/>
+    * It is a equivalent to `getContext().getSystem().scheduler()`
+    *
+    * @return [[akka.actor.Scheduler]]
+    */
+  def getScheduler(): Scheduler = context.system.scheduler
+
+  /**
+    * It is a convenience method that returns system dispatcher.
+    * <p/>
+    * It is a equivalent to `getContext().getSystem().getDispatcher()`
+    */
+  def getDispatcher(): ExecutionContextExecutor = context.system.dispatcher
 
   /**
    * Returns the ActorRef for this actor.
