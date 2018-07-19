@@ -27,4 +27,11 @@ Transform each element in the stream by calling a mapping function with it and p
 
 @@@
 
+## Examples
+
+
+Scala
+:  @@snip [Flow.scala]($akka$/akka-docs/src/test/scala/docs/stream/operators/Map.scala) { #imports #map }
+
+
 
