@@ -34,7 +34,8 @@ public class DataBot extends AbstractActor {
       DistributedData.get(getContext().getSystem()).replicator();
   private final Cluster node = Cluster.get(getContext().getSystem());
 
-  private final Cancellable tickTask = getContext().getSystem().scheduler().schedule(
+  // getScheduler() is equivalent to getContext().getSystem().scheduler()
+  private final Cancellable tickTask = getScheduler().schedule(
      Duration.ofSeconds(5), Duration.ofSeconds(5), getSelf(), TICK,
       getContext().dispatcher(), getSelf());
 

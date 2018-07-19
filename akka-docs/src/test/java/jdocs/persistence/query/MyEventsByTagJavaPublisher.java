@@ -51,10 +51,9 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
     this.tag = tag;
     this.currentOffset = offset;
 
-    final Scheduler scheduler = getContext().getSystem().scheduler();
-    this.continueTask = scheduler
-      .schedule(refreshInterval, refreshInterval, getSelf(), CONTINUE,
-                getContext().dispatcher(), getSelf());
+    // getScheduler() is equivalent to getContext().getSystem().scheduler()
+    this.continueTask = getScheduler().schedule(refreshInterval,
+            refreshInterval, getSelf(), CONTINUE, getContext().dispatcher(), getSelf());
   }
   
   @Override

@@ -139,7 +139,8 @@ public class FaultHandlingDocSample {
       return LoggingReceive.create(receiveBuilder().
         matchEquals(Start, x -> progressListener == null, x -> {
           progressListener = getSender();
-          getContext().getSystem().scheduler().schedule(
+          // getScheduler() is equivalent to getContext().getSystem().scheduler()
+          getScheduler().schedule(
             Duration.ZERO,  Duration.ofSeconds(1L), getSelf(), Do,
             getContext().dispatcher(), null
           );
@@ -291,7 +292,7 @@ public class FaultHandlingDocSample {
           // Tell the counter that there is no storage for the moment
           counter.tell(new UseStorage(null), getSelf());
           // Try to re-establish storage after while
-          getContext().getSystem().scheduler().scheduleOnce(
+          getScheduler().scheduleOnce(
             Duration.ofSeconds(10), getSelf(), Reconnect,
             getContext().dispatcher(), null);
         }).
