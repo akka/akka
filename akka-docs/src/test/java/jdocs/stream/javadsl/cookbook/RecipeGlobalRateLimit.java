@@ -75,12 +75,13 @@ public class RecipeGlobalRateLimit extends RecipeTest {
       this.tokenRefreshAmount = tokenRefreshAmount;
       this.permitTokens = maxAvailableTokens;
 
+      // getDispatcher() is equivalent to getContext().getSystem().dispatcher()
       this.replenishTimer = system.scheduler().schedule(
         this.tokenRefreshPeriod,
         this.tokenRefreshPeriod,
         getSelf(),
         REPLENISH_TOKENS,
-        getContext().getSystem().dispatcher(),
+        getDispatcher(),
         getSelf());
     }
     

@@ -39,7 +39,8 @@ public class DeviceGroupQuery extends AbstractActor {
     this.requestId = requestId;
     this.requester = requester;
 
-    queryTimeoutTimer = getContext().getSystem().scheduler().scheduleOnce(
+    // getScheduler() is equivalent to getContext().getSystem().scheduler()
+    queryTimeoutTimer = getScheduler().scheduleOnce(
             timeout, getSelf(), new CollectionTimeout(), getContext().dispatcher(), getSelf()
     );
   }
