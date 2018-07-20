@@ -367,6 +367,19 @@ Scala
 Java
 :   @@snip [RecipeMissedTicks.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeMissedTicks.java) { #missed-ticks }
 
+### Collecting the last n elements produced
+
+**Situation:** Given a regular stream we want to collect the last n elements emitted.
+
+This recipe uses `Sink.fold` to collect the elements and materializes into a @scala[`Future[Seq[T]]`] @java[`CompletionStage<List<T>>`].
+If the stream completes before signaling at least n elements, the Future will complete with the number of elements taken at that point.
+
+Scala
+:   @@snip [RecipeLastElements.scala]($code$/scala/docs/stream/cookbook/RecipeLastElements.scala) { #last-elements }
+    
+Java
+:   @@snip [RecipeLastElements.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeLastElements.java) { #last-elements }
+
 ### Create a stream processor that repeats the last element seen
 
 **Situation:** Given a producer and consumer, where the rate of neither is known in advance, we want to ensure that none
