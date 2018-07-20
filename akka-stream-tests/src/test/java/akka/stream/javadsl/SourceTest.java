@@ -340,7 +340,7 @@ public class SourceTest extends StreamTest {
     //result list will contain exactly one element "A"
 
     //#source-single
-    //DO NOT use get() directly in your production code!
+    // DO NOT use get() directly in your production code!
     List<String> result = completableFuture.get();
     assertEquals(1, result.size());
     assertEquals("A", result.get(0));
