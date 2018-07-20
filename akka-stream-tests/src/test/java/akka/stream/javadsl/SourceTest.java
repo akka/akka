@@ -337,7 +337,7 @@ public class SourceTest extends StreamTest {
     CompletionStage<List<String>> future = Source.single("A").runWith(Sink.seq(), materializer);
     CompletableFuture<List<String>> completableFuture = future.toCompletableFuture();
     completableFuture.thenAccept(result -> System.out.printf("collected elements: %s\n", result));
-    //result list will contain exactly one element "A"
+    // result list will contain exactly one element "A"
 
     //#source-single
     // DO NOT use get() directly in your production code!
