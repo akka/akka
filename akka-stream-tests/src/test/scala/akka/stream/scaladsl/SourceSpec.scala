@@ -5,7 +5,8 @@
 package akka.stream.scaladsl
 
 import akka.testkit.DefaultTimeout
-import org.scalatest.time.{ Span, Millis }
+import org.scalatest.time.{ Millis, Span }
+
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 //#imports
@@ -27,6 +28,19 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
   implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
   "Single Source" must {
+
+    "produce exactly one element" in {
+      implicit val ec = system.dispatcher
+      //#source-single
+      val s: Future[immutable.Seq[Int]] = Source.single(1).runWith(Sink.seq)
+      s.foreach(list ⇒ println(s"Collected elements: $list")) // prints: Collected elements: List(1)
+
+      //#source-single
+
+      s.futureValue should ===(immutable.Seq(1))
+
+    }
+
     "produce element" in {
       val p = Source.single(1).runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[Int]()
