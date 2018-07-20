@@ -33,8 +33,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       implicit val ec = system.dispatcher
       //#source-single
       val s: Future[immutable.Seq[Int]] = Source.single(1).runWith(Sink.seq)
-      s.foreach(list ⇒ println(s"collected elements: $list"))
-      //list contains exactly one element - 1!
+      s.foreach(list ⇒ println(s"Collected elements: $list")) // prints: Collected elements: List(1)
 
       //#source-single
 
