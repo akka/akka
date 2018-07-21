@@ -25,3 +25,12 @@ Stream a single object
 
 @@@
 
+## Examples
+
+Scala
+:  @@snip [source.scala]($akka$/akka-stream-tests/src/test/scala/akka/stream/scaladsl/SourceSpec.scala) { #imports #source-single }
+
+Java
+:   @@snip [source.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceTest.java) { #imports #source-single }
+
+
