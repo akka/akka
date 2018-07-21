@@ -233,7 +233,23 @@ object Behavior {
    * that PostStop can be sent to previous behavior from `finishTerminate`.
    */
   private[akka] class StoppedBehavior[T](val postStop: OptionVal[Behavior[T]]) extends Behavior[T] {
-    override def toString = "Stopped"
+    validatePostStop(postStop)
+
+    @throws[IllegalArgumentException]
+    private final def validatePostStop(postStop: OptionVal[Behavior[T]]): Unit = {
+      postStop match {
+        case OptionVal.Some(b: DeferredBehavior[_]) ⇒
+          throw new IllegalArgumentException(s"Behavior used as `postStop` behavior in Stopped(...) was a deferred one [${b.toString}], which is not supported (it would never be evaluated).")
+        case _ ⇒ // all good
+      }
+    }
+
+    override def toString = "Stopped" + {
+      postStop match {
+        case OptionVal.Some(_) ⇒ "(postStop)"
+        case _                 ⇒ "()"
+      }
+    }
   }
 
   /**

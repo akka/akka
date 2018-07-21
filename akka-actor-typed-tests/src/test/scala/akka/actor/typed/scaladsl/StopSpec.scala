@@ -5,8 +5,10 @@
 package akka.actor.typed.scaladsl
 
 import akka.Done
-import akka.actor.typed.{ PostStop, TypedAkkaSpecWithShutdown }
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.TE
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.typed.{ Behavior, PostStop, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
+import akka.testkit.EventFilter
 
 import scala.concurrent.Promise
 
@@ -56,6 +58,21 @@ class StopSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       sawSignal.future.futureValue should ===(Done)
     }
 
+  }
+
+  "PostStop" should {
+    "immediately throw when a deferred behavior (setup) is passed in as postStop" in {
+      val ex = intercept[IllegalArgumentException] {
+        Behaviors.stopped(
+          // illegal:
+          Behaviors.setup[String] { _ ⇒
+            throw TE("boom!")
+          }
+        )
+      }
+
+      ex.getMessage should include("Behavior used as `postStop` behavior in Stopped(...) was a deferred one ")
+    }
   }
 
 }
