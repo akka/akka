@@ -12,10 +12,6 @@ Emit each integer in a range, with an option to take bigger steps than 1.
   version="$akka.version$"
 }
 
-## Signature
-
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/javadsl/Source.scala) { #range }
-
 
 ## Description
 
@@ -32,7 +28,13 @@ Emit each integer in a range, with an option to take bigger steps than 1. In Sca
 
 ## Examples
 
-Java
-:   @@snip [Source.java]($akka$/akka-docs/src/test/scala/docs/stream/operators/Source.java) { #imports #range }
+Define the range of integers.
 
+Java
+:   @@snip [Source.java]($akka$/akka-docs/src/test/java/jdocs/stream/operators/Source.java) { #imports #range }
+
+Print out the stream of integers.
+
+Java
+:   @@snip [Source.java]($akka$/akka-docs/src/test/java/jdocs/stream/operators/Source.java) { #run-range}
 
