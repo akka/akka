@@ -15,7 +15,7 @@ Emit each integer in a range, with an option to take bigger steps than 1.
 
 ## Description
 
-Emit each integer in a range, with an option to take bigger steps than 1. In Scala, you can use the apply method to generate a sequence of integers.
+Emit each integer in a range, with an option to take bigger steps than 1. @scala[In Scala, you can use the `apply` method to generate a sequence of integers.]
 
 
 @@@div { .callout }
