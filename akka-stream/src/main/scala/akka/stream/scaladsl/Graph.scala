@@ -883,8 +883,8 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean,
         if (!isClosed(out)) {
           push(out, grab(in))
           if (!noPending) pull(in)
-        } else {
-          // try to find one output that isn't closed
+        } else if (!noPending) {
+          // if they are pending outlets, try to find one output that isn't closed
           dequeueAndDispatch()
         }
       }
