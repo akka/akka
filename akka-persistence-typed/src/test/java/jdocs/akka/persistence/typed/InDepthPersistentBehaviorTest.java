@@ -222,7 +222,7 @@ public class InDepthPersistentBehaviorTest {
 
     //#event-handler
     @Override
-    public EventHandler<BlogEvent, BlogState> eventHandler() {
+    public EventHandler<BlogState, BlogEvent> eventHandler() {
       return eventHandlerBuilder()
           .matchEvent(PostAdded.class, (state, event) ->
               new DraftState(event.content, false))

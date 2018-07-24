@@ -285,7 +285,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
         }
 
         @Override
-        public EventHandler<Incremented, State> eventHandler() {
+        public EventHandler<State, Incremented> eventHandler() {
           return eventHandlerBuilder()
               .matchEvent(Incremented.class, (state, event) -> {
                 List<Integer> newHistory = new ArrayList<>(state.history);
