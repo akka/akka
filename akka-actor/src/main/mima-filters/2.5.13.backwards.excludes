@@ -20,7 +20,3 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.checkRe
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.dungeon.ReceiveTimeout.checkReceiveTimeout")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.ReceiveTimeout.checkReceiveTimeout$default$1")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.ReceiveTimeout.checkReceiveTimeout")
-
-# NPE when using import context.dispatcher #25040
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff*")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.FSM*")

@@ -127,9 +127,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
   import ClusterMetricsCollector._
   import ClusterEvent._
   import Member.addressOrdering
-  import scala.concurrent.ExecutionContext
-
-  private implicit val ec: ExecutionContext = context.dispatcher
+  import context.dispatcher
   val cluster = Cluster(context.system)
   import cluster.{ selfAddress, scheduler }
   import cluster.InfoLogger._

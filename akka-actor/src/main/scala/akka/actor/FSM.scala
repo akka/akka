@@ -7,7 +7,6 @@ package akka.actor
 import language.implicitConversions
 import scala.concurrent.duration.Duration
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext
 import akka.routing.{ Deafen, Listen, Listeners }
 
 import scala.concurrent.duration.FiniteDuration
@@ -628,8 +627,6 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     for (te ← transitionEvent) { if (te.isDefinedAt(tuple)) te(tuple) }
   }
 
-  private implicit val ec: ExecutionContext = context.dispatcher
-
   /*
    * *******************************************
    *       Main actor receive() method
@@ -716,6 +713,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
       currentState = nextState
 
       def scheduleTimeout(d: FiniteDuration): Some[Cancellable] = {
+        import context.dispatcher
         Some(context.system.scheduler.scheduleOnce(d, self, TimeoutMarker(generation)))
       }
 
