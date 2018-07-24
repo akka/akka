@@ -165,7 +165,7 @@ public class OptionalBlogState {
     }
 
     @Override
-    public EventHandler<BlogEvent, Optional<BlogState>> eventHandler() {
+    public EventHandler<Optional<BlogState>, BlogEvent> eventHandler() {
       return eventHandlerBuilder()
         .matchEvent(PostAdded.class, (state, event) ->
             Optional.of(new BlogState(event.content, false)))

@@ -103,7 +103,7 @@ public class PersistentActorCompileOnlyTest {
 
       //#event-handler
       @Override
-      public EventHandler<SimpleEvent, SimpleState> eventHandler() {
+      public EventHandler<SimpleState, SimpleEvent> eventHandler() {
         return (state, event) -> state.addEvent(event);
       }
       //#event-handler
@@ -164,7 +164,7 @@ public class PersistentActorCompileOnlyTest {
       }
 
       @Override
-      public EventHandler<MyEvent, ExampleState> eventHandler() {
+      public EventHandler<ExampleState, MyEvent> eventHandler() {
         return eventHandlerBuilder()
           .matchEvent(Evt.class, (state, event) -> {
             state.events.add(event.data);
@@ -278,7 +278,7 @@ public class PersistentActorCompileOnlyTest {
       }
 
       @Override
-      public EventHandler<Event, EventsInFlight> eventHandler() {
+      public EventHandler<EventsInFlight, Event> eventHandler() {
         return eventHandlerBuilder()
           .matchEvent(IntentRecord.class, (state, event) -> {
             int nextCorrelationId = event.correlationId;
