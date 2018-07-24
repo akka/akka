@@ -15,10 +15,10 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
   val junitVersion = "4.12"
-  val sslConfigVersion = "0.2.3"
+  val sslConfigVersion = "0.2.4"
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
-  val aeronVersion = "1.9.1"
+  val aeronVersion = "1.9.3"
 
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.12", "2.12.6"),
@@ -26,10 +26,10 @@ object Dependencies {
     scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
       CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 12 ⇒ "1.13.5" // does not work for 2.11
+        case Some((2, n)) if n >= 12 ⇒ "1.14.0" // does not work for 2.11
         case _                       ⇒ "1.13.2"
       }),
-    scalaTestVersion := "3.0.4",
+    scalaTestVersion := "3.0.5",
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 13 ⇒ "0.9.0"
@@ -59,7 +59,7 @@ object Dependencies {
 
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
-    val jctools = "org.jctools" % "jctools-core" % "2.1.1" // ApacheV2
+    val jctools = "org.jctools" % "jctools-core" % "2.1.2" // ApacheV2
 
     // reactive streams
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % "1.0.2" // CC0
@@ -67,7 +67,7 @@ object Dependencies {
     // ssl-config
     val sslConfigCore = "com.typesafe" %% "ssl-config-core" % sslConfigVersion // ApacheV2
 
-    val lmdb = "org.lmdbjava" % "lmdbjava" % "0.6.0" // ApacheV2, OpenLDAP Public License
+    val lmdb = "org.lmdbjava" % "lmdbjava" % "0.6.1" // ApacheV2, OpenLDAP Public License
 
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
@@ -77,17 +77,17 @@ object Dependencies {
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
     object Docs {
-      val sprayJson = "io.spray" %% "spray-json" % "1.3.3" % "test"
-      val gson = "com.google.code.gson" % "gson" % "2.8.2" % "test"
+      val sprayJson = "io.spray" %% "spray-json" % "1.3.4" % "test"
+      val gson = "com.google.code.gson" % "gson" % "2.8.5" % "test"
     }
 
     object Test {
       val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % "test" // ApacheV2
-      val commonsIo = "commons-io" % "commons-io" % "2.5" % "test" // ApacheV2
-      val commonsCodec = "commons-codec" % "commons-codec" % "1.10" % "test" // ApacheV2
+      val commonsIo = "commons-io" % "commons-io" % "2.6" % "test" // ApacheV2
+      val commonsCodec = "commons-codec" % "commons-codec" % "1.11" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = "ch.qos.logback" % "logback-classic" % "1.2.3" % "test" // EPL 1.0 / LGPL 2.1
-      val mockito = "org.mockito" % "mockito-core" % "2.7.16" % "test" // MIT
+      val mockito = "org.mockito" % "mockito-core" % "2.19.1" % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "test" } // ApacheV2
       val scalacheck = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value % "test" } // New BSD
