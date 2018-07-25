@@ -49,10 +49,10 @@ public class DeviceTest extends JUnitSuite {
     ActorRef deviceActor = system.actorOf(Device.props("group", "device"));
 
     deviceActor.tell(new DeviceManager.RequestTrackDevice("wrongGroup", "device"), probe.getRef());
-    probe.expectNoMsg();
+    probe.expectNoMessage();
 
     deviceActor.tell(new DeviceManager.RequestTrackDevice("group", "wrongDevice"), probe.getRef());
-    probe.expectNoMsg();
+    probe.expectNoMessage();
   }
   //#device-registration-tests
 
