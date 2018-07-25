@@ -12,10 +12,10 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
-import akka.persistence.typed.EventRejectedException
+import akka.persistence.typed.{ Callback, EventRejectedException, SideEffect, Stop }
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, MDC }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
-import akka.persistence.typed.scaladsl.{ ChainedEffect, Effect }
+import akka.persistence.typed.scaladsl.Effect
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -86,7 +86,7 @@ private[akka] object EventsourcedRunning {
       msg:         Any,
       state:       EventsourcedState[S],
       effect:      Effect[E, S],
-      sideEffects: immutable.Seq[ChainedEffect[S]] = Nil
+      sideEffects: immutable.Seq[SideEffect[S]] = Nil
     ): Behavior[InternalProtocol] = {
       if (setup.log.isDebugEnabled)
         setup.log.debug(
@@ -170,7 +170,7 @@ private[akka] object EventsourcedRunning {
     state:                      EventsourcedState[S],
     numberOfEvents:             Int,
     shouldSnapshotAfterPersist: Boolean,
-    sideEffects:                immutable.Seq[ChainedEffect[S]]
+    sideEffects:                immutable.Seq[SideEffect[S]]
   ): Behavior[InternalProtocol] = {
     setup.setMdc(persistingEventsMdc)
     new PersistingEvents(state, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
@@ -180,7 +180,7 @@ private[akka] object EventsourcedRunning {
     var state:                  EventsourcedState[S],
     numberOfEvents:             Int,
     shouldSnapshotAfterPersist: Boolean,
-    var sideEffects:            immutable.Seq[ChainedEffect[S]])
+    var sideEffects:            immutable.Seq[SideEffect[S]])
     extends MutableBehavior[EventsourcedBehavior.InternalProtocol] {
 
     private var eventCounter = 0
@@ -275,7 +275,7 @@ private[akka] object EventsourcedRunning {
 
   // --------------------------
 
-  def applySideEffects(effects: immutable.Seq[ChainedEffect[S]], state: EventsourcedState[S]): Behavior[InternalProtocol] = {
+  def applySideEffects(effects: immutable.Seq[SideEffect[S]], state: EventsourcedState[S]): Behavior[InternalProtocol] = {
     var res: Behavior[InternalProtocol] = handlingCommands(state)
     val it = effects.iterator
 
@@ -290,16 +290,16 @@ private[akka] object EventsourcedRunning {
     res
   }
 
-  def applySideEffect(effect: ChainedEffect[S], state: EventsourcedState[S]): Behavior[InternalProtocol] = effect match {
+  def applySideEffect(effect: SideEffect[S], state: EventsourcedState[S]): Behavior[InternalProtocol] = effect match {
     case _: Stop.type @unchecked ⇒
       Behaviors.stopped
 
-    case SideEffect(sideEffects) ⇒
+    case Callback(sideEffects) ⇒
       sideEffects(state.state)
       Behaviors.same
 
     case _ ⇒
-      throw new IllegalArgumentException(s"Not supported effect detected [${effect.getClass.getName}]!")
+      throw new IllegalArgumentException(s"Not supported side effect detected [${effect.getClass.getName}]!")
   }
 
 }

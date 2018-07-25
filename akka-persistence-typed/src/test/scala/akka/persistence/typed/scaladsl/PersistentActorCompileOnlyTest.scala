@@ -6,11 +6,11 @@ package akka.persistence.typed.scaladsl
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.TimerScheduler
+import akka.persistence.typed.SideEffect
 
 object PersistentActorCompileOnlyTest {
 
@@ -72,7 +72,7 @@ object PersistentActorCompileOnlyTest {
       commandHandler = CommandHandler.command {
         case Cmd(data, sender) ⇒
           Effect.persist(Evt(data))
-            .andThen { _ ⇒
+            .thenRun { _ ⇒
               sender ! Ack
             }
       },
@@ -115,7 +115,7 @@ object PersistentActorCompileOnlyTest {
 
       commandHandler = (ctx: ActorContext[Command], state, cmd) ⇒ cmd match {
         case DoSideEffect(data) ⇒
-          Effect.persist(IntentRecorded(state.nextCorrelationId, data)).andThen { _ ⇒
+          Effect.persist(IntentRecorded(state.nextCorrelationId, data)).thenRun { _ ⇒
             performSideEffect(ctx.self, state.nextCorrelationId, data)
           }
         case AcknowledgeSideEffect(correlationId) ⇒
@@ -224,7 +224,7 @@ object PersistentActorCompileOnlyTest {
       commandHandler = (ctx, _, cmd) ⇒ cmd match {
         case RegisterTask(task) ⇒
           Effect.persist(TaskRegistered(task))
-            .andThen { _ ⇒
+            .thenRun { _ ⇒
               val child = ctx.spawn[Nothing](worker(task), task)
               // This assumes *any* termination of the child may trigger a `TaskDone`:
               ctx.watchWith(child, TaskDone(task))
@@ -279,7 +279,7 @@ object PersistentActorCompileOnlyTest {
       def addItem(id: Id, self: ActorRef[Command]) =
         Effect
           .persist[Event, List[Id]](ItemAdded(id))
-          .andThen(_ ⇒ metadataRegistry ! GetMetaData(id, adapt))
+          .thenRun(_ ⇒ metadataRegistry ! GetMetaData(id, adapt))
 
       PersistentBehaviors.receive[Command, Event, List[Id]](
         persistenceId = "basket-1",
@@ -344,10 +344,10 @@ object PersistentActorCompileOnlyTest {
 
     //#commonChainedEffects
     // Example factoring out a chained effect rather than using `andThen`
-    val commonChainedEffects = ChainedEffect[Mood](_ ⇒ println("Command processed"))
+    val commonChainedEffects = SideEffect[Mood](_ ⇒ println("Command processed"))
     // Then in a command handler:
     Effect.persist(Remembered("Yep")) // persist event
-      .andChain(commonChainedEffects) // add on common chained effect
+      .andThen(commonChainedEffects) // add on common chained effect
     //#commonChainedEffects
 
     val commandHandler: CommandHandler[Command, Event, Mood] = { (_, state, cmd) ⇒
@@ -357,26 +357,16 @@ object PersistentActorCompileOnlyTest {
           Effect.none
         case CheerUp(sender) ⇒
           changeMoodIfNeeded(state, Happy)
-            .andThen { _ ⇒
+            .thenRun { _ ⇒
               sender ! Ack
-            }.andChain(commonChainedEffects)
+            }.andThen(commonChainedEffects)
         case Remember(memory) ⇒
           // A more elaborate example to show we still have full control over the effects
           // if needed (e.g. when some logic is factored out but you want to add more effects)
           val commonEffects: Effect[Event, Mood] = changeMoodIfNeeded(state, Happy)
           Effect.persist(commonEffects.events :+ Remembered(memory))
-            .andChain(commonChainedEffects)
+            .andThen(commonChainedEffects)
       }
-
-      /*
-      Should not compile. Have to have an Effect.
-      val commandHandler2: CommandHandler[Command, Event, Mood] = { (_, state, cmd) ⇒
-        cmd match {
-          case Greet(whom) ⇒
-            println(s"Hi there, I'm $state!")
-            ChainedEffect.stop()
-        }
-        */
     }
 
     private val eventHandler: EventHandler[Mood, Event] = {
@@ -404,7 +394,7 @@ object PersistentActorCompileOnlyTest {
     private val commandHandler: CommandHandler[Command, Event, State] = CommandHandler.command {
       case Enough ⇒
         Effect.persist(Done)
-          .andThen((_: State) ⇒ println("yay"))
+          .thenRun((_: State) ⇒ println("yay"))
           .andThenStop
     }
 
@@ -429,7 +419,7 @@ object PersistentActorCompileOnlyTest {
       emptyState = new First,
       commandHandler = CommandHandler.command {
         cmd ⇒
-          Effect.persist(cmd).andThen {
+          Effect.persist(cmd).thenRun {
             case _: First  ⇒ println("first")
             case _: Second ⇒ println("second")
           }

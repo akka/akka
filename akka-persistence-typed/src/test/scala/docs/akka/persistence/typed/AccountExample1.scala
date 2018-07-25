@@ -43,7 +43,7 @@ object AccountExample1 {
         else {
           Effect
             .persist(Withdrawn(amount))
-            .andThen {
+            .thenRun {
               case Some(OpenedAccount(balance)) ⇒
                 // do some side-effect using balance
                 println(balance)

@@ -64,8 +64,8 @@ object PerformanceSpec {
         persistenceId = name,
         "",
         commandHandler = CommandHandler.command {
-          case StopMeasure      ⇒ Effect.none.andThen(_ ⇒ probe.ref ! StopMeasure)
-          case FailAt(sequence) ⇒ Effect.none.andThen(_ ⇒ parameters.failAt = sequence)
+          case StopMeasure      ⇒ Effect.none.thenRun(_ ⇒ probe.ref ! StopMeasure)
+          case FailAt(sequence) ⇒ Effect.none.thenRun(_ ⇒ parameters.failAt = sequence)
           case command          ⇒ other(command, parameters)
         },
         eventHandler = {
@@ -80,7 +80,7 @@ object PerformanceSpec {
   def eventSourcedTestPersistenceBehavior(name: String, probe: TestProbe[Command]) =
     behavior(name, probe) {
       case (CommandWithEvent(evt), parameters) ⇒
-        Effect.persist(evt).andThen(_ ⇒ {
+        Effect.persist(evt).thenRun(_ ⇒ {
           parameters.persistCalls += 1
           if (parameters.every(1000)) print(".")
           if (parameters.shouldFail) throw TE("boom")

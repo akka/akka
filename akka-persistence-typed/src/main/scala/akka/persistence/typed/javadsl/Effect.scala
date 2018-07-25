@@ -7,7 +7,7 @@ package akka.persistence.typed.javadsl
 import akka.annotation.DoNotInherit
 import akka.japi.function
 import akka.persistence.typed.internal._
-import akka.persistence.typed.scaladsl.ChainedEffect
+import akka.persistence.typed.{ SideEffect, Stop }
 
 import scala.collection.JavaConverters._
 
@@ -61,10 +61,9 @@ object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
   final def andThen(callback: function.Effect): Effect[Event, State] =
     CompositeEffect(this, SideEffect[State]((_: State) ⇒ callback.apply()))
 
-  final def andThen(chainedEffect: ChainedEffect[State]): Effect[Event, State] =
-    CompositeEffect(this, chainedEffect)
+  def andThen(chainedEffect: SideEffect[State]): Effect[Event, State]
 
   final def thenStop(): Effect[Event, State] =
-    CompositeEffect(this, Stop.asInstanceOf[ChainedEffect[State]])
+    CompositeEffect(this, Stop.asInstanceOf[SideEffect[State]])
 
 }
