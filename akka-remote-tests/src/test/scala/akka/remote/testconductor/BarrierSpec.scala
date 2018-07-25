@@ -552,7 +552,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
     expectMsgType[ActorRef]
   }
 
-  private def noMsg(probes: TestProbe*) {
+  private def noMsg(probes: TestProbe*): Unit = {
     expectNoMsg(1 second)
     probes foreach (_.msgAvailable should ===(false))
   }

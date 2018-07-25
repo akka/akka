@@ -62,7 +62,7 @@ class ConcurrentActivationTest extends WordSpec with Matchers with NonSharedCame
         // should be the size of the activated activated producers and consumers
         deactivations.size should ===(2 * number * number)
         def partitionNames(refs: immutable.Seq[ActorRef]) = refs.map(_.path.name).partition(_.startsWith("concurrent-test-echo-consumer"))
-        def assertContainsSameElements(lists: (Seq[_], Seq[_])) {
+        def assertContainsSameElements(lists: (Seq[_], Seq[_])): Unit = {
           val (a, b) = lists
           a.intersect(b).size should ===(a.size)
         }
@@ -144,7 +144,7 @@ class Registrar(val start: Int, val number: Int, activationsPromise: Promise[Lis
       }
   }
 
-  def add(actor: ⇒ Actor, name: String) {
+  def add(actor: ⇒ Actor, name: String): Unit = {
     val ref = context.actorOf(Props(actor), name)
     actorRefs = actorRefs + ref
     val result = camel.activationFutureFor(ref)

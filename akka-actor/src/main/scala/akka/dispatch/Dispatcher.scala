@@ -67,7 +67,7 @@ class Dispatcher(
   /**
    * INTERNAL API
    */
-  protected[akka] def executeTask(invocation: TaskInvocation) {
+  protected[akka] def executeTask(invocation: TaskInvocation): Unit = {
     try {
       executorService execute invocation
     } catch {

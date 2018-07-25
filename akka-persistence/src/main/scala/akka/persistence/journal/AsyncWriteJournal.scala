@@ -280,7 +280,7 @@ private[persistence] object AsyncWriteJournal {
     }
 
     @scala.annotation.tailrec
-    private def resequence(d: Desequenced) {
+    private def resequence(d: Desequenced): Unit = {
       if (d.snr == delivered + 1) {
         delivered = d.snr
         d.target.tell(d.msg, d.sender)

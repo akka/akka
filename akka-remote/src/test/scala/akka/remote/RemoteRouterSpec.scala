@@ -89,7 +89,7 @@ class RemoteRouterSpec extends AkkaSpec(s"""
     }""").withFallback(system.settings.config)
   val masterSystem = ActorSystem(masterSystemName, conf)
 
-  override def afterTermination() {
+  override def afterTermination(): Unit = {
     shutdown(masterSystem)
   }
 

@@ -118,7 +118,7 @@ class AkkaProtocolStressTest extends AkkaSpec(configA) with ImplicitSender with 
     }
   }
 
-  override def beforeTermination() {
+  override def beforeTermination(): Unit = {
     system.eventStream.publish(TestEvent.Mute(
       EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
       EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))

@@ -133,7 +133,7 @@ class ActorCreationPerfSpec extends AkkaSpec(ActorCreationPerfSpec.config) with 
   override val reportMetricsEnabled = metricsConfig.getBoolean("akka.test.actor.ActorPerfSpec.report-metrics")
   override val forceGcEnabled = metricsConfig.getBoolean("akka.test.actor.ActorPerfSpec.force-gc")
 
-  def runWithCounterInside(metricName: String, scenarioName: String, number: Int, propsCreator: () ⇒ Props) {
+  def runWithCounterInside(metricName: String, scenarioName: String, number: Int, propsCreator: () ⇒ Props): Unit = {
     val hist = histogram(BlockingTimeKey / metricName)
 
     val driver = system.actorOf(Props(classOf[TimingDriver], hist), scenarioName)
@@ -178,7 +178,7 @@ class ActorCreationPerfSpec extends AkkaSpec(ActorCreationPerfSpec.config) with 
     after diff before
   }
 
-  def registerTests(name: String, propsCreator: () ⇒ Props) {
+  def registerTests(name: String, propsCreator: () ⇒ Props): Unit = {
     val scenarioName = name.replaceAll("""[^\w]""", "")
 
     s"warm-up before: $name" taggedAs PerformanceTest in {

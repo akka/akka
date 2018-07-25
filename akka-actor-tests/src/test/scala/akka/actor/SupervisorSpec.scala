@@ -51,7 +51,7 @@ object SupervisorSpec {
         throw e
     }
 
-    override def postRestart(reason: Throwable) {
+    override def postRestart(reason: Throwable): Unit = {
       sendTo ! reason.getMessage
     }
   }
@@ -164,7 +164,7 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
     (pingpong1, pingpong2, pingpong3, topSupervisor)
   }
 
-  override def atStartup() {
+  override def atStartup(): Unit = {
     system.eventStream.publish(Mute(EventFilter[RuntimeException](ExceptionMessage)))
   }
 
@@ -206,10 +206,10 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
         var postRestarts = 0
         var preStarts = 0
         var postStops = 0
-        override def preRestart(reason: Throwable, message: Option[Any]) { preRestarts += 1; testActor ! ("preRestart" + preRestarts) }
-        override def postRestart(reason: Throwable) { postRestarts += 1; testActor ! ("postRestart" + postRestarts) }
-        override def preStart() { preStarts += 1; testActor ! ("preStart" + preStarts) }
-        override def postStop() { postStops += 1; testActor ! ("postStop" + postStops) }
+        override def preRestart(reason: Throwable, message: Option[Any]): Unit = { preRestarts += 1; testActor ! ("preRestart" + preRestarts) }
+        override def postRestart(reason: Throwable): Unit = { postRestarts += 1; testActor ! ("postRestart" + postRestarts) }
+        override def preStart(): Unit = { preStarts += 1; testActor ! ("preStart" + preStarts) }
+        override def postStop(): Unit = { postStops += 1; testActor ! ("postStop" + postStops) }
         def receive = {
           case "crash" ⇒ { testActor ! "crashed"; throw new RuntimeException("Expected") }
           case "ping"  ⇒ sender() ! "pong"
@@ -384,7 +384,7 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
         val init = inits.getAndIncrement()
         if (init % 3 == 1) throw new IllegalStateException("Don't wanna!")
 
-        override def preRestart(cause: Throwable, msg: Option[Any]) {
+        override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
           if (init % 3 == 0) throw new IllegalStateException("Don't wanna!")
         }
 
