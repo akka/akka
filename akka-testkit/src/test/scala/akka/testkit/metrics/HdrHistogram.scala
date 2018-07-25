@@ -24,7 +24,7 @@ private[akka] class HdrHistogram(
 
   private val hist = new hdr.Histogram(highestTrackableValue, numberOfSignificantValueDigits)
 
-  def update(value: Long) {
+  def update(value: Long): Unit = {
     try
       hist.recordValue(value)
     catch {
@@ -32,7 +32,7 @@ private[akka] class HdrHistogram(
     }
   }
 
-  def updateWithCount(value: Long, count: Long) {
+  def updateWithCount(value: Long, count: Long): Unit = {
     try
       hist.recordValueWithCount(value, count)
     catch {

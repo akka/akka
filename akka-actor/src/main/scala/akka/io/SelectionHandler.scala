@@ -47,7 +47,7 @@ private[io] trait ChannelRegistry {
    * Registers the given channel with the selector, creates a ChannelRegistration instance for it
    * and dispatches it back to the channelActor calling this `register`
    */
-  def register(channel: SelectableChannel, initialOps: Int)(implicit channelActor: ActorRef)
+  def register(channel: SelectableChannel, initialOps: Int)(implicit channelActor: ActorRef): Unit
 }
 
 /**
@@ -241,8 +241,8 @@ private[io] object SelectionHandler {
 
     // FIXME: Add possibility to signal failure of task to someone
     private abstract class Task extends Runnable {
-      def tryRun()
-      def run() {
+      def tryRun(): Unit
+      def run(): Unit = {
         try tryRun()
         catch {
           case _: CancelledKeyException ⇒ // ok, can be triggered while setting interest ops

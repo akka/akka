@@ -79,7 +79,7 @@ class RemoteWatcherSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultCon
     akka.remote.transport.AssociationHandle.Disassociated.getClass,
     akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
 
-  override def afterTermination() {
+  override def afterTermination(): Unit = {
     shutdown(remoteSystem)
     super.afterTermination()
   }

@@ -18,12 +18,12 @@ class AveragingGauge extends Gauge[Double] {
   private val sum = new LongAdder
   private val count = new LongAdder
 
-  def add(n: Long) {
+  def add(n: Long): Unit = {
     count.increment()
     sum add n
   }
 
-  def add(ns: Seq[Long]) {
+  def add(ns: Seq[Long]): Unit = {
     // takes a mutable Seq on order to allow use with Array's
     count add ns.length
     sum add ns.sum

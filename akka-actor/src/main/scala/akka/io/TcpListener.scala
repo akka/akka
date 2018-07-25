@@ -124,7 +124,7 @@ private[io] class TcpListener(
     } else if (bind.pullMode) limit else BatchAcceptLimit
   }
 
-  override def postStop() {
+  override def postStop(): Unit = {
     try {
       if (channel.isOpen) {
         log.debug("Closing serverSocketChannel after being stopped")

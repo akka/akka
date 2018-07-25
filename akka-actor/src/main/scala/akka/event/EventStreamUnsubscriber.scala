@@ -24,7 +24,7 @@ protected[akka] class EventStreamUnsubscriber(eventStream: EventStream, debug: B
 
   import EventStreamUnsubscriber._
 
-  override def preStart() {
+  override def preStart(): Unit = {
     if (debug) eventStream.publish(Logging.Debug(simpleName(getClass), getClass, s"registering unsubscriber with $eventStream"))
     eventStream initUnsubscriber self
   }

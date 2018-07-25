@@ -153,7 +153,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     case m ⇒ m
   }
 
-  def runSpec(sMethods: List[Method], jMethods: List[Method]) {
+  def runSpec(sMethods: List[Method], jMethods: List[Method]): Unit = {
     var warnings = 0
 
     val results = for {

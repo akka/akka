@@ -125,7 +125,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
       //#alt-transition-syntax
       onTransition(handler _)
 
-      def handler(from: StateType, to: StateType) {
+      def handler(from: StateType, to: StateType): Unit = {
         // handle it here ...
       }
       //#alt-transition-syntax

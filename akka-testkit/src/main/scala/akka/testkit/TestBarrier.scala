@@ -28,7 +28,7 @@ class TestBarrier(count: Int) {
 
   def await()(implicit system: ActorSystem): Unit = await(TestBarrier.DefaultTimeout)
 
-  def await(timeout: FiniteDuration)(implicit system: ActorSystem) {
+  def await(timeout: FiniteDuration)(implicit system: ActorSystem): Unit = {
     try {
       barrier.await(timeout.dilated.toNanos, TimeUnit.NANOSECONDS)
     } catch {
