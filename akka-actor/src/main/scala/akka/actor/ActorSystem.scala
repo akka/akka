@@ -487,6 +487,12 @@ abstract class ActorSystem extends ActorRefFactory {
   //#scheduler
 
   /**
+   * Java API: Light-weight scheduler for running asynchronous tasks after some deadline
+   * in the future. Not terribly precise but cheap.
+   */
+  def getScheduler: Scheduler = scheduler
+
+  /**
    * Helper object for looking up configured dispatchers.
    */
   def dispatchers: Dispatchers
@@ -498,6 +504,14 @@ abstract class ActorSystem extends ActorRefFactory {
    * Importing this member will place the default MessageDispatcher in scope.
    */
   implicit def dispatcher: ExecutionContextExecutor
+
+  /**
+   * Java API: Default dispatcher as configured. This dispatcher is used for all actors
+   * in the actor system which do not have a different dispatcher configured
+   * explicitly.
+   * Importing this member will place the default MessageDispatcher in scope.
+   */
+  def getDispatcher: ExecutionContextExecutor = dispatcher
 
   /**
    * Helper object for looking up configured mailbox types.
