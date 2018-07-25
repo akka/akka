@@ -6,17 +6,17 @@ package akka.persistence.testkit.scaladsl
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-import java.util.function.{BiFunction, Consumer}
+import java.util.function.{ BiFunction, Consumer }
 
-import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.persistence.testkit.scaladsl.InMemStorageEmulator.JournalOperation
 import akka.persistence.testkit.scaladsl.ProcessingPolicy._
 import akka.persistence.testkit.scaladsl.SnapShotStorageEmulator._
-import akka.persistence.{PersistentRepr, SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria}
+import akka.persistence.{ PersistentRepr, SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 trait InMemStorage[K, T] {
 
@@ -98,7 +98,7 @@ trait InMemStorage[K, T] {
 
 }
 
-trait HighestSeqNumberSupport[K, V] extends InMemStorage[K, V] {
+trait HighestSeqNumSupportStorage[K, V] extends InMemStorage[K, V] {
 
   private final val seqNumbers = new ConcurrentHashMap[K, Long]()
 
@@ -156,22 +156,6 @@ trait HighestSeqNumberSupport[K, V] extends InMemStorage[K, V] {
 
 }
 
-trait ReprInMemStorage extends HighestSeqNumberSupport[String, PersistentRepr] {
-
-  override def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {
-    val sn = reloadHighestSequenceNum(key) + 1
-    elems.zipWithIndex.map(p ⇒ PersistentRepr(p._1, p._2 + sn, key))
-  }
-
-  override def reprToSeqNum(repr: PersistentRepr): Long = repr.sequenceNr
-
-  def add(elems: immutable.Seq[PersistentRepr]): Unit =
-    elems
-      .groupBy(_.persistenceId)
-      .foreach(gr ⇒ add(gr._1, gr._2))
-
-}
-
 trait PolicyOps[U] {
 
   type Policy = ProcessingPolicy[U]
@@ -188,8 +172,22 @@ trait PolicyOps[U] {
 
 }
 
-trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalOperation] {
+trait TestKitStorage[V, P] extends HighestSeqNumSupportStorage[String, V] with PolicyOps[P]
+
+trait InMemStorageEmulator extends TestKitStorage[PersistentRepr, JournalOperation] {
   import InMemStorageEmulator._
+
+  override def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {
+    val sn = reloadHighestSequenceNum(key) + 1
+    elems.zipWithIndex.map(p ⇒ PersistentRepr(p._1, p._2 + sn, key))
+  }
+
+  override def reprToSeqNum(repr: PersistentRepr): Long = repr.sequenceNr
+
+  def add(elems: immutable.Seq[PersistentRepr]): Unit =
+    elems
+      .groupBy(_.persistenceId)
+      .foreach(gr ⇒ add(gr._1, gr._2))
 
   override protected val DefaultPolicy = JournalPolicies.PassAll
 
@@ -238,12 +236,11 @@ trait InMemStorageEmulator extends ReprInMemStorage with PolicyOps[JournalOperat
     }
   }
 
-
   def tryDelete(persistenceId: String, toSeqNumber: Long): Unit = {
     currentPolicy.tryProcess(persistenceId, Delete(toSeqNumber)) match {
-      case ProcessingSuccess => deleteToSeqNumber(persistenceId, toSeqNumber)
-      case Reject(ex) => throw ex
-      case StorageFailure(ex) => throw ex
+      case ProcessingSuccess  ⇒ deleteToSeqNumber(persistenceId, toSeqNumber)
+      case Reject(ex)         ⇒ throw ex
+      case StorageFailure(ex) ⇒ throw ex
     }
   }
 
@@ -265,7 +262,8 @@ object InMemStorageEmulator {
 
 }
 
-trait SnapshotInMemStorage extends HighestSeqNumberSupport[String, (SnapshotMetadata, Any)] {
+trait SnapShotStorageEmulator extends TestKitStorage[(SnapshotMetadata, Any), SnapshotOperation] {
+  import SnapShotStorageEmulator._
 
   override def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[(SnapshotMetadata, Any)] = {
     val sn = reloadHighestSequenceNum(key)
@@ -273,11 +271,6 @@ trait SnapshotInMemStorage extends HighestSeqNumberSupport[String, (SnapshotMeta
   }
 
   override def reprToSeqNum(repr: (SnapshotMetadata, Any)): Long = repr._1.sequenceNr
-
-}
-
-trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[SnapshotOperation] {
-  import SnapShotStorageEmulator._
 
   override protected val DefaultPolicy = SnapshotPolicies.PassAll
 
@@ -297,22 +290,21 @@ trait SnapShotStorageEmulator extends SnapshotInMemStorage with PolicyOps[Snapsh
         .flatMap(_.reverseIterator.find(v ⇒ criteria.matches(v._1))
           .map(v ⇒ SelectedSnapshot(v._1, v._2)))
     currentPolicy.tryProcess(persistenceId, Read(selectedSnapshot.map(_.snapshot))) match {
-      case ProcessingSuccess ⇒ selectedSnapshot
+      case ProcessingSuccess    ⇒ selectedSnapshot
       case f: ProcessingFailure ⇒ throw f.error
     }
   }
 
   def tryDelete(persistenceId: String, selectionCriteria: SnapshotSelectionCriteria): Unit = {
     currentPolicy.tryProcess(persistenceId, DeleteByCriteria(selectionCriteria)) match {
-      case ProcessingSuccess => delete(persistenceId, v ⇒ selectionCriteria.matches(v._1))
+      case ProcessingSuccess    ⇒ delete(persistenceId, v ⇒ selectionCriteria.matches(v._1))
       case f: ProcessingFailure ⇒ throw f.error
     }
   }
 
-
   def tryDelete(meta: SnapshotMetadata): Unit = {
     currentPolicy.tryProcess(meta.persistenceId, DeleteSnapshot(meta)) match {
-      case ProcessingSuccess => delete(meta.persistenceId, _._1.sequenceNr == meta.sequenceNr)
+      case ProcessingSuccess    ⇒ delete(meta.persistenceId, _._1.sequenceNr == meta.sequenceNr)
       case f: ProcessingFailure ⇒ throw f.error
     }
   }
@@ -332,8 +324,6 @@ object SnapShotStorageEmulator {
   case class DeleteByCriteria(criteria: SnapshotSelectionCriteria) extends Delete
 
   case class DeleteSnapshot(metadata: SnapshotMetadata) extends Delete
-
-  type SnapshotPolicy = ProcessingPolicy[SnapshotOperation]
 
   object SnapshotPolicies extends DefaultPolicies[SnapshotOperation]
 

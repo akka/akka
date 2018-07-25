@@ -6,13 +6,13 @@ package akka.persistence.testkit.scaladsl
 
 import java.util.UUID
 
-import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.persistence.{PersistentActor, RecoveryCompleted}
+import akka.actor.{ ActorRef, ActorSystem, Props }
+import akka.persistence.{ PersistentActor, RecoveryCompleted }
 import akka.testkit.TestKitBase
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
-class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase {
+class TestKitSpec extends WordSpecLike with TestKitBase {
 
   override lazy val system = {
     //todo probably implement method for setting plugin in Persistence for testing purposes
@@ -23,6 +23,9 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
         .withFallback(ConfigFactory.defaultApplication()))
 
   }
+
+  lazy val testKit = new PersistenceTestKit(InMemStorageExtension(system))(system)
+  import testKit._
 
   "PersistenceTestkit" should {
 
@@ -58,7 +61,7 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
       a ! B(1)
       a ! B(2)
 
-      assertThrows[AssertionError]{
+      assertThrows[AssertionError] {
         expectPersistedInOrder(pid, List(B(2), B(1)))
       }
 
@@ -75,7 +78,7 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
       a ! B(2)
       a ! B(1)
 
-      assertThrows[AssertionError]{
+      assertThrows[AssertionError] {
         expectPersistedInAnyOrder(pid, List(B(3), B(2)))
       }
 
@@ -88,7 +91,6 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
       val pid = randomPid()
 
       val a = system.actorOf(Props(classOf[A], pid, None))
-
 
       //consecutive calls should stack
       rejectNextPersisted()
@@ -137,14 +139,14 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
 
       val pid = randomPid()
 
-      expectNoMessagePersisted(pid)
+      expectNothingPersisted(pid)
 
       val a = system.actorOf(Props(classOf[A], pid, None))
 
       a ! B(1)
 
-      assertThrows[AssertionError]{
-        expectNoMessagePersisted(pid)
+      assertThrows[AssertionError] {
+        expectNothingPersisted(pid)
       }
 
     }
@@ -178,7 +180,6 @@ class TestKitSpec extends PersistenceTestKit with WordSpecLike with TestKitBase 
 
       expectMsg(preload)
 
-
     }
 
   }
@@ -195,9 +196,9 @@ class A(pid: String, respondOnRecover: Option[ActorRef]) extends PersistentActor
   var recovered = immutable.List.empty[Any]
 
   override def receiveRecover = {
-    case RecoveryCompleted =>
+    case RecoveryCompleted ⇒
       println("Recovered")
-      respondOnRecover.foreach(_  ! recovered)
+      respondOnRecover.foreach(_ ! recovered)
     case s ⇒ recovered :+= s
   }
 

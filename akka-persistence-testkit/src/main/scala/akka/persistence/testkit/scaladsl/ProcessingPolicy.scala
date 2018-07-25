@@ -14,7 +14,6 @@ trait ProcessingPolicy[U] {
 
 object ProcessingPolicy {
 
-
   trait DefaultPolicies[U] {
 
     type PolicyType = ProcessingPolicy[U]
