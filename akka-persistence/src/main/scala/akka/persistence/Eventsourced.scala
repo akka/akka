@@ -432,7 +432,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * messages may be deleted without specifying the actual sequence number by using `Long.MaxValue`
    * as the `toSequenceNr`.
    *
-   * @param toSequenceNr upper sequence number bound of persistent messages to be deleted.
+   * @param toSequenceNr upper sequence number (inclusive) bound of persistent messages to be deleted.
    */
   def deleteMessages(toSequenceNr: Long): Unit = {
     if (toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr)
