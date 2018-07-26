@@ -1,2 +1,0 @@
-# NPE when using import context.dispatcher #25040
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.pubsub.DistributedPubSubMediator*")

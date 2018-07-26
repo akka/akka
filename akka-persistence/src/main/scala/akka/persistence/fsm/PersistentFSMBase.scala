@@ -11,7 +11,6 @@ import language.implicitConversions
 import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContext
 
 /**
  * Finite State Machine actor trait. Use as follows:
@@ -497,7 +496,7 @@ trait PersistentFSMBase[S, D, E] extends Actor with Listeners with ActorLogging 
       if (timeout.isDefined) {
         val t = timeout.get
         if (t.isFinite && t.length >= 0) {
-          implicit val ec: ExecutionContext = context.dispatcher
+          import context.dispatcher
           timeoutFuture = Some(context.system.scheduler.scheduleOnce(t, self, TimeoutMarker(generation)))
         }
       }

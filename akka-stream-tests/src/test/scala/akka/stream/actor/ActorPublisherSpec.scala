@@ -15,7 +15,6 @@ import akka.testkit.TestEvent.Mute
 import akka.testkit.{ EventFilter, ImplicitSender, TestProbe }
 import scala.annotation.tailrec
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext
 import scala.util.control.NoStackTrace
 import akka.actor.Stash
 
@@ -118,7 +117,7 @@ object ActorPublisherSpec {
 
   class TimeoutingPublisher(probe: ActorRef, timeout: FiniteDuration) extends ActorPublisher[Int] {
     import akka.stream.actor.ActorPublisherMessage._
-    implicit val ec: ExecutionContext = context.dispatcher
+    import context.dispatcher
 
     override def subscriptionTimeout = timeout
 

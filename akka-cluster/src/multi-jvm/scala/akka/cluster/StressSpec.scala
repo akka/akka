@@ -8,7 +8,6 @@ import language.postfixOps
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicReference
 import org.scalatest.BeforeAndAfterEach
@@ -258,7 +257,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       immutable.SortedMap.empty[Address, CurrentInternalStats]
     }
 
-    private implicit val ec: ExecutionContext = context.dispatcher
+    import context.dispatcher
 
     def receive = {
       case PhiResult(from, phiValues) ⇒ phiValuesObservedByNode += from → phiValues
@@ -362,7 +361,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       case _ ⇒ 0.0
     }
 
-    private implicit val ec: ExecutionContext = context.dispatcher
+    import context.dispatcher
     val checkPhiTask = context.system.scheduler.schedule(
       1.second, 1.second, self, PhiTick)
 
@@ -464,7 +463,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     var outstanding = Map.empty[JobId, JobState]
     var startTime = 0L
 
-    private implicit val ec: ExecutionContext = context.dispatcher
+    import context.dispatcher
     val resendTask = context.system.scheduler.schedule(3.seconds, 3.seconds, self, RetryTick)
 
     override def postStop(): Unit = {

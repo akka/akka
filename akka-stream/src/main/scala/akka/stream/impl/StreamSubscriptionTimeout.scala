@@ -11,7 +11,6 @@ import akka.stream.StreamSubscriptionTimeoutSettings
 import org.reactivestreams._
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContext
 import scala.util.control.NoStackTrace
 
 /**
@@ -60,8 +59,6 @@ import scala.util.control.NoStackTrace
 @InternalApi private[akka] trait StreamSubscriptionTimeoutSupport {
   this: Actor with ActorLogging ⇒
 
-  private implicit val ec: ExecutionContext = context.dispatcher
-
   import StreamSubscriptionTimeoutSupport._
 
   /**
@@ -78,6 +75,7 @@ import scala.util.control.NoStackTrace
       case NoopTermination ⇒
         NoopSubscriptionTimeout
       case _ ⇒
+        import context.dispatcher
         val cancellable = context.system.scheduler.scheduleOnce(subscriptionTimeoutSettings.timeout, actor, message)
         cancellable
     }

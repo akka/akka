@@ -9,7 +9,6 @@ import akka.actor._
 import akka.stream.impl.{ ReactiveStreamsCompliance, StreamSubscriptionTimeoutSupport }
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import concurrent.duration.Duration
-import concurrent.ExecutionContext
 import concurrent.duration.FiniteDuration
 import akka.stream.impl.CancelledSubscription
 import akka.stream.impl.ReactiveStreamsCompliance._
@@ -342,7 +341,7 @@ trait ActorPublisher[T] extends Actor {
    */
   override protected[akka] def aroundPreStart(): Unit = {
     super.aroundPreStart()
-    implicit val ec: ExecutionContext = context.dispatcher
+    import context.dispatcher
 
     subscriptionTimeout match {
       case timeout: FiniteDuration ⇒

@@ -16,7 +16,6 @@ import com.typesafe.config.ConfigFactory
 
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
 /** INTERNAL API */
@@ -502,7 +501,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
   private def recoveryStarted(replayMax: Long, timeout: FiniteDuration) = new State {
 
     val timeoutCancellable = {
-      implicit val ec: ExecutionContext = context.dispatcher
+      import context.dispatcher
       context.system.scheduler.scheduleOnce(timeout, self, RecoveryTick(snapshot = true))
     }
 
@@ -587,7 +586,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
 
       // protect against snapshot stalling forever because of journal overloaded and such
       val timeoutCancellable = {
-        implicit val ec: ExecutionContext = context.dispatcher
+        import context.dispatcher
         context.system.scheduler.schedule(timeout, timeout, self, RecoveryTick(snapshot = false))
       }
       var eventSeenInInterval = false
