@@ -184,7 +184,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     val all = Seq(c1, c2, c21)
 
     "select actors by their path" in {
-      def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
+      def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef): Unit = {
         askNode(looker, SelectPath(pathOf.path)) should ===(Some(result))
       }
       for {
@@ -194,7 +194,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "select actors by their string path representation" in {
-      def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
+      def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef): Unit = {
         askNode(looker, SelectString(pathOf.path.toStringWithoutAddress)) should ===(Some(result))
         // with trailing /
         askNode(looker, SelectString(pathOf.path.toStringWithoutAddress + "/")) should ===(Some(result))
@@ -206,7 +206,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "select actors by their root-anchored relative path" in {
-      def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
+      def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef): Unit = {
         askNode(looker, SelectString(pathOf.path.toStringWithoutAddress)) should ===(Some(result))
         askNode(looker, SelectString(pathOf.path.elements.mkString("/", "/", "/"))) should ===(Some(result))
       }
@@ -217,7 +217,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "select actors by their relative path" in {
-      def check(looker: ActorRef, result: ActorRef, elems: String*) {
+      def check(looker: ActorRef, result: ActorRef, elems: String*): Unit = {
         askNode(looker, SelectString(elems mkString "/")) should ===(Some(result))
         askNode(looker, SelectString(elems mkString ("", "/", "/"))) should ===(Some(result))
       }
@@ -232,7 +232,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "find system-generated actors" in {
-      def check(target: ActorRef) {
+      def check(target: ActorRef): Unit = {
         for (looker ← all) {
           askNode(looker, SelectPath(target.path)) should ===(Some(target))
           askNode(looker, SelectString(target.path.toString)) should ===(Some(target))
@@ -247,11 +247,11 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     "return deadLetters or ActorIdentity(None), respectively, for non-existing paths" in {
       import scala.collection.JavaConverters._
 
-      def checkOne(looker: ActorRef, query: Query, result: Option[ActorRef]) {
+      def checkOne(looker: ActorRef, query: Query, result: Option[ActorRef]): Unit = {
         val lookup = askNode(looker, query)
         lookup should ===(result)
       }
-      def check(looker: ActorRef) {
+      def check(looker: ActorRef): Unit = {
         val lookname = looker.path.elements.mkString("", "/", "/")
         for (
           (l, r) ← Seq(

@@ -103,7 +103,7 @@ object TypedActorSpec {
 
     def nullReturn(): Any = null
 
-    def incr()
+    def incr(): Unit
 
     @throws(classOf[TimeoutException])
     def read(): Int
@@ -148,7 +148,7 @@ object TypedActorSpec {
 
     var internalNumber = 0
 
-    def incr() {
+    def incr(): Unit = {
       internalNumber += 1
     }
 

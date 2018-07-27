@@ -453,7 +453,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
     }
   }
 
-  override def unstashAll() {
+  override def unstashAll(): Unit = {
     // Internally, all messages are processed by unstashing them from
     // the internal stash one-by-one. Hence, an unstashAll() from the
     // user stash must be prepended to the internal stash.
@@ -656,7 +656,7 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
       }
     }
 
-  private def flushBatch() {
+  private def flushBatch(): Unit = {
     if (eventBatch.nonEmpty) {
       journalBatch ++= eventBatch.reverse
       eventBatch = Nil

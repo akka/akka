@@ -525,7 +525,7 @@ class TestEventListener extends Logging.DefaultLogger {
 
   def addFilter(filter: EventFilter): Unit = filters ::= filter
 
-  def removeFilter(filter: EventFilter) {
+  def removeFilter(filter: EventFilter): Unit = {
     @scala.annotation.tailrec
     def removeFirst(list: List[EventFilter], zipped: List[EventFilter] = Nil): List[EventFilter] = list match {
       case head :: tail if head == filter ⇒ tail.reverse_:::(zipped)

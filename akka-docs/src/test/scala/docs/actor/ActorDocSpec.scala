@@ -123,13 +123,13 @@ class ActorWithMessagesWrapper {
 class Hook extends Actor {
   var child: ActorRef = _
   //#preStart
-  override def preStart() {
+  override def preStart(): Unit = {
     child = context.actorOf(Props[MyActor], "child")
   }
   //#preStart
   def receive = Actor.emptyBehavior
   //#postStop
-  override def postStop() {
+  override def postStop(): Unit = {
     //#clean-up-some-resources
     ()
     //#clean-up-some-resources

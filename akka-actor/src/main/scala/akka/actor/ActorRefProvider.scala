@@ -410,7 +410,7 @@ private[akka] object LocalActorRefProvider {
     }
 
     // guardian MUST NOT lose its children during restart
-    override def preRestart(cause: Throwable, msg: Option[Any]) {}
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {}
   }
 
   /**
@@ -457,7 +457,7 @@ private[akka] object LocalActorRefProvider {
       }
 
     // guardian MUST NOT lose its children during restart
-    override def preRestart(cause: Throwable, msg: Option[Any]) {}
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {}
   }
 
 }
@@ -653,7 +653,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     tempContainer.removeChild(path.name)
   }
 
-  private[akka] def init(_system: ActorSystemImpl) {
+  private[akka] def init(_system: ActorSystemImpl): Unit = {
     system = _system
     rootGuardian.start()
     // chain death watchers so that killing guardian stops the application

@@ -43,13 +43,13 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
   appAuto.eventStream.publish(filter)
   appLifecycle.eventStream.publish(filter)
 
-  def ignoreMute(t: TestKit) {
+  def ignoreMute(t: TestKit): Unit = {
     t.ignoreMsg {
       case (_: TestEvent.Mute | _: TestEvent.UnMute) ⇒ true
     }
   }
 
-  override def afterAll() {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(appLogging)
     TestKit.shutdownActorSystem(appAuto)
     TestKit.shutdownActorSystem(appLifecycle)

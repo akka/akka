@@ -113,7 +113,7 @@ public class MovieWatchList extends PersistentBehavior<MovieWatchList.Command, M
   }
 
   @Override
-  public EventHandler<Event, MovieList> eventHandler() {
+  public EventHandler<MovieList, Event> eventHandler() {
     return eventHandlerBuilder()
       .matchEvent(MovieAdded.class, (state, event) -> state.add(event.movieId))
       .matchEvent(MovieRemoved.class, (state, event) -> state.remove(event.movieId))

@@ -51,7 +51,7 @@ class ReplicatorMessageSerializerSpec extends TestKit(ActorSystem(
 
   val keyA = GSetKey[String]("A")
 
-  override def afterAll {
+  override def afterAll: Unit = {
     shutdown()
   }
 

@@ -20,7 +20,7 @@ class VersionVectorSpec extends TestKit(ActorSystem("VersionVectorSpec"))
   val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3)
   val node4 = UniqueAddress(node1.address.copy(port = Some(2554)), 4)
 
-  override def afterAll {
+  override def afterAll: Unit = {
     shutdown()
   }
 

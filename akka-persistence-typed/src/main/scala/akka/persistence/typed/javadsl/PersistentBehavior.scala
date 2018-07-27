@@ -65,7 +65,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private (val pe
    * For that reason it is strongly discouraged to perform side-effects in this handler;
    * Side effects should be executed in `andThen` or `recoveryCompleted` blocks.
    */
-  protected def eventHandler(): EventHandler[Event, State]
+  protected def eventHandler(): EventHandler[State, Event]
 
   /**
    * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
@@ -85,8 +85,8 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private (val pe
   /**
    * @return A new, mutable, event handler builder
    */
-  protected final def eventHandlerBuilder(): EventHandlerBuilder[Event, State] =
-    EventHandlerBuilder.builder[Event, State]()
+  protected final def eventHandlerBuilder(): EventHandlerBuilder[State, Event] =
+    EventHandlerBuilder.builder[State, Event]()
 
   /**
    * The `callback` function is called to notify the actor that the recovery process

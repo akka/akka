@@ -105,7 +105,7 @@ class JavaActorWithStashSpec extends StashJavaAPI with JUnitSuiteLike
 class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with DefaultTimeout with BeforeAndAfterEach {
   import ActorWithStashSpec._
 
-  override def atStartup {
+  override def atStartup: Unit = {
     system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
   }
 
