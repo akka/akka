@@ -57,21 +57,21 @@ class TestFSMRef[S, D, T <: Actor](
    * corresponding transition initiated from within the FSM, including timeout
    * and stop handling.
    */
-  def setState(stateName: S = fsm.stateName, stateData: D = fsm.stateData, timeout: FiniteDuration = null, stopReason: Option[FSM.Reason] = None) {
+  def setState(stateName: S = fsm.stateName, stateData: D = fsm.stateData, timeout: FiniteDuration = null, stopReason: Option[FSM.Reason] = None): Unit = {
     fsm.applyState(FSM.State(stateName, stateData, Option(timeout), stopReason))
   }
 
   /**
    * Proxy for [[akka.actor.FSM#setTimer]].
    */
-  def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean = false) {
+  def setTimer(name: String, msg: Any, timeout: FiniteDuration, repeat: Boolean = false): Unit = {
     fsm.setTimer(name, msg, timeout, repeat)
   }
 
   /**
    * Proxy for [[akka.actor.FSM#cancelTimer]].
    */
-  def cancelTimer(name: String) { fsm.cancelTimer(name) }
+  def cancelTimer(name: String): Unit = { fsm.cancelTimer(name) }
 
   /**
    * Proxy for [[akka.actor.FSM#isStateTimerActive]].

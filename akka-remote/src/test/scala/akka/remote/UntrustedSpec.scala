@@ -92,7 +92,7 @@ akka.loglevel = DEBUG # test verifies debug
     p.expectMsgType[ActorIdentity].ref.get
   }
 
-  override def afterTermination() {
+  override def afterTermination(): Unit = {
     shutdown(client)
   }
 

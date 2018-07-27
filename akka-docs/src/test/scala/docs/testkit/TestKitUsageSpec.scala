@@ -44,7 +44,7 @@ class TestKitUsageSpec
   val seqRef =
     system.actorOf(Props(classOf[SequencingActor], testActor, headList, tailList))
 
-  override def afterAll {
+  override def afterAll: Unit = {
     shutdown()
   }
 

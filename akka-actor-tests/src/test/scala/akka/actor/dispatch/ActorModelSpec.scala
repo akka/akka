@@ -75,7 +75,7 @@ object ActorModelSpec {
       }
     }
 
-    override def postRestart(reason: Throwable) {
+    override def postRestart(reason: Throwable): Unit = {
       interceptor.getStats(self).restarts.incrementAndGet()
     }
 
@@ -128,40 +128,40 @@ object ActorModelSpec {
 
     }
 
-    protected[akka] abstract override def suspend(actor: ActorCell) {
+    protected[akka] abstract override def suspend(actor: ActorCell): Unit = {
       getStats(actor.self).suspensions.incrementAndGet()
       super.suspend(actor)
     }
 
-    protected[akka] abstract override def resume(actor: ActorCell) {
+    protected[akka] abstract override def resume(actor: ActorCell): Unit = {
       super.resume(actor)
       getStats(actor.self).resumes.incrementAndGet()
     }
 
-    protected[akka] abstract override def register(actor: ActorCell) {
+    protected[akka] abstract override def register(actor: ActorCell): Unit = {
       assert(getStats(actor.self).registers.incrementAndGet() == 1)
       super.register(actor)
     }
 
-    protected[akka] abstract override def unregister(actor: ActorCell) {
+    protected[akka] abstract override def unregister(actor: ActorCell): Unit = {
       assert(getStats(actor.self).unregisters.incrementAndGet() == 1)
       super.unregister(actor)
     }
 
-    protected[akka] abstract override def dispatch(receiver: ActorCell, invocation: Envelope) {
+    protected[akka] abstract override def dispatch(receiver: ActorCell, invocation: Envelope): Unit = {
       val stats = getStats(receiver.self)
       stats.msgsReceived.incrementAndGet()
       super.dispatch(receiver, invocation)
     }
 
-    protected[akka] abstract override def shutdown() {
+    protected[akka] abstract override def shutdown(): Unit = {
       stops.incrementAndGet()
       super.shutdown()
     }
   }
 
   def assertDispatcher(dispatcher: MessageDispatcherInterceptor)(
-    stops: Long = dispatcher.stops.get())(implicit system: ActorSystem) {
+    stops: Long = dispatcher.stops.get())(implicit system: ActorSystem): Unit = {
     val deadline = System.currentTimeMillis + dispatcher.shutdownTimeout.toMillis * 5
     try {
       await(deadline)(stops == dispatcher.stops.get)
@@ -173,12 +173,12 @@ object ActorModelSpec {
     }
   }
 
-  def assertCountDown(latch: CountDownLatch, wait: Long, hint: String) {
+  def assertCountDown(latch: CountDownLatch, wait: Long, hint: String): Unit = {
     if (!latch.await(wait, TimeUnit.MILLISECONDS))
       fail("Failed to count down within " + wait + " millis (count at " + latch.getCount + "). " + hint)
   }
 
-  def assertNoCountDown(latch: CountDownLatch, wait: Long, hint: String) {
+  def assertNoCountDown(latch: CountDownLatch, wait: Long, hint: String): Unit = {
     if (latch.await(wait, TimeUnit.MILLISECONDS))
       fail("Expected count down to fail after " + wait + " millis. " + hint)
   }
@@ -193,7 +193,7 @@ object ActorModelSpec {
     unregisters:   Long = 0,
     msgsReceived:  Long = 0,
     msgsProcessed: Long = 0,
-    restarts:      Long = 0)(implicit system: ActorSystem) {
+    restarts:      Long = 0)(implicit system: ActorSystem): Unit = {
     assertRef(actorRef, dispatcher)(
       suspensions,
       resumes,
@@ -211,7 +211,7 @@ object ActorModelSpec {
     unregisters:   Long = statsFor(actorRef, dispatcher).unregisters.get(),
     msgsReceived:  Long = statsFor(actorRef, dispatcher).msgsReceived.get(),
     msgsProcessed: Long = statsFor(actorRef, dispatcher).msgsProcessed.get(),
-    restarts:      Long = statsFor(actorRef, dispatcher).restarts.get())(implicit system: ActorSystem) {
+    restarts:      Long = statsFor(actorRef, dispatcher).restarts.get())(implicit system: ActorSystem): Unit = {
     val stats = statsFor(actorRef, Option(dispatcher).getOrElse(actorRef.asInstanceOf[ActorRefWithCell].underlying.asInstanceOf[ActorCell].dispatcher))
     val deadline = System.currentTimeMillis + 1000
     try {
@@ -334,7 +334,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       system.stop(a)
     }
 
-    def spawn(f: ⇒ Unit) {
+    def spawn(f: ⇒ Unit): Unit = {
       (new Thread {
         override def run(): Unit =
           try f catch {
@@ -367,7 +367,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       val dispatcher = interceptedDispatcher()
       val props = Props[DispatcherActor].withDispatcher(dispatcher.id)
 
-      def flood(num: Int) {
+      def flood(num: Int): Unit = {
         val cachedMessage = CountDownNStop(new CountDownLatch(num))
         val stopLatch = new CountDownLatch(num)
         val keepAliveLatch = new CountDownLatch(1)

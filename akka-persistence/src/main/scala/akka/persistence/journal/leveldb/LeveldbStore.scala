@@ -182,12 +182,12 @@ private[persistence] trait LeveldbStore extends Actor with WriteJournalBase with
   def tagAsPersistenceId(tag: String): String =
     tagPersistenceIdPrefix + tag
 
-  override def preStart() {
+  override def preStart(): Unit = {
     leveldb = leveldbFactory.open(leveldbDir, if (nativeLeveldb) leveldbOptions else leveldbOptions.compressionType(CompressionType.NONE))
     super.preStart()
   }
 
-  override def postStop() {
+  override def postStop(): Unit = {
     leveldb.close()
     super.postStop()
   }

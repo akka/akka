@@ -108,7 +108,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
     "remote-sys",
     ConfigFactory.parseString("akka.remote.netty.ssl.port = " + cipherConfig.remotePort).withFallback(system.settings.config))
 
-  override def afterTermination() {
+  override def afterTermination(): Unit = {
     if (cipherConfig.runTest) {
       shutdown(other)
     }

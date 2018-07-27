@@ -31,7 +31,7 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
           case "hello" ⇒ helloLatch.countDown()
         }
 
-        override def postStop() {
+        override def postStop(): Unit = {
           stopLatch.countDown()
         }
       })), "round-robin-shutdown")
@@ -85,7 +85,7 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
           case "hello" ⇒ helloLatch.countDown()
         }
 
-        override def postStop() {
+        override def postStop(): Unit = {
           stopLatch.countDown()
         }
       })), "round-robin-broadcast")
