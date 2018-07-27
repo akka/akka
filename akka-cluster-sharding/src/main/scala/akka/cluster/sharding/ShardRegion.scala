@@ -693,11 +693,10 @@ private[akka] class ShardRegion(
   }
 
   def scheduleNextRegistration(): Unit = {
-    timers.startSingleTimer(RegisterRetry, RegisterRetry, nextRegistrationDelay)
-    nextRegistrationDelay *= 2
-
-    if (nextRegistrationDelay >= retryInterval)
-      finishRegistration() // normal Retry msg will try to register
+    if (nextRegistrationDelay < retryInterval) {
+      timers.startSingleTimer(RegisterRetry, RegisterRetry, nextRegistrationDelay)
+      nextRegistrationDelay *= 2
+    }
   }
 
   def finishRegistration(): Unit = {
