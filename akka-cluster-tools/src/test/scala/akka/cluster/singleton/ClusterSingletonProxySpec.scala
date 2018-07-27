@@ -55,7 +55,7 @@ object ClusterSingletonProxySpec {
       "user/singletonManager",
       settings = ClusterSingletonProxySettings(system)), s"singletonProxy-${cluster.selfAddress.port.getOrElse(0)}")
 
-    def testProxy(msg: String) {
+    def testProxy(msg: String): Unit = {
       val probe = TestProbe()
       probe.send(proxy, msg)
       // 25 seconds to make sure the singleton was started up

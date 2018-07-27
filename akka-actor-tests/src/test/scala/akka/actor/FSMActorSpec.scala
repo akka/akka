@@ -235,7 +235,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" → true)) with I
         }
       })
 
-      def checkTimersActive(active: Boolean) {
+      def checkTimersActive(active: Boolean): Unit = {
         for (timer ← timerNames) fsmref.isTimerActive(timer) should ===(active)
         fsmref.isStateTimerActive should ===(active)
       }

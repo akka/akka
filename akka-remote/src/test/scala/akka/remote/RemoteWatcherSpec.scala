@@ -87,7 +87,7 @@ class RemoteWatcherSpec extends AkkaSpec(
     akka.remote.transport.AssociationHandle.Disassociated.getClass,
     akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
 
-  override def afterTermination() {
+  override def afterTermination(): Unit = {
     shutdown(remoteSystem)
   }
 

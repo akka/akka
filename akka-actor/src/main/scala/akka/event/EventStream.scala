@@ -56,7 +56,7 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
     ret
   }
 
-  override def unsubscribe(subscriber: ActorRef) {
+  override def unsubscribe(subscriber: ActorRef): Unit = {
     if (subscriber eq null) throw new IllegalArgumentException("subscriber is null")
     super.unsubscribe(subscriber)
     if (debug) publish(Logging.Debug(simpleName(this), this.getClass, "unsubscribing " + subscriber + " from all channels"))

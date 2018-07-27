@@ -73,7 +73,7 @@ trait LoggingBus extends ActorEventBus {
     _logLevel = level
   }
 
-  private def setUpStdoutLogger(config: Settings) {
+  private def setUpStdoutLogger(config: Settings): Unit = {
     val level = levelFor(config.StdoutLogLevel) getOrElse {
       // only log initialization errors directly with StandardOutLogger.print
       StandardOutLogger.print(Error(new LoggerException, simpleName(this), this.getClass, "unknown akka.stdout-loglevel " + config.StdoutLogLevel))
@@ -89,7 +89,7 @@ trait LoggingBus extends ActorEventBus {
   /**
    * Internal Akka use only
    */
-  private[akka] def startStdoutLogger(config: Settings) {
+  private[akka] def startStdoutLogger(config: Settings): Unit = {
     setUpStdoutLogger(config)
     publish(Debug(simpleName(this), this.getClass, "StandardOutLogger started"))
   }
@@ -97,7 +97,7 @@ trait LoggingBus extends ActorEventBus {
   /**
    * Internal Akka use only
    */
-  private[akka] def startDefaultLoggers(system: ActorSystemImpl) {
+  private[akka] def startDefaultLoggers(system: ActorSystemImpl): Unit = {
     val logName = simpleName(this) + "(" + system + ")"
     val level = levelFor(system.settings.LogLevel) getOrElse {
       // only log initialization errors directly with StandardOutLogger.print
@@ -152,7 +152,7 @@ trait LoggingBus extends ActorEventBus {
   /**
    * Internal Akka use only
    */
-  private[akka] def stopDefaultLoggers(system: ActorSystem) {
+  private[akka] def stopDefaultLoggers(system: ActorSystem): Unit = {
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
       setUpStdoutLogger(system.settings)
@@ -1203,7 +1203,7 @@ trait LoggingAdapter {
    * Log message at info level.
    * @see [[LoggingAdapter]]
    */
-  def info(message: String) { if (isInfoEnabled) notifyInfo(message) }
+  def info(message: String): Unit = { if (isInfoEnabled) notifyInfo(message) }
   /**
    * Message template with 1 replacement argument.
    *
@@ -1232,7 +1232,7 @@ trait LoggingAdapter {
    * Log message at debug level.
    * @see [[LoggingAdapter]]
    */
-  def debug(message: String) { if (isDebugEnabled) notifyDebug(message) }
+  def debug(message: String): Unit = { if (isDebugEnabled) notifyDebug(message) }
   /**
    * Message template with 1 replacement argument.
    *
@@ -1260,7 +1260,7 @@ trait LoggingAdapter {
   /**
    * Log message at the specified log level.
    */
-  def log(level: Logging.LogLevel, message: String) { if (isEnabled(level)) notifyLog(level, message) }
+  def log(level: Logging.LogLevel, message: String): Unit = { if (isEnabled(level)) notifyLog(level, message) }
   /**
    * Message template with 1 replacement argument.
    *

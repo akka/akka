@@ -148,7 +148,7 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
     }
   }
 
-  override def preStart() {
+  override def preStart(): Unit = {
     snapshotDir()
     super.preStart()
   }

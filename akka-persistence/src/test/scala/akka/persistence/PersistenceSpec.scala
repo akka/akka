@@ -50,7 +50,7 @@ abstract class PersistenceSpec(config: Config) extends AkkaSpec(config) with Bef
   def namedPersistentActorWithProvidedConfig[T <: NamedPersistentActor: ClassTag](providedConfig: Config) =
     system.actorOf(Props(implicitly[ClassTag[T]].runtimeClass, name, providedConfig))
 
-  override protected def beforeEach() {
+  override protected def beforeEach(): Unit = {
     _name = s"${namePrefix}-${counter.incrementAndGet()}"
   }
 }
@@ -78,11 +78,11 @@ trait Cleanup { this: AkkaSpec ⇒
     "akka.persistence.journal.leveldb-shared.store.dir",
     "akka.persistence.snapshot-store.local.dir").map(s ⇒ new File(system.settings.config.getString(s)))
 
-  override protected def atStartup() {
+  override protected def atStartup(): Unit = {
     storageLocations.foreach(FileUtils.deleteDirectory)
   }
 
-  override protected def afterTermination() {
+  override protected def afterTermination(): Unit = {
     storageLocations.foreach(FileUtils.deleteDirectory)
   }
 }

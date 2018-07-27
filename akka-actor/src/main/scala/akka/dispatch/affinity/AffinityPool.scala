@@ -353,7 +353,7 @@ private[akka] final class AffinityPoolConfigurator(config: Config, prerequisites
 }
 
 trait RejectionHandler {
-  def reject(command: Runnable, service: ExecutorService)
+  def reject(command: Runnable, service: ExecutorService): Unit
 }
 
 trait RejectionHandlerFactory {

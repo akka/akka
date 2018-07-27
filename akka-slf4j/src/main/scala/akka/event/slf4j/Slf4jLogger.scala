@@ -94,7 +94,7 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
   }
 
   @inline
-  final def withMdc(logSource: String, logEvent: LogEvent)(logStatement: ⇒ Unit) {
+  final def withMdc(logSource: String, logEvent: LogEvent)(logStatement: ⇒ Unit): Unit = {
     MDC.put(mdcAkkaSourceAttributeName, logSource)
     MDC.put(mdcThreadAttributeName, logEvent.thread.getName)
     MDC.put(mdcAkkaTimestamp, formatTimestamp(logEvent.timestamp))

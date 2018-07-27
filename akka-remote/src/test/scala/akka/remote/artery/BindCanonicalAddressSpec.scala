@@ -18,7 +18,7 @@ import java.net.InetAddress
 
 trait BindCanonicalAddressBehaviors {
   this: WordSpec with Matchers ⇒
-  def arteryConnectionTest(transport: String, isUDP: Boolean) {
+  def arteryConnectionTest(transport: String, isUDP: Boolean): Unit = {
 
     val commonConfig = BindCanonicalAddressSpec.commonConfig(transport)
 

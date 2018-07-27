@@ -695,7 +695,7 @@ class CircuitBreaker(
      *
      * @return Promise which executes listener in supplied [[scala.concurrent.ExecutionContext]]
      */
-    protected def notifyTransitionListeners() {
+    protected def notifyTransitionListeners(): Unit = {
       if (hasListeners) {
         val iterator = listeners.iterator
         while (iterator.hasNext) {
