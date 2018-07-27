@@ -86,7 +86,7 @@ detect devices that stopped before they got the `ReadTemperature` message we wil
 way, we get `Terminated` messages for those that stop during the lifetime of the query, so we don't need to wait
 until the timeout to mark these as not available.
 
-Putting this together, the outline of our `DeviceGroupQuery` actor looks like this:
+Putting this together, the outline of our `DeviceGroupQuery` actor looks like below, however we have not defined the receive method in it:
 
 Scala
 :   @@snip [DeviceGroupQuery.scala]($code$/scala/tutorial_5/DeviceGroupQuery.scala) { #query-outline }
@@ -116,7 +116,7 @@ For our use case:
 that has been stopped in the meantime.
    * We can reach the deadline and receive a `CollectionTimeout`.
 
-In the first two cases, we need to keep track of the replies, which we now delegate to a method `receivedResponse`, which we will discuss later. In the case of timeout, we need to simply take all the actors that have not yet replied yet (the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply. Then we reply to the submitter of the query with the collected results and stop the query actor.
+In the first two cases, we need to keep track of the replies, which we now delegate to a method `receivedResponse`, which we will discuss later. In the case of timeout, we need to simply take all the actors that have not replied yet (the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply. Then we reply to the submitter of the query with the collected results and stop the query actor.
 
 To accomplish this, add the following to your `DeviceGroupQuery` source file:
 
