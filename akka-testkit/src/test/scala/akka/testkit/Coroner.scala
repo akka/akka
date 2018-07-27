@@ -119,7 +119,7 @@ object Coroner {
   /**
    * Print a report containing diagnostic information.
    */
-  def printReport(reportTitle: String, out: PrintStream) {
+  def printReport(reportTitle: String, out: PrintStream): Unit = {
     import out.println
 
     val osMx = ManagementFactory.getOperatingSystemMXBean()
@@ -251,12 +251,12 @@ trait WatchedByCoroner {
 
   @volatile private var coronerWatch: Coroner.WatchHandle = _
 
-  final def startCoroner() {
+  final def startCoroner(): Unit = {
     coronerWatch = Coroner.watch(expectedTestDuration.dilated, getClass.getName, System.err,
       startAndStopDuration.dilated, displayThreadCounts)
   }
 
-  final def stopCoroner() {
+  final def stopCoroner(): Unit = {
     coronerWatch.cancel()
     coronerWatch = null
   }

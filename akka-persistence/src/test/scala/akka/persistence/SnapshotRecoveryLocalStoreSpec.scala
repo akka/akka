@@ -43,7 +43,7 @@ class SnapshotRecoveryLocalStoreSpec extends PersistenceSpec(PersistenceSpec.con
 
   import SnapshotRecoveryLocalStoreSpec._
 
-  override protected def beforeEach() {
+  override protected def beforeEach(): Unit = {
     super.beforeEach()
 
     val persistentActor1 = system.actorOf(Props(classOf[SaveSnapshotTestPersistentActor], persistenceId, testActor))

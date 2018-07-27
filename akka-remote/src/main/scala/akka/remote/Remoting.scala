@@ -466,7 +466,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   var pendingReadHandoffs = Map[ActorRef, AkkaProtocolHandle]()
   var stashedInbound = Map[ActorRef, Vector[InboundAssociation]]()
 
-  def handleStashedInbound(endpoint: ActorRef, writerIsIdle: Boolean) {
+  def handleStashedInbound(endpoint: ActorRef, writerIsIdle: Boolean): Unit = {
     val stashed = stashedInbound.getOrElse(endpoint, Vector.empty)
     stashedInbound -= endpoint
     stashed foreach (handleInboundAssociation(_, writerIsIdle))

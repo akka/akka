@@ -112,19 +112,19 @@ trait ClusterNodeMBean {
    * The address format is `akka.tcp://actor-system-name@hostname:port`.
    * A 'Join(thisNodeAddress)' command is sent to the node to join.
    */
-  def join(address: String)
+  def join(address: String): Unit
 
   /**
    * Send command to issue state transition to LEAVING for the node specified by 'address'.
    * The address format is `akka.tcp://actor-system-name@hostname:port`
    */
-  def leave(address: String)
+  def leave(address: String): Unit
 
   /**
    * Send command to DOWN the node specified by 'address'.
    * The address format is `akka.tcp://actor-system-name@hostname:port`
    */
-  def down(address: String)
+  def down(address: String): Unit
 }
 
 /**

@@ -531,15 +531,15 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
   trait Driver {
     def wakeUp(d: FiniteDuration): Unit
     def expectWait(): FiniteDuration
-    def expectWait(d: FiniteDuration) { expectWait() should ===(d) }
+    def expectWait(d: FiniteDuration): Unit = { expectWait() should ===(d) }
     def probe: TestProbe
     def step: FiniteDuration
     def close(): Unit
   }
 
   val localEC = new ExecutionContext {
-    def execute(runnable: Runnable) { runnable.run() }
-    def reportFailure(t: Throwable) { t.printStackTrace() }
+    def execute(runnable: Runnable): Unit = { runnable.run() }
+    def reportFailure(t: Throwable): Unit = { t.printStackTrace() }
   }
 
   def withScheduler(start: Long = 0L, _startTick: Int = 0, config: Config = ConfigFactory.empty)(thunk: (Scheduler with Closeable, Driver) ⇒ Unit): Unit = {
