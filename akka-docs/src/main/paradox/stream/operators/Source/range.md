@@ -15,7 +15,7 @@ Emit each integer in a range, with an option to take bigger steps than 1.
 
 ## Description
 
-Emit each integer in a range, with an option to take bigger steps than 1. @scala[In Scala, you can use the `apply` method to generate a sequence of integers.]
+Emit each integer in a range, with an option to take bigger steps than 1. @scala[In Scala, use the `apply` method to generate a sequence of integers.]
 
 
 @@@div { .callout }
@@ -31,10 +31,9 @@ Emit each integer in a range, with an option to take bigger steps than 1. @scala
 Define the range of integers.
 
 Java
-:   @@snip [Source.java]($akka$/akka-docs/src/test/java/jdocs/stream/operators/Source.java) { #imports #range }
+:   @@snip [SourceDocExamples.java]($akka$/akka-docs/src/test/java/jdocs/stream/operators/SourceDocExamples.java) { #range-imports #range }
 
 Print out the stream of integers.
 
 Java
-:   @@snip [Source.java]($akka$/akka-docs/src/test/java/jdocs/stream/operators/Source.java) { #run-range}
-
+:   @@snip [SourceDocExamples.java]($akka$/akka-docs/src/test/java/jdocs/stream/operators/SourceDocExamples.java) { #run-range}
