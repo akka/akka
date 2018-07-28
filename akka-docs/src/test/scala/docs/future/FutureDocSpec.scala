@@ -38,13 +38,15 @@ object FutureDocSpec {
   //#pipe-to-usage
   class ActorUsingPipeTo(target: ActorRef) extends Actor {
     // akka.pattern.pipe needs to be imported
-    import akka.pattern.{ask, pipe}
+    import akka.pattern.{ ask, pipe }
     // implicit ExecutionContext should be in scope
     implicit val ec: ExecutionContext = context.dispatcher
+    implicit val timeout: Timeout = 5.seconds
 
     def receive = {
-      val future = target ? "some message"
-      future pipeTo sender() // use the pipe pattern
+      case _ ⇒
+        val future = target ? "some message"
+        future pipeTo sender() // use the pipe pattern
     }
   }
   //#pipe-to-usage
