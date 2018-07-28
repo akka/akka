@@ -68,6 +68,14 @@ import static akka.pattern.PatternsCS.retry;
 
 //#imports8
 
+//#imports-ask
+import static akka.pattern.PatternsCS.ask;
+//#imports-ask
+//#imports-pipe
+import static akka.pattern.PatternsCS.pipe;
+//#imports-pipe
+
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -112,6 +120,122 @@ public class FutureDocTest extends AbstractJavaTest {
     }
     //#print-result
   }
+
+  //#pipe-to-usage
+  public class ActorUsingPipeTo extends AbstractActor {
+    ActorRef target;
+    Timeout  timeout;
+
+    ActorUsingPipeTo(ActorRef target) {
+      this.target = target;
+      this.timeout = new Timeout(Duration.create(5, "seconds"));
+    }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(String.class, msg -> {
+          CompletableFuture<Object> fut =
+            ask(target, "some message", timeout).toCompletableFuture();
+
+          // the pipe pattern
+          pipe(fut, getContext().dispatcher()).to(sender());
+        })
+        .build();
+    }
+  }
+  //#pipe-to-usage
+
+  //#pipe-to-returned-data
+  public class UserData     { final String data; UserData(String data){ this.data = data; } }
+  public class UserActivity { final String activity; UserActivity(String activity){ this.activity = activity; } }
+  //#pipe-to-returned-data
+
+  //#pipe-to-user-data-actor
+  public class UserDataActor extends AbstractActor {
+    UserData internalData;
+
+    UserDataActor(){
+      this.internalData = new UserData("initial data");
+    }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(GetFromUserDataActor.class, msg -> sender().tell(internalData, self()))
+        .build();
+    }
+  }
+
+  public class GetFromUserDataActor {}
+  //#pipe-to-user-data-actor
+
+  //#pipe-to-user-activity-actor
+  interface UserActivityRepository {
+    CompletableFuture<ArrayList<UserActivity>> queryHistoricalActivities(String userId);
+  }
+
+  public class UserActivityActor extends AbstractActor {
+    String userId;
+    UserActivityRepository repository;
+
+    UserActivityActor(String userId, UserActivityRepository repository) {
+      this.userId = userId;
+      this.repository = repository;
+    }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(GetFromUserActivityActor.class, msg -> {
+          CompletableFuture<ArrayList<UserActivity>> fut =
+            repository.queryHistoricalActivities(userId);
+
+          pipe(fut, getContext().dispatcher()).to(sender());
+        })
+        .build();
+    }
+  }
+
+  public class GetFromUserActivityActor {}
+  //#pipe-to-user-activity-actor
+
+  //#pipe-to-proxy-actor
+  public class UserProxyActor extends AbstractActor {
+    ActorRef userActor;
+    ActorRef userActivityActor;
+    Timeout timeout = new Timeout(Duration.create(5, "seconds"));
+
+    UserProxyActor(ActorRef userActor, ActorRef userActivityActor) {
+      this.userActor = userActor;
+      this.userActivityActor = userActivityActor;
+    }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(GetUserData.class, msg -> {
+          CompletableFuture<Object> fut =
+            ask(userActor, new GetUserData(), timeout).toCompletableFuture();
+
+          pipe(fut, getContext().dispatcher());
+        })
+        .match(GetUserActivities.class, msg -> {
+          CompletableFuture<Object> fut =
+            ask(userActivityActor, new GetFromUserActivityActor(), timeout).toCompletableFuture();
+
+          pipe(fut, getContext().dispatcher()).to(sender());
+        })
+        .build();
+    }
+  }
+  //#pipe-to-proxy-actor
+
+  //#pipe-to-proxy-messages
+  public class GetUserData {}
+  public class GetUserActivities {}
+  //#pipe-to-proxy-messages
+
   @SuppressWarnings("unchecked") @Test public void useCustomExecutionContext() throws Exception {
     ExecutorService yourExecutorServiceGoesHere = Executors.newSingleThreadExecutor();
     //#diy-execution-context
@@ -135,9 +259,7 @@ public class FutureDocTest extends AbstractJavaTest {
     Future<Object> future = Patterns.ask(actor, msg, timeout);
     String result = (String) Await.result(future, timeout.duration());
     //#ask-blocking
-    //#pipe-to
-    akka.pattern.Patterns.pipe(future, system.dispatcher()).to(actor);
-    //#pipe-to
+
     assertEquals("HELLO", result);
   }
 
