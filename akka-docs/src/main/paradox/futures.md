@@ -95,8 +95,8 @@ or a `ClassCastException` if not. Handling `Exception`s will be discussed furthe
 
 ## Use the pipe pattern
 
-Another useful message-transfer pattern is "pipe", which is to send the result of `Future` to another actor, upon completion of the `Future`.
-The pipe pattern can be used by importing @java[`akka.pattern.PatternsCS.pipe`.]@scala[`akka.pattern.pipe`, and define or import an implicit instance of `ExecutionContext` in the scope.
+Another useful message-transfer pattern is "pipe", which is to send the result of @scala[`Future`]@java[`CompletableFuture`] to another actor, upon completion of the @scala[`Future`]@java[`CompletableFuture`].
+The pipe pattern can be used by importing @java[`akka.pattern.PatternsCS.pipe`.]@scala[`akka.pattern.pipe`, and define or import an implicit instance of `ExecutionContext` in the scope.]
 
 Scala
 :  @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #pipe-to-usage }
