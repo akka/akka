@@ -560,8 +560,8 @@ private[akka] class ActorCell(
     } catch handleNonFatalOrInterruptedException { e ⇒
       handleInvokeFailure(Nil, e)
     } finally {
-      if (influenceReceiveTimeout)
-        checkReceiveTimeout // Reschedule receive timeout
+      // Schedule or reschedule receive timeout
+      checkReceiveTimeout(reschedule = influenceReceiveTimeout)
     }
   }
 
@@ -650,7 +650,7 @@ private[akka] class ActorCell(
       val created = newActor()
       actor = created
       created.aroundPreStart()
-      checkReceiveTimeout
+      checkReceiveTimeout()
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
       case e: InterruptedException ⇒

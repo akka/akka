@@ -155,5 +155,39 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       count.get() should be > 0
       system.stop(timeoutActor)
     }
+
+    "be able to turn on timeout in NotInfluenceReceiveTimeout message handler" taggedAs TimingTest in {
+      val timeoutLatch = TestLatch()
+
+      val timeoutActor = system.actorOf(Props(new Actor {
+        def receive = {
+          case TransperentTick ⇒ context.setReceiveTimeout(500 milliseconds)
+          case ReceiveTimeout  ⇒ timeoutLatch.open
+        }
+      }))
+
+      timeoutActor ! TransperentTick
+
+      Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
+      system.stop(timeoutActor)
+    }
+
+    "be able to turn off timeout in NotInfluenceReceiveTimeout message handler" taggedAs TimingTest in {
+      val timeoutLatch = TestLatch()
+
+      val timeoutActor = system.actorOf(Props(new Actor {
+        context.setReceiveTimeout(500 milliseconds)
+
+        def receive = {
+          case TransperentTick ⇒ context.setReceiveTimeout(Duration.Inf)
+          case ReceiveTimeout  ⇒ timeoutLatch.open
+        }
+      }))
+
+      timeoutActor ! TransperentTick
+
+      intercept[TimeoutException] { Await.ready(timeoutLatch, 1 second) }
+      system.stop(timeoutActor)
+    }
   }
 }
