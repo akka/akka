@@ -5,7 +5,7 @@
 package akka.remote.artery
 
 import com.typesafe.config.{ Config, ConfigFactory }
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, Address }
 import akka.remote.transport.netty.NettyTransportSpec._
 
 import scala.concurrent.Await
@@ -46,8 +46,16 @@ trait BindCanonicalAddressBehaviors {
       implicit val sys = ActorSystem("sys", config.withFallback(commonConfig))
 
       getExternal should ===(address.toAkkaAddress("akka"))
-      getInternal should not contain (address.toAkkaAddress("akka"))
-
+      // May have selected the same random port - bind another in that case while the other still has the canonical port
+      val internals = if (getInternal.collect { case Address(_, _, _, Some(port)) ⇒ port }.toSeq.contains(address.getPort)) {
+        val sys2 = ActorSystem("sys", config.withFallback(commonConfig))
+        val secondInternals = getInternal()(sys2)
+        Await.result(sys2.terminate(), Duration.Inf)
+        secondInternals
+      } else {
+        getInternal
+      }
+      internals should not contain address.toAkkaAddress("akka")
       Await.result(sys.terminate(), Duration.Inf)
     }
 
@@ -98,13 +106,13 @@ trait BindCanonicalAddressBehaviors {
 
 class BindCanonicalAddressSpec extends WordSpec with Matchers with BindCanonicalAddressBehaviors {
   s"artery with aeron-udp transport" should {
-    behave like arteryConnectionTest("aeron-udp", true)
+    behave like arteryConnectionTest("aeron-udp", isUDP = true)
   }
   s"artery with tcp transport" should {
-    behave like arteryConnectionTest("tcp", false)
+    behave like arteryConnectionTest("tcp", isUDP = false)
   }
   s"artery with tls-tcp transport" should {
-    behave like arteryConnectionTest("tls-tcp", false)
+    behave like arteryConnectionTest("tls-tcp", isUDP = false)
   }
 }
 
@@ -114,7 +122,7 @@ object BindCanonicalAddressSpec {
     akka {
       actor.provider = remote
       remote.artery.enabled = true
-      remote.artery.transport = "${transport}"
+      remote.artery.transport = "$transport"
     }
   """)
 }
