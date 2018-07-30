@@ -117,6 +117,17 @@ object CrossJava {
             }
     }
 
+    class WindowsDiscoverConfig extends JavaDiscoverConf {
+      val base: File = file("C://Program Files/Java")
+      val JavaHomeDir = """jdk-?(1\.)?([0-9]+).*""".r
+
+      def javaHomes: Vector[(String, File)] =
+        wrapNull(base.list())
+          .collect {
+            case dir@JavaHomeDir(m, n) => JavaVersion(nullBlank(m) + n).toString -> (base / dir)
+          }
+    }
+
     // See https://github.com/shyiko/jabba
     class JabbaDiscoverConfig extends JavaDiscoverConf {
       val base: File = Path.userHome / ".jabba" / "jdk"
@@ -137,6 +148,7 @@ object CrossJava {
       new LinuxDiscoverConfig(file("/usr") / "java"),
       new LinuxDiscoverConfig(file("/usr") / "lib" / "jvm"),
       new MacOsDiscoverConfig,
+      new WindowsDiscoverConfig
     )
   }
 
