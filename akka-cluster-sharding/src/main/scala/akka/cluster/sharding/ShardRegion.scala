@@ -640,7 +640,7 @@ private[akka] class ShardRegion(
         case (shardId, state) ⇒ ShardRegion.ShardState(shardId, state.entityIds)
       }.toSet)
     }.recover {
-      case x: AskTimeoutException ⇒ CurrentShardRegionState(Set.empty)
+      case _: AskTimeoutException ⇒ CurrentShardRegionState(Set.empty)
     }.pipeTo(ref)
   }
 

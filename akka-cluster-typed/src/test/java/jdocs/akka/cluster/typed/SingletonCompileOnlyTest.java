@@ -8,11 +8,8 @@ import akka.actor.typed.*;
 import akka.actor.typed.javadsl.Behaviors;
 
 //#import
-import akka.cluster.typed.ClusterSingleton;
-import akka.cluster.typed.ClusterSingletonSettings;
-
+import akka.cluster.typed.*;
 import java.time.Duration;
-
 //#import
 
 public class SingletonCompileOnlyTest {
@@ -62,8 +59,8 @@ public class SingletonCompileOnlyTest {
             new GoodByeCounter()
     );
 
-    proxy.tell(new Increment());
-    //#singleton
+      proxy.tell(new Increment());
+      //#singleton
 
   }
 

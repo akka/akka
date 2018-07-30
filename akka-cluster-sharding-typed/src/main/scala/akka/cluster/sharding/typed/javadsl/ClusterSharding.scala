@@ -190,6 +190,11 @@ abstract class ClusterSharding {
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M]
 
   /**
+   * Actor for querying Cluster Sharding state
+   */
+  def shardState: ActorRef[ClusterShardingQuery]
+
+  /**
    * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
    * given `settings`. This could be changed in the future.
    */

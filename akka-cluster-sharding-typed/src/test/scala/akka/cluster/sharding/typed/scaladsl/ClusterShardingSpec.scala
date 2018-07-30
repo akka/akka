@@ -63,7 +63,7 @@ object ClusterShardingSpec {
           "akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec$$IdTestProtocol" = test
         }
       }
-    """.stripMargin)
+    """)
 
   sealed trait TestProtocol extends java.io.Serializable
   final case class ReplyPlz(toMe: ActorRef[String]) extends TestProtocol
@@ -132,23 +132,10 @@ object ClusterShardingSpec {
 
   final case class TheReply(s: String)
 
-}
+  val typeKey = EntityTypeKey[TestProtocol]("envelope-shard")
+  val typeKey2 = EntityTypeKey[IdTestProtocol]("no-envelope-shard")
 
-class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.config) with WordSpecLike {
-  import ClusterShardingSpec._
-
-  val sharding = ClusterSharding(system)
-
-  val system2 = ActorSystem(Behaviors.ignore[Any], name = system.name, config = system.settings.config)
-  val sharding2 = ClusterSharding(system2)
-
-  override def afterAll(): Unit = {
-    ActorTestKit.shutdown(system2, 5.seconds)
-    super.afterAll()
-  }
-
-  private val typeKey = EntityTypeKey[TestProtocol]("envelope-shard")
-  private def behavior(shard: ActorRef[ClusterSharding.ShardCommand], stopProbe: Option[ActorRef[Done]] = None) =
+  def behavior(shard: ActorRef[ClusterSharding.ShardCommand], stopProbe: Option[ActorRef[Done]] = None) =
     Behaviors.receive[TestProtocol] {
       case (ctx, PassivatePlz()) ⇒
         shard ! ClusterSharding.Passivate(ctx.self)
@@ -168,8 +155,7 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
         Behaviors.same
     }
 
-  private val typeKey2 = EntityTypeKey[IdTestProtocol]("no-envelope-shard")
-  private def behaviorWithId(shard: ActorRef[ClusterSharding.ShardCommand]) = Behaviors.receive[IdTestProtocol] {
+  def behaviorWithId(shard: ActorRef[ClusterSharding.ShardCommand]) = Behaviors.receive[IdTestProtocol] {
     case (_, IdStopPlz()) ⇒
       Behaviors.stopped
 
@@ -181,6 +167,27 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
     case (_, IdReplyPlz(_, toMe)) ⇒
       toMe ! "Hello!"
       Behaviors.same
+  }
+
+  val idTestProtocolMessageExtractor = ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
+    case IdReplyPlz(id, _)  ⇒ id
+    case IdWhoAreYou(id, _) ⇒ id
+    case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
+  }
+}
+
+class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.config) with WordSpecLike {
+
+  import ClusterShardingSpec._
+
+  val sharding = ClusterSharding(system)
+
+  val system2 = ActorSystem(Behaviors.ignore[Any], name = system.name, config = system.settings.config)
+  val sharding2 = ClusterSharding(system2)
+
+  override def afterAll(): Unit = {
+    ActorTestKit.shutdown(system2, 5.seconds)
+    super.afterAll()
   }
 
   private val shardingRef1: ActorRef[ShardingEnvelope[TestProtocol]] = sharding.start(Entity(
@@ -208,12 +215,8 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
     typeKey2,
     ctx ⇒ behaviorWithId(ctx.shard),
     IdStopPlz())
-    .withMessageExtractor(
-      ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
-        case IdReplyPlz(id, _)  ⇒ id
-        case IdWhoAreYou(id, _) ⇒ id
-        case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
-      })
+    .withMessageExtractor(idTestProtocolMessageExtractor)
+
   )
 
   def totalEntityCount1(): Int = {
@@ -248,6 +251,18 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
         shardingRef1 ! ShardingEnvelope(s"test$n", ReplyPlz(p.ref))
         p.expectMessage("Hello!")
       }
+    }
+
+    "return the same ShardRegion if requested twice" in {
+      val sameShardRegion = sharding.spawn(
+        _ ⇒ behavior,
+        Props.empty,
+        typeKey,
+        ClusterShardingSettings(system),
+        10,
+        StopPlz())
+
+      sameShardRegion should be(shardingRef1)
     }
 
     "send messages via cluster sharding, without envelopes" in {
