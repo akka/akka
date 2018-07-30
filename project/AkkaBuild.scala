@@ -97,7 +97,12 @@ object AkkaBuild {
       // methods not found in jdk8. To test whether this has the desired effect, compile akka-remote and check the
       // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
       // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
-      scalacOptions in Compile ++= (if (scalaBinaryVersion.value == "2.11" || System.getProperty("java.version").startsWith("1.")) Seq("-target:jvm-1.8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar") else Seq("-release", "8")),
+      scalacOptions in Compile ++= (
+        if (scalaBinaryVersion.value == "2.11" || System.getProperty("java.version").startsWith("1."))
+          Seq("-target:jvm-1.8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
+        else
+          // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
+          Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
