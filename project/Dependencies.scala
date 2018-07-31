@@ -76,6 +76,10 @@ object Dependencies {
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
+
+    // Non-default module in Java9, removed in Java11. For Camel.
+    val jaxb = "javax.xml.bind" % "jaxb-api" % "2.3.0"
+
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.4" % "test"
       val gson = "com.google.code.gson" % "gson" % "2.8.5" % "test"
@@ -167,7 +171,7 @@ object Dependencies {
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
-  val camel = l ++= Seq(camelCore, Test.scalatest.value, Test.junit, Test.mockito, Test.logback, Test.commonsIo)
+  val camel = l ++= Seq(camelCore, jaxb, Test.scalatest.value, Test.junit, Test.mockito, Test.logback, Test.commonsIo)
 
   val osgi = l ++= Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest.value, Test.junit)
 
