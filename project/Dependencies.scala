@@ -79,6 +79,7 @@ object Dependencies {
 
     // Non-default module in Java9, removed in Java11. For Camel.
     val jaxb = "javax.xml.bind" % "jaxb-api" % "2.3.0"
+    val activation = "com.sun.activation" % "javax.activation" % "1.2.0"
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.4" % "test"
@@ -171,7 +172,7 @@ object Dependencies {
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
-  val camel = l ++= Seq(camelCore, jaxb, Test.scalatest.value, Test.junit, Test.mockito, Test.logback, Test.commonsIo)
+  val camel = l ++= Seq(camelCore, jaxb, activation, Test.scalatest.value, Test.junit, Test.mockito, Test.logback, Test.commonsIo)
 
   val osgi = l ++= Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest.value, Test.junit)
 
