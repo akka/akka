@@ -157,3 +157,74 @@ a parameter to the `ClusterSingletonProxy.props` factory method, i.e. each singl
 with different settings if needed.
 
 @@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #singleton-proxy-config }
+
+## Supervision
+
+Sometimes it is useful to add supervision for the Cluster Singleton itself. To accomplish this you need to add a parent supervisor actor which will be used to create the 'real' singleton instance. Below is an example implementation (credit to [this StackOverflow answer](https://stackoverflow.com/a/36716708/779513))
+
+Scala
+:  ```
+import akka.actor.{ Actor, Props }
+
+class SupervisorActor(childProps: Props, override val supervisorStrategy) extends Actor {
+
+  val child = context.actorOf(childProps, "supervised-child")
+
+  def receive = {
+    case msg => child forward msg
+  }
+}
+```
+
+Java
+:  ```
+import akka.actor.Actor;
+import akka.actor.ActorRef
+import akka.actor.Props;
+import akka.actor.SupervisorStrategy
+
+public class SupervisorActor(Props childProps, SupervisorStrategy strategy) extends Actor {
+
+  @Override
+  public SupervisorStrategy supervisorStrategy() {
+    return strategy;
+  }
+
+  ActorRef child = context.actorOf(childProps, "supervised-child")
+
+  @Override
+  public Receive createReceive() {
+    return receiveBuilder()
+      .matchAny(msg -> child.forward(msg, getContext()))
+      .build();
+  }
+}
+```
+
+And used here
+
+Scala
+:   ```
+import akka.actor.PoisonPill
+import akka.cluster.singleton.ClusterManager
+import akka.cluster.singleton.ClusterSingletonManagerSettings
+
+context.actorOf(ClusterSingletonManager.props(
+          singletonProps = Props(classOf[SupervisorActor], props, supervisorStrategy),
+          terminationMessage = PoisonPill,
+          settings = ClusterSingletonManagerSettings(context.system)),
+        name = name)
+```
+
+Java
+:   ```
+import akka.actor.PoisonPill;
+import akka.cluster.singleton.ClusterManager;
+import akka.cluster.singleton.ClusterSingletonManagerSettings;
+
+context.actorOf(ClusterSingletonManager.props(
+          Props.create(SupervisorActor.class, () -> new SupervisorActor(props, supervisorStrategy)),
+          PoisonPill.getInstance(),
+          ClusterSingletonManagerSettings.create(getContext().system())),
+        name);
+```
