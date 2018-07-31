@@ -62,7 +62,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="queue"></a>@ref[queue](Sink/queue.md)|Materialize a `SinkQueue` that can be pulled to trigger demand through the sink.|
 |Sink|<a name="reduce"></a>@ref[reduce](Sink/reduce.md)|Apply a reduction function on the incoming elements and pass the result to the next invocation.|
 |Sink|<a name="seq"></a>@ref[seq](Sink/seq.md)|Collect values emitted from the stream into a collection.|
-|Sink|<a name="takeLast"></a>@ref[takeLast](Sink/takeLast.md)|Collect the last `n` elements emitted.|
+|Sink|<a name="takelast"></a>@ref[takeLast](Sink/takeLast.md)|Materializes into a @scala[`Future`] @java[`CompletionStage`] of  @scala[`Seq[T]`] @java[`List<In>`] containing the last `n` collected elements when the stream completes.|
 
 ## Additional Sink and Source converters
 
@@ -373,8 +373,8 @@ Operators meant for inter-operating between Akka Streams and Actors:
 * [headOption](Sink/headOption.md)
 * [last](Sink/last.md)
 * [lastOption](Sink/lastOption.md)
-* [seq](Sink/seq.md)
 * [takeLast](Sink/takeLast.md)
+* [seq](Sink/seq.md)
 * [asPublisher](Sink/asPublisher.md)
 * [ignore](Sink/ignore.md)
 * [foreach](Sink/foreach.md)
