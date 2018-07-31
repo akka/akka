@@ -9,14 +9,15 @@ import java.util.concurrent.TimeoutException
 import akka.NotUsed
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.{ StreamSpec, TestPublisher }
 
-import scala.concurrent.{ Await, Future, Promise }
+import scala.collection.immutable
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future, Promise }
 
 class LazySinkSpec extends StreamSpec {
 
@@ -79,7 +80,7 @@ class LazySinkSpec extends StreamSpec {
       a[RuntimeException] shouldBe thrownBy { Await.result(futureProbe, remainingOrDefault) }
     }
 
-    "failed gracefully when upstream failed" in assertAllStagesStopped {
+    "fail gracefully when upstream failed" in assertAllStagesStopped {
       val sourceProbe = TestPublisher.manualProbe[Int]()
       val futureProbe =
         Source.fromPublisher(sourceProbe).runWith(Sink.lazyInitAsync(() => Future.successful(TestSink.probe[Int])))
@@ -127,11 +128,26 @@ class LazySinkSpec extends StreamSpec {
         }
       }
 
-      val result = Source(List("whatever")).runWith(Sink.lazyInitAsync[String, NotUsed](() => {
-        println("create sink"); Future.successful(Sink.fromGraph(FailingInnerMat))
+      val result = Source(List("whatever")).runWith(Sink.lazyInitAsync[String, NotUsed](() ⇒ {
+        Future.successful(Sink.fromGraph(FailingInnerMat))
       }))
 
       result.failed.futureValue should ===(matFail)
+    }
+
+    // reproducer for #25410
+    "lazily propagate failure" in {
+      case object MyException extends Exception
+      val lazyMatVal = Source(List(1))
+        .concat(Source.lazily(() ⇒ Source.failed(MyException)))
+        .runWith(Sink.lazyInitAsync(() ⇒ Future.successful(Sink.seq[Int])))
+
+      // lazy init async materialized a sink, so we should have a some here
+      val innerMatVal: Future[immutable.Seq[Int]] = lazyMatVal.futureValue.get
+
+      // the actual matval from Sink.seq should be failed when the stream fails
+      innerMatVal.failed.futureValue should ===(MyException)
+
     }
   }
 
