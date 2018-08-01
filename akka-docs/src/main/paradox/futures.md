@@ -109,9 +109,13 @@ To see how this works in more detail, let's introduce a small example consisting
 In this example, when you need information about a user, you send a request message to `UserProxyActor`,
 then it gets the corresponding result from the appropriate backend actor based on the request message type.
 
-![futures-pipeto1](images/futures-pipeto1.png)
+<p align="center">
+  <img src="images/futures-pipeto1.png">
+</p>
 
-![futures-pipeto2](images/futures-pipeto2.png)
+<p align="center">
+  <img src="images/futures-pipeto2.png">
+</p>
 
 The message types you send to `UserProxyActor` are `GetUserData` and `GetUserActivities`:
 
