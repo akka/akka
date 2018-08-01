@@ -122,8 +122,8 @@ object Dependencies {
       val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
 
        // Non-default module in Java9, removed in Java11. For Camel.
-      val jaxb = "javax.xml.bind" % "jaxb-api" % "2.3.0" % "provided"
-      val activation = "com.sun.activation" % "javax.activation" % "1.2.0" % "provided"
+      val jaxb = "javax.xml.bind" % "jaxb-api" % "2.3.0" % "provided;test"
+      val activation = "com.sun.activation" % "javax.activation" % "1.2.0" % "provided;test"
 
 
       val levelDB = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided" // ApacheV2
