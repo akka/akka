@@ -381,7 +381,7 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
   /**
    * Put an asynchronous boundary around this `Sink`
    *
-   * @param dispatcher Run the graph on this dispatcher
+   * @param dispatcher Run the operator on this dispatcher
    */
   override def async(dispatcher: String): javadsl.Sink[In, Mat] =
     new Sink(delegate.async(dispatcher))
@@ -389,8 +389,8 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
   /**
    * Put an asynchronous boundary around this `Sink`
    *
-   * @param dispatcher      Run the graph on this dispatcher
-   * @param inputBufferSize Set the input buffer to this size for the graph
+   * @param dispatcher      Run the operator on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the operator
    */
   override def async(dispatcher: String, inputBufferSize: Int): javadsl.Sink[In, Mat] =
     new Sink(delegate.async(dispatcher, inputBufferSize))

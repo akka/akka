@@ -190,7 +190,7 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
   /**
    * Put an asynchronous boundary around this `BidiFlow`
    *
-   * @param dispatcher Run the graph on this dispatcher
+   * @param dispatcher Run the operator on this dispatcher
    */
   override def async(dispatcher: String): BidiFlow[I1, O1, I2, O2, Mat] =
     super.async(dispatcher).asInstanceOf[BidiFlow[I1, O1, I2, O2, Mat]]
@@ -198,8 +198,8 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
   /**
    * Put an asynchronous boundary around this `BidiFlow`
    *
-   * @param dispatcher      Run the graph on this dispatcher
-   * @param inputBufferSize Set the input buffer to this size for the graph
+   * @param dispatcher      Run the operator on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the operator
    */
   override def async(dispatcher: String, inputBufferSize: Int): BidiFlow[I1, O1, I2, O2, Mat] =
     super.async(dispatcher, inputBufferSize).asInstanceOf[BidiFlow[I1, O1, I2, O2, Mat]]

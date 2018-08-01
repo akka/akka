@@ -187,8 +187,8 @@ final class Source[+Out, +Mat](
   /**
    * Put an asynchronous boundary around this `Graph`
    *
-   * @param dispatcher      Run the graph on this dispatcher
-   * @param inputBufferSize Set the input buffer to this size for the graph
+   * @param dispatcher      Run the operator on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the operator
    */
   override def async(dispatcher: String, inputBufferSize: Int): Repr[Out] =
     super.async(dispatcher, inputBufferSize).asInstanceOf[Repr[Out]]

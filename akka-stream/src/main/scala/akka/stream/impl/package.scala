@@ -41,7 +41,7 @@ package akka.stream
  *   * Avoid allocations as much as possible.
  *   * Biased implementation for the 90% case. Common cases should be as fast as possible:
  *     * wiring linear chains should be very fast.
- *     * assume that most graphs are mostly linear, with only a few generalized graph constructs thrown in.
+ *     * assume that most graphs are linear, with only a few generalized graph constructs thrown in.
  *     * materialization should not pay the price of island tracking if there is only a single island
  *     * assume that the number of islands is low in general
  *     * avoid "copiedModule" i.e. wrappers that exist solely for the purpose of establishing new port identities

@@ -267,7 +267,7 @@ final class Flow[-In, +Out, +Mat](
   /**
    * Put an asynchronous boundary around this `Flow`
    *
-   * @param dispatcher Run the graph on this dispatcher
+   * @param dispatcher Run the operator on this dispatcher
    */
   override def async(dispatcher: String): Repr[Out] =
     super.async(dispatcher).asInstanceOf[Repr[Out]]
@@ -275,8 +275,8 @@ final class Flow[-In, +Out, +Mat](
   /**
    * Put an asynchronous boundary around this `Flow`
    *
-   * @param dispatcher      Run the graph on this dispatcher
-   * @param inputBufferSize Set the input buffer to this size for the graph
+   * @param dispatcher      Run the operator on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the operator
    */
   override def async(dispatcher: String, inputBufferSize: Int): Repr[Out] =
     super.async(dispatcher, inputBufferSize).asInstanceOf[Repr[Out]]

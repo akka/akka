@@ -23,7 +23,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 
 /**
- * Scala API: A GraphStage represents a reusable graph stream processing operator.
+ * Scala API: A GraphStage represents a reusable stream processing operator.
  *
  * Extend this `GraphStageWithMaterializedValue` if you want to provide a materialized value,
  * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
@@ -60,7 +60,7 @@ abstract class GraphStageWithMaterializedValue[+S <: Shape, +M] extends Graph[S,
 }
 
 /**
- * Java API: A GraphStage represents a reusable graph stream processing operator.
+ * Java API: A GraphStage represents a reusable stream processing operator.
  *
  * Extend this `AbstractGraphStageWithMaterializedValue` if you want to provide a materialized value,
  * represented by the type parameter `M`. If your GraphStage does not need to provide a materialized
@@ -83,7 +83,7 @@ abstract class AbstractGraphStageWithMaterializedValue[+S <: Shape, M] extends G
 }
 
 /**
- * A GraphStage represents a reusable graph stream processing operator.
+ * A GraphStage represents a reusable stream processing operator.
  *
  * A GraphStage consists of a [[Shape]] which describes its input and output ports and a factory function that
  * creates a [[GraphStageLogic]] which implements the processing logic that ties the ports together.
@@ -1019,8 +1019,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * [[AsyncCallback.invokeWithFeedback()]] has an internal promise that will be failed if event cannot be processed
    * due to stream completion.
    *
-   * To be thread safe this method must only be called from either the constructor of the graph operator during
-   * materialization or one of the methods invoked by the graph operator machinery, such as `onPush` and `onPull`.
+   * To be thread safe this method must only be called from either the constructor of the operator during
+   * materialization or one of the methods invoked by the operator machinery, such as `onPush` and `onPull`.
    *
    * This object can be cached and reused within the same [[GraphStageLogic]].
    */
@@ -1160,7 +1160,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * internal state of this operator.
    *
    * This method must (the earliest) be called after the [[GraphStageLogic]] constructor has finished running,
-   * for example from the [[preStart]] callback the graph operator logic provides.
+   * for example from the [[preStart]] callback the operator logic provides.
    *
    * Created [[StageActorRef]] to get messages and watch other actors in synchronous way.
    *

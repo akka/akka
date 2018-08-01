@@ -3008,7 +3008,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   /**
    * Put an asynchronous boundary around this `Source`
    *
-   * @param dispatcher Run the graph on this dispatcher
+   * @param dispatcher Run the operator on this dispatcher
    */
   override def async(dispatcher: String): javadsl.Source[Out, Mat] =
     new Source(delegate.async(dispatcher))
@@ -3016,8 +3016,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   /**
    * Put an asynchronous boundary around this `Source`
    *
-   * @param dispatcher      Run the graph on this dispatcher
-   * @param inputBufferSize Set the input buffer to this size for the graph
+   * @param dispatcher      Run the operator on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the operator
    */
   override def async(dispatcher: String, inputBufferSize: Int): javadsl.Source[Out, Mat] =
     new Source(delegate.async(dispatcher, inputBufferSize))
