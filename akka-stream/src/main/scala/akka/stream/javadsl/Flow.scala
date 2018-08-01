@@ -3037,7 +3037,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
 
   /**
    * Add the given attributes to this [[Flow]]. If the specific attribute was already present
-   * on this graph this means the added attribute will be more specific than the existing one.
+   * on this operator this means the added attribute will be more specific than the existing one.
    * If this Flow is a composite of multiple graphs, new attributes on the composite will be
    * less specific than attributes set directly on the individual graphs of the composite.
    */
@@ -3059,7 +3059,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   /**
    * Put an asynchronous boundary around this `Flow`
    *
-   * @param dispatcher Run the graph on this dispatcher
+   * @param dispatcher Run the operator on this dispatcher
    */
   override def async(dispatcher: String): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.async(dispatcher))
@@ -3067,8 +3067,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   /**
    * Put an asynchronous boundary around this `Flow`
    *
-   * @param dispatcher      Run the graph on this dispatcher
-   * @param inputBufferSize Set the input buffer to this size for the graph
+   * @param dispatcher      Run the operator on this dispatcher
+   * @param inputBufferSize Set the input buffer to this size for the operator
    */
   override def async(dispatcher: String, inputBufferSize: Int): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.async(dispatcher, inputBufferSize))

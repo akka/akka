@@ -116,7 +116,7 @@ class SubFlow[In, Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Flow[I
    * }}}
    *
    * Note that attributes set on the returned graph, including async boundaries are now for the entire graph and not
-   * the `SubFlow`. for example `async` will not have any effect as the returned graph is the entire, closed graph.
+   * the `SubFlow`. For example `async` will not have any effect as the returned graph is the entire, closed graph.
    */
   def to(sink: Graph[SinkShape[Out], _]): Sink[In, Mat] =
     new Sink(delegate.to(sink))
