@@ -4,6 +4,8 @@ Stream iterator in cycled manner.
 
 @ref[Source operators](../index.md#source-operators)
 
+![](../../../images/source-cycle.gif)
+
 @@@div { .group-scala }
 
 ## Signature
