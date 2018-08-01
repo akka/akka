@@ -247,7 +247,7 @@ configured `seed-node-timeout`.
 The joining of given seed nodes will by default be retried indefinitely until
 a successful join. That process can be aborted if unsuccessful by configuring a
 timeout. When aborted it will run @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown),
-which by default will terminated the ActorSystem. CoordinatedShutdown can also be configured to exit
+which by default will terminate the ActorSystem. CoordinatedShutdown can also be configured to exit
 the JVM. It is useful to define this timeout if the `seed-nodes` are assembled
 dynamically and a restart with new seed-nodes should be tried after unsuccessful
 attempts.
