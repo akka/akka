@@ -77,9 +77,6 @@ object Dependencies {
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
 
-    // Non-default module in Java9, removed in Java11. For Camel.
-    val jaxb = "javax.xml.bind" % "jaxb-api" % "2.3.0"
-    val activation = "com.sun.activation" % "javax.activation" % "1.2.0"
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.4" % "test"
@@ -124,11 +121,17 @@ object Dependencies {
       // If changed, update akka-docs/build.sbt as well
       val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
 
+       // Non-default module in Java9, removed in Java11. For Camel.
+      val jaxb = "javax.xml.bind" % "jaxb-api" % "2.3.0" % "provided"
+      val activation = "com.sun.activation" % "javax.activation" % "1.2.0" % "provided"
+
+
       val levelDB = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided" // ApacheV2
       val levelDBmultiJVM = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided;multi-jvm" // ApacheV2
       val levelDBNative = "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % "optional;provided" // New BSD
 
       val junit = Compile.junit % "optional;provided;test"
+
     }
 
   }
@@ -172,7 +175,7 @@ object Dependencies {
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
-  val camel = l ++= Seq(camelCore, jaxb, activation, Test.scalatest.value, Test.junit, Test.mockito, Test.logback, Test.commonsIo)
+  val camel = l ++= Seq(camelCore, Provided.jaxb, Provided.activation, Test.scalatest.value, Test.junit, Test.mockito, Test.logback, Test.commonsIo)
 
   val osgi = l ++= Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest.value, Test.junit)
 
