@@ -34,7 +34,12 @@ object MiscMessageSerializerSpec {
 
     override def equals(other: Any): Boolean = other match {
       case e: TestException ⇒
-        e.getMessage == getMessage && e.stackTrace == stackTrace && e.getCause == getCause
+        e.getMessage == getMessage && e.getCause == getCause &&
+          // on JDK9+ the stacktraces aren't equal, something about how they are constructed
+          // they are alike enough to be roughly equal though
+          e.stackTrace.zip(stackTrace).forall {
+            case (t, o) ⇒ t.getClassName == o.getClassName && t.getFileName == o.getFileName
+          }
       case _ ⇒ false
     }
 
@@ -150,9 +155,12 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       val deserialized = serializer.fromBinary(serializer.toBinary(aiex), serializer.manifest(aiex))
         .asInstanceOf[ActorInitializationException]
 
-      deserialized.getCause should ===(aiex.getCause)
       deserialized.getMessage should ===(aiex.getMessage)
       deserialized.getActor should ===(aiex.getActor)
+      // on JDK9+ these aren't equal anymore, depends on how they were constructed
+      // deserialized.getCause should ===(aiex.getCause)
+      deserialized.getCause.getClass should ===(aiex.getCause.getClass)
+      deserialized.getCause.getMessage should ===(aiex.getCause.getMessage)
     }
 
     "serialize and deserialze ActorInitializationException if ref is null" in {
@@ -161,9 +169,12 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       val deserialized = serializer.fromBinary(serializer.toBinary(aiex), serializer.manifest(aiex))
         .asInstanceOf[ActorInitializationException]
 
-      deserialized.getCause should ===(aiex.getCause)
       deserialized.getMessage should ===(aiex.getMessage)
       deserialized.getActor should ===(aiex.getActor)
+      // on JDK9+ these aren't equal anymore, depends on how they were constructed
+      // deserialized.getCause should ===(aiex.getCause)
+      deserialized.getCause.getClass should ===(aiex.getCause.getClass)
+      deserialized.getCause.getMessage should ===(aiex.getCause.getMessage)
     }
 
     "serialize and deserialze ActorInitializationException if cause  is null" in {
@@ -172,9 +183,11 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       val deserialized = serializer.fromBinary(serializer.toBinary(aiex), serializer.manifest(aiex))
         .asInstanceOf[ActorInitializationException]
 
-      deserialized.getCause should ===(aiex.getCause)
       deserialized.getMessage should ===(aiex.getMessage)
       deserialized.getActor should ===(aiex.getActor)
+      // on JDK9+ these aren't equal anymore, depends on how they were constructed
+      // deserialized.getCause should ===(aiex.getCause)
+      deserialized.getCause should be(null)
     }
   }
 }
