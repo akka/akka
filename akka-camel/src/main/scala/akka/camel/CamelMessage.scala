@@ -30,7 +30,7 @@ class CamelMessage(val body: Any, val headers: Map[String, Any], val attachments
   /**
    * Returns those headers from this message whose name is contained in <code>names</code>.
    */
-  def headers(names: Set[String]): Map[String, Any] = headers filterKeys names
+  def headers(names: Set[String]): Map[String, Any] = (headers filterKeys names).toMap
 
   /**
    * Java API: Returns those headers from this message whose name is contained in <code>names</code>.
@@ -138,7 +138,7 @@ class CamelMessage(val body: Any, val headers: Map[String, Any], val attachments
   /**
    * Returns those attachments from this message whose name is contained in <code>names</code>.
    */
-  def attachments(names: Set[String]): Map[String, DataHandler] = attachments filterKeys names
+  def attachments(names: Set[String]): Map[String, DataHandler] = (attachments filterKeys names).toMap
 
   /**
    * Java API: Returns those attachments from this message whose name is contained in <code>names</code>.
