@@ -116,7 +116,7 @@ private[akka] trait DeathWatch { this: ActorCell ⇒
   //   when all actor references have uid, i.e. actorFor is removed
   private def removeFromMap[T](subject: ActorRef, map: Map[ActorRef, T]): Map[ActorRef, T] =
     if (subject.path.uid != ActorCell.undefinedUid) (map - subject) - new UndefinedUidActorRef(subject)
-    else map filterKeys (_.path != subject.path)
+    else (map filterKeys (_.path != subject.path)).toMap
 
   private def updateWatching(ref: InternalActorRef, newMessage: Option[Any]): Unit =
     watching = watching.updated(ref, newMessage)
