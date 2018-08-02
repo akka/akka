@@ -89,7 +89,7 @@ construction.
 
 #### Here is another example that you can edit and run in the browser:
 
-@@fiddle [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code height=400px extraParams=theme=light&layout=v75&passive cssStyle=width:100%; }
+@@fiddle [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code template=Akka layout=v75 minheight=400px }
 
 @@@
 
