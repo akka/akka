@@ -220,6 +220,7 @@ import scala.util.{ Failure, Success, Try }
  * INTERNAL API
  */
 @InternalApi private[akka] final class TakeLastStage[T](n: Int) extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
+  require(n > 0, "n must be greater than 0")
 
   val in: Inlet[T] = Inlet("takeLastStage.in")
 

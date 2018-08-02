@@ -1,6 +1,6 @@
 # Sink.takeLast
 
-Materializes into a @scala[`Future`] @java[`CompletionStage`] of  @scala[`Seq[T]`] @java[`List<In>`] containing the last `n` collected elements when the stream completes.
+Collect the last `n` values emitted from the stream into a collection.
 
 @ref[Sink operators](../index.md#sink-operators)
 
@@ -14,9 +14,11 @@ Materializes into a @scala[`Future`] @java[`CompletionStage`] of  @scala[`Seq[T]
 
 ## Description
 
-Materializes into a @scala[`Future`] @java[`CompletionStage`] which will complete with the last value emitted when the stream
-completes. If the stream completes with no elements the @scala[`Future`] @java[`CompletionStage`] is failed.
-
+Materializes into a @scala[`Future`] @java[`CompletionStage`] of @scala[`immutable.Seq[T]`] @java[`List<In>`] containing the last `n` collected elements when the stream completes.
+If the stream completes before signaling at least n elements, the @scala[`Future`] @java[`CompletionStage`]  will complete with the number
+of elements taken at that point. 
+If the stream never completes, the @scala[`Future`] @java[`CompletionStage`] will never complete.
+If there is a failure signaled in the stream the @scala[`Future`] @java[`CompletionStage`] will be completed with failure.
 
 @@@div { .callout }
 
