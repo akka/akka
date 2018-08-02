@@ -33,8 +33,9 @@ object ByteIterator {
 
     @inline final def head: Byte = array(from)
 
+    @throws[NoSuchElementException]
     final def next(): Byte = {
-      if (!hasNext) Iterator.empty.next
+      if (!hasNext) throw new NoSuchElementException("next on empty iterator")
       else { val i = from; from = from + 1; array(i) }
     }
 
@@ -103,11 +104,12 @@ object ByteIterator {
       result
     }
 
+    @throws[NoSuchElementException]
     def getBytes(xs: Array[Byte], offset: Int, n: Int): this.type = {
       if (n <= this.len) {
         Array.copy(this.array, this.from, xs, offset, n)
         this.drop(n)
-      } else Iterator.empty.next
+      } else throw new NoSuchElementException("next on empty iterator")
     }
 
     private def wrappedByteBuffer: ByteBuffer = ByteBuffer.wrap(array, from, len).asReadOnlyBuffer
@@ -437,16 +439,16 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
     (this, that)
   }
 
-  override def indexWhere(p: Byte ⇒ Boolean): Int = {
-    var index = 0
+  override def indexWhere(p: Byte ⇒ Boolean, from: Int = 0): Int = {
+    var index = from
     var found = false
     while (!found && hasNext) if (p(next())) { found = true } else { index += 1 }
     if (found) index else -1
   }
 
-  def indexOf(elem: Byte): Int = indexWhere { _ == elem }
+  override def indexOf(elem: Byte, from: Int = 0): Int = indexWhere(_ == elem, from)
 
-  override def indexOf[B >: Byte](elem: B): Int = indexWhere { _ == elem }
+  override def indexOf[B >: Byte](elem: B, from: Int = 0): Int = indexWhere(_ == elem, from)
 
   def toByteString: ByteString
 
