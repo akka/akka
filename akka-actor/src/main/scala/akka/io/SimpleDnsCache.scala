@@ -22,7 +22,7 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup {
 
   private val cache = new AtomicReference(new Cache[String, Dns.Resolved](
     immutable.SortedSet()(expiryEntryOrdering[String]()),
-    Map(), clock))
+    Map(), () ⇒ clock))
 
   private val nanoBase = System.nanoTime()
 
