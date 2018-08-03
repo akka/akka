@@ -54,20 +54,23 @@ The command handler is a function with @java[2 parameters for]@scala[3 parameter
 current `State` and `Command`.
 
 A command handler returns an `Effect` directive that defines what event or events, if any, to persist. 
-@java[Effects are created using a factory that is returned via the `Effect()` method]
-@scala[Effects are created using the `Effect` factory]
-and can be used to create various effects such as:
+Effects are created using @java[a factory that is returned via the `Effect()` method] @scala[the `Effect` factory]
+and can be one of: 
 
 * `persist` will persist one single event or several events atomically, i.e. all events
   are stored or none of them are stored if there is an error
 * `none` no events are to be persisted, for example a read-only command
 * `unhandled` the command is unhandled (not supported) in current state
+* `stop` stop this actor
 
-External side effects are to be performed after successful persist which is achieved with the `andThen` function e.g @scala[`Effect.persist(..).andThen`]@java[`Effect().persist(..).andThen`].
+In addition to returning the primary `Effect` for the command `PersistentBehavior`s can also 
+chain side effects (`SideEffect`s) are to be performed after successful persist which is achieved with the `andThen`  and `thenRun`
+function e.g @scala[`Effect.persist(..).andThen`]@java[`Effect().persist(..).andThen`]. The `thenRun` function
+is a convenience around creating a `SideEffect`.
 
 In the example below a reply is sent to the `replyTo` ActorRef. Note that the new state after applying 
-the event is passed as parameter to the `andThen` function. All `andThen*` registered callbacks
-are executed after successful execution of the persist statement (or immediately, in case of `none` and `unhandled`).
+the event is passed as parameter to the `thenRun` function. All `thenRun` registered callbacks
+are executed sequentially after successful execution of the persist statement (or immediately, in case of `none` and `unhandled`).
 
 ### Event handler
 
@@ -125,6 +128,7 @@ Java
 The `PersistentBehavior` can then be run as with any plain typed actor as described in [typed actors documentation](actors-typed.md).
 
 @java[The `ActorContext` can be obtained with `Behaviors.setup` and be passed as a constructor parameter.]
+
 
 ## Larger example
 
@@ -205,6 +209,34 @@ Scala
 
 Java
 :  @@snip [InDepthPersistentBehaviorTest.java]($akka$/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #behavior }
+
+
+## Effects and Side Effects
+
+Each command has a single `Effect` which can be:
+
+* Persist events
+* None: Accept the comment but no effects
+* Unhandled: Don't handle this message 
+
+Note that there is only one of these. It is not possible to both persist and say none/unhandled.
+These are created using @java[a factory that is returned via the `Effect()` method]
+@scala[the `Effect` factory] and once created
+additional `SideEffects` can be added.
+
+Most of them time this will be done with the `thenRun` method on the `Effect` above. It is also possible
+factor out common `SideEffect`s. For example:
+
+Scala
+:  @@snip [BasicPersistentBehaviorsCompileOnly.scala]($akka$/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #commonChainedEffects }
+
+Java
+:  @@snip [BasicPersistentBehaviorsCompileOnly.scala]($akka$/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #commonChainedEffects }
+
+### Side effects ordering and guarantees
+
+Any `SideEffect`s are executed on an at-once basis and will not be executed if the persist fails.
+The `SideEffect`s are executed sequentially, it is not possible to execute `SideEffect`s in parallel.
 
 ## Serialization
 

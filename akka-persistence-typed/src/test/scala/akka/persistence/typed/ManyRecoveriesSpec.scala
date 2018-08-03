@@ -31,7 +31,7 @@ object ManyRecoveriesSpec {
       persistenceId = name,
       emptyState = "",
       commandHandler = CommandHandler.command {
-        case Cmd(s) ⇒ Effect.persist(Evt(s)).andThen(_ ⇒ probe.ref ! s"$name-$s")
+        case Cmd(s) ⇒ Effect.persist(Evt(s)).thenRun(_ ⇒ probe.ref ! s"$name-$s")
       },
       eventHandler = {
         case (state, _) ⇒ latch.foreach(Await.ready(_, 10.seconds)); state
