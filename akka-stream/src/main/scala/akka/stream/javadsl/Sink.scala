@@ -165,8 +165,8 @@ object Sink {
 
   /**
    * A `Sink` that materializes into a a `CompletionStage` of `List<In>` containing the last `n` collected elements.
-   * If the stream completes before signaling at least n elements, the CompletionStage will complete with the number
-   * of elements taken at that point.
+   *
+   * If the stream completes before signaling at least n elements, the `CompletionStage` will complete with all elements seen so far.
    * If the stream never completes the `CompletionStage` will never complete.
    * If there is a failure signaled in the stream the `CompletionStage` will be completed with failure.
    */

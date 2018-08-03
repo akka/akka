@@ -178,51 +178,11 @@ import scala.util.{ Failure, Success, Try }
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
-
-  val in: Inlet[T] = Inlet("lastOption.in")
-
-  override val shape: SinkShape[T] = SinkShape.of(in)
-
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val p: Promise[Option[T]] = Promise()
-    (new GraphStageLogic(shape) with InHandler {
-      private[this] var prev: T = null.asInstanceOf[T]
-
-      override def preStart(): Unit = pull(in)
-
-      def onPush(): Unit = {
-        prev = grab(in)
-        pull(in)
-      }
-
-      override def onUpstreamFinish(): Unit = {
-        val head = prev
-        prev = null.asInstanceOf[T]
-        p.trySuccess(Option(head))
-        completeStage()
-      }
-
-      override def onUpstreamFailure(ex: Throwable): Unit = {
-        prev = null.asInstanceOf[T]
-        p.tryFailure(ex)
-        failStage(ex)
-      }
-
-      setHandler(in, this)
-    }, p.future)
-  }
-
-  override def toString: String = "LastOptionStage"
-}
-
-/**
- * INTERNAL API
- */
 @InternalApi private[akka] final class TakeLastStage[T](n: Int) extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
-  require(n > 0, "n must be greater than 0")
+  if (n <= 0)
+    throw new IllegalArgumentException("requirement failed: n must be greater than 0")
 
-  val in: Inlet[T] = Inlet("takeLastStage.in")
+  val in: Inlet[T] = Inlet("takeLast.in")
 
   override val shape: SinkShape[T] = SinkShape.of(in)
 
