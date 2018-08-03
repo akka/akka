@@ -190,8 +190,12 @@ object Sink {
    *
    * See also [[lastOption]], [[takeLast]].
    */
-  def last[T]: Sink[T, Future[T]] = Sink.fromGraph(new LastOptionStage[T]).withAttributes(DefaultAttributes.lastSink)
-    .mapMaterializedValue(e ⇒ e.map(_.getOrElse(throw new NoSuchElementException("last of empty stream")))(ExecutionContexts.sameThreadExecutionContext))
+  def last[T]: Sink[T, Future[T]] = {
+    Sink.fromGraph(new TakeLastStage[T](1)).withAttributes(DefaultAttributes.lastSink)
+      .mapMaterializedValue { e ⇒
+        e.map(_.headOption.getOrElse(throw new NoSuchElementException("last of empty stream")))(ExecutionContexts.sameThreadExecutionContext)
+      }
+  }
 
   /**
    * A `Sink` that materializes into a `Future` of the optional last value received.
@@ -200,20 +204,22 @@ object Sink {
    *
    * See also [[last]], [[takeLast]].
    */
-  def lastOption[T]: Sink[T, Future[Option[T]]] = Sink.fromGraph(new LastOptionStage[T]).withAttributes(DefaultAttributes.lastOptionSink)
+  def lastOption[T]: Sink[T, Future[Option[T]]] = {
+    Sink.fromGraph(new TakeLastStage[T](1)).withAttributes(DefaultAttributes.lastOptionSink)
+      .mapMaterializedValue { e ⇒
+        e.map(_.headOption)(ExecutionContexts.sameThreadExecutionContext)
+      }
+  }
 
   /**
    * A `Sink` that materializes into a a `Future` of `immutable.Seq[T]` containing the last `n` collected elements.
-   * If the stream completes before signaling at least n elements, the Future will complete with the number
-   * of elements taken at that point.
+   *
+   * If the stream completes before signaling at least n elements, the `Future` will complete with all elements seen so far.
    * If the stream never completes, the `Future` will never complete.
    * If there is a failure signaled in the stream the `Future` will be completed with failure.
    */
   def takeLast[T](n: Int): Sink[T, Future[immutable.Seq[T]]] =
-    if (n == 1)
-      lastOption.mapMaterializedValue(fut ⇒ fut.map(_.fold(immutable.Seq.empty[T])(m ⇒ immutable.Seq(m)))(ExecutionContexts.sameThreadExecutionContext))
-    else
-      Sink.fromGraph(new TakeLastStage[T](n)).withAttributes(DefaultAttributes.takeLastSink)
+    Sink.fromGraph(new TakeLastStage[T](n)).withAttributes(DefaultAttributes.takeLastSink)
 
   /**
    * A `Sink` that keeps on collecting incoming elements until upstream terminates.
