@@ -190,7 +190,8 @@ lazy val distributedData = akkaModule("akka-distributed-data")
 
 lazy val docs = akkaModule("akka-docs")
   .dependsOn(
-    actor, cluster, clusterMetrics, slf4j, agent, camel, osgi, persistenceTck, persistenceQuery, distributedData, stream,
+    actor, cluster, clusterMetrics, slf4j, agent, osgi, persistenceTck, persistenceQuery, distributedData, stream,
+    camel % "compile->compile;test->test",
     clusterTools % "compile->compile;test->test",
     clusterSharding % "compile->compile;test->test",
     testkit % "compile->compile;test->test",
