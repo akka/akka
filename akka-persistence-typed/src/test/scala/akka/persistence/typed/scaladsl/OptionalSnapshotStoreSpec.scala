@@ -31,7 +31,7 @@ object OptionalSnapshotStoreSpec {
       persistenceId = name,
       emptyState = State(),
       commandHandler = CommandHandler.command {
-        _ ⇒ Effect.persist(Event()).andThen(probe.ref ! _)
+        _ ⇒ Effect.persist(Event()).thenRun(probe.ref ! _)
       },
       eventHandler = {
         case (_, _) ⇒ State()
