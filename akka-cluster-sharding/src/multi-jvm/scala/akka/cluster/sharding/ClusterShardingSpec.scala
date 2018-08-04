@@ -309,7 +309,8 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
           childName = "coordinator",
           minBackoff = 5.seconds,
           maxBackoff = 5.seconds,
-          randomFactor = 0.1).withDeploy(Deploy.local)
+          randomFactor = 0.1,
+          maxRestartAttempts = -1).withDeploy(Deploy.local)
         system.actorOf(
           ClusterSingletonManager.props(
             singletonProps,

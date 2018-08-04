@@ -23,7 +23,8 @@ class BackoffSupervisorDocSpec {
         childName = "myEcho",
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
-        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
+        randomFactor = 0.2, // adds 20% "noise" to vary the intervals slightly
+        maxRestartAttempts = -1
       ))
 
     system.actorOf(supervisor, name = "echoSupervisor")
@@ -43,7 +44,8 @@ class BackoffSupervisorDocSpec {
         childName = "myEcho",
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
-        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
+        randomFactor = 0.2, // adds 20% "noise" to vary the intervals slightly
+        maxRestartAttempts = -1
       ))
 
     system.actorOf(supervisor, name = "echoSupervisor")
@@ -63,7 +65,8 @@ class BackoffSupervisorDocSpec {
         childName = "myEcho",
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
-        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
+        randomFactor = 0.2, // adds 20% "noise" to vary the intervals slightly
+        maxRestartAttempts = -1
       ).withManualReset // the child must send BackoffSupervisor.Reset to its parent
         .withDefaultStoppingStrategy // Stop at any Exception thrown
     )
@@ -85,7 +88,8 @@ class BackoffSupervisorDocSpec {
         childName = "myEcho",
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
-        randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
+        randomFactor = 0.2, // adds 20% "noise" to vary the intervals slightly
+        maxRestartAttempts = -1
       ).withAutoReset(10.seconds) // reset if the child does not throw any errors within 10 seconds
         .withSupervisorStrategy(
           OneForOneStrategy() {

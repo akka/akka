@@ -71,14 +71,17 @@ object Backoff {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
+   * @param maxRestartAttempts maximum number of attempts to restart the child actor.
+   *   In order to restart infinitely pass in `-1`
    */
   def onFailure(
-    childProps:   Props,
-    childName:    String,
-    minBackoff:   FiniteDuration,
-    maxBackoff:   FiniteDuration,
-    randomFactor: Double): BackoffOptions =
-    BackoffOptionsImpl(RestartImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor)
+    childProps:         Props,
+    childName:          String,
+    minBackoff:         FiniteDuration,
+    maxBackoff:         FiniteDuration,
+    randomFactor:       Double,
+    maxRestartAttempts: Int): BackoffOptions =
+    BackoffOptionsImpl(RestartImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor, maxRestartAttempts)
 
   /**
    * Back-off options for creating a back-off supervisor actor that expects a child actor to restart on failure.
@@ -125,14 +128,17 @@ object Backoff {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
+   * @param maxRestartAttempts maximum number of attempts to restart the child actor.
+   *   In order to restart infinitely pass in `-1`
    */
   def onFailure(
-    childProps:   Props,
-    childName:    String,
-    minBackoff:   java.time.Duration,
-    maxBackoff:   java.time.Duration,
-    randomFactor: Double): BackoffOptions =
-    onFailure(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor)
+    childProps:         Props,
+    childName:          String,
+    minBackoff:         java.time.Duration,
+    maxBackoff:         java.time.Duration,
+    randomFactor:       Double,
+    maxRestartAttempts: Int): BackoffOptions =
+    onFailure(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRestartAttempts)
 
   /**
    * Back-off options for creating a back-off supervisor actor that expects a child actor to stop on failure.
@@ -186,14 +192,17 @@ object Backoff {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
+   * @param maxRestartAttempts maximum number of attempts to restart the child actor.
+   *   In order to restart infinitely pass in `-1`
    */
   def onStop(
-    childProps:   Props,
-    childName:    String,
-    minBackoff:   FiniteDuration,
-    maxBackoff:   FiniteDuration,
-    randomFactor: Double): BackoffOptions =
-    BackoffOptionsImpl(StopImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor)
+    childProps:         Props,
+    childName:          String,
+    minBackoff:         FiniteDuration,
+    maxBackoff:         FiniteDuration,
+    randomFactor:       Double,
+    maxRestartAttempts: Int): BackoffOptions =
+    BackoffOptionsImpl(StopImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor, maxRestartAttempts)
 
   /**
    * Back-off options for creating a back-off supervisor actor that expects a child actor to stop on failure.
@@ -247,14 +256,17 @@ object Backoff {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
+   * @param maxRestartAttempts maximum number of attempts to restart the child actor.
+   *   In order to restart infinitely pass in `-1`
    */
   def onStop(
-    childProps:   Props,
-    childName:    String,
-    minBackoff:   java.time.Duration,
-    maxBackoff:   java.time.Duration,
-    randomFactor: Double): BackoffOptions =
-    onStop(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor)
+    childProps:         Props,
+    childName:          String,
+    minBackoff:         java.time.Duration,
+    maxBackoff:         java.time.Duration,
+    randomFactor:       Double,
+    maxRestartAttempts: Int): BackoffOptions =
+    onStop(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRestartAttempts)
 
 }
 
@@ -318,6 +330,7 @@ private final case class BackoffOptionsImpl(
   minBackoff:         FiniteDuration,
   maxBackoff:         FiniteDuration,
   randomFactor:       Double,
+  maxRestartAttempts: Int,
   reset:              Option[BackoffReset] = None,
   supervisorStrategy: OneForOneStrategy    = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
   replyWhileStopped:  Option[Any]          = None) extends BackoffOptions {
@@ -334,6 +347,7 @@ private final case class BackoffOptionsImpl(
     require(minBackoff > Duration.Zero, "minBackoff must be > 0")
     require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
     require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
+    require(maxRestartAttempts > 0 || maxRestartAttempts == -1, "maxRestartAttempts must either be positive or -1")
     backoffReset match {
       case AutoReset(resetBackoff) ⇒
         require(minBackoff <= resetBackoff && resetBackoff <= maxBackoff)
@@ -343,10 +357,10 @@ private final case class BackoffOptionsImpl(
     backoffType match {
       //onFailure method in companion object
       case RestartImpliesFailure ⇒
-        Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped))
+        Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, maxRestartAttempts, supervisorStrategy, replyWhileStopped))
       //onStop method in companion object
       case StopImpliesFailure ⇒
-        Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped))
+        Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, maxRestartAttempts, supervisorStrategy, replyWhileStopped))
     }
   }
 }
