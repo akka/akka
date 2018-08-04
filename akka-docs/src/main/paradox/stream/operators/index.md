@@ -62,6 +62,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="queue"></a>@ref[queue](Sink/queue.md)|Materialize a `SinkQueue` that can be pulled to trigger demand through the sink.|
 |Sink|<a name="reduce"></a>@ref[reduce](Sink/reduce.md)|Apply a reduction function on the incoming elements and pass the result to the next invocation.|
 |Sink|<a name="seq"></a>@ref[seq](Sink/seq.md)|Collect values emitted from the stream into a collection.|
+|Sink|<a name="takelast"></a>@ref[takeLast](Sink/takeLast.md)|Collect the last `n` values emitted from the stream into a collection.|
 
 ## Additional Sink and Source converters
 
@@ -203,7 +204,8 @@ These operators are aware of the backpressure provided by their downstreams and 
 These operators either take a stream and turn it into a stream of streams (nesting) or they take a stream that contains
 nested streams and turn them into a stream of elements instead (flattening).
 
-See the [Substreams](stream-substream.md) page for more detail and code samples.
+See the @ref:[Substreams](../stream-substream.md) page for more detail and code samples.
+
 
 | |Operator|Description|
 |--|--|--|
@@ -371,6 +373,7 @@ Operators meant for inter-operating between Akka Streams and Actors:
 * [headOption](Sink/headOption.md)
 * [last](Sink/last.md)
 * [lastOption](Sink/lastOption.md)
+* [takeLast](Sink/takeLast.md)
 * [seq](Sink/seq.md)
 * [asPublisher](Sink/asPublisher.md)
 * [ignore](Sink/ignore.md)

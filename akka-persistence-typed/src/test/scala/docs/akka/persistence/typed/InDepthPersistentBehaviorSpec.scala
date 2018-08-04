@@ -58,7 +58,7 @@ object InDepthPersistentBehaviorSpec {
       cmd match {
         case AddPost(content, replyTo) ⇒
           val evt = PostAdded(content.postId, content)
-          Effect.persist(evt).andThen { state2 ⇒
+          Effect.persist(evt).thenRun { state2 ⇒
             // After persist is done additional side effects can be performed
             replyTo ! AddPostDone(content.postId)
           }
@@ -75,11 +75,11 @@ object InDepthPersistentBehaviorSpec {
       cmd match {
         case ChangeBody(newBody, replyTo) ⇒
           val evt = BodyChanged(state.postId, newBody)
-          Effect.persist(evt).andThen { _ ⇒
+          Effect.persist(evt).thenRun { _ ⇒
             replyTo ! Done
           }
         case Publish(replyTo) ⇒
-          Effect.persist(Published(state.postId)).andThen { _ ⇒
+          Effect.persist(Published(state.postId)).thenRun { _ ⇒
             println(s"Blog post ${state.postId} was published")
             replyTo ! Done
           }

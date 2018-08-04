@@ -147,7 +147,7 @@ object Sink {
    * If the stream completes before signaling at least a single element, the CompletionStage will be failed with a [[NoSuchElementException]].
    * If the stream signals an error errors before signaling at least a single element, the CompletionStage will be failed with the streams exception.
    *
-   * See also [[lastOption]].
+   * See also [[lastOption]], [[takeLast]].
    */
   def last[In](): Sink[In, CompletionStage[In]] =
     new Sink(scaladsl.Sink.last[In].toCompletionStage())
@@ -157,11 +157,23 @@ object Sink {
    * If the stream completes before signaling at least a single element, the value of the CompletionStage will be an empty [[java.util.Optional]].
    * If the stream signals an error errors before signaling at least a single element, the CompletionStage will be failed with the streams exception.
    *
-   * See also [[head]].
+   * See also [[head]], [[takeLast]].
    */
   def lastOption[In](): Sink[In, CompletionStage[Optional[In]]] =
     new Sink(scaladsl.Sink.lastOption[In].mapMaterializedValue(
       _.map(_.asJava)(ExecutionContexts.sameThreadExecutionContext).toJava))
+
+  /**
+   * A `Sink` that materializes into a a `CompletionStage` of `List<In>` containing the last `n` collected elements.
+   *
+   * If the stream completes before signaling at least n elements, the `CompletionStage` will complete with all elements seen so far.
+   * If the stream never completes the `CompletionStage` will never complete.
+   * If there is a failure signaled in the stream the `CompletionStage` will be completed with failure.
+   */
+  def takeLast[In](n: Int): Sink[In, CompletionStage[java.util.List[In]]] = {
+    import scala.collection.JavaConverters._
+    new Sink(scaladsl.Sink.takeLast[In](n).mapMaterializedValue(fut ⇒ fut.map(sq ⇒ sq.asJava)(ExecutionContexts.sameThreadExecutionContext).toJava))
+  }
 
   /**
    * A `Sink` that keeps on collecting incoming elements until upstream terminates.
