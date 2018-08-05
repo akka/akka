@@ -116,7 +116,7 @@ object BackoffSupervisor {
     require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
     require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
     require(maxRestartAttempts > 0 || maxRestartAttempts == -1, "maxRestartAttempts must either be positive or -1")
-    Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, randomFactor, maxRestartAttempts, strategy))
+    Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, maxRestartAttempts, strategy, None))
   }
 
   /**
@@ -274,19 +274,17 @@ final class BackoffSupervisor(
     minBackoff:         FiniteDuration,
     maxBackoff:         FiniteDuration,
     randomFactor:       Double,
-    maxRestartAttempts: Int,
     supervisorStrategy: SupervisorStrategy) =
-    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, maxRestartAttempts, supervisorStrategy, None)
+    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, -1, supervisorStrategy, None)
 
   // for binary compatibility with 2.4.0
   def this(
-    childProps:         Props,
-    childName:          String,
-    minBackoff:         FiniteDuration,
-    maxBackoff:         FiniteDuration,
-    randomFactor:       Double,
-    maxRestartAttempts: Int) =
-    this(childProps, childName, minBackoff, maxBackoff, randomFactor, maxRestartAttempts, SupervisorStrategy.defaultStrategy)
+    childProps:   Props,
+    childName:    String,
+    minBackoff:   FiniteDuration,
+    maxBackoff:   FiniteDuration,
+    randomFactor: Double) =
+    this(childProps, childName, minBackoff, maxBackoff, randomFactor, SupervisorStrategy.defaultStrategy)
 
   def onTerminated: Receive = {
     case Terminated(ref) if child.contains(ref) ⇒
