@@ -155,8 +155,6 @@ For these examples `PrintResult` is defined as follows:
 Scala's `Future` has several monadic methods that are very similar to the ones used by Scala's collections.
 These allow you to create 'pipelines' or 'streams' that the result will travel through.
 
-### Future is a Monad (kind of)
-
 The first method for working with `Future` functionally is `map`. This method takes a @scala[`Function`]@java[`Mapper`]
 which performs some operation on the result of the `Future`, and returning a new result.
 The return value of the `map` method is another `Future` that will contain the new result:
@@ -176,12 +174,6 @@ string "HelloWorld" and is unaffected by the `map`.
 
 Something to note when using these methods: passed work is always dispatched on the provided `ExecutionContext`. Even if
 the `Future` has already been completed, when one of these methods is called.
-
-@@@ note
-
-Although some monadic operations like `flatMap` and `map` are available on `Future`s, there are [some laws](http://eed3si9n.com/herding-cats/Monad.html#Monad+laws) that a type must obey in order to be a true monad. Future breaks those laws when used for side effects (which is the typical use-case).
-
-@@@
 
 @@@ div { .group-scala }
 
