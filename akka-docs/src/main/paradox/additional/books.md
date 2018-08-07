@@ -2,7 +2,6 @@
 
 ## Books
 
- * [Start Building RESTful Microservices using Akka HTTP with Scala](https://www.amazon.com/dp/1976762545/), by Ayush Kumar Mishra, Knoldus Software LLP, ISBN: 9781976762543, December 2017
  * [Akka Cookbook](https://www.packtpub.com/application-development/akka-cookbook), by Héctor Veiga Ortiz & Piyush Mishra, PACKT Publishing, ISBN: 9781785288180, May 2017
  * [Reactive Design Patterns](https://www.reactivedesignpatterns.com/), by Roland Kuhn with Jamie Allen and Brian Hanafee, Manning Publications Co., ISBN 9781617291807, Feb 2017
  * [Mastering Akka](https://www.packtpub.com/application-development/mastering-akka), by Christian Baxter, PACKT Publishing, ISBN: 9781786465023, October 2016
