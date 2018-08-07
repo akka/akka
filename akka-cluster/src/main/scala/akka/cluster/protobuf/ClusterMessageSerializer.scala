@@ -403,7 +403,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
         .build()
 
     val reachability = reachabilityToProto(gossip.overview.reachability)
-    val members = gossip.members.map(memberToProto)
+    val members = (gossip.members: Set[Member] /* 2.13.0-M5 change cast to .unsorted */ ).map(memberToProto _)
     val seen = gossip.overview.seen.map(mapUniqueAddress)
 
     val overview = cm.GossipOverview.newBuilder.addAllSeen(seen.asJava).
@@ -415,7 +415,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
       .addAllMembers(members.map(_.build).asJava)
       .setOverview(overview)
       .setVersion(vectorClockToProto(gossip.version, hashMapping))
-      .addAllTombstones(gossip.tombstones.map(tombstoneToProto).asJava)
+      .addAllTombstones(gossip.tombstones.map(tombstoneToProto _).asJava)
   }
 
   private def vectorClockToProto(version: VectorClock, hashMapping: Map[String, Int]): cm.VectorClock.Builder = {
@@ -455,7 +455,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
 
     def reachabilityFromProto(observerReachability: Iterable[cm.ObserverReachability]): Reachability = {
       val recordBuilder = new immutable.VectorBuilder[Reachability.Record]
-      val versionsBuilder = new scala.collection.mutable.MapBuilder[UniqueAddress, Long, Map[UniqueAddress, Long]](Map.empty)
+      val versionsBuilder = Map.newBuilder[UniqueAddress, Long]
       for (o ← observerReachability) {
         val observer = addressMapping(o.getAddressIndex)
         versionsBuilder += ((observer, o.getVersion))
@@ -471,7 +471,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
 
     def memberFromProto(member: cm.Member) =
       new Member(addressMapping(member.getAddressIndex), member.getUpNumber, memberStatusFromInt(member.getStatus.getNumber),
-        rolesFromProto(member.getRolesIndexesList.asScala))
+        rolesFromProto(member.getRolesIndexesList.asScala.toSeq))
 
     def rolesFromProto(roleIndexes: Seq[Integer]): Set[String] = {
       var containsDc = false
