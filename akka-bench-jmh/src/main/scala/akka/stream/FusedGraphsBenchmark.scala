@@ -317,7 +317,7 @@ class FusedGraphsBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(100 * 1000)
-  def boradcast_zip_balance_merge(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
+  def broadcast_zip_balance_merge(blackhole: org.openjdk.jmh.infra.Blackhole): Unit = {
     FusedGraphsBenchmark.blackhole = blackhole
     broadcastZipBalanceMerge.run()(materializer).await()
   }

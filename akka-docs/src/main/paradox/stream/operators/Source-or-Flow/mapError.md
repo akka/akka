@@ -21,7 +21,7 @@ would log the `t2` error.
 Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
 This operators can recover the failure signal, but not the skipped elements, which will be dropped.
 
-Similarily to `recover` throwing an exception inside `mapError` _will_ be logged on ERROR level automatically.
+Similarly to `recover` throwing an exception inside `mapError` _will_ be logged on ERROR level automatically.
 
 
 @@@div { .callout }

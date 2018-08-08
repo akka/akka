@@ -95,7 +95,7 @@ abstract class RestartNode3Spec
           expectMsg(5.seconds, "ok")
         }
       }
-      enterBarrier("second-address-transfered")
+      enterBarrier("second-address-transferred")
 
       // now we can join first, third together
       runOn(first, third) {

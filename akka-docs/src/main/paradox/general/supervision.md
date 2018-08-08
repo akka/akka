@@ -197,7 +197,7 @@ This pattern is useful when the started actor fails <a id="^1" href="#1">[1]</a>
 and we need to give it some time to start-up again. One of the prime examples when this is useful is
 when a @ref:[PersistentActor](../persistence.md) fails (by stopping) with a persistence failure - which indicates that
 the database may be down or overloaded, in such situations it makes most sense to give it a little bit of time
-to recover before the peristent actor is started.
+to recover before the persistent actor is started.
 
 > <a id="1" href="#^1">[1]</a> A failure can be indicated in two different ways; by an actor stopping or crashing.
 

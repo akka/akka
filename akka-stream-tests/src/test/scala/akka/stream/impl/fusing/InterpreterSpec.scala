@@ -599,7 +599,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
           push(out, lastElem)
         }
 
-        // note that the default value of lastElem will be always pushed if the upstream closed at the very begining without a pulling
+        // note that the default value of lastElem will be always pushed if the upstream closed at the very beginning without a pulling
         override def onPull(): Unit = {
           if (isClosed(in)) {
             push(out, lastElem)
