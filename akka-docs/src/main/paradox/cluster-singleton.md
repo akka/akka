@@ -157,3 +157,22 @@ a parameter to the `ClusterSingletonProxy.props` factory method, i.e. each singl
 with different settings if needed.
 
 @@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #singleton-proxy-config }
+
+## Supervision
+
+Sometimes it is useful to add supervision for the Cluster Singleton itself. To accomplish this you need to add a parent supervisor actor which will be used to create the 'real' singleton instance. Below is an example implementation (credit to [this StackOverflow answer](https://stackoverflow.com/a/36716708/779513))
+
+Scala
+:  @@snip [ClusterSingletonSupervision.scala]($akka$/akka-docs/src/test/scala/docs/cluster/singleton/ClusterSingletonSupervision.scala) { #singleton-supervisor-actor }
+
+Java
+:  @@snip [SupervisorActor.java]($akka$/akka-docs/src/test/java/jdocs/cluster/singleton/SupervisorActor.java) { #singleton-supervisor-actor }
+
+And used here
+
+Scala
+:  @@snip [ClusterSingletonSupervision.scala]($akka$/akka-docs/src/test/scala/docs/cluster/singleton/ClusterSingletonSupervision.scala) { #singleton-supervisor-actor-usage }
+
+Java
+:  @@snip [ClusterSingletonSupervision.java]($akka$/akka-docs/src/test/java/jdocs/cluster/singleton/ClusterSingletonSupervision.java) { #singleton-supervisor-actor-usage-imports }
+@@snip [ClusterSingletonSupervision.java]($akka$/akka-docs/src/test/java/jdocs/cluster/singleton/ClusterSingletonSupervision.java) { #singleton-supervisor-actor-usage }
