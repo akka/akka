@@ -23,7 +23,7 @@ import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.CanBuildFrom
-import scala.collection.immutable
+import scala.collection.{ immutable, mutable }
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.{ Future, Promise }
@@ -178,33 +178,39 @@ import scala.util.{ Failure, Success, Try }
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class LastOptionStage[T] extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[T]]] {
+@InternalApi private[akka] final class TakeLastStage[T](n: Int) extends GraphStageWithMaterializedValue[SinkShape[T], Future[immutable.Seq[T]]] {
+  if (n <= 0)
+    throw new IllegalArgumentException("requirement failed: n must be greater than 0")
 
-  val in: Inlet[T] = Inlet("lastOption.in")
+  val in: Inlet[T] = Inlet("takeLast.in")
 
   override val shape: SinkShape[T] = SinkShape.of(in)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val p: Promise[Option[T]] = Promise()
+    val p: Promise[immutable.Seq[T]] = Promise()
     (new GraphStageLogic(shape) with InHandler {
-      private[this] var prev: T = null.asInstanceOf[T]
+      private[this] val buffer = mutable.Queue.empty[T]
+      private[this] var count = 0
 
       override def preStart(): Unit = pull(in)
 
-      def onPush(): Unit = {
-        prev = grab(in)
+      override def onPush(): Unit = {
+        buffer.enqueue(grab(in))
+        if (count < n)
+          count += 1
+        else
+          buffer.dequeue()
         pull(in)
       }
 
       override def onUpstreamFinish(): Unit = {
-        val head = prev
-        prev = null.asInstanceOf[T]
-        p.trySuccess(Option(head))
+        val elements = buffer.result().toList
+        buffer.clear()
+        p.trySuccess(elements)
         completeStage()
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
-        prev = null.asInstanceOf[T]
         p.tryFailure(ex)
         failStage(ex)
       }
@@ -213,7 +219,7 @@ import scala.util.{ Failure, Success, Try }
     }, p.future)
   }
 
-  override def toString: String = "LastOptionStage"
+  override def toString: String = "TakeLastStage"
 }
 
 /**

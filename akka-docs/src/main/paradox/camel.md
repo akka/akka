@@ -10,8 +10,22 @@ To use Camel, you must add the following dependency in your project:
   version="$akka.version$"
 }
 
-## Introduction
+Camel depends on `jaxb-api` and `javax.activation` that were removed from the JDK. If running on a version of the JDK 9 or above also add
+the following dependencies:
 
+@@dependency[sbt,Maven,Gradle] {
+  group="javax.xml.bind"
+  artifact="jaxb-api"
+  version="2.3.0"
+}
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.sun.activation"
+  artifact="javax.activation"
+  version="1.2.0"
+}
+
+## Introduction
 
 @@@ warning
 

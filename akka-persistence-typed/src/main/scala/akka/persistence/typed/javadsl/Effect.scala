@@ -7,6 +7,7 @@ package akka.persistence.typed.javadsl
 import akka.annotation.DoNotInherit
 import akka.japi.function
 import akka.persistence.typed.internal._
+import akka.persistence.typed.{ SideEffect, Stop }
 
 import scala.collection.JavaConverters._
 
@@ -33,7 +34,7 @@ object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
   /**
    * Stop this persistent actor
    */
-  def stop: Effect[Event, State] = Stop.asInstanceOf[ChainableEffect[Event, State]]
+  def stop: Effect[Event, State] = none.thenStop()
 
   /**
    * This command is not handled, but it is not an error that it isn't.
@@ -54,9 +55,15 @@ object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
   self: EffectImpl[Event, State] ⇒
   /** Convenience method to register a side effect with just a callback function */
   final def andThen(callback: function.Procedure[State]): Effect[Event, State] =
-    CompositeEffect(this, SideEffect[Event, State](s ⇒ callback.apply(s)))
+    CompositeEffect(this, SideEffect[State](s ⇒ callback.apply(s)))
 
   /** Convenience method to register a side effect that doesn't need access to state */
   final def andThen(callback: function.Effect): Effect[Event, State] =
-    CompositeEffect(this, SideEffect[Event, State]((_: State) ⇒ callback.apply()))
+    CompositeEffect(this, SideEffect[State]((_: State) ⇒ callback.apply()))
+
+  def andThen(chainedEffect: SideEffect[State]): Effect[Event, State]
+
+  final def thenStop(): Effect[Event, State] =
+    CompositeEffect(this, Stop.asInstanceOf[SideEffect[State]])
+
 }
