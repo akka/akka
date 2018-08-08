@@ -174,4 +174,5 @@ Scala
 :  @@snip [ClusterSingletonSupervision.scala]($akka$/akka-docs/src/test/scala/docs/cluster/singleton/ClusterSingletonSupervision.scala) { #singleton-supervisor-actor-usage }
 
 Java
-:  @@snip [ClusterSingletonSupervision.java]($akka$/akka-docs/src/test/java/jdocs/cluster/singleton/ClusterSingletonSupervision.java) { #singleton-supervisor-actor-usage-imports #singleton-supervisor-actor-usage }
+:  @@snip [ClusterSingletonSupervision.java]($akka$/akka-docs/src/test/java/jdocs/cluster/singleton/ClusterSingletonSupervision.java) { #singleton-supervisor-actor-usage-imports }
+@@snip [ClusterSingletonSupervision.java]($akka$/akka-docs/src/test/java/jdocs/cluster/singleton/ClusterSingletonSupervision.java) { #singleton-supervisor-actor-usage }
