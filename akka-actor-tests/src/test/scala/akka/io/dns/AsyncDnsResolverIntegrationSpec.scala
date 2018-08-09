@@ -183,23 +183,6 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       )
     }
 
-    "not hang when resolving raw IP address" in {
-      val name = "127.0.0.1"
-      val answer = resolve(name)
-      answer.name shouldEqual name
-      answer.results.collect { case r: ARecord ⇒ r }.toSet shouldEqual Set(
-        ARecord("127.0.0.1", Int.MaxValue, InetAddress.getByName("127.0.0.1"))
-      )
-    }
-    "not hang when resolving raw IPv6 address" in {
-      val name = "1:2:3:0:0:0:0:0"
-      val answer = resolve(name)
-      answer.name shouldEqual name
-      answer.results.collect { case r: ARecord ⇒ r }.toSet shouldEqual Set(
-        ARecord("1:2:3:0:0:0:0:0", Int.MaxValue, InetAddress.getByName("1:2:3:0:0:0:0:0"))
-      )
-    }
-
     "resolve same address twice" in {
       resolve("a-single.akka.test").results.map(_.asInstanceOf[ARecord].ip) shouldEqual Seq(InetAddress.getByName("192.168.1.20"))
       resolve("a-single.akka.test").results.map(_.asInstanceOf[ARecord].ip) shouldEqual Seq(InetAddress.getByName("192.168.1.20"))

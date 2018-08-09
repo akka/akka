@@ -18,6 +18,7 @@ import akka.util.{ Helpers, Timeout }
 import scala.collection.immutable.Seq
 import scala.collection.{ breakOut, immutable }
 import scala.concurrent.Future
+import scala.util.Try
 import scala.util.control.NonFatal
 
 /**
@@ -49,36 +50,30 @@ private[io] final class AsyncDnsResolver(
   private val resolvers: List[ActorRef] = clientFactory(context, nameServers)
 
   override def receive: Receive = {
-    case DnsProtocol.Resolve(name, _) if isInetAddress(name) ⇒
-      log.warning("Tried to resolve ip [{}], assuming resolved.", name)
-      alreadyResolvedIp(name) pipeTo sender()
     case DnsProtocol.Resolve(name, mode) ⇒
       resolve(name, mode, resolvers) pipeTo sender()
   }
 
-  private def resolve(name: String, requestType: RequestType, resolvers: List[ActorRef]): Future[DnsProtocol.Resolved] = {
-    resolvers match {
-      case Nil ⇒
-        Future.failed(ResolveFailedException(s"Timed out resolving $name with nameservers: $nameServers"))
-      case head :: tail ⇒ resolve(name, requestType, head).recoverWith {
-        case NonFatal(t) ⇒
-          log.error(t, "Resolve failed. Trying next name server")
-          resolve(name, requestType, tail)
+  private def resolve(name: String, requestType: RequestType, resolvers: List[ActorRef]): Future[DnsProtocol.Resolved] =
+    if (isInetAddress(name)) {
+      Future.fromTry {
+        Try {
+          val address = InetAddress.getByName(name) // only checks validity, since known to be IP address
+          val record = ARecord(name, Int.MaxValue, address)
+          DnsProtocol.Resolved(name, record :: Nil)
+        }
+      }
+    } else {
+      resolvers match {
+        case Nil ⇒
+          Future.failed(ResolveFailedException(s"Timed out resolving $name with nameservers: $nameServers"))
+        case head :: tail ⇒ resolve(name, requestType, head).recoverWith {
+          case NonFatal(t) ⇒
+            log.error(t, "Resolve failed. Trying next name server")
+            resolve(name, requestType, tail)
+        }
       }
     }
-  }
-
-  private def alreadyResolvedIp(knownToBeIp: String): Future[DnsProtocol.Resolved] = {
-    if (isInetAddress(knownToBeIp))
-      Future {
-        val address = InetAddress.getByName(knownToBeIp) // only checks validity, since known to be IP address
-        val record = ARecord(knownToBeIp, Int.MaxValue, address)
-        DnsProtocol.Resolved(knownToBeIp, record :: Nil)
-      }
-    else
-      Future.failed(new IllegalArgumentException("Attempted to emit Resolved for known-to-be IP address, " +
-        s"yet argument was not an IP address, was: ${knownToBeIp}"))
-  }
 
   private def sendQuestion(resolver: ActorRef, message: DnsQuestion): Future[Seq[ResourceRecord]] = {
     val result = (resolver ? message).mapTo[Answer].map(_.rrs)
