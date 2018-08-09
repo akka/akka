@@ -4,13 +4,14 @@
 
 package akka.io.dns.internal
 
-import java.net.InetSocketAddress
+import java.net.{ InetAddress, InetSocketAddress }
+import java.nio.charset.StandardCharsets
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory, Props }
 import akka.annotation.InternalApi
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.dns.internal.DnsClient._
-import akka.io.dns.{ DnsProtocol, DnsSettings, ResourceRecord }
+import akka.io.dns.{ ARecord, DnsProtocol, DnsSettings, ResourceRecord }
 import akka.pattern.{ ask, pipe }
 import akka.util.{ Helpers, Timeout }
 
@@ -49,7 +50,8 @@ private[io] final class AsyncDnsResolver(
 
   override def receive: Receive = {
     case DnsProtocol.Resolve(name, _) if isInetAddress(name) ⇒
-      log.warning("Tried to resolve ip [{}]. Ignoring.", name)
+      log.warning("Tried to resolve ip [{}], assuming resolved.", name)
+      alreadyResolvedIp(name) pipeTo sender()
     case DnsProtocol.Resolve(name, mode) ⇒
       resolve(name, mode, resolvers) pipeTo sender()
   }
@@ -64,6 +66,18 @@ private[io] final class AsyncDnsResolver(
           resolve(name, requestType, tail)
       }
     }
+  }
+
+  private def alreadyResolvedIp(knownToBeIp: String): Future[DnsProtocol.Resolved] = {
+    if (isInetAddress(knownToBeIp))
+      Future {
+        val address = InetAddress.getByName(knownToBeIp) // only checks validity, since known to be IP address
+        val record = ARecord(knownToBeIp, Int.MaxValue, address)
+        DnsProtocol.Resolved(knownToBeIp, record :: Nil)
+      }
+    else
+      Future.failed(new IllegalArgumentException("Attempted to emit Resolved for known-to-be IP address, " +
+        s"yet argument was not an IP address, was: ${knownToBeIp}"))
   }
 
   private def sendQuestion(resolver: ActorRef, message: DnsQuestion): Future[Seq[ResourceRecord]] = {
@@ -142,7 +156,8 @@ private[io] object AsyncDnsResolver {
     """^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$""".r
 
   private def isInetAddress(name: String): Boolean =
-    ipv4Address.findAllMatchIn(name).nonEmpty || ipv6Address.findAllMatchIn(name).nonEmpty
+    ipv4Address.findAllMatchIn(name).nonEmpty ||
+      ipv6Address.findAllMatchIn(name).nonEmpty
 
   private val Empty = Future.successful(immutable.Seq.empty[ResourceRecord])
 

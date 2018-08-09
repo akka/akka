@@ -90,7 +90,9 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
   implicit val timeout = Timeout(duration)
 
   "Resolver" must {
-    pending
+
+    pending // PENDING since needs `bind` server to be running to test end-to-end
+
     "resolve single A record" in {
       val name = "a-single.akka.test"
       val answer = resolve(name, DnsProtocol.Ip(ipv6 = false))
@@ -178,6 +180,23 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       answer.results.collect { case r: SRVRecord ⇒ r }.toSet shouldEqual Set(
         SRVRecord("service.tcp.akka.test", 86400, 10, 60, 5060, "a-single.akka.test"),
         SRVRecord("service.tcp.akka.test", 86400, 10, 40, 5070, "a-double.akka.test")
+      )
+    }
+
+    "not hang when resolving raw IP address" in {
+      val name = "127.0.0.1"
+      val answer = resolve(name)
+      answer.name shouldEqual name
+      answer.results.collect { case r: ARecord ⇒ r }.toSet shouldEqual Set(
+        ARecord("127.0.0.1", Int.MaxValue, InetAddress.getByName("127.0.0.1"))
+      )
+    }
+    "not hang when resolving raw IPv6 address" in {
+      val name = "1:2:3:0:0:0:0:0"
+      val answer = resolve(name)
+      answer.name shouldEqual name
+      answer.results.collect { case r: ARecord ⇒ r }.toSet shouldEqual Set(
+        ARecord("1:2:3:0:0:0:0:0", Int.MaxValue, InetAddress.getByName("1:2:3:0:0:0:0:0"))
       )
     }
 
