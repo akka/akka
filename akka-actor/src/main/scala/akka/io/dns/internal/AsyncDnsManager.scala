@@ -4,17 +4,19 @@
 
 package akka.io.dns.internal
 
-import java.net.InetSocketAddress
+import java.net.{ InetAddress, InetSocketAddress }
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, Props, Timers }
 import akka.annotation.InternalApi
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.io.dns.{ DnsProtocol, DnsSettings }
+import akka.io.dns.{ ARecord, DnsProtocol, DnsSettings }
 import akka.io.dns.internal.AsyncDnsManager.CacheCleanup
 import akka.io.{ Dns, DnsExt, PeriodicCacheCleanup }
 import akka.routing.FromConfig
+import akka.util.Timeout
 
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
 
 /**
@@ -31,12 +33,15 @@ private[io] object AsyncDnsManager {
 @InternalApi
 private[io] final class AsyncDnsManager(val ext: DnsExt) extends Actor
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] with ActorLogging with Timers {
+  import akka.pattern.ask
+  import akka.pattern.pipe
 
   implicit val ec = context.dispatcher
 
   private var oldProtocolWarningLoggedTimes = 0
 
   val settings = new DnsSettings(ext.system, ext.Settings.ResolverConfig)
+  implicit val timeout = Timeout(settings.ResolveTimeout)
 
   private val resolver = {
     val props: Props = FromConfig.props(Props(ext.provider.actorClass, settings, ext.cache, (factory: ActorRefFactory, dns: List[InetSocketAddress]) ⇒ {
@@ -67,7 +72,12 @@ private[io] final class AsyncDnsManager(val ext: DnsExt) extends Actor
       log.debug("Resolution request for {} from {}", name, sender())
       warnAboutOldProtocolUse(name)
       val adapted = DnsProtocol.Resolve(name)
-      resolver.forward(adapted)
+      val reply = (resolver ? adapted).mapTo[DnsProtocol.Resolved]
+        .map { asyncResolved ⇒
+          val ips = asyncResolved.results.collect { case a: ARecord ⇒ a.ip }
+          Dns.Resolved(asyncResolved.name, ips)
+        }
+      reply pipeTo sender
 
     case CacheCleanup ⇒
       cacheCleanup.foreach(_.cleanup())
