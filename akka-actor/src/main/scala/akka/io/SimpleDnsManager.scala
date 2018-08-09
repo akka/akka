@@ -42,11 +42,13 @@ class SimpleDnsManager(val ext: DnsExt) extends Actor with RequiresMessageQueue[
 
     case m: dns.DnsProtocol.Resolve ⇒
       if (inetDnsEnabled) {
-        log.error(
+        log.info(
           "Message of [akka.io.dns.DnsProtocol.Protocol] received ({}) while inet-address dns was configured. Dropping DNS resolve request." +
             "Only use [akka.io.dns.DnsProtocol.resolve] to create resolution requests for the Async DNS resolver.",
           Logging.simpleName(m))
-      } else resolver.forward(m)
+      }
+
+      resolver.forward(m)
   }
 
   override def postStop(): Unit = {

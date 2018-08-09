@@ -93,6 +93,31 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       dnsClient2.expectNoMessage()
       expectMsg(Resolved("cats.com", immutable.Seq()))
     }
+
+    "not hang when resolving raw IP address" in {
+      import scala.concurrent.duration._
+      val name = "127.0.0.1"
+      val dnsClient1 = TestProbe()
+      val r = resolver(List(dnsClient1.ref))
+      r ! Resolve(name)
+      dnsClient1.expectNoMessage(50.millis)
+      val answer = expectMsgType[Resolved]
+      answer.results.collect { case r: ARecord ⇒ r }.toSet shouldEqual Set(
+        ARecord("127.0.0.1", Int.MaxValue, InetAddress.getByName("127.0.0.1"))
+      )
+    }
+    "not hang when resolving raw IPv6 address" in {
+      import scala.concurrent.duration._
+      val name = "1:2:3:0:0:0:0:0"
+      val dnsClient1 = TestProbe()
+      val r = resolver(List(dnsClient1.ref))
+      r ! Resolve(name)
+      dnsClient1.expectNoMessage(50.millis)
+      val answer = expectMsgType[Resolved]
+      answer.results.collect { case r: ARecord ⇒ r }.toSet shouldEqual Set(
+        ARecord("1:2:3:0:0:0:0:0", Int.MaxValue, InetAddress.getByName("1:2:3:0:0:0:0:0"))
+      )
+    }
   }
 
   def resolver(clients: List[ActorRef]): ActorRef = {
