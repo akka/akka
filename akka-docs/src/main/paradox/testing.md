@@ -301,7 +301,7 @@ wall time, not CPU time or system time.
 @@@ div { .group-scala }
 
 Ray Roestenburg has written a great article on using the TestKit:
-[http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html](http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html).
+[https://web.archive.org/web/20180114133958/http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html](https://web.archive.org/web/20180114133958/http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html).
 His full example is also available @ref:[here](testing.md#example).
 
 @@@
@@ -815,7 +815,9 @@ to the @ref:[reference configuration](general/configuration.md#config-akka-testk
 
 ## Example
 
-Ray Roestenburg's example code from his blog, which unfortunately is not online anymore, adapted to work with Akka 2.x.
+Ray Roestenburg's example code from his blog, which unfortunately is only available on
+[web archive](https://web.archive.org/web/20180114133958/http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html),
+adapted to work with Akka 2.x.
 
 @@snip [TestKitUsageSpec.scala]($code$/scala/docs/testkit/TestKitUsageSpec.scala) { #testkit-usage }
 
