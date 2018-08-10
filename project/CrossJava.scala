@@ -6,6 +6,7 @@ package akka
 
 import java.io.File
 
+import akka.CrossJava.nullBlank
 import sbt._
 
 import scala.annotation.tailrec
@@ -95,9 +96,9 @@ object CrossJava {
   }
 
   object JavaDiscoverConfig {
-    class LinuxDiscoverConfig(base: File) extends JavaDiscoverConf {
-      val JavaHomeDir = """(java-|jdk-?)(1\.)?([0-9]+).*""".r
+    private val JavaHomeDir = """(java-|jdk-?)(1\.)?([0-9]+).*""".r
 
+    class LinuxDiscoverConfig(base: File) extends JavaDiscoverConf {
       def javaHomes: Vector[(String, File)] =
         wrapNull(base.list())
           .collect {
@@ -107,24 +108,22 @@ object CrossJava {
 
     class MacOsDiscoverConfig extends JavaDiscoverConf {
       val base: File = file("/Library") / "Java" / "JavaVirtualMachines"
-      val JavaHomeDir = """jdk-?(1\.)?([0-9]+).*""".r
 
       def javaHomes: Vector[(String, File)] =
         wrapNull(base.list())
           .collect {
-            case dir@JavaHomeDir(m, n) =>
+            case dir@JavaHomeDir(_, m, n) =>
               JavaVersion(nullBlank(m) + n).toString -> (base / dir / "Contents" / "Home")
             }
     }
 
     class WindowsDiscoverConfig extends JavaDiscoverConf {
       val base: File = file("C://Program Files/Java")
-      val JavaHomeDir = """jdk-?(1\.)?([0-9]+).*""".r
 
       def javaHomes: Vector[(String, File)] =
         wrapNull(base.list())
           .collect {
-            case dir@JavaHomeDir(m, n) => JavaVersion(nullBlank(m) + n).toString -> (base / dir)
+            case dir@JavaHomeDir(_, m, n) => JavaVersion(nullBlank(m) + n).toString -> (base / dir)
           }
     }
 
@@ -143,12 +142,28 @@ object CrossJava {
           }
     }
 
+    class JavaHomeDiscoverConfig extends JavaDiscoverConf {
+      def javaHomes: Vector[(String, File)] =
+        sys.env.get("JAVA_HOME")
+          .map(new java.io.File(_))
+          .filter(_.exists())
+          .flatMap { javaHome =>
+            val base = javaHome.getParentFile
+            javaHome.getName match {
+              case dir@JavaHomeDir(_, m, n) => Some(JavaVersion(nullBlank(m) + n).toString -> (base / dir))
+              case _ => None
+            }
+          }
+          .toVector
+    }
+
     val configs = Vector(
       new JabbaDiscoverConfig,
       new LinuxDiscoverConfig(file("/usr") / "java"),
       new LinuxDiscoverConfig(file("/usr") / "lib" / "jvm"),
       new MacOsDiscoverConfig,
-      new WindowsDiscoverConfig
+      new WindowsDiscoverConfig,
+      new JavaHomeDiscoverConfig,
     )
   }
 
