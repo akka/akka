@@ -498,7 +498,7 @@ or the downstreams. Even for operators that do not complete or fail in this mann
 ## Extending Flow Operators with Custom Operators
 
 The most general way of extending any `Source`, `Flow` or `SubFlow` (e.g. from `groupBy`) is
-demonstrated above: create a operator of flow-shape like the `Duplicator` example given above and use the `.via(...)`
+demonstrated above: create an operator of flow-shape like the `Duplicator` example given above and use the `.via(...)`
 operator to integrate it into your stream topology. This works with all `FlowOps` sub-types, including the
 ports that you connect with the graph DSL.
 
