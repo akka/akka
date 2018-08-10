@@ -63,15 +63,15 @@ can hand it back for further use to an underlying thread-pool.
 Linear processing pipelines can be expressed in Akka Streams using the following core abstractions:
 
 Source
-: A operator with *exactly one output*, emitting data elements whenever downstream operators are
+: An operator with *exactly one output*, emitting data elements whenever downstream operators are
 ready to receive them.
 
 Sink
-: A operator with *exactly one input*, requesting and accepting data elements possibly slowing down the upstream
-producer of elements
+: An operator with *exactly one input*, requesting and accepting data elements, possibly slowing down the upstream
+producer of elements.
 
 Flow
-: A operator which has *exactly one input and output*, which connects its upstream and downstream by
+: An operator which has *exactly one input and output*, which connects its upstream and downstream by
 transforming the data elements flowing through it.
 
 RunnableGraph
