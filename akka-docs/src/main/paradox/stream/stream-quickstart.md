@@ -10,6 +10,15 @@ To use Akka Streams, add the module to your project:
   version="$akka.version$"
 }
 
+@@@ note
+
+
+Both the Java and Scala DSLs of Akka Streams are bundled in the same JAR. For a smooth development experience, when using an IDE such as Eclipse or IntelliJ, you can disable the auto-importer from suggesting `javadsl` imports when working in Scala,
+or viceversa. In IntelliJ, the Auto Import settings are under "Editor" / "General" / "Auto Import". Use a name mask such 
+as `akka.stream.javadsl*` or `akka.stream.scaladsl*` to indicate the DSL you want to exclude from import/completion. 
+
+@@@
+
 ## First steps
 
 A stream usually begins at a source, so this is also how we start an Akka
