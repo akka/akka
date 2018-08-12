@@ -165,6 +165,31 @@ object ThrottlerTransportAdapter {
      */
     def getInstance = this
   }
+
+  /**
+   * Java API: get the Direction.Send instance
+   */
+  def sendDirection() = Direction.Send
+
+  /**
+   * Java API: get the Direction.Receive instance
+   */
+  def receiveDirection() = Direction.Receive
+
+  /**
+   * Java API: get the Direction.Both instance
+   */
+  def bothDirection() = Direction.Both
+
+  /**
+   * Java API: get the ThrottleMode.Blackhole instance
+   */
+  def blackholeThrottleMode() = Blackhole
+
+  /**
+   * Java API: get the ThrottleMode.Unthrottled instance
+   */
+  def unthrottledThrottleMode() = Unthrottled
 }
 
 class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedActorSystem) extends ActorTransportAdapter(_wrappedTransport, _system) {
