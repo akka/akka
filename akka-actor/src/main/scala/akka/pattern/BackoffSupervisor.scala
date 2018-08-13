@@ -39,6 +39,32 @@ object BackoffSupervisor {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
+   */
+  def props(
+    childProps:   Props,
+    childName:    String,
+    minBackoff:   FiniteDuration,
+    maxBackoff:   FiniteDuration,
+    randomFactor: Double): Props = {
+    propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, -1, SupervisorStrategy.defaultStrategy)
+  }
+
+  /**
+   * Props for creating a [[BackoffSupervisor]] actor.
+   *
+   * Exceptions in the child are handled with the default supervision strategy, i.e.
+   * most exceptions will immediately restart the child. You can define another
+   * supervision strategy by using [[#propsWithSupervisorStrategy]].
+   *
+   * @param childProps the [[akka.actor.Props]] of the child actor that
+   *   will be started and supervised
+   * @param childName name of the child actor
+   * @param minBackoff minimum (initial) duration until the child actor will
+   *   started again, if it is terminated
+   * @param maxBackoff the exponential back-off is capped to this duration
+   * @param randomFactor after calculation of the exponential back-off an additional
+   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
+   *   In order to skip this additional delay pass in `0`.
    * @param maxRestartAttempts maximum number of attempts to restart the child actor.
    *   In order to restart infinitely pass in `-1`
    */
@@ -50,6 +76,32 @@ object BackoffSupervisor {
     randomFactor:       Double,
     maxRestartAttempts: Int): Props = {
     propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, maxRestartAttempts, SupervisorStrategy.defaultStrategy)
+  }
+
+  /**
+   * Props for creating a [[BackoffSupervisor]] actor.
+   *
+   * Exceptions in the child are handled with the default supervision strategy, i.e.
+   * most exceptions will immediately restart the child. You can define another
+   * supervision strategy by using [[#propsWithSupervisorStrategy]].
+   *
+   * @param childProps the [[akka.actor.Props]] of the child actor that
+   *   will be started and supervised
+   * @param childName name of the child actor
+   * @param minBackoff minimum (initial) duration until the child actor will
+   *   started again, if it is terminated
+   * @param maxBackoff the exponential back-off is capped to this duration
+   * @param randomFactor after calculation of the exponential back-off an additional
+   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
+   *   In order to skip this additional delay pass in `0`.
+   */
+  def props(
+    childProps:   Props,
+    childName:    String,
+    minBackoff:   java.time.Duration,
+    maxBackoff:   java.time.Duration,
+    randomFactor: Double): Props = {
+    props(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor)
   }
 
   /**
@@ -139,6 +191,37 @@ object BackoffSupervisor {
    * @param strategy the supervision strategy to use for handling exceptions
    *   in the child. As the BackoffSupervisor creates a separate actor to handle the
    *   backoff process, only a [[OneForOneStrategy]] makes sense here.
+   */
+  def propsWithSupervisorStrategy(
+    childProps:   Props,
+    childName:    String,
+    minBackoff:   FiniteDuration,
+    maxBackoff:   FiniteDuration,
+    randomFactor: Double,
+    strategy:     SupervisorStrategy): Props = {
+    propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, -1, strategy)
+  }
+
+  /**
+   * Props for creating a [[BackoffSupervisor]] actor with a custom
+   * supervision strategy.
+   *
+   * Exceptions in the child are handled with the given `supervisionStrategy`. A
+   * `Restart` will perform a normal immediate restart of the child. A `Stop` will
+   * stop the child, but it will be started again after the back-off duration.
+   *
+   * @param childProps the [[akka.actor.Props]] of the child actor that
+   *   will be started and supervised
+   * @param childName name of the child actor
+   * @param minBackoff minimum (initial) duration until the child actor will
+   *   started again, if it is terminated
+   * @param maxBackoff the exponential back-off is capped to this duration
+   * @param randomFactor after calculation of the exponential back-off an additional
+   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
+   *   In order to skip this additional delay pass in `0`.
+   * @param strategy the supervision strategy to use for handling exceptions
+   *   in the child. As the BackoffSupervisor creates a separate actor to handle the
+   *   backoff process, only a [[OneForOneStrategy]] makes sense here.
    * @param maxRestartAttempts maximum number of attempts to restart the child actor.
    *   In order to restart infinitely pass in `-1`
    */
@@ -151,6 +234,37 @@ object BackoffSupervisor {
     maxRestartAttempts: Int,
     strategy:           SupervisorStrategy): Props = {
     propsWithSupervisorStrategy(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRestartAttempts, strategy)
+  }
+
+  /**
+   * Props for creating a [[BackoffSupervisor]] actor with a custom
+   * supervision strategy.
+   *
+   * Exceptions in the child are handled with the given `supervisionStrategy`. A
+   * `Restart` will perform a normal immediate restart of the child. A `Stop` will
+   * stop the child, but it will be started again after the back-off duration.
+   *
+   * @param childProps the [[akka.actor.Props]] of the child actor that
+   *   will be started and supervised
+   * @param childName name of the child actor
+   * @param minBackoff minimum (initial) duration until the child actor will
+   *   started again, if it is terminated
+   * @param maxBackoff the exponential back-off is capped to this duration
+   * @param randomFactor after calculation of the exponential back-off an additional
+   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
+   *   In order to skip this additional delay pass in `0`.
+   * @param strategy the supervision strategy to use for handling exceptions
+   *   in the child. As the BackoffSupervisor creates a separate actor to handle the
+   *   backoff process, only a [[OneForOneStrategy]] makes sense here.
+   */
+  def propsWithSupervisorStrategy(
+    childProps:   Props,
+    childName:    String,
+    minBackoff:   java.time.Duration,
+    maxBackoff:   java.time.Duration,
+    randomFactor: Double,
+    strategy:     SupervisorStrategy): Props = {
+    propsWithSupervisorStrategy(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, -1, strategy)
   }
 
   /**
@@ -266,6 +380,18 @@ final class BackoffSupervisor(
       }
     case s ⇒ s
   }
+
+  // for binary compatibility with 2.5.14
+  def this(
+    childProps:         Props,
+    childName:          String,
+    minBackoff:         FiniteDuration,
+    maxBackoff:         FiniteDuration,
+    reset:              BackoffReset,
+    randomFactor:       Double,
+    supervisorStrategy: SupervisorStrategy,
+    replyWhileStopped:  Option[Any]) =
+    this(childProps, childName, minBackoff, maxBackoff, reset, randomFactor, -1, supervisorStrategy, replyWhileStopped)
 
   // for binary compatibility with 2.4.1
   def this(
