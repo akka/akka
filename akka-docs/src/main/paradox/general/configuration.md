@@ -14,7 +14,7 @@ might amend:
 Akka uses the [Typesafe Config Library](https://github.com/typesafehub/config), which might also be a good choice
 for the configuration of your own application or library built with or without
 Akka. This library is implemented in Java with no external dependencies; you
-should have a look at its documentation (in particular about [ConfigFactory](http://typesafehub.github.io/config/v1.2.0/com/typesafe/config/ConfigFactory.html)),
+should have a look at its documentation (in particular about [ConfigFactory](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html)),
 which is only summarized in the following.
 
 @@@ warning
