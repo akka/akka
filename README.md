@@ -1,4 +1,4 @@
-Akka [![scaladex-badge][]][scaladex]
+Akka [![scaladex-badge]][scaladex]
 ====
 
 [scaladex]:       https://index.scala-lang.org/akka/akka
