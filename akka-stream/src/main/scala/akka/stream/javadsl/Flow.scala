@@ -1245,7 +1245,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
-   * returns false for the first time, including the first failed element iff inclusive is true
+   * returns false for the first time, including the first failed element if inclusive is true
    * Due to input buffering some elements may have been requested from upstream publishers
    * that will then not be processed downstream of this step.
    *
@@ -1268,7 +1268,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
-   * returns false for the first time, including the first failed element iff inclusive is true
+   * returns false for the first time, including the first failed element if inclusive is true
    * Due to input buffering some elements may have been requested from upstream publishers
    * that will then not be processed downstream of this step.
    *
@@ -1318,6 +1318,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
+  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(pf: PartialFunction[Throwable, Out]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.recover(pf))
 
@@ -1336,6 +1337,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
+  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(clazz: Class[_ <: Throwable], supplier: Supplier[Out]): javadsl.Flow[In, Out, Mat] =
     recover {
       case elem if clazz.isInstance(elem) ⇒ supplier.get()
