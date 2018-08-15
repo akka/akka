@@ -929,6 +929,9 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
     if (rememberEntities) Set(CoordinatorStateKey, AllShardsKey) else Set(CoordinatorStateKey)
 
   var shards = Set.empty[String]
+
+  var getShardHomeRequests: Set[(ActorRef, GetShardHome)] = Set.empty
+
   if (rememberEntities)
     replicator ! Subscribe(AllShardsKey, self)
 
@@ -1005,9 +1008,13 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
   // which was scheduled by previous watchStateActors
   def waitingForStateInitialized: Receive = {
     case StateInitialized ⇒
+      unstashGetShardHomeRequests()
       unstashAll()
       stateInitialized()
       activate()
+
+    case v: GetShardHome ⇒
+      stashGetShardHomeRequest(sender(), v)
 
     case _ ⇒ stash()
   }
@@ -1052,9 +1059,9 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
         key, error, evt)
       throw cause
 
-    case GetShardHome(shard) ⇒
+    case v @ GetShardHome(shard) ⇒
       if (!handleGetShardHome(shard))
-        stash() // must wait for update that is in progress
+        stashGetShardHomeRequest(sender(), v) // must wait for update that is in progress
 
     case _ ⇒ stash()
   }
@@ -1062,7 +1069,18 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
   private def unbecomeAfterUpdate[E <: DomainEvent](evt: E, afterUpdateCallback: E ⇒ Unit): Unit = {
     context.unbecome()
     afterUpdateCallback(evt)
+    unstashGetShardHomeRequests()
     unstashAll()
+  }
+
+  private def stashGetShardHomeRequest(sender: ActorRef, request: GetShardHome): Unit =
+    getShardHomeRequests += (sender -> request)
+
+  private def unstashGetShardHomeRequests(): Unit = {
+    getShardHomeRequests.foreach {
+      case (caller, request) ⇒ self.tell(request, sender = caller)
+    }
+    getShardHomeRequests = Set.empty
   }
 
   def activate() = {
