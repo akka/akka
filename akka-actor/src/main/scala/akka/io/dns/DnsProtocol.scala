@@ -9,7 +9,7 @@ import java.util
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.ApiMayChange
 
-import scala.collection.immutable
+import scala.collection.{ immutable ⇒ im }
 import scala.collection.JavaConverters._
 
 /**
@@ -61,11 +61,15 @@ object DnsProtocol {
   }
 
   @ApiMayChange
-  final case class Resolved(name: String, results: immutable.Seq[ResourceRecord]) extends NoSerializationVerificationNeeded {
+  final case class Resolved(name: String, records: im.Seq[ResourceRecord], additionalRecords: im.Seq[ResourceRecord] = im.Seq.empty) extends NoSerializationVerificationNeeded {
     /**
      * Java API
      */
-    def getResults(): util.List[ResourceRecord] = results.asJava
+    def getRecords(): util.List[ResourceRecord] = records.asJava
+    /**
+     * Java API
+     */
+    def getAdditionalRecords(): util.List[ResourceRecord] = additionalRecords.asJava
   }
 
 }

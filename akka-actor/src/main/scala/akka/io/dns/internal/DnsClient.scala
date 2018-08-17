@@ -12,7 +12,7 @@ import akka.annotation.InternalApi
 import akka.io.dns.{ RecordClass, RecordType, ResourceRecord }
 import akka.io.{ IO, Udp }
 
-import scala.collection.immutable
+import scala.collection.{ immutable ⇒ im }
 import scala.util.Try
 
 /**
@@ -25,7 +25,7 @@ import scala.util.Try
   final case class SrvQuestion(id: Short, name: String) extends DnsQuestion
   final case class Question4(id: Short, name: String) extends DnsQuestion
   final case class Question6(id: Short, name: String) extends DnsQuestion
-  final case class Answer(id: Short, rrs: immutable.Seq[ResourceRecord]) extends NoSerializationVerificationNeeded
+  final case class Answer(id: Short, rrs: im.Seq[ResourceRecord], additionalRecs: im.Seq[ResourceRecord] = im.Seq.empty) extends NoSerializationVerificationNeeded
   final case class DropRequest(id: Short)
 }
 
@@ -56,7 +56,7 @@ import scala.util.Try
   }
 
   private def message(name: String, id: Short, recordType: RecordType): Message = {
-    Message(id, MessageFlags(), immutable.Seq(Question(name, recordType, RecordClass.IN)))
+    Message(id, MessageFlags(), im.Seq(Question(name, recordType, RecordClass.IN)))
   }
 
   def ready(socket: ActorRef): Receive = {
@@ -103,8 +103,8 @@ import scala.util.Try
       log.debug(s"Received message from [{}]: [{}]", remote, data)
       val msg = Message.parse(data)
       log.debug(s"Decoded: $msg")
-      val recs = if (msg.flags.responseCode == ResponseCode.SUCCESS) msg.answerRecs else immutable.Seq.empty
-      val response = Answer(msg.id, recs)
+      val (recs, additionalRecs) = if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (im.Seq.empty, im.Seq.empty)
+      val response = Answer(msg.id, recs, additionalRecs)
       inflightRequests.get(response.id) match {
         case Some(reply) ⇒
           reply ! response
