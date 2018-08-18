@@ -16,8 +16,8 @@ To use Akka Streams, add the module to your project:
 ## Core concepts
 
 Akka Streams is a library to process and transfer a sequence of elements using bounded buffer space. This
-latter property is what we refer to as *boundedness* and it is the defining feature of Akka Streams. Translated to
-everyday terms it is possible to express a chain (or as we see later, graphs) of processing entities, each executing
+latter property is what we refer to as *boundedness*, and it is the defining feature of Akka Streams. Translated to
+everyday terms, it is possible to express a chain (or as we see later, graphs) of processing entities, each executing
 independently (and possibly concurrently) from the others while only buffering a limited number of elements at any given
 time. This property of bounded buffers is one of the differences from the actor model, where each actor usually has
 an unbounded, or a bounded, but dropping mailbox. Akka Stream processing entities have bounded "mailboxes" that
@@ -51,7 +51,7 @@ Examples of operators are `map()`, `filter()`, custom ones extending @ref[`Graph
 junctions like `Merge` or `Broadcast`. For the full list of built-in operators see the @ref:[operator index](operators/index.md)
 
 
-When we talk about *asynchronous, non-blocking backpressure* we mean that the operators available in Akka
+When we talk about *asynchronous, non-blocking backpressure*, we mean that the operators available in Akka
 Streams will not use blocking calls but asynchronous message passing to exchange messages between each other, and they
 will use asynchronous means to slow down a fast producer, without blocking its thread. This is a thread-pool friendly
 design, since entities that need to wait (a fast producer waiting on a slow consumer) will not block the thread but
@@ -99,11 +99,11 @@ Java
 
 After running (materializing) the `RunnableGraph[T]` we get back the materialized value of type T. Every stream
 operator can produce a materialized value, and it is the responsibility of the user to combine them to a new type.
-In the above example we used `toMat` to indicate that we want to transform the materialized value of the source and
+In the above example, we used `toMat` to indicate that we want to transform the materialized value of the source and
 sink, and we used the convenience function `Keep.right` to say that we are only interested in the materialized value
 of the sink.
 
-In our example the `FoldSink` materializes a value of type `Future` which will represent the result
+In our example, the `FoldSink` materializes a value of type `Future` which will represent the result
 of the folding process over the stream.  In general, a stream can expose multiple materialized values,
 but it is quite common to be interested in only the value of the Source or the Sink in the stream. For this reason
 there is a convenience method called `runWith()` available for `Sink`, `Source` or `Flow` requiring, respectively,
@@ -143,9 +143,9 @@ Java
 
 @@@ note
 
-By default Akka Streams elements support **exactly one** downstream operator.
+By default, Akka Streams elements support **exactly one** downstream operator.
 Making fan-out (supporting multiple downstream operators) an explicit opt-in feature allows default stream elements to
-be less complex and more efficient. Also it allows for greater flexibility on *how exactly* to handle the multicast scenarios,
+be less complex and more efficient. Also, it allows for greater flexibility on *how exactly* to handle the multicast scenarios,
 by providing named fan-out elements such as broadcast (signals all down-stream elements) or balance (signals one of available down-stream elements).
 
 @@@
@@ -155,7 +155,7 @@ of the given sink or source.
 
 Since a stream can be materialized multiple times, the @scala[materialized value will also be calculated anew] @java[`MaterializedMap` returned is different] for each such
 materialization, usually leading to different values being returned each time.
-In the example below we create two running materialized instance of the stream that we described in the `runnable`
+In the example below, we create two running materialized instance of the stream that we described in the `runnable`
 variable, and both materializations give us a different @scala[`Future`] @java[`CompletionStage`] from the map even though we used the same `sink`
 to refer to the future:
 
@@ -209,12 +209,12 @@ Streams, guarantees that it will never emit more elements than the received tota
 @@@ note
 
 The Reactive Streams specification defines its protocol in terms of `Publisher` and `Subscriber`.
-These types are **not** meant to be user facing API, instead they serve as the low level building blocks for
+These types are **not** meant to be user facing API, instead they serve as the low-level building blocks for
 different Reactive Streams implementations.
 
 Akka Streams implements these concepts as `Source`, `Flow` (referred to as `Processor` in Reactive Streams)
 and `Sink` without exposing the Reactive Streams interfaces directly.
-If you need to integrate with other Reactive Stream libraries read @ref:[Integrating with Reactive Streams](stream-integrations.md#reactive-streams-integration).
+If you need to integrate with other Reactive Stream libraries, read @ref:[Integrating with Reactive Streams](stream-integrations.md#reactive-streams-integration).
 
 @@@
 
@@ -284,7 +284,7 @@ yet will materialize that operator multiple times.
 <a id="operator-fusion"></a>
 ### Operator Fusion
 
-By default Akka Streams will fuse the stream operators. This means that the processing steps of a flow or
+By default, Akka Streams will fuse the stream operators. This means that the processing steps of a flow or
 stream can be executed within the same Actor and has two consequences:
 
  * passing elements from one operator to the next is a lot faster between fused
@@ -365,7 +365,7 @@ In Akka Streams almost all computation operators *preserve input order* of eleme
 "cause" outputs `{OA1,OA2,...,OAk}` and inputs `{IB1,IB2,...,IBm}` "cause" outputs `{OB1,OB2,...,OBl}` and all of
 `IAi` happened before all `IBi` then `OAi` happens before `OBi`.
 
-This property is even uphold by async operations such as `mapAsync`, however an unordered version exists
+This property is even upheld by async operations such as `mapAsync`, however an unordered version exists
 called `mapAsyncUnordered` which does not preserve this ordering.
 
 However, in the case of Junctions which handle multiple input streams (e.g. `Merge`) the output order is,
@@ -407,12 +407,12 @@ Scala
 Java
 :   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #materializer-from-actor-context }
 
-In the above example we used the `ActorContext` to create the materializer. This binds its lifecycle to the surrounding `Actor`. In other words, while the stream we started there would under normal circumstances run forever, if we stop the Actor it would terminate the stream as well. We have *bound the streams' lifecycle to the surrounding actor's lifecycle*.
-This is a very useful technique if the stream is closely related to the actor, e.g. when the actor represents an user or other entity, that we continiously query using the created stream -- and it would not make sense to keep the stream alive when the actor has terminated already. The streams termination will be signalled by an "Abrupt termination exception" signaled by the stream.
+In the above example we used the `ActorContext` to create the materializer. This binds its lifecycle to the surrounding `Actor`. In other words, while the stream we started there would under normal circumstances run forever, if we stop the Actor it would terminate the stream as well. We have *bound the stream's lifecycle to the surrounding actor's lifecycle*.
+This is a very useful technique if the stream is closely related to the actor, e.g. when the actor represents a user or other entity, that we continuously query using the created stream -- and it would not make sense to keep the stream alive when the actor has terminated already. The streams termination will be signalled by an "Abrupt termination exception" signaled by the stream.
 
-You may also cause an `ActorMaterializer` to shutdown by explicitly calling `shutdown()` on it, resulting in abruptly terminating all of the streams it has been running then. 
+You may also cause an `ActorMaterializer` to shut down by explicitly calling `shutdown()` on it, resulting in abruptly terminating all of the streams it has been running then. 
 
-Sometimes however you may want to explicitly create a stream that will out-last the actor's life. For example, if you want to continue pushing some large stream of data to an external service and are doing so via an Akka stream while you already want to eagerly stop the Actor since it has performed all of it's duties already:
+Sometimes, however, you may want to explicitly create a stream that will out-last the actor's life. For example, if you want to continue pushing some large stream of data to an external service and are doing so via an Akka stream while you already want to eagerly stop the Actor since it has performed all of its duties already:
 
 Scala
 :   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-system-in-actor }
