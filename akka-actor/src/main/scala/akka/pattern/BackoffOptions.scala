@@ -129,7 +129,7 @@ object Backoff {
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
    */
-  @deprecated
+  @deprecated("Use the overloaded one which accepts maxRestartAttempts instead.", "2.5.14")
   def onFailure(
     childProps:   Props,
     childName:    String,
@@ -139,7 +139,7 @@ object Backoff {
     BackoffOptionsImpl(RestartImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor)
 
   /**
-   * Back-off options for creating a back-off supervisor actor that expects a child actor to restart on failure.
+   * Java API: Back-off options for creating a back-off supervisor actor that expects a child actor to restart on failure.
    *
    * This explicit supervisor behaves similarly to the normal implicit supervision where
    * if an actor throws an exception, the decider on the supervisor will decide when to
@@ -196,7 +196,7 @@ object Backoff {
     onFailure(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRestartAttempts)
 
   /**
-   * Back-off options for creating a back-off supervisor actor that expects a child actor to restart on failure.
+   * Java API: Back-off options for creating a back-off supervisor actor that expects a child actor to restart on failure.
    *
    * This explicit supervisor behaves similarly to the normal implicit supervision where
    * if an actor throws an exception, the decider on the supervisor will decide when to
@@ -241,7 +241,7 @@ object Backoff {
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
    */
-  @deprecated
+  @Deprecated
   def onFailure(
     childProps:   Props,
     childName:    String,
@@ -367,7 +367,7 @@ object Backoff {
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
    */
-  @deprecated
+  @deprecated("Use the overloaded one which accepts maxRestartAttempts instead.", "2.5.14")
   def onStop(
     childProps:   Props,
     childName:    String,
@@ -377,7 +377,7 @@ object Backoff {
     BackoffOptionsImpl(StopImpliesFailure, childProps, childName, minBackoff, maxBackoff, randomFactor)
 
   /**
-   * Back-off options for creating a back-off supervisor actor that expects a child actor to stop on failure.
+   * Java API: Back-off options for creating a back-off supervisor actor that expects a child actor to stop on failure.
    *
    * This actor can be used to supervise a child actor and start it again
    * after a back-off duration if the child actor is stopped.
@@ -441,7 +441,7 @@ object Backoff {
     onStop(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRestartAttempts)
 
   /**
-   * Back-off options for creating a back-off supervisor actor that expects a child actor to stop on failure.
+   * Java API: Back-off options for creating a back-off supervisor actor that expects a child actor to stop on failure.
    *
    * This actor can be used to supervise a child actor and start it again
    * after a back-off duration if the child actor is stopped.
@@ -493,7 +493,7 @@ object Backoff {
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
    */
-  @deprecated
+  @Deprecated
   def onStop(
     childProps:   Props,
     childName:    String,
