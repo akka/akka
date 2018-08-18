@@ -90,7 +90,9 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
   implicit val timeout = Timeout(duration)
 
   "Resolver" must {
-    pending
+
+    pending // PENDING since needs `bind` server to be running to test end-to-end
+
     "resolve single A record" in {
       val name = "a-single.akka.test"
       val answer = resolve(name, DnsProtocol.Ip(ipv6 = false))

@@ -527,7 +527,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
         else
           readyChannel.getPipeline.get(classOf[ClientHandler]).statusFuture
       } yield handle) recover {
-        case c: CancellationException ⇒ throw new NettyTransportExceptionNoStack("Connection was cancelled")
+        case _: CancellationException ⇒ throw new NettyTransportExceptionNoStack("Connection was cancelled")
         case NonFatal(t) ⇒
           val msg =
             if (t.getCause == null)
@@ -536,7 +536,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
               s"${t.getMessage}, caused by: ${t.getCause}"
             else
               s"${t.getMessage}, caused by: ${t.getCause}, caused by: ${t.getCause.getCause}"
-          throw new NettyTransportExceptionNoStack(msg, t.getCause)
+          throw new NettyTransportExceptionNoStack(s"${t.getClass.getName}: $msg", t.getCause)
       }
     }
   }
