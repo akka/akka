@@ -53,11 +53,11 @@ The child actor is stopped if the restart count exceeds `maxNrOfRetries` during 
 
 Also, there are special values for these parameters. If you specify:
 
-* `-1` to `maxNrOfRetries`, and @scala[`Duration.inf`]@java[`Duration.Inf()`] to `withinTimeRange`
+* `-1` to `maxNrOfRetries`, and @scala[`Duration.Inf`]@java[`Duration.Inf()`] to `withinTimeRange`
     * then the child is always restarted without any limit
 * `-1` to `maxNrOfRetries`, and a non-infinite `Duration` to `withinTimeRange` 
     * `maxNrOfRetries` is treated as `1`
-* a non-negative number to `maxNrOfRetries` and @scala[`Duration.inf`]@java[`Duration.Inf()`] to `withinTimeRange`
+* a non-negative number to `maxNrOfRetries` and @scala[`Duration.Inf`]@java[`Duration.Inf()`] to `withinTimeRange`
     * `withinTimeRange` is treated as infinite duration (i.e.) no matter how long it takes, once the restart count exceeds `maxNrOfRetries`, the child actor is stopped  
    
 The match statement which forms the bulk of the body   
