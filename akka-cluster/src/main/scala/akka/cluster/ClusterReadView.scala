@@ -87,7 +87,12 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
           e match {
             case e: MemberEvent if e.member.address == selfAddress ⇒
-              _cachedSelf = OptionVal.Some(e.member)
+              _cachedSelf match {
+                case OptionVal.Some(s) if s.status == MemberStatus.Removed ⇒
+                // ignore as Cluster.close has been called
+                case _ ⇒
+                  _cachedSelf = OptionVal.Some(e.member)
+              }
             case _ ⇒
           }
         case s: CurrentClusterState ⇒ _state = s
