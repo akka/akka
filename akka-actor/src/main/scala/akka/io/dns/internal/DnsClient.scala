@@ -25,7 +25,7 @@ import scala.util.Try
   final case class SrvQuestion(id: Short, name: String) extends DnsQuestion
   final case class Question4(id: Short, name: String) extends DnsQuestion
   final case class Question6(id: Short, name: String) extends DnsQuestion
-  final case class Answer(id: Short, rrs: im.Seq[ResourceRecord], additionalRecs: im.Seq[ResourceRecord] = im.Seq.empty) extends NoSerializationVerificationNeeded
+  final case class Answer(id: Short, rrs: im.Seq[ResourceRecord], additionalRecs: im.Seq[ResourceRecord] = Nil) extends NoSerializationVerificationNeeded
   final case class DropRequest(id: Short)
 }
 
@@ -103,7 +103,7 @@ import scala.util.Try
       log.debug(s"Received message from [{}]: [{}]", remote, data)
       val msg = Message.parse(data)
       log.debug(s"Decoded: $msg")
-      val (recs, additionalRecs) = if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (im.Seq.empty, im.Seq.empty)
+      val (recs, additionalRecs) = if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (Nil, Nil)
       val response = Answer(msg.id, recs, additionalRecs)
       inflightRequests.get(response.id) match {
         case Some(reply) ⇒

@@ -133,7 +133,6 @@ private[io] final class AsyncDnsResolver(
             sendQuestion(resolver, SrvQuestion(nextId(), caseFoldedName))
               .map(r ⇒ {
                 if (r.rrs.nonEmpty) {
-                  println("Caching")
                   val minTtl = r.rrs.minBy(_.ttl).ttl
                   cache.put((name, SrvType), r, minTtl)
                 }
