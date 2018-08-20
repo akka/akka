@@ -25,7 +25,7 @@ class Member private[cluster] (
   val roles:                     Set[String]) extends Serializable {
 
   lazy val dataCenter: DataCenter = roles.find(_.startsWith(ClusterSettings.DcRolePrefix))
-    .getOrElse(throw new IllegalStateException("DataCenter undefined, should not be possible"))
+    .getOrElse(s"${ClusterSettings.DcRolePrefix}${ClusterSettings.DefaultDataCenter}") // node which is unaware of DC- settings
     .substring(ClusterSettings.DcRolePrefix.length)
 
   def address: Address = uniqueAddress.address
