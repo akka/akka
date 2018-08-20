@@ -24,7 +24,7 @@ object SocketUtil {
       SocketUtil.temporaryServerAddress(address = "127.20.0.0")
       true
     } catch {
-      case e: java.net.BindException ⇒
+      case _: java.net.BindException ⇒
         false
     }
   }
