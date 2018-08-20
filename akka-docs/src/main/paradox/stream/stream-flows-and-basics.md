@@ -17,9 +17,9 @@ To use Akka Streams, add the module to your project:
 
 Akka Streams is a library to process and transfer a sequence of elements using bounded buffer space. This
 latter property is what we refer to as *boundedness*, and it is the defining feature of Akka Streams. Translated to
-everyday terms, it is possible to express a chain (or as we see later, graphs) of processing entities, each executing
-independently (and possibly concurrently) from the others while only buffering a limited number of elements at any given
-time. This property of bounded buffers is one of the differences from the actor model, where each actor usually has
+everyday terms, it is possible to express a chain (or as we see later, graphs) of processing entities. Each of these
+entities executes independently (and possibly concurrently) from the others while only buffering a limited number
+of elements at any given time. This property of bounded buffers is one of the differences from the actor model, where each actor usually has
 an unbounded, or a bounded, but dropping mailbox. Akka Stream processing entities have bounded "mailboxes" that
 do not drop.
 
@@ -52,8 +52,8 @@ junctions like `Merge` or `Broadcast`. For the full list of built-in operators s
 
 
 When we talk about *asynchronous, non-blocking backpressure*, we mean that the operators available in Akka
-Streams will not use blocking calls but asynchronous message passing to exchange messages between each other, and they
-will use asynchronous means to slow down a fast producer, without blocking its thread. This is a thread-pool friendly
+Streams will not use blocking calls but asynchronous message passing to exchange messages between each other.
+This way they can slow down a fast producer without blocking its thread. This is a thread-pool friendly
 design, since entities that need to wait (a fast producer waiting on a slow consumer) will not block the thread but
 can hand it back for further use to an underlying thread-pool.
 
@@ -155,8 +155,8 @@ of the given sink or source.
 
 Since a stream can be materialized multiple times, the @scala[materialized value will also be calculated anew] @java[`MaterializedMap` returned is different] for each such
 materialization, usually leading to different values being returned each time.
-In the example below, we create two running materialized instance of the stream that we described in the `runnable`
-variable, and both materializations give us a different @scala[`Future`] @java[`CompletionStage`] from the map even though we used the same `sink`
+In the example below, we create two running materialized instances of the stream that we described in the `runnable`
+variable. Both materializations give us a different @scala[`Future`] @java[`CompletionStage`] from the map even though we used the same `sink`
 to refer to the future:
 
 Scala
@@ -412,7 +412,9 @@ This is a very useful technique if the stream is closely related to the actor, e
 
 You may also cause an `ActorMaterializer` to shut down by explicitly calling `shutdown()` on it, resulting in abruptly terminating all of the streams it has been running then. 
 
-Sometimes, however, you may want to explicitly create a stream that will out-last the actor's life. For example, if you want to continue pushing some large stream of data to an external service and are doing so via an Akka stream while you already want to eagerly stop the Actor since it has performed all of its duties already:
+Sometimes, however, you may want to explicitly create a stream that will out-last the actor's life.
+For example, you are using an Akka stream to push some large stream of data to an external service.
+You may want to eagerly stop the Actor since it has performed all of its duties already:
 
 Scala
 :   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-system-in-actor }
