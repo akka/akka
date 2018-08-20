@@ -333,7 +333,7 @@ import scala.util.{ Failure, Success, Try }
     val stageLogic = new GraphStageLogic(shape) with InHandler with SinkQueueWithCancel[T] {
       type Received[E] = Try[Option[E]]
 
-      val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+      val maxBuffer = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max
       require(maxBuffer > 0, "Buffer size must be greater than 0")
 
       var buffer: Buffer[Received[T]] = _

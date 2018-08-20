@@ -46,7 +46,7 @@ private[stream] object InputStreamSinkStage {
   override val shape: SinkShape[ByteString] = SinkShape.of(in)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, InputStream) = {
-    val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+    val maxBuffer = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max
     require(maxBuffer > 0, "Buffer size must be greater than 0")
 
     val dataQueue = new LinkedBlockingDeque[StreamToAdapterMessage](maxBuffer + 2)
