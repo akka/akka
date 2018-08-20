@@ -24,19 +24,19 @@ object ActorSystemSpec {
 
   class Waves extends Actor {
     var master: ActorRef = _
-    var terminators = Set[ActorRef]()
+    var terminaters = Set[ActorRef]()
 
     def receive = {
       case n: Int ⇒
         master = sender()
-        terminators = Set() ++ (for (i ← 1 to n) yield {
-          val man = context.watch(context.system.actorOf(Props[Terminator]))
+        terminaters = Set() ++ (for (i ← 1 to n) yield {
+          val man = context.watch(context.system.actorOf(Props[Terminater]))
           man ! "run"
           man
         })
-      case Terminated(child) if terminators contains child ⇒
-        terminators -= child
-        if (terminators.isEmpty) {
+      case Terminated(child) if terminaters contains child ⇒
+        terminaters -= child
+        if (terminaters.isEmpty) {
           master ! "done"
           context stop self
         }
@@ -50,7 +50,7 @@ object ActorSystemSpec {
     }
   }
 
-  class Terminator extends Actor {
+  class Terminater extends Actor {
     def receive = {
       case "run" ⇒ context.stop(self)
     }
@@ -154,7 +154,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       val sys = ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
       try {
         val probe = TestProbe()(sys)
-        val a = sys.actorOf(Props[ActorSystemSpec.Terminator])
+        val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
         probe.watch(a)
         a.tell("run", probe.ref)
         probe.expectTerminated(a)
@@ -171,7 +171,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       val sys = ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
       try {
         val probe = TestProbe()(sys)
-        val a = sys.actorOf(Props[ActorSystemSpec.Terminator])
+        val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
         probe.watch(a)
         a.tell("run", probe.ref)
         probe.expectTerminated(a)
@@ -264,7 +264,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       var created = Vector.empty[ActorRef]
       while (!system.whenTerminated.isCompleted) {
         try {
-          val t = system.actorOf(Props[ActorSystemSpec.Terminator])
+          val t = system.actorOf(Props[ActorSystemSpec.Terminater])
           failing should not be true // because once failing => always failing (it’s due to shutdown)
           created :+= t
           if (created.size % 1000 == 0) Thread.sleep(50) // in case of unfair thread scheduling
