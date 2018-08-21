@@ -9,7 +9,7 @@ import akka.actor.ActorRef;
 import java.util.function.Predicate;
 
 /**
- * Acts as if `System.out.println()` yet swallows all messages. Useful for putting printlines in examples yet without poluting the build with them.
+ * Acts as if `System.out.println()` yet swallows all messages. Useful for putting printlines in examples yet without polluting the build with them.
  */
 public class SilenceSystemOut {
 

@@ -94,7 +94,7 @@ abstract class RestartNode2SpecSpec
           expectMsg(5.seconds, "ok")
         }
       }
-      enterBarrier("seed1-address-transfered")
+      enterBarrier("seed1-address-transferred")
 
       // now we can join seed1System, seed2 together
 

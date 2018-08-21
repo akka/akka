@@ -357,7 +357,7 @@ class SupervisorSpec extends AkkaSpec(SupervisorSpec.config) with BeforeAndAfter
       expectMsg(Timeout, PingMessage)
     }
 
-    "restart killed actors in nested superviser hierarchy" in {
+    "restart killed actors in nested supervisor hierarchy" in {
       val (actor1, actor2, actor3, _) = nestedSupervisorsAllForOne
 
       ping(actor1)

@@ -81,7 +81,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       nr-of-nodes-factor = 1
       # not scaled
       nr-of-seed-nodes = 3
-      nr-of-nodes-joining-to-seed-initally = 2
+      nr-of-nodes-joining-to-seed-initially = 2
       nr-of-nodes-joining-one-by-one-small = 2
       nr-of-nodes-joining-one-by-one-large = 2
       nr-of-nodes-joining-to-one = 2
@@ -175,7 +175,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     val infolog = getBoolean("infolog")
     val nFactor = getInt("nr-of-nodes-factor")
     val numberOfSeedNodes = getInt("nr-of-seed-nodes") // not scaled by nodes factor
-    val numberOfNodesJoiningToSeedNodesInitially = getInt("nr-of-nodes-joining-to-seed-initally") * nFactor
+    val numberOfNodesJoiningToSeedNodesInitially = getInt("nr-of-nodes-joining-to-seed-initially") * nFactor
     val numberOfNodesJoiningOneByOneSmall = getInt("nr-of-nodes-joining-one-by-one-small") * nFactor
     val numberOfNodesJoiningOneByOneLarge = getInt("nr-of-nodes-joining-one-by-one-large") * nFactor
     val numberOfNodesJoiningToOneNode = getInt("nr-of-nodes-joining-to-one") * nFactor

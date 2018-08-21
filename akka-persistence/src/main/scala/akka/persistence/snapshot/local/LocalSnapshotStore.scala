@@ -132,7 +132,7 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
   private def withStream[A <: Closeable, B](stream: A, p: A ⇒ B): B =
     try { p(stream) } finally { stream.close() }
 
-  /** Only by persistenceId and sequenceNr, timestamp is informational - accomodates for 2.13.x series files */
+  /** Only by persistenceId and sequenceNr, timestamp is informational - accommodates for 2.13.x series files */
   protected def snapshotFileForWrite(metadata: SnapshotMetadata, extension: String = ""): File =
     new File(snapshotDir, s"snapshot-${URLEncoder.encode(metadata.persistenceId, UTF_8)}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
 

@@ -15,7 +15,7 @@ class DispatcherShutdownSpec extends WordSpec with Matchers {
 
   "akka dispatcher" should {
 
-    "eventualy shutdown when used after system terminate" in {
+    "eventually shutdown when used after system terminate" in {
 
       val threads = ManagementFactory.getThreadMXBean()
       def threadCount = threads

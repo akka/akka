@@ -49,7 +49,7 @@ class ActorTestKitSpec extends WordSpec with Matchers with ActorTestKit with Sca
 
 }
 
-// derivate classes should also work fine (esp the naming part
+// derivative classes should also work fine (esp the naming part
 trait MyBaseSpec extends WordSpec with ActorTestKit with Matchers with BeforeAndAfterAll {
   override protected def afterAll(): Unit = {
     shutdownTestKit()
@@ -57,7 +57,7 @@ trait MyBaseSpec extends WordSpec with ActorTestKit with Matchers with BeforeAnd
 }
 
 class MyConcreteDerivateSpec extends MyBaseSpec {
-  "A derivate test" should {
+  "A derivative test" should {
     "generate a default name from the test class" in {
       system.name should ===("MyConcreteDerivateSpec")
     }

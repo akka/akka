@@ -13,22 +13,22 @@ private[akka] object PrettyDuration {
 
   /**
    * JAVA API
-   * Selects most apropriate TimeUnit for given duration and formats it accordingly, with 4 digits precision
+   * Selects most appropriate TimeUnit for given duration and formats it accordingly, with 4 digits precision
    */
   def format(duration: Duration): String = duration.pretty
 
   /**
    * JAVA API
-   * Selects most apropriate TimeUnit for given duration and formats it accordingly
+   * Selects most appropriate TimeUnit for given duration and formats it accordingly
    */
   def format(duration: Duration, includeNanos: Boolean, precision: Int): String = duration.pretty(includeNanos, precision)
 
   implicit class PrettyPrintableDuration(val duration: Duration) extends AnyVal {
 
-    /** Selects most apropriate TimeUnit for given duration and formats it accordingly, with 4 digits precision **/
+    /** Selects most appropriate TimeUnit for given duration and formats it accordingly, with 4 digits precision **/
     def pretty: String = pretty(includeNanos = false)
 
-    /** Selects most apropriate TimeUnit for given duration and formats it accordingly */
+    /** Selects most appropriate TimeUnit for given duration and formats it accordingly */
     def pretty(includeNanos: Boolean, precision: Int = 4): String = {
       require(precision > 0, "precision must be > 0")
 

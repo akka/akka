@@ -88,7 +88,7 @@ class AskSpec extends ActorTestKit
     }
 
     "must transform a replied akka.actor.Status.Failure to a failed future" in {
-      // It's unlikely but possible that this happens, since the recieving actor would
+      // It's unlikely but possible that this happens, since the receiving actor would
       // have to accept a message with an actoref that accepts AnyRef or be doing crazy casting
       // For completeness sake though
       implicit val untypedSystem = akka.actor.ActorSystem("AskSpec-untyped-1")

@@ -176,7 +176,7 @@ class DeltaPropagationSelectorSpec extends WordSpec with Matchers with TypeCheck
       selector.collectPropagations() should ===(Map(nodes(0) → expected))
     }
 
-    "calcualte right slice size" in {
+    "calculate right slice size" in {
       val selector = new TestSelector(selfUniqueAddress, nodes)
       selector.nodesSliceSize(0) should ===(0)
       selector.nodesSliceSize(1) should ===(1)
