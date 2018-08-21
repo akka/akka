@@ -98,9 +98,9 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val answer = resolve(name, DnsProtocol.Ip(ipv6 = false))
       withClue(answer) {
         answer.name shouldEqual name
-        answer.results.size shouldEqual 1
-        answer.results.head.name shouldEqual name
-        answer.results.head.asInstanceOf[ARecord].ip shouldEqual InetAddress.getByName("192.168.1.20")
+        answer.records.size shouldEqual 1
+        answer.records.head.name shouldEqual name
+        answer.records.head.asInstanceOf[ARecord].ip shouldEqual InetAddress.getByName("192.168.1.20")
       }
     }
 
@@ -108,7 +108,7 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val name = "a-double.akka.test"
       val answer = resolve(name)
       answer.name shouldEqual name
-      answer.results.map(_.asInstanceOf[ARecord].ip).toSet shouldEqual Set(
+      answer.records.map(_.asInstanceOf[ARecord].ip).toSet shouldEqual Set(
         InetAddress.getByName("192.168.1.21"),
         InetAddress.getByName("192.168.1.22")
       )
@@ -118,14 +118,14 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val name = "aaaa-single.akka.test"
       val answer = resolve(name)
       answer.name shouldEqual name
-      answer.results.map(_.asInstanceOf[AAAARecord].ip) shouldEqual Seq(InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:1"))
+      answer.records.map(_.asInstanceOf[AAAARecord].ip) shouldEqual Seq(InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:1"))
     }
 
     "resolve double AAAA records" in {
       val name = "aaaa-double.akka.test"
       val answer = resolve(name)
       answer.name shouldEqual name
-      answer.results.map(_.asInstanceOf[AAAARecord].ip).toSet shouldEqual Set(
+      answer.records.map(_.asInstanceOf[AAAARecord].ip).toSet shouldEqual Set(
         InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:2"),
         InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:3")
       )
@@ -136,12 +136,12 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val answer = resolve(name)
       answer.name shouldEqual name
 
-      answer.results.collect { case r: ARecord ⇒ r.ip }.toSet shouldEqual Set(
+      answer.records.collect { case r: ARecord ⇒ r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("192.168.1.23"),
         InetAddress.getByName("192.168.1.24")
       )
 
-      answer.results.collect { case r: AAAARecord ⇒ r.ip }.toSet shouldEqual Set(
+      answer.records.collect { case r: AAAARecord ⇒ r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:4"),
         InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:5")
       )
@@ -151,10 +151,10 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val name = "cname-ext.akka.test"
       val answer = (IO(Dns) ? DnsProtocol.Resolve(name)).mapTo[DnsProtocol.Resolved].futureValue
       answer.name shouldEqual name
-      answer.results.collect { case r: CNameRecord ⇒ r.canonicalName }.toSet shouldEqual Set(
+      answer.records.collect { case r: CNameRecord ⇒ r.canonicalName }.toSet shouldEqual Set(
         "a-single.akka.test2"
       )
-      answer.results.collect { case r: ARecord ⇒ r.ip }.toSet shouldEqual Set(
+      answer.records.collect { case r: ARecord ⇒ r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("192.168.2.20")
       )
     }
@@ -163,10 +163,10 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val name = "cname-in.akka.test"
       val answer = resolve(name)
       answer.name shouldEqual name
-      answer.results.collect { case r: CNameRecord ⇒ r.canonicalName }.toSet shouldEqual Set(
+      answer.records.collect { case r: CNameRecord ⇒ r.canonicalName }.toSet shouldEqual Set(
         "a-double.akka.test"
       )
-      answer.results.collect { case r: ARecord ⇒ r.ip }.toSet shouldEqual Set(
+      answer.records.collect { case r: ARecord ⇒ r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("192.168.1.21"),
         InetAddress.getByName("192.168.1.22")
       )
@@ -177,23 +177,23 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
       val answer = resolve("service.tcp.akka.test", Srv)
 
       answer.name shouldEqual name
-      answer.results.collect { case r: SRVRecord ⇒ r }.toSet shouldEqual Set(
+      answer.records.collect { case r: SRVRecord ⇒ r }.toSet shouldEqual Set(
         SRVRecord("service.tcp.akka.test", 86400, 10, 60, 5060, "a-single.akka.test"),
         SRVRecord("service.tcp.akka.test", 86400, 10, 40, 5070, "a-double.akka.test")
       )
     }
 
     "resolve same address twice" in {
-      resolve("a-single.akka.test").results.map(_.asInstanceOf[ARecord].ip) shouldEqual Seq(InetAddress.getByName("192.168.1.20"))
-      resolve("a-single.akka.test").results.map(_.asInstanceOf[ARecord].ip) shouldEqual Seq(InetAddress.getByName("192.168.1.20"))
+      resolve("a-single.akka.test").records.map(_.asInstanceOf[ARecord].ip) shouldEqual Seq(InetAddress.getByName("192.168.1.20"))
+      resolve("a-single.akka.test").records.map(_.asInstanceOf[ARecord].ip) shouldEqual Seq(InetAddress.getByName("192.168.1.20"))
     }
 
     "handle nonexistent domains" in {
       val answer = (IO(Dns) ? DnsProtocol.Resolve("nonexistent.akka.test")).mapTo[DnsProtocol.Resolved].futureValue
-      answer.results shouldEqual List.empty
+      answer.records shouldEqual List.empty
     }
 
-    def resolve(name: String, requestType: RequestType = Ip()) = {
+    def resolve(name: String, requestType: RequestType = Ip()): DnsProtocol.Resolved = {
       (IO(Dns) ? DnsProtocol.Resolve(name, requestType)).mapTo[DnsProtocol.Resolved].futureValue
     }
 
