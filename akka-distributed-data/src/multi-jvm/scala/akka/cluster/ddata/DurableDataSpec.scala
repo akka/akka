@@ -161,7 +161,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
         expectMsg(ReplicaCount(2))
       }
     }
-    enterBarrier("both-initalized")
+    enterBarrier("both-initialized")
 
     r ! Update(KeyA, GCounter(), writeTwo)(_ + 1)
     expectMsg(UpdateSuccess(KeyA, None))

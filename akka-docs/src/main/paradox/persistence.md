@@ -1126,7 +1126,7 @@ A snapshot store plugin can be activated with the following minimal configuratio
 
 The snapshot store instance is an actor so the methods corresponding to requests from persistent actors
 are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
-actors to achive parallelism.
+actors to achieve parallelism.
 
 The snapshot store plugin class must have a constructor with one of these signatures:
 

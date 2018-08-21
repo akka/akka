@@ -138,7 +138,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
       withEmptyActorSystem("ExtensionsSpec06") { system ⇒
         val listedExtensions = system.settings.config.getStringList("akka.actor.typed.library-extensions")
         listedExtensions.size should be > 0
-        // could be initalized by other tests, so at least once
+        // could be initialized by other tests, so at least once
         InstanceCountingExtension.createCount.get() should be > 0
       }
 

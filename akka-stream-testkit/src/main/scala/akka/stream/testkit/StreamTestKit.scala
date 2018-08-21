@@ -432,7 +432,7 @@ object TestSubscriber {
     }
 
     /**
-     * Expect subscription to be followed immediatly by an error signal.
+     * Expect subscription to be followed immediately by an error signal.
      *
      * By default `1` demand will be signalled in order to wake up a possibly lazy upstream.
      *
@@ -443,9 +443,9 @@ object TestSubscriber {
     }
 
     /**
-     * Expect subscription to be followed immediatly by an error signal.
+     * Expect subscription to be followed immediately by an error signal.
      *
-     * Depending on the `signalDemand` parameter demand may be signalled immediatly after obtaining the subscription
+     * Depending on the `signalDemand` parameter demand may be signalled immediately after obtaining the subscription
      * in order to wake up a possibly lazy upstream. You can disable this by setting the `signalDemand` parameter to `false`.
      *
      * See also [[#expectSubscriptionAndError()]].
@@ -499,7 +499,7 @@ object TestSubscriber {
      *
      * Expect subscription followed by immediate stream completion.
      *
-     * Depending on the `signalDemand` parameter demand may be signalled immediatly after obtaining the subscription
+     * Depending on the `signalDemand` parameter demand may be signalled immediately after obtaining the subscription
      * in order to wake up a possibly lazy upstream. You can disable this by setting the `signalDemand` parameter to `false`.
      *
      * See also [[#expectSubscriptionAndComplete]].

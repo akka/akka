@@ -72,7 +72,7 @@ class AllowJavaSerializationOffSpec extends AkkaSpec(
     akka {
       loglevel = debug
       actor {
-        enable-additional-serialization-bindings = off # this should be overriden by the setting below, which should force it to be on
+        enable-additional-serialization-bindings = off # this should be overridden by the setting below, which should force it to be on
         allow-java-serialization = off
         # this is by default on, but tests are running with off, use defaults here
         warn-about-java-serializer-usage = on

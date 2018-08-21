@@ -226,7 +226,7 @@ private[remote] object InboundCompression {
    *
    * @param oldTables is guaranteed to always have at-least one and at-most [[keepOldTables]] elements.
    *                  It starts with containing only a single "disabled" table (versioned as `DecompressionTable.DisabledVersion`),
-   *                  and from there on continiously accumulates at most [[keepOldTables]] recently used tables.
+   *                  and from there on continuously accumulates at most [[keepOldTables]] recently used tables.
    */
   final case class Tables[T](
     oldTables:               List[DecompressionTable[T]],
@@ -485,14 +485,14 @@ private[akka] final class UnknownCompressedIdException(id: Long)
 private[remote] case object NoInboundCompressions extends InboundCompressions {
   override def hitActorRef(originUid: Long, remote: Address, ref: ActorRef, n: Int): Unit = ()
   override def decompressActorRef(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[ActorRef] =
-    if (idx == -1) throw new IllegalArgumentException("Attemted decompression of illegal compression id: -1")
+    if (idx == -1) throw new IllegalArgumentException("Attempted decompression of illegal compression id: -1")
     else OptionVal.None
   override def confirmActorRefCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = ()
   override def runNextActorRefAdvertisement(): Unit = ()
 
   override def hitClassManifest(originUid: Long, remote: Address, manifest: String, n: Int): Unit = ()
   override def decompressClassManifest(originUid: Long, tableVersion: Byte, idx: Int): OptionVal[String] =
-    if (idx == -1) throw new IllegalArgumentException("Attemted decompression of illegal compression id: -1")
+    if (idx == -1) throw new IllegalArgumentException("Attempted decompression of illegal compression id: -1")
     else OptionVal.None
   override def confirmClassManifestCompressionAdvertisement(originUid: Long, tableVersion: Byte): Unit = ()
   override def runNextClassManifestAdvertisement(): Unit = ()

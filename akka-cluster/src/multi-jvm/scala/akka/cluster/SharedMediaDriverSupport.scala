@@ -36,7 +36,7 @@ object SharedMediaDriverSupport {
       require(aeronDir.nonEmpty, "aeron-dir must be defined")
 
       // Check if the media driver is already started by another multi-node jvm.
-      // It checks more than one time with a sleep inbetween. The number of checks
+      // It checks more than one time with a sleep in-between. The number of checks
       // depends on the multi-node index (i).
       @tailrec def isDriverInactive(i: Int): Boolean = {
         if (i < 0) true
