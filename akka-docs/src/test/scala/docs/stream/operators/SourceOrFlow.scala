@@ -26,4 +26,22 @@ object SourceOrFlow {
     //#log
   }
 
+  def conflateExample(): Unit = {
+    //#conflate
+    Source(List(1, 10, 100))
+      .conflate((acc, el) ⇒ acc + el) // acc: Int, el: Int
+    //#conflate
+  }
+
+  def conflateWithSeedExample(): Unit = {
+    //#conflateWithSeed
+    case class NewType(i: Int) {
+      def sum(other: NewType) = NewType(this.i + other.i)
+    }
+
+    Source(List(1, 10, 100))
+      .conflateWithSeed(el ⇒ NewType(el))((acc, el) ⇒ acc sum NewType(el)) // (NewType, Int) => NewType
+    //#conflateWithSeed
+  }
+
 }
