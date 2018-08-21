@@ -9,7 +9,7 @@ import java.util
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.ApiMayChange
 
-import scala.collection.immutable
+import scala.collection.{ immutable ⇒ im }
 import scala.collection.JavaConverters._
 
 /**
@@ -60,12 +60,34 @@ object DnsProtocol {
     def create(name: String, requestType: RequestType): Resolve = Resolve(name, requestType)
   }
 
+  /**
+   * @param name of the record
+   * @param records resource records for the query
+   * @param additionalRecords records that relate to the query but are not strictly answers
+   */
   @ApiMayChange
-  final case class Resolved(name: String, results: immutable.Seq[ResourceRecord]) extends NoSerializationVerificationNeeded {
+  final case class Resolved(name: String, records: im.Seq[ResourceRecord], additionalRecords: im.Seq[ResourceRecord]) extends NoSerializationVerificationNeeded {
     /**
      * Java API
+     *
+     * Records for the query
      */
-    def getResults(): util.List[ResourceRecord] = results.asJava
+    def getRecords(): util.List[ResourceRecord] = records.asJava
+    /**
+     * Java API
+     *
+     * Records that relate to the query but are not strickly answers e.g. A records for the records returned for an SRV query.
+     *
+     */
+    def getAdditionalRecords(): util.List[ResourceRecord] = additionalRecords.asJava
+  }
+
+  @ApiMayChange
+  object Resolved {
+
+    @ApiMayChange
+    def apply(name: String, records: im.Seq[ResourceRecord]): Resolved =
+      new Resolved(name, records, Nil)
   }
 
 }

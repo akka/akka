@@ -74,7 +74,7 @@ private[io] final class AsyncDnsManager(val ext: DnsExt) extends Actor
       val adapted = DnsProtocol.Resolve(name)
       val reply = (resolver ? adapted).mapTo[DnsProtocol.Resolved]
         .map { asyncResolved ⇒
-          val ips = asyncResolved.results.collect { case a: ARecord ⇒ a.ip }
+          val ips = asyncResolved.records.collect { case a: ARecord ⇒ a.ip }
           Dns.Resolved(asyncResolved.name, ips)
         }
       reply pipeTo sender
