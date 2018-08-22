@@ -68,7 +68,7 @@ development of event sourced applications (see section [Event sourcing](#event-s
 <a id="event-sourcing"></a>
 ## Event sourcing
 
-See [here](https://msdn.microsoft.com/en-us/library/jj591559.aspx) for an introduction to EventSourcing, what follows is
+See an [introduction to EventSourcing](https://msdn.microsoft.com/en-us/library/jj591559.aspx), what follows is
 Akka's implementation via persistent actors. 
 
 A persistent actor receives a (non-persistent) command
