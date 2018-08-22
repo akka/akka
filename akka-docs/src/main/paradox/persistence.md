@@ -68,7 +68,10 @@ development of event sourced applications (see section [Event sourcing](#event-s
 <a id="event-sourcing"></a>
 ## Event sourcing
 
-The basic idea behind [Event Sourcing](https://msdn.microsoft.com/en-us/library/jj591559.aspx) is quite simple. A persistent actor receives a (non-persistent) command
+See an [introduction to EventSourcing](https://msdn.microsoft.com/en-us/library/jj591559.aspx), what follows is
+Akka's implementation via persistent actors. 
+
+A persistent actor receives a (non-persistent) command
 which is first validated if it can be applied to the current state. Here validation can mean anything, from simple
 inspection of a command message's fields up to a conversation with several external services, for example.
 If validation succeeds, events are generated from the command, representing the effect of the command. These events
@@ -876,126 +879,6 @@ For more advanced schema evolution techniques refer to the @ref:[Persistence - S
 @@@
 
 <a id="persistent-fsm"></a>
-## Persistent FSM
-
-@scala[`PersistentFSM`]@java[`AbstractPersistentFSM`] handles the incoming messages in an FSM like fashion.
-Its internal state is persisted as a sequence of changes, later referred to as domain events.
-Relationship between incoming messages, FSM's states and transitions, persistence of domain events is defined by a DSL.
-
-### A Simple Example
-
-To demonstrate the features of the @scala[`PersistentFSM` trait]@java[`AbstractPersistentFSM`], consider an actor which represents a Web store customer.
-The contract of our "WebStoreCustomerFSMActor" is that it accepts the following commands:
-
-Scala
-:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-commands }
-
-Java
-:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-commands }
-
-`AddItem` sent when the customer adds an item to a shopping cart
-`Buy` - when the customer finishes the purchase
-`Leave` - when the customer leaves the store without purchasing anything
-`GetCurrentCart` allows to query the current state of customer's shopping cart
-
-The customer can be in one of the following states:
-
-Scala
-:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-states }
-
-Java
-:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-states }
-
-`LookingAround` customer is browsing the site, but hasn't added anything to the shopping cart
-`Shopping` customer has recently added items to the shopping cart
-`Inactive` customer has items in the shopping cart, but hasn't added anything recently
-`Paid` customer has purchased the items
-
-@@@ note
-
-@scala[`PersistentFSM`]@java[`AbstractPersistentFSM`] states must @scala[inherit from trait]@java[implement interface] `PersistentFSM.FSMState` and implement the
-@scala[`def identifier: String`]@java[`String identifier()`] method. This is required in order to simplify the serialization of FSM states.
-String identifiers should be unique!
-
-@@@
-
-Customer's actions are "recorded" as a sequence of "domain events" which are persisted. Those events are replayed on an actor's
-start in order to restore the latest customer's state:
-
-Scala
-:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-domain-events }
-
-Java
-:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-domain-events }
-
-Customer state data represents the items in a customer's shopping cart:
-
-Scala
-:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-states-data }
-
-Java
-:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-states-data }
-
-Here is how everything is wired together:
-
-Scala
-:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-fsm-body }
-
-Java
-:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-fsm-body }
-
-@@@ note
-
-State data can only be modified directly on initialization. Later it's modified only as a result of applying domain events.
-Override the `applyEvent` method to define how state data is affected by domain events, see the example below
-
-@@@
-
-Scala
-:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-apply-event }
-
-Java
-:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-apply-event }
-
-`andThen` can be used to define actions which will be executed following event's persistence - convenient for "side effects" like sending a message or logging.
-Notice that actions defined in `andThen` block are not executed on recovery:
-
-Scala
-:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-andthen-example }
-
-Java
-:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-andthen-example }
-
-A snapshot of state data can be persisted by calling the `saveStateSnapshot()` method:
-
-Scala
-:  @@snip [PersistentFSMSpec.scala]($akka$/akka-persistence/src/test/scala/akka/persistence/fsm/PersistentFSMSpec.scala) { #customer-snapshot-example }
-
-Java
-:  @@snip [AbstractPersistentFSMTest.java]($akka$/akka-persistence/src/test/java/akka/persistence/fsm/AbstractPersistentFSMTest.java) { #customer-snapshot-example }
-
-On recovery state data is initialized according to the latest available snapshot, then the remaining domain events are replayed, triggering the
-`applyEvent` method.
-
-<a id="periodical-snapshot"></a>
-## Periodical snapshot by snapshot-after
-
-You can enable periodical `saveStateSnapshot()` calls in `PersistentFSM` if you turn the following flag on in `reference.conf`
-
-`akka.persistence.fsm.snapshot-after = 1000`
-
-this means `saveStateSnapshot()` is called after the sequence number reaches multiple of 1000.
-
-@@@ note
-
-`saveStateSnapshot()` might not be called exactly at sequence numbers being multiple of the `snapshot-after` configuration value.
-This is because `PersistentFSM` works in a sort of "batch" mode when processing and persisting events, and `saveStateSnapshot()`
-is called only at the end of the "batch". For example, if you set `akka.persistence.fsm.snapshot-after = 1000`,
-it is possible that `saveStateSnapshot()` is called at `lastSequenceNr = 1005, 2003, ... `
-A single batch might persist state transition, also there could be multiple domain events to be persisted
-if you pass them to `applying`  method in the `PersistFSM` DSL.
-
-@@@
 
 <a id="storage-plugins"></a>
 ## Storage plugins
@@ -1058,138 +941,6 @@ akka {
 
 }
 ```
-
-<a id="journal-plugin-api"></a>
-### Journal plugin API
-
-A journal plugin extends `AsyncWriteJournal`.
-
-`AsyncWriteJournal` is an actor and the methods to be implemented are:
-
-Scala
-:  @@snip [AsyncWriteJournal.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/journal/AsyncWriteJournal.scala) { #journal-plugin-api }
-
-Java
-:  @@snip [AsyncWritePlugin.java]($akka$/akka-persistence/src/main/java/akka/persistence/journal/japi/AsyncWritePlugin.java) { #async-write-plugin-api }
-
-If the storage backend API only supports synchronous, blocking writes, the methods should be implemented as:
-
-Scala
-:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #sync-journal-plugin-api }
-
-Java
-:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #sync-journal-plugin-api }
-
-A journal plugin must also implement the methods defined in `AsyncRecovery` for replays and sequence number recovery:
-
-Scala
-:  @@snip [AsyncRecovery.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/journal/AsyncRecovery.scala) { #journal-plugin-api }
-
-Java
-:  @@snip [AsyncRecoveryPlugin.java]($akka$/akka-persistence/src/main/java/akka/persistence/journal/japi/AsyncRecoveryPlugin.java) { #async-replay-plugin-api }
-
-A journal plugin can be activated with the following minimal configuration:
-
-@@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-plugin-config }
-
-The journal plugin instance is an actor so the methods corresponding to requests from persistent actors
-are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
-actors to achieve parallelism.
-
-The journal plugin class must have a constructor with one of these signatures:
-
- * constructor with one `com.typesafe.config.Config` parameter and a `String` parameter for the config path
- * constructor with one `com.typesafe.config.Config` parameter
- * constructor without parameters
-
-The plugin section of the actor system's config will be passed in the config constructor parameter. The config path
-of the plugin is passed in the `String` parameter.
-
-The `plugin-dispatcher` is the dispatcher used for the plugin actor. If not specified, it defaults to
-`akka.persistence.dispatchers.default-plugin-dispatcher`.
-
-Don't run journal tasks/futures on the system default dispatcher, since that might starve other tasks.
-
-### Snapshot store plugin API
-
-A snapshot store plugin must extend the `SnapshotStore` actor and implement the following methods:
-
-Scala
-:  @@snip [SnapshotStore.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/snapshot/SnapshotStore.scala) { #snapshot-store-plugin-api }
-
-Java
-:  @@snip [SnapshotStorePlugin.java]($akka$/akka-persistence/src/main/java/akka/persistence/snapshot/japi/SnapshotStorePlugin.java) { #snapshot-store-plugin-api }
-
-A snapshot store plugin can be activated with the following minimal configuration:
-
-@@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #snapshot-store-plugin-config }
-
-The snapshot store instance is an actor so the methods corresponding to requests from persistent actors
-are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
-actors to achieve parallelism.
-
-The snapshot store plugin class must have a constructor with one of these signatures:
-
- * constructor with one `com.typesafe.config.Config` parameter and a `String` parameter for the config path
- * constructor with one `com.typesafe.config.Config` parameter
- * constructor without parameters
-
-The plugin section of the actor system's config will be passed in the config constructor parameter. The config path
-of the plugin is passed in the `String` parameter.
-
-The `plugin-dispatcher` is the dispatcher used for the plugin actor. If not specified, it defaults to
-`akka.persistence.dispatchers.default-plugin-dispatcher`.
-
-Don't run snapshot store tasks/futures on the system default dispatcher, since that might starve other tasks.
-
-### Plugin TCK
-
-In order to help developers build correct and high quality storage plugins, we provide a Technology Compatibility Kit ([TCK](http://en.wikipedia.org/wiki/Technology_Compatibility_Kit) for short).
-
-The TCK is usable from Java as well as Scala projects. To test your implementation (independently of language) you need to include the akka-persistence-tck dependency:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-persistence-tck_$scala.binary_version$"
-  version="$akka.version$"
-}
-
-To include the Journal TCK tests in your test suite simply extend the provided @scala[`JournalSpec`]@java[`JavaJournalSpec`]:
-
-Scala
-:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-tck-scala }
-
-Java
-:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #journal-tck-java }
-
-Please note that some of the tests are optional, and by overriding the `supports...` methods you give the
-TCK the needed information about which tests to run. You can implement these methods using @scala[boolean values or] the
-provided `CapabilityFlag.on` / `CapabilityFlag.off` values.
-
-We also provide a simple benchmarking class @scala[`JournalPerfSpec`]@java[`JavaJournalPerfSpec`] which includes all the tests that @scala[`JournalSpec`]@java[`JavaJournalSpec`]
-has, and also performs some longer operations on the Journal while printing its performance stats. While it is NOT aimed
-to provide a proper benchmarking environment it can be used to get a rough feel about your journal's performance in the most
-typical scenarios.
-
-In order to include the `SnapshotStore` TCK tests in your test suite extend the `SnapshotStoreSpec`:
-
-Scala
-:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #snapshot-store-tck-scala }
-
-Java
-:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #snapshot-store-tck-java }
-
-In case your plugin requires some setting up (starting a mock database, removing temporary files etc.) you can override the
-`beforeAll` and `afterAll` methods to hook into the tests lifecycle:
-
-Scala
-:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-tck-before-after-scala }
-
-Java
-:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #journal-tck-before-after-java }
-
-We *highly recommend* including these specifications in your test suite, as they cover a broad range of cases you
-might have otherwise forgotten to test for when writing a plugin from scratch.
 
 <a id="pre-packaged-plugins"></a>
 ## Pre-packaged plugins
@@ -1423,3 +1174,8 @@ Scala
 
 Java
 :  @@snip [PersistenceMultiDocTest.java]($code$/java/jdocs/persistence/PersistenceMultiDocTest.java) { #runtime-config }
+
+## See also
+
+* @ref[Persistent FSM](persistence-fsm.md)
+* @ref[Building a new storage backend](persistence-journals.md)
