@@ -16,8 +16,6 @@ import akka.util.HashCode
 private[akka] object ImmutableLongMap {
   def empty[A >: Null](implicit t: ClassTag[A]): ImmutableLongMap[A] =
     new ImmutableLongMap(Array.emptyLongArray, Array.empty)
-
-  private val MaxScanLength = 10
 }
 
 /**

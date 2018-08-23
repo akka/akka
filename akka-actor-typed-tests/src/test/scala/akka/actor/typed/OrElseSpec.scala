@@ -4,10 +4,7 @@
 
 package akka.actor.typed
 
-import scala.util.control.NoStackTrace
-
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import org.scalatest.WordSpecLike
 
