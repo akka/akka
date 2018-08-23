@@ -23,11 +23,7 @@ public class TellPatternJavaActor extends AbstractActor {
     this.breaker = new CircuitBreaker(
       getContext().dispatcher(), getContext().system().scheduler(),
       5, Duration.ofSeconds(10), Duration.ofMinutes(1))
-      .onOpen(new Runnable() {
-        public void run() {
-          notifyMeOnOpen();
-        }
-      });
+      .addOnOpenListener(this::notifyMeOnOpen);
   }
 
   public void notifyMeOnOpen() {

@@ -70,7 +70,7 @@ public class BuncherTest extends AbstractJavaTest {
       final ActorRef probe = getRef();
 
       buncher.tell(new Queue(42), probe);
-      expectNoMsg();
+      expectNoMessage();
       system.stop(buncher);
     }};
   }
