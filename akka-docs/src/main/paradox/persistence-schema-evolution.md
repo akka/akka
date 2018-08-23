@@ -344,7 +344,7 @@ This has two notable *downsides*:
  * first, that the deserialization was actually performed, so we spent some of out time budget on the
 deserialization, even though the event does not contribute anything to the persistent actors state.
  * second, that we are *unable to remove the event class* from the system – since the serializer still needs to create
-the actuall instance of it, as it does not know it will not be used.
+the actual instance of it, as it does not know it will not be used.
 
 The solution to these problems is to use a serializer that is aware of that event being no longer needed, and can notice
 this before starting to deserialize the object.
