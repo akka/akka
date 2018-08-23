@@ -159,7 +159,6 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
       .map(_.name.toUpperCase) // Convert all hashtags to upper case
       .runWith(Sink.foreach(println)) // Attach the Flow to a Sink that will finally print the hashtags
 
-      // $FiddleDependency org.akka-js %%% akkajsactorstream % 1.2.5.1
       //#fiddle_code
       .value
   }
