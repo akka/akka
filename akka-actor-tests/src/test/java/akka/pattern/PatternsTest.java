@@ -119,7 +119,7 @@ public class PatternsTest extends JUnitSuite {
                 .askWithReplyTo(
                         echo,
                         replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
-                        Timeout.apply(3, SECONDS))
+                        Duration.ofSeconds(3))
                 .thenApply(o -> (String)o);
 
         final String actual = response.toCompletableFuture().get(3, SECONDS);
@@ -136,7 +136,8 @@ public class PatternsTest extends JUnitSuite {
                 .askWithReplyTo(
                         echo,
                         replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
-                        3000)
+                        3000
+                )
                 .thenApply(o -> (String)o);
 
         final String actual = response.toCompletableFuture().get(3, SECONDS);
@@ -153,7 +154,8 @@ public class PatternsTest extends JUnitSuite {
                 .askWithReplyTo(
                         selection,
                         replyTo -> new ExplicitAskTestActor.Message(expected, replyTo),
-                        3000)
+                        3000
+                )
                 .thenApply(o -> (String)o);
 
         final String actual = response.toCompletableFuture().get(3, SECONDS);
