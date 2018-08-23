@@ -354,7 +354,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
 
       case ConfigCheckUnsupportedByJoiningNode ⇒
         // handled as Address in initJoinAckToByteArray
-        throw new IllegalStateException("Unexpected ConfigCheckNotSupportedByJoiningNode")
+        throw new IllegalStateException("Unexpected ConfigCheckUnsupportedByJoiningNode")
     }
 
     cm.InitJoinAck.newBuilder().

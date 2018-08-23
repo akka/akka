@@ -536,6 +536,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     val joiningNodeVersion =
       if (joiningNodeConfig.hasPath("akka.version")) joiningNodeConfig.getString("akka.version")
       else "unknown"
+    // When joiningNodeConfig is empty the joining node has version 2.5.9 or earlier.
+    val configCheckUnsupportedByJoiningNode = joiningNodeConfig.isEmpty
 
     val selfStatus = latestGossip.member(selfUniqueAddress).status
 
@@ -557,33 +559,33 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         JoinConfigCompatChecker.filterWithKeys(allowedConfigPaths, context.system.settings.config)
       }
 
-      joinConfigCompatChecker.check(joiningNodeConfig, configWithoutSensitiveKeys) match {
-        case Valid ⇒
-          if (joiningNodeConfig.isEmpty) {
-            // Joining node has version 2.5.9 or earlier.
-            sender() ! InitJoinAck(selfAddress, ConfigCheckUnsupportedByJoiningNode)
-          } else {
-            val nonSensitiveKeys = JoinConfigCompatChecker.removeSensitiveKeys(joiningNodeConfig, cluster.settings)
-            // Send back to joining node a subset of current configuration
-            // containing the keys initially sent by the joining node minus
-            // any sensitive keys as defined by this node configuration
-            val clusterConfig = JoinConfigCompatChecker.filterWithKeys(nonSensitiveKeys, context.system.settings.config)
-            sender() ! InitJoinAck(selfAddress, CompatibleConfig(clusterConfig))
-          }
-        case Invalid(messages) ⇒
-          // messages are only logged on the cluster side
-          log.warning(
-            "Found incompatible settings when [{}] tried to join: {}. " +
-              "Self version [{}], Joining version [{}].",
-            sender().path.address, messages.mkString(", "),
-            context.system.settings.ConfigVersion, joiningNodeVersion)
-          if (joiningNodeConfig.isEmpty) {
-            // Joining node has version 2.5.9 or earlier.
-            sender() ! InitJoinAck(selfAddress, ConfigCheckUnsupportedByJoiningNode)
-          } else {
-            sender() ! InitJoinAck(selfAddress, IncompatibleConfig)
-          }
-      }
+      val configCheckReply =
+        joinConfigCompatChecker.check(joiningNodeConfig, configWithoutSensitiveKeys) match {
+          case Valid ⇒
+            if (configCheckUnsupportedByJoiningNode)
+              ConfigCheckUnsupportedByJoiningNode
+            else {
+              val nonSensitiveKeys = JoinConfigCompatChecker.removeSensitiveKeys(joiningNodeConfig, cluster.settings)
+              // Send back to joining node a subset of current configuration
+              // containing the keys initially sent by the joining node minus
+              // any sensitive keys as defined by this node configuration
+              val clusterConfig = JoinConfigCompatChecker.filterWithKeys(nonSensitiveKeys, context.system.settings.config)
+              CompatibleConfig(clusterConfig)
+            }
+          case Invalid(messages) ⇒
+            // messages are only logged on the cluster side
+            log.warning(
+              "Found incompatible settings when [{}] tried to join: {}. " +
+                "Self version [{}], Joining version [{}].",
+              sender().path.address, messages.mkString(", "),
+              context.system.settings.ConfigVersion, joiningNodeVersion)
+            if (configCheckUnsupportedByJoiningNode)
+              ConfigCheckUnsupportedByJoiningNode
+            else
+              IncompatibleConfig
+        }
+
+      sender() ! InitJoinAck(selfAddress, configCheckReply)
 
     }
   }
