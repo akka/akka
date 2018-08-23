@@ -149,9 +149,8 @@ public class RecipeGlobalRateLimit extends RecipeTest {
         final Flow<T, T, NotUsed> f = Flow.create();
 
         return f.mapAsync(parallelism, element -> {
-          final Timeout triggerTimeout = Timeout.create(maxAllowedWait);
           final CompletionStage<Object> limiterTriggerFuture =
-            PatternsCS.ask(limiter, Limiter.WANT_TO_PASS, triggerTimeout);
+            PatternsCS.ask(limiter, Limiter.WANT_TO_PASS, maxAllowedWait);
           return limiterTriggerFuture.thenApplyAsync(response -> element, system.dispatcher());
         });
       }
