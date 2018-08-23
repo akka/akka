@@ -161,6 +161,9 @@ object Behaviors {
     onSignal:  (ActorContext[T], Signal) ⇒ Unit): Behavior[T] =
     BehaviorImpl.tap(onMessage, onSignal, behavior)
 
+  def pre[T](preBehavior: Behavior[T], behavior: Behavior[T]): Behavior[T] =
+    BehaviorImpl.pre(preBehavior, behavior)
+
   /**
    * Behavior decorator that copies all received message to the designated
    * monitor [[akka.actor.typed.ActorRef]] before invoking the wrapped behavior. The
