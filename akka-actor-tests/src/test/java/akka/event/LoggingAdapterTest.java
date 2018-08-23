@@ -19,11 +19,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
-import scala.concurrent.duration.Duration;
-import scala.util.control.NoStackTrace;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -145,7 +143,7 @@ public class LoggingAdapterTest extends JUnitSuite {
         }
 
         void expectLog(final Object level, final String message, final Throwable cause, final String mdc) {
-            expectMsgPF(Duration.create(3, TimeUnit.SECONDS), "LogEvent", event -> {
+            expectMsgPF(Duration.ofSeconds(3), "LogEvent", event -> {
                 LogEvent log = (LogEvent) event;
                 assertEquals(message, log.message());
                 assertEquals(level, log.level());
