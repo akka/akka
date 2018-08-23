@@ -99,6 +99,13 @@ private[cluster] object InternalClusterAction {
   sealed trait ConfigCheck
   case object UncheckedConfig extends ConfigCheck
   case object IncompatibleConfig extends ConfigCheck
+  /**
+   * Node with version 2.5.9 or earlier is joining. The serialized
+   * representation of `InitJoinAck` must be a plain `Address` for
+   * such a joining node.
+   */
+  case object ConfigCheckUnsupportedByJoiningNode extends ConfigCheck
+
   final case class CompatibleConfig(clusterConfig: Config) extends ConfigCheck
 
   /**
@@ -526,13 +533,22 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   }
 
   def initJoin(joiningNodeConfig: Config): Unit = {
+    val joiningNodeVersion =
+      if (joiningNodeConfig.hasPath("akka.version")) joiningNodeConfig.getString("akka.version")
+      else "unknown"
+    // When joiningNodeConfig is empty the joining node has version 2.5.9 or earlier.
+    val configCheckUnsupportedByJoiningNode = joiningNodeConfig.isEmpty
+
     val selfStatus = latestGossip.member(selfUniqueAddress).status
+
     if (removeUnreachableWithMemberStatus.contains(selfStatus)) {
       // prevents a Down and Exiting node from being used for joining
-      logInfo("Sending InitJoinNack message from node [{}] to [{}]", selfAddress, sender())
+      logInfo("Sending InitJoinNack message from node [{}] to [{}] (version [{}])", selfAddress, sender(),
+        joiningNodeVersion)
       sender() ! InitJoinNack(selfAddress)
     } else {
-      logInfo("Sending InitJoinAck message from node [{}] to [{}]", selfAddress, sender())
+      logInfo("Sending InitJoinAck message from node [{}] to [{}] (version [{}])", selfAddress, sender(),
+        joiningNodeVersion)
       // run config compatibility check using config provided by
       // joining node and current (full) config on cluster side
 
@@ -543,19 +559,33 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         JoinConfigCompatChecker.filterWithKeys(allowedConfigPaths, context.system.settings.config)
       }
 
-      joinConfigCompatChecker.check(joiningNodeConfig, configWithoutSensitiveKeys) match {
-        case Valid ⇒
-          val nonSensitiveKeys = JoinConfigCompatChecker.removeSensitiveKeys(joiningNodeConfig, cluster.settings)
-          // Send back to joining node a subset of current configuration
-          // containing the keys initially sent by the joining node minus
-          // any sensitive keys as defined by this node configuration
-          val clusterConfig = JoinConfigCompatChecker.filterWithKeys(nonSensitiveKeys, context.system.settings.config)
-          sender() ! InitJoinAck(selfAddress, CompatibleConfig(clusterConfig))
-        case Invalid(messages) ⇒
-          // messages are only logged on the cluster side
-          log.warning("Found incompatible settings when [{}] tried to join: {}", sender().path.address, messages.mkString(", "))
-          sender() ! InitJoinAck(selfAddress, IncompatibleConfig)
-      }
+      val configCheckReply =
+        joinConfigCompatChecker.check(joiningNodeConfig, configWithoutSensitiveKeys) match {
+          case Valid ⇒
+            if (configCheckUnsupportedByJoiningNode)
+              ConfigCheckUnsupportedByJoiningNode
+            else {
+              val nonSensitiveKeys = JoinConfigCompatChecker.removeSensitiveKeys(joiningNodeConfig, cluster.settings)
+              // Send back to joining node a subset of current configuration
+              // containing the keys initially sent by the joining node minus
+              // any sensitive keys as defined by this node configuration
+              val clusterConfig = JoinConfigCompatChecker.filterWithKeys(nonSensitiveKeys, context.system.settings.config)
+              CompatibleConfig(clusterConfig)
+            }
+          case Invalid(messages) ⇒
+            // messages are only logged on the cluster side
+            log.warning(
+              "Found incompatible settings when [{}] tried to join: {}. " +
+                "Self version [{}], Joining version [{}].",
+              sender().path.address, messages.mkString(", "),
+              context.system.settings.ConfigVersion, joiningNodeVersion)
+            if (configCheckUnsupportedByJoiningNode)
+              ConfigCheckUnsupportedByJoiningNode
+            else
+              IncompatibleConfig
+        }
+
+      sender() ! InitJoinAck(selfAddress, configCheckReply)
 
     }
   }
