@@ -273,8 +273,6 @@ object BehaviorSpec {
   }
 
   trait Become extends Common with Unhandled {
-    private implicit val inbox = TestInbox[State]("state")
-
     "Becoming" must {
       "must be in state A" in {
         mkCtx().check(GetState()(StateA))

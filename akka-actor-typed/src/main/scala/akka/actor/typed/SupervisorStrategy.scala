@@ -4,8 +4,6 @@
 
 package akka.actor.typed
 
-import java.time
-
 import akka.annotation.InternalApi
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration.Duration

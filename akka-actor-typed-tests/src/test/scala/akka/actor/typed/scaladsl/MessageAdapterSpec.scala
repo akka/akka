@@ -9,7 +9,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.Props
-import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.TestException
 import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.testkit.EventFilter

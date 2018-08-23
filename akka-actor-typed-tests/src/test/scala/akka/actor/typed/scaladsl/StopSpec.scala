@@ -6,9 +6,8 @@ package akka.actor.typed.scaladsl
 
 import akka.Done
 import akka.actor.testkit.typed.TE
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-import akka.actor.typed.{ Behavior, PostStop, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
-import akka.testkit.EventFilter
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.typed.{ PostStop, TypedAkkaSpecWithShutdown }
 
 import scala.concurrent.Promise
 
