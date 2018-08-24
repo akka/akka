@@ -304,24 +304,14 @@ class FlowMapAsyncSpec extends StreamSpec {
       c.expectComplete()
     }
 
-    "signal NPE when future is completed with null" in {
-      val c = TestSubscriber.manualProbe[String]()
-      val p = Source(List("a", "b")).mapAsync(4)(elem ⇒ Future.successful(null)).to(Sink.fromSubscriber(c)).run()
-      val sub = c.expectSubscription()
-      sub.request(10)
-      c.expectError().getMessage should be(ReactiveStreamsCompliance.ElementMustNotBeNullMsg)
-    }
+    "ignore element when future is completed with null" in {
+      val flow = Flow[Int].mapAsync[String](2) {
+        case 2 ⇒ Future.successful(null)
+        case x ⇒ Future.successful(x.toString)
+      }
+      val result = Source(List(1, 2, 3)).via(flow).runWith(Sink.seq)
 
-    "resume when future is completed with null" in {
-      val c = TestSubscriber.manualProbe[String]()
-      val p = Source(List("a", "b", "c"))
-        .mapAsync(4)(elem ⇒ if (elem == "b") Future.successful(null) else Future.successful(elem))
-        .withAttributes(supervisionStrategy(resumingDecider))
-        .to(Sink.fromSubscriber(c)).run()
-      val sub = c.expectSubscription()
-      sub.request(10)
-      for (elem ← List("a", "c")) c.expectNext(elem)
-      c.expectComplete()
+      result.futureValue should ===(Seq("1", "3"))
     }
 
     "should handle cancel properly" in assertAllStagesStopped {
