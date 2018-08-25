@@ -16,14 +16,26 @@ import akka.event.LoggingAdapter;
 
 public class SimpleClusterListener2 extends AbstractActor {
   LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+  //#join
   Cluster cluster = Cluster.get(getContext().getSystem());
+  //#join
 
   //subscribe to cluster changes
   @Override
   public void preStart() {
+    //#join
+    cluster.join(cluster.selfAddress());
+    //#join
+
     //#subscribe
     cluster.subscribe(getSelf(), MemberEvent.class, UnreachableMember.class);
     //#subscribe
+
+    //#register-on-memberup
+    cluster.registerOnMemberUp(
+      () -> cluster.subscribe(getSelf(), MemberEvent.class, UnreachableMember.class)
+    );
+    //#register-on-memberup
   }
 
   //re-subscribe when restart
