@@ -678,7 +678,7 @@ public class FutureDocTest extends AbstractJavaTest {
     //#after
     final ExecutionContext ec = system.dispatcher();
     Future<String> failExc = Futures.failed(new IllegalStateException("OHNOES1"));
-    Timeout delay = Timeout.create(Duration.ofSeconds(200));
+    Timeout delay = Timeout.create(Duration.ofMillis(200));
     Future<String> delayed = Patterns.after(delay.duration(),
       system.scheduler(), ec,  failExc);
     Future<String> future = future(new Callable<String>() {
