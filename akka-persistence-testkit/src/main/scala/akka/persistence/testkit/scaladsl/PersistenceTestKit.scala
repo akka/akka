@@ -102,7 +102,7 @@ class SnapshotTestKit(override val storage: TestKitStorage[(SnapshotMetadata, An
   import SnapShotStorageEmulator._
   import SnapshotTestKit._
 
-  private val settings = SettingsExtension(system)
+  private val settings = Settings(system)
 
   override private[testkit] val pollInterval: FiniteDuration = settings.pollInterval
 
@@ -134,12 +134,14 @@ class SnapshotTestKit(override val storage: TestKitStorage[(SnapshotMetadata, An
 
 object SnapshotTestKit {
 
-  object SettingsExtension extends ExtensionId[Settings] {
+  object Settings extends ExtensionId[Settings] {
 
-    import Settings._
+    val configPath = "akka.persistence.testkit.snapshots"
 
     override def createExtension(system: ExtendedActorSystem): Settings =
       new Settings(system.settings.config.getConfig(configPath))
+
+    override def get(system: ActorSystem): Settings = super.get(system)
 
   }
 
@@ -150,10 +152,6 @@ object SnapshotTestKit {
     val assertTimeout: FiniteDuration = config.getMillisDuration("assert-timeout")
     val pollInterval: FiniteDuration = config.getMillisDuration("assert-poll-interval")
 
-  }
-
-  object Settings {
-    val configPath = "akka.persistence.testkit.snapshots"
   }
 
 }
@@ -170,7 +168,7 @@ class PersistenceTestKit(override val storage: TestKitStorage[PersistentRepr, Jo
 
   implicit private lazy val ec = system.dispatcher
 
-  private final lazy val settings = SettingsExtension(system)
+  private final lazy val settings = Settings(system)
 
   override private[testkit] val Policies = InMemStorageEmulator.JournalPolicies
 
@@ -239,9 +237,11 @@ class PersistenceTestKit(override val storage: TestKitStorage[PersistentRepr, Jo
 
 object PersistenceTestKit {
 
-  object SettingsExtension extends ExtensionId[Settings] {
+  object Settings extends ExtensionId[Settings] {
 
-    import Settings._
+    val configPath = "akka.persistence.testkit.messages"
+
+    override def get(system: ActorSystem): Settings = super.get(system)
 
     override def createExtension(system: ExtendedActorSystem): Settings =
       new Settings(system.settings.config.getConfig(configPath))
@@ -255,10 +255,6 @@ object PersistenceTestKit {
     val assertTimeout: FiniteDuration = config.getMillisDuration("assert-timeout")
     val pollInterval: FiniteDuration = config.getMillisDuration("assert-poll-interval")
 
-  }
-
-  object Settings {
-    val configPath = "akka.persistence.testkit.messages"
   }
 
 }

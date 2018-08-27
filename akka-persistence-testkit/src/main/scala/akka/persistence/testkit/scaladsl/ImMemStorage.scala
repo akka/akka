@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.{ BiFunction, Consumer }
 
-import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.persistence.testkit.scaladsl.InMemStorageEmulator.JournalOperation
 import akka.persistence.testkit.scaladsl.ProcessingPolicy._
 import akka.persistence.testkit.scaladsl.SnapShotStorageEmulator._
@@ -333,6 +333,8 @@ class SnapShotStorageEmulatorExtension extends SnapShotStorageEmulator with Exte
 
 object SnapShotStorageEmulatorExtension extends ExtensionId[SnapShotStorageEmulatorExtension] with ExtensionIdProvider {
 
+  override def get(system: ActorSystem): SnapShotStorageEmulatorExtension = super.get(system)
+
   override def createExtension(system: ExtendedActorSystem): SnapShotStorageEmulatorExtension = new SnapShotStorageEmulatorExtension
 
   override def lookup(): ExtensionId[_ <: Extension] = SnapShotStorageEmulatorExtension
@@ -341,6 +343,8 @@ object SnapShotStorageEmulatorExtension extends ExtensionId[SnapShotStorageEmula
 class InMemEmulatorExtension extends InMemStorageEmulator with Extension
 
 object InMemStorageExtension extends ExtensionId[InMemEmulatorExtension] with ExtensionIdProvider {
+
+  override def get(system: ActorSystem): InMemEmulatorExtension = super.get(system)
 
   override def createExtension(system: ExtendedActorSystem) = new InMemEmulatorExtension
 

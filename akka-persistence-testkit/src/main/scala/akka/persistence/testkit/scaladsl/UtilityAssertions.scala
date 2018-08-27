@@ -43,21 +43,26 @@ trait UtilityAssertions {
     poll(max min interval)
   }
 
-  def assertCondition(a: ⇒ Boolean, max: FiniteDuration, interval: Duration = 100.millis): Unit = {
+  def assertForDuration[A](a: ⇒ A, max: FiniteDuration, interval: Duration = 100.millis): A = {
     val stop = now + max
 
     @tailrec
-    def poll(t: Duration): Unit = {
+    def poll(t: Duration): A = {
       // cannot use null-ness of result as signal it failed
       // because Java API and not wanting to return a value will be "return null"
-      val result: Boolean = a
       val instantNow = now
+      val result =
+        try {
+          a
+        } catch {
+          case e: Throwable ⇒ throw e
+        }
 
-      if (result && instantNow < stop) {
+      if (instantNow < stop) {
         Thread.sleep(t.toMillis)
         poll((stop - now) min interval)
-      } else if (!result) {
-        throw new AssertionError("Assert condition failed")
+      } else {
+        result
       }
     }
 

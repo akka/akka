@@ -95,11 +95,10 @@ trait ExpectOps[U] { this: HasStorage[U, _] ⇒
 
   def expectNothingPersisted(persistenceId: String, max: FiniteDuration): Unit = {
     val nextInd = nextIndexByPersistenceId.getOrElse(persistenceId, 0)
-    assertCondition({
+    assertForDuration({
       val actual = storage.findOneByIndex(persistenceId, nextInd).map(reprToAny)
       val res = actual.isEmpty
       assert(res, s"Found persisted message $actual, but expected None instead")
-      res
     }, max = max, interval = pollInterval)
   }
 
