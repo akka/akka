@@ -172,8 +172,8 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
 
   /**
    * default strategy with maximum number of retries.
-    * @param maxNrOfRetries the number of times a child actor is allowed to be restarted, negative value means no limit,
-    *  if the limit is exceeded the child actor is stopped
+   * @param maxNrOfRetries the number of times a child actor is allowed to be restarted, negative value means no limit,
+   *  if the limit is exceeded the child actor is stopped
    */
   def defaultStrategyWithMaxNrOfRetries(maxNrOfRetries: Int): SupervisorStrategy = {
     OneForOneStrategy(maxNrOfRetries)(defaultDecider)
