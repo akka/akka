@@ -40,7 +40,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
       Set("create", "apply", "ops", "appendJava", "andThen", "andThenMat", "isIdentity", "withAttributes", "transformMaterializing") ++
       Set("asScala", "asJava", "deprecatedAndThen", "deprecatedAndThenMat")
 
-  val graphHelpers = Set("zipGraph", "zipWithGraph", "mergeGraph", "mergeSortedGraph", "interleaveGraph", "concatGraph", "prependGraph", "alsoToGraph", "wireTapGraph", "orElseGraph", "divertToGraph")
+  val graphHelpers = Set("zipGraph", "zipWithGraph", "zipLatestGraph", "zipLatestWithGraph", "mergeGraph", "mergeSortedGraph", "interleaveGraph", "concatGraph", "prependGraph", "alsoToGraph", "wireTapGraph", "orElseGraph", "divertToGraph")
 
   val allowMissing: Map[Class[_], Set[String]] = Map(
     jFlowClass → graphHelpers,

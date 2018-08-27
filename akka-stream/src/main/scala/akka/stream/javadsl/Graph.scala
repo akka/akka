@@ -350,6 +350,35 @@ object Zip {
 }
 
 /**
+ * Combine the elements of 2 streams into a stream of tuples, picking always the latest element of each.
+ *
+ * A `Zip` has a `left` and a `right` input port and one `out` port
+ *
+ * '''Emits when''' all of the inputs have at least an element available, and then each time an element becomes
+ *                  available on either of the inputs
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' any upstream completes
+ *
+ * '''Cancels when''' downstream cancels
+ */
+object ZipLatest {
+  import akka.japi.function.Function2
+  import akka.japi.Pair
+
+  /**
+   * Create a new `ZipLatest` operator with the specified input types and zipping-function
+   * which creates `akka.japi.Pair`s.
+   */
+  def create[A, B]: Graph[FanInShape2[A, B, A Pair B], NotUsed] =
+    ZipLatestWith.create(_toPair.asInstanceOf[Function2[A, B, A Pair B]])
+
+  private[this] final val _toPair: Function2[Any, Any, Any Pair Any] =
+    new Function2[Any, Any, Any Pair Any] { override def apply(a: Any, b: Any): Any Pair Any = new Pair(a, b) }
+}
+
+/**
  * Combine the elements of multiple streams into a stream of lists.
  *
  * A `ZipN` has a `n` input ports and one `out` port
