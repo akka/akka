@@ -4,7 +4,9 @@
 
 package akka.remote
 
+import java.io.ByteArrayOutputStream
 import java.security.NoSuchAlgorithmException
+import java.util.zip.GZIPOutputStream
 
 import akka.actor._
 import akka.event.NoMarkerLogging
@@ -54,7 +56,8 @@ object Configuration {
     }
                      """
 
-  final case class CipherConfig(runTest: Boolean, config: Config, cipher: String, localPort: Int, remotePort: Int)
+  final case class CipherConfig(runTest: Boolean, config: Config, cipher: String, localPort: Int, remotePort: Int,
+                                provider: Option[ConfigSSLEngineProvider])
 
   def getCipherConfig(cipher: String, enabled: String*): CipherConfig = {
     val localPort, remotePort = { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
@@ -69,7 +72,10 @@ object Configuration {
       val rng = sslEngineProvider.createSecureRandom()
 
       rng.nextInt() // Has to work
-      val sRng = settings.SSLRandomNumberGenerator
+      val sRng = settings.SSLRandomNumberGenerator match {
+        case "AES128CounterSecureRNG" | "AES256CounterSecureRNG" ⇒ ""
+        case other ⇒ other
+      }
       if (rng.getAlgorithm != sRng && sRng != "")
         throw new NoSuchAlgorithmException(sRng)
 
@@ -81,9 +87,10 @@ object Configuration {
       engine.getSupportedProtocols.contains(settings.SSLProtocol) ||
         (throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol))
 
-      CipherConfig(true, config, cipher, localPort, remotePort)
+      CipherConfig(true, config, cipher, localPort, remotePort, Some(sslEngineProvider))
     } catch {
-      case (_: IllegalArgumentException) | (_: NoSuchAlgorithmException) ⇒ CipherConfig(false, AkkaSpec.testConf, cipher, localPort, remotePort) // Cannot match against the message since the message might be localized :S
+      case _: IllegalArgumentException | _: NoSuchAlgorithmException ⇒
+        CipherConfig(false, AkkaSpec.testConf, cipher, localPort, remotePort, None) // Cannot match against the message since the message might be localized :S
     }
   }
 }
@@ -92,13 +99,17 @@ class Ticket1978SHA1PRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig
 
 class Ticket1978AES128CounterSecureRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterSecureRNG", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"))
 
+class Ticket1978DeprecatedAES128CounterSecureRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("DeprecatedAES128CounterSecureRNG", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"))
+
 class Ticket1978AES256CounterSecureRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES256CounterSecureRNG", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"))
+
+class Ticket1978DeprecatedAES256CounterSecureRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("DeprecatedAES256CounterSecureRNG", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"))
 
 class Ticket1978DefaultRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("", "TLS_RSA_WITH_AES_128_CBC_SHA"))
 
 class Ticket1978CrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec extends Ticket1978CommunicationSpec(getCipherConfig("", "SSL_RSA_WITH_NULL_MD5"))
 
-class Ticket1978NonExistingRNGSecureSpec extends Ticket1978CommunicationSpec(CipherConfig(false, AkkaSpec.testConf, "NonExistingRNG", 12345, 12346))
+class Ticket1978NonExistingRNGSecureSpec extends Ticket1978CommunicationSpec(CipherConfig(false, AkkaSpec.testConf, "NonExistingRNG", 12345, 12346, None))
 
 abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) extends AkkaSpec(cipherConfig.config) with ImplicitSender {
 
@@ -120,6 +131,38 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
     if (cipherConfig.runTest && preCondition) {
       val ignoreMe = other.actorOf(Props(new Actor { def receive = { case ("ping", x) ⇒ sender() ! ((("pong", x), sender())) } }), "echo")
       val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress
+
+      "generate random" in {
+        val rng = cipherConfig.provider.get.createSecureRandom()
+        val bytes = Array.ofDim[Byte](16)
+        // awaitAssert just in case we are very unlucky to get same sequence more than once
+        awaitAssert {
+          val randomBytes = (1 to 10).map { n ⇒
+            rng.nextBytes(bytes)
+            bytes.toVector
+          }.toSet
+          randomBytes.size should ===(10)
+        }
+      }
+
+      "have random numbers that are not compressable, because then they are not random" in {
+        val provider = new ConfigSSLEngineProvider(system)
+        val rng = provider.createSecureRandom()
+
+        val randomData = new Array[Byte](1024 * 1024)
+        rng.nextBytes(randomData)
+
+        val baos = new ByteArrayOutputStream()
+        val gzipped = new GZIPOutputStream(baos)
+        try gzipped.write(randomData)
+        finally gzipped.close()
+
+        val compressed = baos.toByteArray
+        // random data should not be compressible
+        // Another reproducer of https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html
+        // with the broken implementation the compressed size was <5k
+        compressed.size should be > randomData.length
+      }
 
       "support tell" in within(timeout.duration) {
         val here = {

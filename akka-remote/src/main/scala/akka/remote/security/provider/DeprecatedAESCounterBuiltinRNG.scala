@@ -17,6 +17,11 @@ import scala.concurrent.{ Await, ExecutionContext, Future, duration }
 
 /**
  * INTERNAL API
+ *
+ * We cannot prove that this code is correct and it will therefore be removed
+ * with AES128CounterSecureRNG and AES256CounterSecureRNG. See security
+ * vulnerability https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html
+ *
  * This class is a Scala implementation of AESCounterRNG algorithm
  * patterned after org.uncommons.maths.random by Daniel Dyer (Apache License 2.0)
  *
@@ -32,10 +37,10 @@ import scala.concurrent.{ Await, ExecutionContext, Future, duration }
  * NOTE: this class is not serializable
  */
 @InternalApi
-private[akka] class AESCounterBuiltinRNG(val seed: Array[Byte], implicit val executionContext: ExecutionContext,
-                                         val reseedingThreshold: Long     = CounterRNGConstants.ReseedingThreshold,
-                                         val reseedingDeadline:  Long     = CounterRNGConstants.ReseedingDeadline,
-                                         val reseedingTimeout:   Duration = CounterRNGConstants.ReseedingTimeout) extends Random {
+private[akka] class DeprecatedAESCounterBuiltinRNG(val seed: Array[Byte], implicit val executionContext: ExecutionContext,
+                                                   val reseedingThreshold: Long     = CounterRNGConstants.ReseedingThreshold,
+                                                   val reseedingDeadline:  Long     = CounterRNGConstants.ReseedingDeadline,
+                                                   val reseedingTimeout:   Duration = CounterRNGConstants.ReseedingTimeout) extends Random {
   import CounterRNGConstants._
 
   private val entropySource = new SecureRandom
