@@ -7,15 +7,8 @@ package akka.pattern
 import java.util.concurrent.ThreadLocalRandom
 import java.util.Optional
 
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.DeadLetterSuppression
-import akka.actor.Props
-import akka.actor.Terminated
-import akka.actor.SupervisorStrategy.Directive
-import akka.actor.SupervisorStrategy.Escalate
-import akka.actor.OneForOneStrategy
-import akka.actor.SupervisorStrategy
+import akka.actor.{ Actor, ActorLogging, ActorRef, DeadLetterSuppression, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
+import akka.actor.SupervisorStrategy.{ Directive, Escalate, Restart, Stop }
 import akka.util.JavaDurationConverters._
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -46,7 +39,7 @@ object BackoffSupervisor {
     minBackoff:   FiniteDuration,
     maxBackoff:   FiniteDuration,
     randomFactor: Double): Props = {
-    propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, -1, SupervisorStrategy.defaultStrategy)
+    propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, SupervisorStrategy.defaultStrategy)
   }
 
   /**
@@ -65,17 +58,18 @@ object BackoffSupervisor {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
-   * @param maxRestartAttempts maximum number of attempts to restart the child actor.
-   *   In order to restart infinitely pass in `-1`
+   * @param maxNrOfRetries maximum number of attempts to restart the child actor.
+   *   The supervisor will terminate itself after the maxNoOfRetries is reached.
+   *   In order to restart infinitely pass in `-1`.
    */
   def props(
-    childProps:         Props,
-    childName:          String,
-    minBackoff:         FiniteDuration,
-    maxBackoff:         FiniteDuration,
-    randomFactor:       Double,
-    maxRestartAttempts: Int): Props = {
-    propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, maxRestartAttempts, SupervisorStrategy.defaultStrategy)
+    childProps:     Props,
+    childName:      String,
+    minBackoff:     FiniteDuration,
+    maxBackoff:     FiniteDuration,
+    randomFactor:   Double,
+    maxNrOfRetries: Int): Props = {
+    propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, SupervisorStrategy.defaultStrategyWithMaxNrOfRetries(maxNrOfRetries))
   }
 
   /**
@@ -120,55 +114,18 @@ object BackoffSupervisor {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
-   * @param maxRestartAttempts maximum number of attempts to restart the child actor.
-   *   In order to restart infinitely pass in `-1`
+   * @param maxNrOfRetries maximum number of attempts to restart the child actor.
+   *   The supervisor will terminate itself after the maxNoOfRetries is reached.
+   *   In order to restart infinitely pass in `-1`.
    */
   def props(
-    childProps:         Props,
-    childName:          String,
-    minBackoff:         java.time.Duration,
-    maxBackoff:         java.time.Duration,
-    randomFactor:       Double,
-    maxRestartAttempts: Int): Props = {
-    props(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRestartAttempts)
-  }
-
-  /**
-   * Props for creating a [[BackoffSupervisor]] actor with a custom
-   * supervision strategy.
-   *
-   * Exceptions in the child are handled with the given `supervisionStrategy`. A
-   * `Restart` will perform a normal immediate restart of the child. A `Stop` will
-   * stop the child, but it will be started again after the back-off duration.
-   *
-   * @param childProps the [[akka.actor.Props]] of the child actor that
-   *   will be started and supervised
-   * @param childName name of the child actor
-   * @param minBackoff minimum (initial) duration until the child actor will
-   *   started again, if it is terminated
-   * @param maxBackoff the exponential back-off is capped to this duration
-   * @param randomFactor after calculation of the exponential back-off an additional
-   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
-   *   In order to skip this additional delay pass in `0`.
-   * @param strategy the supervision strategy to use for handling exceptions
-   *   in the child. As the BackoffSupervisor creates a separate actor to handle the
-   *   backoff process, only a [[OneForOneStrategy]] makes sense here.
-   * @param maxRestartAttempts maximum number of attempts to restart the child actor.
-   *   In order to restart infinitely pass in `-1`
-   */
-  def propsWithSupervisorStrategy(
-    childProps:         Props,
-    childName:          String,
-    minBackoff:         FiniteDuration,
-    maxBackoff:         FiniteDuration,
-    randomFactor:       Double,
-    maxRestartAttempts: Int,
-    strategy:           SupervisorStrategy): Props = {
-    require(minBackoff > Duration.Zero, "minBackoff must be > 0")
-    require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
-    require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
-    require(maxRestartAttempts > 0 || maxRestartAttempts == -1, "maxRestartAttempts must either be positive or -1")
-    Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, maxRestartAttempts, strategy, None))
+    childProps:     Props,
+    childName:      String,
+    minBackoff:     java.time.Duration,
+    maxBackoff:     java.time.Duration,
+    randomFactor:   Double,
+    maxNrOfRetries: Int): Props = {
+    props(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, maxNrOfRetries)
   }
 
   /**
@@ -199,41 +156,7 @@ object BackoffSupervisor {
     maxBackoff:   FiniteDuration,
     randomFactor: Double,
     strategy:     SupervisorStrategy): Props = {
-    propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, -1, strategy)
-  }
-
-  /**
-   * Props for creating a [[BackoffSupervisor]] actor with a custom
-   * supervision strategy.
-   *
-   * Exceptions in the child are handled with the given `supervisionStrategy`. A
-   * `Restart` will perform a normal immediate restart of the child. A `Stop` will
-   * stop the child, but it will be started again after the back-off duration.
-   *
-   * @param childProps the [[akka.actor.Props]] of the child actor that
-   *   will be started and supervised
-   * @param childName name of the child actor
-   * @param minBackoff minimum (initial) duration until the child actor will
-   *   started again, if it is terminated
-   * @param maxBackoff the exponential back-off is capped to this duration
-   * @param randomFactor after calculation of the exponential back-off an additional
-   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
-   *   In order to skip this additional delay pass in `0`.
-   * @param strategy the supervision strategy to use for handling exceptions
-   *   in the child. As the BackoffSupervisor creates a separate actor to handle the
-   *   backoff process, only a [[OneForOneStrategy]] makes sense here.
-   * @param maxRestartAttempts maximum number of attempts to restart the child actor.
-   *   In order to restart infinitely pass in `-1`
-   */
-  def propsWithSupervisorStrategy(
-    childProps:         Props,
-    childName:          String,
-    minBackoff:         java.time.Duration,
-    maxBackoff:         java.time.Duration,
-    randomFactor:       Double,
-    maxRestartAttempts: Int,
-    strategy:           SupervisorStrategy): Props = {
-    propsWithSupervisorStrategy(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRestartAttempts, strategy)
+    propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, strategy)
   }
 
   /**
@@ -264,7 +187,7 @@ object BackoffSupervisor {
     maxBackoff:   java.time.Duration,
     randomFactor: Double,
     strategy:     SupervisorStrategy): Props = {
-    propsWithSupervisorStrategy(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, -1, strategy)
+    propsWithSupervisorStrategy(childProps, childName, minBackoff.asScala, maxBackoff.asScala, randomFactor, strategy)
   }
 
   /**
@@ -360,10 +283,10 @@ final class BackoffSupervisor(
   maxBackoff:            FiniteDuration,
   val reset:             BackoffReset,
   randomFactor:          Double,
-  maxRestartAttempts:    Int,
   strategy:              SupervisorStrategy,
   val replyWhileStopped: Option[Any])
-  extends Actor with HandleBackoff {
+  extends Actor with HandleBackoff
+  with ActorLogging {
 
   import BackoffSupervisor._
   import context.dispatcher
@@ -381,18 +304,6 @@ final class BackoffSupervisor(
     case s ⇒ s
   }
 
-  // for binary compatibility with 2.5.14
-  def this(
-    childProps:         Props,
-    childName:          String,
-    minBackoff:         FiniteDuration,
-    maxBackoff:         FiniteDuration,
-    reset:              BackoffReset,
-    randomFactor:       Double,
-    supervisorStrategy: SupervisorStrategy,
-    replyWhileStopped:  Option[Any]) =
-    this(childProps, childName, minBackoff, maxBackoff, reset, randomFactor, -1, supervisorStrategy, replyWhileStopped)
-
   // for binary compatibility with 2.4.1
   def this(
     childProps:         Props,
@@ -401,7 +312,7 @@ final class BackoffSupervisor(
     maxBackoff:         FiniteDuration,
     randomFactor:       Double,
     supervisorStrategy: SupervisorStrategy) =
-    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, -1, supervisorStrategy, None)
+    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, supervisorStrategy, None)
 
   // for binary compatibility with 2.4.0
   def this(
@@ -415,10 +326,20 @@ final class BackoffSupervisor(
   def onTerminated: Receive = {
     case Terminated(ref) if child.contains(ref) ⇒
       child = None
-      if (maxRestartAttempts == -1 || restartCount < maxRestartAttempts) {
+      val maxNrOfRetries = strategy match {
+        case oneForOne: OneForOneStrategy ⇒ oneForOne.maxNrOfRetries
+        case _                            ⇒ -1
+      }
+
+      val nextRestartCount = restartCount + 1
+
+      if (maxNrOfRetries == -1 || nextRestartCount <= maxNrOfRetries) {
         val restartDelay = calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
         context.system.scheduler.scheduleOnce(restartDelay, self, StartChild)
-        restartCount += 1
+        restartCount = nextRestartCount
+      } else {
+        log.debug(s"Terminating on restart #{} which exceeds max allowed restarts ({})", nextRestartCount, maxNrOfRetries)
+        context.stop(self)
       }
   }
 

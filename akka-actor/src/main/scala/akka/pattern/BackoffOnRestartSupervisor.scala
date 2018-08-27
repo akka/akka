@@ -22,7 +22,6 @@ private class BackoffOnRestartSupervisor(
   maxBackoff:            FiniteDuration,
   val reset:             BackoffReset,
   randomFactor:          Double,
-  maxRestartAttempts:    Int,
   strategy:              OneForOneStrategy,
   val replyWhileStopped: Option[Any])
   extends Actor with HandleBackoff
@@ -30,18 +29,6 @@ private class BackoffOnRestartSupervisor(
 
   import context._
   import BackoffSupervisor._
-
-  // for binary compatibility with 2.5.14
-  def this(
-    childProps:        Props,
-    childName:         String,
-    minBackoff:        FiniteDuration,
-    maxBackoff:        FiniteDuration,
-    reset:             BackoffReset,
-    randomFactor:      Double,
-    strategy:          OneForOneStrategy,
-    replyWhileStopped: Option[Any]) =
-    this(childProps, childName, minBackoff, maxBackoff, reset, randomFactor, -1, strategy, replyWhileStopped)
 
   override val supervisorStrategy = OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
     case ex ⇒
@@ -80,11 +67,9 @@ private class BackoffOnRestartSupervisor(
     case Terminated(`childRef`) ⇒
       become(receive)
       child = None
-      if (maxRestartAttempts == -1 || restartCount < maxRestartAttempts) {
-        val restartDelay = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
-        context.system.scheduler.scheduleOnce(restartDelay, self, BackoffSupervisor.StartChild)
-        restartCount += 1
-      }
+      val restartDelay = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
+      context.system.scheduler.scheduleOnce(restartDelay, self, BackoffSupervisor.StartChild)
+      restartCount += 1
 
     case StartChild ⇒ // Ignore it, we will schedule a new one once current child terminated.
   }

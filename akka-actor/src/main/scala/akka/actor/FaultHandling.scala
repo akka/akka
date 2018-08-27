@@ -171,6 +171,15 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
   }
 
   /**
+   * default strategy with maximum number of retries.
+    * @param maxNrOfRetries the number of times a child actor is allowed to be restarted, negative value means no limit,
+    *  if the limit is exceeded the child actor is stopped
+   */
+  def defaultStrategyWithMaxNrOfRetries(maxNrOfRetries: Int): SupervisorStrategy = {
+    OneForOneStrategy(maxNrOfRetries)(defaultDecider)
+  }
+
+  /**
    * This strategy resembles Erlang in that failing children are always
    * terminated (one-for-one).
    */
@@ -546,6 +555,8 @@ case class OneForOneStrategy(
    */
   def this(decider: SupervisorStrategy.Decider) =
     this()(decider)
+
+  def withMaxNrOfRetries(maxNrOfRetries: Int): OneForOneStrategy = copy(maxNrOfRetries = maxNrOfRetries)(decider)
 
   /*
    *  this is a performance optimization to avoid re-allocating the pairs upon

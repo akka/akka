@@ -104,7 +104,7 @@ object PersistenceDocSpec {
           minBackoff = 3.seconds,
           maxBackoff = 30.seconds,
           randomFactor = 0.2,
-          maxRestartAttempts = -1))
+          maxNrOfRetries = -1))
       context.actorOf(props, name = "mySupervisor")
       //#backoff
     }
