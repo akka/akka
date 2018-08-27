@@ -469,8 +469,6 @@ akka {
         protocol = "TLSv1.2"
 
         enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
-
-        random-number-generator = "AES128CounterSecureRNG"
       }
     }
   }
