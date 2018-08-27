@@ -140,7 +140,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val DowningProviderClassName: String = {
     val name = cc.getString("downing-provider-class")
     if (name.nonEmpty) name
-    else if (AutoDownUnreachableAfter.isFinite()) classOf[AutoDowning].getName
+    else if (AutoDownUnreachableAfter.isFinite) classOf[AutoDowning].getName
     else classOf[NoDowning].getName
   }
 
