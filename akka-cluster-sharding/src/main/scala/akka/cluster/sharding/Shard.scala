@@ -607,7 +607,7 @@ private[akka] class DDataShard(
     Array.tabulate(numberOfKeys)(i ⇒ ORSetKey[EntityId](s"shard-${typeName}-${shardId}-$i"))
 
   private def key(entityId: EntityId): ORSetKey[EntityId] = {
-    val i = (math.abs(entityId.hashCode) % numberOfKeys)
+    val i = (math.abs(entityId.hashCode % numberOfKeys))
     stateKeys(i)
   }
 
