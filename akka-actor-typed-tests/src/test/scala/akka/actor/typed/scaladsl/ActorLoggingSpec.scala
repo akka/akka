@@ -193,25 +193,23 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
   "Logging with MDC for a typed actor" must {
 
     "provide the MDC values in the log" in {
-      val behaviors = Behaviors.withMdc[Protocol](
-        Map("static" -> 1),
-        // FIXME why u no infer the type here Scala??
-        (msg: Protocol) ⇒
+      val behaviors: Behavior[Protocol] = Behaviors.withMdc(
+        Map("static" -> 1), { msg ⇒
           if (msg.transactionId == 1)
             Map(
-            "txId" -> msg.transactionId,
-            "first" -> true
-          )
+              "txId" -> msg.transactionId,
+              "first" -> true
+            )
           else Map("txId" -> msg.transactionId)
-      ) {
-          Behaviors.setup { ctx ⇒
-            ctx.log.info("Starting")
-            Behaviors.receiveMessage { msg ⇒
-              ctx.log.info("Got message!")
-              Behaviors.same
-            }
+        },
+        Behaviors.setup { ctx ⇒
+          ctx.log.info("Starting")
+          Behaviors.receiveMessage { msg ⇒
+            ctx.log.info("Got message!")
+            Behaviors.same
           }
         }
+      )
 
       // mdc on defer is empty (thread and timestamp MDC is added by logger backend)
       val ref = EventFilter.custom({
@@ -249,9 +247,9 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
 
     "use the outermost initial mdc" in {
       // when we declare it, we expect the outermost to win
-      val behavior =
-        Behaviors.withMdc[String](Map("outermost" -> true)) {
-          Behaviors.withMdc(Map("innermost" -> true)) {
+      val behavior: Behavior[String] =
+        Behaviors.withMdcStatic(Map("outermost" -> true)) {
+          Behaviors.withMdcStatic(Map("innermost" -> true)) {
             Behaviors.receive { (ctx, msg) ⇒
               ctx.log.info(msg)
               Behaviors.same
@@ -283,7 +281,7 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
           }
         }
 
-      val ref = spawn(Behaviors.withMdc(Map("hasMdc" -> true))(behavior))
+      val ref = spawn(Behaviors.withMdcStatic(Map("hasMdc" -> true))(behavior))
       EventFilter.custom({
         case logEvent if logEvent.level == Logging.InfoLevel ⇒
           logEvent.message should ===("message")
@@ -312,7 +310,7 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
       // when it changes while running, we expect the latest one to apply
       val id = new AtomicInteger(0)
       def behavior: Behavior[String] =
-        Behaviors.withMdc(Map("mdc-version" -> id.incrementAndGet())) {
+        Behaviors.withMdcStatic(Map("mdc-version" -> id.incrementAndGet())) {
           Behaviors.receive { (ctx, msg) ⇒
             msg match {
               case "new-mdc" ⇒
@@ -348,16 +346,19 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
     }
 
     "provide a withMdc decorator" in {
-      val behavior = Behaviors.withMdc[Protocol](Map("mdc" -> "outer"))(
-        Behaviors.setup { ctx ⇒
-          Behaviors.receiveMessage { msg ⇒
-            ctx.log.withMdc(Map("mdc" -> "inner")).info("Got message log.withMDC!")
-            // after log.withMdc so we know it didn't change the outer mdc
-            ctx.log.info("Got message behavior.withMdc!")
-            Behaviors.same
+      val behavior: Behavior[Protocol] =
+        // FIXME y u not infer type param here Scala?
+        Behaviors.withMdcStatic(
+          Map("mdc" -> "outer")) {
+            Behaviors.setup { ctx ⇒
+              Behaviors.receiveMessage { msg ⇒
+                ctx.log.withMdc(Map("mdc" -> "inner")).info("Got message log.withMDC!")
+                // after log.withMdc so we know it didn't change the outer mdc
+                ctx.log.info("Got message behavior.withMdc!")
+                Behaviors.same
+              }
+            }
           }
-        }
-      )
 
       // mdc on message
       val ref = spawn(behavior)
@@ -379,6 +380,59 @@ class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
         }
       }
     }
+
+  }
+
+  def mdcFactoryInferenceCompileOnly() {
+    // compile only to see that type inference works #24798
+    def behavior1: Behavior[String] =
+      Behaviors.withMdcPerMessage(
+        msg ⇒ Map("a" -> msg),
+        Behaviors.receive {
+          case (ctx, msg) ⇒
+            ctx.log.info(msg.toUpperCase())
+            Behaviors.same
+        }
+      )
+    def behavior2: Behavior[String] =
+      Behaviors.withMdc(
+        Map("static-mdc" -> true),
+        msg ⇒ Map("a" -> msg),
+        // one level works
+        Behaviors.receive {
+          case (ctx, msg) ⇒
+            ctx.log.info(msg.toUpperCase())
+            Behaviors.same
+        }
+      )
+    def behavior3: Behavior[String] =
+      Behaviors.withMdc(
+        Map("static-mdc" -> true),
+        msg ⇒ Map("a" -> msg),
+        // nested works
+        Behaviors.setup(ctx ⇒
+          Behaviors.receive {
+            case (ctx, msg) ⇒
+              ctx.log.info(msg.toUpperCase())
+              Behaviors.same
+          }
+        )
+      )
+    def behavior4: Behavior[String] =
+      Behaviors.withMdc(
+        Map("static-mdc" -> true),
+        msg ⇒ Map("a" -> msg),
+        // as soon as we add another level of MDC we have to be explicit
+        Behaviors.withMdcStatic(Map("inner-static" -> true))(
+          Behaviors.setup(ctx ⇒
+            Behaviors.receive {
+              case (ctx, msg) ⇒
+                ctx.log.info(msg.toUpperCase())
+                Behaviors.same
+            }
+          )
+        )
+      )
 
   }
 

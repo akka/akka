@@ -227,8 +227,9 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    withMdc[T](Map.empty[String, Any], mdcForMessage)(behavior)
+  // note: cannot be multi-param-list because it breaks type inference
+  def withMdcPerMessage[T](mdcForMessage: T ⇒ Map[String, Any], behavior: Behavior[T]): Behavior[T] =
+    withMdc[T](Map.empty[String, Any], mdcForMessage, behavior)
 
   /**
    * Static MDC (Mapped Diagnostic Context)
@@ -239,8 +240,8 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    withMdc[T](staticMdc, (_: T) ⇒ Map.empty[String, Any])(behavior)
+  def withMdcStatic[T](staticMdc: Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+    withMdc[T](staticMdc, (_: T) ⇒ Map.empty[String, Any], behavior)
 
   /**
    * Combination of static and per message MDC (Mapped Diagnostic Context).
@@ -259,7 +260,8 @@ object Behaviors {
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
+  // note: cannot be multi-param-list because it breaks type inference
+  def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T ⇒ Map[String, Any], behavior: Behavior[T]): Behavior[T] =
     WithMdcBehavior[T](staticMdc, mdcForMessage, behavior)
 
   // TODO
