@@ -409,7 +409,7 @@ private[remote] class Association(
                 OrdinaryQueueIndex
               } else {
                 // select lane based on destination, to preserve message order
-                OrdinaryQueueIndex + (math.abs(r.path.uid) % outboundLanes)
+                OrdinaryQueueIndex + (math.abs(r.path.uid % outboundLanes))
               }
             r.cachedSendQueueIndex = idx
             idx
