@@ -9,6 +9,8 @@ import akka.cluster.UniqueAddress
 import akka.util.HashCode
 import java.math.BigInteger
 
+import akka.annotation.InternalApi
+
 object PNCounter {
   val empty: PNCounter = new PNCounter(GCounter.empty, GCounter.empty)
   def apply(): PNCounter = empty
@@ -122,12 +124,17 @@ final class PNCounter private[akka] (
   def decrement(node: Cluster, n: java.math.BigInteger): PNCounter =
     decrement(node.selfUniqueAddress, n)
 
-  private[akka] def increment(key: UniqueAddress, n: BigInt): PNCounter = change(key, n)
-  private[akka] def increment(key: UniqueAddress): PNCounter = increment(key, 1)
-  private[akka] def decrement(key: UniqueAddress, n: BigInt): PNCounter = change(key, -n)
-  private[akka] def decrement(key: UniqueAddress): PNCounter = decrement(key, 1)
+  /** Internal API */
+  @InternalApi private[akka] def increment(key: UniqueAddress, n: BigInt): PNCounter = change(key, n)
+  /** Internal API */
+  @InternalApi private[akka] def increment(key: UniqueAddress): PNCounter = increment(key, 1)
+  /** Internal API */
+  @InternalApi private[akka] def decrement(key: UniqueAddress, n: BigInt): PNCounter = change(key, -n)
+  /** Internal API */
+  @InternalApi private[akka] def decrement(key: UniqueAddress): PNCounter = decrement(key, 1)
 
-  private[akka] def change(key: UniqueAddress, n: BigInt): PNCounter =
+  /** Internal API */
+  @InternalApi private[akka] def change(key: UniqueAddress, n: BigInt): PNCounter =
     if (n > 0) copy(increments = increments.increment(key, n))
     else if (n < 0) copy(decrements = decrements.increment(key, -n))
     else this
