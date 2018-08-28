@@ -7,17 +7,17 @@ package akka.persistence.typed
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
-import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy}
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy }
 import akka.persistence.typed.scaladsl.Effect
 import akka.util.Timeout
 import akka.Done
-import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.{AsyncFlatSpec, BeforeAndAfterAll, Matchers}
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.{ AsyncFlatSpec, BeforeAndAfterAll, Matchers }
 
-import scala.collection.{immutable => im}
+import scala.collection.{ immutable ⇒ im }
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
+import scala.concurrent.{ Await, ExecutionContext, Future, TimeoutException }
 
 object ReliableSideEffectBehaviorSpec {
   sealed trait Protocol
@@ -190,13 +190,13 @@ class ReliableSideEffectBehaviorSpec extends AsyncFlatSpec with Matchers with Be
       counter = counter + 1
       system.systemActorOf(
         startRseb("def") {
-        case (state, nfy: AddedString) ⇒ Future {
-          receptacle ! ReceptacleProtocol.Add("+" + nfy.message)
-        }
-        case (state, nfy: RemovedString) ⇒ Future {
-          receptacle ! ReceptacleProtocol.Add("-" + nfy.message)
-        }
-      },
+          case (state, nfy: AddedString) ⇒ Future {
+            receptacle ! ReceptacleProtocol.Add("+" + nfy.message)
+          }
+          case (state, nfy: RemovedString) ⇒ Future {
+            receptacle ! ReceptacleProtocol.Add("-" + nfy.message)
+          }
+        },
         s"defActor-${counter}")
     }
 

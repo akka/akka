@@ -7,9 +7,9 @@
 package akka.persistence.typed
 
 import akka.actor.typed.scaladsl.ActorContext
-import akka.persistence.typed.scaladsl.{Effect, PersistentBehavior}
+import akka.persistence.typed.scaladsl.{ Effect, PersistentBehavior }
 
-import scala.collection.{immutable => im}
+import scala.collection.{ immutable ⇒ im }
 import scala.concurrent.Future
 
 object ReliableSideEffectBehaviors {
