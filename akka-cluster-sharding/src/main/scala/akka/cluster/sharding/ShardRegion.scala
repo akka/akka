@@ -134,6 +134,9 @@ object ShardRegion {
         case ShardRegion.StartEntity(id) ⇒ id
         case _                           ⇒ entityId(message)
       }
+      // It would be better to have abs(id.hashCode % maxNumberOfShards), see issue #25034
+      // but to avoid getting different values when rolling upgrade we keep the old way,
+      // and it doesn't have any serious consequences
       (math.abs(id.hashCode) % maxNumberOfShards).toString
     }
   }

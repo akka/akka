@@ -81,7 +81,7 @@ final class HashCodeMessageExtractor[A](
   extends ShardingMessageExtractor[ShardingEnvelope[A], A] {
 
   override def entityId(envelope: ShardingEnvelope[A]): String = envelope.entityId
-  override def shardId(entityId: String): String = (math.abs(entityId.hashCode) % maxNumberOfShards).toString
+  override def shardId(entityId: String): String = math.abs(entityId.hashCode % maxNumberOfShards).toString
   override def unwrapMessage(envelope: ShardingEnvelope[A]): A = envelope.message
 }
 
@@ -98,7 +98,7 @@ abstract class HashCodeNoEnvelopeMessageExtractor[A](
   override val handOffStopMessage: A)
   extends ShardingMessageExtractor[A, A] {
 
-  override def shardId(entityId: String): String = (math.abs(entityId.hashCode) % maxNumberOfShards).toString
+  override def shardId(entityId: String): String = math.abs(entityId.hashCode % maxNumberOfShards).toString
   override final def unwrapMessage(message: A): A = message
 
   override def toString = s"HashCodeNoEnvelopeMessageExtractor($maxNumberOfShards)"
