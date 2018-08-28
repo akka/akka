@@ -70,13 +70,11 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
     Cluster(system).manager ! Join(Cluster(system).selfMember.address)
 
     "start persistent actor" in {
-      ClusterSharding(system).spawn[Command](
-        (_, entityId) ⇒ persistentActor(entityId),
-        Props.empty,
+      ClusterSharding(system).start(ShardedEntity(
+        entityId ⇒ persistentActor(entityId),
         typeKey,
-        ClusterShardingSettings(system),
-        maxNumberOfShards = 100,
-        handOffStopMessage = StopPlz)
+        StopPlz
+      ))
 
       val p = TestProbe[String]()
 

@@ -539,6 +539,10 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     }
   }
 
+  /**
+   * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
+   * given `settings`. This could be changed in the future.
+   */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
     val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
     val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance

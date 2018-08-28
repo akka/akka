@@ -18,8 +18,13 @@ import akka.cluster.sharding.typed.ShardingEnvelope;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
+import akka.cluster.sharding.typed.javadsl.ShardedEntity;
 
 //#import
+
+import jdocs.akka.persistence.typed.InDepthPersistentBehaviorTest.BlogCommand;
+import jdocs.akka.persistence.typed.InDepthPersistentBehaviorTest.BlogBehavior;
+import jdocs.akka.persistence.typed.InDepthPersistentBehaviorTest.PassivatePost;
 
 public class ShardingCompileOnlyTest {
 
@@ -82,12 +87,30 @@ public class ShardingCompileOnlyTest {
           return Behaviors.same();
         })
         .onMessage(GoodByeCounter.class, (ctx, msg) -> {
-          // the handOffStopMessage, used for rebalance and passivate
+          // the stopMessage, used for rebalance and passivate
           return Behaviors.stopped();
         })
         .build();
   }
   //#counter-passivate
+
+  public static void startPassivateExample() {
+    ActorSystem system = ActorSystem.create(
+        Behaviors.empty(), "ShardingExample"
+    );
+    ClusterSharding sharding = ClusterSharding.get(system);
+
+    //#counter-passivate-start
+    
+    EntityTypeKey<CounterCommand> typeKey = EntityTypeKey.create(CounterCommand.class, "Counter");
+
+    sharding.start(
+      ShardedEntity.create(
+        (shard, entityId) -> counter2(shard, entityId),
+        typeKey,
+        new GoodByeCounter()));
+    //#counter-passivate-start
+  }
 
   public static void example() {
 
@@ -99,16 +122,15 @@ public class ShardingCompileOnlyTest {
     ClusterSharding sharding = ClusterSharding.get(system);
     //#sharding-extension
 
-    //#spawn
+    //#start
     EntityTypeKey<CounterCommand> typeKey = EntityTypeKey.create(CounterCommand.class, "Counter");
-    ActorRef<ShardingEnvelope<CounterCommand>> shardRegion = sharding.spawn(
-        (shard, entityId) -> counter(entityId,0),
-      Props.empty(),
-      typeKey,
-      ClusterShardingSettings.create(system),
-      10,
-      new GoodByeCounter());
-    //#spawn
+
+    ActorRef<ShardingEnvelope<CounterCommand>> shardRegion = sharding.start(
+      ShardedEntity.create(
+        entityId -> counter(entityId,0),
+        typeKey,
+        new GoodByeCounter()));
+    //#start
 
     //#send
     EntityRef<CounterCommand> counterOne = sharding.entityRefFor(typeKey, "counter-`");
@@ -116,5 +138,22 @@ public class ShardingCompileOnlyTest {
 
     shardRegion.tell(new ShardingEnvelope<>("counter-1", new Increment()));
     //#send
+  }
+
+  public static void persistenceExample() {
+    ActorSystem system = ActorSystem.create(
+        Behaviors.empty(), "ShardingExample"
+    );
+    ClusterSharding sharding = ClusterSharding.get(system);
+
+    //#persistence
+    EntityTypeKey<BlogCommand> blogTypeKey = EntityTypeKey.create(BlogCommand.class, "BlogPost");
+
+    sharding.start(
+      ShardedEntity.create(
+        BlogBehavior::behavior,
+        blogTypeKey,
+        new PassivatePost()));
+    //#persistence
   }
 }

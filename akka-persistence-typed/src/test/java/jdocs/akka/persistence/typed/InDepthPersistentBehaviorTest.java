@@ -133,7 +133,6 @@ public class InDepthPersistentBehaviorTest {
     }
   }
   public static class PassivatePost implements BlogCommand {
-
   }
   public static class PostContent implements BlogCommand {
     final String postId;
