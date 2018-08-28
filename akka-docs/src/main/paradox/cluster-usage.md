@@ -16,6 +16,13 @@ To use Akka Cluster, you must add the following dependency in your project:
   version="$akka.version$"
 }
 
+## Sample project
+
+You can look at the
+@java[@extref[Cluster example project](samples:akka-samples-cluster-java)]
+@scala[@extref[Cluster example project](samples:akka-samples-cluster-scala)]
+to see what this looks like in practice.
+
 ## When and where to use Akka Cluster
 
 An architectural choice you have to make is if you are going to use a microservices architecture or

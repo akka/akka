@@ -10,6 +10,13 @@ To use Akka Distributed Data, you must add the following dependency in your proj
   version="$akka.version$"
 }
 
+## Sample project
+
+You can look at the
+@java[@extref[Distributed Data example project](samples:akka-samples-distributed-data-java)]
+@scala[@extref[Distributed Data example project](samples:akka-samples-distributed-data-scala)]
+to see what this looks like in practice.
+
 ## Introduction
 
 *Akka Distributed Data* is useful when you need to share data between nodes in an
