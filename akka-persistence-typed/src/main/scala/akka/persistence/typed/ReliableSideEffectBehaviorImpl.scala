@@ -6,10 +6,10 @@
 
 package akka.persistence.typed
 
+import akka.Done
 import akka.actor.{ ActorPath, typed }
-import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, Signal, SupervisorStrategy, Terminated }
+import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, SupervisorStrategy, Terminated }
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.persistence.typed._
 import akka.persistence.typed.internal._
 import akka.persistence.{ Recovery, SnapshotMetadata, SnapshotSelectionCriteria }
 
