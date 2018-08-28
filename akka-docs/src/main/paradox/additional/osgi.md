@@ -10,6 +10,12 @@ To use Akka in OSGi, you must add the following dependency in your project:
   version=$akka.version$
 }
 
+## Sample project
+
+You can look at the
+@extref[OSGi Dining Hakkers example project](samples:akka-samples-osgi-dining-hakkers)
+to see what this looks like in practice.
+
 ## Background
 
 [OSGi](http://www.osgi.org/developer) is a mature packaging and deployment standard for component-based systems. It
@@ -111,7 +117,3 @@ to conveniently set up the ActorSystem.
 The goal here is to map the OSGi lifecycle more directly to the Akka lifecycle. The `ActorSystemActivator` creates
 the actor system with a class loader that finds resources (`application.conf` and `reference.conf` files) and classes
 from the application bundle and all transitive dependencies.
-
-## Sample
-
-A complete sample project is provided in @extref[akka-sample-osgi-dining-hakkers](samples:akka-sample-osgi-dining-hakkers)
