@@ -6,7 +6,7 @@ package akka.dispatch
 
 import java.util.concurrent.{ ExecutorService, Executor, Executors }
 import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent._
+import scala.concurrent.{ BatchingExecutor => _, Batchable => _, _ }
 import scala.concurrent.duration._
 import akka.testkit.{ TestLatch, AkkaSpec, DefaultTimeout }
 import akka.util.SerializedSuspendableExecutionContext
