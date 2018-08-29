@@ -1,16 +1,16 @@
 /**
-  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
-  */
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
 
 package akka.persistence.query.journal
 
-import akka.persistence.journal.{Tagged, WriteEventAdapter}
+import akka.persistence.journal.{ Tagged, WriteEventAdapter }
 import akka.persistence.query.scaladsl._
-import akka.persistence.query.{EventEnvelope, NoOffset, Sequence}
+import akka.persistence.query.{ EventEnvelope, NoOffset, Sequence }
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.{AkkaSpec, ImplicitSender}
-import com.typesafe.config.{Config, ConfigFactory}
+import akka.testkit.{ AkkaSpec, ImplicitSender }
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.duration._
 
@@ -43,7 +43,6 @@ abstract class EventsByTagSpec(backendName: String, config: Config) extends Akka
   implicit val mat = ActorMaterializer()(system)
 
   def queries: ReadJournal with EventsByTagQuery with CurrentEventsByTagQuery
-
 
   s"$backendName query EventsByTag" must {
     "implement standard EventsByTagQuery" in {

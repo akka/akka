@@ -1,6 +1,6 @@
 /**
-  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
-  */
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
 
 package akka.persistence.query.journal.inmem
 

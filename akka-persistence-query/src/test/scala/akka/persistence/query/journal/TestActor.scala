@@ -4,8 +4,8 @@
 
 package akka.persistence.query.journal
 
-import akka.actor.{ActorRef, Props}
-import akka.persistence.{DeleteMessagesSuccess, PersistentActor}
+import akka.actor.{ ActorRef, Props }
+import akka.persistence.{ DeleteMessagesSuccess, PersistentActor }
 
 import scala.collection.mutable
 

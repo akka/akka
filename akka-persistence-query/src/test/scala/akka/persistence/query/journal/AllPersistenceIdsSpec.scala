@@ -4,11 +4,11 @@
 
 package akka.persistence.query.journal
 
-import akka.persistence.query.scaladsl.{CurrentPersistenceIdsQuery, PersistenceIdsQuery, ReadJournal}
+import akka.persistence.query.scaladsl.{ CurrentPersistenceIdsQuery, PersistenceIdsQuery, ReadJournal }
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.{AkkaSpec, ImplicitSender}
-import com.typesafe.config.{Config, ConfigFactory}
+import akka.testkit.{ AkkaSpec, ImplicitSender }
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.duration._
 

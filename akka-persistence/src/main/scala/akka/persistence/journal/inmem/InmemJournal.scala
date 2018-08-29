@@ -8,7 +8,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 
 import scala.collection.immutable
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.PersistentRepr
@@ -18,7 +18,7 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 
 /**
-  * INTERNAL API — used to implement Persistence Query for testing purposes only.
+ * INTERNAL API — used to implement Persistence Query for testing purposes only.
  */
 private[persistence] object InmemJournal {
 
@@ -70,7 +70,7 @@ private[persistence] class InmemJournal extends AsyncWriteJournal with InmemMess
     }
 
     for {
-      downstream <- sendDownstreamDeletion(persistenceId, toSeqNr)
+      downstream ← sendDownstreamDeletion(persistenceId, toSeqNr)
     } yield {
       ()
     }
@@ -80,7 +80,7 @@ private[persistence] class InmemJournal extends AsyncWriteJournal with InmemMess
 
   private var _downstreamReceiver: Option[ActorRef] = None
 
-  protected def sendDownstream(messages: => Iterable[PersistentRepr]): Unit =
+  protected def sendDownstream(messages: ⇒ Iterable[PersistentRepr]): Unit =
     _downstreamReceiver.foreach(_ ! SpooledMessages(messages))
 
   protected def sendDownstreamDeletion(persistenceId: String, toSequenceNr: Long): Future[Unit] = {
@@ -88,22 +88,22 @@ private[persistence] class InmemJournal extends AsyncWriteJournal with InmemMess
     implicit def executionContext: ExecutionContext = context.dispatcher
 
     _downstreamReceiver match {
-      case Some(target) => (target ? DeleteSpooledMessages(persistenceId, toSequenceNr)).map(_ => ())
-      case None => Future.successful()
+      case Some(target) ⇒ (target ? DeleteSpooledMessages(persistenceId, toSequenceNr)).map(_ ⇒ ())
+      case None         ⇒ Future.successful()
     }
   }
 
   override def receivePluginInternal: Receive = super.receivePluginInternal orElse {
-    case SetDownstreamReceiver(target) =>
+    case SetDownstreamReceiver(target) ⇒
       _downstreamReceiver = Some(target)
 
-    case RemoveDownstreamReceiver =>
+    case RemoveDownstreamReceiver ⇒
       _downstreamReceiver = None
 
-    case SpoolExistingMessages =>
+    case SpoolExistingMessages ⇒
       sendDownstream(messages.values.reduce(_ ++ _).sortBy(_.sequenceNr))
 
-    case Ping =>
+    case Ping ⇒
       sender() ! akka.Done // this is just an "ordering" marker as
   }
 
@@ -112,10 +112,10 @@ private[persistence] class InmemJournal extends AsyncWriteJournal with InmemMess
     sendDownstream(p :: Nil)
   }
 
-  override def update(pid: String, snr: Long)(f: PersistentRepr => PersistentRepr): Unit = {
+  override def update(pid: String, snr: Long)(f: PersistentRepr ⇒ PersistentRepr): Unit = {
     _downstreamReceiver match {
-      case Some(tap) => throw new UnsupportedOperationException("cannot update messages in active tap mode") // smell: Refused Bequest
-      case None => super.update(pid, snr)(f)
+      case Some(tap) ⇒ throw new UnsupportedOperationException("cannot update messages in active tap mode") // smell: Refused Bequest
+      case None      ⇒ super.update(pid, snr)(f)
     }
   }
 

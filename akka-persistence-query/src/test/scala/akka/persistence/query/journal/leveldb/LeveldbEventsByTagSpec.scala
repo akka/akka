@@ -1,13 +1,13 @@
 /**
-  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
-  */
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
 
 package akka.persistence.query.journal.leveldb
 
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.EventsByTagSpec
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 
 object LeveldbEventsByTagSpec {
   def config: Config = ConfigFactory.parseString(

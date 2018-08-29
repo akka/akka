@@ -8,8 +8,8 @@ import akka.actor.ActorRef
 import akka.persistence.query.scaladsl._
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.{AkkaSpec, ImplicitSender}
-import com.typesafe.config.{Config, ConfigFactory}
+import akka.testkit.{ AkkaSpec, ImplicitSender }
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.duration._
 
@@ -66,7 +66,7 @@ abstract class EventsByPersistenceIdSpec(backendName: String, config: Config) ex
       val src = queries.currentEventsByPersistenceId("b", 0L, 2L)
       val x = src.map(_.event).runWith(TestSink.probe[Any])
 
-        x
+      x
         .request(5)
         .expectNext("b-1", "b-2")
         .expectComplete()
@@ -164,7 +164,6 @@ abstract class EventsByPersistenceIdSpec(backendName: String, config: Config) ex
 
       probe.expectNext("c-4")
     }
-
 
     "find new events up to a sequence number" in {
       val ref = setup("d")

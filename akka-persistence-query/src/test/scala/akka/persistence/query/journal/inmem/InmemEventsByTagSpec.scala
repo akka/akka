@@ -1,13 +1,13 @@
 /**
-  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
-  */
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
 
 package akka.persistence.query.journal.inmem
 
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.EventsByTagSpec
 import akka.persistence.query.journal.inmem.scaladsl.InmemReadJournal
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 
 object InmemEventsByTagSpec {
   def config: Config = ConfigFactory.parseString(
@@ -25,6 +25,6 @@ object InmemEventsByTagSpec {
 
 }
 
-class InmemEventsByTagSpec extends EventsByTagSpec("Inmem", InmemEventsByTagSpec.config)  {
+class InmemEventsByTagSpec extends EventsByTagSpec("Inmem", InmemEventsByTagSpec.config) {
   override val queries = PersistenceQuery(system).readJournalFor[InmemReadJournal](InmemReadJournal.Identifier)
 }
