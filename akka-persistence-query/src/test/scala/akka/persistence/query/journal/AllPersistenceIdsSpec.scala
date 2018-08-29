@@ -2,35 +2,31 @@
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.query.journal.leveldb
+package akka.persistence.query.journal
+
+import akka.persistence.query.scaladsl.{CurrentPersistenceIdsQuery, PersistenceIdsQuery, ReadJournal}
+import akka.stream.ActorMaterializer
+import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.{AkkaSpec, ImplicitSender}
+import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.concurrent.duration._
 
-import akka.persistence.query.PersistenceQuery
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.query.scaladsl.PersistenceIdsQuery
-import akka.stream.ActorMaterializer
-import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-
 object AllPersistenceIdsSpec {
-  val config = """
+  def config: Config = ConfigFactory.parseString("""
     akka.loglevel = INFO
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
-    akka.persistence.journal.leveldb.dir = "target/journal-AllPersistenceIdsSpec"
     akka.test.single-expect-default = 10s
-    """
+    """)
 }
 
-class AllPersistenceIdsSpec extends AkkaSpec(AllPersistenceIdsSpec.config)
-  with Cleanup with ImplicitSender {
+abstract class AllPersistenceIdsSpec(backendName: String, config: Config) extends AkkaSpec(config)
+  with ImplicitSender {
 
   implicit val mat = ActorMaterializer()(system)
 
-  val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+  def queries: ReadJournal with CurrentPersistenceIdsQuery with PersistenceIdsQuery
 
-  "Leveldb query AllPersistenceIds" must {
+  s"$backendName query AllPersistenceIds" must {
 
     "implement standard AllPersistenceIdsQuery" in {
       queries.isInstanceOf[PersistenceIdsQuery] should ===(true)

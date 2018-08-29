@@ -1,42 +1,31 @@
 /**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
- */
+  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+  */
 
-package akka.persistence.query.journal.leveldb
+package akka.persistence.query.journal
 
-import scala.concurrent.duration._
-import akka.persistence.journal.Tagged
-import akka.persistence.journal.WriteEventAdapter
-import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.query.scaladsl.EventsByTagQuery
+import akka.persistence.journal.{Tagged, WriteEventAdapter}
+import akka.persistence.query.scaladsl._
+import akka.persistence.query.{EventEnvelope, NoOffset, Sequence}
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-import akka.persistence.query.NoOffset
+import akka.testkit.{AkkaSpec, ImplicitSender}
+import com.typesafe.config.{Config, ConfigFactory}
+
+import scala.concurrent.duration._
 
 object EventsByTagSpec {
-  val config = """
-    akka.loglevel = INFO
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
-    akka.persistence.journal.leveldb {
-      dir = "target/journal-EventsByTagSpec"
-      event-adapters {
-        color-tagger  = akka.persistence.query.journal.leveldb.ColorTagger
-      }
-      event-adapter-bindings = {
-        "java.lang.String" = color-tagger
-      }
-    }
-    akka.persistence.query.journal.leveldb.refresh-interval = 1s
-    akka.test.single-expect-default = 10s
+  def config: Config = ConfigFactory.parseString(
     """
+    akka.loglevel = INFO
+    akka.test.single-expect-default = 10s
+    """)
 
 }
 
 class ColorTagger extends WriteEventAdapter {
   val colors = Set("green", "black", "blue")
+
   override def toJournal(event: Any): Any = event match {
     case s: String ⇒
       var tags = colors.foldLeft(Set.empty[String])((acc, c) ⇒ if (s.contains(c)) acc + c else acc)
@@ -48,14 +37,15 @@ class ColorTagger extends WriteEventAdapter {
   override def manifest(event: Any): String = ""
 }
 
-class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
-  with Cleanup with ImplicitSender {
+abstract class EventsByTagSpec(backendName: String, config: Config) extends AkkaSpec(config)
+  with ImplicitSender {
 
   implicit val mat = ActorMaterializer()(system)
 
-  val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+  def queries: ReadJournal with EventsByTagQuery with CurrentEventsByTagQuery
 
-  "Leveldb query EventsByTag" must {
+
+  s"$backendName query EventsByTag" must {
     "implement standard EventsByTagQuery" in {
       queries.isInstanceOf[EventsByTagQuery] should ===(true)
     }
@@ -122,7 +112,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config)
     }
   }
 
-  "Leveldb live query EventsByTag" must {
+  s"$backendName live query EventsByTag" must {
     "find new events" in {
       val d = system.actorOf(TestActor.props("d"))
 

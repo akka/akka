@@ -2,35 +2,30 @@
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.query.journal.leveldb
+package akka.persistence.query.journal
+
+import akka.actor.ActorRef
+import akka.persistence.query.scaladsl._
+import akka.stream.ActorMaterializer
+import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.{AkkaSpec, ImplicitSender}
+import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.concurrent.duration._
 
-import akka.actor.ActorRef
-import akka.persistence.query.PersistenceQuery
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.query.scaladsl.EventsByTagQuery
-import akka.stream.ActorMaterializer
-import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-
 object EventsByPersistenceIdSpec {
-  val config = """
+  def config: Config = ConfigFactory.parseString("""
     akka.loglevel = INFO
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
-    akka.persistence.journal.leveldb.dir = "target/journal-EventsByPersistenceIdSpec"
     akka.test.single-expect-default = 10s
-    akka.persistence.query.journal.leveldb.refresh-interval = 1s
-    """
+    """)
 }
 
-class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.config)
-  with Cleanup with ImplicitSender {
+abstract class EventsByPersistenceIdSpec(backendName: String, config: Config) extends AkkaSpec(config)
+  with ImplicitSender {
 
   implicit val mat = ActorMaterializer()(system)
 
-  val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+  def queries: ReadJournal with EventsByPersistenceIdQuery with CurrentEventsByPersistenceIdQuery
 
   def setup(persistenceId: String): ActorRef = {
     val ref = setupEmpty(persistenceId)
@@ -47,7 +42,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
     system.actorOf(TestActor.props(persistenceId))
   }
 
-  "Leveldb query EventsByPersistenceId" must {
+  s"$backendName query EventsByPersistenceId" must {
 
     "implement standard EventsByTagQuery" in {
       queries.isInstanceOf[EventsByTagQuery] should ===(true)
@@ -69,7 +64,9 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
     "find existing events up to a sequence number" in {
       val ref = setup("b")
       val src = queries.currentEventsByPersistenceId("b", 0L, 2L)
-      src.map(_.event).runWith(TestSink.probe[Any])
+      val x = src.map(_.event).runWith(TestSink.probe[Any])
+
+        x
         .request(5)
         .expectNext("b-1", "b-2")
         .expectComplete()
@@ -153,7 +150,8 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
 
   }
 
-  "Leveldb live query EventsByPersistenceId" must {
+  s"$backendName live query EventsByPersistenceId" must {
+
     "find new events" in {
       val ref = setup("c")
       val src = queries.eventsByPersistenceId("c", 0L, Long.MaxValue)
@@ -166,6 +164,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
 
       probe.expectNext("c-4")
     }
+
 
     "find new events up to a sequence number" in {
       val ref = setup("d")
@@ -182,6 +181,7 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
 
     "find new events after demand request" in {
       val ref = setup("e")
+
       val src = queries.eventsByPersistenceId("e", 0L, Long.MaxValue)
       val probe = src.map(_.event).runWith(TestSink.probe[Any])
         .request(2)

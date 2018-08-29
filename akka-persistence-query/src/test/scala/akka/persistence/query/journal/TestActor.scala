@@ -2,10 +2,12 @@
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.query.journal.leveldb
+package akka.persistence.query.journal
 
-import akka.persistence.PersistentActor
-import akka.actor.Props
+import akka.actor.{ActorRef, Props}
+import akka.persistence.{DeleteMessagesSuccess, PersistentActor}
+
+import scala.collection.mutable
 
 object TestActor {
   def props(persistenceId: String): Props =
