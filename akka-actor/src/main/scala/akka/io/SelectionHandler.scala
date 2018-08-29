@@ -258,7 +258,7 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
   import SelectionHandler._
   import settings._
 
-  private[this] var sequenceNumber = 0
+  private[this] var sequenceNumber = 0L // should be Long to prevent overflow
   private[this] var childCount = 0
   private[this] val registry = {
     val dispatcher = context.system.dispatchers.lookup(SelectorDispatcher)
