@@ -220,48 +220,6 @@ class InmemReadJournal(system: ExtendedActorSystem, config: Config) extends Read
   journalRef ! InmemJournal.SetDownstreamReceiver(receiver)
   /* from this point on, receiver receives a copy of 'persisted' events */
 
-  private def getAllCurrentRepr(filterPredicate: (PersistentRepr, Offset) => Boolean = (_,_) => true): Future[Seq[(PersistentRepr, Offset)]] =
-    (receiver ? MessageReceiver.GetAllCurrent)
-      .map { case pack: Seq[PersistentRepr @unchecked] =>
-        pack
-          .filter { item => filterPredicate(item, NoOffset) }
-          .map(item => (item, NoOffset))
-      }
-
-  private def getAllTaggedRepr(tag: String, filterPredicate: (PersistentRepr, Offset) => Boolean = (_,_) => true): Future[Seq[(PersistentRepr, Offset)]] = {
-    val filtered =
-      (receiver ? MessageReceiver.GetAllCurrentTagged(tag))
-        .map { case pack: Seq[(PersistentRepr, Offset)@unchecked] =>
-          pack
-            .filter { case (item, offset) => filterPredicate(item, offset) }
-        }
-    /* now strip the "Tagged" structure, as the current API doesn't provide for conjunction of tags */
-
-    filtered.map { pack =>
-      pack
-        .map { case (repr, idx) => (repr, repr.payload, idx) }
-        .collect {
-          case (repr, Tagged(realPayload, tags), idx) =>
-            (repr.withPayload(realPayload), idx)
-        }
-    }
-  }
-
-  private def currentRepr(f: Future[Iterable[(PersistentRepr, Offset)]]): Source[EventEnvelope, NotUsed] =
-    Source.fromFuture(f).flatMapConcat {
-      iterable =>
-        Source.fromIterator {
-          () =>
-            iterable.map {
-              case (repr, offset) =>
-                val event = repr.payload // FIXME: not entirely sure?
-                EventEnvelope(offset, repr.persistenceId, repr.sequenceNr, event)
-            }.toIterator
-        }
-    }
-
-  private val streamLogLevels =       Attributes.logLevels(onElement = Logging.InfoLevel, onFailure = Logging.ErrorLevel, onFinish = Logging.InfoLevel)
-
   private def newLiveMessageSource: Source[PersistentRepr, NotUsed] = {
     Source.fromFuture((receiver ? SubscribeLive).mapTo[LiveSubscription].map(_.source))
       .flatMapConcat(identity)
