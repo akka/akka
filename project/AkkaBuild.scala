@@ -28,7 +28,7 @@ object AkkaBuild {
     Formatting.formatSettings ++
     Protobuf.settings ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      version in ThisBuild := "2.5-SNAPSHOT"
+      version in ThisBuild := "2.5.16"
     )
 
   lazy val mayChangeSettings = Seq(
