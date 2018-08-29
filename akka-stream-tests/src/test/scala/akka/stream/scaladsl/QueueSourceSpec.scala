@@ -72,7 +72,10 @@ class QueueSourceSpec extends StreamSpec {
     }
 
     "reject elements when completed" in {
-      val (source, probe) = Source.queue[Int](42, OverflowStrategy.backpressure).delay(1000.seconds, DelayOverflowStrategy.backpressure).toMat(TestSink.probe)(Keep.both).run()
+      // Not using the materialized test sink leads to the 42 being enqueued but not emitted due to lack of demand.
+      // This will also not effectively complete the stream, hence there is enough time (no races) to offer 43
+      // and verify it is dropped.
+      val source = Source.queue[Int](42, OverflowStrategy.backpressure).to(TestSink.probe).run()
       source.offer(42)
       source.complete()
       val f = source.offer(43)
