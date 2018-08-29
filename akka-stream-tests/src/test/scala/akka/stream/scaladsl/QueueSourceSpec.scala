@@ -71,6 +71,14 @@ class QueueSourceSpec extends StreamSpec {
       f.futureValue should ===(QueueOfferResult.Enqueued)
     }
 
+    "reject elements when completed" in {
+      val (source, probe) = Source.queue[Int](42, OverflowStrategy.backpressure).delay(1000.seconds, DelayOverflowStrategy.backpressure).toMat(TestSink.probe)(Keep.both).run()
+      source.offer(42)
+      source.complete()
+      val f = source.offer(43)
+      f.futureValue should ===(QueueOfferResult.Dropped)
+    }
+
     "buffer when needed" in {
       val s = TestSubscriber.manualProbe[Int]()
       val queue = Source.queue(100, OverflowStrategy.dropHead).to(Sink.fromSubscriber(s)).run()
