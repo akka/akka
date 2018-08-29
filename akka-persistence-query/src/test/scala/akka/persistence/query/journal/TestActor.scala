@@ -24,10 +24,18 @@ class TestActor(override val persistenceId: String) extends PersistentActor {
     case evt: String ⇒
   }
 
+  private val _deleteRequesters: mutable.Buffer[ActorRef] = mutable.Buffer.empty
+
   val receiveCommand: Receive = {
     case DeleteCmd(toSeqNr) ⇒
+      _deleteRequesters.append(sender())
       deleteMessages(toSeqNr)
-      sender() ! s"$toSeqNr-deleted"
+
+    case DeleteMessagesSuccess(toSeqNr) ⇒
+      val senders = _deleteRequesters.toArray
+      _deleteRequesters.clear()
+
+      senders.foreach(_ ! s"$toSeqNr-deleted")
 
     case cmd: String ⇒
       persist(cmd) { evt ⇒
