@@ -72,6 +72,20 @@ class PNCounterSpec extends WordSpec with Matchers {
       c6.increments.state(node2) should be(10)
     }
 
+    "be able to increment each node's record by arbitrary BigInt delta" in {
+      val c1 = PNCounter()
+
+      val c2 = c1 increment (node1, BigInt(3))
+      val c3 = c2 increment (node1, BigInt(4))
+
+      val c4 = c3 increment (node2, BigInt(2))
+      val c5 = c4 increment (node2, BigInt(7))
+      val c6 = c5 increment node2
+
+      c6.increments.state(node1) should be(7)
+      c6.increments.state(node2) should be(10)
+    }
+
     "be able to decrement each node's record by arbitrary delta" in {
       val c1 = PNCounter()
 
