@@ -9,6 +9,8 @@ import akka.cluster.UniqueAddress
 import akka.util.HashCode
 import java.math.BigInteger
 
+import akka.annotation.InternalApi
+
 object PNCounter {
   val empty: PNCounter = new PNCounter(GCounter.empty, GCounter.empty)
   def apply(): PNCounter = empty
@@ -66,7 +68,27 @@ final class PNCounter private[akka] (
    * Increment the counter with the delta `n` specified.
    * If the delta is negative then it will decrement instead of increment.
    */
+  def +(n: BigInt)(implicit node: Cluster): PNCounter = increment(node, n)
+
+  /**
+   * Increment the counter with the delta `n` specified.
+   * If the delta is negative then it will decrement instead of increment.
+   */
   def increment(node: Cluster, n: Long = 1): PNCounter =
+    increment(node.selfUniqueAddress, n)
+
+  /**
+   * Scala API: Increment the counter with the delta `n` specified.
+   * If the delta is negative then it will decrement instead of increment.
+   */
+  def increment(node: Cluster, n: BigInt): PNCounter =
+    increment(node.selfUniqueAddress, n)
+
+  /**
+   * Java API: Increment the counter with the delta `n` specified.
+   * If the delta is negative then it will decrement instead of increment.
+   */
+  def increment(node: Cluster, n: java.math.BigInteger): PNCounter =
     increment(node.selfUniqueAddress, n)
 
   /**
@@ -77,17 +99,42 @@ final class PNCounter private[akka] (
 
   /**
    * Decrement the counter with the delta `n` specified.
+   * If the delta is negative then it will increment instead of decrement.
+   */
+  def -(n: BigInt)(implicit node: Cluster): PNCounter = decrement(node, n)
+
+  /**
+   * Decrement the counter with the delta `n` specified.
    * If the delta `n` is negative then it will increment instead of decrement.
    */
   def decrement(node: Cluster, n: Long = 1): PNCounter =
     decrement(node.selfUniqueAddress, n)
 
-  private[akka] def increment(key: UniqueAddress, n: Long): PNCounter = change(key, n)
-  private[akka] def increment(key: UniqueAddress): PNCounter = increment(key, 1)
-  private[akka] def decrement(key: UniqueAddress, n: Long): PNCounter = change(key, -n)
-  private[akka] def decrement(key: UniqueAddress): PNCounter = decrement(key, 1)
+  /**
+   * Scala API: Decrement the counter with the delta `n` specified.
+   * If the delta `n` is negative then it will increment instead of decrement.
+   */
+  def decrement(node: Cluster, n: BigInt): PNCounter =
+    decrement(node.selfUniqueAddress, n)
 
-  private[akka] def change(key: UniqueAddress, n: Long): PNCounter =
+  /**
+   * Java API: Decrement the counter with the delta `n` specified.
+   * If the delta `n` is negative then it will increment instead of decrement.
+   */
+  def decrement(node: Cluster, n: java.math.BigInteger): PNCounter =
+    decrement(node.selfUniqueAddress, n)
+
+  /** Internal API */
+  @InternalApi private[akka] def increment(key: UniqueAddress, n: BigInt): PNCounter = change(key, n)
+  /** Internal API */
+  @InternalApi private[akka] def increment(key: UniqueAddress): PNCounter = increment(key, 1)
+  /** Internal API */
+  @InternalApi private[akka] def decrement(key: UniqueAddress, n: BigInt): PNCounter = change(key, -n)
+  /** Internal API */
+  @InternalApi private[akka] def decrement(key: UniqueAddress): PNCounter = decrement(key, 1)
+
+  /** Internal API */
+  @InternalApi private[akka] def change(key: UniqueAddress, n: BigInt): PNCounter =
     if (n > 0) copy(increments = increments.increment(key, n))
     else if (n < 0) copy(decrements = decrements.increment(key, -n))
     else this

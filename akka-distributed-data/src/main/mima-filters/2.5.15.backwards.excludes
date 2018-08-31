@@ -1,0 +1,4 @@
+# #25543 allow BigInt increment and decrements in PNCounter
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.PNCounter.increment")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.PNCounter.decrement")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.PNCounter.change")
