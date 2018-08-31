@@ -63,10 +63,10 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
   import ActorSpecMessages._
 
-  def decoration[T: ClassTag]: Behavior[T] ⇒ Behavior[T]
+  def decoration[T]: Behavior[T] ⇒ Behavior[T]
 
   implicit class BehaviorDecorator[T](behavior: Behavior[T])(implicit ev: ClassTag[T]) {
-    def decorate: Behavior[T] = decoration[T](ev)(behavior)
+    def decorate: Behavior[T] = decoration[T](behavior)
   }
 
   "An ActorContext" must {
@@ -589,25 +589,32 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
 class NormalActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T: ClassTag] = x ⇒ x
+  override def decoration[T] = x ⇒ x
 }
 
 class WidenActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T: ClassTag] = b ⇒ b.widen { case x ⇒ x }
+  override def decoration[T] = b ⇒ b.widen { case x ⇒ x }
 }
 
 class DeferredActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T: ClassTag] = b ⇒ Behaviors.setup(_ ⇒ b)
+  override def decoration[T] = b ⇒ Behaviors.setup(_ ⇒ b)
 }
 
 class NestedDeferredActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T: ClassTag] = b ⇒ Behaviors.setup(_ ⇒ Behaviors.setup(_ ⇒ b))
+  override def decoration[T] = b ⇒ Behaviors.setup(_ ⇒ Behaviors.setup(_ ⇒ b))
 }
 
-class TapActorContextSpec extends ActorContextSpec {
+class InterceptActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T: ClassTag]: Behavior[T] ⇒ Behavior[T] = b ⇒ Behaviors.tap[T](b)((_, _) ⇒ (), (_, _) ⇒ ())
+  def tap[T] = new BehaviorInterceptor[T, T] {
+    override def aroundReceive(ctx: ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] =
+      target(msg)
+    override def aroundSignal(ctx: ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] =
+      target(signal)
+  }
+
+  override def decoration[T]: Behavior[T] ⇒ Behavior[T] = b ⇒ Behaviors.intercept[T, T](tap)(b)
 }

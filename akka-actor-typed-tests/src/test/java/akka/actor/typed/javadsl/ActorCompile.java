@@ -37,11 +37,21 @@ public class ActorCompile {
   Behavior<MyMsg> actor2 = Behaviors.receive((ctx, msg) -> unhandled());
   Behavior<MyMsg> actor4 = empty();
   Behavior<MyMsg> actor5 = ignore();
-  Behavior<MyMsg> actor6 = tap(MyMsg.class, (ctx, signal) -> {}, (ctx, msg) -> {}, actor5);
+  Behavior<MyMsg> actor6 = intercept(new BehaviorInterceptor<MyMsg, MyMsg>() {
+    @Override
+    public Behavior<MyMsg> aroundReceive(ActorContext<MyMsg> ctx, MyMsg msg, ReceiveTarget<MyMsg> target) {
+      return target.apply(msg);
+    }
+
+    @Override
+    public Behavior<MyMsg> aroundSignal(ActorContext<MyMsg> ctx, Signal signal, SignalTarget<MyMsg> target) {
+      return target.apply(signal);
+    }
+  }, actor5);
   Behavior<MyMsgA> actor7 = actor6.narrow();
   Behavior<MyMsg> actor8 = setup(ctx -> {
     final ActorRef<MyMsg> self = ctx.getSelf();
-    return monitor(MyMsg.class, self, ignore());
+    return monitor(self, ignore());
   });
   Behavior<MyMsg> actor9 = widened(actor7, pf -> pf.match(MyMsgA.class, x -> x));
   Behavior<MyMsg> actor10 = Behaviors.receive((ctx, msg) -> stopped(actor4), (ctx, signal) -> same());

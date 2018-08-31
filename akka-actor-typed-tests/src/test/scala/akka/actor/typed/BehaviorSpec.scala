@@ -502,10 +502,22 @@ class DeferredScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec {
     aux.receiveAll() should ===(Done :: Nil)
 }
 
-class TapScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reuse with SignalSiphon {
+class InterceptScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reuse with SignalSiphon {
+
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
-    (SBehaviors.tap((_, msg) ⇒ inbox.ref ! Right(msg), (_, sig) ⇒ inbox.ref ! Left(sig), super.behavior(monitor)._1), inbox)
+    val tap = new BehaviorInterceptor[Command, Command] {
+      override def aroundReceive(ctx: ActorContext[Command], msg: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
+        inbox.ref ! Right(msg)
+        target(msg)
+      }
+
+      override def aroundSignal(ctx: ActorContext[Command], signal: Signal, target: SignalTarget[Command]): Behavior[Command] = {
+        inbox.ref ! Left(signal)
+        target(signal)
+      }
+    }
+    (SBehaviors.intercept(tap)(super.behavior(monitor)._1), inbox)
   }
 }
 
@@ -605,11 +617,18 @@ class DeferredJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec {
 class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse with SignalSiphon {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
-    (JBehaviors.tap(
-      classOf[Command],
-      pc((_, msg) ⇒ inbox.ref ! Right(msg)),
-      ps((_, sig) ⇒ inbox.ref ! Left(sig)),
-      super.behavior(monitor)._1), inbox)
+    val tap = new BehaviorInterceptor[Command, Command] {
+      override def aroundReceive(ctx: ActorContext[Command], msg: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
+        inbox.ref ! Right(msg)
+        target(msg)
+      }
+
+      override def aroundSignal(ctx: ActorContext[Command], signal: Signal, target: SignalTarget[Command]): Behavior[Command] = {
+        inbox.ref ! Left(signal)
+        target(signal)
+      }
+    }
+    (JBehaviors.intercept(tap, super.behavior(monitor)._1), inbox)
   }
 }
 

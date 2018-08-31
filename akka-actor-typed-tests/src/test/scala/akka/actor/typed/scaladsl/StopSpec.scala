@@ -7,7 +7,8 @@ package akka.actor.typed.scaladsl
 import akka.Done
 import akka.actor.testkit.typed.TE
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.typed.{ PostStop, TypedAkkaSpecWithShutdown }
+import akka.actor.typed
+import akka.actor.typed.{ Behavior, BehaviorInterceptor, PostStop, ReceiveTarget, Signal, SignalTarget, TypedAkkaSpecWithShutdown }
 
 import scala.concurrent.Promise
 
@@ -31,15 +32,21 @@ class StopSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
     "execute the post stop when wrapped" in {
       val sawSignal = Promise[Done]()
       val ref = spawn(Behaviors.setup[AnyRef] { _ ⇒
-        Behaviors.tap(
-          Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
+        Behaviors.intercept(
+          new BehaviorInterceptor[AnyRef, AnyRef] {
+            override def aroundReceive(ctx: typed.ActorContext[AnyRef], msg: AnyRef, target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
+              target(msg)
+            }
+
+            override def aroundSignal(ctx: typed.ActorContext[AnyRef], signal: Signal, target: SignalTarget[AnyRef]): Behavior[AnyRef] = {
+              target(signal)
+            }
+          }
+        )(Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
             case (ctx, PostStop) ⇒
               sawSignal.success(Done)
               Behaviors.empty
-          }))(
-            (_, _) ⇒ (),
-            (_, _) ⇒ ()
-          )
+          }))
       })
       ref ! "stopit"
       sawSignal.future.futureValue should ===(Done)

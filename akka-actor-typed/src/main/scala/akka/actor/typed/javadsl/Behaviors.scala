@@ -7,13 +7,15 @@ package akka.actor.typed.javadsl
 import java.util.Collections
 import java.util.function.{ Function ⇒ JFunction }
 
-import akka.actor.typed.{ ActorRef, Behavior, ExtensibleBehavior, Signal, SupervisorStrategy }
-import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehavior }
+import akka.actor.typed.{ ActorRef, Behavior, BehaviorInterceptor, ExtensibleBehavior, Signal, SupervisorStrategy }
+import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.japi.function.{ Procedure2, Function2 ⇒ JapiFunction2 }
 import akka.japi.pf.PFBuilder
+
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
+
 /**
  * Factories for [[akka.actor.typed.Behavior]].
  */
@@ -166,19 +168,14 @@ object Behaviors {
   }
 
   /**
-   * This type of Behavior wraps another Behavior while allowing you to perform
-   * some action upon each received message or signal. It is most commonly used
-   * for logging or tracing what a certain Actor does.
+   * Intercept messages and signals for a `behavior` by first passing them to a [[akka.actor.typed.BehaviorInterceptor]]
+   *
+   * When a behavior returns a new behavior as a result of processing a signal or message and that behavior already contains
+   * the same interceptor (defined by the `isSame` method on the `BehaviorInterceptor`) only the innermost interceptor
+   * is kept. This is to protect against stack overflow when recursively defining behaviors.
    */
-  def tap[T](
-    clazz:     Class[T],
-    onMessage: Procedure2[ActorContext[T], T],
-    onSignal:  Procedure2[ActorContext[T], Signal],
-    behavior:  Behavior[T]): Behavior[T] = {
-    akka.actor.typed.scaladsl.Behaviors.tap[T](behavior)(
-      (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
-      (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig))(ClassTag[T](clazz))
-  }
+  def intercept[O, I](behaviorInterceptor: BehaviorInterceptor[O, I], behavior: Behavior[I]): Behavior[O] =
+    BehaviorImpl.intercept(behaviorInterceptor)(behavior)
 
   /**
    * Behavior decorator that copies all received message to the designated
@@ -186,8 +183,8 @@ object Behaviors {
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
    */
-  def monitor[T](clazz: Class[T], monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] = {
-    akka.actor.typed.scaladsl.Behaviors.monitor(monitor, behavior)(reflect.ClassTag(clazz))
+  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] = {
+    akka.actor.typed.scaladsl.Behaviors.monitor(monitor, behavior)
   }
 
   /**
@@ -340,7 +337,7 @@ object Behaviors {
         message ⇒ asScalaMap(mdcForMessage.apply(message))
       }
 
-    WithMdcBehavior[T](
+    WithMdcBehaviorInterceptor[T](
       asScalaMap(staticMdc),
       mdcForMessageFun,
       behavior)
