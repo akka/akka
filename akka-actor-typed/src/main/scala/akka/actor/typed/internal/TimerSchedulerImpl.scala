@@ -9,11 +9,13 @@ import akka.actor.{ Cancellable, NotInfluenceReceiveTimeout }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.actor.typed.ActorRef.ActorRefOps
+import akka.actor.typed.internal.BehaviorImpl.InterceptId
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.JavaDurationConverters._
 
+import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
@@ -147,6 +149,10 @@ import scala.reflect.ClassTag
     }
   }
 
+  private case object TimerInterceptId extends InterceptId {
+    override def toString: String = "Timer"
+  }
+
   def intercept(behavior: Behavior[T]): Behavior[T] = {
     // The scheduled TimerMsg is intercepted to guard against old messages enqueued
     // in mailbox before timer was canceled.
@@ -162,7 +168,8 @@ import scala.reflect.ClassTag
       },
       afterMessage = (ctx, msg, b) ⇒ b, // TODO optimize by using more ConstantFun
       afterSignal = (ctx, sig, b) ⇒ b,
-      behavior)(ClassTag(classOf[TimerSchedulerImpl.TimerMsg]))
+      behavior,
+      TimerInterceptId)(ClassTag(classOf[TimerSchedulerImpl.TimerMsg]))
   }
 
 }

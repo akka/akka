@@ -155,6 +155,9 @@ object Behaviors {
    * This type of Behavior wraps another Behavior while allowing you to perform
    * some action upon each received message or signal. It is most commonly used
    * for logging or tracing what a certain Actor does.
+   *
+   * If a wrapped behavior returns a tap itself, the new tap replaces the existing one,
+   * to protect against stack overflow due to recursively adding taps.
    */
   def tap[T: ClassTag](behavior: Behavior[T])(
     onMessage: (ActorContext[T], T) ⇒ Unit,
