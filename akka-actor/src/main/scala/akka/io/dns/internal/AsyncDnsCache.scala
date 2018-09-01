@@ -12,7 +12,8 @@ import akka.io.{ Dns, PeriodicCacheCleanup }
 import scala.collection.immutable
 import akka.io.SimpleDnsCache._
 import akka.io.dns.internal.AsyncDnsResolver.{ Ipv4Type, Ipv6Type, QueryType }
-import akka.io.dns.{ AAAARecord, ARecord, ResourceRecord }
+import akka.io.dns.internal.DnsClient.Answer
+import akka.io.dns.{ AAAARecord, ARecord }
 
 import scala.annotation.tailrec
 
@@ -20,7 +21,7 @@ import scala.annotation.tailrec
  * Internal API
  */
 @InternalApi class AsyncDnsCache extends Dns with PeriodicCacheCleanup {
-  private val cache = new AtomicReference(new Cache[(String, QueryType), immutable.Seq[ResourceRecord]](
+  private val cache = new AtomicReference(new Cache[(String, QueryType), Answer](
     immutable.SortedSet()(expiryEntryOrdering()),
     immutable.Map(), clock))
 
@@ -35,7 +36,7 @@ import scala.annotation.tailrec
       ipv4 ← cache.get().get((name, Ipv4Type))
       ipv6 ← cache.get().get((name, Ipv6Type))
     } yield {
-      Dns.Resolved(name, (ipv4 ++ ipv6).collect {
+      Dns.Resolved(name, (ipv4.rrs ++ ipv6.rrs).collect {
         case r: ARecord    ⇒ r.ip
         case r: AAAARecord ⇒ r.ip
       })
@@ -49,12 +50,12 @@ import scala.annotation.tailrec
     else (now - nanoBase) / 1000000
   }
 
-  private[io] final def get(key: (String, QueryType)): Option[immutable.Seq[ResourceRecord]] = {
+  private[io] final def get(key: (String, QueryType)): Option[Answer] = {
     cache.get().get(key)
   }
 
   @tailrec
-  private[io] final def put(key: (String, QueryType), records: immutable.Seq[ResourceRecord], ttlMillis: Long): Unit = {
+  private[io] final def put(key: (String, QueryType), records: Answer, ttlMillis: Long): Unit = {
     val c = cache.get()
     if (!cache.compareAndSet(c, c.put(key, records, ttlMillis)))
       put(key, records, ttlMillis)

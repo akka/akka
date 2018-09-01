@@ -69,4 +69,6 @@ Update the versions used in:
 * https://github.com/akka/akka-http-quickstart-java.g8
 * https://github.com/akka/akka-http-quickstart-scala.g8
 * https://github.com/akka/akka-distributed-workers-scala.g8
+* https://github.com/akka/akka-grpc-quickstart-java.g8
+* https://github.com/akka/akka-grpc-quickstart-scala.g8
 * https://github.com/lightbend/reactive-platform-docs/blob/master/build.sbt (this populates https://developer.lightbend.com/docs/reactive-platform/2.0/supported-modules/index.html#akka)

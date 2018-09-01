@@ -73,7 +73,7 @@ private[remote] class SynchronizedEventSink(delegate: EventSink) extends EventSi
 /**
  * INTERNAL API
  *
- * Update clock at various resolutions and aquire the resulting timestamp.
+ * Update clock at various resolutions and acquire the resulting timestamp.
  */
 private[remote] trait EventClock {
 

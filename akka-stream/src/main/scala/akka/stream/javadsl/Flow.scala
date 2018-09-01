@@ -1318,6 +1318,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
+  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(pf: PartialFunction[Throwable, Out]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.recover(pf))
 
@@ -1336,6 +1337,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
+  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(clazz: Class[_ <: Throwable], supplier: Supplier[Out]): javadsl.Flow[In, Out, Mat] =
     recover {
       case elem if clazz.isInstance(elem) ⇒ supplier.get()
@@ -1349,7 +1351,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
    * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
-   * Similarily to [[recover]] throwing an exception inside `mapError` _will_ be logged.
+   * Similarly to [[recover]] throwing an exception inside `mapError` _will_ be logged.
    *
    * '''Emits when''' element is available from the upstream or upstream is failed and pf returns an element
    *

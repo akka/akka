@@ -736,7 +736,7 @@ trait FlowOps[+Out, +Mat] {
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
    * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
-   * Similarily to [[recover]] throwing an exception inside `mapError` _will_ be logged.
+   * Similarly to [[recover]] throwing an exception inside `mapError` _will_ be logged.
    *
    * '''Emits when''' element is available from the upstream or upstream is failed and pf returns an element
    *

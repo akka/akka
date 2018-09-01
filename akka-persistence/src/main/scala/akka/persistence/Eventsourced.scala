@@ -427,10 +427,20 @@ private[persistence] trait Eventsourced extends Snapshotter with PersistenceStas
    * If the delete is successful a [[DeleteMessagesSuccess]] will be sent to the actor.
    * If the delete fails a [[DeleteMessagesFailure]] will be sent to the actor.
    *
-   * @param toSequenceNr upper sequence number bound of persistent messages to be deleted.
+   * The given `toSequenceNr` must be less than or equal to [[Eventsourced#lastSequenceNr]], otherwise
+   * [[DeleteMessagesFailure]] is sent to the actor without performing the delete. All persistent
+   * messages may be deleted without specifying the actual sequence number by using `Long.MaxValue`
+   * as the `toSequenceNr`.
+   *
+   * @param toSequenceNr upper sequence number (inclusive) bound of persistent messages to be deleted.
    */
-  def deleteMessages(toSequenceNr: Long): Unit =
-    journal ! DeleteMessagesTo(persistenceId, toSequenceNr, self)
+  def deleteMessages(toSequenceNr: Long): Unit = {
+    if (toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr)
+      journal ! DeleteMessagesTo(persistenceId, toSequenceNr, self)
+    else
+      self ! DeleteMessagesFailure(new RuntimeException(
+        s"toSequenceNr [$toSequenceNr] must be less than or equal to lastSequenceNr [$lastSequenceNr]"), toSequenceNr)
+  }
 
   /**
    * Returns `true` if this persistent actor is currently recovering.

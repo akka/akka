@@ -17,6 +17,11 @@ import scala.concurrent.{ Await, ExecutionContext, Future, duration }
 
 /**
  * INTERNAL API
+ *
+ * We cannot prove that this code is correct and it will therefore be removed
+ * with AES128CounterSecureRNG and AES256CounterSecureRNG. See security
+ * vulnerability https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html
+ *
  * This class is a Scala implementation of AESCounterRNG algorithm
  * patterned after org.uncommons.maths.random by Daniel Dyer (Apache License 2.0)
  *
@@ -32,16 +37,15 @@ import scala.concurrent.{ Await, ExecutionContext, Future, duration }
  * NOTE: this class is not serializable
  */
 @InternalApi
-private[akka] class AESCounterBuiltinRNG(val seed: Array[Byte], implicit val executionContext: ExecutionContext,
-                                         val reseedingThreshold: Long     = CounterRNGConstants.ReseedingThreshold,
-                                         val reseedingDeadline:  Long     = CounterRNGConstants.ReseedingDeadline,
-                                         val reseedingTimeout:   Duration = CounterRNGConstants.ReseedingTimeout) extends Random {
+private[akka] class DeprecatedAESCounterBuiltinRNG(val seed: Array[Byte], implicit val executionContext: ExecutionContext,
+                                                   val reseedingThreshold: Long     = CounterRNGConstants.ReseedingThreshold,
+                                                   val reseedingDeadline:  Long     = CounterRNGConstants.ReseedingDeadline,
+                                                   val reseedingTimeout:   Duration = CounterRNGConstants.ReseedingTimeout) extends Random {
   import CounterRNGConstants._
 
   private val entropySource = new SecureRandom
 
   // mutable state below, concurrent accesses need synchronized or lock
-  private val counter: Array[Byte] = Array.fill[Byte](CounterSizeBytes)(0)
   private var index: Int = 0
   private var currentBlock: Array[Byte] = null
   private var reseedFuture: Future[Array[Byte]] = null
@@ -52,29 +56,31 @@ private[akka] class AESCounterBuiltinRNG(val seed: Array[Byte], implicit val exe
   // this algorithm can be further improved by better selection of the iv
   // here and at re-seeding time further below
   private val ivArr = Array.fill[Byte](CounterSizeBytes)(0)
-  ivArr(0) = (ivArr(0) + 1.toByte).toByte
+  ivArr(0) = (ivArr(0) + 1).toByte
   private val ivSpec = new IvParameterSpec(ivArr)
   cipher.init(Cipher.ENCRYPT_MODE, new this.AESKey(seed), ivSpec)
 
+  private val zeros: Array[Byte] = Array.fill[Byte](CounterSizeBytes)(0)
+
   @Override
   override protected def next(bits: Int): Int = synchronized {
-    // random result generation phase - if there is not enough bits in counter variable
+    // random result generation phase - if there is not enough bits in the currentBlock
     // we generate some more with AES/CTR
     bitsSinceSeeding += bits
     if (currentBlock == null || currentBlock.length - index < 4) {
       try {
-        currentBlock = cipher.doFinal(counter)
+        currentBlock = cipher.update(zeros)
         index = 0
       } catch {
         case ex: Exception ⇒
-          // Generally Cipher.doFinal() from nextBlock may throw various exceptions.
+          // Generally Cipher.update() from nextBlock may throw various exceptions.
           // However this should never happen.  If initialisation succeeds without exceptions
           // we should be able to proceed indefinitely without exceptions.
           throw new IllegalStateException("Failed creating next random block.", ex)
       }
     }
 
-    // now, enough bits in counter, generate pseudo-random result
+    // now, enough bits in currentBlock, generate pseudo-random result
     val result = (BitwiseByteToInt & currentBlock(index + 3)) |
       ((BitwiseByteToInt & currentBlock(index + 2)) << 8) |
       ((BitwiseByteToInt & currentBlock(index + 1)) << 16) |
@@ -86,7 +92,7 @@ private[akka] class AESCounterBuiltinRNG(val seed: Array[Byte], implicit val exe
     if (bitsSinceSeeding > reseedingThreshold) {
       if (reseedFuture == null) {
         // ask for a seed and process async on a separate thread using AESCounterBuiltinRNGReSeeder threadpool
-        reseedFuture = Future { entropySource.generateSeed(32) }
+        reseedFuture = Future { entropySource.generateSeed(seed.length) }
       }
       // check if reseedingDeadline is exceeded - in that case we cannot proceed, as that would be insecure
       // we need to block on the future to wait for entropy

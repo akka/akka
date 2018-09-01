@@ -817,7 +817,7 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
       expectMsg("pong")
     }
 
-    "handle failure in creation when supervision startegy returns Resume and Restart" taggedAs LongRunningTest in {
+    "handle failure in creation when supervision strategy returns Resume and Restart" taggedAs LongRunningTest in {
       val createAttempt = new AtomicInteger(0)
       val preStartCalled = new AtomicInteger(0)
       val postRestartCalled = new AtomicInteger(0)

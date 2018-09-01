@@ -486,7 +486,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         val b = env.originUid
         val hashA = 23 + a
         val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
-        math.abs(hash) % inboundLanes
+        math.abs(hash % inboundLanes)
       case OptionVal.None ⇒
         // the lane is set by the DuplicateHandshakeReq stage, otherwise 0
         env.lane

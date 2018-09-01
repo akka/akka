@@ -179,7 +179,7 @@ public class RecipeHold extends RecipeTest {
         FiniteDuration timeout = FiniteDuration.create(200, TimeUnit.MILLISECONDS);
 
         sub.request(1);
-        sub.expectNoMsg(timeout);
+        sub.expectNoMessage(timeout);
 
         pub.sendNext(1);
         sub.expectNext(1);

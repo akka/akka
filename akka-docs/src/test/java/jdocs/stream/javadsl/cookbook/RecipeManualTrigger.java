@@ -79,17 +79,17 @@ public class RecipeManualTrigger extends RecipeTest {
 
         FiniteDuration timeout = FiniteDuration.create(100, TimeUnit.MILLISECONDS);
         sub.expectSubscription().request(1000);
-        sub.expectNoMsg(timeout);
+        sub.expectNoMessage(timeout);
 
         pub.sendNext(TRIGGER);
         sub.expectNext(new Message("1"));
-        sub.expectNoMsg(timeout);
+        sub.expectNoMessage(timeout);
 
         pub.sendNext(TRIGGER);
         pub.sendNext(TRIGGER);
         sub.expectNext(new Message("2"));
         sub.expectNext(new Message("3"));
-        sub.expectNoMsg(timeout);
+        sub.expectNoMessage(timeout);
 
         pub.sendNext(TRIGGER);
         sub.expectNext(new Message("4"));
@@ -132,17 +132,17 @@ public class RecipeManualTrigger extends RecipeTest {
 
         FiniteDuration timeout = FiniteDuration.create(100, TimeUnit.MILLISECONDS);
         sub.expectSubscription().request(1000);
-        sub.expectNoMsg(timeout);
+        sub.expectNoMessage(timeout);
 
         pub.sendNext(TRIGGER);
         sub.expectNext(new Message("1"));
-        sub.expectNoMsg(timeout);
+        sub.expectNoMessage(timeout);
 
         pub.sendNext(TRIGGER);
         pub.sendNext(TRIGGER);
         sub.expectNext(new Message("2"));
         sub.expectNext(new Message("3"));
-        sub.expectNoMsg(timeout);
+        sub.expectNoMessage(timeout);
 
         pub.sendNext(TRIGGER);
         sub.expectNext(new Message("4"));

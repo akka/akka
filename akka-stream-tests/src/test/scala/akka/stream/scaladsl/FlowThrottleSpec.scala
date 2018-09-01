@@ -161,7 +161,7 @@ class FlowThrottleSpec extends StreamSpec {
       downstream.cancel()
     }
 
-    "throw exception when exceeding throughtput in enforced mode" in assertAllStagesStopped {
+    "throw exception when exceeding throughput in enforced mode" in assertAllStagesStopped {
       Await.result(
         Source(1 to 5).throttle(1, 200.millis, 5, Enforcing).runWith(Sink.seq),
         2.seconds) should ===(1 to 5) // Burst is 5 so this will not fail
@@ -282,7 +282,7 @@ class FlowThrottleSpec extends StreamSpec {
       downstream.cancel()
     }
 
-    "throw exception when exceeding throughtput in enforced mode" in assertAllStagesStopped {
+    "throw exception when exceeding throughput in enforced mode" in assertAllStagesStopped {
       Await.result(
         Source(1 to 4).throttle(2, 200.millis, 10, identity, Enforcing).runWith(Sink.seq),
         2.seconds) should ===(1 to 4) // Burst is 10 so this will not fail

@@ -59,7 +59,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
     val logic = new GraphStageLogic(shape) with OutHandler {
       handler ⇒
       val buffer = ByteBuffer.allocate(chunkSize)
-      val maxReadAhead = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+      val maxReadAhead = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max
       var channel: FileChannel = _
       var position = startPosition
       var chunkCallback: Try[Int] ⇒ Unit = _

@@ -401,7 +401,7 @@ private[akka] final class FairDistributionHashCache( final val config: Config) e
 
   override final def create(): QueueSelector = new AtomicReference[ImmutableIntMap](ImmutableIntMap.empty) with QueueSelector {
     override def toString: String = s"FairDistributionHashCache(fairDistributionThreshold = $fairDistributionThreshold)"
-    private[this] final def improve(h: Int): Int = Math.abs(reverseBytes(h * 0x9e3775cd) * 0x9e3775cd) // `sbhash`: In memory of Phil Bagwell.
+    private[this] final def improve(h: Int): Int = 0x7FFFFFFF & (reverseBytes(h * 0x9e3775cd) * 0x9e3775cd) // `sbhash`: In memory of Phil Bagwell.
     override final def getQueue(command: Runnable, queues: Int): Int = {
       val runnableHash = command.hashCode()
       if (fairDistributionThreshold == 0)

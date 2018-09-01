@@ -20,7 +20,7 @@ class ByteBufferSerializerDocSpec {
 
     // Implement this method for compatibility with `SerializerWithStringManifest`.
     override def toBinary(o: AnyRef): Array[Byte] = {
-      // in production code, aquire this from a BufferPool
+      // in production code, acquire this from a BufferPool
       val buf = ByteBuffer.allocate(256)
 
       toBinary(o, buf)

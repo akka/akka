@@ -7,7 +7,6 @@ package akka.actor.typed.internal
 import java.util.function.Consumer
 import java.util.function.{ Function ⇒ JFunction }
 
-import akka.actor.typed.ActorContext
 import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl
 import akka.actor.typed.scaladsl

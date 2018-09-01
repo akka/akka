@@ -7,20 +7,22 @@ package akka.remote.security.provider
 import java.security.SecureRandom
 import java.util.concurrent.Executors
 
-import SeedSize.Seed256
+import SeedSize.Seed128
 
 import scala.concurrent.ExecutionContext
 
 /**
- * This class is a wrapper around the 256-bit AESCounterBuiltinRNG AES/CTR PRNG algorithm
+ * This class is a wrapper around the 128-bit AESCounterBuiltinRNG AES/CTR PRNG algorithm
  * The only method used by netty ssl is engineNextBytes(bytes)
+ *
  */
-class AES256CounterSecureRNG extends java.security.SecureRandomSpi {
+@deprecated("Use SecureRandom instead. We cannot prove that this code is correct, see https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html", "2.5.16")
+class DeprecatedAES128CounterSecureRNG extends java.security.SecureRandomSpi {
   private val singleThreadPool = ExecutionContext.fromExecutorService(Executors.newSingleThreadExecutor(new AESCounterBuiltinRNGReSeeder))
   private val entropySource = new SecureRandom
-  private val seed = entropySource.generateSeed(Seed256)
+  private val seed = entropySource.generateSeed(Seed128)
 
-  private val rng = new AESCounterBuiltinRNG(seed, singleThreadPool)
+  private val rng = new DeprecatedAESCounterBuiltinRNG(seed, singleThreadPool)
 
   /**
    * This is managed internally by AESCounterBuiltinRNG

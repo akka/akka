@@ -344,7 +344,7 @@ This has two notable *downsides*:
  * first, that the deserialization was actually performed, so we spent some of out time budget on the
 deserialization, even though the event does not contribute anything to the persistent actors state.
  * second, that we are *unable to remove the event class* from the system – since the serializer still needs to create
-the actuall instance of it, as it does not know it will not be used.
+the actual instance of it, as it does not know it will not be used.
 
 The solution to these problems is to use a serializer that is aware of that event being no longer needed, and can notice
 this before starting to deserialize the object.
@@ -356,7 +356,7 @@ that the type is no longer needed, and skip the deserialization all-together:
 
 ![persistence-drop-event-serializer.png](./images/persistence-drop-event-serializer.png)
  
-The serializer is aware of the old event types that need to be skipped (**O**), and can skip deserializing them alltogether
+The serializer is aware of the old event types that need to be skipped (**O**), and can skip deserializing them altogether
 by returning a "tombstone" (**T**), which the EventAdapter converts into an empty EventSeq.
 Other events (**E**) can just be passed through.
 
@@ -411,7 +411,7 @@ Java
 :  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #detach-models }
 
 The `EventAdapter` takes care of converting from one model to the other one (in both directions),
-alowing the models to be completely detached from each other, such that they can be optimised independently
+allowing the models to be completely detached from each other, such that they can be optimised independently
 as long as the mapping logic is able to convert between them:
 
 Scala
@@ -496,7 +496,7 @@ The `EventAdapter` splits the incoming event into smaller more fine grained even
 
 During recovery however, we now need to convert the old `V1` model into the `V2` representation of the change.
 Depending if the old event contains a name change, we either emit the `UserNameChanged` or we don't,
-and the address change is handled similarily:
+and the address change is handled similarly:
 
 
 Scala

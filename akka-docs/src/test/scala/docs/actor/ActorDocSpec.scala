@@ -379,7 +379,6 @@ class ActorDocSpec extends AkkaSpec("""
       ponger ! Ping
     }
 
-    // $FiddleDependency org.akka-js %%% akkajsactor % 1.2.5.1
     //#fiddle_code
 
     val testProbe = new TestProbe(system)

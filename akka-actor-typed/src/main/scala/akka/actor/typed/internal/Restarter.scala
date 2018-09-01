@@ -13,7 +13,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.util.{ OptionVal, PrettyDuration }
 
-import scala.annotation.tailrec
 import scala.concurrent.duration.{ Deadline, FiniteDuration }
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
