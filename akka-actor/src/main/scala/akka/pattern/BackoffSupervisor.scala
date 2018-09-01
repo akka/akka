@@ -156,7 +156,10 @@ object BackoffSupervisor {
     maxBackoff:   FiniteDuration,
     randomFactor: Double,
     strategy:     SupervisorStrategy): Props = {
-    propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, strategy)
+    require(minBackoff > Duration.Zero, "minBackoff must be > 0")
+    require(maxBackoff >= minBackoff, "maxBackoff must be >= minBackoff")
+    require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
+    Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, randomFactor, strategy))
   }
 
   /**
