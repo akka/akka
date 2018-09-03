@@ -1,0 +1,4 @@
+# #25469 stream refs hardened termination via awaiting completion signal
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.streamref.StreamRefSettingsImpl.*")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.streamref.StreamRefSettingsImpl$")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.StreamRefSettings.*")

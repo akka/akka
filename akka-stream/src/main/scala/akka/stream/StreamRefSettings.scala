@@ -29,7 +29,8 @@ object StreamRefSettings {
     StreamRefSettingsImpl(
       bufferCapacity = c.getInt("buffer-capacity"),
       demandRedeliveryInterval = c.getDuration("demand-redelivery-interval", TimeUnit.MILLISECONDS).millis,
-      subscriptionTimeout = c.getDuration("subscription-timeout", TimeUnit.MILLISECONDS).millis
+      subscriptionTimeout = c.getDuration("subscription-timeout", TimeUnit.MILLISECONDS).millis,
+      finalTerminationSignalDeadline = c.getDuration("termination-received-before-completion-leeway", TimeUnit.MILLISECONDS).millis
     )
   }
 }
@@ -43,11 +44,13 @@ trait StreamRefSettings {
   def bufferCapacity: Int
   def demandRedeliveryInterval: FiniteDuration
   def subscriptionTimeout: FiniteDuration
+  def finalTerminationSignalDeadline: FiniteDuration
 
   // --- with... methods ---
 
   def withBufferCapacity(value: Int): StreamRefSettings
   def withDemandRedeliveryInterval(value: FiniteDuration): StreamRefSettings
   def withSubscriptionTimeout(value: FiniteDuration): StreamRefSettings
+  def withTerminationReceivedBeforeCompletionLeeway(value: FiniteDuration): StreamRefSettings
 }
 
