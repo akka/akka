@@ -13,15 +13,21 @@ import scala.concurrent.duration.FiniteDuration
 
 trait RejectSupport[U] { this: PolicyOpsTestKit[U] with HasStorage[_, U] ⇒
 
-  def rejectNextNOpsCond(cond: (String, U) ⇒ Boolean, n: Int): Unit = {
+  def rejectNextNOpsCond(cond: (String, U) ⇒ Boolean, n: Int): Unit =
+    rejectNextNOpsCond(cond, n, ExpectedRejection)
+
+  def rejectNextNOpsCond(cond: (String, U) ⇒ Boolean, n: Int, cause: Throwable): Unit = {
     val current = storage.currentPolicy
-    val pol = new Policies.RejectNextNCond(n, ExpectedRejection, cond, withPolicy(current))
+    val pol = new Policies.RejectNextNCond(n, cause, cond, withPolicy(current))
     withPolicy(pol)
   }
 
-  def rejectNextNOps(n: Int): Unit = {
+  def rejectNextNOps(n: Int): Unit =
+    rejectNextNOps(n, ExpectedRejection)
+
+  def rejectNextNOps(n: Int, cause: Throwable): Unit = {
     val current = storage.currentPolicy
-    val pol = new Policies.RejectNextN(n, ExpectedRejection, withPolicy(current))
+    val pol = new Policies.RejectNextN(n, cause, withPolicy(current))
     withPolicy(pol)
   }
 
@@ -37,15 +43,21 @@ trait PolicyOpsTestKit[P] extends { this: HasStorage[_, P] ⇒
 
   private[testkit] val Policies: DefaultPolicies[P]
 
-  def failNextNOpsCond(cond: (String, P) ⇒ Boolean, n: Int): Unit = {
+  def failNextNOpsCond(cond: (String, P) ⇒ Boolean, n: Int): Unit =
+    failNextNOps(n, ExpectedFailure)
+
+  def failNextNOpsCond(cond: (String, P) ⇒ Boolean, n: Int, cause: Throwable): Unit = {
     val current = storage.currentPolicy
-    val pol = new Policies.FailNextNCond(n, ExpectedFailure, cond: (String, P) ⇒ Boolean, withPolicy(current))
+    val pol = new Policies.FailNextNCond(n, cause, cond: (String, P) ⇒ Boolean, withPolicy(current))
     withPolicy(pol)
   }
 
-  def failNextNOps(n: Int): Unit = {
+  def failNextNOps(n: Int): Unit =
+    failNextNOps(n, ExpectedFailure)
+
+  def failNextNOps(n: Int, cause: Throwable): Unit = {
     val current = storage.currentPolicy
-    val pol = new Policies.FailNextN(n, ExpectedFailure, withPolicy(current))
+    val pol = new Policies.FailNextN(n, cause, withPolicy(current))
     withPolicy(pol)
   }
 
