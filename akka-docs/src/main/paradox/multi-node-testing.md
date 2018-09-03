@@ -10,9 +10,11 @@ To use Multi Node Testing, you must add the following dependency in your project
   version=$akka.version$
 }
 
-If you are using the latest nightly build you should pick a timestamped Akka version from
-[https://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/](https://repo.akka.io/snapshots/com/typesafe/akka/akka-multi-node-testkit_2.11/).
-We recommend against using `SNAPSHOT` in order to obtain stable builds.
+## Sample project
+
+You can look at the
+@extref[Multi Node example project](samples:akka-samples-multi-node)
+to see what this looks like in practice.
 
 ## Multi Node Testing Concepts
 

@@ -37,8 +37,10 @@ You can use both Akka remoting and Akka Cluster inside of Docker containers. But
 that you will need to take special care with the network configuration when using Docker,
 described here: @ref:[Akka behind NAT or in a Docker container](../remoting.md#remote-configuration-nat)
 
-For an example of how to set up a project using Akka Cluster and Docker take a look at the
-["akka-docker-cluster" sample](https://github.com/muuki88/activator-akka-docker).
+You can look at the
+@java[@extref[Cluster with docker-compse example project](samples:akka-samples-cluster-docker-compose-java)]
+@scala[@extref[Cluster with docker-compose example project](samples:akka-samples-cluster-docker-compose-scala)]
+to see what this looks like in practice.
 
 
 

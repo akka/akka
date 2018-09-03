@@ -10,6 +10,13 @@ To use Finite State Machine actors, you must add the following dependency in you
   version="$akka.version$"
 }
 
+## Sample project
+
+You can look at the
+@java[@extref[FSM example project](samples:akka-samples-fsm-java)]
+@scala[@extref[FSM example project](samples:akka-samples-fsm-scala)]
+to see what this looks like in practice.
+
 ## Overview
 
 The FSM (Finite State Machine) is available as @scala[a mixin for the] @java[an abstract base class that implements an] Akka Actor and

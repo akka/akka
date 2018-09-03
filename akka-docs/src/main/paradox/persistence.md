@@ -21,6 +21,13 @@ LevelDB-based plugins will require the following additional dependency:
   version="1.8"
 }
 
+## Sample project
+
+You can look at the
+@java[@extref[Persistence example project](samples:akka-samples-persistence-java)]
+@scala[@extref[Persistence example project](samples:akka-samples-persistence-scala)]
+to see what this looks like in practice.
+
 ## Introduction
 
 Akka persistence enables stateful actors to persist their internal state so that it can be recovered when an actor
