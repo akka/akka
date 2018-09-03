@@ -126,6 +126,15 @@ The console output may look like this:
 [INFO] [03/13/2018 15:50:05.816] [hello-akka.actor.default-dispatcher-6] [akka://hello/user/Akka] Greeting 3 for Akka
 ```
 
+@@@ div { .group-scala }
+
+#### Here is another example that you can edit and run in the browser:
+
+@@fiddle [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #fiddle_code template=Akka layout=v75 minheight=400px }
+
+@@@
+
+
 ## A More Complex Example
 
 The next example is more realistic and demonstrates some important patterns:
