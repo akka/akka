@@ -822,6 +822,33 @@ private[akka] class ActorSystemImpl(
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path
 
+  // Used for ManifestInfo.checkSameVersion
+  private def allModules: List[String] = List(
+    "akka-actor",
+    "akka-actor-testkit-typed",
+    "akka-actor-typed",
+    "akka-agent",
+    "akka-camel",
+    "akka-cluster",
+    "akka-cluster-metrics",
+    "akka-cluster-sharding",
+    "akka-cluster-sharding-typed",
+    "akka-cluster-tools",
+    "akka-cluster-typed",
+    "akka-distributed-data",
+    "akka-multi-node-testkit",
+    "akka-osgi",
+    "akka-persistence",
+    "akka-persistence-query",
+    "akka-persistence-shared",
+    "akka-persistence-typed",
+    "akka-protobuf",
+    "akka-remote",
+    "akka-slf4j",
+    "akka-stream",
+    "akka-stream-testkit",
+    "akka-stream-typed")
+
   @volatile private var _initialized = false
   /**
    *  Asserts that the ActorSystem has been fully initialized. Can be used to guard code blocks that might accidentally
@@ -844,6 +871,7 @@ private[akka] class ActorSystemImpl(
     if (settings.LogDeadLetters > 0)
       logDeadLetterListener = Some(systemActorOf(Props[DeadLetterListener], "deadLetterListener"))
     eventStream.startUnsubscriber()
+    ManifestInfo(this).checkSameVersion("Akka", allModules, logWarning = true)
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()
     this
