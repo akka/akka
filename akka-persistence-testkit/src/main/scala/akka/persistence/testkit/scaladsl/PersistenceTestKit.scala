@@ -7,7 +7,7 @@ package akka.persistence.testkit.scaladsl
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId }
 import akka.persistence.testkit.scaladsl.InMemStorageEmulator.JournalOperation
 import akka.persistence.{ Persistence, PersistentRepr, SnapshotMetadata }
-import akka.persistence.testkit.scaladsl.SnapShotStorageEmulator.SnapshotOperation
+import akka.persistence.testkit.scaladsl.SnapshotStorageEmulator.SnapshotOperation
 import com.typesafe.config.Config
 
 import scala.collection.immutable
@@ -99,7 +99,7 @@ class SnapshotTestKit(override val storage: TestKitStorage[(SnapshotMetadata, An
   with HasStorage[(SnapshotMetadata, Any), SnapshotOperation] {
   require(Try(Persistence(system).journalFor(PersistenceTestKitSnapshotPlugin.PluginId)).isSuccess, "The test persistence plugin for snapshots is not configured")
 
-  import SnapShotStorageEmulator._
+  import SnapshotStorageEmulator._
   import SnapshotTestKit._
 
   private val settings = Settings(system)
@@ -108,7 +108,7 @@ class SnapshotTestKit(override val storage: TestKitStorage[(SnapshotMetadata, An
 
   override private[testkit] val maxTimeout: FiniteDuration = settings.assertTimeout
 
-  override private[testkit] val Policies = SnapShotStorageEmulator.SnapshotPolicies
+  override private[testkit] val Policies = SnapshotStorageEmulator.SnapshotPolicies
 
   override def failNextNPersisted(persistenceId: String, n: Int): Unit =
     failNextNOpsCond((pid, op) ⇒ pid == persistenceId && op.isInstanceOf[Write], n)

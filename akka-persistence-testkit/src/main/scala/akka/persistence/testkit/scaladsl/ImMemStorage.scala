@@ -11,7 +11,7 @@ import java.util.function.{ BiFunction, Consumer }
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.persistence.testkit.scaladsl.InMemStorageEmulator.JournalOperation
 import akka.persistence.testkit.scaladsl.ProcessingPolicy._
-import akka.persistence.testkit.scaladsl.SnapShotStorageEmulator._
+import akka.persistence.testkit.scaladsl.SnapshotStorageEmulator._
 import akka.persistence.{ PersistentRepr, SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 
 import scala.annotation.tailrec
@@ -262,8 +262,8 @@ object InMemStorageEmulator {
 
 }
 
-trait SnapShotStorageEmulator extends TestKitStorage[(SnapshotMetadata, Any), SnapshotOperation] {
-  import SnapShotStorageEmulator._
+trait SnapshotStorageEmulator extends TestKitStorage[(SnapshotMetadata, Any), SnapshotOperation] {
+  import SnapshotStorageEmulator._
 
   override def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[(SnapshotMetadata, Any)] = {
     val sn = reloadHighestSequenceNum(key)
@@ -311,7 +311,7 @@ trait SnapShotStorageEmulator extends TestKitStorage[(SnapshotMetadata, Any), Sn
 
 }
 
-object SnapShotStorageEmulator {
+object SnapshotStorageEmulator {
 
   trait SnapshotOperation
 
@@ -329,15 +329,15 @@ object SnapShotStorageEmulator {
 
 }
 
-class SnapShotStorageEmulatorExtension extends SnapShotStorageEmulator with Extension
+class SnapshotStorageEmulatorExtension extends SnapshotStorageEmulator with Extension
 
-object SnapShotStorageEmulatorExtension extends ExtensionId[SnapShotStorageEmulatorExtension] with ExtensionIdProvider {
+object SnapshotStorageEmulatorExtension extends ExtensionId[SnapshotStorageEmulatorExtension] with ExtensionIdProvider {
 
-  override def get(system: ActorSystem): SnapShotStorageEmulatorExtension = super.get(system)
+  override def get(system: ActorSystem): SnapshotStorageEmulatorExtension = super.get(system)
 
-  override def createExtension(system: ExtendedActorSystem): SnapShotStorageEmulatorExtension = new SnapShotStorageEmulatorExtension
+  override def createExtension(system: ExtendedActorSystem): SnapshotStorageEmulatorExtension = new SnapshotStorageEmulatorExtension
 
-  override def lookup(): ExtensionId[_ <: Extension] = SnapShotStorageEmulatorExtension
+  override def lookup(): ExtensionId[_ <: Extension] = SnapshotStorageEmulatorExtension
 }
 
 class InMemEmulatorExtension extends InMemStorageEmulator with Extension
