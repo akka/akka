@@ -18,7 +18,7 @@ import akka.util.Timeout;
 //#imports1
 
 //#imports2
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 import akka.japi.Function;
 
 import java.util.concurrent.*;
@@ -68,6 +68,14 @@ import static akka.pattern.PatternsCS.retry;
 
 //#imports8
 
+//#imports-ask
+import static akka.pattern.PatternsCS.ask;
+//#imports-ask
+//#imports-pipe
+import static akka.pattern.PatternsCS.pipe;
+//#imports-pipe
+
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -112,6 +120,134 @@ public class FutureDocTest extends AbstractJavaTest {
     }
     //#print-result
   }
+
+  //#pipe-to-usage
+  public class ActorUsingPipeTo extends AbstractActor {
+    ActorRef target;
+    Timeout  timeout;
+
+    ActorUsingPipeTo(ActorRef target) {
+      this.target = target;
+      this.timeout = Timeout.create(Duration.ofSeconds(5));
+    }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(String.class, msg -> {
+          CompletableFuture<Object> fut =
+            ask(target, "some message", timeout).toCompletableFuture();
+
+          // the pipe pattern
+          pipe(fut, getContext().dispatcher()).to(getSender());
+        })
+        .build();
+    }
+  }
+  //#pipe-to-usage
+
+  //#pipe-to-returned-data
+  public class UserData     {
+    final String data;
+
+    UserData(String data){
+      this.data = data;
+    }
+  }
+
+  public class UserActivity {
+    final String activity;
+    UserActivity(String activity){
+      this.activity = activity;
+    }
+  }
+  //#pipe-to-returned-data
+
+  //#pipe-to-user-data-actor
+  public class UserDataActor extends AbstractActor {
+    UserData internalData;
+
+    UserDataActor(){
+      this.internalData = new UserData("initial data");
+    }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(GetFromUserDataActor.class, msg -> sender().tell(internalData, self()))
+        .build();
+    }
+  }
+
+  public class GetFromUserDataActor {}
+  //#pipe-to-user-data-actor
+
+  //#pipe-to-user-activity-actor
+  interface UserActivityRepository {
+    CompletableFuture<ArrayList<UserActivity>> queryHistoricalActivities(String userId);
+  }
+
+  public class UserActivityActor extends AbstractActor {
+    String userId;
+    UserActivityRepository repository;
+
+    UserActivityActor(String userId, UserActivityRepository repository) {
+      this.userId = userId;
+      this.repository = repository;
+    }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(GetFromUserActivityActor.class, msg -> {
+          CompletableFuture<ArrayList<UserActivity>> fut =
+            repository.queryHistoricalActivities(userId);
+
+          pipe(fut, getContext().dispatcher()).to(sender());
+        })
+        .build();
+    }
+  }
+
+  public class GetFromUserActivityActor {}
+  //#pipe-to-user-activity-actor
+
+  //#pipe-to-proxy-actor
+  public class UserProxyActor extends AbstractActor {
+    ActorRef userActor;
+    ActorRef userActivityActor;
+    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+
+    UserProxyActor(ActorRef userActor, ActorRef userActivityActor) {
+      this.userActor = userActor;
+      this.userActivityActor = userActivityActor;
+    }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(GetUserData.class, msg -> {
+          CompletableFuture<Object> fut =
+            ask(userActor, new GetUserData(), timeout).toCompletableFuture();
+
+          pipe(fut, getContext().dispatcher());
+        })
+        .match(GetUserActivities.class, msg -> {
+          CompletableFuture<Object> fut =
+            ask(userActivityActor, new GetFromUserActivityActor(), timeout).toCompletableFuture();
+
+          pipe(fut, getContext().dispatcher()).to(sender());
+        })
+        .build();
+    }
+  }
+  //#pipe-to-proxy-actor
+
+  //#pipe-to-proxy-messages
+  public class GetUserData {}
+  public class GetUserActivities {}
+  //#pipe-to-proxy-messages
+
   @SuppressWarnings("unchecked") @Test public void useCustomExecutionContext() throws Exception {
     ExecutorService yourExecutorServiceGoesHere = Executors.newSingleThreadExecutor();
     //#diy-execution-context
@@ -131,13 +267,11 @@ public class FutureDocTest extends AbstractJavaTest {
     ActorRef actor = system.actorOf(Props.create(MyActor.class));
     String msg = "hello";
     //#ask-blocking
-    Timeout timeout = new Timeout(Duration.create(5, "seconds"));
+    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
     Future<Object> future = Patterns.ask(actor, msg, timeout);
     String result = (String) Await.result(future, timeout.duration());
     //#ask-blocking
-    //#pipe-to
-    akka.pattern.Patterns.pipe(future, system.dispatcher()).to(actor);
-    //#pipe-to
+
     assertEquals("HELLO", result);
   }
 
@@ -152,7 +286,8 @@ public class FutureDocTest extends AbstractJavaTest {
 
     f.onSuccess(new PrintResult<String>(), system.dispatcher());
     //#future-eval
-    String result = (String) Await.result(f, Duration.create(5, SECONDS));
+    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+    String result = (String) Await.result(f, timeout.duration());
     assertEquals("HelloWorld", result);
   }
 
@@ -175,7 +310,8 @@ public class FutureDocTest extends AbstractJavaTest {
 
     f2.onSuccess(new PrintResult<Integer>(), system.dispatcher());
     //#map
-    int result = Await.result(f2, Duration.create(5, SECONDS));
+    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+    int result = Await.result(f2, timeout.duration());
     assertEquals(10, result);
   }
 
@@ -202,7 +338,8 @@ public class FutureDocTest extends AbstractJavaTest {
 
     f2.onSuccess(new PrintResult<Integer>(), system.dispatcher());
     //#flat-map
-    int result = Await.result(f2, Duration.create(5, SECONDS));
+    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+    int result = Await.result(f2, timeout.duration());
     assertEquals(10, result);
   }
 
@@ -233,7 +370,8 @@ public class FutureDocTest extends AbstractJavaTest {
 
     futureSum.onSuccess(new PrintResult<Long>(), system.dispatcher());
     //#sequence
-    long result = Await.result(futureSum, Duration.create(5, SECONDS));
+    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+    long result = Await.result(futureSum, timeout.duration());
     assertEquals(3L, result);
   }
 
@@ -258,7 +396,8 @@ public class FutureDocTest extends AbstractJavaTest {
     //Returns the sequence of strings as upper case
     futureResult.onSuccess(new PrintResult<Iterable<String>>(), system.dispatcher());
     //#traverse
-    Iterable<String> result = Await.result(futureResult, Duration.create(5, SECONDS));
+    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+    Iterable<String> result = Await.result(futureResult, timeout.duration());
     assertEquals(Arrays.asList("A", "B", "C"), result);
   }
 
@@ -284,7 +423,8 @@ public class FutureDocTest extends AbstractJavaTest {
 
     resultFuture.onSuccess(new PrintResult<String>(), system.dispatcher());
     //#fold
-    String result = Await.result(resultFuture, Duration.create(5, SECONDS));
+    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+    String result = Await.result(resultFuture, timeout.duration());
     assertEquals("ab", result);
   }
 
@@ -308,7 +448,8 @@ public class FutureDocTest extends AbstractJavaTest {
 
     resultFuture.onSuccess(new PrintResult<Object>(), system.dispatcher());
     //#reduce
-    Object result = Await.result(resultFuture, Duration.create(5, SECONDS));
+    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+    Object result = Await.result(resultFuture, timeout.duration());
 
     assertEquals("ab", result);
   }
@@ -328,12 +469,13 @@ public class FutureDocTest extends AbstractJavaTest {
     Future<String> theFuture = promise.future();
     promise.success("hello");
     //#promise
-    Object result = Await.result(future, Duration.create(5, SECONDS));
+    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+    Object result = Await.result(future, timeout.duration());
     assertEquals("Yay!", result);
     Throwable result2 = Await.result(otherFuture.failed(),
-      Duration.create(5, SECONDS));
+      timeout.duration());
     assertEquals("Bang!", result2.getMessage());
-    String out = Await.result(theFuture, Duration.create(5, SECONDS));
+    String out = Await.result(theFuture, timeout.duration());
     assertEquals("hello", out);
   }
 
@@ -406,7 +548,8 @@ public class FutureDocTest extends AbstractJavaTest {
 
     future.onSuccess(new PrintResult<Integer>(), system.dispatcher());
     //#recover
-    int result = Await.result(future, Duration.create(5, SECONDS));
+    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+    int result = Await.result(future, timeout.duration());
     assertEquals(result, 0);
   }
 
@@ -434,7 +577,8 @@ public class FutureDocTest extends AbstractJavaTest {
 
     future.onSuccess(new PrintResult<Integer>(), system.dispatcher());
     //#try-recover
-    int result = Await.result(future, Duration.create(5, SECONDS));
+    Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+    int result = Await.result(future,  timeout.duration());
     assertEquals(result, 0);
   }
 
@@ -507,7 +651,8 @@ public class FutureDocTest extends AbstractJavaTest {
 
       future3.onSuccess(new PrintResult<String>(), system.dispatcher());
       //#zip
-      String result = Await.result(future3, Duration.create(5, SECONDS));
+      Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+      String result = Await.result(future3, timeout.duration());
       assertEquals("foo bar", result);
     }
 
@@ -520,7 +665,8 @@ public class FutureDocTest extends AbstractJavaTest {
       Future<String> future4 = future1.fallbackTo(future2).fallbackTo(future3);
       future4.onSuccess(new PrintResult<String>(), system.dispatcher());
       //#fallback-to
-      String result = Await.result(future4, Duration.create(5, SECONDS));
+      Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+      String result = Await.result(future4, timeout.duration());
       assertEquals("bar", result);
     }
 
@@ -532,7 +678,8 @@ public class FutureDocTest extends AbstractJavaTest {
     //#after
     final ExecutionContext ec = system.dispatcher();
     Future<String> failExc = Futures.failed(new IllegalStateException("OHNOES1"));
-    Future<String> delayed = Patterns.after(Duration.create(200, "millis"),
+    Timeout delay = Timeout.create(Duration.ofMillis(200));
+    Future<String> delayed = Patterns.after(delay.duration(),
       system.scheduler(), ec,  failExc);
     Future<String> future = future(new Callable<String>() {
       public String call() throws InterruptedException {
@@ -543,7 +690,8 @@ public class FutureDocTest extends AbstractJavaTest {
     Future<String> result = Futures.firstCompletedOf(
       Arrays.<Future<String>>asList(future, delayed), ec);
     //#after
-    Await.result(result, Duration.create(2, SECONDS));
+    Timeout timeout = Timeout.create(Duration.ofSeconds(2));
+    Await.result(result, timeout.duration());
   }
 
   @Test

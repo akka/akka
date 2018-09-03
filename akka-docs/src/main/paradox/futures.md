@@ -91,15 +91,82 @@ When using non-blocking it is better to use the `mapTo` method to safely try to 
 The `mapTo` method will return a new `Future` that contains the result if the cast was successful,
 or a `ClassCastException` if not. Handling `Exception`s will be discussed further within this documentation.
 
-@@@ 
+@@@
 
-To send the result of a `Future` to an `Actor`, you can use the `pipe` construct:
+## Use the pipe pattern
 
-scala
-:  @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #pipe-to }
+Another useful message-transfer pattern is "pipe", which is to send the result of @scala[`Future`]@java[`CompletableFuture`] to another actor, upon completion of the @scala[`Future`]@java[`CompletableFuture`].
+The pipe pattern can be used by importing @java[`akka.pattern.PatternsCS.pipe`.]@scala[`akka.pattern.pipe`, and define or import an implicit instance of `ExecutionContext` in the scope.]
 
-java
-:  @@snip [FutureDocTest.java]($code$/java/jdocs/future/FutureDocTest.java) { #pipe-to }
+Scala
+:  @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #pipe-to-usage }
+
+Java
+:  @@snip [FutureDocTest.java]($code$/java/jdocs/future/FutureDocTest.java) { #imports-ask #imports-pipe #pipe-to-usage }
+
+To see how this works in more detail, let's introduce a small example consisting of three different actors,
+`UserProxyActor`, `UserDataActor` and `UserActivityActor`.
+In this example, when you need information about a user, you send a request message to `UserProxyActor`,
+then it gets the corresponding result from the appropriate backend actor based on the request message type.
+
+<p align="center">
+  <img src="images/futures-pipeto1.png">
+</p>
+
+<p align="center">
+  <img src="images/futures-pipeto2.png">
+</p>
+
+The message types you send to `UserProxyActor` are `GetUserData` and `GetUserActivities`:
+
+Scala
+:  @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #pipe-to-proxy-messages }
+
+Java
+:  @@snip [FutureDocTest.java]($code$/java/jdocs/future/FutureDocTest.java) {  #pipe-to-proxy-messages }
+
+and `UserData` and @scala[`List[UserActivity]`]@java[`ArrayList<UserActivity>`] are returned to the original sender in the end.
+
+Scala
+:  @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #pipe-to-returned-data }
+
+Java
+:  @@snip [FutureDocTest.java]($code$/java/jdocs/future/FutureDocTest.java) { #pipe-to-returned-data }
+
+The backend `UserDataActor` and `UserActivityActor` are defined as follows:
+
+Scala
+:  @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #pipe-to-user-data-actor }
+
+Java
+:  @@snip [FutureDocTest.java]($code$/java/jdocs/future/FutureDocTest.java) { #pipe-to-user-data-actor }
+
+`UserDataActor` holds the data in memory, so that it can return the current state of the user data quickly upon a request.
+
+On the other hand, `UserActivityActor` queries into a `repository` to retrieve historical user activities then
+sends the result to the `sender()` which is `UserProxy` in this case, with the pipe pattern.
+
+Scala
+:  @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #pipe-to-user-activity-actor }
+
+Java
+:  @@snip [FutureDocTest.java]($code$/java/jdocs/future/FutureDocTest.java) { #imports-pipe #pipe-to-user-activity-actor }
+
+Since it needs to talk to the separate `repository`, it takes time to retrieve the list of `UserActivity`,
+hence the return type of `queryHistoricalActivities` is @scala[`Future`]@java[`CompletableFuture`].
+To send back the result to the `sender()` we used the @scala[`pipeTo`]@java[`pipe`] method,
+so that the result of the @scala[`Future`]@java[`CompletableFuture`] is sent to `sender()` upon @scala[`Future`]@java[`CompletableFuture`]'s completion.
+
+Finally, the definition of `UserProxyActor` is as below.
+
+Scala
+:  @@snip [FutureDocSpec.scala]($code$/scala/docs/future/FutureDocSpec.scala) { #pipe-to-proxy-actor }
+
+Java
+:  @@snip [FutureDocTest.java]($code$/java/jdocs/future/FutureDocTest.java) { #imports-ask #imports-pipe #pipe-to-proxy-actor }
+
+Note that the @scala[`pipeTo`]@java[`pipe`] method used with the @scala[`?`]@java[`ask`] method.
+Using @scala[`pipeTo`]@java[`pipe`] with the @scala[`?`]@java[`ask`] method is a common practice when you want to relay a message from one actor to another.
 
 ## Use Directly
 
