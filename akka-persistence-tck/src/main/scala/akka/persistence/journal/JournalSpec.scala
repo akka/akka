@@ -262,9 +262,10 @@ abstract class JournalSpec(config: Config) extends PluginSpec(config) with MayVe
         receiverProbe.expectMsgPF() {
           case ReplayedMessage(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid)) ⇒ payload should be(event)
         }
-        receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 6L))
+        receiverProbe.expectMsgPF() {
+          case RecoverySuccess(highestSequenceNr) ⇒ highestSequenceNr should be >= 6L
+        }
       }
     }
-
   }
 }
