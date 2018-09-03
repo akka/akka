@@ -4,6 +4,12 @@ This chapter outlines the concept behind supervision, the primitives offered
 and their semantics. For details on how that translates into real code, please
 refer to the corresponding chapters for Scala and Java APIs.
 
+## Sample project
+
+You can look at the
+@extref[Supervision example project](samples:akka-samples-supervision-java)
+to see what this looks like in practice.
+
 <a id="supervision-directives"></a>
 ## What Supervision Means
 

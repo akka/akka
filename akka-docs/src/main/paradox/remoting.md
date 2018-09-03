@@ -358,13 +358,6 @@ This configuration setting will send messages to the defined remote actor paths.
 It requires that you create the destination actors on the remote nodes with matching paths.
 That is not done by the router.
 
-<a id="remote-sample"></a>
-## Remoting Sample
-
-You can download a ready to run @scala[@extref[remoting sample](ecs:akka-samples-remote-scala)]@java[@extref[remoting sample](ecs:akka-samples-remote-java)]
-together with a tutorial for a more hands-on experience. The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-remote-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-remote-java)].
-
 ### Remote Events
 
 It is possible to listen to events that occur in Akka Remote, and to subscribe/unsubscribe to these events
@@ -627,3 +620,8 @@ Keep in mind that local.address will most likely be in one of private network ra
  * *192.168.0.0 - 192.168.255.255* (network class C)
 
 For further details see [RFC 1597](https://tools.ietf.org/html/rfc1597) and [RFC 1918](https://tools.ietf.org/html/rfc1918).
+
+You can look at the
+@java[@extref[Cluster with docker-compse example project](samples:akka-samples-cluster-docker-compose-java)]
+@scala[@extref[Cluster with docker-compose example project](samples:akka-samples-cluster-docker-compose-scala)]
+to see what this looks like in practice.

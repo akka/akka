@@ -706,12 +706,6 @@ This configuration setting will send messages to the defined remote actor paths.
 It requires that you create the destination actors on the remote nodes with matching paths.
 That is not done by the router.
 
-## Remoting Sample
-
-You can download a ready to run @scala[@extref[remoting sample](ecs:akka-samples-remote-scala)]@java[@extref[remoting sample](ecs:akka-samples-remote-java)]
-together with a tutorial for a more hands-on experience. The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-remote-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-remote-java)].
-
 ## Performance tuning
 
 ### Lanes
@@ -940,3 +934,8 @@ akka {
  }
 }
 ```
+
+You can look at the
+@java[@extref[Cluster with docker-compse example project](samples:akka-samples-cluster-docker-compose-java)]
+@scala[@extref[Cluster with docker-compose example project](samples:akka-samples-cluster-docker-compose-scala)]
+to see what this looks like in practice.

@@ -11,6 +11,5 @@
 * [io-tcp](io-tcp.md)
 * [io-udp](io-udp.md)
 * [camel](camel.md)
-* [multi-jvm-testing](multi-jvm-testing.md)
 
 @@@

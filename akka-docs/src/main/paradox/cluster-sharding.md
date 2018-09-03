@@ -10,6 +10,13 @@ To use Cluster Sharding, you must add the following dependency in your project:
   version=$akka.version$
 }
 
+## Sample project
+
+You can look at the
+@java[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-java)]
+@scala[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-scala)]
+to see what this looks like in practice.
+
 ## Introduction
 
 Cluster sharding is useful when you need to distribute actors across several nodes in the cluster and want to
