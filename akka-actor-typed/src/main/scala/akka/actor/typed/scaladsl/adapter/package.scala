@@ -88,6 +88,8 @@ package object adapter {
     def actorOf(props: akka.actor.Props, name: String): akka.actor.ActorRef =
       ActorContextAdapter.toUntyped(ctx).actorOf(props, name)
 
+    def toUntyped: akka.actor.ActorContext = ActorContextAdapter.toUntyped(ctx)
+
     // watch, unwatch and stop not needed here because of the implicit ActorRef conversion
   }
 

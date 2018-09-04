@@ -5,7 +5,6 @@
 package akka.stream.typed.scaladsl
 
 //#imports
-import akka.stream.typed.scaladsl.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
