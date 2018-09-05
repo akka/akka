@@ -7,13 +7,15 @@ package akka.actor.typed.javadsl
 import java.util.Collections
 import java.util.function.{ Function ⇒ JFunction }
 
-import akka.actor.typed.{ ActorRef, Behavior, ExtensibleBehavior, Signal, SupervisorStrategy }
+import akka.actor.typed.{ ActorRef, Behavior, ExtensibleBehavior, InterceptId, Signal, SupervisorStrategy }
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehavior }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.japi.function.{ Procedure2, Function2 ⇒ JapiFunction2 }
 import akka.japi.pf.PFBuilder
+
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
+
 /**
  * Factories for [[akka.actor.typed.Behavior]].
  */
@@ -169,15 +171,21 @@ object Behaviors {
    * This type of Behavior wraps another Behavior while allowing you to perform
    * some action upon each received message or signal. It is most commonly used
    * for logging or tracing what a certain Actor does.
+   *
+   * @param id Used to identify when a tap is added again (using instance equality),
+   *           and the outermost/previous one should be removed. If not called recursively,
+   *           just pass a new `InterceptId` instance.
    */
   def tap[T](
     clazz:     Class[T],
     onMessage: Procedure2[ActorContext[T], T],
     onSignal:  Procedure2[ActorContext[T], Signal],
+    id:        InterceptId,
     behavior:  Behavior[T]): Behavior[T] = {
     akka.actor.typed.scaladsl.Behaviors.tap[T](behavior)(
       (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
-      (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig))(ClassTag[T](clazz))
+      (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig),
+      id)(ClassTag[T](clazz))
   }
 
   /**
@@ -185,9 +193,13 @@ object Behaviors {
    * monitor [[akka.actor.typed.ActorRef]] before invoking the wrapped behavior. The
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
+   *
+   * @param id Used to identify when a monitor is added again (using instance equality),
+   *           and the outermost/previous one should be removed. If not called recursively,
+   *           just pass a new `InterceptId` instance.
    */
-  def monitor[T](clazz: Class[T], monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] = {
-    akka.actor.typed.scaladsl.Behaviors.monitor(monitor, behavior)(reflect.ClassTag(clazz))
+  def monitor[T](clazz: Class[T], monitor: ActorRef[T], behavior: Behavior[T], id: InterceptId): Behavior[T] = {
+    akka.actor.typed.scaladsl.Behaviors.monitor(monitor, behavior, id)(reflect.ClassTag(clazz))
   }
 
   /**

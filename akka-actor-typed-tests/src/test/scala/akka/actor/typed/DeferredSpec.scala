@@ -113,7 +113,9 @@ class DeferredSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       val behv = Behaviors.monitor(monitorProbe.ref, Behaviors.setup[Command] { _ ⇒
         probe.ref ! Started
         target(probe.ref)
-      })
+      },
+        new InterceptId
+      )
       probe.expectNoMessage() // not yet
       val ref = spawn(behv)
       // it's supposed to be created immediately (not waiting for first message)

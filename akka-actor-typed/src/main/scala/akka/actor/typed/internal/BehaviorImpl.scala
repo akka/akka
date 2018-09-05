@@ -93,12 +93,11 @@ import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
     override def toString = s"ReceiveMessage(${LineNumbers(onMessage)})"
   }
 
-  private class Tap extends InterceptId
-
   def tap[T: ClassTag](
     onMessage: (SAC[T], T) ⇒ _,
     onSignal:  (SAC[T], Signal) ⇒ _,
-    behavior:  Behavior[T]): Behavior[T] = {
+    behavior:  Behavior[T],
+    id:        InterceptId): Behavior[T] = {
     intercept[T, T](
       beforeMessage = (ctx, msg) ⇒ {
         onMessage(ctx, msg)
@@ -111,10 +110,8 @@ import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
       afterMessage = ConstantFun.scalaAnyThreeToThird,
       afterSignal = ConstantFun.scalaAnyThreeToThird,
       behavior,
-      new Tap) // FIXME this could cause stack overflow if used recursively
+      id)
   }
-
-  class InterceptId
 
   /**
    * Intercept another `behavior` by invoking `beforeMessage` for

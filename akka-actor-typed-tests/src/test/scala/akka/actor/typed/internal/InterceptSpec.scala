@@ -5,9 +5,8 @@
 package akka.actor.typed.internal
 
 import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-import akka.actor.typed.{ Behavior, TypedAkkaSpecWithShutdown }
-import akka.actor.typed.internal.BehaviorImpl.InterceptId
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ Behavior, InterceptId, TypedAkkaSpecWithShutdown }
 import org.scalatest.WordSpecLike
 
 class InterceptSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShutdown {
@@ -32,7 +31,7 @@ class InterceptSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWit
           // FIXME returning same here causes exception in intercept for some reason
           Behaviors.same
         ),
-        new InterceptId {}
+        new InterceptId
       ))
 
       ref ! "message"

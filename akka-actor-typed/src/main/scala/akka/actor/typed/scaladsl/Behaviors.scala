@@ -143,35 +143,30 @@ object Behaviors {
    * This type of Behavior wraps another Behavior while allowing you to perform
    * some action upon each received message or signal. It is most commonly used
    * for logging or tracing what a certain Actor does.
-   */
-  @deprecated("Use overloaded tap", "2.5.13")
-  def tap[T: ClassTag](
-    onMessage: (ActorContext[T], T) ⇒ _,
-    onSignal:  (ActorContext[T], Signal) ⇒ _, // FIXME use partial function here also?
-    behavior:  Behavior[T]): Behavior[T] =
-    tap(behavior)((ctx, msg) ⇒ onMessage(ctx, msg), (ctx, signal) ⇒ onSignal(ctx, signal))
-
-  /**
-   * This type of Behavior wraps another Behavior while allowing you to perform
-   * some action upon each received message or signal. It is most commonly used
-   * for logging or tracing what a certain Actor does.
    *
-   * If a wrapped behavior returns a tap itself, the new tap replaces the existing one,
-   * to protect against stack overflow due to recursively adding taps.
+   * @param id Used to identify when a tap is added again (using instance equality),
+   *           and the outermost/previous one should be removed. If not called recursively,
+   *           just pass a new `InterceptId` instance.
    */
   def tap[T: ClassTag](behavior: Behavior[T])(
     onMessage: (ActorContext[T], T) ⇒ Unit,
-    onSignal:  (ActorContext[T], Signal) ⇒ Unit): Behavior[T] =
-    BehaviorImpl.tap(onMessage, onSignal, behavior)
+    onSignal:  (ActorContext[T], Signal) ⇒ Unit,
+    id:        InterceptId
+  ): Behavior[T] =
+    BehaviorImpl.tap(onMessage, onSignal, behavior, id)
 
   /**
    * Behavior decorator that copies all received message to the designated
    * monitor [[akka.actor.typed.ActorRef]] before invoking the wrapped behavior. The
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
+   *
+   * @param id Used to identify when a monitor is added again (using instance equality),
+   *           and the outermost/previous one should be removed. If not called recursively,
+   *           just pass a new `InterceptId` instance.
    */
-  def monitor[T: ClassTag](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
-    tap(behavior)((_, msg) ⇒ monitor ! msg, unitFunction)
+  def monitor[T: ClassTag](monitor: ActorRef[T], behavior: Behavior[T], id: InterceptId): Behavior[T] =
+    tap(behavior)((_, msg) ⇒ monitor ! msg, unitFunction, id)
 
   /**
    * Wrap the given behavior with the given [[SupervisorStrategy]] for

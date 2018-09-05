@@ -609,5 +609,5 @@ class NestedDeferredActorContextSpec extends ActorContextSpec {
 
 class TapActorContextSpec extends ActorContextSpec {
 
-  override def decoration[T: ClassTag]: Behavior[T] ⇒ Behavior[T] = b ⇒ Behaviors.tap[T](b)((_, _) ⇒ (), (_, _) ⇒ ())
+  override def decoration[T: ClassTag]: Behavior[T] ⇒ Behavior[T] = b ⇒ Behaviors.tap[T](b)((_, _) ⇒ (), (_, _) ⇒ (), new InterceptId)
 }

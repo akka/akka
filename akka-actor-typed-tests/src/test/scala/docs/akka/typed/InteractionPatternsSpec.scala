@@ -7,7 +7,7 @@ package docs.akka.typed
 import java.net.URI
 
 import akka.NotUsed
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, InterceptId, TypedAkkaSpecWithShutdown }
 import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
 import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.util.Timeout
@@ -263,7 +263,7 @@ class InteractionPatternsSpec extends ActorTestKit with TypedAkkaSpecWithShutdow
 
     // somewhat modified behavior to let us know we saw the two requests
     val monitor = TestProbe[HalCommand]()
-    val hal = spawn(Behaviors.monitor(monitor.ref, halBehavior))
+    val hal = spawn(Behaviors.monitor(monitor.ref, halBehavior, new InterceptId))
     spawn(daveBehavior(hal))
     monitor.expectMessageType[OpenThePodBayDoorsPlease]
     monitor.expectMessageType[OpenThePodBayDoorsPlease]

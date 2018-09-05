@@ -15,10 +15,10 @@ import akka.actor.testkit.typed.scaladsl._
 import akka.actor.testkit.typed._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
+
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
-
 import akka.actor.typed.SupervisorStrategy.Resume
 
 object SupervisionSpec {
@@ -709,7 +709,7 @@ class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
                         probe.ref ! new RuntimeException().getStackTrace.toVector
                         Behaviors.stopped
                     }).onFailure[RuntimeException](SupervisorStrategy.resume)
-                )((_, _) ⇒ (), (_, _) ⇒ ()) // whatever
+                )((_, _) ⇒ (), (_, _) ⇒ (), new InterceptId) // whatever
               ).onFailure[IllegalArgumentException](SupervisorStrategy.restartWithLimit(23, 10.seconds))
             )
           ).onFailure[RuntimeException](SupervisorStrategy.restart)
