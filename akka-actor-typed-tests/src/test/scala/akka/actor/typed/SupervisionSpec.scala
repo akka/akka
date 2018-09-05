@@ -709,7 +709,7 @@ class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
                         probe.ref ! new RuntimeException().getStackTrace.toVector
                         Behaviors.stopped
                     }).onFailure[RuntimeException](SupervisorStrategy.resume)
-                )((_, _) ⇒ (), (_, _) ⇒ (), new InterceptId) // whatever
+                )((_, _) ⇒ (), (_, _) ⇒ (), new WrappedBehaviorId) // whatever
               ).onFailure[IllegalArgumentException](SupervisorStrategy.restartWithLimit(23, 10.seconds))
             )
           ).onFailure[RuntimeException](SupervisorStrategy.restart)

@@ -97,7 +97,7 @@ import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
     onMessage: (SAC[T], T) ⇒ _,
     onSignal:  (SAC[T], Signal) ⇒ _,
     behavior:  Behavior[T],
-    id:        InterceptId): Behavior[T] = {
+    id:        WrappedBehaviorId): Behavior[T] = {
     intercept[T, T](
       beforeMessage = (ctx, msg) ⇒ {
         onMessage(ctx, msg)
@@ -139,7 +139,7 @@ import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
     afterMessage:  (SAC[T], T, Behavior[T]) ⇒ Behavior[T],
     afterSignal:   (SAC[T], Signal, Behavior[T]) ⇒ Behavior[T],
     behavior:      Behavior[T],
-    interceptId:   InterceptId): Behavior[T] = {
+    interceptId:   WrappedBehaviorId): Behavior[T] = {
     behavior match {
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[T] { ctx ⇒
@@ -158,7 +158,7 @@ import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
     afterMessage:    (SAC[T], T, Behavior[T]) ⇒ Behavior[T],
     afterSignal:     (SAC[T], Signal, Behavior[T]) ⇒ Behavior[T],
     behavior:        Behavior[T],
-    interceptId:     InterceptId) extends ExtensibleBehavior[T] with WrappingBehavior[T] {
+    interceptId:     WrappedBehaviorId) extends ExtensibleBehavior[T] with WrappingBehavior[T] {
 
     def nestedBehavior: Behavior[T] = behavior
 

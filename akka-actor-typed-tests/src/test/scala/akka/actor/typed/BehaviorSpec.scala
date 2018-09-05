@@ -510,7 +510,7 @@ class TapScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reu
     )(
         (_, msg) ⇒ inbox.ref ! Right(msg),
         (_, sig) ⇒ inbox.ref ! Left(sig),
-        new InterceptId
+        new WrappedBehaviorId
       ), inbox)
   }
 }
@@ -615,7 +615,7 @@ class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse
       classOf[Command],
       pc((_, msg) ⇒ inbox.ref ! Right(msg)),
       ps((_, sig) ⇒ inbox.ref ! Left(sig)),
-      new InterceptId,
+      new WrappedBehaviorId,
       super.behavior(monitor)._1), inbox)
   }
 }

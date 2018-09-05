@@ -7,7 +7,7 @@ package akka.actor.typed.scaladsl
 import akka.Done
 import akka.actor.testkit.typed.TE
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.typed.{ InterceptId, PostStop, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ WrappedBehaviorId, PostStop, TypedAkkaSpecWithShutdown }
 
 import scala.concurrent.Promise
 
@@ -39,7 +39,7 @@ class StopSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           }))(
             (_, _) ⇒ (),
             (_, _) ⇒ (),
-            new InterceptId
+            new WrappedBehaviorId
           )
       })
       ref ! "stopit"

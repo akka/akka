@@ -6,7 +6,7 @@ package akka.actor.typed.internal
 
 import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ Behavior, InterceptId, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ Behavior, WrappedBehaviorId, TypedAkkaSpecWithShutdown }
 import org.scalatest.WordSpecLike
 
 class InterceptSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShutdown {
@@ -31,7 +31,7 @@ class InterceptSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWit
           // FIXME returning same here causes exception in intercept for some reason
           Behaviors.same
         ),
-        new InterceptId
+        new WrappedBehaviorId
       ))
 
       ref ! "message"
@@ -44,7 +44,7 @@ class InterceptSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWit
     "intercept messages only using the latest of the same intercept id" in {
       val probe = TestProbe[String]()
 
-      val sameId = new InterceptId
+      val sameId = new WrappedBehaviorId
 
       def next(count: Int): Behavior[String] =
         BehaviorImpl.intercept[String, String](
@@ -99,7 +99,7 @@ class InterceptSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWit
             // FIXME returning same here causes exception in intercept for some reason
             next(count + 1)
           ),
-          new InterceptId
+          new WrappedBehaviorId
         )
 
       val ref = spawn(next(1))

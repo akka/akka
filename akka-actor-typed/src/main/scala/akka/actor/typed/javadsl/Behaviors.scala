@@ -7,7 +7,7 @@ package akka.actor.typed.javadsl
 import java.util.Collections
 import java.util.function.{ Function ⇒ JFunction }
 
-import akka.actor.typed.{ ActorRef, Behavior, ExtensibleBehavior, InterceptId, Signal, SupervisorStrategy }
+import akka.actor.typed.{ ActorRef, Behavior, ExtensibleBehavior, WrappedBehaviorId, Signal, SupervisorStrategy }
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehavior }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.japi.function.{ Procedure2, Function2 ⇒ JapiFunction2 }
@@ -180,7 +180,7 @@ object Behaviors {
     clazz:     Class[T],
     onMessage: Procedure2[ActorContext[T], T],
     onSignal:  Procedure2[ActorContext[T], Signal],
-    id:        InterceptId,
+    id:        WrappedBehaviorId,
     behavior:  Behavior[T]): Behavior[T] = {
     akka.actor.typed.scaladsl.Behaviors.tap[T](behavior)(
       (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
@@ -198,7 +198,7 @@ object Behaviors {
    *           and the outermost/previous one should be removed. If not called recursively,
    *           just pass a new `InterceptId` instance.
    */
-  def monitor[T](clazz: Class[T], monitor: ActorRef[T], behavior: Behavior[T], id: InterceptId): Behavior[T] = {
+  def monitor[T](clazz: Class[T], monitor: ActorRef[T], behavior: Behavior[T], id: WrappedBehaviorId): Behavior[T] = {
     akka.actor.typed.scaladsl.Behaviors.monitor(monitor, behavior, id)(reflect.ClassTag(clazz))
   }
 

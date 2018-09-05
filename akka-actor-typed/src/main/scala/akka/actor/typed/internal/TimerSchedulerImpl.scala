@@ -145,7 +145,7 @@ import scala.reflect.ClassTag
     }
   }
 
-  private val TimerInterceptId = new InterceptId
+  private val TimerInterceptId = new WrappedBehaviorId
 
   def intercept(behavior: Behavior[T]): Behavior[T] = {
     // The scheduled TimerMsg is intercepted to guard against old messages enqueued

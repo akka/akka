@@ -114,7 +114,7 @@ class DeferredSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
         probe.ref ! Started
         target(probe.ref)
       },
-        new InterceptId
+        new WrappedBehaviorId
       )
       probe.expectNoMessage() // not yet
       val ref = spawn(behv)

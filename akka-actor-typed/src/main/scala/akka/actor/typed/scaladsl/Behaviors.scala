@@ -151,7 +151,7 @@ object Behaviors {
   def tap[T: ClassTag](behavior: Behavior[T])(
     onMessage: (ActorContext[T], T) ⇒ Unit,
     onSignal:  (ActorContext[T], Signal) ⇒ Unit,
-    id:        InterceptId
+    id:        WrappedBehaviorId
   ): Behavior[T] =
     BehaviorImpl.tap(onMessage, onSignal, behavior, id)
 
@@ -165,7 +165,7 @@ object Behaviors {
    *           and the outermost/previous one should be removed. If not called recursively,
    *           just pass a new `InterceptId` instance.
    */
-  def monitor[T: ClassTag](monitor: ActorRef[T], behavior: Behavior[T], id: InterceptId): Behavior[T] =
+  def monitor[T: ClassTag](monitor: ActorRef[T], behavior: Behavior[T], id: WrappedBehaviorId): Behavior[T] =
     tap(behavior)((_, msg) ⇒ monitor ! msg, unitFunction, id)
 
   /**

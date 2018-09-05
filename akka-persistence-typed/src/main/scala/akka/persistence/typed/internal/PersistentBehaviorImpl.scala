@@ -6,7 +6,7 @@ package akka.persistence.typed.internal
 
 import akka.Done
 import akka.actor.typed
-import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, SupervisorStrategy }
+import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, WrappedBehaviorId, PostStop, SupervisorStrategy }
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.persistence._
@@ -14,9 +14,8 @@ import akka.persistence.typed.{ EventAdapter, NoOpEventAdapter }
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
-import scala.util.{ Failure, Success, Try }
 
-import akka.actor.typed.PostStop
+import scala.util.{ Failure, Success, Try }
 
 @InternalApi
 private[akka] object PersistentBehaviorImpl {
@@ -80,7 +79,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
               eventsourcedSetup.cancelRecoveryTimer()
               clearStashBuffer()
             case _ ⇒
-          })
+          }, new WrappedBehaviorId)
 
       }.widen[Any] {
         case res: JournalProtocol.Response           ⇒ InternalProtocol.JournalResponse(res)
