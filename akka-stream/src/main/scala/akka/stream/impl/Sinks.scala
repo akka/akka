@@ -592,9 +592,7 @@ import akka.util.ccompat._
               // which can happen if upstream fails immediately after emitting a first value.
               // The SubSource won't be started until the stream shuts down, which means downstream won't see the failure,
               // scheduling it lets the interpreter first start the substream
-              getAsyncCallback[Throwable] {
-                case ex: Throwable ⇒ failStage(ex)
-              }.invoke(ex)
+              getAsyncCallback[Throwable](failStage).invoke(ex)
             }
           })
 
