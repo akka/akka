@@ -50,7 +50,9 @@ Some modules are excluded from the binary compatibility guarantees, such as:
  
 ### When will a deprecated method be removed entirely
 
-Once a method has been deprecated then it will be kept, at minimum, for one **full** major version release. For example, if it is deprecated in version 2.5.2 then it will remain through the rest of 2.5, as well as the entirety of 2.6. 
+Once a method has been deprecated then the guideline* is that it will be kept, at minimum, for one **full** minor version release. For example, if it is deprecated in version 2.5.2 then it will remain through the rest of 2.5, as well as the entirety of 2.6. 
+
+*This is a guideline because in **rare** instances, after careful consideration, an exception may be made and the method removed earlier.
 
 <a id="24versioningchange"></a>
 ## Change in versioning scheme, stronger compatibility since 2.4
