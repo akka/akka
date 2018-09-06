@@ -23,9 +23,11 @@ object BehaviorTestKitSpec {
     sealed trait Command
 
     case class SpawnChildren(numberOfChildren: Int) extends Command
+    val SpawnChild = SpawnChildren(1)
     case class SpawnChildrenWithProps(numberOfChildren: Int, props: Props) extends Command
     case class SpawnAnonymous(numberOfChildren: Int) extends Command
     case class SpawnAnonymousWithProps(numberOfChildren: Int, props: Props) extends Command
+    case class StopChild(child: ActorRef[String]) extends Command
     case object SpawnAdapter extends Command
     case class SpawnAdapterWithName(name: String) extends Command
     case class CreateMessageAdapter[U](messageClass: Class[U], f: U ⇒ Command) extends Command
@@ -55,6 +57,9 @@ object BehaviorTestKitSpec {
           0.until(numberOfChildren).foreach { _ ⇒
             ctx.spawnAnonymous(Child.initial, props)
           }
+          Behaviors.same
+        case StopChild(child) =>
+          ctx.stop(child)
           Behaviors.same
         case SpawnAdapter ⇒
           ctx.spawnMessageAdapter {
@@ -279,6 +284,19 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
 
       d.receiveAll shouldBe Seq(Done)
       testkit.expectEffectType[Stopped]
+    }
+
+    "stop and restart a named child" in {
+      val testkit = BehaviorTestKit(Father.init)
+      testkit.run(SpawnChild)
+      val child = testkit.expectEffectType[Spawned[String]]
+
+      testkit.run(StopChild(child.ref))
+      testkit.expectEffect(Stopped(child.childName))
+
+      testkit.run(SpawnChild)
+      val newChild = testkit.expectEffectType[Spawned[_]]
+      child.childName shouldBe newChild.childName
     }
   }
 }
