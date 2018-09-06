@@ -39,8 +39,7 @@ trait Signal
 /**
  * Lifecycle signal that is fired upon restart of the Actor before replacing
  * the behavior with the fresh one (i.e. this signal is received within the
- * behavior that failed). The replacement behavior will receive PreStart as its
- * first signal.
+ * behavior that failed).
  */
 sealed abstract class PreRestart extends Signal
 case object PreRestart extends PreRestart {
