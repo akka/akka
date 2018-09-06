@@ -141,7 +141,6 @@ private[stream] final class SourceRefStageImpl[Out](
           scheduleDemandRedelivery()
 
         case TerminationDeadlineTimerKey ⇒
-          log.warning("[{}] Failing since termination deadline exceeded, no final completion/failure message was received from other side within {}", stageActorName, settings.finalTerminationSignalDeadline)
           failStage(RemoteStreamRefActorTerminatedException(s"Remote partner [$partnerRef] has terminated unexpectedly and no clean completion/failure message was received " +
             "(possible reasons: network partition or subscription timeout triggered termination of partner). Tearing down."))
       }
@@ -179,10 +178,18 @@ private[stream] final class SourceRefStageImpl[Out](
           failStage(RemoteStreamRefActorTerminatedException(s"Remote stream (${sender.path}) failed, reason: $reason"))
 
         case (_, Terminated(ref)) ⇒
-          // we need to start a delayed shutdown in case we were network partitioned and the final signal complete/fail
-          // will never reach us; so after the given timeout we need to forcefully terminate this side of the stream ref
-          // the other (sending) side terminates by default once it gets a Terminated signal so no special handling is needed there.
-          scheduleOnce(TerminationDeadlineTimerKey, settings.finalTerminationSignalDeadline)
+          partnerRef match {
+            case OptionVal.Some(`ref`) ⇒
+              // we need to start a delayed shutdown in case we were network partitioned and the final signal complete/fail
+              // will never reach us; so after the given timeout we need to forcefully terminate this side of the stream ref
+              // the other (sending) side terminates by default once it gets a Terminated signal so no special handling is needed there.
+              scheduleOnce(TerminationDeadlineTimerKey, settings.finalTerminationSignalDeadline)
+
+            case _ ⇒
+              // this should not have happened! It should be impossible that we watched some other actor
+              failStage(RemoteStreamRefActorTerminatedException(s"Received UNEXPECTED Terminated($ref) message! " +
+                s"This actor was NOT our trusted remote partner, which was: $getPartnerRef. Tearing down."))
+          }
       }
 
       def tryPush(): Unit =

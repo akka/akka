@@ -79,7 +79,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
 
       private var completedBeforeRemoteConnected: OptionVal[Try[Done]] = OptionVal.None
 
-      // `true` when this side of the stream has completed/failed, and we await the Terminated() signal back from the partner
+      // Some when this side of the stream has completed/failed, and we await the Terminated() signal back from the partner
       // so we can safely shut down completely; This is to avoid *our* Terminated() signal to reach the partner before the
       // Complete/Fail message does, which can happen on transports such as Artery which use a dedicated lane for system messages (Terminated)
       private[this] var finishedWithAwaitingPartnerTermination: OptionVal[Try[Done]] = OptionVal.None
@@ -148,8 +148,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
             s"[$stageActorName] Remote side did not subscribe (materialize) handed out Source reference [${promise.future.value}], " +
               s"within subscription timeout: ${PrettyDuration.format(subscriptionTimeout.timeout)}!")
 
-          getPartnerRef ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
-          finishedWithAwaitingPartnerTermination = OptionVal(Failure(ex))
+          throw ex
       }
 
       private def grabSequenced[T](in: Inlet[T]): StreamRefsProtocol.SequencedOnNext[T] = {
@@ -164,7 +163,6 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
             ref ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
             finishedWithAwaitingPartnerTermination = OptionVal(Failure(ex))
             setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
-          // super.onUpstreamFailure(ex)
 
           case _ ⇒
             completedBeforeRemoteConnected = OptionVal(scala.util.Failure(ex))
@@ -180,7 +178,6 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
             ref ! StreamRefsProtocol.RemoteStreamCompleted(remoteCumulativeDemandConsumed)
             finishedWithAwaitingPartnerTermination = OptionVal(Success(Done))
             setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
-          // super.onUpstreamFailure()
           case _ ⇒
             completedBeforeRemoteConnected = OptionVal(scala.util.Success(Done))
             // not terminating on purpose, since other side may subscribe still and then we want to complete it
@@ -197,7 +194,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
 
           completedBeforeRemoteConnected match {
             case OptionVal.Some(scala.util.Failure(ex)) ⇒
-              log.warning("Stream already terminated with exception before remote side materialized, sending failure: " + ex.getMessage)
+              log.warning("Stream already terminated with exception before remote side materialized, sending failure: {}", ex)
               partner ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
               finishedWithAwaitingPartnerTermination = OptionVal(Failure(ex))
               setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
