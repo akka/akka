@@ -189,11 +189,11 @@ import akka.japi.function.{ Function ⇒ JFunction }
   }
 
   override def entityRefFor[A](typeKey: scaladsl.EntityTypeKey[A], entityId: String): scaladsl.EntityRef[A] = {
-    new EntityRefImpl[A](untypedSharding.shardRegion(typeKey.name), entityId)
+    new EntityRefImpl[A](untypedSharding.shardRegion(typeKey.name), entityId, system.scheduler)
   }
 
   override def entityRefFor[A](typeKey: javadsl.EntityTypeKey[A], entityId: String): javadsl.EntityRef[A] = {
-    new EntityRefImpl[A](untypedSharding.shardRegion(typeKey.name), entityId)
+    new EntityRefImpl[A](untypedSharding.shardRegion(typeKey.name), entityId, system.scheduler)
   }
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
@@ -207,13 +207,14 @@ import akka.japi.function.{ Function ⇒ JFunction }
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class EntityRefImpl[A](shardRegion: akka.actor.ActorRef, entityId: String)
+@InternalApi private[akka] final class EntityRefImpl[A](shardRegion: akka.actor.ActorRef, entityId: String,
+                                                        scheduler: Scheduler)
   extends javadsl.EntityRef[A] with scaladsl.EntityRef[A] {
 
   override def tell(msg: A): Unit =
     shardRegion ! ShardingEnvelope(entityId, msg)
 
-  override def ask[U](message: (ActorRef[U]) ⇒ A)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] = {
+  override def ask[U](message: (ActorRef[U]) ⇒ A)(implicit timeout: Timeout): Future[U] = {
     val replyTo = new EntityPromiseRef[U](shardRegion.asInstanceOf[InternalActorRef], timeout)
     val m = message(replyTo.ref)
     if (replyTo.promiseRef ne null) replyTo.promiseRef.messageClassName = m.getClass.getName
@@ -221,8 +222,8 @@ import akka.japi.function.{ Function ⇒ JFunction }
     replyTo.future
   }
 
-  def ask[U](message: JFunction[ActorRef[U], A], timeout: Timeout, scheduler: Scheduler): CompletionStage[U] =
-    ask[U](replyTo ⇒ message.apply(replyTo))(timeout, scheduler).toJava
+  def ask[U](message: JFunction[ActorRef[U], A], timeout: Timeout): CompletionStage[U] =
+    ask[U](replyTo ⇒ message.apply(replyTo))(timeout).toJava
 
   /** Similar to [[akka.actor.typed.scaladsl.AskPattern.PromiseRef]] but for an `EntityRef` target. */
   @InternalApi
