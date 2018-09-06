@@ -50,6 +50,9 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
     inbox.get
   }
 
+  override def childInbox[U](ref: ActorRef[U]): TestInboxImpl[U] =
+    childInbox(ref.path.name)
+
   override def childTestKit[U](child: ActorRef[U]): BehaviorTestKitImpl[U] = ctx.childTestKit(child)
 
   override def selfInbox(): TestInboxImpl[T] = ctx.selfInbox
