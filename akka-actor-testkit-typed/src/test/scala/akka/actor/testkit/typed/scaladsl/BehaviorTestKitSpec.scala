@@ -58,7 +58,7 @@ object BehaviorTestKitSpec {
             ctx.spawnAnonymous(Child.initial, props)
           }
           Behaviors.same
-        case StopChild(child) =>
+        case StopChild(child) ⇒
           ctx.stop(child)
           Behaviors.same
         case SpawnAdapter ⇒
