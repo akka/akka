@@ -1,7 +1,16 @@
 # Fault Tolerance
 
 When an actor throws an unexpected exception, a failure, while processing a message or during initialization, the actor
-will by default be stopped. Note that there is an important distinction between failures and validation errors:
+will by default be stopped.
+
+@@@ note
+
+An important difference between Typed and Untyped actors is that Typed actors are by default stopped if
+an exception is thrown and no supervision strategy is defined while in Untyped they are restarted.
+
+@@@
+
+Note that there is an important distinction between failures and validation errors:
 
 A validation error means that the data of a command sent to an actor is not valid, this should rather be modelled as a
 part of the actor protocol than make the actor throw exceptions.
@@ -74,6 +83,39 @@ Java
 
 Each returned behavior will be re-wrapped automatically with the supervisor.
 
+## Child actors remain when restarting
+
+Child actors are not influenced when the parent actor is restarted. The restarted parent instance will have the same
+children as before the failure.
+
+@@@ note
+
+An important difference between Typed and Untyped actors is that a Typed actor keeps its children when it is
+restarted while in Untyped the children are stopped when the parent is restarted, unless `preRestart` is
+overridden to change this behavior.
+
+@@@
+
+Child actors can be stopped with `ActorContext.stop` when the parent actor is restarted from the `PreRestart`
+signal in the parent.
+
+Scala
+:  @@snip [SupervisionCompileOnly.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/supervision/SupervisionCompileOnly.scala) { #restart-stop-children }
+
+Java
+:  @@snip [SupervisionCompileOnlyTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/supervision/SupervisionCompileOnlyTest.java) { #restart-stop-children }
+
+If child actors are created from `setup` like in the previous example and they should remain intact (not stopped)
+when parent is restarted the `supervise` should be placed inside the `setup` like this:
+
+Scala
+:  @@snip [SupervisionCompileOnly.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/supervision/SupervisionCompileOnly.scala) { #restart-keep-children }
+
+Java
+:  @@snip [SupervisionCompileOnlyTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/supervision/SupervisionCompileOnlyTest.java) { #restart-keep-children }
+
+That means that the `setup` block will only be run when the parent actor is first started, and not when it is
+restarted.
 
 ## Bubble failures up through the hierarchy
 
