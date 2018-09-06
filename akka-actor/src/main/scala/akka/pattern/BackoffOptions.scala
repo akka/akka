@@ -131,7 +131,7 @@ object Backoff {
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
    */
-  @deprecated("Use the overloaded one which accepts maxNrOfRetries instead.", "2.5.14")
+  @deprecated("Use the overloaded one which accepts maxNrOfRetries instead.", "2.5.17")
   def onFailure(
     childProps:   Props,
     childName:    String,

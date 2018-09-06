@@ -69,7 +69,11 @@ object BackoffSupervisor {
     maxBackoff:     FiniteDuration,
     randomFactor:   Double,
     maxNrOfRetries: Int): Props = {
-    propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, SupervisorStrategy.defaultStrategyWithMaxNrOfRetries(maxNrOfRetries))
+    val supervisionStrategy = SupervisorStrategy.defaultStrategy match {
+      case oneForOne: OneForOneStrategy ⇒ oneForOne.withMaxNrOfRetries(maxNrOfRetries)
+      case s                            ⇒ s
+    }
+    propsWithSupervisorStrategy(childProps, childName, minBackoff, maxBackoff, randomFactor, supervisionStrategy)
   }
 
   /**
