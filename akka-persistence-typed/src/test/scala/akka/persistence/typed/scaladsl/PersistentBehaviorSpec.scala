@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown, WrappedBehaviorId }
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.snapshot.SnapshotStore
@@ -21,11 +21,11 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.Eventually
+
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.{ Success, Try }
-
 import akka.persistence.journal.inmem.InmemJournal
 
 object PersistentBehaviorSpec {
@@ -475,7 +475,8 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
       val probe = TestProbe[String]
       val wrapped: Behavior[Command] = Behaviors.tap(counter(nextPid))(
         (_, _) ⇒ probe.ref ! "msg received",
-        (_, _) ⇒ ()
+        (_, _) ⇒ (),
+        new WrappedBehaviorId
       )
       val c = spawn(wrapped)
 

@@ -505,7 +505,13 @@ class DeferredScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec {
 class TapScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reuse with SignalSiphon {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
-    (SBehaviors.tap((_, msg) ⇒ inbox.ref ! Right(msg), (_, sig) ⇒ inbox.ref ! Left(sig), super.behavior(monitor)._1), inbox)
+    (SBehaviors.tap(
+      super.behavior(monitor)._1
+    )(
+        (_, msg) ⇒ inbox.ref ! Right(msg),
+        (_, sig) ⇒ inbox.ref ! Left(sig),
+        new WrappedBehaviorId
+      ), inbox)
   }
 }
 
@@ -609,6 +615,7 @@ class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse
       classOf[Command],
       pc((_, msg) ⇒ inbox.ref ! Right(msg)),
       ps((_, sig) ⇒ inbox.ref ! Left(sig)),
+      new WrappedBehaviorId,
       super.behavior(monitor)._1), inbox)
   }
 }

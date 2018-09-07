@@ -7,10 +7,10 @@ package internal
 
 import akka.util.{ ConstantFun, LineNumbers }
 import akka.annotation.InternalApi
-import akka.actor.typed.{ ActorContext ⇒ AC }
+import akka.actor.typed.{ WrappingBehavior, ActorContext ⇒ AC }
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
-import scala.reflect.ClassTag
 
+import scala.reflect.ClassTag
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 
 /**
@@ -96,7 +96,8 @@ import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
   def tap[T: ClassTag](
     onMessage: (SAC[T], T) ⇒ _,
     onSignal:  (SAC[T], Signal) ⇒ _,
-    behavior:  Behavior[T]): Behavior[T] = {
+    behavior:  Behavior[T],
+    id:        WrappedBehaviorId): Behavior[T] = {
     intercept[T, T](
       beforeMessage = (ctx, msg) ⇒ {
         onMessage(ctx, msg)
@@ -108,7 +109,8 @@ import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
       },
       afterMessage = ConstantFun.scalaAnyThreeToThird,
       afterSignal = ConstantFun.scalaAnyThreeToThird,
-      behavior)
+      behavior,
+      id)
   }
 
   /**
@@ -125,37 +127,54 @@ import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
    * intercepted, e.g. to return another `Behavior`. The passed message to
    * `afterMessage` is the message returned from `beforeMessage` (possibly
    * different than the incoming message).
+   *
+   * If a behavior returned from the inner behavior processing a message
+   * returns a behavior stack that contains the same `interceptId` it will "replace"
+   * this intercept to protect against causing stack overflows with nested interceptors.
+   * To always keep an interceptor instance, make sure to give it a unique name.
    */
   def intercept[T, U: ClassTag](
-    beforeMessage:  (SAC[U], U) ⇒ T,
-    beforeSignal:   (SAC[T], Signal) ⇒ Boolean,
-    afterMessage:   (SAC[T], T, Behavior[T]) ⇒ Behavior[T],
-    afterSignal:    (SAC[T], Signal, Behavior[T]) ⇒ Behavior[T],
-    behavior:       Behavior[T],
-    toStringPrefix: String                                      = "Intercept"): Behavior[T] = {
+    beforeMessage: (SAC[U], U) ⇒ T,
+    beforeSignal:  (SAC[T], Signal) ⇒ Boolean,
+    afterMessage:  (SAC[T], T, Behavior[T]) ⇒ Behavior[T],
+    afterSignal:   (SAC[T], Signal, Behavior[T]) ⇒ Behavior[T],
+    behavior:      Behavior[T],
+    interceptId:   WrappedBehaviorId): Behavior[T] = {
     behavior match {
       case d: DeferredBehavior[T] ⇒
         DeferredBehavior[T] { ctx ⇒
           val b = Behavior.validateAsInitial(Behavior.start(d, ctx))
-          Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, b, toStringPrefix)
+          Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, b, interceptId)
         }
       case _ ⇒
         val b = Behavior.validateAsInitial(behavior)
-        Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, b, toStringPrefix)
+        Intercept(beforeMessage, beforeSignal, afterMessage, afterSignal, b, interceptId)
     }
-
   }
 
-  private final case class Intercept[T, U <: Any: ClassTag](
+  private[akka] final case class Intercept[T, U <: Any: ClassTag](
     beforeOnMessage: (SAC[U], U) ⇒ T,
     beforeOnSignal:  (SAC[T], Signal) ⇒ Boolean,
     afterMessage:    (SAC[T], T, Behavior[T]) ⇒ Behavior[T],
     afterSignal:     (SAC[T], Signal, Behavior[T]) ⇒ Behavior[T],
     behavior:        Behavior[T],
-    toStringPrefix:  String                                      = "Intercept") extends ExtensibleBehavior[T] {
+    interceptId:     WrappedBehaviorId) extends ExtensibleBehavior[T] with WrappingBehavior[T] {
+
+    def nestedBehavior: Behavior[T] = behavior
+
+    override def replaceNested(newNested: Behavior[T]): Behavior[T] =
+      copy(behavior = newNested)
 
     private def intercept(nextBehavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
-      Behavior.wrap(this, nextBehavior, ctx)(Intercept(beforeOnMessage, beforeOnSignal, afterMessage, afterSignal, _))
+      val started = Behavior.start(nextBehavior, ctx)
+      val duplicateInterceptExists = Behavior.existsInStack(started) {
+        case b: Intercept[_, _] if b.interceptId == interceptId ⇒ true
+        case _ ⇒ false
+      }
+
+      // don't re-wrap if same interceptor id exists in returned and started behavior stack
+      if (duplicateInterceptExists) started
+      else Behavior.wrap(this, started, ctx)(Intercept(beforeOnMessage, beforeOnSignal, afterMessage, afterSignal, _, interceptId))
     }
 
     override def receiveSignal(ctx: AC[T], signal: Signal): Behavior[T] = {
@@ -183,7 +202,8 @@ import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
       }
     }
 
-    override def toString = s"$toStringPrefix(${LineNumbers(beforeOnMessage)},${LineNumbers(beforeOnSignal)},$behavior)"
+    override def toString = s"$interceptId(${LineNumbers(beforeOnMessage)},${LineNumbers(beforeOnSignal)},$behavior)"
+
   }
 
   class OrElseBehavior[T](first: Behavior[T], second: Behavior[T]) extends ExtensibleBehavior[T] {

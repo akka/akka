@@ -5,10 +5,9 @@
 package akka.actor.typed.internal
 
 import scala.collection.immutable.HashMap
-
 import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.internal.adapter.AbstractLogger
-import akka.actor.typed.{ ActorContext, Behavior, ExtensibleBehavior, Signal }
+import akka.actor.typed.{ ActorContext, Behavior, ExtensibleBehavior, Signal, WrappingBehavior }
 import akka.annotation.InternalApi
 
 /**
@@ -55,7 +54,10 @@ import akka.annotation.InternalApi
 @InternalApi private[akka] final class WithMdcBehavior[T] private (
   staticMdc:            Map[String, Any],
   mdcForMessage:        T ⇒ Map[String, Any],
-  private val behavior: Behavior[T]) extends ExtensibleBehavior[T] {
+  private val behavior: Behavior[T]) extends ExtensibleBehavior[T] with WrappingBehavior[T] {
+
+  def nestedBehavior: Behavior[T] = behavior
+  def replaceNested(newNested: Behavior[T]): Behavior[T] = new WithMdcBehavior[T](staticMdc, mdcForMessage, newNested)
 
   // re-wrap with mdc so that it doesn't get lost if behavior changes,
   // unless it changes to new MDC, then throw this away and use the new one

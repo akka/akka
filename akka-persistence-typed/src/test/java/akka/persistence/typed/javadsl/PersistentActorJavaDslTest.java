@@ -440,6 +440,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     ActorRef<Command> c = testKit.spawn(Behaviors.tap(Command.class,
       (ctx, cmd) -> interceptProbe.ref().tell(cmd),
       (ctx, signal) -> signalProbe.ref().tell(signal),
+      new WrappedBehaviorId(),
       counter("tap1")));
     c.tell(Increment.instance);
     interceptProbe.expectMessage(Increment.instance);
