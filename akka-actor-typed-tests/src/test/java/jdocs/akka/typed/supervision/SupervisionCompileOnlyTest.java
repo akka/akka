@@ -6,6 +6,7 @@ package jdocs.akka.typed.supervision;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.PreRestart;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.Behaviors;
 import scala.concurrent.duration.FiniteDuration;
@@ -77,5 +78,56 @@ public class SupervisionCompileOnlyTest {
     //#top-level
     Behaviors.supervise(counter(1));
     //#top-level
+
   }
+
+    //#restart-stop-children
+    static Behavior<String> child(long size) {
+      return Behaviors.receiveMessage(msg -> child(size + msg.length()));
+    }
+
+    static Behavior<String> parent() {
+      return Behaviors.<String> supervise(
+          Behaviors.setup(ctx -> {
+            final ActorRef<String> child1 = ctx.spawn(child(0), "child1");
+            final ActorRef<String> child2 = ctx.spawn(child(0), "child2");
+
+            return Behaviors.receive((__, msg) -> {
+              // there might be bugs here...
+              String[] parts = msg.split(" ");
+              child1.tell(parts[0]);
+              child2.tell(parts[1]);
+              return Behaviors.same();
+            }, (__, signal) -> {
+              // stop children when restarted, new instances are created from setup
+              if (PreRestart.instance().equals(signal)) {
+                ctx.getChildren().forEach(ctx::stop);
+              }
+              return Behaviors.same();
+            });
+          })
+      ).onFailure(SupervisorStrategy.restart());
+    }
+    //#restart-stop-children
+
+    //#restart-keep-children
+    static Behavior<String> parent2() {
+      return Behaviors.setup(ctx -> {
+        final ActorRef<String> child1 = ctx.spawn(child(0), "child1");
+        final ActorRef<String> child2 = ctx.spawn(child(0), "child2");
+
+        // supervision strategy inside the setup to not recreate children on restart
+        return Behaviors.<String> supervise(
+          Behaviors.receiveMessage(msg -> {
+            // there might be bugs here...
+            String[] parts = msg.split(" ");
+            child1.tell(parts[0]);
+            child2.tell(parts[1]);
+            return Behaviors.same();
+          })
+        ).onFailure(SupervisorStrategy.restart());
+      });
+    }
+    //#restart-keep-children
+
 }

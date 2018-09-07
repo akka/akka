@@ -392,8 +392,6 @@ class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
         parentProbe.expectMessage(GotSignal(PreRestart))
         ref ! GetState
       }
-      // TODO document this difference compared to classic actors, and that
-      //      children can be stopped if needed in PreRestart
       parentProbe.expectMessageType[State].children.keySet should contain(childName)
       childProbe.expectNoMessage()
     }
