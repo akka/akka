@@ -4,9 +4,10 @@
 
 package akka.cluster.typed
 
-import akka.actor.typed.{ ActorRef, Behavior, Props, TypedAkkaSpecWithShutdown }
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 
 object ClusterSingletonPersistenceSpec {
@@ -48,11 +49,9 @@ object ClusterSingletonPersistenceSpec {
 
 }
 
-class ClusterSingletonPersistenceSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class ClusterSingletonPersistenceSpec extends ActorTestKitWordSpec(ClusterSingletonPersistenceSpec.config) {
   import ClusterSingletonPersistenceSpec._
   import akka.actor.typed.scaladsl.adapter._
-
-  override def config = ClusterSingletonPersistenceSpec.config
 
   implicit val s = system
 

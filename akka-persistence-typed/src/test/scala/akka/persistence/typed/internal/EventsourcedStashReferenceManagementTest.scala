@@ -5,15 +5,14 @@
 package akka.persistence.typed.internal
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ Behavior, Signal, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ Behavior, Signal }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol.{ IncomingCommand, RecoveryPermitGranted }
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-import scala.concurrent.duration.{ FiniteDuration, _ }
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import scala.concurrent.duration._
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 
-import com.typesafe.config.ConfigFactory
-
-class EventsourcedStashReferenceManagementTest extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class EventsourcedStashReferenceManagementTest extends ActorTestKitWordSpec {
 
   case class Impl() extends EventsourcedStashReferenceManagement
 

@@ -4,20 +4,38 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.typed.Terminated
-import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
-
 import scala.concurrent.Promise
 
-// can be mixed into any spec style,
-class ActorTestKitSpec extends WordSpec with Matchers with ActorTestKit with ScalaFutures {
+import akka.actor.typed.Terminated
+import akka.actor.typed.scaladsl.Behaviors
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.Matchers
+import org.scalatest.WordSpec
+import org.scalatest.WordSpecLike
+
+class ActorTestKitSpec extends ActorTestKitWordSpec {
 
   "the Scala testkit" should {
 
-    "generate a default name from the test class" in {
+    "generate a default name from the test class via ActorTestKitWordSpec" in {
       system.name should ===("ActorTestKitSpec")
+    }
+
+    "generate a default name from the test class" in {
+      val testkit2 = ActorTestKit()
+      try {
+        testkit2.system.name should ===("ActorTestKitSpec")
+      } finally
+        testkit2.shutdownTestKit()
+    }
+
+    "use name from given class name" in {
+      val testkit2 = ActorTestKit(classOf[Vector[_]].getName)
+      try {
+        // removing package name and such
+        testkit2.system.name should ===("Vector")
+      } finally
+        testkit2.shutdownTestKit()
     }
 
     "spawn an actor" in {
@@ -42,26 +60,51 @@ class ActorTestKitSpec extends WordSpec with Matchers with ActorTestKit with Sca
 
     "stop the actor system" in {
       // usually done in test framework hook method but we want to assert
-      shutdownTestKit()
-      system.whenTerminated.futureValue shouldBe a[Terminated]
+      val testkit2 = ActorTestKit()
+      testkit2.shutdownTestKit()
+      testkit2.system.whenTerminated.futureValue shouldBe a[Terminated]
     }
   }
 
 }
 
 // derivative classes should also work fine (esp the naming part
-trait MyBaseSpec extends WordSpec with ActorTestKit with Matchers with BeforeAndAfterAll {
-  override protected def afterAll(): Unit = {
-    shutdownTestKit()
-  }
-}
+abstract class MyBaseSpec extends ActorTestKitWordSpec with WordSpecLike with Matchers
 
 class MyConcreteDerivateSpec extends MyBaseSpec {
   "A derivative test" should {
-    "generate a default name from the test class" in {
+    "generate a default name from the test class via ActorTestKitWordSpec" in {
       system.name should ===("MyConcreteDerivateSpec")
+    }
+
+    "generate a default name from the test class" in {
+      val testkit2 = ActorTestKit()
+      try {
+        testkit2.system.name should ===("MyConcreteDerivateSpec")
+      } finally
+        testkit2.shutdownTestKit()
+    }
+
+    "use name from given class name" in {
+      val testkit2 = ActorTestKit(classOf[Vector[_]].getName)
+      try {
+        testkit2.system.name should ===("Vector")
+      } finally
+        testkit2.shutdownTestKit()
     }
   }
 
+}
+
+class CompositionSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+  val testKit = ActorTestKit()
+
+  override def afterAll(): Unit = {
+    testKit.shutdownTestKit()
+  }
+
+  "generate a default name from the test class" in {
+    testKit.system.name should ===("CompositionSpec")
+  }
 }
 

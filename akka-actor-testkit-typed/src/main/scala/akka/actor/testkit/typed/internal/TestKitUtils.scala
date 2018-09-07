@@ -4,10 +4,11 @@
 
 package akka.actor.testkit.typed.internal
 
+import java.lang.reflect.Modifier
+
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.annotation.InternalApi
-
 import scala.concurrent.{ Await, TimeoutException }
 import scala.concurrent.duration.Duration
 
@@ -47,6 +48,15 @@ private[akka] object TestKitUtils {
   private val TestKitRegex = """akka\.testkit\.typed\.(?:javadsl|scaladsl)\.ActorTestKit(?:\$.*)?""".r
 
   def testNameFromCallStack(classToStartFrom: Class[_]): String = {
+
+    def isAbstractClass(className: String): Boolean = {
+      try {
+        Modifier.isAbstract(Class.forName(className).getModifiers)
+      } catch {
+        case _: Throwable ⇒ false // yes catch everything, best effort check
+      }
+    }
+
     val startFrom = classToStartFrom.getName
     val filteredStack = Thread.currentThread.getStackTrace.toIterator
       .map(_.getClassName)
@@ -57,11 +67,24 @@ private[akka] object TestKitUtils {
         case `startFrom`                            ⇒ true
         case str if str.startsWith(startFrom + "$") ⇒ true // lambdas inside startFrom etc
         case TestKitRegex()                         ⇒ true // testkit internals
+        case str if isAbstractClass(str)            ⇒ true
         case _                                      ⇒ false
       }
 
+    if (filteredStack.isEmpty)
+      throw new IllegalArgumentException(s"Couldn't find [${classToStartFrom.getName}] in call stack")
+
     // sanitize for actor system name
-    filteredStack.next()
+    scrubActorSystemName(filteredStack.next())
+  }
+
+  /**
+   * Sanitize the `name` to be used as valid actor system name by
+   * replacing invalid characters. `name` may for example be a fully qualified
+   * class name and then the short class name will be used.
+   */
+  def scrubActorSystemName(name: String): String = {
+    name
       .replaceFirst("""^.*\.""", "") // drop package name
       .replaceAll("""\$\$?\w+""", "") // drop scala anonymous functions/classes
       .replaceAll("[^a-zA-Z_0-9]", "_")

@@ -4,16 +4,13 @@
 
 package akka.actor.typed.internal.receptionist
 
-import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.internal.ActorRefSerializationSpec
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 
-class ServiceKeySerializationSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
-
-  override def config = ActorRefSerializationSpec.config
+class ServiceKeySerializationSpec extends ActorTestKitWordSpec(ActorRefSerializationSpec.config) {
 
   val serialization = SerializationExtension(system.toUntyped)
 

@@ -5,9 +5,10 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.TestProbe
 
-class ReceivePartialSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class ReceivePartialSpec extends ActorTestKitWordSpec {
 
   "An immutable partial" must {
 

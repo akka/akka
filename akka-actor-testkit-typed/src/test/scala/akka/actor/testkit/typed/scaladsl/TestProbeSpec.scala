@@ -4,11 +4,11 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.typed.scaladsl.Behaviors
-
 import scala.concurrent.duration._
 
-class TestProbeSpec extends AbstractActorSpec {
+import akka.actor.typed.scaladsl.Behaviors
+
+class TestProbeSpec extends ActorTestKitWordSpec {
 
   def compileOnlyApiTest(): Unit = {
     val probe = TestProbe[AnyRef]()

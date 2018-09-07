@@ -10,10 +10,10 @@ import java.nio.charset.StandardCharsets
 
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, MutableBehavior }
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
-
 import scala.concurrent.duration._
 import scala.concurrent.Await
+
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 //#imports
 
 object MutableIntroSpec {
@@ -86,7 +86,7 @@ object MutableIntroSpec {
 
 }
 
-class MutableIntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class MutableIntroSpec extends ActorTestKitWordSpec {
 
   import MutableIntroSpec._
 
