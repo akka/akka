@@ -4,6 +4,7 @@
 
 package akka.actor.typed.javadsl
 
+import akka.actor
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.EmptyProps
@@ -58,6 +59,9 @@ object Adapter {
 
   def toUntyped(sys: ActorSystem[_]): akka.actor.ActorSystem =
     sys.toUntyped
+
+  def toUntyped(ctx: ActorContext[_]): actor.ActorContext =
+    ActorContextAdapter.toUntyped(ctx)
 
   def watch[U](ctx: akka.actor.ActorContext, other: ActorRef[U]): Unit =
     ctx.watch(other)
