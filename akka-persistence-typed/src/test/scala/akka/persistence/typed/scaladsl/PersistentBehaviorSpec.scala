@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated }
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.snapshot.SnapshotStore
@@ -20,8 +20,6 @@ import akka.stream.scaladsl.Sink
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.concurrent.Eventually
-
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -213,11 +211,9 @@ object PersistentBehaviorSpec {
 
 }
 
-class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
+class PersistentBehaviorSpec extends ActorTestKitWordSpec(PersistentBehaviorSpec.conf) {
 
   import PersistentBehaviorSpec._
-
-  override lazy val config: Config = PersistentBehaviorSpec.conf
 
   implicit val testSettings = TestKitSettings(system)
 

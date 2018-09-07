@@ -5,15 +5,16 @@
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ ActorRef, PostStop, Props, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, PostStop, Props }
 import akka.testkit.EventFilter
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
+
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 
 object ActorContextAskSpec {
   val config = ConfigFactory.parseString(
@@ -30,9 +31,7 @@ object ActorContextAskSpec {
     """)
 }
 
-class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
-
-  override def config = ActorContextAskSpec.config
+class ActorContextAskSpec extends ActorTestKitWordSpec(ActorContextAskSpec.config) {
 
   implicit val untyped = system.toUntyped // FIXME no typed event filter yet
 

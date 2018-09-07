@@ -2,7 +2,7 @@
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.testkit.typed.javadsl;
+package jdocs.akka.actor.testkit.typed.javadsl;
 
 //#manual-scheduling-simple
 

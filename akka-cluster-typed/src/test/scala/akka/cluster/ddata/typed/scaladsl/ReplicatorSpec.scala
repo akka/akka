@@ -5,7 +5,7 @@
 package akka.cluster.ddata.typed.scaladsl
 
 import akka.actor.Scheduler
-import akka.actor.typed.{ ActorRef, Behavior, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
@@ -16,7 +16,6 @@ import akka.actor.testkit.typed.scaladsl._
 import akka.actor.testkit.typed.TestKitSettings
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -116,9 +115,7 @@ object ReplicatorSpec {
 
 }
 
-class ReplicatorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
-
-  override def config = ReplicatorSpec.config
+class ReplicatorSpec extends ActorTestKitWordSpec(ReplicatorSpec.config) {
 
   import ReplicatorSpec._
 

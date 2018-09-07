@@ -51,9 +51,11 @@ akka {
   ).withFallback(configSystem1)
 }
 
-class BasicClusterConfigSpec extends TypedAkkaSpec {
-
+class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually with Matchers {
   import BasicClusterExampleSpec._
+
+  implicit override val patienceConfig =
+    PatienceConfig(timeout = scaled(Span(10, Seconds)), interval = scaled(Span(100, Millis)))
 
   "Cluster API" must {
     "init cluster" in {

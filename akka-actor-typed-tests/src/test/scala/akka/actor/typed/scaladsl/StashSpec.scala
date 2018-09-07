@@ -5,7 +5,8 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.TestProbe
 
 object StashSpec {
   sealed trait Command
@@ -186,7 +187,7 @@ class MutableStashSpec extends StashSpec {
   def behaviorUnderTest: Behavior[Command] = Behaviors.setup(ctx ⇒ new MutableStash(ctx))
 }
 
-abstract class StashSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+abstract class StashSpec extends ActorTestKitWordSpec {
   import StashSpec._
 
   def testQualifier: String

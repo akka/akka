@@ -7,12 +7,14 @@ package akka.cluster.sharding.typed.scaladsl
 import java.nio.charset.StandardCharsets
 
 import scala.concurrent.duration._
+
 import akka.actor.ExtendedActorSystem
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Props
-import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.MemberStatus
@@ -21,7 +23,7 @@ import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.cluster.typed.Leave
 import akka.serialization.SerializerWithStringManifest
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.time.Span
@@ -119,10 +121,8 @@ object ClusterShardingSpec {
 
 }
 
-class ClusterShardingSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class ClusterShardingSpec extends ActorTestKitWordSpec(ClusterShardingSpec.config) {
   import ClusterShardingSpec._
-
-  override def config = ClusterShardingSpec.config
 
   val sharding = ClusterSharding(system)
 
@@ -326,7 +326,6 @@ class ClusterShardingSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
       Cluster(system2).manager ! Leave(Cluster(system2).selfMember.address)
 
-      implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, Span(100, org.scalatest.time.Millis))
       eventually {
         // if it wouldn't receive the StopPlz and stop the leaving would take longer and this would fail
         Cluster(system2).isTerminated should ===(true)

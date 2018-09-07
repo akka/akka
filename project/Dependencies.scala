@@ -132,6 +132,9 @@ object Dependencies {
 
       val junit = Compile.junit % "optional;provided;test"
 
+
+      val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "optional;provided;test" } // ApacheV2
+
     }
 
   }
@@ -147,7 +150,7 @@ object Dependencies {
   val actorTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath,
     Test.mockito, Test.scalacheck.value, Test.jimfs)
 
-  val actorTestkitTyped = l ++= Seq(Provided.junit)
+  val actorTestkitTyped = l ++= Seq(Provided.junit, Provided.scalatest.value)
 
   val remote = l ++= Seq(netty, aeronDriver, aeronClient, Test.junit, Test.scalatest.value, Test.jimfs)
 

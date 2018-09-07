@@ -4,19 +4,22 @@
 
 package akka.actor.typed.internal.receptionist
 
-import akka.actor.typed._
-import akka.actor.typed.receptionist.Receptionist._
-import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
-import akka.actor.typed.scaladsl.AskPattern._
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, BehaviorTestKit, TestInbox, TestProbe }
-import org.scalatest.concurrent.Eventually
-
 import scala.concurrent.Future
 
-class LocalReceptionistSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
+import akka.actor.testkit.typed.scaladsl.TestInbox
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed._
+import akka.actor.typed.receptionist.Receptionist
+import akka.actor.typed.receptionist.Receptionist._
+import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.Behaviors
+import org.scalatest.Matchers
+import org.scalatest.WordSpec
 
+object LocalReceptionistSpec {
   trait ServiceA
   val ServiceKeyA = ServiceKey[ServiceA]("service-a")
   val behaviorA = Behaviors.empty[ServiceA]
@@ -33,61 +36,16 @@ class LocalReceptionistSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
     }
   }
 
-  implicit val testSettings = TestKitSettings(system)
+}
+
+class LocalReceptionistSpec extends ActorTestKitWordSpec {
+  import LocalReceptionistSpec._
 
   abstract class TestSetup {
     val receptionist = spawn(LocalReceptionist.behavior)
   }
 
   "A local receptionist" must {
-
-    "register a service" in {
-      val testkit = BehaviorTestKit(LocalReceptionist.behavior)
-      val a = TestInbox[ServiceA]("a")
-      val r = TestInbox[Registered]("r")
-      testkit.run(Register(ServiceKeyA, a.ref, r.ref))
-      testkit.retrieveEffect() // watching however that is implemented
-      r.receiveMessage() should be(Registered(ServiceKeyA, a.ref))
-      val q = TestInbox[Listing]("q")
-      testkit.run(Find(ServiceKeyA, q.ref))
-      testkit.retrieveAllEffects() should be(Nil)
-      q.receiveMessage() should be(Listing(ServiceKeyA, Set(a.ref)))
-      assertEmpty(a, r, q)
-    }
-
-    "register two services" in {
-      val testkit = BehaviorTestKit(LocalReceptionist.behavior)
-      val a = TestInbox[ServiceA]("a")
-      val r = TestInbox[Registered]("r")
-      testkit.run(Register(ServiceKeyA, a.ref, r.ref))
-      r.receiveMessage() should be(Registered(ServiceKeyA, a.ref))
-      val b = TestInbox[ServiceB]("b")
-      testkit.run(Register(ServiceKeyB, b.ref, r.ref))
-      r.receiveMessage() should be(Registered(ServiceKeyB, b.ref))
-      val q = TestInbox[Listing]("q")
-      testkit.run(Find(ServiceKeyA, q.ref))
-      q.receiveMessage() should be(Listing(ServiceKeyA, Set(a.ref)))
-      testkit.run(Find(ServiceKeyB, q.ref))
-      q.receiveMessage() should be(Listing(ServiceKeyB, Set(b.ref)))
-      assertEmpty(a, b, r, q)
-    }
-
-    "register two services with the same key" in {
-      val testkit = BehaviorTestKit(LocalReceptionist.behavior)
-      val a1 = TestInbox[ServiceA]("a1")
-      val r = TestInbox[Registered]("r")
-      testkit.run(Register(ServiceKeyA, a1.ref, r.ref))
-      r.receiveMessage() should be(Registered(ServiceKeyA, a1.ref))
-      val a2 = TestInbox[ServiceA]("a2")
-      testkit.run(Register(ServiceKeyA, a2.ref, r.ref))
-      r.receiveMessage() should be(Registered(ServiceKeyA, a2.ref))
-      val q = TestInbox[Listing]("q")
-      testkit.run(Find(ServiceKeyA, q.ref))
-      q.receiveMessage() should be(Listing(ServiceKeyA, Set(a1.ref, a2.ref)))
-      testkit.run(Find(ServiceKeyB, q.ref))
-      q.receiveMessage() should be(Listing(ServiceKeyB, Set.empty[ActorRef[ServiceB]]))
-      assertEmpty(a1, a2, r, q)
-    }
 
     "unregister services when they terminate" in {
       new TestSetup {
@@ -165,5 +123,65 @@ class LocalReceptionistSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
       listing.isForKey(ServiceKeyA) should ===(true)
       listing.serviceInstances(ServiceKeyA) should be(Set())
     }
+  }
+}
+
+class LocalReceptionistBehaviorSpec extends WordSpec with Matchers {
+  import LocalReceptionistSpec._
+
+  def assertEmpty(inboxes: TestInbox[_]*): Unit = {
+    inboxes foreach (i ⇒ withClue(s"inbox $i had messages")(i.hasMessages should be(false)))
+  }
+
+  "A local receptionist behavior" must {
+
+    "register a service" in {
+      val testkit = BehaviorTestKit(LocalReceptionist.behavior)
+      val a = TestInbox[ServiceA]("a")
+      val r = TestInbox[Registered]("r")
+      testkit.run(Register(ServiceKeyA, a.ref, r.ref))
+      testkit.retrieveEffect() // watching however that is implemented
+      r.receiveMessage() should be(Registered(ServiceKeyA, a.ref))
+      val q = TestInbox[Listing]("q")
+      testkit.run(Find(ServiceKeyA, q.ref))
+      testkit.retrieveAllEffects() should be(Nil)
+      q.receiveMessage() should be(Listing(ServiceKeyA, Set(a.ref)))
+      assertEmpty(a, r, q)
+    }
+
+    "register two services" in {
+      val testkit = BehaviorTestKit(LocalReceptionist.behavior)
+      val a = TestInbox[ServiceA]("a")
+      val r = TestInbox[Registered]("r")
+      testkit.run(Register(ServiceKeyA, a.ref, r.ref))
+      r.receiveMessage() should be(Registered(ServiceKeyA, a.ref))
+      val b = TestInbox[ServiceB]("b")
+      testkit.run(Register(ServiceKeyB, b.ref, r.ref))
+      r.receiveMessage() should be(Registered(ServiceKeyB, b.ref))
+      val q = TestInbox[Listing]("q")
+      testkit.run(Find(ServiceKeyA, q.ref))
+      q.receiveMessage() should be(Listing(ServiceKeyA, Set(a.ref)))
+      testkit.run(Find(ServiceKeyB, q.ref))
+      q.receiveMessage() should be(Listing(ServiceKeyB, Set(b.ref)))
+      assertEmpty(a, b, r, q)
+    }
+
+    "register two services with the same key" in {
+      val testkit = BehaviorTestKit(LocalReceptionist.behavior)
+      val a1 = TestInbox[ServiceA]("a1")
+      val r = TestInbox[Registered]("r")
+      testkit.run(Register(ServiceKeyA, a1.ref, r.ref))
+      r.receiveMessage() should be(Registered(ServiceKeyA, a1.ref))
+      val a2 = TestInbox[ServiceA]("a2")
+      testkit.run(Register(ServiceKeyA, a2.ref, r.ref))
+      r.receiveMessage() should be(Registered(ServiceKeyA, a2.ref))
+      val q = TestInbox[Listing]("q")
+      testkit.run(Find(ServiceKeyA, q.ref))
+      q.receiveMessage() should be(Listing(ServiceKeyA, Set(a1.ref, a2.ref)))
+      testkit.run(Find(ServiceKeyB, q.ref))
+      q.receiveMessage() should be(Listing(ServiceKeyB, Set.empty[ActorRef[ServiceB]]))
+      assertEmpty(a1, a2, r, q)
+    }
+
   }
 }

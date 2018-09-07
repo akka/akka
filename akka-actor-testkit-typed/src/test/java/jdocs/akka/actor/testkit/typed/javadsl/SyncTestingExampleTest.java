@@ -2,9 +2,12 @@
  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.testkit.typed.javadsl;
+package jdocs.akka.actor.testkit.typed.javadsl;
 
 //#imports
+import akka.actor.testkit.typed.javadsl.BehaviorTestKit;
+import akka.actor.testkit.typed.javadsl.Effects;
+import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
 //#imports

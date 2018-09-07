@@ -10,12 +10,14 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-import akka.actor.typed.{ ActorRef, ActorRefResolver, Props, TypedAkkaSpecWithShutdown }
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.{ ActorRef, ActorRefResolver, Props }
 import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 
 object ClusterSingletonApiSpec {
 
@@ -86,10 +88,8 @@ object ClusterSingletonApiSpec {
   }
 }
 
-class ClusterSingletonApiSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class ClusterSingletonApiSpec extends ActorTestKitWordSpec(ClusterSingletonApiSpec.config) {
   import ClusterSingletonApiSpec._
-
-  override def config = ClusterSingletonApiSpec.config
 
   implicit val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)

@@ -5,20 +5,19 @@
 package akka.persistence.typed.internal
 
 import akka.actor.PoisonPill
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps }
-import akka.actor.typed.{ ActorRef, Behavior, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.Persistence
 import akka.persistence.RecoveryPermitter.{ RecoveryPermitGranted, RequestRecoveryPermit, ReturnRecoveryPermit }
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
 import akka.testkit.EventFilter
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.concurrent.Eventually
-
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 
 object RecoveryPermitterSpec {
 
@@ -63,17 +62,15 @@ object RecoveryPermitterSpec {
     }
 }
 
-class RecoveryPermitterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
+class RecoveryPermitterSpec extends ActorTestKitWordSpec(s"""
+      akka.persistence.max-concurrent-recoveries = 3
+      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+      akka.actor.warn-about-java-serializer-usage = off
+      akka.loggers = ["akka.testkit.TestEventListener"]
+      """) {
 
   import RecoveryPermitterSpec._
 
-  override def config: Config = ConfigFactory.parseString(
-    s"""
-        akka.persistence.max-concurrent-recoveries = 3
-        akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-        akka.actor.warn-about-java-serializer-usage = off
-        akka.loggers = ["akka.testkit.TestEventListener"]
-      """)
   implicit val untypedSystem = system.toUntyped
 
   private val permitter = Persistence(untypedSystem).recoveryPermitter
@@ -83,11 +80,11 @@ class RecoveryPermitterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
     p.expectMessage(RecoveryPermitGranted)
   }
 
-  val p1 = TestProbe[Any]()
-  val p2 = TestProbe[Any]()
-  val p3 = TestProbe[Any]()
-  val p4 = TestProbe[Any]()
-  val p5 = TestProbe[Any]()
+  val p1 = createTestProbe[Any]()
+  val p2 = createTestProbe[Any]()
+  val p3 = createTestProbe[Any]()
+  val p4 = createTestProbe[Any]()
+  val p5 = createTestProbe[Any]()
 
   "RecoveryPermitter" must {
     "grant permits up to the limit" in {
@@ -185,7 +182,7 @@ class RecoveryPermitterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
       requestPermit(p1)
       requestPermit(p2)
 
-      val stopProbe = TestProbe[ActorRef[Command]]()
+      val stopProbe = createTestProbe[ActorRef[Command]]()
       val parent =
         EventFilter.error(occurrences = 1, start = "Exception during recovery.").intercept {
           spawn(

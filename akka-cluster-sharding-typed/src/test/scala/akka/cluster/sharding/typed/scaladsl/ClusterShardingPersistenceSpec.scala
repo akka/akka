@@ -4,15 +4,15 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
-import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 
 object ClusterShardingPersistenceSpec {
@@ -59,11 +59,8 @@ object ClusterShardingPersistenceSpec {
 
 }
 
-class ClusterShardingPersistenceSpec extends ActorTestKit
-  with TypedAkkaSpecWithShutdown {
+class ClusterShardingPersistenceSpec extends ActorTestKitWordSpec(ClusterShardingPersistenceSpec.config) {
   import ClusterShardingPersistenceSpec._
-
-  override def config = ClusterShardingPersistenceSpec.config
 
   val sharding = ClusterSharding(system)
 

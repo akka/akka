@@ -6,7 +6,8 @@ package akka.actor.typed
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.testkit.typed.scaladsl._
-import org.scalatest.WordSpecLike
+import org.scalatest.Matchers
+import org.scalatest.WordSpec
 
 object OrElseSpec {
   sealed trait Ping
@@ -44,7 +45,7 @@ object OrElseSpec {
 
 }
 
-class OrElseSpec extends WordSpecLike with TypedAkkaSpec {
+class OrElseSpec extends WordSpec with Matchers {
 
   import OrElseSpec._
 

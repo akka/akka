@@ -13,12 +13,11 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, T
 //#fiddle_code
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
-import akka.actor.typed.TypedAkkaSpecWithShutdown
 
 object IntroSpec {
   //format: OFF
@@ -171,7 +170,7 @@ object IntroSpec {
 
 }
 
-class IntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class IntroSpec extends ActorTestKitWordSpec {
 
   import IntroSpec._
 
