@@ -5,6 +5,8 @@
 package akka.actor.testkit.typed.javadsl
 
 import akka.actor.Scheduler
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.internal.TestKitUtils
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.util.Timeout
 import com.typesafe.config.Config
@@ -12,8 +14,8 @@ import org.junit.Rule
 import org.junit.rules.ExternalResource
 
 /**
- * A Junit external resource for the testkit, making it possible to have Junit manage the lifecycle of the testkit.
- * The testkit will be automatically shut down when the test completes fails.
+ * A Junit external resource for the [[ActorTestKit]], making it possible to have Junit manage the lifecycle of the testkit.
+ * The testkit will be automatically shut down when the test completes or fails.
  *
  * Note that Junit is not provided as a transitive dependency of the testkit module but must be added explicitly
  * to your project to use this.
@@ -32,16 +34,16 @@ import org.junit.rules.ExternalResource
  * }
  * }}}
  */
-class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
+final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
 
-  def this() = this(ActorTestKit.create(classOf[TestKitJunitResource]))
-  def this(customConfig: Config) = this(ActorTestKit.create(classOf[TestKitJunitResource], customConfig))
-
-  def this(testClass: Class[_]) = this(ActorTestKit.create())
-  def this(testClass: Class[_], customConfig: Config) = this(ActorTestKit.create(testClass, customConfig))
+  def this() = this(ActorTestKit.create(TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource])))
+  def this(customConfig: Config) =
+    this(ActorTestKit.create(TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource]), customConfig))
+  def this(customConfig: Config, settings: TestKitSettings) =
+    this(ActorTestKit.create(TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource]), customConfig, settings))
 
   @Rule
-  final val testKit = _kit
+  val testKit: ActorTestKit = _kit
 
   // delegates of the TestKit api for minimum fuss
   /**

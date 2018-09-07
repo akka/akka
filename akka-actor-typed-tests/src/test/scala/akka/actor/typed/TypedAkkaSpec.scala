@@ -35,4 +35,7 @@ trait TypedAkkaSpecWithShutdown extends TypedAkkaSpec {
   override protected def afterAll(): Unit = shutdownTestKit()
 }
 
+/**
+ * A predefined exception that can be used in tests. It doesn't include a stack trace.
+ */
 class TestException(msg: String) extends RuntimeException(msg) with NoStackTrace

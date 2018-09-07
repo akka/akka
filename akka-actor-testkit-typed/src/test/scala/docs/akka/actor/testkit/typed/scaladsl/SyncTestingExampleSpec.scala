@@ -2,14 +2,17 @@
  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.testkit.typed.scaladsl
+package docs.akka.actor.testkit.typed.scaladsl
 
 //#imports
+import akka.actor.testkit.typed.Effect._
+import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
+import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
-import akka.actor.testkit.typed.Effect._
 //#imports
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.Matchers
+import org.scalatest.WordSpec
 
 object SyncTestingExampleSpec {
   //#child

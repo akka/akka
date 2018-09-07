@@ -2,7 +2,7 @@
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.testkit.typed.javadsl;
+package jdocs.akka.actor.testkit.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
@@ -12,9 +12,11 @@ import akka.actor.testkit.typed.javadsl.TestProbe;
 import org.junit.AfterClass;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 //#test-header
 public class AsyncTestingExampleTest {
-  final static ActorTestKit testKit = ActorTestKit.create(AsyncTestingExampleTest.class);
+  final static ActorTestKit testKit = ActorTestKit.create();
 //#test-header
 
   //#under-test
@@ -51,8 +53,8 @@ public class AsyncTestingExampleTest {
   @Test
   public void testVerifyingAResponse() {
     //#test-spawn
-    TestProbe<Pong> probe = testKit.createTestProbe();
     ActorRef<Ping> pinger = testKit.spawn(echoActor, "ping");
+    TestProbe<Pong> probe = testKit.createTestProbe();
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMessage(new Pong("hello"));
     //#test-spawn
@@ -61,10 +63,15 @@ public class AsyncTestingExampleTest {
   @Test
   public void testVerifyingAResponseAnonymous() {
     //#test-spawn-anonymous
-    TestProbe<Pong> probe = testKit.createTestProbe();
     ActorRef<Ping> pinger = testKit.spawn(echoActor);
+    //#test-spawn-anonymous
+    TestProbe<Pong> probe = testKit.createTestProbe();
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMessage(new Pong("hello"));
-    //#test-spawn-anonymous
+  }
+
+  @Test
+  public void systemNameShouldComeFromTestClass() {
+    assertEquals(testKit.system().name(), "AsyncTestingExampleTest");
   }
 }

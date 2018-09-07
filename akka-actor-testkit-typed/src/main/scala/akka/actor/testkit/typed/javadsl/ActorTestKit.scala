@@ -10,7 +10,7 @@ import akka.actor.Scheduler
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.TestKitUtils
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit ⇒ ScalaTestKit }
+import akka.actor.testkit.typed.scaladsl
 import akka.util.Timeout
 import com.typesafe.config.Config
 import akka.util.JavaDurationConverters._
@@ -18,34 +18,49 @@ import akka.util.JavaDurationConverters._
 object ActorTestKit {
 
   /**
-   * Create a testkit named from the class that is calling this method
+   * Create a testkit named from the class that is calling this method.
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * e.g. threads will include the name.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
-  def create(): ActorTestKit = new ActorTestKit(new ScalaTestKit {})
+  def create(): ActorTestKit =
+    new ActorTestKit(scaladsl.ActorTestKit(TestKitUtils.testNameFromCallStack(classOf[ActorTestKit])))
 
   /**
-   * Create a testkit named with this test class
+   * Create a named testkit.
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * e.g. threads will include the name.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
-  def create(testClass: Class[_]): ActorTestKit = new ActorTestKit(new ScalaTestKit {
-    override def name = TestKitUtils.testNameFromCallStack(testClass)
-  })
+  def create(name: String): ActorTestKit =
+    new ActorTestKit(scaladsl.ActorTestKit(name))
 
   /**
-   * Create a testkit named with this test class, and use a custom config for the actor system
+   * Create a named testkit, and use a custom config for the actor system.
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * e.g. threads will include the name.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
-  def create(testClass: Class[_], customConfig: Config) = new ActorTestKit(new ScalaTestKit {
-    override def name = TestKitUtils.testNameFromCallStack(testClass)
-    override def config = customConfig
-  })
+  def create(name: String, customConfig: Config): ActorTestKit =
+    new ActorTestKit(scaladsl.ActorTestKit(name, customConfig))
 
   /**
-   * Create a testkit named with this test class, and use a custom config for the actor system,
+   * Create a named testkit, and use a custom config for the actor system,
    * and a custom [[akka.actor.testkit.typed.TestKitSettings]]
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * e.g. threads will include the name.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
-  def create(testClass: Class[_], customConfig: Config, settings: TestKitSettings) = new ActorTestKit(new ScalaTestKit {
-    override def name = TestKitUtils.testNameFromCallStack(testClass)
-    override def config = customConfig
-    override def testkitSettings: TestKitSettings = settings
-  })
+  def create(name: String, customConfig: Config, settings: TestKitSettings): ActorTestKit =
+    new ActorTestKit(scaladsl.ActorTestKit(name, customConfig, settings))
 
   /**
    * Shutdown the given actor system and wait up to `duration` for shutdown to complete.
@@ -91,13 +106,13 @@ object ActorTestKit {
  * The actor system has a custom guardian that allows for spawning arbitrary actors using the `spawn` methods.
  *
  * Designed to work with any test framework, but framework glue code that calls `shutdownTestKit` after all tests has
- * run needs to be provided by the user.
+ * run needs to be provided by the user or with [[TestKitJunitResource]].
  *
  * Use `TestKit.create` factories to construct manually or [[TestKitJunitResource]] to use together with JUnit tests
  *
  * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
-final class ActorTestKit protected (delegate: akka.actor.testkit.typed.scaladsl.ActorTestKit) {
+final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scaladsl.ActorTestKit) {
 
   /**
    * The default timeout as specified with the config/[[akka.actor.testkit.typed.TestKitSettings]]
@@ -156,6 +171,8 @@ final class ActorTestKit protected (delegate: akka.actor.testkit.typed.scaladsl.
    * @tparam M the type of messages the probe should accept
    */
   def createTestProbe[M](name: String, clazz: Class[M]): TestProbe[M] = TestProbe.create(name, clazz, system)
+
+  // Note that if more methods are added here they should also be added to TestKitJunitResource
 
   /**
    * Terminate the actor system and the testkit
