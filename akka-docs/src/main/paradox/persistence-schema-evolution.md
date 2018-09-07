@@ -38,7 +38,7 @@ evolution feel free to submit Pull Requests to this page to extend it.
 
 In recent years we have observed a tremendous move towards immutable append-only datastores, with event-sourcing being
 the prime technique successfully being used in these settings. For an excellent overview why and how immutable data makes scalability
-and systems design much simpler you may want to read Pat Helland's excellent [Immutability Changes Everything](http://www.cidrdb.org/cidr2015/Papers/CIDR15_Paper16.pdf) whitepaper.
+and systems design much simpler you may want to read Pat Helland's excellent [Immutability Changes Everything](http://cidrdb.org/cidr2015/Papers/CIDR15_Paper16.pdf) whitepaper.
 
 Since with [Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html) the **events are immutable** and usually never deleted – the way schema evolution is handled
 differs from how one would go about it in a mutable database setting (e.g. in typical CRUD database applications).
