@@ -91,8 +91,16 @@ object OSGi {
     exports(
       packages = Seq(
         "akka.stream.*",
-        "com.typesafe.sslconfig.akka.*"),
-      imports = Seq(scalaJava8CompatImport(), scalaParsingCombinatorImport(), sslConfigCoreImport()))
+        "com.typesafe.sslconfig.akka.*"
+      ),
+      imports = Seq(
+        scalaJava8CompatImport(),
+        scalaParsingCombinatorImport(),
+        sslConfigCoreImport("com.typesafe.sslconfig.ssl.*"),
+        sslConfigCoreImport("com.typesafe.sslconfig.util.*"),
+        "!com.typesafe.sslconfig.akka.*"
+      )
+    )
 
   val streamTestkit = exports(Seq("akka.stream.testkit.*"))
 
