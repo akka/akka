@@ -112,6 +112,8 @@ object OSGi {
     Seq("akka.persistence.*"),
     imports = Seq(optionalResolution("org.fusesource.leveldbjni.*"), optionalResolution("org.iq80.leveldb.*")))
 
+  val persistenceTyped = exports(Seq("akka.persistence.typed.*"))
+
   val persistenceQuery = exports(Seq("akka.persistence.query.*"))
 
   val testkit = exports(Seq("akka.testkit.*"))
