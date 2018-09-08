@@ -406,6 +406,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .settings(Dependencies.persistenceShared)
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
+  .settings(OSGi.persistenceTyped)
   .disablePlugins(MimaPlugin)
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
