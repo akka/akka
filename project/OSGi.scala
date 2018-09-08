@@ -35,6 +35,8 @@ object OSGi {
     // dynamicImportPackage needed for loading classes defined in configuration
     OsgiKeys.dynamicImportPackage := Seq("*"))
 
+  val actorTyped = exports(Seq("akka.actor.typed.*"))
+
   val agent = exports(Seq("akka.agent.*"))
 
   val camel = exports(Seq("akka.camel.*"))
