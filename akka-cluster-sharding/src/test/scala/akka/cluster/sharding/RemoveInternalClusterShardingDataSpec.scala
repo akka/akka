@@ -40,7 +40,7 @@ object RemoveInternalClusterShardingDataSpec {
     akka.persistence.snapshot-store.local.dir = "target/snapshots-RemoveInternalClusterShardingDataSpec"
     akka.cluster.sharding.snapshot-after = 5
     akka.cluster.sharding.state-store-mode = persistence
-    |akka.cluster.sharding.keep-nr-of-batches = 0
+    akka.cluster.sharding.keep-nr-of-batches = 0
     """
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
