@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Logging, you must add the following dependency in your project:
+To use Logging, you must at least use the Akka actors dependency in your project, and will most likely want to configure logging via the SLF4J module (@ref:[see below](#slf4j)), or use `java.util.logging` (@ref:[see below](#java-util-logging)).
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -352,9 +352,12 @@ Akka provides a logger for [SLF4J](http://www.slf4j.org/). This module is availa
 It has a single dependency: the slf4j-api jar. In your runtime, you also need a SLF4J backend. We recommend [Logback](http://logback.qos.ch/):
 
 @@dependency[sbt,Maven,Gradle] {
-  group="ch.qos.logback"
-  artifact="logback-classic"
-  version="1.2.3"
+  group="com.typesafe.akka"
+  artifact="akka-slf4j_$scala.binary_version$"
+  version="$akka.version$"
+  group2="ch.qos.logback"
+  artifact2="logback-classic"
+  version2="1.2.3"
 }
 
 You need to enable the Slf4jLogger in the `loggers` element in
