@@ -9,10 +9,12 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.MutableBehavior
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import scala.concurrent._
 import scala.concurrent.duration._
+
+import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 import com.typesafe.config.ConfigFactory
 
 object WatchSpec {
@@ -39,10 +41,10 @@ object WatchSpec {
   case class StartWatchingWith(watchee: ActorRef[Stop.type], msg: CustomTerminationMessage) extends Message
 }
 
-class WatchSpec extends ActorTestKit
-  with TypedAkkaSpecWithShutdown {
+class WatchSpec extends ActorTestKitWordSpec(WatchSpec.config) {
+  // FIXME why systemActor? spawn?
+  import testKit.systemActor
 
-  override def config = WatchSpec.config
   implicit def untypedSystem = system.toUntyped
 
   import WatchSpec._

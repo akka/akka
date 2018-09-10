@@ -4,17 +4,14 @@
 
 package akka.cluster.typed
 
-import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 
 object ClusterApiSpec {
   val config = ConfigFactory.parseString(
@@ -37,9 +34,7 @@ object ClusterApiSpec {
     """)
 }
 
-class ClusterApiSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with ScalaFutures {
-
-  override def config = ClusterApiSpec.config
+class ClusterApiSpec extends ActorTestKitWordSpec(ClusterApiSpec.config) {
 
   val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)

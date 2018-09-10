@@ -11,7 +11,7 @@ class ScalaTestIntegrationExampleSpec extends ActorTestKitWordSpec {
 
   "Something" must {
     "behave correctly" in {
-      val probe = testKit.createTestProbe[String]()
+      val probe = createTestProbe[String]()
       // ... assertions etc.
     }
   }

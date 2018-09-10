@@ -15,12 +15,13 @@ import akka.cluster.MemberStatus
 import akka.cluster.typed.{ Cluster, Join }
 import akka.serialization.SerializerWithStringManifest
 import akka.actor.testkit.typed.FishingOutcome
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 object ClusterReceptionistSpec {
   val config = ConfigFactory.parseString(
@@ -96,15 +97,9 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
   "The cluster receptionist" must {
 
     "eventually replicate registrations to the other side" in {
-      val testKit1 = new ActorTestKit {
-        override def name = super.name + "-test-1"
-        override def config = ClusterReceptionistSpec.config
-      }
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-1", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
-      val testKit2 = new ActorTestKit {
-        override def name = system1.name
-        override def config = testKit1.system.settings.config
-      }
+      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
       val system2 = testKit2.system
       try {
         val clusterNode1 = Cluster(system1)
@@ -137,15 +132,9 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
     }
 
     "remove registrations when node dies" in {
-      val testKit1 = new ActorTestKit {
-        override def name = super.name + "-test-2"
-        override def config = ClusterReceptionistSpec.config
-      }
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-2", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
-      val testKit2 = new ActorTestKit {
-        override def name = system1.name
-        override def config = testKit1.system.settings.config
-      }
+      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
       val system2 = testKit2.system
       try {
 
@@ -181,15 +170,9 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
     }
 
     "work with services registered before node joins cluster" in {
-      val testKit1 = new ActorTestKit {
-        override def name = super.name + "-test-2"
-        override def config = ClusterReceptionistSpec.config
-      }
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-3", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
-      val testKit2 = new ActorTestKit {
-        override def name = system1.name
-        override def config = testKit1.system.settings.config
-      }
+      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
       val system2 = testKit2.system
       try {
 
@@ -229,15 +212,9 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
     }
 
     "handle a new incarnation of the same node well" in {
-      val testKit1 = new ActorTestKit {
-        override def name = super.name + "-test-3"
-        override def config = ClusterReceptionistSpec.config
-      }
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-4", ClusterReceptionistSpec.config)
       val system1 = testKit1.system
-      val testKit2 = new ActorTestKit {
-        override def name = system1.name
-        override def config = testKit1.system.settings.config
-      }
+      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
       val system2 = testKit2.system
       try {
 
@@ -271,10 +248,8 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         system1.log.debug("Terminating system2, uid: [{}]", clusterNode2.selfMember.uniqueAddress.longUid)
         Await.ready(system2.terminate(), 10.seconds)
 
-        val testKit3 = new ActorTestKit {
-          override protected def name: String = system1.name
-          override def config: Config = testKit1.config
-        }
+        val testKit3 = ActorTestKit(system1.name, testKit1.config)
+
         try {
           val system3 = testKit3.system
           system1.log.debug("Starting system3 at same hostname port as system2, uid: [{}]", Cluster(system3).selfMember.uniqueAddress.longUid)

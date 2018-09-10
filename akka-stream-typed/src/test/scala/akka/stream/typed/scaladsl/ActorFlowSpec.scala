@@ -7,16 +7,15 @@ package akka.stream.typed.scaladsl
 //#imports
 import akka.stream.typed.scaladsl.ActorMaterializer
 import akka.stream.scaladsl._
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
-
 import scala.concurrent.duration._
 
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+
 //#imports
-import akka.actor.typed.{ DispatcherSelector, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.DispatcherSelector
 import akka.stream.testkit.TestSubscriber
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
@@ -26,7 +25,7 @@ object ActorFlowSpec {
   final case class Reply(s: String)
 }
 
-class ActorFlowSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class ActorFlowSpec extends ActorTestKitWordSpec {
   import ActorFlowSpec._
 
   implicit val mat = ActorMaterializer()

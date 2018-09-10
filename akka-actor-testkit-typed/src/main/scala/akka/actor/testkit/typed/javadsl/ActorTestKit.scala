@@ -125,6 +125,8 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
    */
   def system: ActorSystem[Void] = delegate.system.asInstanceOf[ActorSystem[Void]]
 
+  def testKitSettings: TestKitSettings = delegate.testKitSettings
+
   /**
    * The scheduler of the testkit actor system
    */

@@ -6,21 +6,18 @@ package akka.actor.typed.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.TestException
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ Behavior, LogMarker, TestException, TypedAkkaSpec }
+import akka.actor.typed.{ Behavior, LogMarker }
 import akka.event.Logging
 import akka.event.Logging.{ LogEventWithCause, LogEventWithMarker }
 import akka.testkit.EventFilter
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import com.typesafe.config.ConfigFactory
 
-class ActorLoggingSpec extends ActorTestKit with TypedAkkaSpec {
-
-  override def config = ConfigFactory.parseString(
-    """
+class ActorLoggingSpec extends ActorTestKitWordSpec("""
     akka.loglevel = DEBUG # test verifies debug
     akka.loggers = ["akka.testkit.TestEventListener"]
-  """)
+    """) {
 
   val marker = LogMarker("marker")
   val cause = new TestException("böö")

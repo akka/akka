@@ -13,6 +13,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.util.Timeout
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 object ActorTestKitBase {
   def testNameFromCallStack(): String = TestKitUtils.testNameFromCallStack(classOf[ActorTestKitBase])
@@ -34,6 +35,12 @@ abstract class ActorTestKitBase(val testKit: ActorTestKit) {
   /**
    * Use a custom config for the actor system.
    */
+  def this(config: String) =
+    this(ActorTestKit(ActorTestKitBase.testNameFromCallStack(), ConfigFactory.parseString(config)))
+
+  /**
+   * Use a custom config for the actor system.
+   */
   def this(config: Config) = this(ActorTestKit(ActorTestKitBase.testNameFromCallStack(), config))
 
   /**
@@ -50,11 +57,15 @@ abstract class ActorTestKitBase(val testKit: ActorTestKit) {
   /**
    * See corresponding method on [[ActorTestKit]]
    */
-  def timeout: Timeout = testKit.timeout
+  implicit def testKitSettings: TestKitSettings = testKit.testKitSettings
   /**
    * See corresponding method on [[ActorTestKit]]
    */
-  def scheduler: Scheduler = testKit.scheduler
+  implicit def timeout: Timeout = testKit.timeout
+  /**
+   * See corresponding method on [[ActorTestKit]]
+   */
+  implicit def scheduler: Scheduler = testKit.scheduler
 
   /**
    * See corresponding method on [[ActorTestKit]]

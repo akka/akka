@@ -4,10 +4,11 @@
 
 package akka.actor.typed
 
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
 
-class MonitorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class MonitorSpec extends ActorTestKitWordSpec {
 
   "The monitor behavior" should {
 

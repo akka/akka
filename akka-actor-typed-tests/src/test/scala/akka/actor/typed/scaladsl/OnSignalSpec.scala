@@ -6,9 +6,10 @@ package akka.actor.typed
 package scaladsl
 
 import akka.Done
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.TestProbe
 
-final class OnSignalSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+final class OnSignalSpec extends ActorTestKitWordSpec {
 
   "An Actor.OnSignal behavior" must {
     "must correctly install the signal handler" in {

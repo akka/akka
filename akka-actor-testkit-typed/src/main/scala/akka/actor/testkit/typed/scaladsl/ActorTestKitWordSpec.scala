@@ -4,25 +4,11 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.Scheduler
 import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.internal.TestKitUtils
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Behavior
-import akka.actor.typed.Props
-import akka.util.Timeout
 import com.typesafe.config.Config
-import org.junit.Rule
-import org.junit.rules.ExternalResource
-import org.scalatest.Args
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
-import org.scalatest.Status
-import org.scalatest.Suite
-import org.scalatest.SuiteMixin
-import org.scalatest.TestSuite
-import org.scalatest.WordSpec
 import org.scalatest.WordSpecLike
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
@@ -43,6 +29,12 @@ abstract class ActorTestKitWordSpec(testKit: ActorTestKit) extends ActorTestKitB
   with WordSpecLike with Matchers with BeforeAndAfterAll with ScalaFutures with Eventually {
 
   def this() = this(ActorTestKit(ActorTestKitBase.testNameFromCallStack()))
+
+  /**
+   * Use a custom config for the actor system.
+   */
+  def this(config: String) =
+    this(ActorTestKit(ActorTestKitBase.testNameFromCallStack(), ConfigFactory.parseString(config)))
 
   /**
    * Use a custom config for the actor system.

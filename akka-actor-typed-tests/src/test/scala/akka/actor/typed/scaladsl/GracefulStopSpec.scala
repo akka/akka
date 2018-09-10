@@ -7,9 +7,10 @@ package scaladsl
 
 import akka.Done
 import akka.NotUsed
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.TestProbe
 
-final class GracefulStopSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+final class GracefulStopSpec extends ActorTestKitWordSpec {
 
   "Graceful stop" must {
 

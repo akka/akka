@@ -7,13 +7,12 @@ package akka.persistence.typed.scaladsl
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy }
 import akka.actor.testkit.typed.TE
 import akka.persistence.AtomicWrite
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.EventRejectedException
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.concurrent.Eventually
+import com.typesafe.config.ConfigFactory
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -62,11 +61,9 @@ object PersistentBehaviorFailureSpec {
     """).withFallback(ConfigFactory.load("reference.conf")).resolve()
 }
 
-class PersistentBehaviorFailureSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
+class PersistentBehaviorFailureSpec extends ActorTestKitWordSpec(PersistentBehaviorFailureSpec.conf) {
 
   import PersistentBehaviorSpec._
-
-  override lazy val config: Config = PersistentBehaviorFailureSpec.conf
 
   implicit val testSettings = TestKitSettings(system)
 

@@ -9,7 +9,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.typed.TypedAkkaSpecWithShutdown
+import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 import docs.akka.typed.IntroSpec.HelloWorld
 
 //#imports1
@@ -43,7 +43,7 @@ object SpawnProtocolDocSpec {
   //#main
 }
 
-class SpawnProtocolDocSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class SpawnProtocolDocSpec extends ActorTestKitWordSpec {
 
   import SpawnProtocolDocSpec._
 

@@ -10,6 +10,8 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
+import org.scalatest.Matchers
+import org.scalatest.WordSpec
 
 object SpawnProtocolSpec {
   sealed trait Message
@@ -24,7 +26,7 @@ object SpawnProtocolSpec {
     }
 }
 
-class SpawnProtocolSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class SpawnProtocolSpec extends ActorTestKitWordSpec {
 
   import SpawnProtocolSpec._
   implicit val testSettings = TestKitSettings(system)
@@ -93,7 +95,7 @@ class SpawnProtocolSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   }
 }
 
-class StubbedSpawnProtocolSpec extends TypedAkkaSpec {
+class StubbedSpawnProtocolSpec extends WordSpec with Matchers {
 
   import SpawnProtocolSpec._
 

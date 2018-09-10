@@ -10,6 +10,7 @@ import akka.actor.testkit.typed.internal.TestKitUtils
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.util.Timeout
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import org.junit.Rule
 import org.junit.rules.ExternalResource
 
@@ -37,8 +38,24 @@ import org.junit.rules.ExternalResource
 final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
 
   def this() = this(ActorTestKit.create(TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource])))
+
+  /**
+   * Use a custom config for the actor system.
+   */
+  def this(customConfig: String) =
+    this(ActorTestKit.create(
+      TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource]),
+      ConfigFactory.parseString(customConfig)))
+
+  /**
+   * Use a custom config for the actor system.
+   */
   def this(customConfig: Config) =
     this(ActorTestKit.create(TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource]), customConfig))
+
+  /**
+   * Use a custom config for the actor system, and a custom [[akka.actor.testkit.typed.TestKitSettings]].
+   */
   def this(customConfig: Config, settings: TestKitSettings) =
     this(ActorTestKit.create(TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource]), customConfig, settings))
 
@@ -50,6 +67,10 @@ final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
    * See corresponding method on [[ActorTestKit]]
    */
   def system: ActorSystem[Void] = testKit.system
+  /**
+   * See corresponding method on [[ActorTestKit]]
+   */
+  def testKitSettings: TestKitSettings = testKit.testKitSettings
   /**
    * See corresponding method on [[ActorTestKit]]
    */
