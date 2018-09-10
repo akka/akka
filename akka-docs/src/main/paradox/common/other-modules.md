@@ -8,9 +8,9 @@ A full server- and client-side HTTP stack on top of akka-actor and akka-stream.
 
 Various Akka Streams connectors, integration patterns, and data transformations for integration use cases
 
-## [Akka Streams Kafka](http://doc.akka.io/docs/akka-stream-kafka/current/home.html)
+## [Alpakka Kafka Connector](http://doc.akka.io/docs/akka-stream-kafka/current/home.html)
 
-Akka Streams Kafka, also known as Reactive Kafka, is an Akka Streams connector for Apache Kafka.
+The Alpakka Kafka Connector connects Apache Kafka with Akka Streams.
 
 ## [Cassandra Plugins for Akka Persistence](https://github.com/akka/akka-persistence-cassandra)
 
