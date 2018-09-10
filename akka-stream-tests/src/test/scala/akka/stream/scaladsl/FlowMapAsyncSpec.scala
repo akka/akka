@@ -314,6 +314,46 @@ class FlowMapAsyncSpec extends StreamSpec {
       result.futureValue should ===(Seq("1", "3"))
     }
 
+    "continue emitting after a sequence of nulls" in {
+      val flow = Flow[Int].mapAsync[String](3) { value ⇒
+        if (value == 0 || value >= 100) Future.successful(value.toString)
+        else Future.successful(null)
+      }
+
+      val result = Source(0 to 102).via(flow).runWith(Sink.seq)
+
+      result.futureValue should ===(Seq("0", "100", "101", "102"))
+    }
+
+    "complete without emitting any element after a sequence of nulls only" in {
+      val flow = Flow[Int].mapAsync[String](3) { _ ⇒
+        Future.successful(null)
+      }
+
+      val result = Source(0 to 200).via(flow).runWith(Sink.seq)
+
+      result.futureValue shouldBe empty
+    }
+
+    "complete stage if future with null result is completed last" in {
+      import system.dispatcher
+      val latch = TestLatch(2)
+
+      val flow = Flow[Int].mapAsync[String](2) {
+        case 2 ⇒ Future {
+          Await.ready(latch, 10 seconds)
+          null
+        }
+        case x ⇒
+          latch.countDown()
+          Future.successful(x.toString)
+      }
+
+      val result = Source(List(1, 2, 3)).via(flow).runWith(Sink.seq)
+
+      result.futureValue should ===(Seq("1", "3"))
+    }
+
     "should handle cancel properly" in assertAllStagesStopped {
       val pub = TestPublisher.manualProbe[Int]()
       val sub = TestSubscriber.manualProbe[Int]()

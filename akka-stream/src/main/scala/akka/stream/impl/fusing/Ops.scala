@@ -1222,9 +1222,13 @@ private[stream] object Collect {
         else if (isAvailable(out)) {
           val holder = buffer.dequeue()
           holder.elem match {
-            case Success(elem) ⇒
-              if (elem != null) push(out, elem)
+            case Success(elem) if elem != null ⇒
+              push(out, elem)
               pullIfNeeded()
+
+            case Success(null) ⇒
+              pullIfNeeded()
+              pushNextIfPossible()
 
             case Failure(NonFatal(ex)) ⇒
               holder.supervisionDirectiveFor(decider, ex) match {
@@ -1282,6 +1286,8 @@ private[stream] object Collect {
               push(out, elem)
             } else buffer.enqueue(elem)
           case Success(null) ⇒
+            if (isClosed(in) && todo == 0) completeStage()
+            else if (!hasBeenPulled(in)) tryPull(in)
           case Failure(ex) ⇒
             if (decider(ex) == Supervision.Stop) failStage(ex)
             else if (isClosed(in) && todo == 0) completeStage()
