@@ -534,25 +534,25 @@ private[akka] class PersistentShard(
       }
 
     case SaveSnapshotFailure(_, reason) ⇒
-      log.warning("PersistentShard snapshot failure: {}", reason.getMessage)
+      log.warning("PersistentShard snapshot failure: [{}]", reason.getMessage)
 
     case DeleteMessagesSuccess(toSequenceNr) ⇒
-      val deleteFrom = math.max(0, toSequenceNr - (keepNrOfBatches * snapshotAfter))
       val deleteTo = toSequenceNr - 1
-      log.debug("PersistentShard messages to {} deleted successfully. Deleting snapshots from {} to {}", toSequenceNr, deleteFrom, deleteTo)
+      val deleteFrom = math.max(0, deleteTo - (keepNrOfBatches * snapshotAfter))
+      log.debug("PersistentShard messages to [{}] deleted successfully. Deleting snapshots from [{}] to [{}]", toSequenceNr, deleteFrom, deleteTo)
       deleteSnapshots(SnapshotSelectionCriteria(
         minSequenceNr = deleteFrom,
         maxSequenceNr = deleteTo
       ))
 
     case DeleteMessagesFailure(reason, toSequenceNr) ⇒
-      log.warning("PersistentShard messages to {} deletion failure: {}", toSequenceNr, reason.getMessage)
+      log.warning("PersistentShard messages to [{}] deletion failure: [{}]", toSequenceNr, reason.getMessage)
 
     case DeleteSnapshotsSuccess(m) ⇒
-      log.debug("PersistentShard snapshots matching {} deleted successfully", m)
+      log.debug("PersistentShard snapshots matching [{}] deleted successfully", m)
 
     case DeleteSnapshotsFailure(m, reason) ⇒
-      log.warning("PersistentShard snapshots matching {} deletion failure: {}", m, reason.getMessage)
+      log.warning("PersistentShard snapshots matching [{}] deletion failure: [{}]", m, reason.getMessage)
 
   }: Receive).orElse(super.receiveCommand)
 
