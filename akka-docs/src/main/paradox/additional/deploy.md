@@ -42,5 +42,7 @@ You can look at the
 @scala[@extref[Cluster with docker-compose example project](samples:akka-samples-cluster-docker-compose-scala)]
 to see what this looks like in practice.
 
+For the JVM to run well in a Docker container, there are some general (not Akka specific) parameters that might need tuning. You may want to look into using [`-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap`](https://dzone.com/articles/running-a-jvm-in-a-container-without-getting-kille) options for your JVM later than 8u131, which makes it understand c-group memory limits.
+
 
 
