@@ -47,6 +47,7 @@ import akka.stream.SharedKillSwitch
 import scala.util.control.NoStackTrace
 
 import akka.actor.Cancellable
+import akka.event.HiFrequencyLogging
 import akka.stream.StreamTcpException
 
 /**
@@ -140,6 +141,8 @@ private[remote] class Association(
   private def advancedSettings = transport.settings.Advanced
 
   private val restartCounter = new RestartCounter(advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout)
+
+  private val droppedMessageLogging = new HiFrequencyLogging(transport.system, 1, 10.seconds)
 
   // We start with the raw wrapped queue and then it is replaced with the materialized value of
   // the `SendQueue` after materialization. Using same underlying queue. This makes it possible to
@@ -332,12 +335,12 @@ private[remote] class Association(
         case OptionVal.Some(ref) ⇒ ref.cachedAssociation = null // don't use this Association instance any more
         case OptionVal.None      ⇒
       }
-      if (log.isDebugEnabled) {
+      droppedMessageLogging.filter { discardInfo ⇒
         val reason =
           if (removed) "removed unused quarantined association"
           else s"overflow of send queue, size [$queueSize]"
-        log.debug(
-          "Dropping message [{}] from [{}] to [{}] due to {}",
+        log.warning(
+          s"Dropping message [{}] from [{}] to [{}] due to {}$discardInfo",
           Logging.messageClassName(message), sender.getOrElse(deadletters), recipient.getOrElse(recipient), reason)
       }
       flightRecorder.hiFreq(Transport_SendQueueOverflow, queueIndex)
@@ -384,10 +387,13 @@ private[remote] class Association(
       } catch {
         case ShuttingDown ⇒ // silence it
       }
-    } else if (log.isDebugEnabled)
-      log.debug(
-        "Dropping message [{}] from [{}] to [{}] due to quarantined system [{}]",
-        Logging.messageClassName(message), sender.getOrElse(deadletters), recipient.getOrElse(recipient), remoteAddress)
+    } else {
+      droppedMessageLogging.filter { discardInfo ⇒
+        log.warning(
+          s"Dropping message [{}] from [{}] to [{}] due to quarantined system [{}]$discardInfo",
+          Logging.messageClassName(message), sender.getOrElse(deadletters), recipient.getOrElse(recipient), remoteAddress)
+      }
+    }
   }
 
   private def selectQueue(recipient: OptionVal[RemoteActorRef]): Int = {
