@@ -5,7 +5,7 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.duration._
-import akka.stream.{ Attributes, ActorMaterializer, OverflowStrategy }
+import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
@@ -13,6 +13,7 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.actor.PoisonPill
 import akka.actor.Status
 import akka.Done
+import akka.testkit.TestProbe
 
 class ActorRefSourceSpec extends StreamSpec {
   implicit val materializer = ActorMaterializer()
@@ -145,6 +146,41 @@ class ActorRefSourceSpec extends StreamSpec {
       val ref = Source.actorRef(10, OverflowStrategy.fail).withAttributes(Attributes.name(name)).to(Sink.fromSubscriber(s)).run()
       ref.path.name.contains(name) should ===(true)
       ref ! PoisonPill
+    }
+
+    "can tell the inner buffer stats to asker" in assertAllStagesStopped {
+      val asker = TestProbe()
+      val s = TestSubscriber.manualProbe[Int]()
+      val ref = Source.actorRef(10, OverflowStrategy.dropBuffer).to(Sink.fromSubscriber(s)).run()
+      val sub = s.expectSubscription
+
+      asker.send(ref, GetBufferStatus)
+      val x0 = asker.expectMsgType[BufferStatus]
+      x0.used shouldBe 0
+      x0.capacity shouldBe 10
+
+      ref ! 1
+      ref ! 2
+      ref ! 3
+
+      asker.send(ref, GetBufferStatus)
+      val x1 = asker.expectMsgType[BufferStatus]
+      x1.used shouldBe 3
+      x1.capacity shouldBe 10
+
+      sub.request(1)
+      s.expectNext(1)
+
+      asker.send(ref, GetBufferStatus)
+      val x2 = asker.expectMsgType[BufferStatus]
+      x2.used shouldBe 2
+      x2.capacity shouldBe 10
+
+      ref ! Status.Success("ok")
+
+      sub.request(5)
+      s.expectNext(2, 3)
+      s.expectComplete()
     }
   }
 }

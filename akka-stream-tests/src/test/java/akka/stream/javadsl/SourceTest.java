@@ -539,10 +539,10 @@ public class SourceTest extends StreamTest {
     assertEquals(result.size(), 10000);
     for (Integer i: result) assertEquals(i, (Integer) 42);
   }
-  
+
   @Test
   public void mustBeAbleToUseQueue() throws Exception {
-    final Pair<SourceQueueWithComplete<String>, CompletionStage<List<String>>> x = 
+    final Pair<SourceQueueWithComplete<String>, CompletionStage<List<String>>> x =
         Flow.of(String.class).runWith(
             Source.queue(2, OverflowStrategy.fail()),
             Sink.seq(), materializer);
@@ -558,6 +558,7 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustBeAbleToUseActorRefSource() throws Exception {
     final TestKit probe = new TestKit(system);
+    final TestKit probe2 = new TestKit(system);
     final Source<Integer, ActorRef> actorRefSource = Source.actorRef(10, OverflowStrategy.fail());
     final ActorRef ref = actorRefSource.to(Sink.foreach(new Procedure<Integer>() {
       public void apply(Integer elem) {
@@ -568,6 +569,11 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals(1);
     ref.tell(2, ActorRef.noSender());
     probe.expectMsgEquals(2);
+    probe2.send(ref, GetBufferStatus.getInstance());
+    BufferStatus status = probe2.expectMsgClass(BufferStatus.class);
+    assertEquals(0, status.getUsed());
+    assertEquals(10, status.getCapacity());
+    probe.expectNoMessage();
     ref.tell(new Status.Success("ok"), ActorRef.noSender());
   }
 

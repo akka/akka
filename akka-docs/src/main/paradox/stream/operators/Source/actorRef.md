@@ -24,3 +24,11 @@ elements or failing the stream; the strategy is chosen by the user.
 
 @@@
 
+The created actor can be asked about the inner buffer state too. 
+
+Scala
+:   @@snip [SourceOperators.scala]($code$/scala/docs/stream/operators/SourceOperators.scala) { #sourceActorRefBufferSize }
+
+Java
+:   @@snip [ActorRefSource.java]($code$/java/jdocs/stream/operators/ActorRefSource.java) { #sourceActorRefBufferSize }
+

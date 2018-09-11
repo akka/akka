@@ -9,8 +9,7 @@ import akka.actor.Props
 import akka.actor.Status
 import akka.annotation.InternalApi
 import akka.stream.OverflowStrategies._
-import akka.stream.{ BufferOverflowException, OverflowStrategies, OverflowStrategy }
-import akka.stream.ActorMaterializerSettings
+import akka.stream._
 
 /**
  * INTERNAL API
@@ -43,6 +42,7 @@ import akka.stream.ActorMaterializerSettings
     .orElse(requestElem)
     .orElse(receiveFailure)
     .orElse(receiveComplete)
+    .orElse(bufferStatusRequest)
     .orElse(receiveElem)
 
   def receiveComplete: Receive = completionMatcher.andThen { _ ⇒
@@ -115,6 +115,12 @@ import akka.stream.ActorMaterializerSettings
     case elem if isActive ⇒
       log.debug("Dropping element because Status.Success received already, " +
         "only draining already buffered elements: [{}] (pending: [{}])", elem, buffer.used)
+  }
+
+  def bufferStatusRequest: Receive = {
+    case GetBufferStatus ⇒
+      val bufferStatus = if (bufferSize == 0) new BufferStatus(0, 0) else new BufferStatus(buffer.used, buffer.capacity)
+      sender() ! bufferStatus
   }
 
 }
