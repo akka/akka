@@ -54,12 +54,52 @@ import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
         case _ ⇒
       }
       matcher.applyOrElse(msg, any2null) match {
-        case null        ⇒ unhandled
-        case transformed ⇒ widen(Behavior.interpretMessage(behavior, ctx.as[T], transformed), ctx.as[T])
+        case null ⇒ unhandled
+        case transformed ⇒
+          widen(Behavior.interpretMessage(behavior, ctx.as[T], transformed), ctx.as[T])
       }
     }
 
     override def toString: String = s"${behavior.toString}.widen(${LineNumbers(matcher)})"
+  }
+
+  def pre[T](
+    preBehavior: Behavior[T],
+    behavior:    Behavior[T]): Behavior[T] = {
+    behavior match {
+      case d: DeferredBehavior[T] @unchecked ⇒
+        DeferredBehavior[T] { ctx ⇒
+          val b = Behavior.validateAsInitial(Behavior.start(d, ctx.as[T]))
+          Pre[T](preBehavior, b)
+        }
+      // FIXME same with the preBehavior?
+      case _ ⇒
+        Pre(preBehavior, behavior)
+    }
+  }
+
+  private final case class Pre[T](preBehavior: Behavior[T], behavior: Behavior[T]) extends ExtensibleBehavior[T] {
+
+    private def wrap(nextPreBehavior: Behavior[T], nextBehavior: Behavior[T], ctx: AC[T]): Behavior[T] = {
+      val nextPre = if (Behavior.isUnhandled(nextPreBehavior)) preBehavior else nextPreBehavior
+      val nextOrStopped = if (Behavior.isAlive(nextPreBehavior)) nextBehavior else Behavior.stopped[T]
+      Behavior.wrap(this, nextOrStopped, ctx)(b ⇒ Pre[T](nextPre, nextBehavior))
+    }
+
+    // FIXME intercept signals also
+    override def receiveSignal(ctx: AC[T], signal: Signal): Behavior[T] =
+      wrap(preBehavior, Behavior.interpretSignal(behavior, ctx.as[T], signal), ctx.as[T])
+
+    override def receive(ctx: AC[T], msg: T): Behavior[T] = {
+      // same problem as widen with TimerMessage? see issue #25318
+      println(s"# Pre.receive $msg") // FIXME
+      val nextPreBehavior = Behavior.interpretMessage(preBehavior, ctx.as[T], msg)
+      val nextBehavior = Behavior.interpretMessage(behavior, ctx.as[T], msg)
+      println(s"# returned $nextPreBehavior -- $nextBehavior") // FIXME
+      wrap(nextPreBehavior, nextBehavior, ctx)
+    }
+
+    override def toString: String = s"Pre($preBehavior, $behavior})"
   }
 
   class ReceiveBehavior[T](
