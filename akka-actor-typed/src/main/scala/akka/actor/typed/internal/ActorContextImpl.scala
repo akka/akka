@@ -82,16 +82,16 @@ import akka.util.JavaDurationConverters._
     spawnAnonymous(behavior, Props.empty)
 
   // Scala API impl
-  override def ask[Req, Res](otherActor: ActorRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
+  override def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
     import akka.actor.typed.scaladsl.AskPattern._
-    (otherActor ? createRequest)(responseTimeout, system.scheduler).onComplete(res ⇒
+    (target ? createRequest)(responseTimeout, system.scheduler).onComplete(res ⇒
       self.asInstanceOf[ActorRef[AnyRef]] ! new AskResponse(res, mapResponse)
     )
   }
 
   // Java API impl
-  def ask[Req, Res](resClass: Class[Res], otherActor: ActorRef[Req], responseTimeout: Timeout, createRequest: function.Function[ActorRef[Res], Req], applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
-    this.ask(otherActor)(createRequest.apply) {
+  def ask[Req, Res](resClass: Class[Res], target: RecipientRef[Req], responseTimeout: Timeout, createRequest: function.Function[ActorRef[Res], Req], applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
+    this.ask(target)(createRequest.apply) {
       case Success(message) ⇒ applyToResponse.apply(message, null)
       case Failure(ex)      ⇒ applyToResponse.apply(null.asInstanceOf[Res], ex)
     }(responseTimeout, ClassTag[Res](resClass))

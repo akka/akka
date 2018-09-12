@@ -99,6 +99,19 @@ package object adapter {
   }
 
   /**
+   * Extension methods added to [[akka.actor.ActorRef]].
+   */
+  implicit class UntypedActorRefOps(val ref: akka.actor.ActorRef) extends AnyVal {
+
+    /**
+     * Adapt the untyped `ActorRef` to typed `ActorRef[T]`. There is also an
+     * automatic implicit conversion for this, but this more explicit variant might
+     * sometimes be preferred.
+     */
+    def toTyped[T]: ActorRef[T] = ActorRefAdapter(ref)
+  }
+
+  /**
    * Implicit conversion from untyped [[akka.actor.ActorRef]] to typed [[akka.actor.typed.ActorRef]].
    */
   implicit def actorRefAdapter[T](ref: akka.actor.ActorRef): ActorRef[T] = ActorRefAdapter(ref)

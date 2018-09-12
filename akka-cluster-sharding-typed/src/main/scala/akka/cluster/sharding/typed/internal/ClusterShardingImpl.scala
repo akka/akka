@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
 
+import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
 import akka.actor.Scheduler
@@ -20,6 +21,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
+import akka.actor.typed.internal.InternalRecipientRef
 import akka.actor.typed.internal.adapter.ActorRefAdapter
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
@@ -222,7 +224,7 @@ import akka.util.Timeout
  */
 @InternalApi private[akka] final class EntityRefImpl[M](shardRegion: akka.actor.ActorRef, entityId: String,
                                                         scheduler: Scheduler)
-  extends javadsl.EntityRef[M] with scaladsl.EntityRef[M] {
+  extends javadsl.EntityRef[M] with scaladsl.EntityRef[M] with InternalRecipientRef[M] {
 
   override def tell(msg: M): Unit =
     shardRegion ! ShardingEnvelope(entityId, msg)
@@ -265,6 +267,18 @@ import akka.util.Timeout
     val ref: ActorRef[U] = _ref
     val future: Future[U] = _future
     val promiseRef: PromiseActorRef = _promiseRef
+  }
+
+  // impl InternalRecipientRef
+  override def provider: ActorRefProvider = {
+    import akka.actor.typed.scaladsl.adapter._
+    shardRegion.toTyped.asInstanceOf[InternalRecipientRef[_]].provider
+  }
+
+  // impl InternalRecipientRef
+  def isTerminated: Boolean = {
+    import akka.actor.typed.scaladsl.adapter._
+    shardRegion.toTyped.asInstanceOf[InternalRecipientRef[_]].isTerminated
   }
 
 }

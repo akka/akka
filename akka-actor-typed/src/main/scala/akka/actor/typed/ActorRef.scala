@@ -6,10 +6,11 @@ package akka.actor.typed
 
 import akka.annotation.InternalApi
 import akka.{ actor ⇒ a }
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.Future
 import scala.util.Success
+
+import akka.actor.typed.internal.InternalRecipientRef
 
 /**
  * An ActorRef is the identity or address of an Actor instance. It is valid
@@ -20,7 +21,7 @@ import scala.util.Success
  * [[akka.event.EventStream]] on a best effort basis
  * (i.e. this delivery is not reliable).
  */
-trait ActorRef[-T] extends java.lang.Comparable[ActorRef[_]] with java.io.Serializable {
+trait ActorRef[-T] extends RecipientRef[T] with java.lang.Comparable[ActorRef[_]] with java.io.Serializable { this: InternalRecipientRef[T] ⇒
   /**
    * Send a message to the Actor referenced by this ActorRef using *at-most-once*
    * messaging semantics.
@@ -100,5 +101,29 @@ private[akka] final case class SerializedActorRef[T] private (address: String) {
     case someSystem ⇒
       val resolver = ActorRefResolver(someSystem.toTyped)
       resolver.resolveActorRef(address)
+  }
+}
+
+/**
+ * FIXME doc
+ * - not serializable
+ * - not watchable
+ */
+trait RecipientRef[-T] { this: InternalRecipientRef[T] ⇒
+  /**
+   * Send a message to the destination referenced by this `RecipientRef` using *at-most-once*
+   * messaging semantics.
+   */
+  def tell(msg: T): Unit
+}
+
+object RecipientRef {
+
+  implicit final class RecipientRefOps[-T](val ref: RecipientRef[T]) extends AnyVal {
+    /**
+     * Send a message to the destination referenced by this `RecipientRef` using *at-most-once*
+     * messaging semantics.
+     */
+    def !(msg: T): Unit = ref.tell(msg)
   }
 }
