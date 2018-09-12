@@ -1,20 +1,26 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.typed
+package akka.actor.typed.internal
 
+import akka.actor.typed.Behavior
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 
 // FIXME see if we can completely eliminate this with the help of BehaviorInterceptor instead
+
 /**
+ * INTERNAL API
+ *
  * Behaviors that wrap other behaviors must sometimes be traversed to look through the stack of behaviors,
  * for example to deduplicate wrapping behaviors. They should therefore implement this trait (interface).
  *
  * Do not implement this, instead reach for [[akka.actor.typed.BehaviorInterceptor]]
  */
 @DoNotInherit
-trait WrappingBehavior[O, I] {
+@InternalApi
+private[akka] trait WrappingBehavior[O, I] {
   /**
    * @return The behavior that is wrapped by this behavior
    */
@@ -25,4 +31,3 @@ trait WrappingBehavior[O, I] {
    */
   def replaceNested(newNested: Behavior[I]): Behavior[O]
 }
-

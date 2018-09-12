@@ -5,7 +5,7 @@
 package akka.actor.typed.internal
 
 import akka.actor.typed.internal.adapter.AbstractLogger
-import akka.actor.typed.{ ActorContext, Behavior, BehaviorInterceptor, Signal, WrappingBehavior }
+import akka.actor.typed.{ ActorContext, Behavior, BehaviorInterceptor, Signal }
 import akka.annotation.InternalApi
 
 import scala.collection.immutable.HashMap
