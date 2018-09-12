@@ -193,10 +193,10 @@ is typically that (network) I/O occurs under the covers.
 
 
 Scala
-:   @@snip [BlockingDispatcherSample.scala]($akka$/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #blocking-in-actor }
+:   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #blocking-in-actor }
 
 Java
-:   @@snip [BlockingDispatcherSample.java]($akka$/akka-docs/src/test/java/jdocs/actor/BlockingActor.java) { #blocking-in-actor  }
+:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/BlockingActor.java) { #blocking-in-actor  }
 
 
 When facing this, you
@@ -206,10 +206,10 @@ find bottlenecks or run out of memory or threads when the application runs
 under increased load.
 
 Scala
-:   @@snip [BlockingDispatcherSample.scala]($akka$/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #blocking-in-future }
+:   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #blocking-in-future }
 
 Java
-:   @@snip [BlockingDispatcherSample.java]($akka$/akka-docs/src/test/java/jdocs/actor/BlockingFutureActor.java) { #blocking-in-future  }
+:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/BlockingFutureActor.java) { #blocking-in-future  }
 
 
 ### Problem: Blocking on default dispatcher
@@ -256,17 +256,17 @@ including Streams, Http and other reactive libraries built on top of it.
 Let's set up an application with the above `BlockingFutureActor` and the following `PrintActor`.
 
 Scala
-:   @@snip [BlockingDispatcherSample.scala]($akka$/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #print-actor }
+:   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #print-actor }
 
 Java
-:   @@snip [BlockingDispatcherSample.java]($akka$/akka-docs/src/test/java/jdocs/actor/PrintActor.java) { #print-actor }
+:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/PrintActor.java) { #print-actor }
 
 
 Scala
-:   @@snip [BlockingDispatcherSample.scala]($akka$/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #blocking-main }
+:   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #blocking-main }
 
 Java
-:   @@snip [BlockingDispatcherSample.java]($akka$/akka-docs/src/test/java/jdocs/actor/BlockingDispatcherTest.java) { #blocking-main }
+:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/BlockingDispatcherTest.java) { #blocking-main }
 
 
 Here the app is sending 100 messages to `BlockingFutureActor` and `PrintActor` and large numbers
@@ -326,7 +326,7 @@ In `application.conf`, the dispatcher dedicated to blocking behavior should
 be configured as follows:
 
 <!--same config text for Scala & Java-->
-@@snip [BlockingDispatcherSample.scala]($akka$/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #my-blocking-dispatcher-config }
+@@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #my-blocking-dispatcher-config }
 
 A `thread-pool-executor` based dispatcher allows us to set a limit on the number of threads it will host,
 and this way we gain tight control over how at-most-how-many blocked threads will be in the system.
@@ -339,10 +339,10 @@ Whenever blocking has to be done, use the above configured dispatcher
 instead of the default one:
 
 Scala
-:   @@snip [BlockingDispatcherSample.scala]($akka$/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #separate-dispatcher }
+:   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #separate-dispatcher }
 
 Java
-:   @@snip [BlockingDispatcherSample.java]($akka$/akka-docs/src/test/java/jdocs/actor/SeparateDispatcherFutureActor.java) { #separate-dispatcher }
+:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/SeparateDispatcherFutureActor.java) { #separate-dispatcher }
 
 The thread pool behavior is shown in the below diagram.
 

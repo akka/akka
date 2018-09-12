@@ -12,10 +12,10 @@ A journal plugin extends `AsyncWriteJournal`.
 `AsyncWriteJournal` is an actor and the methods to be implemented are:
 
 Scala
-:  @@snip [AsyncWriteJournal.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/journal/AsyncWriteJournal.scala) { #journal-plugin-api }
+:  @@snip [AsyncWriteJournal.scala](/akka-persistence/src/main/scala/akka/persistence/journal/AsyncWriteJournal.scala) { #journal-plugin-api }
 
 Java
-:  @@snip [AsyncWritePlugin.java]($akka$/akka-persistence/src/main/java/akka/persistence/journal/japi/AsyncWritePlugin.java) { #async-write-plugin-api }
+:  @@snip [AsyncWritePlugin.java](/akka-persistence/src/main/java/akka/persistence/journal/japi/AsyncWritePlugin.java) { #async-write-plugin-api }
 
 If the storage backend API only supports synchronous, blocking writes, the methods should be implemented as:
 
@@ -28,10 +28,10 @@ Java
 A journal plugin must also implement the methods defined in `AsyncRecovery` for replays and sequence number recovery:
 
 Scala
-:  @@snip [AsyncRecovery.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/journal/AsyncRecovery.scala) { #journal-plugin-api }
+:  @@snip [AsyncRecovery.scala](/akka-persistence/src/main/scala/akka/persistence/journal/AsyncRecovery.scala) { #journal-plugin-api }
 
 Java
-:  @@snip [AsyncRecoveryPlugin.java]($akka$/akka-persistence/src/main/java/akka/persistence/journal/japi/AsyncRecoveryPlugin.java) { #async-replay-plugin-api }
+:  @@snip [AsyncRecoveryPlugin.java](/akka-persistence/src/main/java/akka/persistence/journal/japi/AsyncRecoveryPlugin.java) { #async-replay-plugin-api }
 
 A journal plugin can be activated with the following minimal configuration:
 
@@ -60,10 +60,10 @@ Don't run journal tasks/futures on the system default dispatcher, since that mig
 A snapshot store plugin must extend the `SnapshotStore` actor and implement the following methods:
 
 Scala
-:  @@snip [SnapshotStore.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/snapshot/SnapshotStore.scala) { #snapshot-store-plugin-api }
+:  @@snip [SnapshotStore.scala](/akka-persistence/src/main/scala/akka/persistence/snapshot/SnapshotStore.scala) { #snapshot-store-plugin-api }
 
 Java
-:  @@snip [SnapshotStorePlugin.java]($akka$/akka-persistence/src/main/java/akka/persistence/snapshot/japi/SnapshotStorePlugin.java) { #snapshot-store-plugin-api }
+:  @@snip [SnapshotStorePlugin.java](/akka-persistence/src/main/java/akka/persistence/snapshot/japi/SnapshotStorePlugin.java) { #snapshot-store-plugin-api }
 
 A snapshot store plugin can be activated with the following minimal configuration:
 

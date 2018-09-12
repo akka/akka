@@ -8,7 +8,7 @@ Pass incoming elements to a function that return a @scala[`Future`] @java[`Compl
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #mapAsync }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #mapAsync }
 
 @@@
 

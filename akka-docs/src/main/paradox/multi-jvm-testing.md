@@ -10,7 +10,7 @@ To configure it in your project you should do the following steps:
 
 1. Add it as a plugin by adding the following to your project/plugins.sbt:
 
-    @@snip [plugins.sbt]($akka$/project/plugins.sbt) { #sbt-multi-jvm }
+    @@snip [plugins.sbt](/project/plugins.sbt) { #sbt-multi-jvm }
 
 2. Add multi-JVM testing to `build.sbt` or `project/Build.scala` by enabling `MultiJvmPlugin` and 
 setting the `MultiJvm` config.

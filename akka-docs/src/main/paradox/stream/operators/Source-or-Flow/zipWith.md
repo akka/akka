@@ -8,7 +8,7 @@ Combines elements from multiple sources through a `combine` function and passes 
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #zipWith }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #zipWith }
 
 @@@
 

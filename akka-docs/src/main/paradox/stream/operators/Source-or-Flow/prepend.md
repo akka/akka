@@ -8,7 +8,7 @@ Prepends the given source to the flow, consuming it until completion before the 
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #prepend }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #prepend }
 
 @@@
 

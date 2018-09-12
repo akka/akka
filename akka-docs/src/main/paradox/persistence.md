@@ -647,7 +647,7 @@ Java
 
 where `metadata` is of type `SnapshotMetadata`:
 
-@@snip [SnapshotProtocol.scala]($akka$/akka-persistence/src/main/scala/akka/persistence/SnapshotProtocol.scala) { #snapshot-metadata }
+@@snip [SnapshotProtocol.scala](/akka-persistence/src/main/scala/akka/persistence/SnapshotProtocol.scala) { #snapshot-metadata }
 
 During recovery, the persistent actor is offered a previously saved snapshot via a `SnapshotOffer` message from
 which it can initialize internal state.

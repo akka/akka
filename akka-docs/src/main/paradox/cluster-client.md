@@ -105,28 +105,28 @@ akka.extensions = ["akka.cluster.client.ClusterClientReceptionist"]
 Next, register the actors that should be available for the client.
 
 Scala
-:  @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #server }
+:  @@snip [ClusterClientSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #server }
 
 Java
-:  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #server }
+:  @@snip [ClusterClientTest.java](/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #server }
 
 On the client you create the @unidoc[ClusterClient] actor and use it as a gateway for sending
 messages to the actors identified by their path (without address information) somewhere
 in the cluster.
 
 Scala
-:  @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #client }
+:  @@snip [ClusterClientSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #client }
 
 Java
-:  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #client }
+:  @@snip [ClusterClientTest.java](/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #client }
 
 The `initialContacts` parameter is a @scala[`Set[ActorPath]`]@java[`Set<ActorPath>`], which can be created like this:
 
 Scala
-:  @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #initialContacts }
+:  @@snip [ClusterClientSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #initialContacts }
 
 Java
-:  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #initialContacts }
+:  @@snip [ClusterClientTest.java](/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #initialContacts }
 
 You will probably define the address information of the initial contact points in configuration or system property.
 See also [Configuration](#cluster-client-config).
@@ -160,18 +160,18 @@ receptionists), as they become available. The code illustrates subscribing to th
 initial state.
 
 Scala
-:  @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #clientEventsListener }
+:  @@snip [ClusterClientSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #clientEventsListener }
 
 Java
-:  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #clientEventsListener }
+:  @@snip [ClusterClientTest.java](/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #clientEventsListener }
 
 Similarly we can have an actor that behaves in a similar fashion for learning what cluster clients are connected to a @unidoc[ClusterClientReceptionist]:
 
 Scala
-:  @@snip [ClusterClientSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #receptionistEventsListener }
+:  @@snip [ClusterClientSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/client/ClusterClientSpec.scala) { #receptionistEventsListener }
 
 Java
-:  @@snip [ClusterClientTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #receptionistEventsListener }
+:  @@snip [ClusterClientTest.java](/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #receptionistEventsListener }
 
 <a id="cluster-client-config"></a>
 ## Configuration
@@ -179,7 +179,7 @@ Java
 The @unidoc[ClusterClientReceptionist] extension (or @unidoc[akka.cluster.client.ClusterReceptionistSettings]) can be configured
 with the following properties:
 
-@@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #receptionist-ext-config }
+@@snip [reference.conf](/akka-cluster-tools/src/main/resources/reference.conf) { #receptionist-ext-config }
 
 The following configuration properties are read by the @unidoc[ClusterClientSettings]
 when created with a @scala[@scaladoc[`ActorSystem`](akka.actor.ActorSystem)]@java[@javadoc[`ActorSystem`](akka.actor.ActorSystem)] parameter. It is also possible to amend the @unidoc[ClusterClientSettings]
@@ -187,7 +187,7 @@ or create it from another config section with the same layout as below. @unidoc[
 a parameter to the @scala[@scaladoc[`ClusterClient.props`](akka.cluster.client.ClusterClient$)]@java[@javadoc[`ClusterClient.props`](akka.cluster.client.ClusterClient$)] factory method, i.e. each client can be configured
 with different settings if needed.
 
-@@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #cluster-client-config }
+@@snip [reference.conf](/akka-cluster-tools/src/main/resources/reference.conf) { #cluster-client-config }
 
 ## Failure handling
 

@@ -8,7 +8,7 @@ Creates a real `Flow` upon receiving the first element by calling relevant `flow
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #lazyInitAsync }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #lazyInitAsync }
 
 @@@
 

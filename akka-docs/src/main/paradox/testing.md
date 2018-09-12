@@ -448,7 +448,7 @@ This code can be used to forward messages, e.g. in a chain `A --> Probe -->
 B`, as long as a certain protocol is obeyed.
 
 Scala
-:   @@snip [TestProbeSpec.scala]($akka$/akka-testkit/src/test/scala/akka/testkit/TestProbeSpec.scala) { #autopilot }
+:   @@snip [TestProbeSpec.scala](/akka-testkit/src/test/scala/akka/testkit/TestProbeSpec.scala) { #autopilot }
 
 Java
 :   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-auto-pilot }

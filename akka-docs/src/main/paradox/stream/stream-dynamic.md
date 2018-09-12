@@ -24,7 +24,7 @@ The `KillSwitch` @scala[trait] @java[interface] allows to:
 
 
 Scala
-:   @@snip [KillSwitch.scala]($akka$/akka-stream/src/main/scala/akka/stream/KillSwitch.scala) { #kill-switch }
+:   @@snip [KillSwitch.scala](/akka-stream/src/main/scala/akka/stream/KillSwitch.scala) { #kill-switch }
 
 After the first call to either `shutdown` or `abort`, all subsequent calls to any of these methods will be ignored.
 Stream completion is performed by both

@@ -64,7 +64,7 @@ Scala
 :   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #simple-graph-dsl }
 
 Java
-:   @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #simple-graph-dsl }
+:   @@snip [GraphDSLTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #simple-graph-dsl }
 
 @@@ note
 
@@ -99,16 +99,16 @@ Scala
 :   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-reusing-a-flow }
 
 Java
-:   @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-reusing-a-flow }
+:   @@snip [GraphDSLTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-reusing-a-flow }
 
 In some cases we may have a list of graph elements, for example if they are dynamically created. 
 If these graphs have similar signatures, we can construct a graph collecting all their materialized values as a collection:
 
 Scala
-:   @@snip [GraphOpsIntegrationSpec.scala]($akka$/akka-stream-tests/src/test/scala/akka/stream/scaladsl/GraphOpsIntegrationSpec.scala) { #graph-from-list }
+:   @@snip [GraphOpsIntegrationSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/GraphOpsIntegrationSpec.scala) { #graph-from-list }
 
 Java
-:   @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-from-list }
+:   @@snip [GraphDSLTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-from-list }
 
 
 <a id="partial-graph-dsl"></a>
@@ -300,7 +300,7 @@ this purpose exists the special type `BidiFlow` which is a graph that
 has exactly two open inlets and two open outlets. The corresponding shape is
 called `BidiShape` and is defined like this:
 
-@@snip [Shape.scala]($akka$/akka-stream/src/main/scala/akka/stream/Shape.scala) { #bidi-shape }   
+@@snip [Shape.scala](/akka-stream/src/main/scala/akka/stream/Shape.scala) { #bidi-shape }   
 
 
 A bidirectional flow is defined just like a unidirectional `Flow` as
@@ -367,7 +367,7 @@ Scala
 :   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-matvalue }
 
 Java
-:   @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-matvalue }
+:   @@snip [GraphDSLTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-matvalue }
 
 
 Be careful not to introduce a cycle where the materialized value actually contributes to the materialized value.
@@ -377,7 +377,7 @@ Scala
 :  @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-matvalue-cycle }
 
 Java
-:  @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-matvalue-cycle }
+:  @@snip [GraphDSLTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-matvalue-cycle }
 
 
 <a id="graph-cycles"></a>

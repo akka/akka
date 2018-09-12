@@ -95,7 +95,7 @@ necessary parameters) and then call the method when the message is received.
 
 ## From `akka.actor.ActorSystem`
 
-@@snip [ActorSystem.scala]($akka$/akka-actor/src/main/scala/akka/actor/ActorSystem.scala) { #scheduler }
+@@snip [ActorSystem.scala](/akka-actor/src/main/scala/akka/actor/ActorSystem.scala) { #scheduler }
 
 @@@ warning
 
@@ -112,10 +112,10 @@ different one using the `akka.scheduler.implementation` configuration
 property. The referenced class must implement the following interface:
 
 Scala
-:  @@snip [Scheduler.scala]($akka$/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #scheduler }
+:  @@snip [Scheduler.scala](/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #scheduler }
 
 Java
-:  @@snip [AbstractScheduler.java]($akka$/akka-actor/src/main/java/akka/actor/AbstractScheduler.java) { #scheduler }
+:  @@snip [AbstractScheduler.java](/akka-actor/src/main/java/akka/actor/AbstractScheduler.java) { #scheduler }
 
 ## The Cancellable interface
 
@@ -131,4 +131,4 @@ scheduled task was canceled or will (eventually) have run.
 
 @@@
 
-@@snip [Scheduler.scala]($akka$/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #cancellable }
+@@snip [Scheduler.scala](/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #cancellable }

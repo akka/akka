@@ -72,7 +72,7 @@ Set it to a lower value if you want to limit total number of routees.
 The same type of router could also have been defined in code:
 
 Scala
-:  @@snip [StatsService.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsService.scala) { #router-lookup-in-code }
+:  @@snip [StatsService.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsService.scala) { #router-lookup-in-code }
 
 Java
 :  @@snip [StatsService.java]($code$/java/jdocs/cluster/StatsService.java) { #router-lookup-in-code }
@@ -93,7 +93,7 @@ the average number of characters per word when all results have been collected.
 Messages:
 
 Scala
-:  @@snip [StatsMessages.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsMessages.scala) { #messages }
+:  @@snip [StatsMessages.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsMessages.scala) { #messages }
 
 Java
 :  @@snip [StatsMessages.java]($code$/java/jdocs/cluster/StatsMessages.java) { #messages }
@@ -101,7 +101,7 @@ Java
 The worker that counts number of characters in each word:
 
 Scala
-:  @@snip [StatsWorker.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsWorker.scala) { #worker }
+:  @@snip [StatsWorker.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsWorker.scala) { #worker }
 
 Java
 :  @@snip [StatsWorker.java]($code$/java/jdocs/cluster/StatsWorker.java) { #worker }
@@ -110,7 +110,7 @@ The service that receives text from users and splits it up into words, delegates
 
 @@@ div { .group-scala }
 
-@@snip [StatsService.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsService.scala) { #service }
+@@snip [StatsService.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsService.scala) { #service }
 
 @@@
 
@@ -180,7 +180,7 @@ Set it to a lower value if you want to limit total number of routees.
 The same type of router could also have been defined in code:
 
 Scala
-:  @@snip [StatsService.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsService.scala) { #router-deploy-in-code }
+:  @@snip [StatsService.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsService.scala) { #router-deploy-in-code }
 
 Java
 :  @@snip [StatsService.java]($code$/java/jdocs/cluster/StatsService.java) { #router-deploy-in-code }

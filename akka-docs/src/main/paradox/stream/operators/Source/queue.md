@@ -8,7 +8,7 @@ Materialize a `SourceQueue` onto which elements can be pushed for emitting from 
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #queue }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #queue }
 
 @@@
 

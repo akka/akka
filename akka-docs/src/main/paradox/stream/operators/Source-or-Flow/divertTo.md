@@ -8,7 +8,7 @@ Each upstream element will either be diverted to the given sink, or the downstre
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #divertTo }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #divertTo }
 
 @@@
 

@@ -721,12 +721,12 @@ add the `sbt-multi-jvm` plugin and the dependency to `akka-multi-node-testkit`.
 First, as described in @ref:[Multi Node Testing](multi-node-testing.md), we need some scaffolding to configure the `MultiNodeSpec`.
 Define the participating roles and their [configuration](#cluster-configuration) in an object extending `MultiNodeConfig`:
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #MultiNodeConfig }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #MultiNodeConfig }
 
 Define one concrete test class for each role/node. These will be instantiated on the different nodes (JVMs). They can be
 implemented differently, but often they are the same and extend an abstract test class, as illustrated here.
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #concrete-tests }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #concrete-tests }
 
 Note the naming convention of these classes. The name of the classes must end with `MultiJvmNode1`, `MultiJvmNode2`
 and so on. It is possible to define another suffix to be used by the `sbt-multi-jvm`, but the default should be
@@ -734,18 +734,18 @@ fine in most cases.
 
 Then the abstract `MultiNodeSpec`, which takes the `MultiNodeConfig` as constructor parameter.
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #abstract-test }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #abstract-test }
 
 Most of this can be extracted to a separate trait to avoid repeating this in all your tests.
 
 Typically you begin your test by starting up the cluster and let the members join, and create some actors.
 That can be done like this:
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #startup-cluster }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #startup-cluster }
 
 From the test you interact with the cluster using the `Cluster` extension, e.g. `join`.
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #join }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #join }
 
 Notice how the *testActor* from @ref:[testkit](testing.md) is added as [subscriber](#cluster-subscriber)
 to cluster changes and then waiting for certain events, such as in this case all members becoming 'Up'.
@@ -753,7 +753,7 @@ to cluster changes and then waiting for certain events, such as in this case all
 The above code was running for all roles (JVMs). `runOn` is a convenient utility to declare that a certain block
 of code should only run for a specific role.
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #test-statsService }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #test-statsService }
 
 Once again we take advantage of the facilities in @ref:[testkit](testing.md) to verify expected behavior.
 Here using `testActor` as sender (via `ImplicitSender`) and verifying the reply with `expectMsgPF`.
@@ -761,7 +761,7 @@ Here using `testActor` as sender (via `ImplicitSender`) and verifying the reply 
 In the above code you can see `node(third)`, which is useful facility to get the root actor reference of
 the actor system for a specific role. This can also be used to grab the `akka.actor.Address` of that node.
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #addresses }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #addresses }
 
 @@@
 

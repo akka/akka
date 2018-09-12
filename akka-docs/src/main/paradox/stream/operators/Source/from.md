@@ -9,7 +9,7 @@ Stream the values of an `Iterable`.
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/javadsl/Source.scala) { #from }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/javadsl/Source.scala) { #from }
 
 @@@
 
@@ -30,4 +30,4 @@ as a source. Otherwise the stream may fail with `ConcurrentModificationException
 ## Examples
 
 Java
-:  @@snip [from.java]($akka$/akka-docs/src/test/java/jdocs/stream/operators/SourceDocExamples.java) { #imports #source-from-example }
+:  @@snip [from.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceDocExamples.java) { #imports #source-from-example }

@@ -156,10 +156,10 @@ having a global singleton in one data center and accessing it from other data ce
 This is how to create a singleton proxy for a specific data center:
 
 Scala
-:  @@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-proxy-dc }
+:  @@snip [ClusterSingletonManagerSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-proxy-dc }
 
 Java
-:  @@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-proxy-dc }
+:  @@snip [ClusterSingletonManagerTest.java](/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-proxy-dc }
 
 If using the own data center as the `withDataCenter` parameter that would be a proxy for the singleton in the own data center, which
 is also the default if `withDataCenter` is not given.
@@ -193,7 +193,7 @@ accessing them from other data centers.
 This is how to create a sharding proxy for a specific data center:
 
 Scala
-:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #proxy-dc }
+:  @@snip [ClusterShardingSpec.scala](/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #proxy-dc }
 
 Java
 :  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #proxy-dc }

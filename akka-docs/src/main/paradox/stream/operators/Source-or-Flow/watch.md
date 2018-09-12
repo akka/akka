@@ -8,7 +8,7 @@ Watch a specific `ActorRef` and signal a failure downstream once the actor termi
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #watch }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #watch }
 
 @@@
 

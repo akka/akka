@@ -99,19 +99,19 @@ Before explaining how to create a cluster singleton actor, let's define message 
 which will be used by the singleton.
 
 Scala
-:  @@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #singleton-message-classes }
+:  @@snip [ClusterSingletonManagerSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #singleton-message-classes }
 
 Java
-:  @@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/TestSingletonMessages.java) { #singleton-message-classes }
+:  @@snip [ClusterSingletonManagerTest.java](/akka-cluster-tools/src/test/java/akka/cluster/singleton/TestSingletonMessages.java) { #singleton-message-classes }
 
 On each node in the cluster you need to start the `ClusterSingletonManager` and
 supply the `Props` of the singleton actor, in this case the JMS queue consumer.
 
 Scala
-:  @@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-manager }
+:  @@snip [ClusterSingletonManagerSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-manager }
 
 Java
-:  @@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-manager }
+:  @@snip [ClusterSingletonManagerTest.java](/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-manager }
 
 Here we limit the singleton to nodes tagged with the `"worker"` role, but all nodes, independent of
 role, can be used by not specifying `withRole`.
@@ -123,19 +123,19 @@ perfectly fine `terminationMessage` if you only need to stop the actor.
 Here is how the singleton actor handles the `terminationMessage` in this example.
 
 Scala
-:  @@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #consumer-end }
+:  @@snip [ClusterSingletonManagerSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #consumer-end }
 
 Java
-:  @@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/Consumer.java) { #consumer-end }
+:  @@snip [ClusterSingletonManagerTest.java](/akka-cluster-tools/src/test/java/akka/cluster/singleton/Consumer.java) { #consumer-end }
 
 With the names given above, access to the singleton can be obtained from any cluster node using a properly
 configured proxy.
 
 Scala
-:  @@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-proxy }
+:  @@snip [ClusterSingletonManagerSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-proxy }
 
 Java
-:  @@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-proxy }
+:  @@snip [ClusterSingletonManagerTest.java](/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-proxy }
 
 A more comprehensive sample is available in the tutorial named 
 @scala[[Distributed workers with Akka and Scala!](https://github.com/typesafehub/activator-akka-distributed-workers)]@java[[Distributed workers with Akka and Java!](https://github.com/typesafehub/activator-akka-distributed-workers-java)].
@@ -148,7 +148,7 @@ or create it from another config section with the same layout as below. `Cluster
 a parameter to the `ClusterSingletonManager.props` factory method, i.e. each singleton can be configured
 with different settings if needed.
 
-@@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #singleton-config }
+@@snip [reference.conf](/akka-cluster-tools/src/main/resources/reference.conf) { #singleton-config }
 
 The following configuration properties are read by the `ClusterSingletonProxySettings`
 when created with a `ActorSystem` parameter. It is also possible to amend the `ClusterSingletonProxySettings`
@@ -156,23 +156,23 @@ or create it from another config section with the same layout as below. `Cluster
 a parameter to the `ClusterSingletonProxy.props` factory method, i.e. each singleton proxy can be configured
 with different settings if needed.
 
-@@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #singleton-proxy-config }
+@@snip [reference.conf](/akka-cluster-tools/src/main/resources/reference.conf) { #singleton-proxy-config }
 
 ## Supervision
 
 Sometimes it is useful to add supervision for the Cluster Singleton itself. To accomplish this you need to add a parent supervisor actor which will be used to create the 'real' singleton instance. Below is an example implementation (credit to [this StackOverflow answer](https://stackoverflow.com/a/36716708/779513))
 
 Scala
-:  @@snip [ClusterSingletonSupervision.scala]($akka$/akka-docs/src/test/scala/docs/cluster/singleton/ClusterSingletonSupervision.scala) { #singleton-supervisor-actor }
+:  @@snip [ClusterSingletonSupervision.scala](/akka-docs/src/test/scala/docs/cluster/singleton/ClusterSingletonSupervision.scala) { #singleton-supervisor-actor }
 
 Java
-:  @@snip [SupervisorActor.java]($akka$/akka-docs/src/test/java/jdocs/cluster/singleton/SupervisorActor.java) { #singleton-supervisor-actor }
+:  @@snip [SupervisorActor.java](/akka-docs/src/test/java/jdocs/cluster/singleton/SupervisorActor.java) { #singleton-supervisor-actor }
 
 And used here
 
 Scala
-:  @@snip [ClusterSingletonSupervision.scala]($akka$/akka-docs/src/test/scala/docs/cluster/singleton/ClusterSingletonSupervision.scala) { #singleton-supervisor-actor-usage }
+:  @@snip [ClusterSingletonSupervision.scala](/akka-docs/src/test/scala/docs/cluster/singleton/ClusterSingletonSupervision.scala) { #singleton-supervisor-actor-usage }
 
 Java
-:  @@snip [ClusterSingletonSupervision.java]($akka$/akka-docs/src/test/java/jdocs/cluster/singleton/ClusterSingletonSupervision.java) { #singleton-supervisor-actor-usage-imports }
-@@snip [ClusterSingletonSupervision.java]($akka$/akka-docs/src/test/java/jdocs/cluster/singleton/ClusterSingletonSupervision.java) { #singleton-supervisor-actor-usage }
+:  @@snip [ClusterSingletonSupervision.java](/akka-docs/src/test/java/jdocs/cluster/singleton/ClusterSingletonSupervision.java) { #singleton-supervisor-actor-usage-imports }
+@@snip [ClusterSingletonSupervision.java](/akka-docs/src/test/java/jdocs/cluster/singleton/ClusterSingletonSupervision.java) { #singleton-supervisor-actor-usage }

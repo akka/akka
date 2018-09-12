@@ -8,7 +8,7 @@ Wrap any resource that can be opened, queried for next element (in a blocking wa
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfoldResource }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfoldResource }
 
 @@@
 

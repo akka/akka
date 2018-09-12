@@ -138,10 +138,10 @@ for more information.
 @scala[[JsonFraming](http://doc.akka.io/api/akka/current/akka/stream/scaladsl/JsonFraming$.html)]@java[[JsonFraming](http://doc.akka.io/japi/akka/current/akka/stream/javadsl/JsonFraming.html#objectScanner-int-)] separates valid JSON objects from incoming `ByteString` objects:
 
 Scala
-:  @@snip [JsonFramingSpec.scala]($akka$akka-stream-tests/src/test/scala/akka/stream/scaladsl/JsonFramingSpec.scala) { #using-json-framing }
+:  @@snip [JsonFramingSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/JsonFramingSpec.scala) { #using-json-framing }
 
 Java
-:  @@snip [JsonFramingTest.java]($akka$akka-stream-tests/src/test/java/akka/stream/javadsl/JsonFramingTest.java) { #using-json-framing }
+:  @@snip [JsonFramingTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/JsonFramingTest.java) { #using-json-framing }
 
 ### TLS
 
@@ -150,10 +150,10 @@ Similar factories as shown above for raw TCP but where the data is encrypted usi
 Using TLS requires a keystore and a truststore and then a somewhat involved dance of configuring the SSLContext and the details for how the session should be negotiated:
 
 Scala
-:  @@snip [TcpSpec.scala]($akka$akka-stream-tests/src/test/scala/akka/stream/io/TcpSpec.scala) { #setting-up-ssl-context }
+:  @@snip [TcpSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/io/TcpSpec.scala) { #setting-up-ssl-context }
 
 Java
-:  @@snip [TcpTest.java]($akka$akka-stream-tests/src/test/java/akka/stream/javadsl/TcpTest.java) { #setting-up-ssl-context }
+:  @@snip [TcpTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/TcpTest.java) { #setting-up-ssl-context }
 
 
 The `SslContext` and `NegotiateFirstSession` instances can then be used with the binding or outgoing connection factory methods.

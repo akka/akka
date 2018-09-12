@@ -8,7 +8,7 @@ Defers creation and materialization of a `Source` until there is demand.
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #lazily }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #lazily }
 
 @@@
 

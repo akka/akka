@@ -792,4 +792,4 @@ paper by Mark Shapiro et. al.
 
 The `DistributedData` extension can be configured with the following properties:
 
-@@snip [reference.conf]($akka$/akka-distributed-data/src/main/resources/reference.conf) { #distributed-data }
+@@snip [reference.conf](/akka-distributed-data/src/main/resources/reference.conf) { #distributed-data }

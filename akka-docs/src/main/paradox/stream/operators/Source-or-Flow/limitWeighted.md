@@ -8,7 +8,7 @@ Ensure stream boundedness by evaluating the cost of incoming elements using a co
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #limitWeighted }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #limitWeighted }
 
 @@@
 

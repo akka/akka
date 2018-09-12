@@ -217,4 +217,4 @@ Custom metrics collector implementation class must be specified in the
 
 The Cluster metrics extension can be configured with the following properties:
 
-@@snip [reference.conf]($akka$/akka-cluster-metrics/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-cluster-metrics/src/main/resources/reference.conf)

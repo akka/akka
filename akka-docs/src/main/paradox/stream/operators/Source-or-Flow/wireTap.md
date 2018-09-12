@@ -8,7 +8,7 @@ Attaches the given `Sink` to this `Flow` as a wire tap, meaning that elements th
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #wireTap }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #wireTap }
 
 @@@
 

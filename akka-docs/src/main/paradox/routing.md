@@ -176,7 +176,7 @@ by specifying the strategy when defining the router.
 Setting the strategy is done like this:
 
 Scala
-:  @@snip [RoutingSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala) { #supervision }
+:  @@snip [RoutingSpec.scala](/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala) { #supervision }
 
 Java
 :  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #supervision }

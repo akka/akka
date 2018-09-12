@@ -334,7 +334,7 @@ The list of allowed classes has to be configured on the "remote" system, in othe
 others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
 should not allow others to remote deploy onto it. The full settings section may for example look like this:
 
-@@snip [RemoteDeploymentWhitelistSpec.scala]($akka$/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
+@@snip [RemoteDeploymentWhitelistSpec.scala](/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
 
 Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
 
@@ -662,7 +662,7 @@ remained the same, we recommend reading the @ref:[Serialization](serialization.m
 Implementing an `akka.serialization.ByteBufferSerializer` works the same way as any other serializer,
 
 Scala
-:  @@snip [Serializer.scala]($akka$/akka-actor/src/main/scala/akka/serialization/Serializer.scala) { #ByteBufferSerializer }
+:  @@snip [Serializer.scala](/akka-actor/src/main/scala/akka/serialization/Serializer.scala) { #ByteBufferSerializer }
 
 Java
 :  @@snip [ByteBufferSerializerDocTest.java]($code$/java/jdocs/actor/ByteBufferSerializerDocTest.java) { #ByteBufferSerializer-interface }

@@ -153,4 +153,4 @@ for the default `LeveldbReadJournal.Identifier`.
 
 It can be configured with the following properties:
 
-@@snip [reference.conf]($akka$/akka-persistence-query/src/main/resources/reference.conf) { #query-leveldb }
+@@snip [reference.conf](/akka-persistence-query/src/main/resources/reference.conf) { #query-leveldb }

@@ -422,64 +422,64 @@ Each Akka module has a reference configuration file with the default values.
 <a id="config-akka-actor"></a>
 ### akka-actor
 
-@@snip [reference.conf]($akka$/akka-actor/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-actor/src/main/resources/reference.conf)
 
 <a id="config-akka-agent"></a>
 ### akka-agent
 
-@@snip [reference.conf]($akka$/akka-agent/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-agent/src/main/resources/reference.conf)
 
 <a id="config-akka-camel"></a>
 ### akka-camel
 
-@@snip [reference.conf]($akka$/akka-camel/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-camel/src/main/resources/reference.conf)
 
 <a id="config-akka-cluster"></a>
 ### akka-cluster
 
-@@snip [reference.conf]($akka$/akka-cluster/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-cluster/src/main/resources/reference.conf)
 
 <a id="config-akka-multi-node-testkit"></a>
 ### akka-multi-node-testkit
 
-@@snip [reference.conf]($akka$/akka-multi-node-testkit/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-multi-node-testkit/src/main/resources/reference.conf)
 
 <a id="config-akka-persistence"></a>
 ### akka-persistence
 
-@@snip [reference.conf]($akka$/akka-persistence/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-persistence/src/main/resources/reference.conf)
 
 <a id="config-akka-remote"></a>
 ### akka-remote
 
-@@snip [reference.conf]($akka$/akka-remote/src/main/resources/reference.conf) { #shared #classic type=none }
+@@snip [reference.conf](/akka-remote/src/main/resources/reference.conf) { #shared #classic type=none }
 
 <a id="config-akka-remote-artery"></a>
 ### akka-remote (artery)
 
-@@snip [reference.conf]($akka$/akka-remote/src/main/resources/reference.conf) { #shared #artery type=none }
+@@snip [reference.conf](/akka-remote/src/main/resources/reference.conf) { #shared #artery type=none }
 
 <a id="config-akka-testkit"></a>
 ### akka-testkit
 
-@@snip [reference.conf]($akka$/akka-testkit/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-testkit/src/main/resources/reference.conf)
 
 <a id="config-cluster-metrics"></a>
 ### akka-cluster-metrics
 
-@@snip [reference.conf]($akka$/akka-cluster-metrics/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-cluster-metrics/src/main/resources/reference.conf)
 
 <a id="config-cluster-tools"></a>
 ### akka-cluster-tools
 
-@@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-cluster-tools/src/main/resources/reference.conf)
 
 <a id="config-cluster-sharding"></a>
 ### akka-cluster-sharding
 
-@@snip [reference.conf]($akka$/akka-cluster-sharding/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-cluster-sharding/src/main/resources/reference.conf)
 
 <a id="config-distributed-data"></a>
 ### akka-distributed-data
 
-@@snip [reference.conf]($akka$/akka-distributed-data/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-distributed-data/src/main/resources/reference.conf)

@@ -55,7 +55,7 @@ See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing).
 This is how an entity actor may look like:
 
 Scala
-:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-actor }
+:  @@snip [ClusterShardingSpec.scala](/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-actor }
 
 Java
 :  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-actor }
@@ -75,7 +75,7 @@ in case if there is no match between the roles of the current cluster node and t
 `ClusterShardingSettings`.
 
 Scala
-:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-start }
+:  @@snip [ClusterShardingSpec.scala](/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-start }
 
 Java
 :  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-start }
@@ -84,7 +84,7 @@ The @scala[`extractEntityId` and `extractShardId` are two] @java[`messageExtract
 identifier and the shard identifier from incoming messages.
 
 Scala
-:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-extractor }
+:  @@snip [ClusterShardingSpec.scala](/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-extractor }
 
 Java
 :  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-extractor }
@@ -122,7 +122,7 @@ delegate the message to the right node and it will create the entity actor on de
 first message for a specific entity is delivered.
 
 Scala
-:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-usage }
+:  @@snip [ClusterShardingSpec.scala](/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-usage }
 
 Java
 :  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-usage }
@@ -344,7 +344,7 @@ the `rememberEntities` flag to true in `ClusterShardingSettings` when calling
 extract from the `EntityId`.
 
 Scala
-:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #extractShardId-StartEntity }
+:  @@snip [ClusterShardingSpec.scala](/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #extractShardId-StartEntity }
 
 Java
 :  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #extractShardId-StartEntity }
@@ -381,7 +381,7 @@ you need to create an intermediate parent actor that defines the `supervisorStra
 child entity actor.
 
 Scala
-:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #supervisor }
+:  @@snip [ClusterShardingSpec.scala](/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #supervisor }
 
 Java
 :  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #supervisor }
@@ -389,7 +389,7 @@ Java
 You start such a supervisor in the same way as if it was the entity actor.
 
 Scala
-:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-supervisor-start }
+:  @@snip [ClusterShardingSpec.scala](/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-supervisor-start }
 
 Java
 :  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #counter-supervisor-start }
@@ -466,7 +466,7 @@ with the same layout as below. `ClusterShardingSettings` is a parameter to the `
 the `ClusterSharding` extension, i.e. each each entity type can be configured with different settings
 if needed.
 
-@@snip [reference.conf]($akka$/akka-cluster-sharding/src/main/resources/reference.conf) { #sharding-ext-config }
+@@snip [reference.conf](/akka-cluster-sharding/src/main/resources/reference.conf) { #sharding-ext-config }
 
 Custom shard allocation strategy can be defined in an optional parameter to
 `ClusterSharding.start`. See the API documentation of @scala[`ShardAllocationStrategy`] @java[`AbstractShardAllocationStrategy`] for details

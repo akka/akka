@@ -8,7 +8,7 @@ Create a sink which materializes into a @scala[`Future`] @java[`CompletionStage`
 
 ## Signature
 
-@@signature [StreamConverters.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #javaCollector }
+@@signature [StreamConverters.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #javaCollector }
 
 @@@
 

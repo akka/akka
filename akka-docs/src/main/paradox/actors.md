@@ -301,7 +301,7 @@ to a notification service) and watching other actors’ lifecycle. For these
 purposes there is the `Inbox` class:
 
 Scala
-:  @@snip [ActorDSLSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #inbox }
+:  @@snip [ActorDSLSpec.scala](/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #inbox }
 
 Java
 :  @@snip [InboxDocTest.java]($code$/java/jdocs/actor/InboxDocTest.java) { #inbox }
@@ -314,7 +314,7 @@ in this example the sender reference will be that of the actor hidden away
 within the inbox. This allows the reply to be received on the last line.
 Watching an actor is quite simple as well:
 
-@@snip [ActorDSLSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #watch }
+@@snip [ActorDSLSpec.scala](/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #watch }
 
 @@@
 
@@ -379,7 +379,7 @@ The remaining visible methods are user-overridable life-cycle hooks which are
 described in the following:
 
 Scala
-:  @@snip [Actor.scala]($akka$/akka-actor/src/main/scala/akka/actor/Actor.scala) { #lifecycle-hooks }
+:  @@snip [Actor.scala](/akka-actor/src/main/scala/akka/actor/Actor.scala) { #lifecycle-hooks }
 
 Java
 :  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #lifecycle-callbacks }  
@@ -829,7 +829,7 @@ An Actor has to
 @java[define its initial receive behavior by implementing the `createReceive` method in the `AbstractActor`:]
 
 Scala
-:  @@snip [Actor.scala]($akka$/akka-actor/src/main/scala/akka/actor/Actor.scala) { #receive }
+:  @@snip [Actor.scala](/akka-actor/src/main/scala/akka/actor/Actor.scala) { #receive }
 
 Java
 :  @@snip [ActorDocTest.java]($code$/java/jdocs/actor/ActorDocTest.java) { #createReceive }
@@ -1088,7 +1088,7 @@ services in a specific order and perform registered tasks during the shutdown pr
 The order of the shutdown phases is defined in configuration `akka.coordinated-shutdown.phases`.
 The default phases are defined as:
 
-@@snip [reference.conf]($akka$/akka-actor/src/main/resources/reference.conf) { #coordinated-shutdown-phases }
+@@snip [reference.conf](/akka-actor/src/main/resources/reference.conf) { #coordinated-shutdown-phases }
 
 More phases can be added in the application's configuration if needed by overriding a phase with an
 additional `depends-on`. Especially the phases `before-service-unbind`, `before-cluster-shutdown` and

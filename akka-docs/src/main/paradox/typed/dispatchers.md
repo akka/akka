@@ -25,10 +25,10 @@ details @ref:[here](../dispatchers.md#blocking-needs-careful-management).
 To select a dispatcher use `DispatcherSelector` to create a `Props` instance for spawning your actor:
 
 Scala
-:  @@snip [DispatcherDocSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/DispatchersDocSpec.scala) { #spawn-dispatcher }
+:  @@snip [DispatcherDocSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/DispatchersDocSpec.scala) { #spawn-dispatcher }
 
 Java
-:  @@snip [DispatcherDocTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/DispatchersDocTest.java) { #spawn-dispatcher }
+:  @@snip [DispatcherDocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/DispatchersDocTest.java) { #spawn-dispatcher }
 
 `DispatcherSelector` has two convenience methods to look up the default dispatcher and a dispatcher you can use to 
 execute actors that block e.g. a legacy database API that does not support @scala[`Future`]@java[`CompletionStage`]s.
@@ -36,9 +36,9 @@ execute actors that block e.g. a legacy database API that does not support @scal
 The final example shows how to load a custom dispatcher from configuration and replies on this being in your application.conf:
 
 Scala
-:  @@snip [DispatcherDocSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/DispatchersDocSpec.scala) { #config }
+:  @@snip [DispatcherDocSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/DispatchersDocSpec.scala) { #config }
 
 Java
-:  @@snip [DispatcherDocSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/DispatchersDocSpec.scala) { #config }
+:  @@snip [DispatcherDocSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/DispatchersDocSpec.scala) { #config }
 
 For full details on how to configure custom dispatchers see the @ref:[untyped docs](../dispatchers.md#types-of-dispatchers).
