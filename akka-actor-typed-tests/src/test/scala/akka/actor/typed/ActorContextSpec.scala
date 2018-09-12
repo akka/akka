@@ -612,9 +612,9 @@ class InterceptActorContextSpec extends ActorContextSpec {
 
   def tap[T] = new BehaviorInterceptor[T, T] {
     override def aroundReceive(ctx: ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] =
-      target(msg)
+      target(ctx, msg)
     override def aroundSignal(ctx: ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] =
-      target(signal)
+      target(ctx, signal)
   }
 
   override def decoration[T]: Behavior[T] ⇒ Behavior[T] = b ⇒ Behaviors.intercept[T, T](tap)(b)

@@ -77,7 +77,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
         val onStopInterceptor = new BehaviorInterceptor[Any, Any] {
           import BehaviorInterceptor._
           def aroundReceive(ctx: typed.ActorContext[Any], msg: Any, target: ReceiveTarget[Any]): Behavior[Any] = {
-            target(msg)
+            target(ctx, msg)
           }
 
           def aroundSignal(ctx: typed.ActorContext[Any], signal: Signal, target: SignalTarget[Any]): Behavior[Any] = {
@@ -85,7 +85,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
               eventsourcedSetup.cancelRecoveryTimer()
               clearStashBuffer()
             }
-            target(signal)
+            target(ctx, signal)
           }
         }
         val widened = EventsourcedRequestingRecoveryPermit(eventsourcedSetup).widen[Any] {

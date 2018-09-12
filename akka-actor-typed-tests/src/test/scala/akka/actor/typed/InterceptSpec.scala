@@ -30,13 +30,13 @@ class InterceptSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWit
   private def snitchingInterceptor(probe: ActorRef[String]) = new BehaviorInterceptor[String, String] {
     override def aroundReceive(ctx: ActorContext[String], msg: String, target: ReceiveTarget[String]): Behavior[String] = {
       probe ! ("before " + msg)
-      val b = target(msg)
+      val b = target(ctx, msg)
       probe ! ("after " + msg)
       b
     }
 
     override def aroundSignal(ctx: ActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] = {
-      target(signal)
+      target(ctx, signal)
     }
 
     // keeping the instance equality as "isSame" for these
@@ -177,10 +177,10 @@ class InterceptSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWit
         }
 
         def aroundReceive(ctx: ActorContext[String], msg: String, target: ReceiveTarget[String]): Behavior[String] =
-          target(msg)
+          target(ctx, msg)
 
         def aroundSignal(ctx: ActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] =
-          target(signal)
+          target(ctx, signal)
       }
 
       val innerBehaviorStarted = new AtomicBoolean(false)

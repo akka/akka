@@ -40,12 +40,12 @@ public class ActorCompile {
   Behavior<MyMsg> actor6 = intercept(new BehaviorInterceptor<MyMsg, MyMsg>() {
     @Override
     public Behavior<MyMsg> aroundReceive(ActorContext<MyMsg> ctx, MyMsg msg, ReceiveTarget<MyMsg> target) {
-      return target.apply(msg);
+      return target.apply(ctx, msg);
     }
 
     @Override
     public Behavior<MyMsg> aroundSignal(ActorContext<MyMsg> ctx, Signal signal, SignalTarget<MyMsg> target) {
-      return target.apply(signal);
+      return target.apply(ctx, signal);
     }
   }, actor5);
   Behavior<MyMsgA> actor7 = actor6.narrow();

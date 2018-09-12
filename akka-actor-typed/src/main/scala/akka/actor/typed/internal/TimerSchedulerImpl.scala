@@ -169,7 +169,7 @@ private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T
 
     // null means not applicable
     if (intercepted == null) Behavior.same
-    else target.apply(intercepted)
+    else target(ctx, intercepted)
   }
 
   override def aroundSignal(ctx: typed.ActorContext[AnyRef], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
@@ -177,7 +177,7 @@ private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T
       case PreRestart | PostStop ⇒ timerSchedulerImpl.cancelAll()
       case _                     ⇒ // unhandled
     }
-    target.apply(signal)
+    target(ctx, signal)
   }
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean =

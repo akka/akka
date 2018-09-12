@@ -440,13 +440,13 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
       @Override
       public Behavior<Object> aroundReceive(ActorContext<Object> ctx, Object msg, ReceiveTarget<Object> target) {
         interceptProbe.ref().tell(msg);
-        return target.apply(msg);
+        return target.apply(ctx, msg);
       }
 
       @Override
       public Behavior<Object> aroundSignal(ActorContext<Object> ctx, Signal signal, SignalTarget<Object> target) {
         signalProbe.ref().tell(signal);
-        return target.apply(signal);
+        return target.apply(ctx, signal);
       }
     };
     ActorRef<Command> c = testKit.spawn(Behaviors.intercept(tap, ((Behavior)counter("tap1"))));

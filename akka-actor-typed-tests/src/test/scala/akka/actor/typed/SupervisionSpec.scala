@@ -698,10 +698,10 @@ class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       val whateverInterceptor = new BehaviorInterceptor[String, String] {
         // identity intercept
         override def aroundReceive(ctx: ActorContext[String], msg: String, target: ReceiveTarget[String]): Behavior[String] =
-          target(msg)
+          target(ctx, msg)
 
         override def aroundSignal(ctx: ActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] =
-          target(signal)
+          target(ctx, signal)
       }
 
       val behv = supervise[String](Behaviors.receiveMessage {

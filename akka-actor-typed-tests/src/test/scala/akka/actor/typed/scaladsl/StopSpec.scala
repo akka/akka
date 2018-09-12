@@ -36,11 +36,11 @@ class StopSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
         Behaviors.intercept(
           new BehaviorInterceptor[AnyRef, AnyRef] {
             override def aroundReceive(ctx: typed.ActorContext[AnyRef], msg: AnyRef, target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
-              target(msg)
+              target(ctx, msg)
             }
 
             override def aroundSignal(ctx: typed.ActorContext[AnyRef], signal: Signal, target: SignalTarget[AnyRef]): Behavior[AnyRef] = {
-              target(signal)
+              target(ctx, signal)
             }
           }
         )(Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {

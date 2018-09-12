@@ -38,13 +38,25 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
 
   import BehaviorInterceptor._
 
+  private val preStartTarget: PreStartTarget[I] = new PreStartTarget[I] {
+    override def start(ctx: ActorContext[_]): Behavior[I] = {
+      Behavior.start[I](nestedBehavior, ctx.asInstanceOf[ActorContext[I]])
+    }
+  }
+
+  private val receiveTarget: ReceiveTarget[I] = new ReceiveTarget[I] {
+    override def apply(ctx: ActorContext[_], msg: I): Behavior[I] =
+      Behavior.interpretMessage(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], msg)
+  }
+
+  private val signalTarget = new SignalTarget[I] {
+    override def apply(ctx: ActorContext[_], signal: Signal): Behavior[I] =
+      Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], signal)
+  }
+
   // invoked pre-start to start/de-duplicate the initial behavior stack
   def preStart(ctx: typed.ActorContext[O]): Behavior[O] = {
-    val started = interceptor.preStart(ctx.asInstanceOf[ActorContext[I]], new PreStartTarget[I] {
-      override def start(): Behavior[I] = {
-        Behavior.start[I](nestedBehavior, ctx.asInstanceOf[ActorContext[I]])
-      }
-    })
+    val started = interceptor.preStart(ctx.asInstanceOf[ActorContext[I]], preStartTarget)
     deduplicate(started, ctx)
   }
 
@@ -52,20 +64,11 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
     new InterceptorImpl(interceptor, newNested)
 
   override def receive(ctx: typed.ActorContext[O], msg: O): Behavior[O] = {
-    // FIXME can we avoid allocating one on each message?
-    val receiveTarget = new ReceiveTarget[I] {
-      override def apply(msg: I): Behavior[I] =
-        Behavior.interpretMessage(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], msg)
-    }
     val interceptedResult = interceptor.aroundReceive(ctx, msg, receiveTarget)
     deduplicate(interceptedResult, ctx)
   }
 
   override def receiveSignal(ctx: typed.ActorContext[O], signal: Signal): Behavior[O] = {
-    val signalTarget = new SignalTarget[I] {
-      override def apply(signal: Signal): Behavior[I] =
-        Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], signal)
-    }
     val interceptedResult = interceptor.aroundSignal(ctx, signal, signalTarget)
     deduplicate(interceptedResult, ctx)
   }
@@ -101,11 +104,11 @@ private[akka] final case class MonitorInterceptor[T](actorRef: ActorRef[T]) exte
 
   override def aroundReceive(ctx: ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     actorRef ! msg
-    target(msg)
+    target(ctx, msg)
   }
 
   override def aroundSignal(ctx: ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
-    target(signal)
+    target(ctx, signal)
   }
 
   // only once to the same actor in the same behavior stack
@@ -150,12 +153,12 @@ private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction
 
     matcher.applyOrElse(msg, any2null) match {
       case null        ⇒ Behavior.unhandled
-      case transformed ⇒ target(transformed)
+      case transformed ⇒ target(ctx, transformed)
     }
   }
 
   def aroundSignal(ctx: ActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I] =
-    target(signal)
+    target(ctx, signal)
 
   override def toString: String = s"Widen(${LineNumbers(matcher)})"
 }

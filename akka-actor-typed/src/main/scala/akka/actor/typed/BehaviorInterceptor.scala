@@ -24,7 +24,7 @@ abstract class BehaviorInterceptor[O, I] {
    *         the next message or signal.
    */
   def preStart(ctx: ActorContext[I], target: PreStartTarget[I]): Behavior[I] =
-    target.start()
+    target.start(ctx)
 
   /**
    * Intercept a message sent to the running actor. Pass the message on to the next behavior
@@ -61,7 +61,7 @@ object BehaviorInterceptor {
    */
   @DoNotInherit
   trait PreStartTarget[T] {
-    def start(): Behavior[T]
+    def start(ctx: ActorContext[_]): Behavior[T]
   }
 
   /**
@@ -71,7 +71,7 @@ object BehaviorInterceptor {
    */
   @DoNotInherit
   trait ReceiveTarget[T] {
-    def apply(msg: T): Behavior[T]
+    def apply(ctx: ActorContext[_], msg: T): Behavior[T]
   }
 
   /**
@@ -81,7 +81,7 @@ object BehaviorInterceptor {
    */
   @DoNotInherit
   trait SignalTarget[T] {
-    def apply(signal: Signal): Behavior[T]
+    def apply(ctx: ActorContext[_], signal: Signal): Behavior[T]
   }
 
 }

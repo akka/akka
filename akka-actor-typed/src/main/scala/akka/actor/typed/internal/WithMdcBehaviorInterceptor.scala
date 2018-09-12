@@ -63,7 +63,7 @@ import scala.collection.immutable.HashMap
       }
     }
 
-    loop(target.start()).asInstanceOf[Behavior[T]]
+    loop(target.start(ctx)).asInstanceOf[Behavior[T]]
   }
 
   // in the normal case, a new withMDC replaces the previous one
@@ -77,7 +77,7 @@ import scala.collection.immutable.HashMap
     ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = mdc
     val next =
       try {
-        target(msg)
+        target(ctx, msg)
       } finally {
         ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = Map.empty
       }
@@ -87,7 +87,7 @@ import scala.collection.immutable.HashMap
   override def aroundSignal(ctx: ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = staticMdc
     try {
-      target(signal)
+      target(ctx, signal)
     } finally {
       ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = Map.empty
     }
@@ -104,5 +104,5 @@ import scala.collection.immutable.HashMap
     }
   }
 
-  override def toString: String = s"WithMdc(${staticMdc})"
+  override def toString: String = s"WithMdc($staticMdc)"
 }
