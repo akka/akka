@@ -12,25 +12,34 @@ import akka.annotation.InternalApi
 import akka.util.Timeout
 import akka.{ actor ⇒ a }
 import com.typesafe.config.ConfigFactory
-
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
+
+import akka.actor.ActorRefProvider
+import akka.actor.typed.internal.InternalRecipientRef
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] final class ActorSystemStub(val name: String)
-  extends ActorSystem[Nothing] with ActorRef[Nothing] with ActorRefImpl[Nothing] {
+  extends ActorSystem[Nothing] with ActorRef[Nothing] with ActorRefImpl[Nothing] with InternalRecipientRef[Nothing] {
 
   override val path: a.ActorPath = a.RootActorPath(a.Address("akka", name)) / "user"
 
   override val settings: Settings = new Settings(getClass.getClassLoader, ConfigFactory.empty, name)
 
-  override def tell(msg: Nothing): Unit = throw new RuntimeException("must not send message to ActorSystemStub")
+  override def tell(msg: Nothing): Unit = throw new UnsupportedOperationException("must not send message to ActorSystemStub")
 
+  // impl ActorRefImpl
   override def isLocal: Boolean = true
+  // impl ActorRefImpl
   override def sendSystem(signal: akka.actor.typed.internal.SystemMessage): Unit =
-    throw new RuntimeException("must not send SYSTEM message to ActorSystemStub")
+    throw new UnsupportedOperationException("must not send SYSTEM message to ActorSystemStub")
+
+  // impl InternalRecipientRef, ask not supported
+  override def provider: ActorRefProvider = throw new UnsupportedOperationException("no provider")
+  // impl InternalRecipientRef
+  def isTerminated: Boolean = whenTerminated.isCompleted
 
   val deadLettersInbox = new DebugRef[Any](path.parent / "deadLetters", true)
   override def deadLetters[U]: akka.actor.typed.ActorRef[U] = deadLettersInbox

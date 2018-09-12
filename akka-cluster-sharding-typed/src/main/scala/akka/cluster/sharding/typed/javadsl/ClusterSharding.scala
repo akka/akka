@@ -12,7 +12,9 @@ import java.util.function.BiFunction
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.actor.typed.RecipientRef
 import akka.actor.typed.Props
+import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
@@ -333,7 +335,7 @@ object EntityTypeKey {
  *
  * Not for user extension.
  */
-@DoNotInherit abstract class EntityRef[M] { scaladslSelf: scaladsl.EntityRef[M] ⇒
+@DoNotInherit abstract class EntityRef[M] extends RecipientRef[M] { scaladslSelf: scaladsl.EntityRef[M] with InternalRecipientRef[M] ⇒
 
   /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*
@@ -344,6 +346,9 @@ object EntityTypeKey {
   /**
    * Allows to "ask" the [[EntityRef]] for a reply.
    * See [[akka.actor.typed.javadsl.AskPattern]] for a complete write-up of this pattern
+   *
+   * Note that if you are inside of an actor you should prefer [[akka.actor.typed.javadsl.ActorContext.ask]]
+   * as that provides better safety.
    */
   def ask[U](message: JFunction[ActorRef[U], M], timeout: Timeout): CompletionStage[U]
 
