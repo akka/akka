@@ -140,26 +140,14 @@ object Behaviors {
     receive[T]((_, _) ⇒ same).receiveSignal(handler)
 
   /**
-   * This type of Behavior wraps another Behavior while allowing you to perform
-   * some action upon each received message or signal. It is most commonly used
-   * for logging or tracing what a certain Actor does.
+   * Intercept messages and signals for a `behavior` by first passing them to a [[akka.actor.typed.BehaviorInterceptor]]
+   *
+   * When a behavior returns a new behavior as a result of processing a signal or message and that behavior already contains
+   * the same interceptor (defined by the `isSame` method on the `BehaviorInterceptor`) only the innermost interceptor
+   * is kept. This is to protect against stack overflow when recursively defining behaviors.
    */
-  @deprecated("Use overloaded tap", "2.5.13")
-  def tap[T: ClassTag](
-    onMessage: (ActorContext[T], T) ⇒ _,
-    onSignal:  (ActorContext[T], Signal) ⇒ _, // FIXME use partial function here also?
-    behavior:  Behavior[T]): Behavior[T] =
-    tap(behavior)((ctx, msg) ⇒ onMessage(ctx, msg), (ctx, signal) ⇒ onSignal(ctx, signal))
-
-  /**
-   * This type of Behavior wraps another Behavior while allowing you to perform
-   * some action upon each received message or signal. It is most commonly used
-   * for logging or tracing what a certain Actor does.
-   */
-  def tap[T: ClassTag](behavior: Behavior[T])(
-    onMessage: (ActorContext[T], T) ⇒ Unit,
-    onSignal:  (ActorContext[T], Signal) ⇒ Unit): Behavior[T] =
-    BehaviorImpl.tap(onMessage, onSignal, behavior)
+  def intercept[O, I](behaviorInterceptor: BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
+    BehaviorImpl.intercept(behaviorInterceptor)(behavior)
 
   /**
    * Behavior decorator that copies all received message to the designated
@@ -167,8 +155,8 @@ object Behaviors {
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
    */
-  def monitor[T: ClassTag](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
-    tap(behavior)((_, msg) ⇒ monitor ! msg, unitFunction)
+  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
+    BehaviorImpl.intercept(new MonitorInterceptor[T](monitor))(behavior)
 
   /**
    * Wrap the given behavior with the given [[SupervisorStrategy]] for
@@ -260,7 +248,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](staticMdc, mdcForMessage, behavior)
+    WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage, behavior)
 
   // TODO
   // final case class Selective[T](timeout: FiniteDuration, selector: PartialFunction[T, Behavior[T]], onTimeout: () ⇒ Behavior[T])

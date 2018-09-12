@@ -21,11 +21,11 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.Eventually
+
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.{ Success, Try }
-
 import akka.persistence.journal.inmem.InmemJournal
 
 object PersistentBehaviorSpec {
@@ -472,18 +472,15 @@ class PersistentBehaviorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown
     }
 
     "wrap persistent behavior in tap" in {
-      val probe = TestProbe[String]
-      val wrapped: Behavior[Command] = Behaviors.tap(counter(nextPid))(
-        (_, _) ⇒ probe.ref ! "msg received",
-        (_, _) ⇒ ()
-      )
+      val probe = TestProbe[Command]
+      val wrapped: Behavior[Command] = Behaviors.monitor(probe.ref, counter(nextPid))
       val c = spawn(wrapped)
 
       c ! Increment
       val replyProbe = TestProbe[State]()
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
-      probe.expectMessage("msg received")
+      probe.expectMessage(Increment)
     }
 
     "tag events" in {

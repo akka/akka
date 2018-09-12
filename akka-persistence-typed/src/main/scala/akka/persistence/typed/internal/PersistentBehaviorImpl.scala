@@ -6,7 +6,7 @@ package akka.persistence.typed.internal
 
 import akka.Done
 import akka.actor.typed
-import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, SupervisorStrategy }
+import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, BehaviorInterceptor, PostStop, Signal, SupervisorStrategy }
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.persistence._
@@ -14,9 +14,8 @@ import akka.persistence.typed.{ EventAdapter, NoOpEventAdapter }
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
-import scala.util.{ Failure, Success, Try }
 
-import akka.actor.typed.PostStop
+import scala.util.{ Failure, Success, Try }
 
 @InternalApi
 private[akka] object PersistentBehaviorImpl {
@@ -50,13 +49,13 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
 
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
     Behaviors.supervise {
-      Behaviors.setup[InternalProtocol] { ctx ⇒
+      Behaviors.setup[Command] { ctx ⇒
         val settings = EventsourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
 
         val internalStash = stashBuffer(settings)
 
         val eventsourcedSetup = new EventsourcedSetup(
-          ctx,
+          ctx.asInstanceOf[ActorContext[InternalProtocol]],
           persistenceId,
           emptyState,
           commandHandler,
@@ -73,22 +72,31 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
           internalStash = internalStash
         )
 
-        Behaviors.tap(EventsourcedRequestingRecoveryPermit(eventsourcedSetup))(
-          onMessage = (_, _) ⇒ Unit,
-          onSignal = {
-            case (_, PostStop) ⇒
+        // needs to accept Any since we also can get messages from the journal
+        // not part of the protocol
+        val onStopInterceptor = new BehaviorInterceptor[Any, Any] {
+          import BehaviorInterceptor._
+          def aroundReceive(ctx: typed.ActorContext[Any], msg: Any, target: ReceiveTarget[Any]): Behavior[Any] = {
+            target(ctx, msg)
+          }
+
+          def aroundSignal(ctx: typed.ActorContext[Any], signal: Signal, target: SignalTarget[Any]): Behavior[Any] = {
+            if (signal == PostStop) {
               eventsourcedSetup.cancelRecoveryTimer()
               clearStashBuffer()
-            case _ ⇒
-          })
-
-      }.widen[Any] {
-        case res: JournalProtocol.Response           ⇒ InternalProtocol.JournalResponse(res)
-        case res: SnapshotProtocol.Response          ⇒ InternalProtocol.SnapshotterResponse(res)
-        case RecoveryPermitter.RecoveryPermitGranted ⇒ InternalProtocol.RecoveryPermitGranted
-        case internal: InternalProtocol              ⇒ internal // such as RecoveryTickEvent
-        case cmd: Command @unchecked                 ⇒ InternalProtocol.IncomingCommand(cmd)
-      }.narrow[Command]
+            }
+            target(ctx, signal)
+          }
+        }
+        val widened = EventsourcedRequestingRecoveryPermit(eventsourcedSetup).widen[Any] {
+          case res: JournalProtocol.Response           ⇒ InternalProtocol.JournalResponse(res)
+          case res: SnapshotProtocol.Response          ⇒ InternalProtocol.SnapshotterResponse(res)
+          case RecoveryPermitter.RecoveryPermitGranted ⇒ InternalProtocol.RecoveryPermitGranted
+          case internal: InternalProtocol              ⇒ internal // such as RecoveryTickEvent
+          case cmd: Command @unchecked                 ⇒ InternalProtocol.IncomingCommand(cmd)
+        }
+        Behaviors.intercept(onStopInterceptor)(widened).narrow[Command]
+      }
     }.onFailure[JournalFailureException](supervisionStrategy)
   }
 

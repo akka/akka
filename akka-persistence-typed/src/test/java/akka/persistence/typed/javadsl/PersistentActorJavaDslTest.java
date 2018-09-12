@@ -5,7 +5,6 @@
 package akka.persistence.typed.javadsl;
 
 import akka.actor.typed.*;
-import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.Pair;
@@ -435,12 +434,22 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
   @Test
   public void tapPersistentActor() {
-    TestProbe<Command> interceptProbe = testKit.createTestProbe();
+    TestProbe<Object> interceptProbe = testKit.createTestProbe();
     TestProbe<Signal> signalProbe = testKit.createTestProbe();
-    ActorRef<Command> c = testKit.spawn(Behaviors.tap(Command.class,
-      (ctx, cmd) -> interceptProbe.ref().tell(cmd),
-      (ctx, signal) -> signalProbe.ref().tell(signal),
-      counter("tap1")));
+    BehaviorInterceptor<Object, Object> tap = new BehaviorInterceptor<Object, Object>() {
+      @Override
+      public Behavior<Object> aroundReceive(ActorContext<Object> ctx, Object msg, ReceiveTarget<Object> target) {
+        interceptProbe.ref().tell(msg);
+        return target.apply(ctx, msg);
+      }
+
+      @Override
+      public Behavior<Object> aroundSignal(ActorContext<Object> ctx, Signal signal, SignalTarget<Object> target) {
+        signalProbe.ref().tell(signal);
+        return target.apply(ctx, signal);
+      }
+    };
+    ActorRef<Command> c = testKit.spawn(Behaviors.intercept(tap, ((Behavior)counter("tap1"))));
     c.tell(Increment.instance);
     interceptProbe.expectMessage(Increment.instance);
     signalProbe.expectNoMessage();
