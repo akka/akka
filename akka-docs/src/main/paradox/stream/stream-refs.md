@@ -81,19 +81,19 @@ That sink materializes the `SourceRef` that you can then send to other nodes. Pl
 `Future` so you will have to use the pipeTo
 
 Scala
-:   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-source }
+:   @@snip [FlowStreamRefsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-source }
 
 Java
-:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-source }
+:   @@snip [FlowStreamRefsDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-source }
 
 The origin actor which creates and owns the Source could also perform some validation or additional setup
 when preparing the source. Once it has handed out the `SourceRef` the remote side can run it like this:
 
 Scala
-:   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-source-use }
+:   @@snip [FlowStreamRefsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-source-use }
 
 Java
-:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-source-use }
+:   @@snip [FlowStreamRefsDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-source-use }
 
 The process of preparing and running a `SourceRef` powered distributed stream is shown by the animation below:
 
@@ -122,19 +122,19 @@ into various other systems (e.g. any of the Alpakka provided Sinks).
 @@@
 
 Scala
-:   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-sink }
+:   @@snip [FlowStreamRefsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-sink }
 
 Java
-:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-sink }
+:   @@snip [FlowStreamRefsDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-sink }
 
 Using the offered `SinkRef` to send data to the origin of the Sink is also simple, as we can treat the 
 SinkRef just as any other Sink and directly `runWith` or `run` with it.
 
 Scala
-:   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-sink-use }
+:   @@snip [FlowStreamRefsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-sink-use }
 
 Java
-:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-sink-use }
+:   @@snip [FlowStreamRefsDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-sink-use }
 
 The process of preparing and running a `SinkRef` powered distributed stream is shown by the animation below: 
 
@@ -190,10 +190,10 @@ globally (`akka.stream.materializer.stream-ref.subscription-timeout`), but also 
 
 
 Scala
-:   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #attr-sub-timeout }
+:   @@snip [FlowStreamRefsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #attr-sub-timeout }
 
 Java
-:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #attr-sub-timeout }
+:   @@snip [FlowStreamRefsDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowStreamRefsDocTest.java) { #attr-sub-timeout }
 
 
 ## General configuration

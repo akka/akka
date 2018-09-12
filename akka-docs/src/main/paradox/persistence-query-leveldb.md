@@ -23,10 +23,10 @@ The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery`
 extension:
 
 Scala
-:  @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #get-read-journal }
+:  @@snip [LeveldbPersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #get-read-journal }
 
 Java
-:  @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #get-read-journal }
+:  @@snip [LeveldbPersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #get-read-journal }
 
 ## Supported Queries
 
@@ -36,10 +36,10 @@ Java
 identified by `persistenceId`.
 
 Scala
-:  @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #EventsByPersistenceId }
+:  @@snip [LeveldbPersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #EventsByPersistenceId }
 
 Java
-:  @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #EventsByPersistenceId }
+:  @@snip [LeveldbPersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #EventsByPersistenceId }
 
 You can retrieve a subset of all events by specifying `fromSequenceNr` and `toSequenceNr`
 or use `0L` and @scala[`Long.MaxValue`]@java[`Long.MAX_VALUE`] respectively to retrieve all events. Note that
@@ -68,10 +68,10 @@ backend journal.
 `persistenceIds` is used for retrieving all `persistenceIds` of all persistent actors.
 
 Scala
-:  @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #AllPersistenceIds }
+:  @@snip [LeveldbPersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #AllPersistenceIds }
 
 Java
-:  @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #AllPersistenceIds }
+:  @@snip [LeveldbPersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #AllPersistenceIds }
 
 The returned event stream is unordered and you can expect different order for multiple
 executions of the query.
@@ -93,19 +93,19 @@ backend journal.
 all domain events of an Aggregate Root type.
 
 Scala
-:  @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #EventsByTag }
+:  @@snip [LeveldbPersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #EventsByTag }
 
 Java
-:  @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #EventsByTag }
+:  @@snip [LeveldbPersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #EventsByTag }
 
 To tag events you create an @ref:[Event Adapters](persistence.md#event-adapters) that wraps the events in a `akka.persistence.journal.Tagged`
 with the given `tags`.
 
 Scala
-:  @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #tagger }
+:  @@snip [LeveldbPersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #tagger }
 
 Java
-:  @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #tagger }
+:  @@snip [LeveldbPersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #tagger }
 
 You can use `NoOffset` to retrieve all events with a given tag or retrieve a subset of all
 events by specifying a `Sequence` `offset`. The `offset` corresponds to an ordered sequence number for

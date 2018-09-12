@@ -75,7 +75,7 @@ Scala
 :  @@snip [StatsService.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsService.scala) { #router-lookup-in-code }
 
 Java
-:  @@snip [StatsService.java]($code$/java/jdocs/cluster/StatsService.java) { #router-lookup-in-code }
+:  @@snip [StatsService.java](/akka-docs/src/test/java/jdocs/cluster/StatsService.java) { #router-lookup-in-code }
 
 See [configuration](#cluster-configuration) section for further descriptions of the settings.
 
@@ -96,7 +96,7 @@ Scala
 :  @@snip [StatsMessages.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsMessages.scala) { #messages }
 
 Java
-:  @@snip [StatsMessages.java]($code$/java/jdocs/cluster/StatsMessages.java) { #messages }
+:  @@snip [StatsMessages.java](/akka-docs/src/test/java/jdocs/cluster/StatsMessages.java) { #messages }
 
 The worker that counts number of characters in each word:
 
@@ -104,7 +104,7 @@ Scala
 :  @@snip [StatsWorker.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsWorker.scala) { #worker }
 
 Java
-:  @@snip [StatsWorker.java]($code$/java/jdocs/cluster/StatsWorker.java) { #worker }
+:  @@snip [StatsWorker.java](/akka-docs/src/test/java/jdocs/cluster/StatsWorker.java) { #worker }
 
 The service that receives text from users and splits it up into words, delegates to workers and aggregates:
 
@@ -116,8 +116,8 @@ The service that receives text from users and splits it up into words, delegates
 
 @@@ div { .group-java }
 
-@@snip [StatsService.java]($code$/java/jdocs/cluster/StatsService.java) { #service }
-@@snip [StatsAggregator.java]($code$/java/jdocs/cluster/StatsAggregator.java) { #aggregator }
+@@snip [StatsService.java](/akka-docs/src/test/java/jdocs/cluster/StatsService.java) { #service }
+@@snip [StatsAggregator.java](/akka-docs/src/test/java/jdocs/cluster/StatsAggregator.java) { #aggregator }
 
 @@@
 
@@ -183,7 +183,7 @@ Scala
 :  @@snip [StatsService.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsService.scala) { #router-deploy-in-code }
 
 Java
-:  @@snip [StatsService.java]($code$/java/jdocs/cluster/StatsService.java) { #router-deploy-in-code }
+:  @@snip [StatsService.java](/akka-docs/src/test/java/jdocs/cluster/StatsService.java) { #router-deploy-in-code }
 
 See [configuration](#cluster-configuration) section for further descriptions of the settings.
 
@@ -206,7 +206,7 @@ Scala
     @@@
 
 Java
-:  @@snip [StatsSampleOneMasterMain.java]($code$/java/jdocs/cluster/StatsSampleOneMasterMain.java) { #create-singleton-manager }
+:  @@snip [StatsSampleOneMasterMain.java](/akka-docs/src/test/java/jdocs/cluster/StatsSampleOneMasterMain.java) { #create-singleton-manager }
 
 We also need an actor on each node that keeps track of where current single master exists and
 delegates jobs to the `StatsService`. That is provided by the `ClusterSingletonProxy`:
@@ -223,7 +223,7 @@ Scala
     @@@
 
 Java
-:  @@snip [StatsSampleOneMasterMain.java]($code$/java/jdocs/cluster/StatsSampleOneMasterMain.java) { #singleton-proxy }
+:  @@snip [StatsSampleOneMasterMain.java](/akka-docs/src/test/java/jdocs/cluster/StatsSampleOneMasterMain.java) { #singleton-proxy }
 
 The `ClusterSingletonProxy` receives text from users and delegates to the current `StatsService`, the single
 master. It listens to cluster events to lookup the `StatsService` on the oldest node.

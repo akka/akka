@@ -310,7 +310,7 @@ substitutions.
 You may also specify and parse the configuration programmatically in other ways when instantiating
 the `ActorSystem`.
 
-@@snip [ConfigDocSpec.scala]($code$/scala/docs/config/ConfigDocSpec.scala) { #imports #custom-config }
+@@snip [ConfigDocSpec.scala](/akka-docs/src/test/scala/docs/config/ConfigDocSpec.scala) { #imports #custom-config }
 
 ## Reading configuration from a custom location
 
@@ -353,7 +353,7 @@ you could put a config string in code using
 You can also combine your custom config with the usual config,
 that might look like:
 
-@@snip [ConfigDoc.java]($code$/java/jdocs/config/ConfigDoc.java) { #java-custom-config }
+@@snip [ConfigDoc.java](/akka-docs/src/test/java/jdocs/config/ConfigDoc.java) { #java-custom-config }
 
 When working with `Config` objects, keep in mind that there are
 three "layers" in the cake:
@@ -388,7 +388,7 @@ things like dispatcher, mailbox, router settings, and remote deployment.
 Configuration of these features are described in the chapters detailing corresponding
 topics. An example may look like this:
 
-@@snip [ConfigDocSpec.scala]($code$/scala/docs/config/ConfigDocSpec.scala) { #deployment-section }
+@@snip [ConfigDocSpec.scala](/akka-docs/src/test/scala/docs/config/ConfigDocSpec.scala) { #deployment-section }
 
 @@@ note
 

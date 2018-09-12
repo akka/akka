@@ -78,10 +78,10 @@ The messages that we will use to communicate registration requests and
 their acknowledgement have a simple definition:
 
 Scala
-:   @@snip [DeviceManager.scala]($code$/scala/tutorial_4/DeviceManager.scala) { #device-manager-msgs }
+:   @@snip [DeviceManager.scala](/akka-docs/src/test/scala/tutorial_4/DeviceManager.scala) { #device-manager-msgs }
 
 Java
-:   @@snip [DeviceManager.java]($code$/java/jdocs/tutorial_4/DeviceManager.java) { #device-manager-msgs }
+:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/tutorial_4/DeviceManager.java) { #device-manager-msgs }
 
 In this case we have not included a request ID field in the messages. Since registration happens once, when the component connects the system to some network protocol, the ID is not important. However, it is usually a best practice to include a request ID.
 
@@ -97,10 +97,10 @@ message is preserved in the upper layers.* We will show you in the next section 
 The device actor registration code looks like the following. Modify your example to match.
 
 Scala
-:   @@snip [Device.scala]($code$/scala/tutorial_4/Device.scala) { #device-with-register }
+:   @@snip [Device.scala](/akka-docs/src/test/scala/tutorial_4/Device.scala) { #device-with-register }
 
 Java
-:   @@snip [Device.java]($code$/java/jdocs/tutorial_4/Device.java) { #device-with-register }
+:   @@snip [Device.java](/akka-docs/src/test/java/jdocs/tutorial_4/Device.java) { #device-with-register }
 
 @@@ note { .group-scala }
 
@@ -111,10 +111,10 @@ We used a feature of scala pattern matching where we can check to see if a certa
 We can now write two new test cases, one exercising successful registration, the other testing the case when IDs don't match:
 
 Scala
-:   @@snip [DeviceSpec.scala]($code$/scala/tutorial_4/DeviceSpec.scala) { #device-registration-tests }
+:   @@snip [DeviceSpec.scala](/akka-docs/src/test/scala/tutorial_4/DeviceSpec.scala) { #device-registration-tests }
 
 Java
-:   @@snip [DeviceTest.java]($code$/java/jdocs/tutorial_4/DeviceTest.java) { #device-registration-tests }
+:   @@snip [DeviceTest.java](/akka-docs/src/test/java/jdocs/tutorial_4/DeviceTest.java) { #device-registration-tests }
 
 @@@ note
 
@@ -138,27 +138,27 @@ We also want to keep the ID of the original sender of the request so that our de
 sender while @scala[`!`] @java[`tell`] sets the sender to be the current actor. Just like with our device actor, we ensure that we don't respond to wrong group IDs. Add the following to your source file:
 
 Scala
-:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_4/DeviceGroup.scala) { #device-group-register }
+:   @@snip [DeviceGroup.scala](/akka-docs/src/test/scala/tutorial_4/DeviceGroup.scala) { #device-group-register }
 
 Java
-:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_4/DeviceGroup.java) { #device-group-register }
+:   @@snip [DeviceGroup.java](/akka-docs/src/test/java/jdocs/tutorial_4/DeviceGroup.java) { #device-group-register }
 
 Just as we did with the device, we test this new functionality. We also test that the actors returned for the two different IDs are actually different, and we also attempt to record a temperature reading for each of the devices to see if the actors are responding.
 
 Scala
-:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_4/DeviceGroupSpec.scala) { #device-group-test-registration }
+:   @@snip [DeviceGroupSpec.scala](/akka-docs/src/test/scala/tutorial_4/DeviceGroupSpec.scala) { #device-group-test-registration }
 
 Java
-:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupTest.java) { #device-group-test-registration }
+:   @@snip [DeviceGroupTest.java](/akka-docs/src/test/java/jdocs/tutorial_4/DeviceGroupTest.java) { #device-group-test-registration }
 
 If a device actor already exists for the registration request, we would like to use
 the existing actor instead of a new one. We have not tested this yet, so we need to fix this:
 
 Scala
-:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_4/DeviceGroupSpec.scala) { #device-group-test3 }
+:   @@snip [DeviceGroupSpec.scala](/akka-docs/src/test/scala/tutorial_4/DeviceGroupSpec.scala) { #device-group-test3 }
 
 Java
-:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupTest.java) { #device-group-test3 }
+:   @@snip [DeviceGroupTest.java](/akka-docs/src/test/java/jdocs/tutorial_4/DeviceGroupTest.java) { #device-group-test3 }
 
 
 ### Keeping track of the device actors in the group
@@ -177,19 +177,19 @@ Unfortunately, the `Terminated` message only contains the `ActorRef` of the chil
 Adding the functionality to identify the actor results in this:
 
 Scala
-:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_4/DeviceGroup.scala) { #device-group-remove }
+:   @@snip [DeviceGroup.scala](/akka-docs/src/test/scala/tutorial_4/DeviceGroup.scala) { #device-group-remove }
 
 Java
-:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_4/DeviceGroup.java) { #device-group-remove }
+:   @@snip [DeviceGroup.java](/akka-docs/src/test/java/jdocs/tutorial_4/DeviceGroup.java) { #device-group-remove }
 
 So far we have no means to get which devices the group device actor keeps track of and, therefore, we cannot test our new functionality yet. To make it testable, we add a new query capability (message @scala[`RequestDeviceList(requestId: Long)`] @java[`RequestDeviceList`]) that lists the currently active
 device IDs:
 
 Scala
-:   @@snip [DeviceGroup.scala]($code$/scala/tutorial_4/DeviceGroup.scala) { #device-group-full }
+:   @@snip [DeviceGroup.scala](/akka-docs/src/test/scala/tutorial_4/DeviceGroup.scala) { #device-group-full }
 
 Java
-:   @@snip [DeviceGroup.java]($code$/java/jdocs/tutorial_4/DeviceGroup.java) { #device-group-full }
+:   @@snip [DeviceGroup.java](/akka-docs/src/test/java/jdocs/tutorial_4/DeviceGroup.java) { #device-group-full }
 
 We are almost ready to test the removal of devices. But, we still need the following capabilities:
 
@@ -201,20 +201,20 @@ We are almost ready to test the removal of devices. But, we still need the follo
 We add two more test cases now. In the first, we test that we get back the list of proper IDs once we have added a few devices. The second test case makes sure that the device ID is properly removed after the device actor has been stopped:
 
 Scala
-:   @@snip [DeviceGroupSpec.scala]($code$/scala/tutorial_4/DeviceGroupSpec.scala) { #device-group-list-terminate-test }
+:   @@snip [DeviceGroupSpec.scala](/akka-docs/src/test/scala/tutorial_4/DeviceGroupSpec.scala) { #device-group-list-terminate-test }
 
 Java
-:   @@snip [DeviceGroupTest.java]($code$/java/jdocs/tutorial_4/DeviceGroupTest.java) { #device-group-list-terminate-test }
+:   @@snip [DeviceGroupTest.java](/akka-docs/src/test/java/jdocs/tutorial_4/DeviceGroupTest.java) { #device-group-list-terminate-test }
 
 ## Creating device manager actors
 
 Going up to the next level in our hierarchy, we need to create the entry point for our device manager component in the `DeviceManager` source file. This actor is very similar to the device group actor, but creates device group actors instead of device actors:
 
 Scala
-:   @@snip [DeviceManager.scala]($code$/scala/tutorial_4/DeviceManager.scala) { #device-manager-full }
+:   @@snip [DeviceManager.scala](/akka-docs/src/test/scala/tutorial_4/DeviceManager.scala) { #device-manager-full }
 
 Java
-:   @@snip [DeviceManager.java]($code$/java/jdocs/tutorial_4/DeviceManager.java) { #device-manager-full }
+:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/tutorial_4/DeviceManager.java) { #device-manager-full }
 
 We leave tests of the device manager as an exercise for you since it is very similar to the tests we have already written for the group
 actor.

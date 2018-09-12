@@ -67,6 +67,6 @@ Since Akka runs on the JVM there are still some rules to be followed.
 
  * Closing over internal Actor state and exposing it to other threads
 
-@@snip [SharedMutableStateDocSpec.scala]($code$/scala/docs/actor/SharedMutableStateDocSpec.scala) { #mutable-state }
+@@snip [SharedMutableStateDocSpec.scala](/akka-docs/src/test/scala/docs/actor/SharedMutableStateDocSpec.scala) { #mutable-state }
 
  * Messages **should** be immutable, this is to avoid the shared mutable state trap.

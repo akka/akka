@@ -27,10 +27,10 @@ operators that create substreams are listed on @ref[Nesting and flattening opera
 A typical operation that generates substreams is `groupBy`.
 
 Scala
-:   @@snip [SubstreamDocSpec.scala]($code$/scala/docs/stream/SubstreamDocSpec.scala) { #groupBy1 }
+:   @@snip [SubstreamDocSpec.scala](/akka-docs/src/test/scala/docs/stream/SubstreamDocSpec.scala) { #groupBy1 }
 
 Java
-:   @@snip [SubstreamDocTest.java]($code$/java/jdocs/stream/SubstreamDocTest.java) { #groupBy1 }
+:   @@snip [SubstreamDocTest.java](/akka-docs/src/test/java/jdocs/stream/SubstreamDocTest.java) { #groupBy1 }
 
 ![stream-substream-groupBy1.png](../../images/stream-substream-groupBy1.png)
 
@@ -46,10 +46,10 @@ all transformations are applied to all encountered substreams in the same fashio
 So, if you add the following `Sink`, that is added to each of the substreams as in the below diagram.
 
 Scala
-:   @@snip [SubstreamDocSpec.scala]($code$/scala/docs/stream/SubstreamDocSpec.scala) { #groupBy2 }
+:   @@snip [SubstreamDocSpec.scala](/akka-docs/src/test/scala/docs/stream/SubstreamDocSpec.scala) { #groupBy2 }
 
 Java
-:   @@snip [SubstreamDocTest.java]($code$/java/jdocs/stream/SubstreamDocTest.java) { #groupBy2 }
+:   @@snip [SubstreamDocTest.java](/akka-docs/src/test/java/jdocs/stream/SubstreamDocTest.java) { #groupBy2 }
 
 ![stream-substream-groupBy2.png](../../images/stream-substream-groupBy2.png)
 
@@ -59,10 +59,10 @@ merge or concat substreams into the master stream again.
 The `mergeSubstreams` method merges an unbounded number of substreams back to the master stream.
 
 Scala
-:   @@snip [SubstreamDocSpec.scala]($code$/scala/docs/stream/SubstreamDocSpec.scala) { #groupBy3 }
+:   @@snip [SubstreamDocSpec.scala](/akka-docs/src/test/scala/docs/stream/SubstreamDocSpec.scala) { #groupBy3 }
 
 Java
-:   @@snip [SubstreamDocTest.java]($code$/java/jdocs/stream/SubstreamDocTest.java) { #groupBy3 }
+:   @@snip [SubstreamDocTest.java](/akka-docs/src/test/java/jdocs/stream/SubstreamDocTest.java) { #groupBy3 }
 
 ![stream-substream-groupBy3.png](../../images/stream-substream-groupBy3.png)
 
@@ -70,10 +70,10 @@ You can limit the number of active substreams running and being merged at a time
 with either the `mergeSubstreamsWithParallelism` or `concatSubstreams` method.
 
 Scala
-:   @@snip [SubstreamDocSpec.scala]($code$/scala/docs/stream/SubstreamDocSpec.scala) { #groupBy4 }
+:   @@snip [SubstreamDocSpec.scala](/akka-docs/src/test/scala/docs/stream/SubstreamDocSpec.scala) { #groupBy4 }
 
 Java
-:   @@snip [SubstreamDocTest.java]($code$/java/jdocs/stream/SubstreamDocTest.java) { #groupBy4 }
+:   @@snip [SubstreamDocTest.java](/akka-docs/src/test/java/jdocs/stream/SubstreamDocTest.java) { #groupBy4 }
 
 However, since the number of running (i.e. not yet completed) substreams is capped,
 be careful so that these methods do not cause deadlocks with back pressure like in the below diagram.
@@ -95,19 +95,19 @@ a new substream is generated, and the succeeding elements after split will flow 
  whereas `splitAfter` flows the next element to the new substream after the element on which predicate returned true.
 
 Scala
-:   @@snip [SubstreamDocSpec.scala]($code$/scala/docs/stream/SubstreamDocSpec.scala) { #splitWhenAfter }
+:   @@snip [SubstreamDocSpec.scala](/akka-docs/src/test/scala/docs/stream/SubstreamDocSpec.scala) { #splitWhenAfter }
 
 Java
-:   @@snip [SubstreamDocTest.java]($code$/java/jdocs/stream/SubstreamDocTest.java) { #splitWhenAfter }
+:   @@snip [SubstreamDocTest.java](/akka-docs/src/test/java/jdocs/stream/SubstreamDocTest.java) { #splitWhenAfter }
 
 These are useful when you scanned over something and you don't need to care about anything behind it.
 A typical example is counting the number of characters for each line like below.
 
 Scala
-:   @@snip [SubstreamDocSpec.scala]($code$/scala/docs/stream/SubstreamDocSpec.scala) { #wordCount }
+:   @@snip [SubstreamDocSpec.scala](/akka-docs/src/test/scala/docs/stream/SubstreamDocSpec.scala) { #wordCount }
 
 Java
-:   @@snip [SubstreamDocTest.java]($code$/java/jdocs/stream/SubstreamDocTest.java) { #wordCount }
+:   @@snip [SubstreamDocTest.java](/akka-docs/src/test/java/jdocs/stream/SubstreamDocTest.java) { #wordCount }
 
 This prints out the following output.
 
@@ -130,10 +130,10 @@ The function `f` of `flatMapConcat` transforms each input element into a `Source
 into the output stream by concatenation.
 
 Scala
-:   @@snip [SubstreamDocSpec.scala]($code$/scala/docs/stream/SubstreamDocSpec.scala) { #flatMapConcat }
+:   @@snip [SubstreamDocSpec.scala](/akka-docs/src/test/scala/docs/stream/SubstreamDocSpec.scala) { #flatMapConcat }
 
 Java
-:   @@snip [SubstreamDocTest.java]($code$/java/jdocs/stream/SubstreamDocTest.java) { #flatMapConcat }
+:   @@snip [SubstreamDocTest.java](/akka-docs/src/test/java/jdocs/stream/SubstreamDocTest.java) { #flatMapConcat }
 
 ![stream-substream-flatMapConcat1.png](../../images/stream-substream-flatMapConcat1.png)
 
@@ -151,9 +151,9 @@ Elements from all the substreams are concatenated to the sink.
  Instead, up to `breadth` number of streams emit elements at any given time.
 
 Scala
-:   @@snip [SubstreamDocSpec.scala]($code$/scala/docs/stream/SubstreamDocSpec.scala) { #flatMapMerge }
+:   @@snip [SubstreamDocSpec.scala](/akka-docs/src/test/scala/docs/stream/SubstreamDocSpec.scala) { #flatMapMerge }
 
 Java
-:   @@snip [SubstreamDocTest.java]($code$/java/jdocs/stream/SubstreamDocTest.java) { #flatMapMerge }
+:   @@snip [SubstreamDocTest.java](/akka-docs/src/test/java/jdocs/stream/SubstreamDocTest.java) { #flatMapMerge }
 
 ![stream-substream-flatMapMerge.png](../../images/stream-substream-flatMapMerge.png)

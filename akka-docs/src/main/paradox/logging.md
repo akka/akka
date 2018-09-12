@@ -25,11 +25,11 @@ Create a `LoggingAdapter` and use the `error`, `warning`, `info`, or `debug` met
 as illustrated in this example:
 
 Scala
-:   @@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #my-actor }
+:   @@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #my-actor }
 
 Java
-:   @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #imports }
-    @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #my-actor }
+:   @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #imports }
+    @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #my-actor }
 
 @@@ div { .group-scala }
 
@@ -65,10 +65,10 @@ the same line with the same severity). You may pass an array as the only
 substitution argument to have its elements be treated individually:
 
 Scala
-:   @@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #array }
+:   @@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #array }
 
 Java
-:   @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #array }
+:   @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #array }
 
 The Java `Class` of the log source is also included in the generated
 `LogEvent`. In case of a simple string this is replaced with a “marker”
@@ -259,7 +259,7 @@ using implicit parameters and thus fully customizable: create your own
 instance of `LogSource[T]` and have it in scope when creating the
 logger.
 
-@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #my-source }
+@@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #my-source }
 
 This example creates a log source which mimics traditional usage of Java
 loggers, which are based upon the originating object’s class name as log
@@ -332,11 +332,11 @@ logger available in the 'akka-slf4j' module.
 Example of creating a listener:
 
 Scala
-:   @@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #my-event-listener }
+:   @@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #my-event-listener }
 
 Java
-:   @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #imports #imports-listener }
-    @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #my-event-listener }
+:   @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #imports #imports-listener }
+    @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #my-event-listener }
 
 ## Logging to stdout during startup and shutdown
 
@@ -512,11 +512,11 @@ if it is not set to a new map. Use `log.clearMDC()`.
 @@@
 
 Scala
-:   @@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #mdc }
+:   @@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #mdc }
 
 Java
-:   @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #imports-mdc }
-    @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #mdc-actor }
+:   @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #imports-mdc }
+    @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #mdc-actor }
 
 @@@ div { .group-scala }
 
@@ -524,7 +524,7 @@ For convenience, you can mix in the `log` member into actors, instead of definin
 This trait also lets you override `def mdc(msg: Any): MDC` for specifying MDC values
 depending on current message and lets you forget about the cleanup as well, since it already does it for you.
 
-@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #mdc-actor }
+@@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #mdc-actor }
 
 @@@
 

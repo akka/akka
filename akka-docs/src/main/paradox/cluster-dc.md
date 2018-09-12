@@ -98,10 +98,10 @@ if you see this in log messages.
 You can retrieve information about what data center a member belongs to:
 
 Scala
-:  @@snip [ClusterDocSpec.scala]($code$/scala/docs/cluster/ClusterDocSpec.scala) { #dcAccess }
+:  @@snip [ClusterDocSpec.scala](/akka-docs/src/test/scala/docs/cluster/ClusterDocSpec.scala) { #dcAccess }
 
 Java
-:  @@snip [ClusterDocTest.java]($code$/java/jdocs/cluster/ClusterDocTest.java) { #dcAccess }
+:  @@snip [ClusterDocTest.java](/akka-docs/src/test/java/jdocs/cluster/ClusterDocTest.java) { #dcAccess }
 
 ## Failure Detection
 
@@ -196,7 +196,7 @@ Scala
 :  @@snip [ClusterShardingSpec.scala](/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #proxy-dc }
 
 Java
-:  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #proxy-dc }
+:  @@snip [ClusterShardingTest.java](/akka-docs/src/test/java/jdocs/sharding/ClusterShardingTest.java) { #proxy-dc }
 
 Another way to manage global entities is to make sure that certain entity ids are located in 
 only one data center by routing the messages to the right region. For example, the routing function

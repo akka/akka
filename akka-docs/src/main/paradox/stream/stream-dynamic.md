@@ -43,18 +43,18 @@ below for usage examples.
  * **Shutdown**
 
 Scala
-:   @@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #unique-shutdown }
+:   @@snip [KillSwitchDocSpec.scala](/akka-docs/src/test/scala/docs/stream/KillSwitchDocSpec.scala) { #unique-shutdown }
 
 Java
-:   @@snip [KillSwitchDocTest.java]($code$/java/jdocs/stream/KillSwitchDocTest.java) { #unique-shutdown }
+:   @@snip [KillSwitchDocTest.java](/akka-docs/src/test/java/jdocs/stream/KillSwitchDocTest.java) { #unique-shutdown }
 
  * **Abort**
 
 Scala
-:   @@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #unique-abort }
+:   @@snip [KillSwitchDocSpec.scala](/akka-docs/src/test/scala/docs/stream/KillSwitchDocSpec.scala) { #unique-abort }
 
 Java
-:   @@snip [KillSwitchDocTest.java]($code$/java/jdocs/stream/KillSwitchDocTest.java) { #unique-abort }
+:   @@snip [KillSwitchDocTest.java](/akka-docs/src/test/java/jdocs/stream/KillSwitchDocTest.java) { #unique-abort }
 
 <a id="shared-kill-switch"></a>
 ### SharedKillSwitch
@@ -66,18 +66,18 @@ Refer to the below for usage examples.
  * **Shutdown**
 
 Scala
-:   @@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #shared-shutdown }
+:   @@snip [KillSwitchDocSpec.scala](/akka-docs/src/test/scala/docs/stream/KillSwitchDocSpec.scala) { #shared-shutdown }
 
 Java
-:   @@snip [KillSwitchDocTest.java]($code$/java/jdocs/stream/KillSwitchDocTest.java) { #shared-shutdown }
+:   @@snip [KillSwitchDocTest.java](/akka-docs/src/test/java/jdocs/stream/KillSwitchDocTest.java) { #shared-shutdown }
 
  * **Abort**
 
 Scala
-:   @@snip [KillSwitchDocSpec.scala]($code$/scala/docs/stream/KillSwitchDocSpec.scala) { #shared-abort }
+:   @@snip [KillSwitchDocSpec.scala](/akka-docs/src/test/scala/docs/stream/KillSwitchDocSpec.scala) { #shared-abort }
 
 Java
-:   @@snip [KillSwitchDocTest.java]($code$/java/jdocs/stream/KillSwitchDocTest.java) { #shared-abort }
+:   @@snip [KillSwitchDocTest.java](/akka-docs/src/test/java/jdocs/stream/KillSwitchDocTest.java) { #shared-abort }
 
 @@@ note
 
@@ -103,10 +103,10 @@ It is not possible to attach any producers until this `Source` has been material
 by the fact that we only get the corresponding `Sink` as a materialized value. Usage might look like this:
 
 Scala
-:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #merge-hub }
+:   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #merge-hub }
 
 Java
-:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #merge-hub }
+:   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #merge-hub }
 
 This sequence, while might look odd at first, ensures proper startup order. Once we get the `Sink`,
 we can use it as many times as wanted. Everything that is fed to it will be delivered to the consumer we attached
@@ -120,10 +120,10 @@ to which the single producer must be attached first. Consumers can only be attac
 been materialized (i.e. the producer has been started). One example of using the `BroadcastHub`:
 
 Scala
-:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #broadcast-hub }
+:   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #broadcast-hub }
 
 Java
-:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #broadcast-hub }
+:   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #broadcast-hub }
 
 The resulting `Source` can be materialized any number of times, each materialization effectively attaching
 a new subscriber. If there are no subscribers attached to this hub then it will not drop any elements but instead
@@ -144,20 +144,20 @@ we materialize this small stream, we get back a pair of `Source` and `Sink` that
 the publish and subscribe sides of our channel.
 
 Scala
-:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-1 }
+:   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-1 }
 
 Java
-:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #pub-sub-1 }
+:   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #pub-sub-1 }
 
 We now use a few tricks to add more features. First of all, we attach a `Sink.ignore`
 at the broadcast side of the channel to keep it drained when there are no subscribers. If this behavior is not the
 desired one this line can be dropped.
 
 Scala
-:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-2 }
+:   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-2 }
 
 Java
-:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #pub-sub-2 }
+:   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #pub-sub-2 }
 
 We now wrap the `Sink` and `Source` in a `Flow` using `Flow.fromSinkAndSource`. This bundles
 up the two sides of the channel into one and forces users of it to always define a publisher and subscriber side
@@ -168,20 +168,20 @@ Finally, we add `backpressureTimeout` on the consumer side to ensure that subscr
 than 3 seconds are forcefully removed (and their stream failed).
 
 Scala
-:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-3 }
+:   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-3 }
 
 Java
-:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #pub-sub-3 }
+:   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #pub-sub-3 }
 
 The resulting Flow now has a type of `Flow[String, String, UniqueKillSwitch]` representing a publish-subscribe
 channel which can be used any number of times to attach new producers or consumers. In addition, it materializes
 to a `UniqueKillSwitch` (see [UniqueKillSwitch](#unique-kill-switch)) that can be used to deregister a single user externally:
 
 Scala
-:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-4 }
+:   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-4 }
 
 Java
-:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #pub-sub-4 }
+:   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #pub-sub-4 }
 
 ### Using the PartitionHub
 
@@ -195,10 +195,10 @@ to which the single producer must be attached first. Consumers can only be attac
 been materialized (i.e. the producer has been started). One example of using the `PartitionHub`:
 
 Scala
-:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #partition-hub }
+:   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #partition-hub }
 
 Java
-:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #partition-hub }
+:   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #partition-hub }
 
 The `partitioner` function takes two parameters; the first is the number of active consumers and the second
 is the stream element. The function should return the index of the selected consumer for the given element, 
@@ -220,17 +220,17 @@ The above example illustrate a stateless partition function. For more advanced s
 @scala[`statefulSink`] can be used. Here is an example of a stateful round-robin function:
 
 Scala
-:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #partition-hub-stateful }
+:   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #partition-hub-stateful }
 
 Java
-:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #partition-hub-stateful }
+:   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #partition-hub-stateful }
 
 Note that it is a factory of a function to to be able to hold stateful variables that are 
 unique for each materialization. @java[In this example the `partitioner` function is implemented as a class to
 be able to hold the mutable variable. A new instance of `RoundRobin` is created for each materialization of the hub.]
 
 @@@ div { .group-java }
-@@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #partition-hub-stateful-function }
+@@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #partition-hub-stateful-function }
 @@@
 
 The function takes two parameters; the first is information about active consumers, including an array of 
@@ -245,7 +245,7 @@ Note that this is a moving target since the elements are consumed concurrently. 
 a hub that routes to the consumer with least buffered elements:
 
 Scala
-:   @@snip [HubsDocSpec.scala]($code$/scala/docs/stream/HubsDocSpec.scala) { #partition-hub-fastest }
+:   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #partition-hub-fastest }
 
 Java
-:   @@snip [HubDocTest.java]($code$/java/jdocs/stream/HubDocTest.java) { #partition-hub-fastest }
+:   @@snip [HubDocTest.java](/akka-docs/src/test/java/jdocs/stream/HubDocTest.java) { #partition-hub-fastest }

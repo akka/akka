@@ -20,10 +20,10 @@ Java
 If the storage backend API only supports synchronous, blocking writes, the methods should be implemented as:
 
 Scala
-:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #sync-journal-plugin-api }
+:  @@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #sync-journal-plugin-api }
 
 Java
-:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #sync-journal-plugin-api }
+:  @@snip [LambdaPersistencePluginDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #sync-journal-plugin-api }
 
 A journal plugin must also implement the methods defined in `AsyncRecovery` for replays and sequence number recovery:
 
@@ -35,7 +35,7 @@ Java
 
 A journal plugin can be activated with the following minimal configuration:
 
-@@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-plugin-config }
+@@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-plugin-config }
 
 The journal plugin instance is an actor so the methods corresponding to requests from persistent actors
 are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
@@ -67,7 +67,7 @@ Java
 
 A snapshot store plugin can be activated with the following minimal configuration:
 
-@@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #snapshot-store-plugin-config }
+@@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #snapshot-store-plugin-config }
 
 The snapshot store instance is an actor so the methods corresponding to requests from persistent actors
 are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
@@ -102,10 +102,10 @@ The TCK is usable from Java as well as Scala projects. To test your implementati
 To include the Journal TCK tests in your test suite simply extend the provided @scala[`JournalSpec`]@java[`JavaJournalSpec`]:
 
 Scala
-:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-tck-scala }
+:  @@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-tck-scala }
 
 Java
-:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #journal-tck-java }
+:  @@snip [LambdaPersistencePluginDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #journal-tck-java }
 
 Please note that some of the tests are optional, and by overriding the `supports...` methods you give the
 TCK the needed information about which tests to run. You can implement these methods using @scala[boolean values or] the
@@ -119,19 +119,19 @@ typical scenarios.
 In order to include the `SnapshotStore` TCK tests in your test suite extend the `SnapshotStoreSpec`:
 
 Scala
-:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #snapshot-store-tck-scala }
+:  @@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #snapshot-store-tck-scala }
 
 Java
-:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #snapshot-store-tck-java }
+:  @@snip [LambdaPersistencePluginDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #snapshot-store-tck-java }
 
 In case your plugin requires some setting up (starting a mock database, removing temporary files etc.) you can override the
 `beforeAll` and `afterAll` methods to hook into the tests lifecycle:
 
 Scala
-:  @@snip [PersistencePluginDocSpec.scala]($code$/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-tck-before-after-scala }
+:  @@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-tck-before-after-scala }
 
 Java
-:  @@snip [LambdaPersistencePluginDocTest.java]($code$/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #journal-tck-before-after-java }
+:  @@snip [LambdaPersistencePluginDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #journal-tck-before-after-java }
 
 We *highly recommend* including these specifications in your test suite, as they cover a broad range of cases you
 might have otherwise forgotten to test for when writing a plugin from scratch.

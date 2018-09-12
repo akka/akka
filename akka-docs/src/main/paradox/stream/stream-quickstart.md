@@ -22,34 +22,34 @@ A stream usually begins at a source, so this is also how we start an Akka
 Stream. Before we create one, we import the full complement of streaming tools:
 
 Scala
-:   @@snip [QuickStartDocSpec.scala]($code$/scala/docs/stream/QuickStartDocSpec.scala) { #stream-imports }
+:   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #stream-imports }
 
 Java
-:   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #stream-imports }
+:   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #stream-imports }
 
 If you want to execute the code samples while you read through the quick start guide, you will also need the following imports:
 
 Scala
-:   @@snip [QuickStartDocSpec.scala]($code$/scala/docs/stream/QuickStartDocSpec.scala) { #other-imports }
+:   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #other-imports }
 
 Java
-:   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #other-imports }
+:   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #other-imports }
 
 And an @scala[object]@java[class] to hold your code, for example:
 
 Scala
-:   @@snip [QuickStartDocSpec.scala]($code$/scala/docs/stream/QuickStartDocSpec.scala) { #main-app }
+:   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #main-app }
 
 Java
-:   @@snip [Main.java]($code$/java/jdocs/stream/Main.java) { #main-app }
+:   @@snip [Main.java](/akka-docs/src/test/java/jdocs/stream/Main.java) { #main-app }
 
 Now we will start with a rather simple source, emitting the integers 1 to 100:
 
 Scala
-:   @@snip [QuickStartDocSpec.scala]($code$/scala/docs/stream/QuickStartDocSpec.scala) { #create-source }
+:   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #create-source }
 
 Java
-:   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #create-source }
+:   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #create-source }
 
 The `Source` type is parameterized with two types: the first one is the
 type of element that this source emits and the second one may signal that
@@ -63,10 +63,10 @@ first 100 natural numbers, but this source is not yet active. In order to get
 those numbers out we have to run it:
 
 Scala
-:   @@snip [QuickStartDocSpec.scala]($code$/scala/docs/stream/QuickStartDocSpec.scala) { #run-source }
+:   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #run-source }
 
 Java
-:   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #run-source }
+:   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #run-source }
 
 This line will complement the source with a consumer function—in this example
 we print out the numbers to the console—and pass this little stream
@@ -79,20 +79,20 @@ terminate, because the `ActorSystem` is never terminated. Luckily
 `runForeach` returns a @scala[`Future[Done]`]@java[`CompletionStage<Done>`] which resolves when the stream finishes:
 
 Scala
-:   @@snip [QuickStartDocSpec.scala]($code$/scala/docs/stream/QuickStartDocSpec.scala) { #run-source-and-terminate }
+:   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #run-source-and-terminate }
 
 Java
-:   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #run-source-and-terminate }
+:   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #run-source-and-terminate }
 
 You may wonder where the Actor gets created that runs the stream, and you are
 probably also asking yourself what this `materializer` means. In order to get
 this value we first need to create an Actor system:
 
 Scala
-:   @@snip [QuickStartDocSpec.scala]($code$/scala/docs/stream/QuickStartDocSpec.scala) { #create-materializer }
+:   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #create-materializer }
 
 Java
-:   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #create-materializer }
+:   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #create-materializer }
 
 There are other ways to create a materializer, e.g. from an
 `ActorContext` when using streams from within Actors. The
@@ -108,10 +108,10 @@ be reused, incorporated into a larger design. We may choose to transform the
 source of integers and write it to a file instead:
 
 Scala
-:   @@snip [QuickStartDocSpec.scala]($code$/scala/docs/stream/QuickStartDocSpec.scala) { #transform-source }
+:   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #transform-source }
 
 Java
-:   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #transform-source }
+:   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #transform-source }
 
 First we use the `scan` operator to run a computation over the whole
 stream: starting with the number 1 (@scala[`BigInt(1)`]@java[`BigInteger.ONE`]) we multiply by each of
@@ -132,7 +132,7 @@ whether the stream terminated normally or exceptionally.
 <a name="here-is-another-example-that-you-can-edit-and-run-in-the-browser-"></a>
 Here is another example that you can edit and run in the browser:
 
-@@fiddle [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #fiddle_code template=Akka layout=v75 minheight=400px }
+@@fiddle [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #fiddle_code template=Akka layout=v75 minheight=400px }
 
 
 ## Reusable Pieces
@@ -147,10 +147,10 @@ plain English), we need a starting point that is like a source but with an
 “open” input. In Akka Streams this is called a `Flow`:
 
 Scala
-:   @@snip [QuickStartDocSpec.scala]($code$/scala/docs/stream/QuickStartDocSpec.scala) { #transform-sink }
+:   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #transform-sink }
 
 Java
-:   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #transform-sink }
+:   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #transform-sink }
 
 Starting from a flow of strings we convert each to `ByteString` and then
 feed to the already known file-writing `Sink`. The resulting blueprint
@@ -167,10 +167,10 @@ attaching it to our `factorials` source—after a small adaptation to turn the
 numbers into strings:
 
 Scala
-:   @@snip [QuickStartDocSpec.scala]($code$/scala/docs/stream/QuickStartDocSpec.scala) { #use-transformed-sink }
+:   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #use-transformed-sink }
 
 Java
-:   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #use-transformed-sink }
+:   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #use-transformed-sink }
 
 ## Time-Based Processing
 
@@ -183,10 +183,10 @@ second is the factorial of one, and so on. We combine these two by forming
 strings like `"3! = 6"`.
 
 Scala
-:   @@snip [QuickStartDocSpec.scala]($code$/scala/docs/stream/QuickStartDocSpec.scala) { #add-streams }
+:   @@snip [QuickStartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/QuickStartDocSpec.scala) { #add-streams }
 
 Java
-:   @@snip [QuickStartDocTest.java]($code$/java/jdocs/stream/QuickStartDocTest.java) { #add-streams }
+:   @@snip [QuickStartDocTest.java](/akka-docs/src/test/java/jdocs/stream/QuickStartDocTest.java) { #add-streams }
 
 All operations so far have been time-independent and could have been performed
 in the same fashion on strict collections of elements. The next line
@@ -225,10 +225,10 @@ allow to control what should happen in such scenarios.
 Here's the data model we'll be working with throughout the quickstart examples:
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #model }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #model }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #model }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #model }
 
 @@@ note
 
@@ -247,10 +247,10 @@ In order to prepare our environment by creating an `ActorSystem` and `ActorMater
 which will be responsible for materializing and running the streams we are about to create:
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #materializer-setup }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #materializer-setup }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #materializer-setup }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #materializer-setup }
 
 The `ActorMaterializer` can optionally take `ActorMaterializerSettings` which can be used to define
 materialization properties, such as default buffer sizes (see also @ref:[Buffers for asynchronous operators](stream-rate.md#async-stream-buffers)), the dispatcher to
@@ -259,10 +259,10 @@ be used by the pipeline etc. These can be overridden with `withAttributes` on `F
 Let's assume we have a stream of tweets readily available. In Akka this is expressed as a @scala[`Source[Out, M]`]@java[`Source<Out, M>`]:
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweet-source }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweet-source }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweet-source }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweet-source }
 
 Streams always start flowing from a @scala[`Source[Out,M1]`]@java[`Source<Out,M1>`] then can continue through @scala[`Flow[In,Out,M2]`]@java[`Flow<In,Out,M2>`] elements or
 more advanced operators to finally be consumed by a @scala[`Sink[In,M3]`]@java[`Sink<In,M3>`] @scala[(ignore the type parameters `M1`, `M2`
@@ -278,10 +278,10 @@ however they operate on streams and not collections of data (which is a very imp
 only make sense in streaming and vice versa):
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #authors-filter-map }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #authors-filter-map }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #authors-filter-map }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #authors-filter-map }
 
 Finally in order to @ref:[materialize](stream-flows-and-basics.md#stream-materialization) and run the stream computation we need to attach
 the Flow to a @scala[`Sink`]@java[`Sink<T, M>`] that will get the Flow running. The simplest way to do this is to call
@@ -290,18 +290,18 @@ the @scala[`Sink` companion object]@java[`Sink class`].
 For now let's print each author:
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #authors-foreachsink-println }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #authors-foreachsink-println }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #authors-foreachsink-println }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #authors-foreachsink-println }
 
 or by using the shorthand version (which are defined only for the most popular Sinks such as `Sink.fold` and `Sink.foreach`):
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #authors-foreach-println }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #authors-foreach-println }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #authors-foreach-println }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #authors-foreach-println }
 
 Materializing and running a stream always requires a `Materializer` to be @scala[in implicit scope (or passed in explicitly,
 like this: `.run(materializer)`)]@java[passed in explicitly, like this: `.run(mat)`].
@@ -309,10 +309,10 @@ like this: `.run(materializer)`)]@java[passed in explicitly, like this: `.run(ma
 The complete snippet looks like this:
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #first-sample }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #first-sample }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #first-sample }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #first-sample }
 
 ## Flattening sequences in streams
 
@@ -322,10 +322,10 @@ works on Scala Collections. In order to get a flattened stream of hashtags from 
 operator:
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #hashtags-mapConcat }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #hashtags-mapConcat }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #hashtags-mapConcat }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #hashtags-mapConcat }
 
 @@@ note
 
@@ -356,10 +356,10 @@ at the expense of not reading as familiarly as collection transformations.
 Graphs are constructed using `GraphDSL` like this:
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #graph-dsl-broadcast }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #graph-dsl-broadcast }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #graph-dsl-broadcast }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #graph-dsl-broadcast }
 
 As you can see, @scala[inside the `GraphDSL` we use an implicit graph builder `b` to mutably construct the graph
 using the `~>` "edge operator" (also read as "connect" or "via" or "to"). The operator is provided implicitly
@@ -392,10 +392,10 @@ and must be handled explicitly. For example, if we are only interested in the "*
 elements*" this can be expressed using the `buffer` element:
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweets-slow-consumption-dropHead }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweets-slow-consumption-dropHead }
 
 Java
-:  @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-slow-consumption-dropHead }
+:  @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-slow-consumption-dropHead }
 
 The `buffer` element takes an explicit and required `OverflowStrategy`, which defines how the buffer should react
 when it receives another element while it is full. Strategies provided include dropping the oldest element (`dropHead`),
@@ -414,10 +414,10 @@ but in general it is possible to deal with finite streams and come up with a nic
 First, let's write such an element counter using @scala[`Sink.fold` and]@java[`Flow.of(Class)` and `Sink.fold` to]  see how the types look like:
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweets-fold-count }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweets-fold-count }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-fold-count }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-fold-count }
 
 @scala[First we prepare a reusable `Flow` that will change each incoming tweet into an integer of value `1`. We'll use this in
 order to combine those with a `Sink.fold` that will sum all `Int` elements of the stream and make its result available as
@@ -446,20 +446,20 @@ for example one that consumes a live stream of tweets within a minute, the mater
 will be different, as illustrated by this example:
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweets-runnable-flow-materialized-twice }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweets-runnable-flow-materialized-twice }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-runnable-flow-materialized-twice }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-runnable-flow-materialized-twice }
 
 Many elements in Akka Streams provide materialized values which can be used for obtaining either results of computation or
 steering these elements which will be discussed in detail in @ref:[Stream Materialization](stream-flows-and-basics.md#stream-materialization). Summing up this section, now we know
 what happens behind the scenes when we run this one-liner, which is equivalent to the multi line version above:
 
 Scala
-:   @@snip [TwitterStreamQuickstartDocSpec.scala]($code$/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweets-fold-count-oneline }
+:   @@snip [TwitterStreamQuickstartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/TwitterStreamQuickstartDocSpec.scala) { #tweets-fold-count-oneline }
 
 Java
-:   @@snip [TwitterStreamQuickstartDocTest.java]($code$/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-fold-count-oneline }
+:   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #tweets-fold-count-oneline }
 
 @@@ note
 

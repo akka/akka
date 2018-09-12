@@ -31,17 +31,17 @@ gives excellent performance in most cases.
 Dispatchers implement the `ExecutionContext` interface and can thus be used to run `Future` invocations etc.
 
 Scala
-:  @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #lookup }
+:  @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #lookup }
 
 Java
-:  @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #lookup }
+:  @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #lookup }
 ## Setting the dispatcher for an Actor
 
 So in case you want to give your `Actor` a different dispatcher than the default, you need to do two things, of which the first
 is to configure the dispatcher:
 
 <!--same config text for Scala & Java-->
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #my-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #my-dispatcher-config }
 
 @@@ note
 
@@ -55,7 +55,7 @@ You can read more about parallelism in the JDK's [ForkJoinPool documentation](ht
 Another example that uses the "thread-pool-executor":
 
 <!--same config text for Scala & Java-->
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
 
 @@@ note
 
@@ -69,23 +69,23 @@ For more options, see the default-dispatcher section of the @ref:[configuration]
 Then you create the actor as usual and define the dispatcher in the deployment configuration.
 
 Scala
-:  @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-dispatcher-in-config }
+:  @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-dispatcher-in-config }
 
 Java
-:  @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-dispatcher-in-config }
+:  @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-dispatcher-in-config }
 
 <!--same config text for Scala & Java-->
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #dispatcher-deployment-config } 
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #dispatcher-deployment-config } 
 
 An alternative to the deployment configuration is to define the dispatcher in code.
 If you define the `dispatcher` in the deployment configuration then this value will be used instead
 of programmatically provided parameter.
 
 Scala
-:  @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-dispatcher-in-code }
+:  @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-dispatcher-in-code }
 
 Java
-:  @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-dispatcher-in-code }
+:  @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-dispatcher-in-code }
 
 @@@ note
 
@@ -140,40 +140,40 @@ There are 3 different types of message dispatchers:
 
 Configuring a dispatcher with fixed thread pool size, e.g. for actors that perform blocking IO:
 
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
 
 And then using it:
 
 Scala
-:  @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-fixed-pool-size-dispatcher }
+:  @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-fixed-pool-size-dispatcher }
 
 Java
-:  @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-fixed-pool-size-dispatcher }
+:  @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-fixed-pool-size-dispatcher }
 
 Another example that uses the thread pool based on the number of cores (e.g. for CPU bound tasks)
 
 <!--same config text for Scala & Java-->
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-thread-pool-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-thread-pool-dispatcher-config }
 
 A different kind of dispatcher that uses an affinity pool may increase throughput in cases where there is relatively small
 number of actors that maintain some internal state. The affinity pool tries its best to ensure that an actor is always
 scheduled to run on the same thread. This actor to thread pinning aims to decrease CPU cache misses which can result 
 in significant throughput improvement.
 
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #affinity-pool-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #affinity-pool-dispatcher-config }
 
 Configuring a `PinnedDispatcher`:
 
 <!--same config text for Scala & Java-->
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-pinned-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-pinned-dispatcher-config }
 
 And then using it:
 
 Scala
-:  @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-pinned-dispatcher }
+:  @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-pinned-dispatcher }
 
 Java
-:  @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-pinned-dispatcher }
+:  @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-pinned-dispatcher }
 
 Note that `thread-pool-executor` configuration as per the above `my-thread-pool-dispatcher` example is
 NOT applicable. This is because every actor will have its own thread pool when using `PinnedDispatcher`,

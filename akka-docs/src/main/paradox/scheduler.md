@@ -53,34 +53,34 @@ by the `akka.scheduler.tick-duration` configuration property.
 ## Some examples
 
 Scala
-:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #imports1 }
+:  @@snip [SchedulerDocSpec.scala](/akka-docs/src/test/scala/docs/actor/SchedulerDocSpec.scala) { #imports1 }
 
 Java
-:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #imports1 }
+:  @@snip [SchedulerDocTest.java](/akka-docs/src/test/java/jdocs/actor/SchedulerDocTest.java) { #imports1 }
 
 Schedule to send the "foo"-message to the testActor after 50ms:
 
 Scala
-:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-message } 
+:  @@snip [SchedulerDocSpec.scala](/akka-docs/src/test/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-message } 
 
 Java
-:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-message }
+:  @@snip [SchedulerDocTest.java](/akka-docs/src/test/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-message }
 
 Schedule a @scala[function]@java[`Runnable`], that sends the current time to the testActor, to be executed after 50ms:
 
 Scala
-:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-thunk }
+:  @@snip [SchedulerDocSpec.scala](/akka-docs/src/test/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-thunk }
 
 Java
-:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-thunk }
+:  @@snip [SchedulerDocTest.java](/akka-docs/src/test/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-thunk }
 
 Schedule to send the "Tick"-message to the `tickActor` after 0ms repeating every 50ms:
 
 Scala
-:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-recurring }
+:  @@snip [SchedulerDocSpec.scala](/akka-docs/src/test/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-recurring }
 
 Java
-:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-recurring }
+:  @@snip [SchedulerDocTest.java](/akka-docs/src/test/java/jdocs/actor/SchedulerDocTest.java) { #schedule-recurring }
 
 @@@ warning
 

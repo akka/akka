@@ -28,10 +28,10 @@ In combination with the queue, the @ref[`throttle`](./../Source-or-Flow/throttle
 ## Example
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #source-queue }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #source-queue }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #source-queue }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #source-queue }
 
 ## Reactive Streams Semantics
 
