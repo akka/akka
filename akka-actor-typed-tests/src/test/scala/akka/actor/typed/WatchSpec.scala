@@ -48,11 +48,11 @@ class WatchSpec extends ActorTestKit
   import WatchSpec._
 
   class WatchSetup {
-    val terminator = systemActor(terminatorBehavior)
+    val terminator = spawn(terminatorBehavior)
     val receivedTerminationSignal: Promise[Terminated] = Promise()
     val watchProbe = TestProbe[Done]()
 
-    val watcher = systemActor(
+    val watcher = spawn(
       Behaviors.supervise(
         Behaviors.receive[StartWatching] {
           case (ctx, StartWatching(watchee)) ⇒
@@ -155,11 +155,11 @@ class WatchSpec extends ActorTestKit
     }
 
     class WatchWithSetup {
-      val terminator = systemActor(terminatorBehavior)
+      val terminator = spawn(terminatorBehavior)
       val receivedTerminationSignal: Promise[Message] = Promise()
       val watchProbe = TestProbe[Done]()
 
-      val watcher = systemActor(
+      val watcher = spawn(
         Behaviors.supervise(
           Behaviors.receive[Message] {
             case (ctx, StartWatchingWith(watchee, msg)) ⇒
@@ -191,11 +191,11 @@ class WatchSpec extends ActorTestKit
     }
 
     "allow watch message definition after watch using unwatch" in {
-      val terminator = systemActor(terminatorBehavior)
+      val terminator = spawn(terminatorBehavior)
       val receivedTerminationSignal: Promise[Message] = Promise()
       val watchProbe = TestProbe[Done]()
 
-      val watcher = systemActor(
+      val watcher = spawn(
         Behaviors.supervise(
           Behaviors.receive[Message] {
             case (ctx, StartWatching(watchee)) ⇒
@@ -221,11 +221,11 @@ class WatchSpec extends ActorTestKit
     }
 
     "allow watch message redefinition using unwatch" in {
-      val terminator = systemActor(terminatorBehavior)
+      val terminator = spawn(terminatorBehavior)
       val receivedTerminationSignal: Promise[Message] = Promise()
       val watchProbe = TestProbe[Done]()
 
-      val watcher = systemActor(
+      val watcher = spawn(
         Behaviors.supervise(
           Behaviors.receive[Message] {
             case (ctx, StartWatchingWith(watchee, msg)) ⇒
@@ -248,10 +248,10 @@ class WatchSpec extends ActorTestKit
     }
 
     class ErrorTestSetup {
-      val terminator = systemActor(terminatorBehavior)
+      val terminator = spawn(terminatorBehavior)
       private val stopProbe = TestProbe[Done]()
 
-      val watcher = systemActor(
+      val watcher = spawn(
         Behaviors.supervise(
           Behaviors.receive[Message] {
             case (ctx, StartWatchingWith(watchee, msg)) ⇒
