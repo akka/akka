@@ -7,7 +7,7 @@ package akka.actor.typed.internal
 import akka.actor.typed
 import akka.actor.typed.Behavior.{ SameBehavior, UnhandledBehavior }
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
-import akka.actor.typed.{ ActorContext, ActorRef, Behavior, BehaviorInterceptor, ExtensibleBehavior, PreStartTarget, ReceiveTarget, Signal, SignalTarget, WrappingBehavior }
+import akka.actor.typed.{ ActorContext, ActorRef, Behavior, BehaviorInterceptor, ExtensibleBehavior, Signal, WrappingBehavior }
 import akka.annotation.InternalApi
 import akka.util.LineNumbers
 
@@ -35,6 +35,8 @@ private[akka] object InterceptorImpl {
 @InternalApi
 private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterceptor[O, I], val nestedBehavior: Behavior[I])
   extends ExtensibleBehavior[O] with WrappingBehavior[O, I] {
+
+  import BehaviorInterceptor._
 
   // invoked pre-start to start/de-duplicate the initial behavior stack
   def preStart(ctx: typed.ActorContext[O]): Behavior[O] = {
@@ -95,6 +97,8 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
  */
 @InternalApi
 private[akka] final case class MonitorInterceptor[T](actorRef: ActorRef[T]) extends BehaviorInterceptor[T, T] {
+  import BehaviorInterceptor._
+
   override def aroundReceive(ctx: ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     actorRef ! msg
     target(msg)
@@ -128,6 +132,7 @@ private[akka] object WidenedInterceptor {
 @InternalApi
 private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction[O, I]) extends BehaviorInterceptor[O, I] {
   import WidenedInterceptor._
+  import BehaviorInterceptor._
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
     // can only be elimintated if it is the same partial function

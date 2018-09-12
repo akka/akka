@@ -7,10 +7,10 @@ package akka.actor.typed
 import java.io.IOException
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 
-import akka.actor.{ ActorInitializationException, typed }
+import akka.actor.ActorInitializationException
 import akka.actor.typed.scaladsl.{ Behaviors, MutableBehavior }
 import akka.actor.typed.scaladsl.Behaviors._
-import akka.testkit.{ ErrorFilter, EventFilter }
+import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.testkit.typed._
 import com.typesafe.config.ConfigFactory
@@ -244,6 +244,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
 }
 
 class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+  import BehaviorInterceptor._
 
   override def config = ConfigFactory.parseString(
     """
@@ -720,7 +721,7 @@ class SupervisionSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
                         probe.ref ! new RuntimeException().getStackTrace.toVector
                         Behaviors.stopped
                     }).onFailure[RuntimeException](SupervisorStrategy.resume)
-                ) // whatever
+                )
               ).onFailure[IllegalArgumentException](SupervisorStrategy.restartWithLimit(23, 10.seconds))
             )
           ).onFailure[RuntimeException](SupervisorStrategy.restart)

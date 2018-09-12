@@ -5,7 +5,7 @@
 package akka.actor.typed.internal
 
 import akka.actor.typed.internal.adapter.AbstractLogger
-import akka.actor.typed.{ ActorContext, Behavior, BehaviorInterceptor, PreStartTarget, ReceiveTarget, Signal, SignalTarget, WrappingBehavior }
+import akka.actor.typed.{ ActorContext, Behavior, BehaviorInterceptor, Signal, WrappingBehavior }
 import akka.annotation.InternalApi
 
 import scala.collection.immutable.HashMap
@@ -35,6 +35,8 @@ import scala.collection.immutable.HashMap
 @InternalApi private[akka] final class WithMdcBehaviorInterceptor[T] private (
   staticMdc:     Map[String, Any],
   mdcForMessage: T ⇒ Map[String, Any]) extends BehaviorInterceptor[T, T] {
+
+  import BehaviorInterceptor._
 
   override def preStart(ctx: ActorContext[T], target: PreStartTarget[T]): Behavior[T] = {
     // when declaring we expect the outermost to win

@@ -8,7 +8,6 @@ package internal
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.actor.DeadLetterSuppression
-import akka.actor.typed.Behavior.DeferredBehavior
 import akka.actor.typed.SupervisorStrategy._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi

@@ -8,11 +8,12 @@ import akka.Done
 import akka.actor.testkit.typed.TE
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed
-import akka.actor.typed.{ Behavior, BehaviorInterceptor, PostStop, ReceiveTarget, Signal, SignalTarget, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ Behavior, BehaviorInterceptor, PostStop, Signal, TypedAkkaSpecWithShutdown }
 
 import scala.concurrent.Promise
 
 class StopSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+  import BehaviorInterceptor._
 
   "Stopping an actor" should {
 

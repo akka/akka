@@ -6,7 +6,7 @@ package akka.persistence.typed.internal
 
 import akka.Done
 import akka.actor.typed
-import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, BehaviorInterceptor, PostStop, ReceiveTarget, Signal, SignalTarget, SupervisorStrategy }
+import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, BehaviorInterceptor, PostStop, Signal, SupervisorStrategy }
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.persistence._
@@ -72,9 +72,10 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
           internalStash = internalStash
         )
 
-        // needs to accept AnyRef since we also can get messages from the journal
+        // needs to accept Any since we also can get messages from the journal
         // not part of the protocol
         val onStopInterceptor = new BehaviorInterceptor[Any, Any] {
+          import BehaviorInterceptor._
           def aroundReceive(ctx: typed.ActorContext[Any], msg: Any, target: ReceiveTarget[Any]): Behavior[Any] = {
             target(msg)
           }

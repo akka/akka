@@ -608,6 +608,7 @@ class NestedDeferredActorContextSpec extends ActorContextSpec {
 }
 
 class InterceptActorContextSpec extends ActorContextSpec {
+  import BehaviorInterceptor._
 
   def tap[T] = new BehaviorInterceptor[T, T] {
     override def aroundReceive(ctx: ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] =

@@ -6,15 +6,28 @@ package akka.actor.typed
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.WordSpecLike
-
 import scala.concurrent.duration._
 
-class InterceptSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShutdown {
+import akka.actor.ActorInitializationException
+import com.typesafe.config.ConfigFactory
 
-  def snitchingInterceptor(probe: ActorRef[String]) = new BehaviorInterceptor[String, String] {
+class InterceptSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWithShutdown {
+  import BehaviorInterceptor._
+
+  override def config = ConfigFactory.parseString(
+    """
+      akka.loggers = [akka.testkit.TestEventListener]
+    """)
+
+  // FIXME eventfilter support in typed testkit
+  import scaladsl.adapter._
+  implicit val untypedSystem = system.toUntyped
+
+  private def snitchingInterceptor(probe: ActorRef[String]) = new BehaviorInterceptor[String, String] {
     override def aroundReceive(ctx: ActorContext[String], msg: String, target: ReceiveTarget[String]): Behavior[String] = {
       probe ! ("before " + msg)
       val b = target(msg)
@@ -179,6 +192,79 @@ class InterceptSpec extends ActorTestKit with WordSpecLike with TypedAkkaSpecWit
       val probe = TestProbe()
       probe.expectTerminated(ref, 3.seconds)
       innerBehaviorStarted.get should ===(false)
+    }
+
+  }
+
+  "intercept with nested setup" in {
+    val probe = TestProbe[String]()
+    val interceptor = snitchingInterceptor(probe.ref)
+
+    val ref: ActorRef[String] = spawn(Behaviors.intercept(interceptor)(
+      Behaviors.setup { _ ⇒
+        var count = 0
+        Behaviors.receiveMessage[String] { m ⇒
+          count += 1
+          probe.ref ! s"actual behavior $m-$count"
+          Behaviors.same
+        }
+      }
+    ))
+
+    ref ! "a"
+    probe.expectMessage("before a")
+    probe.expectMessage("actual behavior a-1")
+    probe.expectMessage("after a")
+
+    ref ! "b"
+    probe.expectMessage("before b")
+    probe.expectMessage("actual behavior b-2")
+    probe.expectMessage("after b")
+  }
+
+  "intercept with recursivly setup" in {
+    val probe = TestProbe[String]()
+    val interceptor = snitchingInterceptor(probe.ref)
+
+    def next(count1: Int): Behavior[String] = {
+      Behaviors.intercept(interceptor)(
+        Behaviors.setup { _ ⇒
+          var count2 = 0
+          Behaviors.receiveMessage[String] { m ⇒
+            count2 += 1
+            probe.ref ! s"actual behavior $m-$count1-$count2"
+            next(count1 + 1)
+          }
+        }
+      )
+    }
+
+    val ref: ActorRef[String] = spawn(next(1))
+
+    ref ! "a"
+    probe.expectMessage("before a")
+    probe.expectMessage("actual behavior a-1-1")
+    probe.expectMessage("after a")
+
+    ref ! "b"
+    probe.expectMessage("before b")
+    probe.expectMessage("actual behavior b-2-1")
+    probe.expectMessage("after b")
+
+    ref ! "c"
+    probe.expectMessage("before c")
+    probe.expectMessage("actual behavior c-3-1")
+    probe.expectMessage("after c")
+  }
+
+  "not allow intercept setup(same)" in {
+    val probe = TestProbe[String]()
+    val interceptor = snitchingInterceptor(probe.ref)
+
+    EventFilter[ActorInitializationException](occurrences = 1).intercept {
+      val ref = spawn(Behaviors.intercept(interceptor)(
+        Behaviors.setup[String] { _ ⇒ Behaviors.same[String] }))
+      probe.expectTerminated(ref, probe.remainingOrDefault)
     }
 
   }

@@ -10,8 +10,6 @@ import akka.annotation.InternalApi
 import akka.actor.typed.{ ActorContext ⇒ AC }
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
 
-import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
-
 /**
  * INTERNAL API
  */

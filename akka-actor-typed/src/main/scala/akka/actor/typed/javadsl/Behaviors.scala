@@ -9,8 +9,9 @@ import java.util.function.{ Function ⇒ JFunction }
 
 import akka.actor.typed.{ ActorRef, Behavior, BehaviorInterceptor, ExtensibleBehavior, Signal, SupervisorStrategy }
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
+import akka.actor.typed.scaladsl
 import akka.annotation.{ ApiMayChange, DoNotInherit }
-import akka.japi.function.{ Procedure2, Function2 ⇒ JapiFunction2 }
+import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
 import akka.japi.pf.PFBuilder
 
 import scala.collection.JavaConverters._
@@ -171,7 +172,7 @@ object Behaviors {
    * Intercept messages and signals for a `behavior` by first passing them to a [[akka.actor.typed.BehaviorInterceptor]]
    *
    * When a behavior returns a new behavior as a result of processing a signal or message and that behavior already contains
-   * the same interceptor (defined by the `isSame` method on the `BehaviorInterceptor`) only the innermost interceptor
+   * the same interceptor (defined by the [[akka.actor.typed.BehaviorInterceptor#isSame]] method) only the innermost interceptor
    * is kept. This is to protect against stack overflow when recursively defining behaviors.
    */
   def intercept[O, I](behaviorInterceptor: BehaviorInterceptor[O, I], behavior: Behavior[I]): Behavior[O] =
@@ -183,9 +184,8 @@ object Behaviors {
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
    */
-  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] = {
-    akka.actor.typed.scaladsl.Behaviors.monitor(monitor, behavior)
-  }
+  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
+    scaladsl.Behaviors.monitor(monitor, behavior)
 
   /**
    * Wrap the given behavior such that it is restarted (i.e. reset to its

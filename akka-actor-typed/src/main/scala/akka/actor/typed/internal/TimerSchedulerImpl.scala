@@ -13,7 +13,6 @@ import akka.dispatch.ExecutionContexts
 import akka.util.JavaDurationConverters._
 
 import scala.concurrent.duration.FiniteDuration
-import scala.reflect.ClassTag
 
 /**
  * INTERNAL API
@@ -160,6 +159,7 @@ import scala.reflect.ClassTag
 @InternalApi
 private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T]) extends BehaviorInterceptor[AnyRef, T] {
   import TimerSchedulerImpl._
+  import BehaviorInterceptor._
 
   override def aroundReceive(ctx: typed.ActorContext[AnyRef], msg: AnyRef, target: ReceiveTarget[T]): Behavior[T] = {
     val intercepted = msg match {

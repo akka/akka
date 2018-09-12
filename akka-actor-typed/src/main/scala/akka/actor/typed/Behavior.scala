@@ -57,7 +57,7 @@ sealed abstract class Behavior[T] { behavior ⇒
  * Extension point for implementing custom behaviors in addition to the existing
  * set of behaviors available through the DSLs in [[akka.actor.typed.scaladsl.Behaviors]] and [[akka.actor.typed.javadsl.Behaviors]]
  *
- * Note that behaviors that keeps an inner behavior, and intercepts messages for it should not be implemented as
+ * Note that behaviors that keep an inner behavior, and intercepts messages for it should not be implemented as
  * an extensible behavior but should instead use the [[BehaviorInterceptor]]
  */
 abstract class ExtensibleBehavior[T] extends Behavior[T] {
@@ -266,7 +266,6 @@ object Behavior {
     behavior match {
       case SameBehavior                  ⇒ current
       case UnhandledBehavior             ⇒ current
-      // FIXME? recurse here, this wouldn't start tap(setup(x => Same))
       case deferred: DeferredBehavior[T] ⇒ canonicalize(deferred(ctx), deferred, ctx)
       case other                         ⇒ other
     }
@@ -286,19 +285,18 @@ object Behavior {
       case UnhandledBehavior                ⇒ unhandled
       case stopped: StoppedBehavior[T]      ⇒ stopped.asInstanceOf[Behavior[U]] // won't receive more messages so cast is safe
       case deferred: DeferredBehavior[T]    ⇒ wrap(currentBehavior, start(deferred, ctx), ctx)(f)
-      // FIXME? recurse here, this wouldn't start+wrap tap(setup(x => Same))
       case other                            ⇒ f(other)
     }
 
   /**
-   * Starts deferred behavior and nested deferred behaviors until all deferred behaviors in the stack is started
+   * Starts deferred behavior and nested deferred behaviors until all deferred behaviors in the stack are started
    * and then the resulting behavior is returned.
    */
-  // TODO no longer @tailrec
   def start[T](behavior: Behavior[T], ctx: ActorContext[T]): Behavior[T] = {
+    // TODO can this be made @tailrec?
     behavior match {
       case innerDeferred: DeferredBehavior[T] ⇒ start(innerDeferred(ctx), ctx)
-      case wrapped: WrappingBehavior[T, Any] ⇒
+      case wrapped: WrappingBehavior[T, Any] @unchecked ⇒
         // make sure that a deferred behavior wrapped inside some other behavior is also started
         val startedInner = start(wrapped.nestedBehavior, ctx.asInstanceOf[ActorContext[Any]])
         if (startedInner eq wrapped.nestedBehavior) wrapped
@@ -309,21 +307,20 @@ object Behavior {
 
   /**
    * Go through the behavior stack and apply a predicate to see if any nested behavior
-   * satisfies it. The stack must not contain any unstarted deferred behavior or an exception
+   * satisfies it. The stack must not contain any unstarted deferred behavior or an `IllegalArgumentException`
    * will be thrown.
    */
-
   def existsInStack[T](behavior: Behavior[T])(p: Behavior[T] ⇒ Boolean): Boolean = {
     @tailrec
     def loop(b: Behavior[T]): Boolean =
       b match {
-        case b if p(b) ⇒ true
-        case wrappingBehavior: WrappingBehavior[T, T] ⇒
+        case _ if p(b) ⇒ true
+        case wrappingBehavior: WrappingBehavior[T, T] @unchecked ⇒
           loop(wrappingBehavior.nestedBehavior)
         case d: DeferredBehavior[T] ⇒
           throw new IllegalArgumentException(
             "Cannot verify behavior existence when there are deferred in the behavior stack, " +
-              "Behavior.start the stack first.")
+              s"Behavior.start the stack first. This is probably a bug, please create an issue. $d")
         case _ ⇒ false
       }
 
@@ -339,7 +336,6 @@ object Behavior {
     behavior match {
       case SameBehavior | UnhandledBehavior ⇒
         throw new IllegalArgumentException(s"cannot use $behavior as initial behavior")
-      // FIXME? should we loop here as well - tap(SameBehavior, _, _) would pass right now
       case x ⇒ x
     }
 

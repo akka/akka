@@ -8,19 +8,20 @@ import akka.annotation.DoNotInherit
 
 /**
  * A behavior interceptor allows for intercepting message and signal reception and perform arbitrary logic -
- * transform, filter, send to a side channel etc. It is the core API for decoration of behaviors. Many prewritten
+ * transform, filter, send to a side channel etc. It is the core API for decoration of behaviors. Many built-in
  * intercepting behaviors are provided through factories in the respective `Behaviors`.
  *
  * @tparam O The outer message type – the type of messages the intercepting behavior will accept
  * @tparam I The inner message type - the type of message the wrapped behavior accepts
  */
-// FIXME separate types for javadsl and scaladsl to provide the different ctx-types?
 abstract class BehaviorInterceptor[O, I] {
+  import BehaviorInterceptor._
 
   /**
    * Override to intercept actor startup. To trigger startup of
-   * the next behavior in the stack, call `target.start()`. The returned behavior will be the
-   * "started" behavior of the actor used to accept the next message or signal.
+   * the next behavior in the stack, call `target.start()`.
+   * @return The returned behavior will be the "started" behavior of the actor used to accept
+   *         the next message or signal.
    */
   def preStart(ctx: ActorContext[I], target: PreStartTarget[I]): Behavior[I] =
     target.start()
@@ -43,7 +44,7 @@ abstract class BehaviorInterceptor[O, I] {
   def aroundSignal(ctx: ActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I]
 
   /**
-   * @return true if this behavior logically the same as another behavior interceptor and can therefore be eliminated
+   * @return `true` if this behavior logically the same as another behavior interceptor and can therefore be eliminated
    *         (to avoid building infinitely growing stacks of behaviors)? Default implementation is based on instance
    *         equality. Override to provide use case specific logic.
    */
@@ -51,32 +52,36 @@ abstract class BehaviorInterceptor[O, I] {
 
 }
 
-/**
- * Abstraction of passing the pre-start on further in the behavior stack
- *
- * Not for user extension
- */
-@DoNotInherit
-trait PreStartTarget[T] {
-  def start(): Behavior[T]
-}
+object BehaviorInterceptor {
 
-/**
- * Abstraction of passing the message on further in the behavior stack
- *
- * Not for user extension
- */
-@DoNotInherit
-trait ReceiveTarget[T] {
-  def apply(msg: T): Behavior[T]
-}
+  /**
+   * Abstraction of passing the on further in the behavior stack in [[BehaviorInterceptor#preStart]].
+   *
+   * Not for user extension
+   */
+  @DoNotInherit
+  trait PreStartTarget[T] {
+    def start(): Behavior[T]
+  }
 
-/**
- * Abstraction of passing the signal on further in the behavior stack
- *
- * Not for user extension
- */
-@DoNotInherit
-trait SignalTarget[T] {
-  def apply(signal: Signal): Behavior[T]
+  /**
+   * Abstraction of passing the message on further in the behavior stack in [[BehaviorInterceptor#aroundReceive]].
+   *
+   * Not for user extension
+   */
+  @DoNotInherit
+  trait ReceiveTarget[T] {
+    def apply(msg: T): Behavior[T]
+  }
+
+  /**
+   * Abstraction of passing the signal on further in the behavior stack in [[BehaviorInterceptor#aroundReceive]].
+   *
+   * Not for user extension
+   */
+  @DoNotInherit
+  trait SignalTarget[T] {
+    def apply(signal: Signal): Behavior[T]
+  }
+
 }
