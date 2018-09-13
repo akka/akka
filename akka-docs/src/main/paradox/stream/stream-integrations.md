@@ -30,10 +30,10 @@ the `ask` and the mailbox of the actor will not be filled with more messages tha
 `parallelism` of the `ask` operator (similarly to how the `mapAsync` operator works).
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #ask }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #ask }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #ask }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #ask }
 
 Note that the messages received in the actor will be in the same order as
 the stream elements, i.e. the `parallelism` does not change the ordering
@@ -48,10 +48,10 @@ reply will complete the  @scala[`Future`]@java[`CompletionStage`] of the `ask` a
 In case the target actor is stopped, the operator will fail with an `AskStageTargetActorTerminatedException`
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #ask-actor }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #ask-actor }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #ask-actor }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #ask-actor }
 
 The stream can be completed with failure by sending `akka.actor.Status.Failure` as reply from the actor.
 
@@ -85,18 +85,18 @@ given `onCompleteMessage` will be sent to the destination actor. When the stream
 failure a `akka.actor.Status.Failure` message will be sent to the destination actor.
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #actorRefWithAck }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #actorRefWithAck }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #actorRefWithAck }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #actorRefWithAck }
 
 The receiving actor would then need to be implemented similar to the following:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #actorRefWithAck-actor }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #actorRefWithAck-actor }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #actorRefWithAck-actor }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #actorRefWithAck-actor }
 
 Note that replying to the sender of the elements (the "stream") is required as lack of those ack signals would be interpreted
 as back-pressure (as intended), and no new elements will be sent into the actor until it acknowledges some elements.
@@ -141,10 +141,10 @@ was dropped. Can also complete  with `QueueOfferResult.Failure` - when stream fa
 `QueueOfferResult.QueueClosed` when downstream is completed.
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #source-queue }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #source-queue }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #source-queue }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #source-queue }
 
 When used from an actor you typically `pipe` the result of the @scala[`Future`]@java[`CompletionStage`] back to the actor to
 continue processing.
@@ -178,43 +178,43 @@ For example, sending emails to the authors of selected tweets using an external
 email service:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #email-server-send }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #email-server-send }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #email-server-send }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #email-server-send }
 
 We start with the tweet stream of authors:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #tweet-authors}
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #tweet-authors}
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #tweet-authors }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #tweet-authors }
 
 Assume that we can lookup their email address using:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #email-address-lookup }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #email-address-lookup }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #email-address-lookup }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #email-address-lookup }
 
 Transforming the stream of authors to a stream of email addresses by using the `lookupEmail`
 service can be done with `mapAsync`:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #email-addresses-mapAsync }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #email-addresses-mapAsync }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #email-addresses-mapAsync }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #email-addresses-mapAsync }
 
 Finally, sending the emails:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #send-emails }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #send-emails }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #send-emails }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #send-emails }
 
 `mapAsync` is applying the given function that is calling out to the external service to
 each of the elements as they pass through this processing step. The function returns a @scala[`Future`]@java[`CompletionStage`]
@@ -237,10 +237,10 @@ Note that `mapAsync` preserves the order of the stream elements. In this example
 is not important and then we can use the more efficient `mapAsyncUnordered`:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #external-service-mapAsyncUnordered }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #external-service-mapAsyncUnordered }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #external-service-mapAsyncUnordered }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #external-service-mapAsyncUnordered }
 
 In the above example the services conveniently returned a  @scala[`Future`]@java[`CompletionStage`] of the result.
 If that is not the case you need to wrap the call in a  @scala[`Future`]@java[`CompletionStage`]. If the service call
@@ -248,23 +248,23 @@ involves blocking you must also make sure that you run it on a dedicated executi
 avoid starvation and disturbance of other tasks in the system.
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #blocking-mapAsync }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #blocking-mapAsync }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #blocking-mapAsync }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #blocking-mapAsync }
 
 The configuration of the `"blocking-dispatcher"` may look something like:
 
-@@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #blocking-dispatcher-config }
+@@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #blocking-dispatcher-config }
 
 An alternative for blocking calls is to perform them in a `map` operation, still using a
 dedicated dispatcher for that operation.
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #blocking-map }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #blocking-map }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #blocking-map }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #blocking-map }
 
 However, that is not exactly the same as `mapAsync`, since the `mapAsync` may run
 several calls concurrently, but `map` performs them one at a time.
@@ -273,10 +273,10 @@ For a service that is exposed as an actor, or if an actor is used as a gateway i
 external service, you can use `ask`:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #save-tweets }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #save-tweets }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #save-tweets }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #save-tweets }
 
 Note that if the `ask` is not completed within the given timeout the stream is completed with failure.
 If that is not desired outcome you can use `recover` on the `ask` @scala[`Future`]@java[`CompletionStage`].
@@ -305,10 +305,10 @@ successive calls as long as there is downstream demand of several elements.
 Here is a fictive service that we can use to illustrate these aspects.
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #sometimes-slow-service }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #sometimes-slow-service }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #sometimes-slow-service }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #sometimes-slow-service }
 
 Elements starting with a lower case character are simulated to take longer time
 to process.
@@ -316,10 +316,10 @@ to process.
 Here is how we can use it with `mapAsync`:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #sometimes-slow-mapAsync }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #sometimes-slow-mapAsync }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #sometimes-slow-mapAsync }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #sometimes-slow-mapAsync }
 
 The output may look like this:
 
@@ -377,10 +377,10 @@ calls are limited by the buffer size (4) of the `ActorMaterializerSettings`.
 Here is how we can use the same service with `mapAsyncUnordered`:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #sometimes-slow-mapAsyncUnordered }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #sometimes-slow-mapAsyncUnordered }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #sometimes-slow-mapAsyncUnordered }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #sometimes-slow-mapAsyncUnordered }
 
 The output may look like this:
 
@@ -451,34 +451,34 @@ An incomplete list of other implementations:
 The two most important interfaces in Reactive Streams are the `Publisher` and `Subscriber`.
 
 Scala
-:   @@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #imports }
+:   @@snip [ReactiveStreamsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #imports }
 
 Java
-:   @@snip [ReactiveStreamsDocTest.java]($code$/java/jdocs/stream/ReactiveStreamsDocTest.java) { #imports }
+:   @@snip [ReactiveStreamsDocTest.java](/akka-docs/src/test/java/jdocs/stream/ReactiveStreamsDocTest.java) { #imports }
 
 Let us assume that a library provides a publisher of tweets:
 
 Scala
-:   @@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #tweets-publisher }
+:   @@snip [ReactiveStreamsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #tweets-publisher }
 
 Java
-:   @@snip [ReactiveStreamsDocTest.java]($code$/java/jdocs/stream/ReactiveStreamsDocTest.java) { #tweets-publisher }
+:   @@snip [ReactiveStreamsDocTest.java](/akka-docs/src/test/java/jdocs/stream/ReactiveStreamsDocTest.java) { #tweets-publisher }
 
 and another library knows how to store author handles in a database:
 
 Scala
-:   @@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #author-storage-subscriber }
+:   @@snip [ReactiveStreamsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #author-storage-subscriber }
 
 Java
-:   @@snip [ReactiveStreamsDocTest.java]($code$/java/jdocs/stream/ReactiveStreamsDocTest.java) { #author-storage-subscriber }
+:   @@snip [ReactiveStreamsDocTest.java](/akka-docs/src/test/java/jdocs/stream/ReactiveStreamsDocTest.java) { #author-storage-subscriber }
 
 Using an Akka Streams `Flow` we can transform the stream and connect those:
 
 Scala
-:   @@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #authors #connect-all }
+:   @@snip [ReactiveStreamsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #authors #connect-all }
 
 Java
-:   @@snip [ReactiveStreamsDocTest.java]($code$/java/jdocs/stream/ReactiveStreamsDocTest.java) { #authors #connect-all }
+:   @@snip [ReactiveStreamsDocTest.java](/akka-docs/src/test/java/jdocs/stream/ReactiveStreamsDocTest.java) { #authors #connect-all }
 
 The `Publisher` is used as an input `Source` to the flow and the
 `Subscriber` is used as an output `Sink`.
@@ -488,10 +488,10 @@ materializes to a `Processor` when `run()` is called. `run()` itself can be call
 times, resulting in a new `Processor` instance each time.
 
 Scala
-:   @@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #flow-publisher-subscriber }
+:   @@snip [ReactiveStreamsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #flow-publisher-subscriber }
 
 Java
-:   @@snip [ReactiveStreamsDocTest.java]($code$/java/jdocs/stream/ReactiveStreamsDocTest.java) { #flow-publisher-subscriber }
+:   @@snip [ReactiveStreamsDocTest.java](/akka-docs/src/test/java/jdocs/stream/ReactiveStreamsDocTest.java) { #flow-publisher-subscriber }
 
 A publisher can be connected to a subscriber with the `subscribe` method.
 
@@ -499,10 +499,10 @@ It is also possible to expose a `Source` as a `Publisher`
 by using the Publisher-`Sink`:
 
 Scala
-:   @@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #source-publisher }
+:   @@snip [ReactiveStreamsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #source-publisher }
 
 Java
-:   @@snip [ReactiveStreamsDocTest.java]($code$/java/jdocs/stream/ReactiveStreamsDocTest.java) { #source-publisher }
+:   @@snip [ReactiveStreamsDocTest.java](/akka-docs/src/test/java/jdocs/stream/ReactiveStreamsDocTest.java) { #source-publisher }
 
 A publisher that is created with  @scala[`Sink.asPublisher(fanout = false)`]@java[`Sink.asPublisher(AsPublisher.WITHOUT_FANOUT)`] supports only a single subscription.
 Additional subscription attempts will be rejected with an `IllegalStateException`.
@@ -510,17 +510,17 @@ Additional subscription attempts will be rejected with an `IllegalStateException
 A publisher that supports multiple subscribers using fan-out/broadcasting is created as follows:
 
 Scala
-:   @@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #author-alert-subscriber #author-storage-subscriber }
+:   @@snip [ReactiveStreamsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #author-alert-subscriber #author-storage-subscriber }
 
 Java
-:   @@snip [ReactiveStreamsDocTest.java]($code$/java/jdocs/stream/ReactiveStreamsDocTest.java) { #author-alert-subscriber #author-storage-subscriber }
+:   @@snip [ReactiveStreamsDocTest.java](/akka-docs/src/test/java/jdocs/stream/ReactiveStreamsDocTest.java) { #author-alert-subscriber #author-storage-subscriber }
 
 
 Scala
-:   @@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #source-fanoutPublisher }
+:   @@snip [ReactiveStreamsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #source-fanoutPublisher }
 
 Java
-:   @@snip [ReactiveStreamsDocTest.java]($code$/java/jdocs/stream/ReactiveStreamsDocTest.java) { #source-fanoutPublisher }
+:   @@snip [ReactiveStreamsDocTest.java](/akka-docs/src/test/java/jdocs/stream/ReactiveStreamsDocTest.java) { #source-fanoutPublisher }
 
 The input buffer size of the operator controls how far apart the slowest subscriber can be from the fastest subscriber
 before slowing down the stream.
@@ -529,19 +529,19 @@ To make the picture complete, it is also possible to expose a `Sink` as a `Subsc
 by using the Subscriber-`Source`:
 
 Scala
-:   @@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #sink-subscriber }
+:   @@snip [ReactiveStreamsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #sink-subscriber }
 
 Java
-:   @@snip [ReactiveStreamsDocTest.java]($code$/java/jdocs/stream/ReactiveStreamsDocTest.java) { #sink-subscriber }
+:   @@snip [ReactiveStreamsDocTest.java](/akka-docs/src/test/java/jdocs/stream/ReactiveStreamsDocTest.java) { #sink-subscriber }
 
 It is also possible to use re-wrap `Processor` instances as a `Flow` by
 passing a factory function that will create the `Processor` instances:
 
 Scala
-:   @@snip [ReactiveStreamsDocSpec.scala]($code$/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #use-processor }
+:   @@snip [ReactiveStreamsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ReactiveStreamsDocSpec.scala) { #use-processor }
 
 Java
-:   @@snip [ReactiveStreamsDocTest.java]($code$/java/jdocs/stream/ReactiveStreamsDocTest.java) { #use-processor }
+:   @@snip [ReactiveStreamsDocTest.java](/akka-docs/src/test/java/jdocs/stream/ReactiveStreamsDocTest.java) { #use-processor }
 
 Please note that a factory is necessary to achieve reusability of the resulting `Flow`.
 
@@ -584,10 +584,10 @@ stream publisher that keeps track of the subscription life cycle and requested e
 Here is an example of such an actor. It dispatches incoming jobs to the attached subscriber:
 
 Scala
-:   @@snip [ActorPublisherDocSpec.scala]($code$/scala/docs/stream/ActorPublisherDocSpec.scala) { #job-manager }
+:   @@snip [ActorPublisherDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ActorPublisherDocSpec.scala) { #job-manager }
 
 Java
-:   @@snip [ActorPublisherDocTest.java]($code$/java/jdocs/stream/ActorPublisherDocTest.java) { #job-manager }
+:   @@snip [ActorPublisherDocTest.java](/akka-docs/src/test/java/jdocs/stream/ActorPublisherDocTest.java) { #job-manager }
 
 You send elements to the stream by calling `onNext`. You are allowed to send as many
 elements as have been requested by the stream subscriber. This amount can be inquired with
@@ -620,10 +620,10 @@ More detailed information can be found in the API documentation.
 This is how it can be used as input `Source` to a `Flow`:
 
 Scala
-:   @@snip [ActorPublisherDocSpec.scala]($code$/scala/docs/stream/ActorPublisherDocSpec.scala) { #actor-publisher-usage }
+:   @@snip [ActorPublisherDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ActorPublisherDocSpec.scala) { #actor-publisher-usage }
 
 Java
-:   @@snip [ActorPublisherDocTest.java]($code$/java/jdocs/stream/ActorPublisherDocTest.java) { #actor-publisher-usage }
+:   @@snip [ActorPublisherDocTest.java](/akka-docs/src/test/java/jdocs/stream/ActorPublisherDocTest.java) { #actor-publisher-usage }
 
 @scala[A publisher that is created with `Sink.asPublisher` supports a specified number of subscribers. Additional
        subscription attempts will be rejected with an `IllegalStateException`.
@@ -652,10 +652,10 @@ messages from the stream. It can also receive other, non-stream messages, in the
 Here is an example of such an actor. It dispatches incoming jobs to child worker actors:
 
 Scala
-:   @@snip [ActorSubscriberDocSpec.scala]($code$/scala/docs/stream/ActorSubscriberDocSpec.scala) { #worker-pool }
+:   @@snip [ActorSubscriberDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ActorSubscriberDocSpec.scala) { #worker-pool }
 
 Java
-:   @@snip [ActorSubscriberDocTest.java]($code$/java/jdocs/stream/ActorSubscriberDocTest.java) { #worker-pool }
+:   @@snip [ActorSubscriberDocTest.java](/akka-docs/src/test/java/jdocs/stream/ActorSubscriberDocTest.java) { #worker-pool }
 
 Subclass must define the `RequestStrategy` to control stream back pressure.
 After each incoming message the  @scala[`ActorSubscriber`]@java[`AbstractActorSubscriber`] will automatically invoke
@@ -674,7 +674,7 @@ More detailed information can be found in the API documentation.
 This is how it can be used as output `Sink` to a `Flow`:
 
 Scala
-:   @@snip [ActorSubscriberDocSpec.scala]($code$/scala/docs/stream/ActorSubscriberDocSpec.scala) { #actor-subscriber-usage }
+:   @@snip [ActorSubscriberDocSpec.scala](/akka-docs/src/test/scala/docs/stream/ActorSubscriberDocSpec.scala) { #actor-subscriber-usage }
 
 Java
-:   @@snip [ActorSubscriberDocTest.java]($code$/java/jdocs/stream/ActorSubscriberDocTest.java) { #actor-subscriber-usage }
+:   @@snip [ActorSubscriberDocTest.java](/akka-docs/src/test/java/jdocs/stream/ActorSubscriberDocTest.java) { #actor-subscriber-usage }

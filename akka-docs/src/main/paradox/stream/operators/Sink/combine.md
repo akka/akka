@@ -8,7 +8,7 @@ Combine several sinks into one using a user specified strategy
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #combine }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #combine }
 
 @@@
 

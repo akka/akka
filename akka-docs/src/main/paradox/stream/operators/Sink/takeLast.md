@@ -8,7 +8,7 @@ Collect the last `n` values emitted from the stream into a collection.
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #takeLast }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #takeLast }
 
 @@@
 

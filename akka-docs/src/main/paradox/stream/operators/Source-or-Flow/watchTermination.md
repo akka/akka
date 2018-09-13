@@ -8,7 +8,7 @@ Materializes to a @scala[`Future`] @java[`CompletionStage`] that will be complet
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #watchTermination }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #watchTermination }
 
 @@@
 

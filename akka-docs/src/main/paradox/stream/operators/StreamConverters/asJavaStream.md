@@ -7,7 +7,7 @@ Create a sink which materializes into Java 8 `Stream` that can be run to trigger
 @@@ div { .group-scala }
 ## Signature
 
-@@signature [StreamConverters.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #asJavaStream }
+@@signature [StreamConverters.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #asJavaStream }
 @@@
 
 ## Description

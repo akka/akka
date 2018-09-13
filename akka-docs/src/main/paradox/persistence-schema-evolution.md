@@ -168,22 +168,22 @@ For more in-depth explanations on how serialization picks the serializer to use 
 First we start by defining our domain model class, here representing a person:
 
 Scala
-:  @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #simplest-custom-serializer-model }
+:  @@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #simplest-custom-serializer-model }
 
 Java
-:  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #simplest-custom-serializer-model }
+:  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #simplest-custom-serializer-model }
 
 Next we implement a serializer (or extend an existing one to be able to handle the new `Person` class):
 
 Scala
-:  @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #simplest-custom-serializer }
+:  @@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #simplest-custom-serializer }
 
 Java
-:  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #simplest-custom-serializer }
+:  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #simplest-custom-serializer }
 
 And finally we register the serializer and bind it to handle the `docs.persistence.Person` class:
 
-@@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #simplest-custom-serializer-config }
+@@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #simplest-custom-serializer-config }
 
 Deserialization will be performed by the same serializer which serialized the message initially
 because of the `identifier` being stored together with the message.
@@ -219,16 +219,16 @@ values somehow. This is usually modeled as some kind of default value, or by rep
 See below for an example how reading an optional field from a serialized protocol buffers message might look like.
 
 Scala
-:  @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #protobuf-read-optional-model }
+:  @@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #protobuf-read-optional-model }
 
 Java
-:  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #protobuf-read-optional-model }
+:  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #protobuf-read-optional-model }
 
 Next we prepare an protocol definition using the protobuf Interface Description Language, which we'll use to generate
 the serializer code to be used on the Akka Serialization layer (notice that the schema aproach allows us to rename
 fields, as long as the numeric identifiers of the fields do not change):
 
-@@snip [FlightAppModels.proto]($code$/../main/protobuf/FlightAppModels.proto) { #protobuf-read-optional-proto }
+@@snip [FlightAppModels.proto](/akka-docs/src/test/../main/protobuf/FlightAppModels.proto) { #protobuf-read-optional-proto }
 
 The serializer implementation uses the protobuf generated classes to marshall the payloads.
 Optional fields can be handled explicitly or missing values by calling the `has...` methods on the protobuf object,
@@ -236,10 +236,10 @@ which we do for `seatType` in order to use a `Unknown` type in case the event wa
 the field to this event type:
 
 Scala
-:  @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #protobuf-read-optional }
+:  @@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #protobuf-read-optional }
 
 Java
-:  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #protobuf-read-optional }
+:  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #protobuf-read-optional }
 
 <a id="rename-field"></a>
 ### Rename fields
@@ -265,7 +265,7 @@ add the overhead of having to maintain the schema. When using serializers like t
 
 This is how such a rename would look in protobuf:
 
-@@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #protobuf-rename-proto }
+@@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #protobuf-rename-proto }
 
 It is important to learn about the strengths and limitations of your serializers, in order to be able to move
 swiftly and refactor your models fearlessly as you go on with the project.
@@ -294,10 +294,10 @@ or using a library like @scala[[Stamina](https://github.com/scalapenos/stamina)]
 The following snippet showcases how one could apply renames if working with plain JSON (using @scala[`spray.json.JsObject`]@java[a `JsObject` as an example JSON representation]):
 
 Scala
-:  @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #rename-plain-json }
+:  @@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #rename-plain-json }
 
 Java
-:  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #rename-plain-json }
+:  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #rename-plain-json }
 
 As you can see, manually handling renames induces some boilerplate onto the EventAdapter, however much of it
 you will find is common infrastructure code that can be either provided by an external library (for promotion management)
@@ -363,19 +363,19 @@ Other events (**E**) can just be passed through.
 The serializer detects that the string manifest points to a removed event type and skips attempting to deserialize it:
 
 Scala
-:  @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #string-serializer-skip-deleved-event-by-manifest }
+:  @@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #string-serializer-skip-deleved-event-by-manifest }
 
 Java
-:  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #string-serializer-skip-deleved-event-by-manifest }
+:  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #string-serializer-skip-deleved-event-by-manifest }
 
 The EventAdapter we implemented is aware of `EventDeserializationSkipped` events (our "Tombstones"),
 and emits and empty `EventSeq` whenever such object is encoutered:
 
 Scala
-:  @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #string-serializer-skip-deleved-event-by-manifest-adapter }
+:  @@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #string-serializer-skip-deleved-event-by-manifest-adapter }
 
 Java
-:  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #string-serializer-skip-deleved-event-by-manifest-adapter }
+:  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #string-serializer-skip-deleved-event-by-manifest-adapter }
 
 <a id="detach-domain-from-data-model"></a>
 ### Detach domain model from data model
@@ -405,20 +405,20 @@ include additional data for the event (e.g. tags), for ease of later querying.
 We will use the following domain and data models to showcase how the separation can be implemented by the adapter:
 
 Scala
-:  @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #detach-models }
+:  @@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #detach-models }
 
 Java
-:  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #detach-models }
+:  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #detach-models }
 
 The `EventAdapter` takes care of converting from one model to the other one (in both directions),
 allowing the models to be completely detached from each other, such that they can be optimised independently
 as long as the mapping logic is able to convert between them:
 
 Scala
-:  @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #detach-models-adapter }
+:  @@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #detach-models-adapter }
 
 Java
-:  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #detach-models-adapter }
+:  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #detach-models-adapter }
 
 The same technique could also be used directly in the Serializer if the end result of marshalling is bytes.
 Then the serializer can simply convert the bytes do the domain object by using the generated protobuf builders.
@@ -441,10 +441,10 @@ The journal plugin notices that the incoming event type is JSON (for example by 
 event) and stores the incoming object directly.
 
 Scala
-:  @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #detach-models-adapter-json }
+:  @@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #detach-models-adapter-json }
 
 Java
-:  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #detach-models-adapter-json }
+:  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #detach-models-adapter-json }
 
 @@@ note
 
@@ -500,10 +500,10 @@ and the address change is handled similarly:
 
 
 Scala
-:  @@snip [PersistenceSchemaEvolutionDocSpec.scala]($code$/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #split-events-during-recovery }
+:  @@snip [PersistenceSchemaEvolutionDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSchemaEvolutionDocSpec.scala) { #split-events-during-recovery }
 
 Java
-:  @@snip [PersistenceSchemaEvolutionDocTest.java]($code$/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #split-events-during-recovery }
+:  @@snip [PersistenceSchemaEvolutionDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceSchemaEvolutionDocTest.java) { #split-events-during-recovery }
 
 By returning an `EventSeq` from the event adapter, the recovered event can be converted to multiple events before
 being delivered to the persistent actor.

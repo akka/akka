@@ -169,17 +169,17 @@ complete the test names.
 First we need some scaffolding to hook up the `MultiNodeSpec` with your favorite test framework. Lets define a trait
 `STMultiNodeSpec` that uses ScalaTest to start and stop `MultiNodeSpec`.
 
-@@snip [STMultiNodeSpec.scala]($akka$/akka-remote-tests/src/test/scala/akka/remote/testkit/STMultiNodeSpec.scala) { #example }
+@@snip [STMultiNodeSpec.scala](/akka-remote-tests/src/test/scala/akka/remote/testkit/STMultiNodeSpec.scala) { #example }
 
 Then we need to define a configuration. Lets use two nodes `"node1` and `"node2"` and call it
 `MultiNodeSampleConfig`.
 
-@@snip [MultiNodeSample.scala]($akka$/akka-remote-tests/src/multi-jvm/scala/akka/remote/sample/MultiNodeSample.scala) { #package #config }
+@@snip [MultiNodeSample.scala](/akka-remote-tests/src/multi-jvm/scala/akka/remote/sample/MultiNodeSample.scala) { #package #config }
 
 And then finally to the node test code. That starts the two nodes, and demonstrates a barrier, and a remote actor
 message send/receive.
 
-@@snip [MultiNodeSample.scala]($akka$/akka-remote-tests/src/multi-jvm/scala/akka/remote/sample/MultiNodeSample.scala) { #package #spec }
+@@snip [MultiNodeSample.scala](/akka-remote-tests/src/multi-jvm/scala/akka/remote/sample/MultiNodeSample.scala) { #package #spec }
 
 The easiest way to run this example yourself is to download the ready to run
 @extref[Akka Multi-Node Testing Sample with Scala](ecs:akka-samples-multi-node-scala)

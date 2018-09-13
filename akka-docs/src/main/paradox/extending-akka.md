@@ -21,40 +21,40 @@ So let's create a sample extension that lets us count the number of times someth
 First, we define what our `Extension` should do:
 
 Scala
-:  @@snip [ExtensionDocSpec.scala]($code$/scala/docs/extension/ExtensionDocSpec.scala) { #extension }
+:  @@snip [ExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/ExtensionDocSpec.scala) { #extension }
 
 Java
-:  @@snip [ExtensionDocTest.java]($code$/java/jdocs/extension/ExtensionDocTest.java) { #imports #extension }
+:  @@snip [ExtensionDocTest.java](/akka-docs/src/test/java/jdocs/extension/ExtensionDocTest.java) { #imports #extension }
 
 Then we need to create an `ExtensionId` for our extension so we can grab a hold of it.
 
 Scala
-:  @@snip [ExtensionDocSpec.scala]($code$/scala/docs/extension/ExtensionDocSpec.scala) { #extensionid }
+:  @@snip [ExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/ExtensionDocSpec.scala) { #extensionid }
 
 Java
-:  @@snip [ExtensionDocTest.java]($code$/java/jdocs/extension/ExtensionDocTest.java) { #imports #extensionid }
+:  @@snip [ExtensionDocTest.java](/akka-docs/src/test/java/jdocs/extension/ExtensionDocTest.java) { #imports #extensionid }
 
 Wicked! Now all we need to do is to actually use it:
 
 Scala
-:  @@snip [ExtensionDocSpec.scala]($code$/scala/docs/extension/ExtensionDocSpec.scala) { #extension-usage }
+:  @@snip [ExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/ExtensionDocSpec.scala) { #extension-usage }
 
 Java
-:  @@snip [ExtensionDocTest.java]($code$/java/jdocs/extension/ExtensionDocTest.java) { #extension-usage }
+:  @@snip [ExtensionDocTest.java](/akka-docs/src/test/java/jdocs/extension/ExtensionDocTest.java) { #extension-usage }
 
 Or from inside of an Akka Actor:
 
 Scala
-:  @@snip [ExtensionDocSpec.scala]($code$/scala/docs/extension/ExtensionDocSpec.scala) { #extension-usage-actor }
+:  @@snip [ExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/ExtensionDocSpec.scala) { #extension-usage-actor }
 
 Java
-:  @@snip [ExtensionDocTest.java]($code$/java/jdocs/extension/ExtensionDocTest.java) { #extension-usage-actor }
+:  @@snip [ExtensionDocTest.java](/akka-docs/src/test/java/jdocs/extension/ExtensionDocTest.java) { #extension-usage-actor }
 
 @@@ div { .group-scala }
 
 You can also hide extension behind traits:
 
-@@snip [ExtensionDocSpec.scala]($code$/scala/docs/extension/ExtensionDocSpec.scala) { #extension-usage-actor-trait }
+@@snip [ExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/ExtensionDocSpec.scala) { #extension-usage-actor-trait }
 
 @@@
 
@@ -66,7 +66,7 @@ To be able to load extensions from your Akka configuration you must add FQCNs of
 in the `akka.extensions` section of the config you provide to your `ActorSystem`.
 
 Scala
-:  @@snip [ExtensionDocSpec.scala]($code$/scala/docs/extension/ExtensionDocSpec.scala) { #config }
+:  @@snip [ExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/ExtensionDocSpec.scala) { #config }
 
 Java
 :   @@@vars
@@ -89,23 +89,23 @@ The @ref:[configuration](general/configuration.md) can be used for application s
 
 Sample configuration:
 
-@@snip [SettingsExtensionDocSpec.scala]($code$/scala/docs/extension/SettingsExtensionDocSpec.scala) { #config }
+@@snip [SettingsExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/SettingsExtensionDocSpec.scala) { #config }
 
 The `Extension`:
 
 Scala
-:  @@snip [SettingsExtensionDocSpec.scala]($code$/scala/docs/extension/SettingsExtensionDocSpec.scala) { #imports #extension #extensionid }
+:  @@snip [SettingsExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/SettingsExtensionDocSpec.scala) { #imports #extension #extensionid }
 
 Java
-:  @@snip [SettingsExtensionDocTest.java]($code$/java/jdocs/extension/SettingsExtensionDocTest.java) { #imports #extension #extensionid }
+:  @@snip [SettingsExtensionDocTest.java](/akka-docs/src/test/java/jdocs/extension/SettingsExtensionDocTest.java) { #imports #extension #extensionid }
 
 Use it:
 
 Scala
-:  @@snip [SettingsExtensionDocSpec.scala]($code$/scala/docs/extension/SettingsExtensionDocSpec.scala) { #extension-usage-actor }
+:  @@snip [SettingsExtensionDocSpec.scala](/akka-docs/src/test/scala/docs/extension/SettingsExtensionDocSpec.scala) { #extension-usage-actor }
 
 Java
-:  @@snip [SettingsExtensionDocTest.java]($code$/java/jdocs/extension/SettingsExtensionDocTest.java) { #extension-usage-actor }
+:  @@snip [SettingsExtensionDocTest.java](/akka-docs/src/test/java/jdocs/extension/SettingsExtensionDocTest.java) { #extension-usage-actor }
 
 ## Library extensions
 

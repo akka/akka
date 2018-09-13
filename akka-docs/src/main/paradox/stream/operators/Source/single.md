@@ -8,7 +8,7 @@ Stream a single object
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #single }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #single }
 
 @@@
 
@@ -28,9 +28,9 @@ Stream a single object
 ## Examples
 
 Scala
-:  @@snip [source.scala]($akka$/akka-stream-tests/src/test/scala/akka/stream/scaladsl/SourceSpec.scala) { #imports #source-single }
+:  @@snip [source.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/SourceSpec.scala) { #imports #source-single }
 
 Java
-:   @@snip [source.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceTest.java) { #imports #source-single }
+:   @@snip [source.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceTest.java) { #imports #source-single }
 
 

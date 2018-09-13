@@ -8,7 +8,7 @@ Integration with Reactive Streams, subscribes to a `org.reactivestreams.Publishe
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromPublisher }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromPublisher }
 
 @@@
 

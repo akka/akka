@@ -8,7 +8,7 @@ Materializes into a @scala[`Future`] @java[`CompletionStage`] which will complet
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #last }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #last }
 
 @@@
 

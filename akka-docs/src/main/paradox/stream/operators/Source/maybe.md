@@ -8,7 +8,7 @@ Materialize a @scala[`Promise[Option[T]]`] @java[`CompletionStage`] that if comp
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #maybe }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #maybe }
 
 @@@
 

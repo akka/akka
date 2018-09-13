@@ -36,10 +36,10 @@ in more depth.
 For the sake of demonstration let us consider the following strategy:
 
 Scala
-:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #strategy }
+:  @@snip [FaultHandlingDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSpec.scala) { #strategy }
 
 Java
-:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #strategy }
+:  @@snip [FaultHandlingTest.java](/akka-docs/src/test/java/jdocs/actor/FaultHandlingTest.java) { #strategy }
 
 We have chosen a few well-known exception types in order to demonstrate the
 application of the fault handling directives described in @ref:[supervision](general/supervision.md).
@@ -94,7 +94,7 @@ in the same way as the default strategy defined above.
 
 You can combine your own strategy with the default strategy:
 
-@@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #default-strategy-fallback }
+@@snip [FaultHandlingDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSpec.scala) { #default-strategy-fallback }
 
 @@@
 
@@ -135,73 +135,73 @@ The following section shows the effects of the different directives in practice,
 where a test setup is needed. First off, we need a suitable supervisor:
 
 Scala
-:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #supervisor }
+:  @@snip [FaultHandlingDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSpec.scala) { #supervisor }
 
 Java
-:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #supervisor }
+:  @@snip [FaultHandlingTest.java](/akka-docs/src/test/java/jdocs/actor/FaultHandlingTest.java) { #supervisor }
 
 This supervisor will be used to create a child, with which we can experiment:
 
 Scala
-:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #child }
+:  @@snip [FaultHandlingDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSpec.scala) { #child }
 
 Java
-:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #child }
+:  @@snip [FaultHandlingTest.java](/akka-docs/src/test/java/jdocs/actor/FaultHandlingTest.java) { #child }
 
 The test is easier by using the utilities described in @scala[@ref:[Testing Actor Systems](testing.md)]@java[@ref:[TestKit](testing.md)],
 where `TestProbe` provides an actor ref useful for receiving and inspecting replies.
 
 Scala
-:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #testkit }
+:  @@snip [FaultHandlingDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSpec.scala) { #testkit }
 
 Java
-:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #testkit }
+:  @@snip [FaultHandlingTest.java](/akka-docs/src/test/java/jdocs/actor/FaultHandlingTest.java) { #testkit }
 
 Let us create actors:
 
 Scala
-:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #create }
+:  @@snip [FaultHandlingDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSpec.scala) { #create }
 
 Java
-:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #create }
+:  @@snip [FaultHandlingTest.java](/akka-docs/src/test/java/jdocs/actor/FaultHandlingTest.java) { #create }
 
 The first test shall demonstrate the `Resume` directive, so we try it out by
 setting some non-initial state in the actor and have it fail:
 
 Scala
-:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #resume }
+:  @@snip [FaultHandlingDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSpec.scala) { #resume }
 
 Java
-:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #resume }
+:  @@snip [FaultHandlingTest.java](/akka-docs/src/test/java/jdocs/actor/FaultHandlingTest.java) { #resume }
 
 As you can see the value 42 survives the fault handling directive. Now, if we
 change the failure to a more serious `NullPointerException`, that will no
 longer be the case:
 
 Scala
-:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #restart }
+:  @@snip [FaultHandlingDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSpec.scala) { #restart }
 
 Java
-:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #restart }
+:  @@snip [FaultHandlingTest.java](/akka-docs/src/test/java/jdocs/actor/FaultHandlingTest.java) { #restart }
 
 And finally in case of the fatal `IllegalArgumentException` the child will be
 terminated by the supervisor:
 
 Scala
-:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #stop }
+:  @@snip [FaultHandlingDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSpec.scala) { #stop }
 
 Java
-:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #stop }
+:  @@snip [FaultHandlingTest.java](/akka-docs/src/test/java/jdocs/actor/FaultHandlingTest.java) { #stop }
 
 Up to now the supervisor was completely unaffected by the child’s failure,
 because the directives set did handle it. In case of an `Exception`, this is not
 true anymore and the supervisor escalates the failure.
 
 Scala
-:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #escalate-kill }
+:  @@snip [FaultHandlingDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSpec.scala) { #escalate-kill }
 
 Java
-:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #escalate-kill }
+:  @@snip [FaultHandlingTest.java](/akka-docs/src/test/java/jdocs/actor/FaultHandlingTest.java) { #escalate-kill }
 
 The supervisor itself is supervised by the top-level actor provided by the
 `ActorSystem`, which has the default policy to restart in case of all
@@ -214,16 +214,16 @@ In case this is not desired (which depends on the use case), we need to use a
 different supervisor which overrides this behavior.
 
 Scala
-:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #supervisor2 }
+:  @@snip [FaultHandlingDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSpec.scala) { #supervisor2 }
 
 Java
-:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #supervisor2 }
+:  @@snip [FaultHandlingTest.java](/akka-docs/src/test/java/jdocs/actor/FaultHandlingTest.java) { #supervisor2 }
 
 With this parent, the child survives the escalated restart, as demonstrated in
 the last test:
 
 Scala
-:  @@snip [FaultHandlingDocSpec.scala]($code$/scala/docs/actor/FaultHandlingDocSpec.scala) { #escalate-restart }
+:  @@snip [FaultHandlingDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSpec.scala) { #escalate-restart }
 
 Java
-:  @@snip [FaultHandlingTest.java]($code$/java/jdocs/actor/FaultHandlingTest.java) { #escalate-restart }
+:  @@snip [FaultHandlingTest.java](/akka-docs/src/test/java/jdocs/actor/FaultHandlingTest.java) { #escalate-restart }

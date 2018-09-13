@@ -8,7 +8,7 @@ Invoke a callback when the stream has completed or failed.
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #onComplete }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #onComplete }
 
 @@@
 

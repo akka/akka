@@ -8,7 +8,7 @@ Allow sending of one last element downstream when a failure has happened upstrea
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #recover }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #recover }
 
 @@@
 

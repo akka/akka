@@ -8,7 +8,7 @@ Drop `n` elements and then pass any subsequent element downstream.
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #drop }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #drop }
 
 @@@
 

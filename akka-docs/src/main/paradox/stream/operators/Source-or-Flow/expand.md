@@ -8,7 +8,7 @@ Like `extrapolate`, but does not have the `initial` argument, and the `Iterator`
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #expand }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #expand }
 
 @@@
 

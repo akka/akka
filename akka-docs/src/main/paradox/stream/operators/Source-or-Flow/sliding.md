@@ -8,7 +8,7 @@ Provide a sliding window over the incoming stream and pass the windows as groups
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #sliding }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #sliding }
 
 @@@
 

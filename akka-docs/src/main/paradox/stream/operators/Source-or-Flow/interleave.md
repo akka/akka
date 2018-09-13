@@ -8,7 +8,7 @@ Emits a specifiable number of elements from the original source, then from the p
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #interleave }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #interleave }
 
 @@@
 

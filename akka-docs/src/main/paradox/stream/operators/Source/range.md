@@ -31,9 +31,9 @@ Emit each integer in a range, with an option to take bigger steps than 1. @scala
 Define the range of integers.
 
 Java
-:   @@snip [SourceDocExamples.java]($akka$/akka-docs/src/test/java/jdocs/stream/operators/SourceDocExamples.java) { #range-imports #range }
+:   @@snip [SourceDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceDocExamples.java) { #range-imports #range }
 
 Print out the stream of integers.
 
 Java
-:   @@snip [SourceDocExamples.java]($akka$/akka-docs/src/test/java/jdocs/stream/operators/SourceDocExamples.java) { #run-range}
+:   @@snip [SourceDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceDocExamples.java) { #run-range}

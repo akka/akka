@@ -8,7 +8,7 @@ Pass elements downstream within a timeout and then complete.
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #takeWithin }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #takeWithin }
 
 @@@
 

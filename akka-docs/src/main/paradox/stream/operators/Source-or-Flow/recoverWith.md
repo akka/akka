@@ -8,7 +8,7 @@ Allow switching to alternative Source when a failure has happened upstream.
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #recoverWith }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #recoverWith }
 
 @@@
 

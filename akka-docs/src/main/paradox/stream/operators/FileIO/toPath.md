@@ -8,7 +8,7 @@ Create a sink which will write incoming `ByteString` s to a given file path.
 
 ## Signature
 
-@@signature [FileIO.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/FileIO.scala) { #toPath }
+@@signature [FileIO.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/FileIO.scala) { #toPath }
 
 @@@
 

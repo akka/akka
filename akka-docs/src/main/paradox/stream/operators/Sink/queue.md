@@ -8,7 +8,7 @@ Materialize a `SinkQueue` that can be pulled to trigger demand through the sink.
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #queue }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #queue }
 
 @@@
 

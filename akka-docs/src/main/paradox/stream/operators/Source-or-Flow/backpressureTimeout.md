@@ -7,7 +7,7 @@ If the time between the emission of an element and the following downstream dema
 @@@ div { .group-scala }
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #backpressureTimeout }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #backpressureTimeout }
 @@@
 
 

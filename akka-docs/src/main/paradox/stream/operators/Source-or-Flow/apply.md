@@ -7,7 +7,7 @@ Stream the values of an `immutable.Seq`.
 @@@ div { .group-scala }
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #apply }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #apply }
 @@@
 
 ## Description
