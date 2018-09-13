@@ -22,8 +22,8 @@ object BehaviorTestKitSpec {
 
     sealed trait Command
 
+    case object SpawnChild extends Command
     case class SpawnChildren(numberOfChildren: Int) extends Command
-    val SpawnChild = SpawnChildren(1)
     case class SpawnChildrenWithProps(numberOfChildren: Int, props: Props) extends Command
     case class SpawnAnonymous(numberOfChildren: Int) extends Command
     case class SpawnAnonymousWithProps(numberOfChildren: Int, props: Props) extends Command
@@ -38,6 +38,9 @@ object BehaviorTestKitSpec {
 
     val init: Behavior[Command] = Behaviors.receive[Command] { (ctx, msg) ⇒
       msg match {
+        case SpawnChild ⇒
+          ctx.spawn(Child.initial, "child")
+          Behaviors.same
         case SpawnChildren(numberOfChildren) if numberOfChildren > 0 ⇒
           0.until(numberOfChildren).foreach { i ⇒
             ctx.spawn(Child.initial, s"child$i")
