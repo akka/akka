@@ -8,7 +8,7 @@ Create a sink that wraps an `OutputStream`.
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #fromOutputStream }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #fromOutputStream }
 
 @@@
 

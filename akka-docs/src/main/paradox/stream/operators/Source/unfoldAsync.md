@@ -8,7 +8,7 @@ Just like `unfold` but the fold function returns a @scala[`Future`] @java[`Compl
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfoldAsync }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfoldAsync }
 
 @@@
 

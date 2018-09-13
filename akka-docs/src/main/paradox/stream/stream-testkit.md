@@ -34,10 +34,10 @@ asserting on the results that sink produced. Here is an example of a test for a
 sink:
 
 Scala
-:   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #strict-collection }
+:   @@snip [StreamTestKitDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamTestKitDocSpec.scala) { #strict-collection }
 
 Java
-:   @@snip [StreamTestKitDocTest.java]($code$/java/jdocs/stream/StreamTestKitDocTest.java) { #strict-collection }
+:   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #strict-collection }
 
 The same strategy can be applied for sources as well. In the next example we
 have a source that produces an infinite stream of elements. Such source can be
@@ -45,20 +45,20 @@ tested by asserting that first arbitrary number of elements hold some
 condition. Here the `take` operator and `Sink.seq` are very useful.
 
 Scala
-:   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #grouped-infinite }
+:   @@snip [StreamTestKitDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamTestKitDocSpec.scala) { #grouped-infinite }
 
 Java
-:   @@snip [StreamTestKitDocTest.java]($code$/java/jdocs/stream/StreamTestKitDocTest.java) { #grouped-infinite }
+:   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #grouped-infinite }
 
 When testing a flow we need to attach a source and a sink. As both stream ends
 are under our control, we can choose sources that tests various edge cases of
 the flow and sinks that ease assertions.
 
 Scala
-:   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #folded-stream }
+:   @@snip [StreamTestKitDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamTestKitDocSpec.scala) { #folded-stream }
 
 Java
-:   @@snip [StreamTestKitDocTest.java]($code$/java/jdocs/stream/StreamTestKitDocTest.java) { #folded-stream }
+:   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #folded-stream }
 
 ## TestKit
 
@@ -71,10 +71,10 @@ One of the more straightforward tests would be to materialize stream to a
 to the probe.
 
 Scala
-:   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #pipeto-testprobe }
+:   @@snip [StreamTestKitDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamTestKitDocSpec.scala) { #pipeto-testprobe }
 
 Java
-:   @@snip [StreamTestKitDocTest.java]($code$/java/jdocs/stream/StreamTestKitDocTest.java) { #pipeto-testprobe }
+:   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #pipeto-testprobe }
 
 Instead of materializing to a future, we can use a `Sink.actorRef` that
 sends all incoming elements to the given `ActorRef`. Now we can use
@@ -83,20 +83,20 @@ arrive. We can also assert stream completion by expecting for
 `onCompleteMessage` which was given to `Sink.actorRef`.
 
 Scala
-:   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #sink-actorref }
+:   @@snip [StreamTestKitDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamTestKitDocSpec.scala) { #sink-actorref }
 
 Java
-:   @@snip [StreamTestKitDocTest.java]($code$/java/jdocs/stream/StreamTestKitDocTest.java) { #sink-actorref }
+:   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #sink-actorref }
 
 Similarly to `Sink.actorRef` that provides control over received
 elements, we can use `Source.actorRef` and have full control over
 elements to be sent.
 
 Scala
-:   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #source-actorref }
+:   @@snip [StreamTestKitDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamTestKitDocSpec.scala) { #source-actorref }
 
 Java
-:   @@snip [StreamTestKitDocTest.java]($code$/java/jdocs/stream/StreamTestKitDocTest.java) { #source-actorref }
+:   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #source-actorref }
 
 ## Streams TestKit
 
@@ -112,35 +112,35 @@ A sink returned by `TestSink.probe` allows manual control over demand and
 assertions over elements coming downstream.
 
 Scala
-:   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #test-sink-probe }
+:   @@snip [StreamTestKitDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamTestKitDocSpec.scala) { #test-sink-probe }
 
 Java
-:   @@snip [StreamTestKitDocTest.java]($code$/java/jdocs/stream/StreamTestKitDocTest.java) { #test-sink-probe }
+:   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #test-sink-probe }
 
 A source returned by `TestSource.probe` can be used for asserting demand or
 controlling when stream is completed or ended with an error.
 
 Scala
-:   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #test-source-probe }
+:   @@snip [StreamTestKitDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamTestKitDocSpec.scala) { #test-source-probe }
 
 Java
-:   @@snip [StreamTestKitDocTest.java]($code$/java/jdocs/stream/StreamTestKitDocTest.java) { #test-source-probe }
+:   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #test-source-probe }
 
 You can also inject exceptions and test sink behavior on error conditions.
 
 Scala
-:   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #injecting-failure }
+:   @@snip [StreamTestKitDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamTestKitDocSpec.scala) { #injecting-failure }
 
 Java
-:   @@snip [StreamTestKitDocTest.java]($code$/java/jdocs/stream/StreamTestKitDocTest.java) { #injecting-failure }
+:   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #injecting-failure }
 
 Test source and sink can be used together in combination when testing flows.
 
 Scala
-:   @@snip [StreamTestKitDocSpec.scala]($code$/scala/docs/stream/StreamTestKitDocSpec.scala) { #test-source-and-sink }
+:   @@snip [StreamTestKitDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamTestKitDocSpec.scala) { #test-source-and-sink }
 
 Java
-:   @@snip [StreamTestKitDocTest.java]($code$/java/jdocs/stream/StreamTestKitDocTest.java) { #test-source-and-sink }
+:   @@snip [StreamTestKitDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamTestKitDocTest.java) { #test-source-and-sink }
 
 ## Fuzzing Mode
 

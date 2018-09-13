@@ -8,7 +8,7 @@ Emit the contents of a file.
 
 ## Signature
 
-@@signature [FileIO.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/FileIO.scala) { #fromPath }
+@@signature [FileIO.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/FileIO.scala) { #fromPath }
 
 @@@
 

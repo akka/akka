@@ -8,7 +8,7 @@ Create a source that wraps a Java 8 `Stream`.
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #fromJavaStream }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #fromJavaStream }
 
 @@@
 

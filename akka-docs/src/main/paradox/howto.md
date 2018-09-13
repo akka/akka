@@ -148,7 +148,7 @@ Finally the promise returned by Patterns.ask() is fulfilled as a failure, includ
 
 Let's have a look at the example code:
 
-@@snip [SupervisedAsk.java]($code$/java/jdocs/pattern/SupervisedAsk.java)
+@@snip [SupervisedAsk.java](/akka-docs/src/test/java/jdocs/pattern/SupervisedAsk.java)
 
 In the askOf method the SupervisorCreator is sent the user message.
 The SupervisorCreator creates a SupervisorActor and forwards the message.
@@ -161,7 +161,7 @@ Afterwards the actor hierarchy is stopped.
 
 Finally we are able to execute an actor and receive the results or exceptions.
 
-@@snip [SupervisedAskSpec.java]($code$/java/jdocs/pattern/SupervisedAskSpec.java)
+@@snip [SupervisedAskSpec.java](/akka-docs/src/test/java/jdocs/pattern/SupervisedAskSpec.java)
 
 @@@
 

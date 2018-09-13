@@ -8,7 +8,7 @@ End the current substream whenever a predicate returns `true`, starting a new su
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #splitAfter }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #splitAfter }
 
 @@@
 

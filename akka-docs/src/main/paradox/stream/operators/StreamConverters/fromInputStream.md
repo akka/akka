@@ -8,7 +8,7 @@ Create a source that wraps an `InputStream`.
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #fromInputStream }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #fromInputStream }
 
 @@@
 

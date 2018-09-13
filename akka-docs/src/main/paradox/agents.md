@@ -55,10 +55,10 @@ value and providing an @scala[implicit] `ExecutionContext` to be used for it,
 @scala[for these examples we're going to use the default global one, but YMMV:]
 
 Scala
-:  @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #create }
+:  @@snip [AgentDocSpec.scala](/akka-docs/src/test/scala/docs/agent/AgentDocSpec.scala) { #create }
 
 Java
-:  @@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-agent #create type=java }
+:  @@snip [AgentDocTest.java](/akka-docs/src/test/java/jdocs/agent/AgentDocTest.java) { #import-agent #create type=java }
 
 ## Reading an Agent's value
 
@@ -66,10 +66,10 @@ Agents can be dereferenced (you can get an Agent's value) by invoking the Agent
 with @scala[parentheses] @java[`get()`] like this:
 
 Scala
-:  @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #read-apply #read-get  }
+:  @@snip [AgentDocSpec.scala](/akka-docs/src/test/scala/docs/agent/AgentDocSpec.scala) { #read-apply #read-get  }
 
 Java
-:  @@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #read-get type=java }
+:  @@snip [AgentDocTest.java](/akka-docs/src/test/java/jdocs/agent/AgentDocTest.java) { #read-get type=java }
 
 Reading an Agent's current value does not involve any message passing and
 happens immediately. So while updates to an Agent are asynchronous, reading the
@@ -80,7 +80,7 @@ state of an Agent is synchronous.
 You can also get a `Future` to the Agents value, that will be completed after the
 currently queued updates have completed:
 
-@@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-future #read-future type=java }
+@@snip [AgentDocTest.java](/akka-docs/src/test/java/jdocs/agent/AgentDocTest.java) { #import-future #read-future type=java }
 
 See @ref:[Futures](futures.md) for more information on `Futures`.
 
@@ -97,10 +97,10 @@ occur in order. You apply a value or a function by invoking the `send`
 function.
 
 Scala
-:  @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #send }
+:  @@snip [AgentDocSpec.scala](/akka-docs/src/test/scala/docs/agent/AgentDocSpec.scala) { #send }
 
 Java
-:  @@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-function #send type=java }
+:  @@snip [AgentDocTest.java](/akka-docs/src/test/java/jdocs/agent/AgentDocTest.java) { #import-function #send type=java }
 
 You can also dispatch a function to update the internal state but on its own
 thread. This does not use the reactive thread pool and can be used for
@@ -109,19 +109,19 @@ method. Dispatches using either `sendOff` or `send` will still be executed
 in order.
 
 Scala
-:  @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #send-off }
+:  @@snip [AgentDocSpec.scala](/akka-docs/src/test/scala/docs/agent/AgentDocSpec.scala) { #send-off }
 
 Java
-:  @@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-function #send-off type=java }
+:  @@snip [AgentDocTest.java](/akka-docs/src/test/java/jdocs/agent/AgentDocTest.java) { #import-function #send-off type=java }
 
 All `send` methods also have a corresponding `alter` method that returns a `Future`.
 See @ref:[`Future`s](futures.md) for more information on `Future`s.
 
 Scala
-:  @@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #alter #alter-off }
+:  @@snip [AgentDocSpec.scala](/akka-docs/src/test/scala/docs/agent/AgentDocSpec.scala) { #alter #alter-off }
 
 Java
-:  @@snip [AgentDocTest.java]($code$/java/jdocs/agent/AgentDocTest.java) { #import-future #import-function #alter #alter-off type=java }
+:  @@snip [AgentDocTest.java](/akka-docs/src/test/java/jdocs/agent/AgentDocTest.java) { #import-future #import-function #alter #alter-off type=java }
 
 @@@ div { .group-scala }
 
@@ -130,7 +130,7 @@ Java
 You can also get a `Future` to the Agents value, that will be completed after the
 currently queued updates have completed:
 
-@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #read-future }
+@@snip [AgentDocSpec.scala](/akka-docs/src/test/scala/docs/agent/AgentDocSpec.scala) { #read-future }
 
 See @ref:[`Future`s](futures.md) for more information on `Future`s.
 
@@ -143,7 +143,7 @@ as-is. They are so-called 'persistent'.
 
 Example of monadic usage:
 
-@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #monadic-example }
+@@snip [AgentDocSpec.scala](/akka-docs/src/test/scala/docs/agent/AgentDocSpec.scala) { #monadic-example }
 
 @@@
 
@@ -163,6 +163,6 @@ transaction is aborted. @scala[Here's an example:]
 
 @@@ div { .group-scala }
 
-@@snip [AgentDocSpec.scala]($code$/scala/docs/agent/AgentDocSpec.scala) { #transfer-example }
+@@snip [AgentDocSpec.scala](/akka-docs/src/test/scala/docs/agent/AgentDocSpec.scala) { #transfer-example }
 
 @@@

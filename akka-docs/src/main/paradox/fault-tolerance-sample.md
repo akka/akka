@@ -36,7 +36,7 @@
 # Full Source Code of the Fault Tolerance Sample
 
 Scala
-:  @@snip [FaultHandlingDocSample.scala]($code$/scala/docs/actor/FaultHandlingDocSample.scala) { #all }
+:  @@snip [FaultHandlingDocSample.scala](/akka-docs/src/test/scala/docs/actor/FaultHandlingDocSample.scala) { #all }
 
 Java
-:  @@snip [FaultHandlingDocSample.java]($code$/java/jdocs/actor/FaultHandlingDocSample.java) { #all }
+:  @@snip [FaultHandlingDocSample.java](/akka-docs/src/test/java/jdocs/actor/FaultHandlingDocSample.java) { #all }

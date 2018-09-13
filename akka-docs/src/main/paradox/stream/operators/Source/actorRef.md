@@ -7,7 +7,7 @@ Materialize an `ActorRef`; sending messages to it will emit them on the stream.
 @@@ div { .group-scala }
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #actorRef }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #actorRef }
 @@@
 
 ## Description

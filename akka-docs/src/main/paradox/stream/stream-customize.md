@@ -38,10 +38,10 @@ cancelled. To start, we need to define the "interface" of our operator, which is
 (this is explained in more detail in the section @ref:[Modularity, Composition and Hierarchy](stream-composition.md)). This is how this looks like:
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #boilerplate-example }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #boilerplate-example }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #simple-source }
+:   @@snip [GraphStageDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageDocTest.java) { #simple-source }
 
 As you see, in itself the `GraphStage` only defines the ports of this operator and a shape that contains the ports.
 It also has, a currently unimplemented method called `createLogic`. If you recall, operators are reusable in multiple
@@ -66,7 +66,7 @@ to stop the operator, we don't need to override it. In the `onPull` callback we 
 is how it looks like in the end:
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #custom-source-example }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #custom-source-example }
 
 Instances of the above `GraphStage` are subclasses of @scala[`Graph[SourceShape[Int],NotUsed]`] @java[`Graph<SourceShape<Integer>,NotUsed>`] which means
 that they are already usable in many situations, but do not provide the DSL methods we usually have for other
@@ -75,10 +75,10 @@ that they are already usable in many situations, but do not provide the DSL meth
 source as any other built-in one:
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #simple-source-usage }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #simple-source-usage }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #simple-source-usage }
+:   @@snip [GraphStageDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageDocTest.java) { #simple-source-usage }
 
 Similarly, to create a custom `Sink` one can register a subclass `InHandler` with the operator `Inlet`.
 The `onPush()` callback is used to signal the handler a new element has been pushed to the operator,
@@ -87,10 +87,10 @@ Please note, most Sinks would need to request upstream elements as soon as they 
 done by calling `pull(inlet)` in the `preStart()` callback.
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #custom-sink-example }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #custom-sink-example }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #simple-sink }
+:   @@snip [GraphStageDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageDocTest.java) { #simple-sink }
 
 
 ### Port states, @scala[InHandler] @java[AbstractInHandler] and @scala[OutHandler] @java[AbstractOutHandler]
@@ -199,10 +199,10 @@ Map calls `push(out)` from the `onPush()` handler and it also calls `pull()` fro
 conceptual wiring above, and fully expressed in code below:
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #one-to-one }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #one-to-one }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #one-to-one }
+:   @@snip [GraphStageDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageDocTest.java) { #one-to-one }
 
 Map is a typical example of a one-to-one transformation of a stream where
 demand is passed along upstream elements passed on downstream.
@@ -218,10 +218,10 @@ example by adding a conditional in the `onPush` handler and decide between a `pu
 (and not having a mapping `f` function).
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #many-to-one }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #many-to-one }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #many-to-one }
+:   @@snip [GraphStageDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageDocTest.java) { #many-to-one }
 
 To complete the picture we define a one-to-many transformation as the next step. We chose a straightforward example operator
 that emits every upstream element twice downstream. The conceptual wiring of this operator looks like this:
@@ -233,10 +233,10 @@ has duplicated this last element already or not. We must also make sure to emit 
 if the upstream completes.
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #one-to-many }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #one-to-many }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #one-to-many }
+:   @@snip [GraphStageDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageDocTest.java) { #one-to-many }
 
 In this case a pull from downstream might be consumed by the operator itself rather
 than passed along upstream as the operator might contain an element it wants to
@@ -250,10 +250,10 @@ This example can be simplified by replacing the usage of a mutable state with ca
 reinstate the original handlers:
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #simpler-one-to-many }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #simpler-one-to-many }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #simpler-one-to-many }
+:   @@snip [GraphStageDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageDocTest.java) { #simpler-one-to-many }
 
 Finally, to demonstrate all of the operators above, we put them together into a processing chain,
 which conceptually would correspond to the following structure:
@@ -263,10 +263,10 @@ which conceptually would correspond to the following structure:
 In code this is only a few lines, using the `via` use our custom operators in a stream:
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #graph-operator-chain }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #graph-operator-chain }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #graph-operator-chain }
+:   @@snip [GraphStageDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageDocTest.java) { #graph-operator-chain }
 
 If we attempt to draw the sequence of events, it shows that there is one "event token"
 in circulation in a potential chain of operators, just like our conceptual "railroad tracks" representation predicts.
@@ -318,10 +318,10 @@ See @ref:[Using the SLF4J API directly](../logging.md#slf4j-directly) for more d
 The operator then gets access to the `log` field which it can safely use from any `GraphStage` callbacks:
 
 Scala
-:   @@snip [GraphStageLoggingDocSpec.scala]($code$/scala/docs/stream/GraphStageLoggingDocSpec.scala) { #operator-with-logging }
+:   @@snip [GraphStageLoggingDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageLoggingDocSpec.scala) { #operator-with-logging }
 
 Java
-:   @@snip [GraphStageLoggingDocTest.java]($code$/java/jdocs/stream/GraphStageLoggingDocTest.java) { #operator-with-logging }
+:   @@snip [GraphStageLoggingDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageLoggingDocTest.java) { #operator-with-logging }
 
 @@@ note
 
@@ -347,10 +347,10 @@ operator starts out as closed but as soon as an element is pushed downstream the
 of time during which it will consume and drop upstream messages:
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #timed }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #timed }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #timed }
+:   @@snip [GraphStageDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageDocTest.java) { #timed }
 
 ### Using asynchronous side-channels
 
@@ -369,10 +369,10 @@ This example shows an asynchronous side channel operator that starts dropping el
 when a future completes:
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #async-side-channel }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #async-side-channel }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #async-side-channel }
+:   @@snip [GraphStageDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageDocTest.java) { #async-side-channel }
 
 ### Integration with actors
 
@@ -409,10 +409,10 @@ necessary (non-blocking) synchronization and visibility guarantees to this share
 In this sample the materialized value is a future containing the first element to go through the stream:
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #materialized }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #materialized }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #materialized }
+:   @@snip [GraphStageDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageDocTest.java) { #materialized }
 
 ### Using attributes to affect the behavior of an operator
 
@@ -456,10 +456,10 @@ initialization. The buffer has demand for up to two elements without any downstr
 The following code example demonstrates a buffer class corresponding to the message sequence chart above.
 
 Scala
-:   @@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #detached }
+:   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #detached }
 
 Java
-:   @@snip [GraphStageDocTest.java]($code$/java/jdocs/stream/GraphStageDocTest.java) { #detached }
+:   @@snip [GraphStageDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphStageDocTest.java) { #detached }
 
 ## Thread safety of custom operators
 
@@ -512,11 +512,11 @@ extensions to `Source` and `Flow` see [this sketch by R. Kuhn](https://gist.gith
 
 A lot simpler is the task of adding an extension method to `Source` as shown below:
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #extending-source }
+@@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #extending-source }
 
 The analog works for `Flow` as well:
 
-@@snip [GraphStageDocSpec.scala]($code$/scala/docs/stream/GraphStageDocSpec.scala) { #extending-flow }
+@@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #extending-flow }
 
 If you try to write this for `SubFlow`, though, you will run into the same issue as when trying to unify
 the two solutions above, only on a higher level (the type constructors needed for that unification would have rank

@@ -8,7 +8,7 @@ If the primary source completes without emitting any elements, the elements from
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #orElse }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #orElse }
 
 @@@
 

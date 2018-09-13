@@ -8,7 +8,7 @@ Accumulate incoming events until the specified number of elements have been accu
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #grouped }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #grouped }
 
 @@@
 

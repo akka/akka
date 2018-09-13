@@ -40,28 +40,28 @@ send them on after the burst ended or a flush request is received.
 First, consider all of the below to use these import statements:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #simple-imports }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #simple-imports }
 
 Java
-:  @@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #simple-imports }
+:  @@snip [Buncher.java](/akka-docs/src/test/java/jdocs/actor/fsm/Buncher.java) { #simple-imports }
 
 The contract of our “Buncher” actor is that it accepts or produces the following messages:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #simple-events }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #simple-events }
 
 Java
-:  @@snip [Events.java]($code$/java/jdocs/actor/fsm/Events.java) { #simple-events }
+:  @@snip [Events.java](/akka-docs/src/test/java/jdocs/actor/fsm/Events.java) { #simple-events }
 
 `SetTarget` is needed for starting it up, setting the destination for the
 `Batches` to be passed on; `Queue` will add to the internal queue while
 `Flush` will mark the end of a burst.
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #simple-state }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #simple-state }
 
 Java
-:  @@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #simple-state }
+:  @@snip [Buncher.java](/akka-docs/src/test/java/jdocs/actor/fsm/Buncher.java) { #simple-state }
 
 The actor can be in two states: no message queued (aka `Idle`) or some
 message queued (aka `Active`). It will stay in the `Active` state as long as
@@ -72,10 +72,10 @@ the actual queue of messages.
 Now let’s take a look at the skeleton for our FSM actor:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #simple-fsm }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #simple-fsm }
 
 Java
-:  @@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #simple-fsm }
+:  @@snip [Buncher.java](/akka-docs/src/test/java/jdocs/actor/fsm/Buncher.java) { #simple-fsm }
 
 The basic strategy is to declare the actor, @scala[mixing in the `FSM` trait]@java[by inheriting the `AbstractFSM` class]
 and specifying the possible states and data values as type parameters. Within
@@ -103,10 +103,10 @@ which is not handled by the `when()` block is passed to the
 `whenUnhandled()` block:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #unhandled-elided }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #unhandled-elided }
 
 Java
-:  @@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #unhandled-elided }
+:  @@snip [Buncher.java](/akka-docs/src/test/java/jdocs/actor/fsm/Buncher.java) { #unhandled-elided }
 
 The first case handled here is adding `Queue()` requests to the internal
 queue and going to the `Active` state (this does the obvious thing of staying
@@ -121,10 +121,10 @@ multiple such blocks and all of them will be tried for matching behavior in
 case a state transition occurs (i.e. only when the state actually changes).
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #transition-elided }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #transition-elided }
 
 Java
-:  @@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #transition-elided }
+:  @@snip [Buncher.java](/akka-docs/src/test/java/jdocs/actor/fsm/Buncher.java) { #transition-elided }
 
 The transition callback is a @scala[partial function]@java[builder constructed by `matchState`, followed by zero or multiple `state`], which takes as input a pair of
 states—the current and the next state. @scala[The FSM trait includes a convenience
@@ -146,10 +146,10 @@ To verify that this buncher actually works, it is quite easy to write a test
 using the @scala[@ref:[Testing Actor Systems which is conveniently bundled with ScalaTest traits into `AkkaSpec`](testing.md)]@java[@ref:[TestKit](testing.md), here using JUnit as an example]:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #test-code }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #test-code }
 
 Java
-:  @@snip [BuncherTest.java]($code$/java/jdocs/actor/fsm/BuncherTest.java) { #test-code }
+:  @@snip [BuncherTest.java](/akka-docs/src/test/java/jdocs/actor/fsm/BuncherTest.java) { #test-code }
 
 ## Reference
 
@@ -165,10 +165,10 @@ Actor since an Actor is created to drive the FSM.
 ]
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #simple-fsm }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #simple-fsm }
 
 Java
-:  @@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #simple-fsm }
+:  @@snip [Buncher.java](/akka-docs/src/test/java/jdocs/actor/fsm/Buncher.java) { #simple-fsm }
 
 @@@ note
 
@@ -222,10 +222,10 @@ which is conveniently given using the @scala[partial function literal]@java[stat
 demonstrated below:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #when-syntax }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #when-syntax }
 
 Java
-:  @@snip [Buncher.java]($code$/java/jdocs/actor/fsm/Buncher.java) { #when-syntax }
+:  @@snip [Buncher.java](/akka-docs/src/test/java/jdocs/actor/fsm/Buncher.java) { #when-syntax }
 
 @@@ div { .group-scala }
 
@@ -247,10 +247,10 @@ states. If you want to leave the handling of a state “unhandled” (more below
 it still needs to be declared like this:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #NullFunction }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #NullFunction }
 
 Java
-:  @@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #NullFunction }
+:  @@snip [FSMDocTest.java](/akka-docs/src/test/java/jdocs/actor/fsm/FSMDocTest.java) { #NullFunction }
 
 ### Defining the Initial State
 
@@ -271,10 +271,10 @@ do something else in this case you can specify that with
 `whenUnhandled(stateFunction)`:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #unhandled-syntax }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #unhandled-syntax }
 
 Java
-:  @@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #unhandled-syntax }
+:  @@snip [FSMDocTest.java](/akka-docs/src/test/java/jdocs/actor/fsm/FSMDocTest.java) { #unhandled-syntax }
 
 Within this handler the state of the FSM may be queried using the
 `stateName` method.
@@ -314,10 +314,10 @@ does not modify the state transition.
 All modifiers can be chained to achieve a nice and concise description:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #modifier-syntax }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #modifier-syntax }
 
 Java
-:  @@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #modifier-syntax }
+:  @@snip [FSMDocTest.java](/akka-docs/src/test/java/jdocs/actor/fsm/FSMDocTest.java) { #modifier-syntax }
 
 The parentheses are not actually needed in all cases, but they visually
 distinguish between modifiers and their arguments and therefore make the code
@@ -356,10 +356,10 @@ resulting state is needed as it is not possible to modify the transition in
 progress.
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #transition-syntax }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #transition-syntax }
 
 Java
-:  @@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #transition-syntax }
+:  @@snip [FSMDocTest.java](/akka-docs/src/test/java/jdocs/actor/fsm/FSMDocTest.java) { #transition-syntax }
 
 @@@ div { .group-scala }
 
@@ -376,10 +376,10 @@ It is also possible to pass a function object accepting two states to
 a method:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #alt-transition-syntax }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #alt-transition-syntax }
 
 Java
-:  @@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #alt-transition-syntax }
+:  @@snip [FSMDocTest.java](/akka-docs/src/test/java/jdocs/actor/fsm/FSMDocTest.java) { #alt-transition-syntax }
 
 The handlers registered with this method are stacked, so you can intersperse
 `onTransition` blocks with `when` blocks as suits your design. It
@@ -431,13 +431,13 @@ transformed using Scala’s full supplement of functional programming tools. In
 order to retain type inference, there is a helper function which may be used in
 case some common handling logic shall be applied to different clauses:
 
-@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #transform-syntax }
+@@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #transform-syntax }
 
 It goes without saying that the arguments to this method may also be stored, to
 be used several times, e.g. when applying the same transformation to several
 `when()` blocks:
 
-@@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #alt-transform-syntax }
+@@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #alt-transform-syntax }
 
 @@@
 
@@ -495,20 +495,20 @@ may not be used within a `when` block).
 @@@
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #stop-syntax }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #stop-syntax }
 
 Java
-:  @@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #stop-syntax }
+:  @@snip [FSMDocTest.java](/akka-docs/src/test/java/jdocs/actor/fsm/FSMDocTest.java) { #stop-syntax }
 
 You can use `onTermination(handler)` to specify custom code that is
 executed when the FSM is stopped. The handler is a partial function which takes
 a `StopEvent(reason, stateName, stateData)` as argument:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #termination-syntax }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #termination-syntax }
 
 Java
-:  @@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #termination-syntax }
+:  @@snip [FSMDocTest.java](/akka-docs/src/test/java/jdocs/actor/fsm/FSMDocTest.java) { #termination-syntax }
 
 As for the `whenUnhandled` case, this handler is not stacked, so each
 invocation of `onTermination` replaces the previously installed handler.
@@ -541,10 +541,10 @@ The setting `akka.actor.debug.fsm` in @ref:[configuration](general/configuration
 event trace by `LoggingFSM` instances:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #logging-fsm }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #logging-fsm }
 
 Java
-:  @@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #logging-fsm }
+:  @@snip [FSMDocTest.java](/akka-docs/src/test/java/jdocs/actor/fsm/FSMDocTest.java) { #logging-fsm }
 
 This FSM will log at DEBUG level:
 
@@ -563,10 +563,10 @@ log which may be used during debugging (for tracing how the FSM entered a
 certain failure state) or for other creative uses:
 
 Scala
-:  @@snip [FSMDocSpec.scala]($code$/scala/docs/actor/FSMDocSpec.scala) { #logging-fsm }
+:  @@snip [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #logging-fsm }
 
 Java
-:  @@snip [FSMDocTest.java]($code$/java/jdocs/actor/fsm/FSMDocTest.java) { #logging-fsm }
+:  @@snip [FSMDocTest.java](/akka-docs/src/test/java/jdocs/actor/fsm/FSMDocTest.java) { #logging-fsm }
 
 The `logDepth` defaults to zero, which turns off the event log.
 

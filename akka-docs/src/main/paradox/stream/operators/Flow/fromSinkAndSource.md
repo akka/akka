@@ -8,7 +8,7 @@ Creates a `Flow` from a `Sink` and a `Source` where the Flow's input will be sen
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #fromSinkAndSource }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #fromSinkAndSource }
 
 @@@
 

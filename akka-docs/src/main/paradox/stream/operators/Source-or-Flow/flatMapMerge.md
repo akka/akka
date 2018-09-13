@@ -8,7 +8,7 @@ Transform each input element into a `Source` whose elements are then flattened i
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #flatMapMerge }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #flatMapMerge }
 
 @@@
 

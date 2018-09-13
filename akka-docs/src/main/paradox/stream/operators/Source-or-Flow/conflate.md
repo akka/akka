@@ -8,7 +8,7 @@ Allow for a slower downstream by passing incoming elements and a summary into an
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #conflate }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #conflate }
 
 @@@
 

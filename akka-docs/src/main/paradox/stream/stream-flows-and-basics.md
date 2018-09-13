@@ -90,10 +90,10 @@ thread-safe, and freely shareable*, which means that it is for example safe to s
 one actor prepare the work, and then have it be materialized at some completely different place in the code.
 
 Scala
-:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materialization-in-steps }
+:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #materialization-in-steps }
 
 Java
-:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #materialization-in-steps }
+:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #materialization-in-steps }
 
 @@@ div { .group-scala }
 
@@ -127,19 +127,19 @@ both a `Source` and a `Sink` (in order to run a `Flow`, since it has neither att
 @@@
 
 Scala
-:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materialization-runWith }
+:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #materialization-runWith }
 
 Java
-:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #materialization-runWith }
+:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #materialization-runWith }
 
 It is worth pointing out that since operators are *immutable*, connecting them returns a new operator,
 instead of modifying the existing instance, so while constructing long flows, remember to assign the new value to a variable or run it:
 
 Scala
-:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #source-immutable }
+:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #source-immutable }
 
 Java
-:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #source-immutable }
+:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #source-immutable }
 
 @@@ note
 
@@ -160,10 +160,10 @@ variable. Both materializations give us a different @scala[`Future`] @java[`Comp
 to refer to the future:
 
 Scala
-:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #stream-reuse }
+:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #stream-reuse }
 
 Java
-:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #stream-reuse }
+:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #stream-reuse }
 
 ### Defining sources, sinks and flows
 
@@ -171,18 +171,18 @@ The objects `Source` and `Sink` define various ways to create sources and sinks 
 examples show some of the most useful constructs (refer to the API documentation for more details):
 
 Scala
-:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #source-sink }
+:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #source-sink }
 
 Java
-:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #source-sink }
+:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #source-sink }
 
 There are various ways to wire up different parts of a stream, the following examples show some of the available options:
 
 Scala
-:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-connecting }
+:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #flow-connecting }
 
 Java
-:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #flow-connecting }
+:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #flow-connecting }
 
 ### Illegal stream elements
 
@@ -297,10 +297,10 @@ operators by way of adding `Attributes.asyncBoundary` using the method `async` o
 to operators that shall communicate with the downstream of the graph in an asynchronous fashion.
 
 Scala
-:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-async }
+:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #flow-async }
 
 Java
-:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #flow-async }
+:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #flow-async }
 
 In this example we create two regions within the flow which will be executed in one Actor each—assuming that adding
 and multiplying integers is an extremely costly operation this will lead to a performance gain since two CPUs can
@@ -334,10 +334,10 @@ many operator methods have variants that take an additional argument, a function
 resulting values. Some examples of using these combiners are illustrated in the example below.
 
 Scala
-:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #flow-mat-combine }
+:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #flow-mat-combine }
 
 Java
-:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #flow-mat-combine }
+:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #flow-mat-combine }
 
 @@@ note
 
@@ -354,10 +354,10 @@ By using the `preMaterialize` operator on a `Source`, you can obtain its materia
 to consume messages from the original `Source`. Note that this can be materialized multiple times.
 
 Scala
-:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #source-prematerialization }
+:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #source-prematerialization }
 
 Java
-:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #source-prematerialization }
+:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #source-prematerialization }
 
 ## Stream ordering
 
@@ -388,10 +388,10 @@ The usual way of creating an `ActorMaterializer` is to create it next to your `A
 which likely is in a "main" class of your application:
 
 Scala
-:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-system }
+:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-system }
 
 Java
-:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #materializer-from-system }
+:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #materializer-from-system }
 
 In this case the streams run by the materializer will run until it is shut down. When the materializer is shut down
 *before* the streams have run to completion, they will be terminated abruptly. This is a little different than the
@@ -402,10 +402,10 @@ normal completion signals to manage the lifecycles of your streams.
 If we look at the following example, where we create the `ActorMaterializer` within an `Actor`:
 
 Scala
-:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-actor-context }
+:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-actor-context }
 
 Java
-:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #materializer-from-actor-context }
+:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #materializer-from-actor-context }
 
 In the above example we used the `ActorContext` to create the materializer. This binds its lifecycle to the surrounding `Actor`. In other words, while the stream we started there would under normal circumstances run forever, if we stop the Actor it would terminate the stream as well. We have *bound the stream's lifecycle to the surrounding actor's lifecycle*.
 This is a very useful technique if the stream is closely related to the actor, e.g. when the actor represents a user or other entity, that we continuously query using the created stream -- and it would not make sense to keep the stream alive when the actor has terminated already. The streams termination will be signalled by an "Abrupt termination exception" signaled by the stream.
@@ -417,10 +417,10 @@ For example, you are using an Akka stream to push some large stream of data to a
 You may want to eagerly stop the Actor since it has performed all of its duties already:
 
 Scala
-:   @@snip [FlowDocSpec.scala]($code$/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-system-in-actor }
+:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-system-in-actor }
 
 Java
-:   @@snip [FlowDocTest.java]($code$/java/jdocs/stream/FlowDocTest.java) { #materializer-from-system-in-actor }
+:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #materializer-from-system-in-actor }
 
 In the above example we pass in a materializer to the Actor, which results in binding its lifecycle to the entire `ActorSystem` rather than the single enclosing actor. This can be useful if you want to share a materializer or group streams into specific materializers,
 for example because of the materializer's settings etc.
