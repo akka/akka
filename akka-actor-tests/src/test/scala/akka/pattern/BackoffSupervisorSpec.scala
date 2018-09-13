@@ -6,6 +6,7 @@ package akka.pattern
 
 import akka.actor._
 import akka.testkit._
+import org.scalatest.concurrent.Eventually
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
 import scala.concurrent.duration._
@@ -42,7 +43,7 @@ object BackoffSupervisorSpec {
   }
 }
 
-class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
+class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually {
   import BackoffSupervisorSpec._
 
   def onStopOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) = Backoff.onStop(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
@@ -245,15 +246,15 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
 
     "stop restarting the child after reaching maxNrOfRetries limit (Backoff.onStop)" in {
       val supervisor = create(onStopOptions(maxNrOfRetries = 2))
-      def waitForChild(n: Int = 0): Option[ActorRef] = {
+      def waitForChild: Option[ActorRef] = {
+        eventually(timeout(1.second), interval(50.millis)) {
+          supervisor ! BackoffSupervisor.GetCurrentChild
+          val c = expectMsgType[BackoffSupervisor.CurrentChild].ref
+          c.isDefined shouldBe true
+        }
+
         supervisor ! BackoffSupervisor.GetCurrentChild
-        val c = expectMsgType[BackoffSupervisor.CurrentChild].ref
-        if (c.isDefined)
-          c
-        else if (n < 20) {
-          Thread.sleep(50)
-          waitForChild(n + 1)
-        } else None
+        expectMsgType[BackoffSupervisor.CurrentChild].ref
       }
 
       watch(supervisor)
@@ -270,7 +271,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
       supervisor ! BackoffSupervisor.GetRestartCount
       expectMsg(BackoffSupervisor.RestartCount(1))
 
-      val c2 = waitForChild().get
+      val c2 = waitForChild.get
       awaitAssert(c2 should !==(c1))
       watch(c2)
       c2 ! PoisonPill
@@ -279,7 +280,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
       supervisor ! BackoffSupervisor.GetRestartCount
       expectMsg(BackoffSupervisor.RestartCount(2))
 
-      val c3 = waitForChild().get
+      val c3 = waitForChild.get
       awaitAssert(c3 should !==(c2))
       watch(c3)
       c3 ! PoisonPill
@@ -291,15 +292,15 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
       filterException[TestException] {
         val supervisor = create(onFailureOptions(maxNrOfRetries = 2))
 
-        def waitForChild(n: Int = 0): Option[ActorRef] = {
+        def waitForChild: Option[ActorRef] = {
+          eventually(timeout(1.second), interval(50.millis)) {
+            supervisor ! BackoffSupervisor.GetCurrentChild
+            val c = expectMsgType[BackoffSupervisor.CurrentChild].ref
+            c.isDefined shouldBe true
+          }
+
           supervisor ! BackoffSupervisor.GetCurrentChild
-          val c = expectMsgType[BackoffSupervisor.CurrentChild].ref
-          if (c.isDefined)
-            c
-          else if (n < 20) {
-            Thread.sleep(50)
-            waitForChild(n + 1)
-          } else None
+          expectMsgType[BackoffSupervisor.CurrentChild].ref
         }
 
         watch(supervisor)
@@ -316,7 +317,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
         supervisor ! BackoffSupervisor.GetRestartCount
         expectMsg(BackoffSupervisor.RestartCount(1))
 
-        val c2 = waitForChild().get
+        val c2 = waitForChild.get
         awaitAssert(c2 should !==(c1))
         watch(c2)
         c2 ! "boom"
@@ -325,7 +326,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
         supervisor ! BackoffSupervisor.GetRestartCount
         expectMsg(BackoffSupervisor.RestartCount(2))
 
-        val c3 = waitForChild().get
+        val c3 = waitForChild.get
         awaitAssert(c3 should !==(c2))
         watch(c3)
         c3 ! "boom"
