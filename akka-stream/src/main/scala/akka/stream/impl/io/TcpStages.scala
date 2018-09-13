@@ -236,7 +236,7 @@ private[stream] object ConnectionSourceStage {
       val msg = evt._2
       msg match {
         case Terminated(_)          ⇒ failStage(new StreamTcpException("The IO manager actor (TCP) has terminated. Stopping now."))
-        case f @ CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}"))
+        case f @ CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}").initCause(f.cause.orNull))
         case c: Connected ⇒
           role.asInstanceOf[Outbound].localAddressPromise.success(c.localAddress)
           connection = sender
@@ -276,7 +276,7 @@ private[stream] object ConnectionSourceStage {
             pull(bytesIn)
 
         case Terminated(_)          ⇒ failStage(new StreamTcpException("The connection actor has terminated. Stopping now."))
-        case f @ CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}"))
+        case f @ CommandFailed(cmd) ⇒ failStage(new StreamTcpException(s"Tcp command [$cmd] failed${f.causedByString}").initCause(f.cause.orNull))
         case ErrorClosed(cause)     ⇒ failStage(new StreamTcpException(s"The connection closed with error: $cause"))
         case Aborted                ⇒ failStage(new StreamTcpException("The connection has been aborted"))
         case Closed                 ⇒ completeStage()
