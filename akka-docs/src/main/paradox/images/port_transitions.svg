@@ -687,7 +687,7 @@
        id="g6720"
        transform="translate(54,0)">
       <rect
-         style="fill:none;stroke:#4e9a06;stroke-width:4;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+         style="fill:none;stroke:#000000;stroke-width:4;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
          id="rect6674"
          width="133.937"
          height="62.001453"
@@ -750,7 +750,7 @@
       <g
          id="g6729">
         <rect
-           style="fill:none;stroke:#000000;stroke-width:4;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+           style="fill:none;stroke:#4e9a06;stroke-width:4;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
            id="rect6692"
            width="133.937"
            height="62.001453"

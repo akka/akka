@@ -96,8 +96,11 @@ Java
 ### Port states, @scala[InHandler] @java[AbstractInHandler] and @scala[OutHandler] @java[AbstractOutHandler]
 
 In order to interact with a port (`Inlet` or `Outlet`) of the operator we need to be able to receive events
-and generate new events belonging to the port. From the `GraphStageLogic` the following operations are available
-on an output port:
+and generate new events belonging to the port.
+
+#### Output port
+
+From the `GraphStageLogic` the following operations are available on an output port:
 
  * `push(out,elem)` pushes an element to the output port. Only possible after the port has been pulled by downstream.
  * `complete(out)` closes the output port normally.
@@ -122,6 +125,8 @@ to call it while the port is in that state. If an event is not listed for a stat
 in that state.
 
 ![outport_transitions.png](../images/outport_transitions.png)
+
+#### Input port
 
 The following operations are available for *input* ports:
 
@@ -154,10 +159,14 @@ in that state.
 
 ![inport_transitions.png](../images/inport_transitions.png)
 
+#### Complete and fail
+
 Finally, there are two methods available for convenience to complete the operator and all of its ports:
 
  * `completeStage()` is equivalent to closing all output ports and cancelling all input ports.
  * `failStage(exception)` is equivalent to failing all output ports and cancelling all input ports.
+
+#### Emit
 
 In some cases it is inconvenient and error prone to react on the regular state machine events with the
 signal based API described above. For those cases there is an API which allows for a more declarative sequencing
