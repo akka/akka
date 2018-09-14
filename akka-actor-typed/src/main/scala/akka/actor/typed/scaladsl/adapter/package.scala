@@ -5,7 +5,9 @@
 package akka.actor.typed
 package scaladsl
 
+import akka.actor.ExtendedActorSystem
 import akka.actor.typed.internal.adapter._
+import akka.annotation.InternalApi
 
 /**
  * Scala API: Adapters between typed and untyped actors and actor systems.
@@ -52,6 +54,13 @@ package object adapter {
    */
   implicit class TypedActorSystemOps(val sys: ActorSystem[_]) extends AnyVal {
     def toUntyped: akka.actor.ActorSystem = ActorSystemAdapter.toUntyped(sys)
+
+    /**
+     * INTERNAL API
+     */
+    @InternalApi private[akka] def internalSystemActorOf[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U] = {
+      toUntyped.asInstanceOf[ExtendedActorSystem].systemActorOf(PropsAdapter(behavior, props), name)
+    }
   }
 
   /**

@@ -9,6 +9,7 @@ import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.actor.typed.ActorRef
 import akka.actor.ExtendedActorSystem
+import akka.actor.typed.Props
 
 object DistributedData extends ExtensionId[DistributedData] {
   def get(system: ActorSystem[_]): DistributedData = apply(system)
@@ -43,7 +44,7 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
     val underlyingReplicator = akka.cluster.ddata.DistributedData(untypedSystem).replicator
     val replicatorBehavior = Replicator.behavior(settings, underlyingReplicator)
 
-    untypedSystem.systemActorOf(PropsAdapter(replicatorBehavior), name)
+    system.internalSystemActorOf(replicatorBehavior, name, Props.empty)
   }
 
 }
