@@ -1,0 +1,3 @@
+# #25435 - Adding maximum restart attempts to BackoffSupervisor
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withMaxNrOfRetries")
+
