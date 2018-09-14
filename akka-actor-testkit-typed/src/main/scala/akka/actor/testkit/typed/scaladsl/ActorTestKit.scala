@@ -123,12 +123,4 @@ trait ActorTestKit {
   final def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
     Await.result(internalSystem ? (ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
 
-  // FIXME needed for Akka internal tests but, users shouldn't spawn system actors?
-  @InternalApi
-  private[akka] def systemActor[T](behavior: Behavior[T], name: String): ActorRef[T] =
-    Await.result(system.systemActorOf(behavior, name), timeout.duration)
-
-  @InternalApi
-  private[akka] def systemActor[T](behavior: Behavior[T]): ActorRef[T] =
-    Await.result(system.systemActorOf(behavior, childName.next()), timeout.duration)
 }

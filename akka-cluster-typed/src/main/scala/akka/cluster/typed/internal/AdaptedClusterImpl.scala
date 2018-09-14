@@ -5,6 +5,7 @@
 package akka.cluster.typed.internal
 
 import akka.actor.ExtendedActorSystem
+import akka.actor.typed.Props
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.{ ClusterEvent, MemberStatus }
@@ -13,6 +14,7 @@ import akka.cluster.typed._
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
+import akka.cluster.Member
 
 /**
  * INTERNAL API:
@@ -136,19 +138,19 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
   import AdapterClusterImpl._
 
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted actor systems can be used for cluster features")
-  private val untypedSystem = system.toUntyped
-  private def extendedUntyped = untypedSystem.asInstanceOf[ExtendedActorSystem]
-  private val untypedCluster = akka.cluster.Cluster(untypedSystem)
+  private val untypedCluster = akka.cluster.Cluster(system.toUntyped)
 
-  override def selfMember = untypedCluster.selfMember
-  override def isTerminated = untypedCluster.isTerminated
-  override def state = untypedCluster.state
+  override def selfMember: Member = untypedCluster.selfMember
+  override def isTerminated: Boolean = untypedCluster.isTerminated
+  override def state: ClusterEvent.CurrentClusterState = untypedCluster.state
 
   // must not be lazy as it also updates the cached selfMember
-  override val subscriptions: ActorRef[ClusterStateSubscription] = extendedUntyped.systemActorOf(
-    PropsAdapter(subscriptionsBehavior(untypedCluster)), "clusterStateSubscriptions")
+  override val subscriptions: ActorRef[ClusterStateSubscription] =
+    system.internalSystemActorOf(
+      subscriptionsBehavior(untypedCluster), "clusterStateSubscriptions", Props.empty)
 
-  override lazy val manager: ActorRef[ClusterCommand] = extendedUntyped.systemActorOf(
-    PropsAdapter(managerBehavior(untypedCluster)), "clusterCommandManager")
+  override lazy val manager: ActorRef[ClusterCommand] =
+    system.internalSystemActorOf(
+      managerBehavior(untypedCluster), "clusterCommandManager", Props.empty)
 
 }

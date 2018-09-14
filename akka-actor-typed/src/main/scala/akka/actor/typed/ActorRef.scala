@@ -61,17 +61,6 @@ object ActorRef {
     def !(msg: T): Unit = ref.tell(msg)
   }
 
-  /**
-   * INTERNAL API
-   *
-   * FIXME, this isn't really used since we removed the native actor system
-   */
-  @InternalApi private[akka] def apply[T](f: Future[ActorRef[T]], bufferSize: Int = 1000): ActorRef[T] =
-    f.value match {
-      // an AdaptedActorSystem will always create refs eagerly, so it will take this path
-      case Some(Success(ref)) ⇒ ref
-      case _                  ⇒ throw new IllegalStateException("Only expecting completed futures until the native actor system is implemented")
-    }
 }
 
 /**
