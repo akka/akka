@@ -1,5 +1,11 @@
 # DNS Extension
 
+@@@ note
+
+The `async-dns` API is marked as `ApiMayChange` as more information is expected to be added to the protocol.
+
+@@@
+
 Akka DNS is a pluggable way to interact with DNS. Implementations much implement `akka.io.DnsProvider` and provide a configuration
 block that specifies the implementation via `provider-object`.
 
@@ -15,10 +21,10 @@ There are currently two implementations:
 DNS lookups can be done via the `DNS` extension:
 
 Scala
-:  @@snip [DnsCompileOnlyDocSpec.scala]($code$/scala/docs/actor/io/dns/DnsCompileOnlyDocSpec.scala) { #resolve }
+:  @@snip [DnsCompileOnlyDocSpec.scala](/akka-docs/src/test/scala/docs/actor/io/dns/DnsCompileOnlyDocSpec.scala) { #resolve }
 
 Java
-:  @@snip [DnsCompileOnlyDocTest.java]($code$/java/jdocs/actor/io/dns/DnsCompileOnlyDocTest.java) { #resolve }
+:  @@snip [DnsCompileOnlyDocTest.java](/akka-docs/src/test/java/jdocs/actor/io/dns/DnsCompileOnlyDocTest.java) { #resolve }
 
 Alternatively the `IO(Dns)` actor can be interacted with directly. However this exposes the different protocols of the DNS provider.
 `inet-adddress` uses `Dns.Resolved` and `Dns.Resolved` where as the `async-dns` uses `DnsProtocol.Resolve` and `DnsProtocol.Resolved`. 
@@ -28,26 +34,25 @@ and it wasn't possible to evolve the original API in a backward compatible way.
 Inet-Address API:
 
 Scala
-:  @@snip [IODocSpec.scala]($code$/scala/docs/actor/io/dns/DnsCompileOnlyDocSpec.scala) { #actor-api-inet-address }
+:  @@snip [IODocSpec.scala](/akka-docs/src/test/scala/docs/actor/io/dns/DnsCompileOnlyDocSpec.scala) { #actor-api-inet-address }
 
 Java
-:  @@snip [DnsCompileOnlyDocTest.java]($code$/java/jdocs/actor/io/dns/DnsCompileOnlyDocTest.java) { #actor-api-inet-address }
+:  @@snip [DnsCompileOnlyDocTest.java](/akka-docs/src/test/java/jdocs/actor/io/dns/DnsCompileOnlyDocTest.java) { #actor-api-inet-address }
 
 Async-DNS API:
 
 Scala
-:  @@snip [IODocSpec.scala]($code$/scala/docs/actor/io/dns/DnsCompileOnlyDocSpec.scala) { #actor-api-async }
+:  @@snip [IODocSpec.scala](/akka-docs/src/test/scala/docs/actor/io/dns/DnsCompileOnlyDocSpec.scala) { #actor-api-async }
 
 Java
-:  @@snip [DnsCompileOnlyDocTest.java]($code$/java/jdocs/actor/io/dns/DnsCompileOnlyDocTest.java) { #actor-api-async }
+:  @@snip [DnsCompileOnlyDocTest.java](/akka-docs/src/test/java/jdocs/actor/io/dns/DnsCompileOnlyDocTest.java) { #actor-api-async }
 
 The Async DNS provider has the following advantages:
 
 * No JVM DNS caching. It is expected that future versions will expose more caching related information.
 * No blocking. `InetAddress` resolving is a blocking operation.
-* Exposes `SRV`, `A` and `AAAA` records
+* Exposes `SRV`, `A` and `AAAA` records.
 
-Beware that the `async-dns` API is marked as `ApiMayChange` as more information is expected to be added.
 
 ## SRV Records
 
@@ -55,10 +60,10 @@ To get DNS SRV records `akka.io.dns.resolver` must be set to `async-dns` and `Dn
 must be set to `DnsProtocol.Srv` 
 
 Scala
-:  @@snip [IODocSpec.scala]($code$/scala/docs/actor/io/dns/DnsCompileOnlyDocSpec.scala) { #srv }
+:  @@snip [IODocSpec.scala](/akka-docs/src/test/scala/docs/actor/io/dns/DnsCompileOnlyDocSpec.scala) { #srv }
 
 Java
-:  @@snip [DnsCompileOnlyDocTest.java]($code$/java/jdocs/actor/io/dns/DnsCompileOnlyDocTest.java) { #srv }
+:  @@snip [DnsCompileOnlyDocTest.java](/akka-docs/src/test/java/jdocs/actor/io/dns/DnsCompileOnlyDocTest.java) { #srv }
 
 The `DnsProtocol.Resolved` will contain `akka.io.dns.SRVRecord`s.
 

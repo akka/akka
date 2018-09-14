@@ -15,6 +15,8 @@ import static akka.pattern.PatternsCS.pipe;
 
 import scala.Option;
 
+import java.util.concurrent.CompletionStage;
+
 
 public class DnsCompileOnlyDocTest {
     public static void example() {
@@ -31,7 +33,7 @@ public class DnsCompileOnlyDocTest {
         {
             //#actor-api-inet-address
             final ActorRef dnsManager = Dns.get(system).manager();
-            ask(dnsManager, new Dns.Resolve("google.com"), timeout);
+            CompletionStage<Object> resolved = ask(dnsManager, new Dns.Resolve("google.com"), timeout);
             //#actor-api-inet-address
 
         }
@@ -39,14 +41,14 @@ public class DnsCompileOnlyDocTest {
         {
             //#actor-api-async
             final ActorRef dnsManager = Dns.get(system).manager();
-            ask(dnsManager, DnsProtocol.resolve("google.com"), timeout);
+            CompletionStage<Object> resolved = ask(dnsManager, DnsProtocol.resolve("google.com"), timeout);
             //#actor-api-async
         }
 
         {
             //#srv
             final ActorRef dnsManager = Dns.get(system).manager();
-            ask(dnsManager, DnsProtocol.resolve("google.com", DnsProtocol.srvRequestType()), timeout);
+            CompletionStage<Object> resolved = ask(dnsManager, DnsProtocol.resolve("google.com", DnsProtocol.srvRequestType()), timeout);
             //#srv
         }
 
