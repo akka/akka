@@ -176,7 +176,9 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
       "Only direct children of an actor can be stopped through the actor context, " +
         s"but [$child] is not a child of [$self]. Stopping other actors has to be expressed as " +
         "an explicit stop message that the actor accepts.")
-    else ()
+    else {
+      _children -= child.path.name
+    }
   }
   override def watch[U](other: ActorRef[U]): Unit = ()
   override def watchWith[U](other: ActorRef[U], msg: T): Unit = ()
