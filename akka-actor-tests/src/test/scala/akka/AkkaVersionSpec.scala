@@ -59,7 +59,7 @@ class AkkaVersionSpec extends WordSpec with Matchers {
     }
 
     "succeed if Akka version is SNAPSHOT" in {
-      AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.16")
+      AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5-SNAPSHOT")
     }
 
     "succeed if Akka version is timestamped SNAPSHOT" in {
