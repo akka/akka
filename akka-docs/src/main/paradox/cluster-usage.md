@@ -417,7 +417,7 @@ as the first message, followed by events for incremental updates.
 Note that you may receive an empty `CurrentClusterState`, containing no members,
 followed by `MemberUp` events from other nodes which already joined,
 if you start the subscription before the initial join procedure has completed.
-(e.g.) When you start the subscription immediately after `cluster.join()` like below.
+This may for example happen when you start the subscription immediately after `cluster.join()` like below.
 This is expected behavior. When the node has been accepted in the cluster you will
 receive `MemberUp` for that node, and other nodes.
 
@@ -428,7 +428,7 @@ Java
 :  @@snip [SimpleClusterListener2.java]($code$/java/jdocs/cluster/SimpleClusterListener2.java) { #join #subscribe }
 
 To avoid receiving an empty `CurrentClusterState` at the beginning, you can use like below,
-to defer subscription until the `MemberUp` event for the own node is received.
+to defer subscription until the `MemberUp` event for the own node is received:
 
 Scala
 :  @@snip [SimpleClusterListener2.scala]($code$/scala/docs/cluster/SimpleClusterListener2.scala) { #join #register-on-memberup }
