@@ -184,32 +184,36 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     // not tailrec but that should be ok
     def loop(timeout: FiniteDuration, seen: List[M]): List[M] = {
       val start = System.nanoTime()
-      val msg = receiveOne(timeout)
-      try {
-        fisher(msg) match {
-          case FishingOutcome.Complete    ⇒ (msg :: seen).reverse
-          case FishingOutcome.Fail(error) ⇒ throw new AssertionError(s"$error, hint: $hint")
-          case continue ⇒
-            val newTimeout =
-              if (timeout.isFinite()) timeout - (System.nanoTime() - start).nanos
-              else timeout
-            if (newTimeout.toMillis <= 0) {
-              throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
-            } else {
+      val maybeMsg = Option(receiveOne(timeout))
+      maybeMsg match {
+        case Some(msg) =>
+          try {
+            fisher(msg) match {
+              case FishingOutcome.Complete    ⇒ (msg :: seen).reverse
+              case FishingOutcome.Fail(error) ⇒ throw new AssertionError(s"$error, hint: $hint")
+              case continue ⇒
+                val newTimeout =
+                  if (timeout.isFinite()) timeout - (System.nanoTime() - start).nanos
+                  else timeout
+                if (newTimeout.toMillis <= 0) {
+                  throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
+                } else {
 
-              continue match {
-                case FishingOutcome.Continue          ⇒ loop(newTimeout, msg :: seen)
-                case FishingOutcome.ContinueAndIgnore ⇒ loop(newTimeout, seen)
-                case _                                ⇒ ??? // cannot happen
-              }
+                  continue match {
+                    case FishingOutcome.Continue          ⇒ loop(newTimeout, msg :: seen)
+                    case FishingOutcome.ContinueAndIgnore ⇒ loop(newTimeout, seen)
+                    case _                                ⇒ ??? // cannot happen
+                  }
 
+                }
             }
-        }
-      } catch {
-        case ex: MatchError ⇒ throw new AssertionError(
-          s"Unexpected message $msg while fishing for messages, " +
-            s"seen messages ${seen.reverse}, hint: $hint", ex)
-      }
+          } catch {
+            case ex: MatchError ⇒ throw new AssertionError(
+              s"Unexpected message $msg while fishing for messages, " +
+                s"seen messages ${seen.reverse}, hint: $hint", ex)
+          }
+      case None =>
+        throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
     }
 
     loop(max.dilated, Nil)
