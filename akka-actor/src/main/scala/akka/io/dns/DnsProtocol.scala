@@ -48,17 +48,17 @@ object DnsProtocol {
 
   object Resolve {
     def apply(name: String): Resolve = Resolve(name, Ip())
-
-    /**
-     * Java API
-     */
-    def create(name: String): Resolve = Resolve(name, Ip())
-
-    /**
-     * Java API
-     */
-    def create(name: String, requestType: RequestType): Resolve = Resolve(name, requestType)
   }
+
+  /**
+   * Java API
+   */
+  def resolve(name: String): Resolve = Resolve(name, Ip())
+
+  /**
+   * Java API
+   */
+  def resolve(name: String, requestType: RequestType): Resolve = Resolve(name, requestType)
 
   /**
    * @param name of the record
