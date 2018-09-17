@@ -19,7 +19,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 
 class RemoteContextAskSpecSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
   override def identifier = 41
@@ -83,7 +83,7 @@ object RemoteContextAskSpec {
 
 }
 
-class RemoteContextAskSpec extends ActorTestKitWordSpec(RemoteContextAskSpec.config) {
+class RemoteContextAskSpec extends ActorTestKitScalaTestSpec(RemoteContextAskSpec.config) {
 
   import RemoteContextAskSpec._
 

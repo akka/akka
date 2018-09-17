@@ -7,11 +7,12 @@ package akka.actor.typed
 import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.testkit.typed.scaladsl.TestProbe
+
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
-
 import akka.actor.testkit.typed.TestException
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
+import org.scalatest.WordSpecLike
 
 object ActorSpecMessages {
 
@@ -61,7 +62,7 @@ object ActorSpecMessages {
 
 }
 
-abstract class ActorContextSpec extends ActorTestKitWordSpec {
+abstract class ActorContextSpec extends ActorTestKitScalaTestSpec with WordSpecLike {
 
   import ActorSpecMessages._
 

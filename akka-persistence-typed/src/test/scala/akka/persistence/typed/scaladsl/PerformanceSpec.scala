@@ -14,7 +14,7 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 
 object PerformanceSpec {
 
@@ -89,7 +89,7 @@ object PerformanceSpec {
     }
 }
 
-class PerformanceSpec extends ActorTestKitWordSpec(ConfigFactory.parseString(s"""
+class PerformanceSpec extends ActorTestKitScalaTestSpec(ConfigFactory.parseString(s"""
       akka.actor.serialize-creators = off
       akka.actor.serialize-messages = off
       akka.actor.warn-about-java-serializer-usage = off

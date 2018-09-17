@@ -6,13 +6,13 @@ package docs.akka.actor.testkit.typed.scaladsl
 
 //#manual-scheduling-simple
 import scala.concurrent.duration._
-
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 import akka.actor.testkit.typed.scaladsl.ManualTime
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
+import org.scalatest.WordSpecLike
 
-class ManualTimerExampleSpec extends ActorTestKitWordSpec(ManualTime.config) {
+class ManualTimerExampleSpec extends ActorTestKitScalaTestSpec(ManualTime.config) with WordSpecLike {
 
   val manualTime: ManualTime = ManualTime()
 

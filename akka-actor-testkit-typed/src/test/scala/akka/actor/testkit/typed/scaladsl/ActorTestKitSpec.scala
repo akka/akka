@@ -13,7 +13,7 @@ import org.scalatest.Matchers
 import org.scalatest.WordSpec
 import org.scalatest.WordSpecLike
 
-class ActorTestKitSpec extends ActorTestKitWordSpec {
+class ActorTestKitSpec extends ActorTestKitScalaTestSpec with WordSpecLike {
 
   "the Scala testkit" should {
 
@@ -69,7 +69,7 @@ class ActorTestKitSpec extends ActorTestKitWordSpec {
 }
 
 // derivative classes should also work fine (esp the naming part
-abstract class MyBaseSpec extends ActorTestKitWordSpec with WordSpecLike with Matchers
+abstract class MyBaseSpec extends ActorTestKitScalaTestSpec with Matchers with WordSpecLike
 
 class MyConcreteDerivateSpec extends MyBaseSpec {
   "A derivative test" should {

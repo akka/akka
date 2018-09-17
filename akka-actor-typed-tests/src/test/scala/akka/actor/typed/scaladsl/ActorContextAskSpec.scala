@@ -9,12 +9,13 @@ import akka.actor.typed.{ ActorRef, PostStop, Props }
 import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
-
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
+import org.scalatest.WordSpecLike
 
 object ActorContextAskSpec {
   val config = ConfigFactory.parseString(
@@ -31,7 +32,7 @@ object ActorContextAskSpec {
     """)
 }
 
-class ActorContextAskSpec extends ActorTestKitWordSpec(ActorContextAskSpec.config) {
+class ActorContextAskSpec extends ActorTestKitScalaTestSpec(ActorContextAskSpec.config) with WordSpecLike {
 
   implicit val untyped = system.toUntyped // FIXME no typed event filter yet
 

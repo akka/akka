@@ -6,7 +6,7 @@ package akka.persistence.typed.scaladsl
 
 import java.util.UUID
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps }
 import akka.event.Logging
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
@@ -41,7 +41,7 @@ object OptionalSnapshotStoreSpec {
 
 }
 
-class OptionalSnapshotStoreSpec extends ActorTestKitWordSpec(s"""
+class OptionalSnapshotStoreSpec extends ActorTestKitScalaTestSpec(s"""
     akka.persistence.publish-plugin-commands = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.leveldb.dir = "target/journal-${classOf[OptionalSnapshotStoreSpec].getName}"

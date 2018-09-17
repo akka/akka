@@ -23,7 +23,7 @@ object ActorTestKitBase {
  * A base class for the [[ActorTestKit]], making it possible to have testing framework (e.g. ScalaTest)
  * manage the lifecycle of the testkit.
  *
- * An implementation for ScalaTest is [[ActorTestKitWordSpec]].
+ * An implementation for ScalaTest is [[ActorTestKitScalaTestSpec]].
  *
  * Another abstract class that is testing framework specific should extend this class and
  * automatically shut down the `testKit` when the test completes or fails by implementing [[ActorTestKitBase#afterAll]].

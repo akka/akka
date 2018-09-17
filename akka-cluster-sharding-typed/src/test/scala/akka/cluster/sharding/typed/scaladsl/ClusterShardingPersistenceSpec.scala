@@ -4,7 +4,7 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
@@ -59,7 +59,7 @@ object ClusterShardingPersistenceSpec {
 
 }
 
-class ClusterShardingPersistenceSpec extends ActorTestKitWordSpec(ClusterShardingPersistenceSpec.config) {
+class ClusterShardingPersistenceSpec extends ActorTestKitScalaTestSpec(ClusterShardingPersistenceSpec.config) {
   import ClusterShardingPersistenceSpec._
 
   val sharding = ClusterSharding(system)

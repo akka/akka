@@ -211,7 +211,7 @@ object PersistentBehaviorSpec {
 
 }
 
-class PersistentBehaviorSpec extends ActorTestKitWordSpec(PersistentBehaviorSpec.conf) {
+class PersistentBehaviorSpec extends ActorTestKitScalaTestSpec(PersistentBehaviorSpec.conf) {
 
   import PersistentBehaviorSpec._
 

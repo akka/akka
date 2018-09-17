@@ -115,7 +115,7 @@ object ReplicatorSpec {
 
 }
 
-class ReplicatorSpec extends ActorTestKitWordSpec(ReplicatorSpec.config) {
+class ReplicatorSpec extends ActorTestKitScalaTestSpec(ReplicatorSpec.config) {
 
   import ReplicatorSpec._
 

@@ -17,7 +17,7 @@ import akka.testkit.EventFilter
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 
 object RecoveryPermitterSpec {
 
@@ -62,7 +62,7 @@ object RecoveryPermitterSpec {
     }
 }
 
-class RecoveryPermitterSpec extends ActorTestKitWordSpec(s"""
+class RecoveryPermitterSpec extends ActorTestKitScalaTestSpec(s"""
       akka.persistence.max-concurrent-recoveries = 3
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.actor.warn-about-java-serializer-usage = off

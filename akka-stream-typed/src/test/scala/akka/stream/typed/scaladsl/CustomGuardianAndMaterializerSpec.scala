@@ -10,7 +10,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 
 object CustomGuardianAndMaterializerSpec {
 
@@ -21,7 +21,7 @@ object CustomGuardianAndMaterializerSpec {
   case object Failed extends GuardianProtocol
 }
 
-class CustomGuardianAndMaterializerSpec extends ActorTestKitWordSpec {
+class CustomGuardianAndMaterializerSpec extends ActorTestKitScalaTestSpec with WordSpecLike{
   import CustomGuardianAndMaterializerSpec._
 
   val guardian = Behaviors.receive[GuardianProtocol] {

@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 
 import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.ActorSystem
@@ -121,7 +121,7 @@ object ClusterShardingSpec {
 
 }
 
-class ClusterShardingSpec extends ActorTestKitWordSpec(ClusterShardingSpec.config) {
+class ClusterShardingSpec extends ActorTestKitScalaTestSpec(ClusterShardingSpec.config) {
   import ClusterShardingSpec._
 
   val sharding = ClusterSharding(system)

@@ -61,7 +61,7 @@ object PersistentBehaviorFailureSpec {
     """).withFallback(ConfigFactory.load("reference.conf")).resolve()
 }
 
-class PersistentBehaviorFailureSpec extends ActorTestKitWordSpec(PersistentBehaviorFailureSpec.conf) {
+class PersistentBehaviorFailureSpec extends ActorTestKitScalaTestSpec(PersistentBehaviorFailureSpec.conf) {
 
   import PersistentBehaviorSpec._
 

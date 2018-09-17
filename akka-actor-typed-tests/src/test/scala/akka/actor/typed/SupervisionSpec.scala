@@ -13,7 +13,7 @@ import akka.actor.typed.scaladsl.Behaviors._
 import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.testkit.typed._
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -242,10 +242,10 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
   }
 }
 
-class SupervisionSpec extends ActorTestKitWordSpec(
+class SupervisionSpec extends ActorTestKitScalaTestSpec(
   """
     akka.loggers = [akka.testkit.TestEventListener]
-    """) {
+    """) with WordSpecLike {
 
   import SupervisionSpec._
   import BehaviorInterceptor._

@@ -5,9 +5,10 @@
 package docs.akka.actor.testkit.typed.scaladsl
 
 //#scalatest-integration
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
+import org.scalatest.WordSpecLike
 
-class ScalaTestIntegrationExampleSpec extends ActorTestKitWordSpec {
+class ScalaTestIntegrationExampleSpec extends ActorTestKitScalaTestSpec with WordSpecLike {
 
   "Something" must {
     "behave correctly" in {

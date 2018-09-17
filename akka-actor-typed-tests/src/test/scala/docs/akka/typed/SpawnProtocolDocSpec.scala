@@ -7,10 +7,10 @@ package docs.akka.typed
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 import docs.akka.typed.IntroSpec.HelloWorld
+import org.scalatest.WordSpecLike
 
 //#imports1
 import akka.actor.typed.Behavior
@@ -43,7 +43,7 @@ object SpawnProtocolDocSpec {
   //#main
 }
 
-class SpawnProtocolDocSpec extends ActorTestKitWordSpec {
+class SpawnProtocolDocSpec extends ActorTestKitScalaTestSpec with WordSpecLike {
 
   import SpawnProtocolDocSpec._
 

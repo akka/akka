@@ -21,7 +21,7 @@ object ActorSourceSinkSpec {
   case object Failed extends AckProto
 }
 
-class ActorSourceSinkSpec extends ActorTestKitWordSpec {
+class ActorSourceSinkSpec extends ActorTestKitScalaTestSpec with WordSpecLike{
   import ActorSourceSinkSpec._
 
   implicit val mat = ActorMaterializer()

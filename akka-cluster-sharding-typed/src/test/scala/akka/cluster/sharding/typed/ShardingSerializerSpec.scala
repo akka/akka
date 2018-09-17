@@ -7,9 +7,9 @@ package akka.cluster.sharding.typed
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.cluster.sharding.typed.internal.ShardingSerializer
 import akka.serialization.SerializationExtension
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 
-class ShardingSerializerSpec extends ActorTestKitWordSpec {
+class ShardingSerializerSpec extends ActorTestKitScalaTestSpec with WordSpecLike{
 
   "The typed ShardingSerializer" must {
 

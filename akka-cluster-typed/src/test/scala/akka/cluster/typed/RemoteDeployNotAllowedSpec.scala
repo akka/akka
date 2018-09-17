@@ -11,7 +11,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 
 object RemoteDeployNotAllowedSpec {
   def config = ConfigFactory.parseString(
@@ -44,7 +44,7 @@ object RemoteDeployNotAllowedSpec {
     """).withFallback(config)
 }
 
-class RemoteDeployNotAllowedSpec extends ActorTestKitWordSpec(RemoteDeployNotAllowedSpec.config) {
+class RemoteDeployNotAllowedSpec extends ActorTestKitScalaTestSpec(RemoteDeployNotAllowedSpec.config) {
 
   "Typed cluster" must {
 

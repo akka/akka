@@ -10,13 +10,13 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.testkit.TimingTest
+import org.scalatest.WordSpecLike
 
-class TimerSpec extends ActorTestKitWordSpec {
+class TimerSpec extends ActorTestKitScalaTestSpec with WordSpecLike {
 
   sealed trait Command
   case class Tick(n: Int) extends Command

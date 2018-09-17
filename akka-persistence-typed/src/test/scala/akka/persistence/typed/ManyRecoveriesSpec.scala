@@ -13,7 +13,7 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 
 object ManyRecoveriesSpec {
 
@@ -47,7 +47,7 @@ object ManyRecoveriesSpec {
     (1 to n).map(mapper).toSet
 }
 
-class ManyRecoveriesSpec extends ActorTestKitWordSpec(s"""
+class ManyRecoveriesSpec extends ActorTestKitScalaTestSpec(s"""
     akka.actor.default-dispatcher {
       type = Dispatcher
       executor = "thread-pool-executor"
