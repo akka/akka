@@ -16,6 +16,7 @@ import akka.actor.testkit.typed.scaladsl._
 import akka.actor.testkit.typed.TestKitSettings
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
+import org.scalatest.WordSpecLike
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -115,7 +116,7 @@ object ReplicatorSpec {
 
 }
 
-class ReplicatorSpec extends ActorTestKitScalaTestSpec(ReplicatorSpec.config) {
+class ReplicatorSpec extends ActorTestKitScalaTestSpec(ReplicatorSpec.config) with WordSpecLike {
 
   import ReplicatorSpec._
 

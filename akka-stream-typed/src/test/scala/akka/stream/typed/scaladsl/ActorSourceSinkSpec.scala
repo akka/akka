@@ -11,6 +11,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.actor.testkit.typed.scaladsl._
+import org.scalatest.WordSpecLike
 
 object ActorSourceSinkSpec {
 

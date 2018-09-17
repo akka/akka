@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps
 import akka.event.Logging
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import org.scalatest.WordSpecLike
 
 object OptionalSnapshotStoreSpec {
 
@@ -50,7 +51,7 @@ class OptionalSnapshotStoreSpec extends ActorTestKitScalaTestSpec(s"""
 
     # snapshot store plugin is NOT defined, things should still work
     akka.persistence.snapshot-store.local.dir = "target/snapshots-${classOf[OptionalSnapshotStoreSpec].getName}/"
-    """) {
+    """) with WordSpecLike {
 
   import OptionalSnapshotStoreSpec._
 

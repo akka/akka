@@ -10,6 +10,7 @@ import akka.actor.typed.Behavior
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist
 import akka.serialization.SerializationExtension
 import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
+import org.scalatest.WordSpecLike
 
 class AkkaClusterTypedSerializerSpec extends ActorTestKitScalaTestSpec with WordSpecLike {
 

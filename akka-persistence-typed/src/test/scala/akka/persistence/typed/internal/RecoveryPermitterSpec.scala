@@ -14,10 +14,11 @@ import akka.persistence.RecoveryPermitter.{ RecoveryPermitGranted, RequestRecove
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
 import akka.testkit.EventFilter
+
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
+import org.scalatest.WordSpecLike
 
 object RecoveryPermitterSpec {
 
@@ -67,7 +68,7 @@ class RecoveryPermitterSpec extends ActorTestKitScalaTestSpec(s"""
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.actor.warn-about-java-serializer-usage = off
       akka.loggers = ["akka.testkit.TestEventListener"]
-      """) {
+      """) with WordSpecLike {
 
   import RecoveryPermitterSpec._
 

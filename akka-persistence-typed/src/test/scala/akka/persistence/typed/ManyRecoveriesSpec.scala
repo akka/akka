@@ -10,10 +10,11 @@ import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehavior, PersistentBehaviors }
 import akka.testkit.TestLatch
 import akka.actor.testkit.typed.scaladsl.TestProbe
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
+import org.scalatest.WordSpecLike
 
 object ManyRecoveriesSpec {
 
@@ -58,7 +59,7 @@ class ManyRecoveriesSpec extends ActorTestKitScalaTestSpec(s"""
     akka.persistence.max-concurrent-recoveries = 3
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.actor.warn-about-java-serializer-usage = off
-    """) {
+    """) with WordSpecLike {
 
   import ManyRecoveriesSpec._
 

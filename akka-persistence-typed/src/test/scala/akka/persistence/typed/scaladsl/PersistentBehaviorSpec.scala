@@ -20,11 +20,13 @@ import akka.stream.scaladsl.Sink
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.{ Success, Try }
 import akka.persistence.journal.inmem.InmemJournal
+import org.scalatest.WordSpecLike
 
 object PersistentBehaviorSpec {
 
@@ -211,7 +213,7 @@ object PersistentBehaviorSpec {
 
 }
 
-class PersistentBehaviorSpec extends ActorTestKitScalaTestSpec(PersistentBehaviorSpec.conf) {
+class PersistentBehaviorSpec extends ActorTestKitScalaTestSpec(PersistentBehaviorSpec.conf) with WordSpecLike {
 
   import PersistentBehaviorSpec._
 

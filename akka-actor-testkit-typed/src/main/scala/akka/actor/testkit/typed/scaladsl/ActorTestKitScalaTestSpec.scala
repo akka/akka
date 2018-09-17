@@ -49,9 +49,9 @@ abstract class ActorTestKitScalaTestSpec(testKit: ActorTestKit) extends ActorTes
     PatienceConfig(testKit.testKitSettings.DefaultTimeout.duration, Span(100, org.scalatest.time.Millis))
 
   /**
-    * Shuts down the ActorTestKit. If override be sure to call super.afterAll
-    * or shut down the testkit explicitly with `testKit.shutdownTestKit()`.
-    */
+   * Shuts down the ActorTestKit. If override be sure to call super.afterAll
+   * or shut down the testkit explicitly with `testKit.shutdownTestKit()`.
+   */
   override protected def afterAll(): Unit = {
     super.afterAll()
     testKit.shutdownTestKit()

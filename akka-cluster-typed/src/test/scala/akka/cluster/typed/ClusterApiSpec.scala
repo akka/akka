@@ -12,6 +12,7 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
+import org.scalatest.WordSpecLike
 
 object ClusterApiSpec {
   val config = ConfigFactory.parseString(
@@ -34,7 +35,7 @@ object ClusterApiSpec {
     """)
 }
 
-class ClusterApiSpec extends ActorTestKitScalaTestSpec(ClusterApiSpec.config) {
+class ClusterApiSpec extends ActorTestKitScalaTestSpec(ClusterApiSpec.config) with WordSpecLike {
 
   val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)

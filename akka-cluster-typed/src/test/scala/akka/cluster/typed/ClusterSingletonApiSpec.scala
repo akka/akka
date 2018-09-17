@@ -14,10 +14,11 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.{ ActorRef, ActorRefResolver, Props }
 import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
+import org.scalatest.WordSpecLike
 
 object ClusterSingletonApiSpec {
 
@@ -88,7 +89,7 @@ object ClusterSingletonApiSpec {
   }
 }
 
-class ClusterSingletonApiSpec extends ActorTestKitScalaTestSpec(ClusterSingletonApiSpec.config) {
+class ClusterSingletonApiSpec extends ActorTestKitScalaTestSpec(ClusterSingletonApiSpec.config) with WordSpecLike {
   import ClusterSingletonApiSpec._
 
   implicit val testSettings = TestKitSettings(system)
