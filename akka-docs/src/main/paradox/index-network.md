@@ -10,6 +10,7 @@
 * [io](io.md)
 * [io-tcp](io-tcp.md)
 * [io-udp](io-udp.md)
+* [io-dns](io-dns.md)
 * [camel](camel.md)
 
 @@@
