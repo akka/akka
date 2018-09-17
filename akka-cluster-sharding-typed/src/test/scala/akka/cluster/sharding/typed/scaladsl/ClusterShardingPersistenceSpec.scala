@@ -14,6 +14,7 @@ import akka.cluster.typed.Join
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
+import org.scalatest.{ WordSpec, WordSpecLike }
 
 object ClusterShardingPersistenceSpec {
   val config = ConfigFactory.parseString(
@@ -59,7 +60,7 @@ object ClusterShardingPersistenceSpec {
 
 }
 
-class ClusterShardingPersistenceSpec extends ActorTestKitScalaTestSpec(ClusterShardingPersistenceSpec.config) {
+class ClusterShardingPersistenceSpec extends ActorTestKitScalaTestSpec(ClusterShardingPersistenceSpec.config) with WordSpecLike {
   import ClusterShardingPersistenceSpec._
 
   val sharding = ClusterSharding(system)

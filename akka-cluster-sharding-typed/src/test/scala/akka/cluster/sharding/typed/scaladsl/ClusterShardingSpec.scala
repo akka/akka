@@ -7,7 +7,6 @@ package akka.cluster.sharding.typed.scaladsl
 import java.nio.charset.StandardCharsets
 
 import scala.concurrent.duration._
-
 import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
@@ -26,6 +25,7 @@ import akka.serialization.SerializerWithStringManifest
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
+import org.scalatest.WordSpecLike
 import org.scalatest.time.Span
 
 object ClusterShardingSpec {
@@ -121,7 +121,7 @@ object ClusterShardingSpec {
 
 }
 
-class ClusterShardingSpec extends ActorTestKitScalaTestSpec(ClusterShardingSpec.config) {
+class ClusterShardingSpec extends ActorTestKitScalaTestSpec(ClusterShardingSpec.config) with WordSpecLike {
   import ClusterShardingSpec._
 
   val sharding = ClusterSharding(system)

@@ -9,9 +9,10 @@ import akka.stream.typed.scaladsl.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
+import org.scalatest.WordSpecLike
 
 //#imports
 import akka.actor.typed.DispatcherSelector

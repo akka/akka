@@ -5,12 +5,12 @@
 package akka.stream.typed.scaladsl
 
 import scala.concurrent.Future
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
+import org.scalatest.WordSpecLike
 
 object CustomGuardianAndMaterializerSpec {
 
