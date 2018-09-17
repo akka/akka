@@ -186,7 +186,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
       val start = System.nanoTime()
       val maybeMsg = Option(receiveOne(timeout))
       maybeMsg match {
-        case Some(msg) =>
+        case Some(msg) ⇒
           try {
             fisher(msg) match {
               case FishingOutcome.Complete    ⇒ (msg :: seen).reverse
@@ -214,7 +214,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
           }
 
 
-        case None =>
+        case None ⇒
           throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
       }
     }
