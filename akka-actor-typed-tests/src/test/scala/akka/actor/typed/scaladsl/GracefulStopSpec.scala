@@ -7,10 +7,11 @@ package scaladsl
 
 import akka.Done
 import akka.NotUsed
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import org.scalatest.WordSpecLike
 
-final class GracefulStopSpec extends ActorTestKitWordSpec {
+final class GracefulStopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   "Graceful stop" must {
 
@@ -19,13 +20,13 @@ final class GracefulStopSpec extends ActorTestKitWordSpec {
 
       val behavior =
         Behaviors.setup[akka.NotUsed] { context ⇒
-          val c1 = context.spawn[NotUsed](Behaviors.receiveSignal {
+          context.spawn[NotUsed](Behaviors.receiveSignal {
             case (_, PostStop) ⇒
               probe.ref ! "child-done"
               Behaviors.stopped
           }, "child1")
 
-          val c2 = context.spawn[NotUsed](Behaviors.receiveSignal {
+          context.spawn[NotUsed](Behaviors.receiveSignal {
             case (_, PostStop) ⇒
               probe.ref ! "child-done"
               Behaviors.stopped
@@ -33,7 +34,7 @@ final class GracefulStopSpec extends ActorTestKitWordSpec {
 
           Behaviors.stopped {
             Behaviors.receiveSignal {
-              case (ctx, PostStop) ⇒
+              case (_, PostStop) ⇒
                 // cleanup function body
                 probe.ref ! "parent-done"
                 Behaviors.same
@@ -51,11 +52,11 @@ final class GracefulStopSpec extends ActorTestKitWordSpec {
       val probe = TestProbe[Done]("probe")
 
       val behavior =
-        Behaviors.setup[akka.NotUsed] { context ⇒
+        Behaviors.setup[akka.NotUsed] { _ ⇒
           // do not spawn any children
           Behaviors.stopped {
             Behaviors.receiveSignal {
-              case (ctx, PostStop) ⇒
+              case (_, PostStop) ⇒
                 // cleanup function body
                 probe.ref ! Done
                 Behaviors.same

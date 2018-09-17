@@ -6,13 +6,14 @@ package docs.akka.typed
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ DeathPactException, SupervisorStrategy }
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
-class FaultToleranceDocSpec extends ActorTestKitWordSpec(
+class FaultToleranceDocSpec extends ScalaTestWithActorTestKit(
   """
       # silenced to not put noise in test logs
       akka.loglevel = OFF
-    """) {
+    """) with WordSpecLike {
 
   "Bubbling of failures" must {
 

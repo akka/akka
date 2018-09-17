@@ -158,11 +158,11 @@ Scala
 Java
 :  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #under-test }
 
-@scala[Tests extend `ActorTestKit`. This provides access to]@java[Tests create an instance of `ActorTestKit`. This provides access to]
+Tests create an instance of `ActorTestKit`. This provides access to:
 
 * An ActorSystem
 * Methods for spawning Actors. These are created under the root guardian
-* A hook to shut down the ActorSystem from the test suite
+* A method to shut down the ActorSystem from the test suite
 
 Scala
 :  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-header }
@@ -215,8 +215,10 @@ a dependency on JUnit to use this.
 
 @@@ div { .group-scala } 
 
-If you are using ScalaTest you can extend `akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec` to
-have the async test kit automatically shutdown when the test is complete.
+If you are using ScalaTest you can extend `akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit` to
+have the async test kit automatically shutdown when the test is complete. This is done in `afterAll` from
+the `BeforeAndAfterAll` trait. If you override that method you should call `super.afterAll` to shutdown the
+test kit.
 
 Note that the dependency on ScalaTest is marked as optional from the test kit module, so your project must explicitly include
 a dependency on ScalaTest to use this.

@@ -13,11 +13,12 @@ import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, TimeoutException }
 import scala.util.Success
-
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 object AskSpec {
   sealed trait Msg
@@ -25,8 +26,8 @@ object AskSpec {
   final case class Stop(replyTo: ActorRef[Unit]) extends Msg
 }
 
-class AskSpec extends ActorTestKitWordSpec(
-  "akka.loggers = [ akka.testkit.TestEventListener ]") {
+class AskSpec extends ScalaTestWithActorTestKit(
+  "akka.loggers = [ akka.testkit.TestEventListener ]") with WordSpecLike {
 
   import AskSpec._
 

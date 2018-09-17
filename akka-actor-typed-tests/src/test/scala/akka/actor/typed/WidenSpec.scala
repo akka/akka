@@ -6,11 +6,12 @@ package akka.actor.typed
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
+import org.scalatest.WordSpecLike
 
-class WidenSpec extends ActorTestKitWordSpec {
+class WidenSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   "Widen" should {
 

@@ -7,11 +7,12 @@ package akka.actor.typed
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.typesafe.config.{ Config, ConfigFactory }
-import scala.concurrent.Future
 
+import scala.concurrent.Future
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 class DummyExtension1 extends Extension
 object DummyExtension1 extends ExtensionId[DummyExtension1] {
@@ -60,7 +61,7 @@ akka.actor.typed {
    """).resolve()
 }
 
-class ExtensionsSpec extends ActorTestKitWordSpec {
+class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   "The extensions subsystem" must {
     "return the same instance for the same id" in

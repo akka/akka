@@ -12,9 +12,10 @@ import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
 import akka.actor.testkit.typed.TE
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import scala.concurrent.duration._
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 object PerformanceSpec {
 
@@ -89,7 +90,7 @@ object PerformanceSpec {
     }
 }
 
-class PerformanceSpec extends ActorTestKitWordSpec(ConfigFactory.parseString(s"""
+class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseString(s"""
       akka.actor.serialize-creators = off
       akka.actor.serialize-messages = off
       akka.actor.warn-about-java-serializer-usage = off
@@ -99,7 +100,7 @@ class PerformanceSpec extends ActorTestKitWordSpec(ConfigFactory.parseString(s""
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "target/snapshots-PerformanceSpec/"
       akka.test.single-expect-default = 10s
-      """).withFallback(ConfigFactory.parseString(PerformanceSpec.config))) {
+      """).withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with WordSpecLike {
 
   import PerformanceSpec._
 
