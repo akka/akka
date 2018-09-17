@@ -11,7 +11,7 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist
 import akka.serialization.SerializationExtension
 import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 
-class AkkaClusterTypedSerializerSpec extends ActorTestKitScalaTestSpec with WordSpecLike{
+class AkkaClusterTypedSerializerSpec extends ActorTestKitScalaTestSpec with WordSpecLike {
 
   val ref = spawn(Behavior.empty[String])
   val untypedSystem = system.toUntyped

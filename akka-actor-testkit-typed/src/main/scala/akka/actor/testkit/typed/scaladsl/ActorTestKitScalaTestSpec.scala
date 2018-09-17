@@ -14,7 +14,8 @@ import org.scalatest.time.Span
 
 /**
  * A ScalaTest base class for the [[ActorTestKit]], making it possible to have ScalaTest manage the lifecycle of the testkit.
- * The testkit will be automatically shut down when the test completes or fails.
+ * The testkit will be automatically shut down when the test completes or fails using ScalaTest's BeforeAndAfterAll trait. If
+ * a spec overrides afterAll it must call super.afterAll.
  *
  * Note that ScalaTest is not provided as a transitive dependency of the testkit module but must be added explicitly
  * to your project to use this.
@@ -47,7 +48,10 @@ abstract class ActorTestKitScalaTestSpec(testKit: ActorTestKit) extends ActorTes
   implicit val patience: PatienceConfig =
     PatienceConfig(testKit.testKitSettings.DefaultTimeout.duration, Span(100, org.scalatest.time.Millis))
 
-  // FIXME document to call super if override
+  /**
+    * Shuts down the ActorTestKit. If override be sure to call super.afterAll
+    * or shut down the testkit explicitly with `testKit.shutdownTestKit()`.
+    */
   override protected def afterAll(): Unit = {
     super.afterAll()
     testKit.shutdownTestKit()

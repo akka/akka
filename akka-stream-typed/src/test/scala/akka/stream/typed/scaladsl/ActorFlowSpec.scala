@@ -25,7 +25,7 @@ object ActorFlowSpec {
   final case class Reply(s: String)
 }
 
-class ActorFlowSpec extends ActorTestKitScalaTestSpec with WordSpecLike{
+class ActorFlowSpec extends ActorTestKitScalaTestSpec with WordSpecLike {
   import ActorFlowSpec._
 
   implicit val mat = ActorMaterializer()

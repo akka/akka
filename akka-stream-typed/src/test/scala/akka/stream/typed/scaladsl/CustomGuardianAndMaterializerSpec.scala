@@ -21,7 +21,7 @@ object CustomGuardianAndMaterializerSpec {
   case object Failed extends GuardianProtocol
 }
 
-class CustomGuardianAndMaterializerSpec extends ActorTestKitScalaTestSpec with WordSpecLike{
+class CustomGuardianAndMaterializerSpec extends ActorTestKitScalaTestSpec with WordSpecLike {
   import CustomGuardianAndMaterializerSpec._
 
   val guardian = Behaviors.receive[GuardianProtocol] {

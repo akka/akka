@@ -12,7 +12,7 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ActorTestKitScalaTestSpec
 
-class EventsourcedStashReferenceManagementTest extends ActorTestKitScalaTestSpec with WordSpecLike{
+class EventsourcedStashReferenceManagementTest extends ActorTestKitScalaTestSpec with WordSpecLike {
 
   case class Impl() extends EventsourcedStashReferenceManagement
 
