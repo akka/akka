@@ -212,8 +212,11 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
               s"Unexpected message $msg while fishing for messages, " +
                 s"seen messages ${seen.reverse}, hint: $hint", ex)
           }
-      case None =>
-        throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
+
+
+        case None =>
+          throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
+      }
     }
 
     loop(max.dilated, Nil)
