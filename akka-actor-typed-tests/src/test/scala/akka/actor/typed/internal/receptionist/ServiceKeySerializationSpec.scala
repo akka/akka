@@ -8,9 +8,10 @@ import akka.actor.typed.internal.ActorRefSerializationSpec
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
-class ServiceKeySerializationSpec extends ActorTestKitWordSpec(ActorRefSerializationSpec.config) {
+class ServiceKeySerializationSpec extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config) with WordSpecLike {
 
   val serialization = SerializationExtension(system.toUntyped)
 

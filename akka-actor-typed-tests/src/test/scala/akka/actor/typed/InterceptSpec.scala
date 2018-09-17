@@ -13,13 +13,13 @@ import org.scalatest.WordSpecLike
 import scala.concurrent.duration._
 
 import akka.actor.ActorInitializationException
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.typesafe.config.ConfigFactory
 
-class InterceptSpec extends ActorTestKitWordSpec(
+class InterceptSpec extends ScalaTestWithActorTestKit(
   """
       akka.loggers = [akka.testkit.TestEventListener]
-    """) {
+    """) with WordSpecLike {
   import BehaviorInterceptor._
 
   // FIXME eventfilter support in typed testkit

@@ -11,6 +11,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.actor.testkit.typed.scaladsl._
+import org.scalatest.WordSpecLike
 
 object ActorSourceSinkSpec {
 
@@ -21,7 +22,7 @@ object ActorSourceSinkSpec {
   case object Failed extends AckProto
 }
 
-class ActorSourceSinkSpec extends ActorTestKitWordSpec {
+class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   import ActorSourceSinkSpec._
 
   implicit val mat = ActorMaterializer()

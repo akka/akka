@@ -9,9 +9,10 @@ import akka.stream.typed.scaladsl.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
-import scala.concurrent.duration._
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import scala.concurrent.duration._
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 //#imports
 import akka.actor.typed.DispatcherSelector
@@ -25,7 +26,7 @@ object ActorFlowSpec {
   final case class Reply(s: String)
 }
 
-class ActorFlowSpec extends ActorTestKitWordSpec {
+class ActorFlowSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   import ActorFlowSpec._
 
   implicit val mat = ActorMaterializer()

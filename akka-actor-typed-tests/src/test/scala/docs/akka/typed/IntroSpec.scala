@@ -9,11 +9,12 @@ package docs.akka.typed
 import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Terminated }
+import org.scalatest.WordSpecLike
 //#imports
 //#fiddle_code
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import scala.concurrent.Await
@@ -170,7 +171,7 @@ object IntroSpec {
 
 }
 
-class IntroSpec extends ActorTestKitWordSpec {
+class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import IntroSpec._
 

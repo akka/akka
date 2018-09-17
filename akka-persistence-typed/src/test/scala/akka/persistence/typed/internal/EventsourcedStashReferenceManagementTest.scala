@@ -9,10 +9,12 @@ import akka.actor.typed.{ Behavior, Signal }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol.{ IncomingCommand, RecoveryPermitGranted }
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import scala.concurrent.duration._
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
 
-class EventsourcedStashReferenceManagementTest extends ActorTestKitWordSpec {
+import scala.concurrent.duration._
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
+
+class EventsourcedStashReferenceManagementTest extends ScalaTestWithActorTestKit with WordSpecLike {
 
   case class Impl() extends EventsourcedStashReferenceManagement
 

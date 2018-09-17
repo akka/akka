@@ -7,10 +7,11 @@ package docs.akka.typed
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior }
+
 import scala.collection.immutable
 import scala.concurrent.duration._
-
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 object FSMDocSpec {
 
@@ -66,7 +67,7 @@ object FSMDocSpec {
   //#test-code
 }
 
-class FSMDocSpec extends ActorTestKitWordSpec {
+class FSMDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import FSMDocSpec._
 

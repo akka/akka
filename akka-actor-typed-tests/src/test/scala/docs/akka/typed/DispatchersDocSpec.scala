@@ -11,8 +11,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, DispatcherSelector, Props, SpawnProtocol }
 import akka.dispatch.Dispatcher
 import DispatchersDocSpec._
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.typesafe.config.ConfigFactory
+import org.scalatest.WordSpecLike
 
 object DispatchersDocSpec {
 
@@ -55,7 +56,7 @@ object DispatchersDocSpec {
 
 }
 
-class DispatchersDocSpec extends ActorTestKitWordSpec(DispatchersDocSpec.config) {
+class DispatchersDocSpec extends ScalaTestWithActorTestKit(DispatchersDocSpec.config) with WordSpecLike {
 
   "Actor Dispatchers" should {
     "support default and blocking dispatcher" in {

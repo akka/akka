@@ -11,13 +11,14 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
-
-class InteractionPatternsSpec extends ActorTestKitWordSpec {
+class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   "The interaction patterns docs" must {
 

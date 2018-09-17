@@ -4,11 +4,12 @@
 
 package akka.cluster.typed
 
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
+import org.scalatest.WordSpecLike
 
 object ClusterSingletonPersistenceSpec {
   val config = ConfigFactory.parseString(
@@ -49,7 +50,7 @@ object ClusterSingletonPersistenceSpec {
 
 }
 
-class ClusterSingletonPersistenceSpec extends ActorTestKitWordSpec(ClusterSingletonPersistenceSpec.config) {
+class ClusterSingletonPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSingletonPersistenceSpec.config) with WordSpecLike {
   import ClusterSingletonPersistenceSpec._
   import akka.actor.typed.scaladsl.adapter._
 

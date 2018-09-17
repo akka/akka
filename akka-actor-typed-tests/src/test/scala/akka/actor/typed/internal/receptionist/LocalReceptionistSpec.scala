@@ -5,8 +5,7 @@
 package akka.actor.typed.internal.receptionist
 
 import scala.concurrent.Future
-
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -16,8 +15,7 @@ import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 object LocalReceptionistSpec {
   trait ServiceA
@@ -38,7 +36,7 @@ object LocalReceptionistSpec {
 
 }
 
-class LocalReceptionistSpec extends ActorTestKitWordSpec {
+class LocalReceptionistSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   import LocalReceptionistSpec._
 
   abstract class TestSetup {

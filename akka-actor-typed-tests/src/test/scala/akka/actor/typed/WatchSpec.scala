@@ -10,12 +10,13 @@ import akka.actor.typed.scaladsl.MutableBehavior
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.TestProbe
+
 import scala.concurrent._
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.TestException
-import akka.actor.testkit.typed.scaladsl.ActorTestKitWordSpec
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.typesafe.config.ConfigFactory
+import org.scalatest.WordSpecLike
 
 object WatchSpec {
   val config = ConfigFactory.parseString("""akka.loggers = ["akka.testkit.TestEventListener"]""")
@@ -41,7 +42,7 @@ object WatchSpec {
   case class StartWatchingWith(watchee: ActorRef[Stop.type], msg: CustomTerminationMessage) extends Message
 }
 
-class WatchSpec extends ActorTestKitWordSpec(WatchSpec.config) {
+class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpecLike {
   // FIXME why systemActor? spawn?
   import testKit.systemActor
 
