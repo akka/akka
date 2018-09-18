@@ -9,10 +9,10 @@ import akka.stream.javadsl.Flow;
 //#log
 import akka.stream.Attributes;
 import akka.stream.javadsl.Source;
+//#log
 
 import java.util.Arrays;
 
-//#log
 
 class SourceOrFlow {
 
@@ -35,8 +35,8 @@ class SourceOrFlow {
     //#conflate
   }
 
-  static //#conflateWithSeed
-      class NewType {
+  static //#conflateWithSeed-type
+  class NewType {
 
     private final Integer el;
 
@@ -48,7 +48,7 @@ class SourceOrFlow {
       return new NewType(this.el + other.el);
     }
   }
-  //#conflateWithSeed
+  //#conflateWithSeed-type
 
   void conflateWithSeedExample() {
     //#conflateWithSeed

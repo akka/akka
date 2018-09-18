@@ -24,7 +24,8 @@ Scala
 :   @@snip [SourceOrFlow.scala](/akka-docs/src/test/scala/docs/stream/operators/SourceOrFlow.scala) { #conflateWithSeed }
 
 Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #conflateWithSeed }
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #conflateWithSeed-type #conflateWithSeed }
+
 
 If downstream is slower, the "seed" function is called which is able to change the type of the to be conflated
 elements if needed (it can also be an identity function, in which case this `conflateWithSeed` is equivalent to 
