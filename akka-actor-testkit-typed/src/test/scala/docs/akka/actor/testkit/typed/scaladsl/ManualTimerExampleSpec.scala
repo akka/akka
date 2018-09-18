@@ -2,16 +2,17 @@
  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.testkit.typed.scaladsl
+package docs.akka.actor.testkit.typed.scaladsl
 
 //#manual-scheduling-simple
-import akka.actor.typed.scaladsl.Behaviors
-
 import scala.concurrent.duration._
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.ManualTime
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.scaladsl.Behaviors
+import org.scalatest.WordSpecLike
 
-class ManualTimerExampleSpec extends AbstractActorSpec {
-
-  override def config = ManualTime.config
+class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config) with WordSpecLike {
 
   val manualTime: ManualTime = ManualTime()
 
