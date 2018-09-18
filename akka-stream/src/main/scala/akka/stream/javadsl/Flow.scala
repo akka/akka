@@ -1428,10 +1428,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def recoverWithComplete(ex: Class[Throwable]): javadsl.Flow[In, Out, Mat] =
-    new Flow(delegate.recoverWithComplete {
-      case t if ex == t.getClass ⇒ Done
-    })
+  def recoverWithComplete(clazz: Class[_ <: Throwable]): javadsl.Flow[In, Out, Mat] =
+    recoverWith {
+      case elem if clazz.isInstance(elem) ⇒ Done
+    }
 
   /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
