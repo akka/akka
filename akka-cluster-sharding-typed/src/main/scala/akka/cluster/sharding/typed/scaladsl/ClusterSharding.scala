@@ -291,9 +291,9 @@ object EntityTypeKey {
    * val f: Future[Reply] = target.ask(Request("hello", _))
    * }}}
    *
-   * Please note that an implicit [[akka.util.Timeout]] and [[akka.actor.Scheduler]] must be available to use this pattern.
+   * Please note that an implicit [[akka.util.Timeout]] must be available to use this pattern.
    */
-  def ask[U](f: ActorRef[U] ⇒ A)(implicit timeout: Timeout, scheduler: Scheduler): Future[U]
+  def ask[U](f: ActorRef[U] ⇒ A)(implicit timeout: Timeout): Future[U]
 
   /**
    * Allows to "ask" the [[EntityRef]] for a reply.
@@ -309,10 +309,10 @@ object EntityTypeKey {
    * val f: Future[Reply] = target ? (Request("hello", _))
    * }}}
    *
-   * Please note that an implicit [[akka.util.Timeout]] and [[akka.actor.Scheduler]] must be available to use this pattern.
+   * Please note that an implicit [[akka.util.Timeout]] must be available to use this pattern.
    */
-  def ?[U](message: ActorRef[U] ⇒ A)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] =
-    this.ask(message)(timeout, scheduler)
+  def ?[U](message: ActorRef[U] ⇒ A)(implicit timeout: Timeout): Future[U] =
+    this.ask(message)(timeout)
 
 }
 
