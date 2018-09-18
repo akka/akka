@@ -2,13 +2,13 @@
 
 Allows to transform a stream failure into a successful stream.
 
-@ref[Simple processing stages](../index.md#simple-processing-stages)
+@ref[Simple operators](../index.md#simple-operators)
 
 @@@div { .group-scala }
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #recoverWithComplete }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #recoverWithComplete }
 
 @@@
 
