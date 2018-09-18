@@ -6,10 +6,13 @@ package akka.actor.typed
 
 import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 object ActorSpecMessages {
 
@@ -59,7 +62,7 @@ object ActorSpecMessages {
 
 }
 
-abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import ActorSpecMessages._
 
@@ -584,7 +587,6 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
     }
   }
 
-  override def afterAll(): Unit = shutdownTestKit()
 }
 
 class NormalActorContextSpec extends ActorContextSpec {

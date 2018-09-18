@@ -835,6 +835,7 @@ private[akka] class ActorSystemImpl(
           "Please report at https://github.com/akka/akka/issues."
       )
   private lazy val _start: this.type = try {
+
     registerOnTermination(stopScheduler())
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
@@ -968,9 +969,6 @@ private[akka] class ActorSystemImpl(
         }
       }
     }
-
-    // eager initialization of CoordinatedShutdown
-    CoordinatedShutdown(this)
 
     loadExtensions("akka.library-extensions", throwOnLoadFail = true)
     loadExtensions("akka.extensions", throwOnLoadFail = false)

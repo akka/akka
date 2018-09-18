@@ -8,13 +8,77 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.actor.testkit.typed.TestKitSettings
+
 import akka.actor.testkit.typed.internal.{ ActorTestKitGuardian, TestKitUtils }
 import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import akka.actor.Scheduler
+import akka.util.Timeout
+
 object ActorTestKit {
+
+  /**
+   * Create a testkit named from the class that is calling this method.
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * e.g. threads will include the name.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   */
+  def apply(): ActorTestKit =
+    new ActorTestKit(
+      name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
+      config = noConfigSet,
+      settings = None
+    )
+
+  /**
+   * Create a named testkit.
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * e.g. threads will include the name.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   */
+  def apply(name: String): ActorTestKit =
+    new ActorTestKit(
+      name = TestKitUtils.scrubActorSystemName(name),
+      config = noConfigSet,
+      settings = None
+    )
+
+  /**
+   * Create a named testkit, and use a custom config for the actor system.
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * e.g. threads will include the name.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   */
+  def apply(name: String, customConfig: Config): ActorTestKit =
+    new ActorTestKit(
+      name = TestKitUtils.scrubActorSystemName(name),
+      config = customConfig,
+      settings = None
+    )
+
+  /**
+   * Create a named testkit, and use a custom config for the actor system,
+   * and a custom [[akka.actor.testkit.typed.TestKitSettings]]
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * e.g. threads will include the name.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   */
+  def apply(name: String, customConfig: Config, settings: TestKitSettings): ActorTestKit =
+    new ActorTestKit(
+      name = TestKitUtils.scrubActorSystemName(name),
+      config = customConfig,
+      settings = Some(settings)
+    )
 
   /**
    * Shutdown the given [[akka.actor.typed.ActorSystem]] and block until it shuts down,
@@ -58,40 +122,27 @@ object ActorTestKit {
  * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
 @ApiMayChange
-trait ActorTestKit {
-  /**
-   * Actor system name based on the test it is mixed into, override to customize, or pass to constructor
-   * if using [[ActorTestKit]] rather than [[ActorTestKit]]
-   */
-  protected def name: String = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit])
+final class ActorTestKit private[akka] (val name: String, val config: Config, settings: Option[TestKitSettings]) {
 
-  /**
-   * Configuration the actor system is created with, override to customize, or pass to constructor
-   * if using [[ActorTestKit]] rather than [[ActorTestKit]]
-   */
-  def config: Config = ActorTestKit.noConfigSet
-
-  /**
-   * TestKit settings used in the tests, override or provide custom config to customize
-   */
-  protected implicit def testkitSettings = TestKitSettings(system)
+  implicit def testKitSettings: TestKitSettings =
+    settings.getOrElse(TestKitSettings(system))
 
   private val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
     if (config eq ActorTestKit.noConfigSet) ActorSystem(ActorTestKitGuardian.testKitGuardian, name)
     else ActorSystem(ActorTestKitGuardian.testKitGuardian, name, config)
 
-  implicit final def system: ActorSystem[Nothing] = internalSystem
+  implicit def system: ActorSystem[Nothing] = internalSystem
 
-  implicit def scheduler = system.scheduler
+  implicit def scheduler: Scheduler = system.scheduler
   private val childName: Iterator[String] = Iterator.from(0).map(_.toString)
 
-  implicit val timeout = testkitSettings.DefaultTimeout
+  implicit val timeout: Timeout = testKitSettings.DefaultTimeout
 
-  final def shutdownTestKit(): Unit = {
+  def shutdownTestKit(): Unit = {
     ActorTestKit.shutdown(
       system,
-      testkitSettings.DefaultActorSystemShutdownTimeout,
-      testkitSettings.ThrowOnShutdownTimeout
+      testKitSettings.DefaultActorSystemShutdownTimeout,
+      testKitSettings.ThrowOnShutdownTimeout
     )
   }
 
@@ -99,28 +150,48 @@ trait ActorTestKit {
    * Spawn the given behavior. This is created as a child of the test kit
    * guardian
    */
-  final def spawn[T](behavior: Behavior[T]): ActorRef[T] =
+  def spawn[T](behavior: Behavior[T]): ActorRef[T] =
     spawn(behavior, Props.empty)
 
   /**
    * Spawn the given behavior. This is created as a child of the test kit
    * guardian
    */
-  final def spawn[T](behavior: Behavior[T], props: Props): ActorRef[T] =
+  def spawn[T](behavior: Behavior[T], props: Props): ActorRef[T] =
     Await.result(internalSystem ? (ActorTestKitGuardian.SpawnActorAnonymous(behavior, _, props)), timeout.duration)
 
   /**
    * Spawn the given behavior. This is created as a child of the test kit
    * guardian
    */
-  final def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] =
+  def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] =
     spawn(behavior, name, Props.empty)
 
   /**
    * Spawn the given behavior. This is created as a child of the test kit
    * guardian
    */
-  final def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
+  def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
     Await.result(internalSystem ? (ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
 
+  /**
+   * Shortcut for creating a new test probe for the testkit actor system
+   * @tparam M the type of messages the probe should accept
+   */
+  def createTestProbe[M](): TestProbe[M] = TestProbe()(system)
+
+  /**
+   * Shortcut for creating a new named test probe for the testkit actor system
+   * @tparam M the type of messages the probe should accept
+   */
+  def createTestProbe[M](name: String): TestProbe[M] = TestProbe(name)(system)
+
+  // FIXME needed for Akka internal tests but, users shouldn't spawn system actors?
+  @InternalApi
+  private[akka] def systemActor[T](behavior: Behavior[T], name: String): ActorRef[T] =
+    Await.result(system.systemActorOf(behavior, name), timeout.duration)
+
+  @InternalApi
+  private[akka] def systemActor[T](behavior: Behavior[T]): ActorRef[T] =
+    Await.result(system.systemActorOf(behavior, childName.next()), timeout.duration)
 }

@@ -54,27 +54,27 @@ The following demonstrates how to test:
 The examples below require the following imports:
 
 Scala
-:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #imports }
+:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #imports }
 
 Java
-:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #imports }
+:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #imports }
 
 Each of the tests are testing an actor that based on the message executes a different effect to be tested:
 
 Scala
-:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #under-test }
+:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #under-test }
 
 Java
-:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #under-test }
+:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #under-test }
 
 For creating a child actor a noop actor is created:
 
 
 Scala
-:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #child }
+:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #child }
 
 Java
-:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #child }
+:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #child }
 
 All of the tests make use of the `BehaviorTestkit` to avoid the need for a real `ActorContext`. Some of the tests
 make use of the `TestInbox` which allows the creation of an `ActorRef` that can be used for synchronous testing, similar to the
@@ -86,18 +86,18 @@ make use of the `TestInbox` which allows the creation of an `ActorRef` that can 
 With a name:
 
 Scala
-:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #test-child }
+:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #test-child }
 
 Java
-:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-child }
+:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-child }
 
 Anonymously:
 
 Scala
-:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #test-anonymous-child }
+:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #test-anonymous-child }
 
 Java
-:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-anonymous-child }
+:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-anonymous-child }
 
 ### Sending messages
 
@@ -105,27 +105,27 @@ For testing sending a message a `TestInbox` is created that provides an `ActorRe
 messages that have been sent to it.
 
 Scala
-:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #test-message }
+:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #test-message }
 
 Java
-:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-message }
+:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-message }
 
 Another use case is sending a message to a child actor you can do this by looking up the 'TestInbox' for
 a child actor from the 'BehaviorTestKit':
 
 Scala
-:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #test-child-message }
+:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #test-child-message }
 
 Java
-:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-child-message }
+:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-child-message }
 
 For anonymous children the actor names are generated in a deterministic way:
 
 Scala
-:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #test-child-message-anonymous }
+:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #test-child-message-anonymous }
 
 Java
-:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-child-message-anonymous }
+:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-child-message-anonymous }
 
 ### Testing other effects
 
@@ -153,30 +153,30 @@ the same in that a single procedure drives the test.
 Actor under test:
 
 Scala
-:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #under-test }
+:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #under-test }
 
 Java
-:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #under-test }
+:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #under-test }
 
-@scala[Tests extend `ActorTestKit`. This provides access to]@java[Tests create an instance of `ActorTestKit`. This provides access to]
+Tests create an instance of `ActorTestKit`. This provides access to:
 
 * An ActorSystem
 * Methods for spawning Actors. These are created under the root guardian
-* A hook to shut down the ActorSystem from the test suite
+* A method to shut down the ActorSystem from the test suite
 
 Scala
-:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-header }
+:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-header }
 
 Java
-:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-header }
+:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-header }
 
-Your test is responsible for shutting down the `ActorSystem` e.g. using `BeforeAndAfterAll` when using ScalaTest
+Your test is responsible for shutting down the `ActorSystem` e.g. using @scala[`BeforeAndAfterAll` when using ScalaTest]@java[`@AfterClass` when using JUnit].
 
 Scala
-:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-shutdown }
+:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-shutdown }
 
 Java
-:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-shutdown }
+:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-shutdown }
 
 The following demonstrates:
 
@@ -185,18 +185,21 @@ The following demonstrates:
 * Verifying that the actor under test responds via the `TestProbe`
 
 Scala
-:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-spawn }
+:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-spawn }
 
 Java
-:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-spawn }
+:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-spawn }
 
 Actors can also be spawned anonymously:
 
 Scala
-:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-spawn-anonymous }
+:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-spawn-anonymous }
 
 Java
-:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-spawn-anonymous }
+:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/AsyncTestingExampleTest.java) { #test-spawn-anonymous }
+
+Note that you can add `import testKit._` to get access to the `spawn` and `createTestProbe` methods at the top level
+without prefixing them with `testKit`.
 
 ### Test framework integration
 
@@ -212,16 +215,21 @@ a dependency on JUnit to use this.
 
 @@@ div { .group-scala } 
 
-It often makes sense to introduce a common base class for all tests using the async test kit, here is an example how to
-hook it into a ScalaTest test suite.
+If you are using ScalaTest you can extend `akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit` to
+have the async test kit automatically shutdown when the test is complete. This is done in `afterAll` from
+the `BeforeAndAfterAll` trait. If you override that method you should call `super.afterAll` to shutdown the
+test kit.
+
+Note that the dependency on ScalaTest is marked as optional from the test kit module, so your project must explicitly include
+a dependency on ScalaTest to use this.
 
 @@@
 
 Scala
-:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/AbstractActorSpec.scala) { #scalatest-glue }
+:  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/ScalaTestIntegrationExampleSpec.scala) { #scalatest-integration }
 
 Java
-:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/JunitIntegrationExampleTest.java) { #junit-integration }
+:  @@snip [AsyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/JunitIntegrationExampleTest.java) { #junit-integration }
 
 ### Controlling the scheduler
 
@@ -232,7 +240,7 @@ Making such tests more reliable by using generous timeouts make the tests take a
 For such situations, we provide a scheduler where you can manually, explicitly advance the clock.
 
 Scala
-:   @@snip [ManualTimerExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/akka/actor/testkit/typed/scaladsl/ManualTimerExampleSpec.scala) { #manual-scheduling-simple }
+:   @@snip [ManualTimerExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/ManualTimerExampleSpec.scala) { #manual-scheduling-simple }
 
 Java
-:   @@snip [ManualTimerExampleTest.scala](/akka-actor-testkit-typed/src/test/java/akka/actor/testkit/typed/javadsl/ManualTimerExampleTest.java) { #manual-scheduling-simple }
+:   @@snip [ManualTimerExampleTest.scala](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/ManualTimerExampleTest.java) { #manual-scheduling-simple }
