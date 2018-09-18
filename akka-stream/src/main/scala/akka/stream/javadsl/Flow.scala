@@ -1412,6 +1412,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     recoverWith {
       case elem if clazz.isInstance(elem) ⇒ supplier.get()
     }
+
   /**
    * RecoverWithComplete allows to transform a stream failure into a successful stream.
    *

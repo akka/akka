@@ -144,6 +144,7 @@ depending on being backpressured by downstream or not.
 |Source/Flow|<a name="maperror"></a>@ref[mapError](Source-or-Flow/mapError.md)|While similar to `recover` this operators can be used to transform an error signal to a different one *without* logging it as an error in the process.|
 |Source/Flow|<a name="recover"></a>@ref[recover](Source-or-Flow/recover.md)|Allow sending of one last element downstream when a failure has happened upstream.|
 |Source/Flow|<a name="recoverwith"></a>@ref[recoverWith](Source-or-Flow/recoverWith.md)|Allow switching to alternative Source when a failure has happened upstream.|
+|Source/Flow|<a name="recoverwithcomplete"></a>@ref[recoverWithComplete](Source-or-Flow/recoverWithComplete.md)|Allows to transform a stream failure into a successful stream.|
 |Source/Flow|<a name="recoverwithretries"></a>@ref[recoverWithRetries](Source-or-Flow/recoverWithRetries.md)|RecoverWithRetries allows to switch to alternative Source on flow failure.|
 |Source/Flow|<a name="reduce"></a>@ref[reduce](Source-or-Flow/reduce.md)|Start with first element and then apply the current and next value to the given function, when upstream complete the current value is emitted downstream.|
 |Source/Flow|<a name="scan"></a>@ref[scan](Source-or-Flow/scan.md)|Emit its current value, which starts at `zero`, and then apply the current and next value to the given function, emitting the next current value.|
@@ -317,6 +318,7 @@ Operators meant for inter-operating between Akka Streams and Actors:
 * [recover](Source-or-Flow/recover.md)
 * [mapError](Source-or-Flow/mapError.md)
 * [recoverWith](Source-or-Flow/recoverWith.md)
+* [recoverWithComplete](Source-or-Flow/recoverWithComplete.md)
 * [recoverWithRetries](Source-or-Flow/recoverWithRetries.md)
 * [mapConcat](Source-or-Flow/mapConcat.md)
 * [statefulMapConcat](Source-or-Flow/statefulMapConcat.md)
