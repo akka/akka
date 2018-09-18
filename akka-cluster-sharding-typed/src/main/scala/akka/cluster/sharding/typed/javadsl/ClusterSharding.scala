@@ -260,10 +260,8 @@ object EntityTypeKey {
   /**
    * Allows to "ask" the [[EntityRef]] for a reply.
    * See [[akka.actor.typed.javadsl.AskPattern]] for a complete write-up of this pattern
-   *
-   * Please note that a [[akka.util.Timeout]] and [[akka.actor.Scheduler]] must be available to use this pattern.
    */
-  def ask[U](message: JFunction[ActorRef[U], A], timeout: Timeout, scheduler: Scheduler): CompletionStage[U]
+  def ask[U](message: JFunction[ActorRef[U], A], timeout: Timeout): CompletionStage[U]
 
   /**
    * INTERNAL API
