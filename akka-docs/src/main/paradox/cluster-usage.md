@@ -429,19 +429,19 @@ This is expected behavior. When the node has been accepted in the cluster you wi
 receive `MemberUp` for that node, and other nodes.
 
 Scala
-:  @@snip [SimpleClusterListener2.scala]($code$/scala/docs/cluster/SimpleClusterListener2.scala) { #join #subscribe }
+:  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #join #subscribe }
 
 Java
-:  @@snip [SimpleClusterListener2.java]($code$/java/jdocs/cluster/SimpleClusterListener2.java) { #join #subscribe }
+:  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #join #subscribe }
 
 To avoid receiving an empty `CurrentClusterState` at the beginning, you can use it like shown in the following example,
 to defer subscription until the `MemberUp` event for the own node is received:
 
 Scala
-:  @@snip [SimpleClusterListener2.scala]($code$/scala/docs/cluster/SimpleClusterListener2.scala) { #join #register-on-memberup }
+:  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #join #register-on-memberup }
 
 Java
-:  @@snip [SimpleClusterListener2.java]($code$/java/jdocs/cluster/SimpleClusterListener2.java) { #join #register-on-memberup }
+:  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #join #register-on-memberup }
 
 
 If you find it inconvenient to handle the `CurrentClusterState` you can use
