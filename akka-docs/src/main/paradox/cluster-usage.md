@@ -427,7 +427,7 @@ Scala
 Java
 :  @@snip [SimpleClusterListener2.java]($code$/java/jdocs/cluster/SimpleClusterListener2.java) { #join #subscribe }
 
-To avoid receiving an empty `CurrentClusterState` at the beginning, you can use like below,
+To avoid receiving an empty `CurrentClusterState` at the beginning, you can it use like shown in the following example,
 to defer subscription until the `MemberUp` event for the own node is received:
 
 Scala
