@@ -425,6 +425,8 @@ and here is a summary of things to consider.
  * [akka.cluster.sharding.state-store-mode](#mig25-sharding-store)
  * [akka.remote.netty.ssl.require-mutual-authentication](#mig25-mutual)
 
+See also the @ref:[rolling update guide](rolling-update.md) for specifics about later patch releases.
+
 #### Limit lookup of routees to nodes tagged with multiple roles
 
 Starting with 2.5.4, cluster routing supports delivering messages to routees tagged with all specified roles
