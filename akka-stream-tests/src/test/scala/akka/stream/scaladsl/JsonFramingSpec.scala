@@ -46,6 +46,208 @@ class JsonFramingSpec extends AkkaSpec {
       )
     }
 
+    "parse json array of strings" in {
+      val input =
+        """
+          |[
+          |"john",
+          |"Ég get etið gler án þess að meiða mig",
+          |"jack"
+          |]
+        """.stripMargin
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq(
+        """"john"""",
+        """"Ég get etið gler án þess að meiða mig"""",
+        """"jack""""
+      )
+    }
+
+    "parse json array of ints" in {
+      val input =
+        """
+          |[
+          |1,
+          |2,
+          |3
+          |]
+        """.stripMargin
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq("1", "2", "3")
+    }
+
+    "parse json array of nested objects" in {
+      val input =
+        """
+          |[
+          | {
+          |   "person": { "name" : "john" },
+          |   "age": 12
+          | },
+          | {
+          |   "person": { "name" : "Ég get etið gler án þess að meiða mig" },
+          |   "age": 27
+          | },
+          | {
+          |   "person": { "name" : "jack" },
+          |   "age": 43
+          | }
+          |]
+          |""".stripMargin // also should complete once notices end of array
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq(
+        """{
+          |   "person": { "name" : "john" },
+          |   "age": 12
+          | }""".stripMargin,
+        """{
+          |   "person": { "name" : "Ég get etið gler án þess að meiða mig" },
+          |   "age": 27
+          | }""".stripMargin,
+        """{
+          |   "person": { "name" : "jack" },
+          |   "age": 43
+          | }""".stripMargin)
+    }
+
+    "parse json array of nested objects that contains arrays of strings" in {
+      val input =
+        """
+          |[
+          | {
+          |   "person": { "name" : "john" },
+          |   "age": 12,
+          |   "likes": [ "hiking", "painting" ]
+          | },
+          | {
+          |   "person": { "name" : "Ég get etið gler án þess að meiða mig" },
+          |   "age": 27,
+          |   "likes": [ "opens { hey", "ho } closes" ]
+          | },
+          | {
+          |   "person": { "name" : "jack" },
+          |   "age": 43,
+          |   "likes": [ "fine }]]]]]]]", "really }}}}}" ]
+          | }
+          |]
+          |""".stripMargin // also should complete once notices end of array
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq(
+        """{
+          |   "person": { "name" : "john" },
+          |   "age": 12,
+          |   "likes": [ "hiking", "painting" ]
+          | }""".stripMargin,
+        """{
+          |   "person": { "name" : "Ég get etið gler án þess að meiða mig" },
+          |   "age": 27,
+          |   "likes": [ "opens { hey", "ho } closes" ]
+          | }""".stripMargin,
+        """{
+          |   "person": { "name" : "jack" },
+          |   "age": 43,
+          |   "likes": [ "fine }]]]]]]]", "really }}}}}" ]
+          | }""".stripMargin)
+    }
+
+    "parse json array of nested objects that contains arrays of objects" in {
+      val input =
+        """
+          |[
+          | {
+          |   "person": { "name" : "john" },
+          |   "age": 12,
+          |   "likes": [
+          |      {
+          |         "name": "hiking",
+          |         "location": "outdoors"
+          |      },
+          |      {
+          |         "name": "painting",
+          |         "location": "indoors"
+          |      }
+          |      ]
+          | },
+          | {
+          |   "person": { "name" : "Ég get etið gler án þess að meiða mig" },
+          |   "age": 27,
+          |   "likes": [ { "name": "rugby", "location": "outdoors" } ]
+          | },
+          | {
+          |   "person": { "name" : "jack" },
+          |   "age": 43,
+          |   "likes": [ { "name": "futsal", "location":
+          |      "indoors"
+          |       }, { "name":
+          |         "museums", "location": "indoors" } ]
+          | }
+          |]
+          |""".stripMargin // also should complete once notices end of array
+      // note: the formatting of the JSON object is voluntarily not that pretty
+      // we test that it's carried over "as is" save for the framing
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq(
+        """{
+          |   "person": { "name" : "john" },
+          |   "age": 12,
+          |   "likes": [
+          |      {
+          |         "name": "hiking",
+          |         "location": "outdoors"
+          |      },
+          |      {
+          |         "name": "painting",
+          |         "location": "indoors"
+          |      }
+          |      ]
+          | }""".stripMargin,
+        """{
+          |   "person": { "name" : "Ég get etið gler án þess að meiða mig" },
+          |   "age": 27,
+          |   "likes": [ { "name": "rugby", "location": "outdoors" } ]
+          | }""".stripMargin,
+        """{
+          |   "person": { "name" : "jack" },
+          |   "age": 43,
+          |   "likes": [ { "name": "futsal", "location":
+          |      "indoors"
+          |       }, { "name":
+          |         "museums", "location": "indoors" } ]
+          | }""".stripMargin)
+    }
+
+
+
     "emit single json element from string" in {
       val input =
         """| { "name": "john" }
@@ -62,7 +264,7 @@ class JsonFramingSpec extends AkkaSpec {
       Await.result(result, 3.seconds) shouldBe Seq("""{ "name": "john" }""")
     }
 
-    "parse line delimited" in {
+    "parse line delimited objects" in {
       val input =
         """| { "name": "john" }
            | { "name": "jack" }
@@ -81,7 +283,38 @@ class JsonFramingSpec extends AkkaSpec {
         """{ "name": "katie" }""")
     }
 
-    "parse comma delimited" in {
+    "parse line delimited strings" in {
+      val input =
+        """  "apples"
+          |"pears"
+          |"scooby-doo"  """.stripMargin
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq(""""apples"""", """"pears"""", """"scooby-doo"""")
+    }
+
+    "parse line delimited ints" in {
+      val input =
+        """  1
+          | 2
+          |3  """.stripMargin
+      // intentionally shown with inconsistent post-stripping margins
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq("1", "2", "3")
+    }
+
+    "parse comma delimited objects" in {
       val input =
         """  { "name": "john" }, { "name": "jack" }, { "name": "katie" }  """
 
@@ -96,6 +329,33 @@ class JsonFramingSpec extends AkkaSpec {
         """{ "name": "jack" }""",
         """{ "name": "katie" }""")
     }
+
+    "parse comma delimited strings" in {
+      val input =
+        """  "apples", "pears", "scooby-doo"  """
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq(""""apples"""", """"pears"""", """"scooby-doo"""")
+    }
+
+    "parse comma delimited ints" in {
+      val input =
+        """  1, 2, 3  """
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq("1", "2", "3")
+    }
+
 
     "parse chunks successfully" in {
       val input: Seq[ByteString] = Seq(
