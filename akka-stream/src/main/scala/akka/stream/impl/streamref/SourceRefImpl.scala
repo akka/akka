@@ -36,9 +36,9 @@ private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) e
 @InternalApi
 private[stream] final class SourceRefStageImpl[Out](
   val initialPartnerRef: OptionVal[ActorRef]
-) extends GraphStageWithMaterializedValue[SourceShape[Out], Future[SinkRef[Out]]] { stage ⇒
+) extends GraphStageWithMaterializedValue[SourceShape[ByteString], Future[SinkRef[Out]]] { stage ⇒
 
-  val out: Outlet[Out] = Outlet[Out](s"${Logging.simpleName(getClass)}.out")
+  val out: Outlet[ByteString] = Outlet[ByteString](s"${Logging.simpleName(getClass)}.out")
   override def shape = SourceShape.of(out)
 
   private def initialRefName =
@@ -76,7 +76,7 @@ private[stream] final class SourceRefStageImpl[Out](
       private var localCumulativeDemand: Long = 0L
       private var localRemainingRequested: Int = 0
 
-      private var receiveBuffer: FixedSizeBuffer.FixedSizeBuffer[Out] = _ // initialized in preStart since depends on settings
+      private var receiveBuffer: FixedSizeBuffer.FixedSizeBuffer[ByteString] = _ // initialized in preStart since depends on settings
 
       private var requestStrategy: RequestStrategy = _ // initialized in preStart since depends on receiveBuffer's size
       // end of demand management ---
@@ -87,7 +87,7 @@ private[stream] final class SourceRefStageImpl[Out](
       private def getPartnerRef = partnerRef.get
 
       override def preStart(): Unit = {
-        receiveBuffer = FixedSizeBuffer[Out](settings.bufferCapacity)
+        receiveBuffer = FixedSizeBuffer[ByteString](settings.bufferCapacity)
         requestStrategy = WatermarkRequestStrategy(highWatermark = receiveBuffer.capacity)
 
         self = getStageActor(initialReceive)
@@ -201,7 +201,7 @@ private[stream] final class SourceRefStageImpl[Out](
           push(out, element)
         } else if (receiveBuffer.isEmpty && completed) completeStage()
 
-      private def onReceiveElement(payload: Out): Unit = {
+      private def onReceiveElement(payload: ByteString): Unit = {
         localRemainingRequested -= 1
         if (receiveBuffer.isEmpty && isAvailable(out)) {
           push(out, payload)

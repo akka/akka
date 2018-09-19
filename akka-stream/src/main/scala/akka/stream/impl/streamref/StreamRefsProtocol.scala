@@ -7,6 +7,7 @@ package akka.stream.impl.streamref
 import akka.actor.{ ActorRef, DeadLetterSuppression }
 import akka.annotation.InternalApi
 import akka.stream.impl.ReactiveStreamsCompliance
+import akka.util.ByteString
 
 /** INTERNAL API */
 @InternalApi
@@ -23,7 +24,7 @@ private[akka] object StreamRefsProtocol {
    * Sequence numbers start from `0`.
    */
   @InternalApi
-  private[akka] final case class SequencedOnNext[T](seqNr: Long, payload: T) extends StreamRefsProtocol with DeadLetterSuppression {
+  private[akka] final case class SequencedOnNext(seqNr: Long, payload: ByteString) extends StreamRefsProtocol with DeadLetterSuppression {
     if (payload == null) throw ReactiveStreamsCompliance.elementMustNotBeNullException
   }
 

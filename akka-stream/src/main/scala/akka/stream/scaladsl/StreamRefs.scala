@@ -48,4 +48,5 @@ object StreamRefs {
   @ApiMayChange
   def sinkRef[T](): Source[T, Future[SinkRef[T]]] =
     Source.fromGraph(new SourceRefStageImpl[T](OptionVal.None))
+      .via(Chunking.unchunk[T])
 }

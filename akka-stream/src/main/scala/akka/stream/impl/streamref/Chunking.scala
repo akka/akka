@@ -6,13 +6,12 @@ package akka.stream.impl.streamref
 
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 import akka.serialization.Serializers
 import akka.stream.ActorMaterializer
 import akka.stream.Attributes
 import akka.stream.FlowShape
-import akka.stream.StreamRefMessages.SerializedMessage
+import akka.stream.StreamRefMessages.Payload
 import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl.Flow
@@ -50,8 +49,8 @@ private[akka] object Chunking {
           import akka.protobuf.ByteString
 
           // copied from akka-remote MessageSerializer
-          val builder = SerializedMessage.newBuilder
-          builder.setMessage(ByteString.copyFrom(serializer.toBinary(message.asInstanceOf[AnyRef])))
+          val builder = Payload.newBuilder
+          builder.setEnclosedMessage(ByteString.copyFrom(serializer.toBinary(message.asInstanceOf[AnyRef])))
           builder.setSerializerId(serializer.identifier)
           if (ms.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(ms))
 
@@ -69,9 +68,9 @@ private[akka] object Chunking {
         val sys = GraphInterpreter.currentInterpreter.materializer.asInstanceOf[ActorMaterializer].system
         import sys.dispatcher
         Future {
-          val messageProtocol = SerializedMessage.parseFrom(bytes.toArray)
+          val messageProtocol = Payload.parseFrom(bytes.toArray)
           SerializationExtension(sys).deserialize(
-            messageProtocol.getMessage.toByteArray,
+            messageProtocol.getEnclosedMessage.toByteArray,
             messageProtocol.getSerializerId,
             if (messageProtocol.hasMessageManifest) messageProtocol.getMessageManifest.toStringUtf8 else ""
           ).get

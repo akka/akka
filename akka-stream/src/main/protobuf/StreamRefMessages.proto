@@ -38,7 +38,7 @@ message CumulativeDemand {
 
 message SequencedOnNext {
     required int64 seqNr = 1;
-    required Payload payload = 2;
+    required bytes payload = 2;
 }
 
 message RemoteStreamFailure {
@@ -47,10 +47,4 @@ message RemoteStreamFailure {
 
 message RemoteStreamCompleted {
     required int64 seqNr = 1;
-}
-
-message SerializedMessage {
-    required bytes message = 1;
-    required int32 serializerId = 2;
-    optional bytes messageManifest = 3;
 }

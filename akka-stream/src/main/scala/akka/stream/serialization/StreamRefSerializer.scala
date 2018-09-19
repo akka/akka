@@ -29,7 +29,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
 
   override def manifest(o: AnyRef): String = o match {
     // protocol
-    case _: StreamRefsProtocol.SequencedOnNext[_]    ⇒ SequencedOnNextManifest
+    case _: StreamRefsProtocol.SequencedOnNext       ⇒ SequencedOnNextManifest
     case _: StreamRefsProtocol.CumulativeDemand      ⇒ CumulativeDemandManifest
     // handshake
     case _: StreamRefsProtocol.OnSubscribeHandshake  ⇒ OnSubscribeHandshakeManifest
@@ -45,7 +45,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     // protocol
-    case o: StreamRefsProtocol.SequencedOnNext[_]    ⇒ serializeSequencedOnNext(o).toByteArray
+    case o: StreamRefsProtocol.SequencedOnNext       ⇒ serializeSequencedOnNext(o).toByteArray
     case d: StreamRefsProtocol.CumulativeDemand      ⇒ serializeCumulativeDemand(d).toByteArray
     // handshake
     case h: StreamRefsProtocol.OnSubscribeHandshake  ⇒ serializeOnSubscribeHandshake(h).toByteArray
@@ -98,20 +98,10 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
       .build()
   }
 
-  private def serializeSequencedOnNext(o: StreamRefsProtocol.SequencedOnNext[_]) = {
-    val p = o.payload.asInstanceOf[AnyRef]
-    val msgSerializer = serialization.findSerializerFor(p)
-
-    val payloadBuilder = StreamRefMessages.Payload.newBuilder()
-      .setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(p)))
-      .setSerializerId(msgSerializer.identifier)
-
-    val ms = Serializers.manifestFor(msgSerializer, p)
-    if (ms.nonEmpty) payloadBuilder.setMessageManifest(ByteString.copyFromUtf8(ms))
-
+  private def serializeSequencedOnNext(o: StreamRefsProtocol.SequencedOnNext) = {
     StreamRefMessages.SequencedOnNext.newBuilder()
       .setSeqNr(o.seqNr)
-      .setPayload(payloadBuilder.build())
+      .setPayload(ByteString.copyFrom(o.payload.toArray))
       .build()
   }
 
@@ -152,15 +142,9 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
     SourceRefImpl[Any](initialPartnerRef)
   }
 
-  private def deserializeSequencedOnNext(bytes: Array[Byte]): StreamRefsProtocol.SequencedOnNext[AnyRef] = {
+  private def deserializeSequencedOnNext(bytes: Array[Byte]): StreamRefsProtocol.SequencedOnNext = {
     val o = StreamRefMessages.SequencedOnNext.parseFrom(bytes)
-    val p = o.getPayload
-    val payload = serialization.deserialize(
-      p.getEnclosedMessage.toByteArray,
-      p.getSerializerId,
-      p.getMessageManifest.toStringUtf8
-    )
-    StreamRefsProtocol.SequencedOnNext(o.getSeqNr, payload.get)
+    StreamRefsProtocol.SequencedOnNext(o.getSeqNr, akka.util.ByteString(o.getPayload.toByteArray))
   }
 
   private def deserializeCumulativeDemand(bytes: Array[Byte]): StreamRefsProtocol.CumulativeDemand = {

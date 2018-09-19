@@ -12,6 +12,7 @@ import akka.event.Logging
 import akka.stream._
 import akka.stream.scaladsl.Sink
 import akka.stream.stage._
+import akka.util.ByteString
 import akka.util.{ OptionVal, PrettyDuration }
 
 import scala.concurrent.{ Future, Promise }
@@ -21,7 +22,8 @@ import scala.util.{ Failure, Success, Try }
 @InternalApi
 private[stream] final case class SinkRefImpl[In](initialPartnerRef: ActorRef) extends SinkRef[In] {
   override def sink(): Sink[In, NotUsed] =
-    Sink.fromGraph(new SinkRefStageImpl[In](OptionVal.Some(initialPartnerRef))).mapMaterializedValue(_ ⇒ NotUsed)
+    Chunking.chunk[In]
+      .to(Sink.fromGraph(new SinkRefStageImpl[In](OptionVal.Some(initialPartnerRef))))
 }
 
 /**
@@ -33,10 +35,10 @@ private[stream] final case class SinkRefImpl[In](initialPartnerRef: ActorRef) ex
 @InternalApi
 private[stream] final class SinkRefStageImpl[In] private[akka] (
   val initialPartnerRef: OptionVal[ActorRef]
-) extends GraphStageWithMaterializedValue[SinkShape[In], Future[SourceRef[In]]] {
+) extends GraphStageWithMaterializedValue[SinkShape[ByteString], Future[SourceRef[In]]] {
 
-  val in: Inlet[In] = Inlet[In](s"${Logging.simpleName(getClass)}($initialRefName).in")
-  override def shape: SinkShape[In] = SinkShape.of(in)
+  val in: Inlet[ByteString] = Inlet[ByteString](s"${Logging.simpleName(getClass)}($initialRefName).in")
+  override def shape: SinkShape[ByteString] = SinkShape.of(in)
 
   private def initialRefName: String =
     initialPartnerRef match {
@@ -151,7 +153,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
           throw ex
       }
 
-      private def grabSequenced[T](in: Inlet[T]): StreamRefsProtocol.SequencedOnNext[T] = {
+      private def grabSequenced[T](in: Inlet[ByteString]): StreamRefsProtocol.SequencedOnNext = {
         val onNext = StreamRefsProtocol.SequencedOnNext(remoteCumulativeDemandConsumed, grab(in))
         remoteCumulativeDemandConsumed += 1
         onNext
