@@ -26,6 +26,7 @@ import akka.cluster.sharding.typed.ShardingMessageExtractor
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.cluster.typed.Leave
+import akka.pattern.AskTimeoutException
 import akka.serialization.SerializerWithStringManifest
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
@@ -286,7 +287,7 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
           IdStopPlz()))
       }
 
-      ex.getMessage should include("already spawned")
+      ex.getMessage should include("already started")
     }
 
     "EntityRef - tell" in {
@@ -341,6 +342,27 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       p.expectMessageType[TheReply].s should startWith("I'm alice")
 
       aliceRef ! StopPlz()
+    }
+
+    "EntityRef - AskTimeoutException" in {
+      val ignorantKey = EntityTypeKey[TestProtocol]("ignorant")
+
+      sharding.start(ShardedEntity(
+        _ ⇒ Behaviors.ignore[TestProtocol],
+        ignorantKey,
+        StopPlz()))
+
+      val ref = sharding.entityRefFor(ignorantKey, "sloppy")
+
+      val reply = ref.ask(WhoAreYou)(Timeout(10.millis))
+      val exc = reply.failed.futureValue
+      exc.getClass should ===(classOf[AskTimeoutException])
+      exc.getMessage should startWith("Ask timed out on")
+      exc.getMessage should include(ignorantKey.toString)
+      exc.getMessage should include("sloppy") // the entity id
+      exc.getMessage should include(ref.toString)
+      exc.getMessage should include(s"[${classOf[WhoAreYou].getName}]") // message class
+      exc.getMessage should include("[10 ms]") // timeout
     }
 
     "handle untyped StartEntity message" in {

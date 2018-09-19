@@ -40,11 +40,13 @@ object Patterns {
    * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[scala.concurrent.Future]]
    * holding the eventual reply message; this means that the target actor
-   * needs to send the result to the `sender` reference provided. The Future
-   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * needs to send the result to the `sender` reference provided.
+   *
+   * The Future will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
-   * `Await.result(..., timeout)`).
+   * `Await.result(..., timeout)`). A typical reason for `AskTimeoutException` is that the
+   * recipient actor didn't send a reply.
    *
    * <b>Warning:</b>
    * When using future callbacks, inside actors you need to carefully avoid closing over
@@ -85,11 +87,13 @@ object Patterns {
    * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[scala.concurrent.Future]]
    * holding the eventual reply message; this means that the target actor
-   * needs to send the result to the `sender` reference provided. The Future
-   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * needs to send the result to the `sender` reference provided.
+   *
+   * The Future will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
-   * `Await.result(..., timeout)`).
+   * `Await.result(..., timeout)`). A typical reason for `AskTimeoutException` is that the
+   * recipient actor didn't send a reply.
    *
    * <b>Warning:</b>
    * When using future callbacks, inside actors you need to carefully avoid closing over
@@ -131,11 +135,13 @@ object Patterns {
    * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[scala.concurrent.Future]]
    * holding the eventual reply message; this means that the target [[akka.actor.ActorSelection]]
-   * needs to send the result to the `sender` reference provided. The Future
-   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * needs to send the result to the `sender` reference provided.
+   *
+   * The Future will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
-   * `Await.result(..., timeout)`).
+   * `Await.result(..., timeout)`). A typical reason for `AskTimeoutException` is that the
+   * recipient actor didn't send a reply.
    *
    * <b>Warning:</b>
    * When using future callbacks, inside actors you need to carefully avoid closing over
@@ -163,11 +169,13 @@ object Patterns {
    * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[scala.concurrent.Future]]
    * holding the eventual reply message; this means that the target [[akka.actor.ActorSelection]]
-   * needs to send the result to the `sender` reference provided. The Future
-   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * needs to send the result to the `sender` reference provided.
+   *
+   * The Future will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
-   * `Await.result(..., timeout)`).
+   * `Await.result(..., timeout)`). A typical reason for `AskTimeoutException` is that the
+   * recipient actor didn't send a reply.
    *
    * <b>Warning:</b>
    * When using future callbacks, inside actors you need to carefully avoid closing over
@@ -297,11 +305,13 @@ object PatternsCS {
    * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[java.util.concurrent.CompletionStage]]
    * holding the eventual reply message; this means that the target actor
-   * needs to send the result to the `sender` reference provided. The CompletionStage
-   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * needs to send the result to the `sender` reference provided.
+   *
+   * The CompletionStage will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
-   * `Await.result(..., timeout)`).
+   * `Await.result(..., timeout)`). A typical reason for `AskTimeoutException` is that the
+   * recipient actor didn't send a reply.
    *
    * <b>Warning:</b>
    * When using future callbacks, inside actors you need to carefully avoid closing over
@@ -326,11 +336,13 @@ object PatternsCS {
    * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[java.util.concurrent.CompletionStage]]
    * holding the eventual reply message; this means that the target actor
-   * needs to send the result to the `sender` reference provided. The CompletionStage
-   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * needs to send the result to the `sender` reference provided.
+   *
+   * The CompletionStage will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
-   * `Await.result(..., timeout)`).
+   * `Await.result(..., timeout)`). A typical reason for `AskTimeoutException` is that the
+   * recipient actor didn't send a reply.
    *
    * <b>Warning:</b>
    * When using future callbacks, inside actors you need to carefully avoid closing over
@@ -391,11 +403,13 @@ object PatternsCS {
    * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[java.util.concurrent.CompletionStage]]
    * holding the eventual reply message; this means that the target actor
-   * needs to send the result to the `sender` reference provided. The CompletionStage
-   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * needs to send the result to the `sender` reference provided.
+   *
+   * The CompletionStage will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
-   * `Await.result(..., timeout)`).
+   * `Await.result(..., timeout)`). A typical reason for `AskTimeoutException` is that the
+   * recipient actor didn't send a reply.
    *
    * <b>Warning:</b>
    * When using future callbacks, inside actors you need to carefully avoid closing over
@@ -437,11 +451,13 @@ object PatternsCS {
    * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[java.util.concurrent.CompletionStage]]
    * holding the eventual reply message; this means that the target [[akka.actor.ActorSelection]]
-   * needs to send the result to the `sender` reference provided. The CompletionStage
-   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * needs to send the result to the `sender` reference provided.
+   *
+   * The CompletionStage will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
-   * `Await.result(..., timeout)`).
+   * `Await.result(..., timeout)`). A typical reason for `AskTimeoutException` is that the
+   * recipient actor didn't send a reply.
    *
    * <b>Warning:</b>
    * When using future callbacks, inside actors you need to carefully avoid closing over
@@ -466,11 +482,13 @@ object PatternsCS {
    * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[java.util.concurrent.CompletionStage]]
    * holding the eventual reply message; this means that the target [[akka.actor.ActorSelection]]
-   * needs to send the result to the `sender` reference provided. The CompletionStage
-   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * needs to send the result to the `sender` reference provided.
+   *
+   * The CompletionStage will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
-   * `Await.result(..., timeout)`).
+   * `Await.result(..., timeout)`). A typical reason for `AskTimeoutException` is that the
+   * recipient actor didn't send a reply.
    *
    * <b>Warning:</b>
    * When using future callbacks, inside actors you need to carefully avoid closing over
@@ -494,11 +512,13 @@ object PatternsCS {
    * <i>Java API for `akka.pattern.ask`:</i>
    * Sends a message asynchronously and returns a [[java.util.concurrent.CompletionStage]]
    * holding the eventual reply message; this means that the target [[akka.actor.ActorSelection]]
-   * needs to send the result to the `sender` reference provided. The CompletionStage
-   * will be completed with an [[akka.pattern.AskTimeoutException]] after the
+   * needs to send the result to the `sender` reference provided.
+   *
+   * The CompletionStage will be completed with an [[akka.pattern.AskTimeoutException]] after the
    * given timeout has expired; this is independent from any timeout applied
    * while awaiting a result for this future (i.e. in
-   * `Await.result(..., timeout)`).
+   * `Await.result(..., timeout)`). A typical reason for `AskTimeoutException` is that the
+   * recipient actor didn't send a reply.
    *
    * <b>Warning:</b>
    * When using future callbacks, inside actors you need to carefully avoid closing over

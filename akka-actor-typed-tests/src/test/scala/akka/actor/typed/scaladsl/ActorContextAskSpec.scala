@@ -54,8 +54,8 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
         // Timeout comes from TypedAkkaSpec
 
         ctx.ask(pingPong)(Ping) {
-          case Success(pong) ⇒ Pong(ctx.self.path.name + "1", Thread.currentThread().getName)
-          case Failure(ex)   ⇒ throw ex
+          case Success(_)  ⇒ Pong(ctx.self.path.name + "1", Thread.currentThread().getName)
+          case Failure(ex) ⇒ throw ex
         }
 
         Behaviors.receiveMessage { pong ⇒
@@ -87,7 +87,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
         }
       ))
 
-      val snitch = Behaviors.setup[AnyRef] { (ctx) ⇒
+      val snitch = Behaviors.setup[AnyRef] { ctx ⇒
         ctx.ask(pingPong)(Ping) {
           case Success(msg) ⇒ throw new NotImplementedError(msg.toString)
           case Failure(x)   ⇒ x
@@ -115,17 +115,16 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
 
     "deal with timeouts in ask" in {
       val probe = TestProbe[AnyRef]()
-      val snitch = Behaviors.setup[AnyRef] { (ctx) ⇒
+      val snitch = Behaviors.setup[AnyRef] { ctx ⇒
 
         ctx.ask[String, String](system.deadLetters)(ref ⇒ "boo") {
           case Success(m) ⇒ m
           case Failure(x) ⇒ x
-        }(20.millis, implicitly[ClassTag[String]])
+        }(10.millis, implicitly[ClassTag[String]])
 
-        Behaviors.receive {
-          case (_, msg) ⇒
-            probe.ref ! msg
-            Behaviors.same
+        Behaviors.receiveMessage { msg ⇒
+          probe.ref ! msg
+          Behaviors.same
         }
       }
 
@@ -135,8 +134,33 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
         }
       }
 
-      probe.expectMessageType[TimeoutException]
+      val exc = probe.expectMessageType[TimeoutException]
+      exc.getMessage should include("had already been terminated")
+    }
 
+    "must timeout if recipient doesn't reply in time" in {
+      val target = spawn(Behaviors.ignore[String])
+      val probe = TestProbe[AnyRef]()
+      val snitch = Behaviors.setup[AnyRef] { ctx ⇒
+
+        ctx.ask[String, String](target)(_ ⇒ "bar") {
+          case Success(m) ⇒ m
+          case Failure(x) ⇒ x
+        }(10.millis, implicitly[ClassTag[String]])
+
+        Behaviors.receiveMessage { msg ⇒
+          probe.ref ! msg
+          Behaviors.same
+        }
+      }
+
+      spawn(snitch)
+
+      val exc = probe.expectMessageType[TimeoutException]
+      exc.getMessage should startWith("Ask timed out on")
+      exc.getMessage should include(target.path.toString)
+      exc.getMessage should include("[java.lang.String]") // message class
+      exc.getMessage should include("[10 ms]") // timeout
     }
 
   }
