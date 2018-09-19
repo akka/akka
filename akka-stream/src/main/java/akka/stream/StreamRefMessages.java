@@ -12,10 +12,10 @@ public final class StreamRefMessages {
   public static void registerAllExtensions(
       akka.protobuf.ExtensionRegistry registry) {
   }
-  public interface SinkRefOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface SinkRefOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:SinkRef)
+      akka.protobuf.MessageOrBuilder {
 
-    // required .ActorRef targetRef = 1;
     /**
      * <code>required .ActorRef targetRef = 1;</code>
      */
@@ -33,8 +33,9 @@ public final class StreamRefMessages {
    * Protobuf type {@code SinkRef}
    */
   public static final class SinkRef extends
-      akka.protobuf.GeneratedMessage
-      implements SinkRefOrBuilder {
+      akka.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:SinkRef)
+      SinkRefOrBuilder {
     // Use SinkRef.newBuilder() to construct.
     private SinkRef(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -133,7 +134,6 @@ public final class StreamRefMessages {
     }
 
     private int bitField0_;
-    // required .ActorRef targetRef = 1;
     public static final int TARGETREF_FIELD_NUMBER = 1;
     private akka.stream.StreamRefMessages.ActorRef targetRef_;
     /**
@@ -161,7 +161,8 @@ public final class StreamRefMessages {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasTargetRef()) {
         memoizedIsInitialized = 0;
@@ -276,8 +277,9 @@ public final class StreamRefMessages {
      * Protobuf type {@code SinkRef}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.stream.StreamRefMessages.SinkRefOrBuilder {
+        akka.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:SinkRef)
+        akka.stream.StreamRefMessages.SinkRefOrBuilder {
       public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.stream.StreamRefMessages.internal_static_SinkRef_descriptor;
@@ -407,7 +409,6 @@ public final class StreamRefMessages {
       }
       private int bitField0_;
 
-      // required .ActorRef targetRef = 1;
       private akka.stream.StreamRefMessages.ActorRef targetRef_ = akka.stream.StreamRefMessages.ActorRef.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
           akka.stream.StreamRefMessages.ActorRef, akka.stream.StreamRefMessages.ActorRef.Builder, akka.stream.StreamRefMessages.ActorRefOrBuilder> targetRefBuilder_;
@@ -516,7 +517,7 @@ public final class StreamRefMessages {
         if (targetRefBuilder_ == null) {
           targetRefBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.stream.StreamRefMessages.ActorRef, akka.stream.StreamRefMessages.ActorRef.Builder, akka.stream.StreamRefMessages.ActorRefOrBuilder>(
-                  targetRef_,
+                  getTargetRef(),
                   getParentForChildren(),
                   isClean());
           targetRef_ = null;
@@ -535,10 +536,10 @@ public final class StreamRefMessages {
     // @@protoc_insertion_point(class_scope:SinkRef)
   }
 
-  public interface SourceRefOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface SourceRefOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:SourceRef)
+      akka.protobuf.MessageOrBuilder {
 
-    // required .ActorRef originRef = 1;
     /**
      * <code>required .ActorRef originRef = 1;</code>
      */
@@ -551,13 +552,23 @@ public final class StreamRefMessages {
      * <code>required .ActorRef originRef = 1;</code>
      */
     akka.stream.StreamRefMessages.ActorRefOrBuilder getOriginRefOrBuilder();
+
+    /**
+     * <code>optional bool isChunked = 2;</code>
+     */
+    boolean hasIsChunked();
+    /**
+     * <code>optional bool isChunked = 2;</code>
+     */
+    boolean getIsChunked();
   }
   /**
    * Protobuf type {@code SourceRef}
    */
   public static final class SourceRef extends
-      akka.protobuf.GeneratedMessage
-      implements SourceRefOrBuilder {
+      akka.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:SourceRef)
+      SourceRefOrBuilder {
     // Use SourceRef.newBuilder() to construct.
     private SourceRef(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -616,6 +627,11 @@ public final class StreamRefMessages {
               bitField0_ |= 0x00000001;
               break;
             }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              isChunked_ = input.readBool();
+              break;
+            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
@@ -656,7 +672,6 @@ public final class StreamRefMessages {
     }
 
     private int bitField0_;
-    // required .ActorRef originRef = 1;
     public static final int ORIGINREF_FIELD_NUMBER = 1;
     private akka.stream.StreamRefMessages.ActorRef originRef_;
     /**
@@ -678,13 +693,30 @@ public final class StreamRefMessages {
       return originRef_;
     }
 
+    public static final int ISCHUNKED_FIELD_NUMBER = 2;
+    private boolean isChunked_;
+    /**
+     * <code>optional bool isChunked = 2;</code>
+     */
+    public boolean hasIsChunked() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>optional bool isChunked = 2;</code>
+     */
+    public boolean getIsChunked() {
+      return isChunked_;
+    }
+
     private void initFields() {
       originRef_ = akka.stream.StreamRefMessages.ActorRef.getDefaultInstance();
+      isChunked_ = false;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasOriginRef()) {
         memoizedIsInitialized = 0;
@@ -704,6 +736,9 @@ public final class StreamRefMessages {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeMessage(1, originRef_);
       }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeBool(2, isChunked_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -716,6 +751,10 @@ public final class StreamRefMessages {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, originRef_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeBoolSize(2, isChunked_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -799,8 +838,9 @@ public final class StreamRefMessages {
      * Protobuf type {@code SourceRef}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.stream.StreamRefMessages.SourceRefOrBuilder {
+        akka.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:SourceRef)
+        akka.stream.StreamRefMessages.SourceRefOrBuilder {
       public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.stream.StreamRefMessages.internal_static_SourceRef_descriptor;
@@ -840,6 +880,8 @@ public final class StreamRefMessages {
           originRefBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000001);
+        isChunked_ = false;
+        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
 
@@ -876,6 +918,10 @@ public final class StreamRefMessages {
         } else {
           result.originRef_ = originRefBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.isChunked_ = isChunked_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -894,6 +940,9 @@ public final class StreamRefMessages {
         if (other == akka.stream.StreamRefMessages.SourceRef.getDefaultInstance()) return this;
         if (other.hasOriginRef()) {
           mergeOriginRef(other.getOriginRef());
+        }
+        if (other.hasIsChunked()) {
+          setIsChunked(other.getIsChunked());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -930,7 +979,6 @@ public final class StreamRefMessages {
       }
       private int bitField0_;
 
-      // required .ActorRef originRef = 1;
       private akka.stream.StreamRefMessages.ActorRef originRef_ = akka.stream.StreamRefMessages.ActorRef.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
           akka.stream.StreamRefMessages.ActorRef, akka.stream.StreamRefMessages.ActorRef.Builder, akka.stream.StreamRefMessages.ActorRefOrBuilder> originRefBuilder_;
@@ -1039,12 +1087,44 @@ public final class StreamRefMessages {
         if (originRefBuilder_ == null) {
           originRefBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.stream.StreamRefMessages.ActorRef, akka.stream.StreamRefMessages.ActorRef.Builder, akka.stream.StreamRefMessages.ActorRefOrBuilder>(
-                  originRef_,
+                  getOriginRef(),
                   getParentForChildren(),
                   isClean());
           originRef_ = null;
         }
         return originRefBuilder_;
+      }
+
+      private boolean isChunked_ ;
+      /**
+       * <code>optional bool isChunked = 2;</code>
+       */
+      public boolean hasIsChunked() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>optional bool isChunked = 2;</code>
+       */
+      public boolean getIsChunked() {
+        return isChunked_;
+      }
+      /**
+       * <code>optional bool isChunked = 2;</code>
+       */
+      public Builder setIsChunked(boolean value) {
+        bitField0_ |= 0x00000002;
+        isChunked_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bool isChunked = 2;</code>
+       */
+      public Builder clearIsChunked() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        isChunked_ = false;
+        onChanged();
+        return this;
       }
 
       // @@protoc_insertion_point(builder_scope:SourceRef)
@@ -1058,10 +1138,10 @@ public final class StreamRefMessages {
     // @@protoc_insertion_point(class_scope:SourceRef)
   }
 
-  public interface ActorRefOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface ActorRefOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:ActorRef)
+      akka.protobuf.MessageOrBuilder {
 
-    // required string path = 1;
     /**
      * <code>required string path = 1;</code>
      */
@@ -1080,8 +1160,9 @@ public final class StreamRefMessages {
    * Protobuf type {@code ActorRef}
    */
   public static final class ActorRef extends
-      akka.protobuf.GeneratedMessage
-      implements ActorRefOrBuilder {
+      akka.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:ActorRef)
+      ActorRefOrBuilder {
     // Use ActorRef.newBuilder() to construct.
     private ActorRef(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -1128,8 +1209,9 @@ public final class StreamRefMessages {
               break;
             }
             case 10: {
+              akka.protobuf.ByteString bs = input.readBytes();
               bitField0_ |= 0x00000001;
-              path_ = input.readBytes();
+              path_ = bs;
               break;
             }
           }
@@ -1172,7 +1254,6 @@ public final class StreamRefMessages {
     }
 
     private int bitField0_;
-    // required string path = 1;
     public static final int PATH_FIELD_NUMBER = 1;
     private java.lang.Object path_;
     /**
@@ -1221,7 +1302,8 @@ public final class StreamRefMessages {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasPath()) {
         memoizedIsInitialized = 0;
@@ -1332,8 +1414,9 @@ public final class StreamRefMessages {
      * Protobuf type {@code ActorRef}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.stream.StreamRefMessages.ActorRefOrBuilder {
+        akka.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:ActorRef)
+        akka.stream.StreamRefMessages.ActorRefOrBuilder {
       public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.stream.StreamRefMessages.internal_static_ActorRef_descriptor;
@@ -1452,7 +1535,6 @@ public final class StreamRefMessages {
       }
       private int bitField0_;
 
-      // required string path = 1;
       private java.lang.Object path_ = "";
       /**
        * <code>required string path = 1;</code>
@@ -1466,9 +1548,12 @@ public final class StreamRefMessages {
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
-          path_ = s;
+          akka.protobuf.ByteString bs =
+              (akka.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            path_ = s;
+          }
           return s;
         } else {
           return (java.lang.String) ref;
@@ -1537,10 +1622,10 @@ public final class StreamRefMessages {
     // @@protoc_insertion_point(class_scope:ActorRef)
   }
 
-  public interface PayloadOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface PayloadOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:Payload)
+      akka.protobuf.MessageOrBuilder {
 
-    // required bytes enclosedMessage = 1;
     /**
      * <code>required bytes enclosedMessage = 1;</code>
      */
@@ -1550,7 +1635,6 @@ public final class StreamRefMessages {
      */
     akka.protobuf.ByteString getEnclosedMessage();
 
-    // required int32 serializerId = 2;
     /**
      * <code>required int32 serializerId = 2;</code>
      */
@@ -1560,7 +1644,6 @@ public final class StreamRefMessages {
      */
     int getSerializerId();
 
-    // optional bytes messageManifest = 3;
     /**
      * <code>optional bytes messageManifest = 3;</code>
      */
@@ -1574,8 +1657,9 @@ public final class StreamRefMessages {
    * Protobuf type {@code Payload}
    */
   public static final class Payload extends
-      akka.protobuf.GeneratedMessage
-      implements PayloadOrBuilder {
+      akka.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:Payload)
+      PayloadOrBuilder {
     // Use Payload.newBuilder() to construct.
     private Payload(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -1676,7 +1760,6 @@ public final class StreamRefMessages {
     }
 
     private int bitField0_;
-    // required bytes enclosedMessage = 1;
     public static final int ENCLOSEDMESSAGE_FIELD_NUMBER = 1;
     private akka.protobuf.ByteString enclosedMessage_;
     /**
@@ -1692,7 +1775,6 @@ public final class StreamRefMessages {
       return enclosedMessage_;
     }
 
-    // required int32 serializerId = 2;
     public static final int SERIALIZERID_FIELD_NUMBER = 2;
     private int serializerId_;
     /**
@@ -1708,7 +1790,6 @@ public final class StreamRefMessages {
       return serializerId_;
     }
 
-    // optional bytes messageManifest = 3;
     public static final int MESSAGEMANIFEST_FIELD_NUMBER = 3;
     private akka.protobuf.ByteString messageManifest_;
     /**
@@ -1732,7 +1813,8 @@ public final class StreamRefMessages {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasEnclosedMessage()) {
         memoizedIsInitialized = 0;
@@ -1861,8 +1943,9 @@ public final class StreamRefMessages {
      * Protobuf type {@code Payload}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.stream.StreamRefMessages.PayloadOrBuilder {
+        akka.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:Payload)
+        akka.stream.StreamRefMessages.PayloadOrBuilder {
       public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.stream.StreamRefMessages.internal_static_Payload_descriptor;
@@ -2001,7 +2084,6 @@ public final class StreamRefMessages {
       }
       private int bitField0_;
 
-      // required bytes enclosedMessage = 1;
       private akka.protobuf.ByteString enclosedMessage_ = akka.protobuf.ByteString.EMPTY;
       /**
        * <code>required bytes enclosedMessage = 1;</code>
@@ -2037,7 +2119,6 @@ public final class StreamRefMessages {
         return this;
       }
 
-      // required int32 serializerId = 2;
       private int serializerId_ ;
       /**
        * <code>required int32 serializerId = 2;</code>
@@ -2070,7 +2151,6 @@ public final class StreamRefMessages {
         return this;
       }
 
-      // optional bytes messageManifest = 3;
       private akka.protobuf.ByteString messageManifest_ = akka.protobuf.ByteString.EMPTY;
       /**
        * <code>optional bytes messageManifest = 3;</code>
@@ -2117,10 +2197,10 @@ public final class StreamRefMessages {
     // @@protoc_insertion_point(class_scope:Payload)
   }
 
-  public interface OnSubscribeHandshakeOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface OnSubscribeHandshakeOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:OnSubscribeHandshake)
+      akka.protobuf.MessageOrBuilder {
 
-    // required .ActorRef targetRef = 1;
     /**
      * <code>required .ActorRef targetRef = 1;</code>
      */
@@ -2138,8 +2218,9 @@ public final class StreamRefMessages {
    * Protobuf type {@code OnSubscribeHandshake}
    */
   public static final class OnSubscribeHandshake extends
-      akka.protobuf.GeneratedMessage
-      implements OnSubscribeHandshakeOrBuilder {
+      akka.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:OnSubscribeHandshake)
+      OnSubscribeHandshakeOrBuilder {
     // Use OnSubscribeHandshake.newBuilder() to construct.
     private OnSubscribeHandshake(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -2238,7 +2319,6 @@ public final class StreamRefMessages {
     }
 
     private int bitField0_;
-    // required .ActorRef targetRef = 1;
     public static final int TARGETREF_FIELD_NUMBER = 1;
     private akka.stream.StreamRefMessages.ActorRef targetRef_;
     /**
@@ -2266,7 +2346,8 @@ public final class StreamRefMessages {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasTargetRef()) {
         memoizedIsInitialized = 0;
@@ -2381,8 +2462,9 @@ public final class StreamRefMessages {
      * Protobuf type {@code OnSubscribeHandshake}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.stream.StreamRefMessages.OnSubscribeHandshakeOrBuilder {
+        akka.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:OnSubscribeHandshake)
+        akka.stream.StreamRefMessages.OnSubscribeHandshakeOrBuilder {
       public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.stream.StreamRefMessages.internal_static_OnSubscribeHandshake_descriptor;
@@ -2512,7 +2594,6 @@ public final class StreamRefMessages {
       }
       private int bitField0_;
 
-      // required .ActorRef targetRef = 1;
       private akka.stream.StreamRefMessages.ActorRef targetRef_ = akka.stream.StreamRefMessages.ActorRef.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
           akka.stream.StreamRefMessages.ActorRef, akka.stream.StreamRefMessages.ActorRef.Builder, akka.stream.StreamRefMessages.ActorRefOrBuilder> targetRefBuilder_;
@@ -2621,7 +2702,7 @@ public final class StreamRefMessages {
         if (targetRefBuilder_ == null) {
           targetRefBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.stream.StreamRefMessages.ActorRef, akka.stream.StreamRefMessages.ActorRef.Builder, akka.stream.StreamRefMessages.ActorRefOrBuilder>(
-                  targetRef_,
+                  getTargetRef(),
                   getParentForChildren(),
                   isClean());
           targetRef_ = null;
@@ -2640,10 +2721,10 @@ public final class StreamRefMessages {
     // @@protoc_insertion_point(class_scope:OnSubscribeHandshake)
   }
 
-  public interface CumulativeDemandOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface CumulativeDemandOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:CumulativeDemand)
+      akka.protobuf.MessageOrBuilder {
 
-    // required int64 seqNr = 1;
     /**
      * <code>required int64 seqNr = 1;</code>
      */
@@ -2657,8 +2738,9 @@ public final class StreamRefMessages {
    * Protobuf type {@code CumulativeDemand}
    */
   public static final class CumulativeDemand extends
-      akka.protobuf.GeneratedMessage
-      implements CumulativeDemandOrBuilder {
+      akka.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:CumulativeDemand)
+      CumulativeDemandOrBuilder {
     // Use CumulativeDemand.newBuilder() to construct.
     private CumulativeDemand(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -2749,7 +2831,6 @@ public final class StreamRefMessages {
     }
 
     private int bitField0_;
-    // required int64 seqNr = 1;
     public static final int SEQNR_FIELD_NUMBER = 1;
     private long seqNr_;
     /**
@@ -2771,7 +2852,8 @@ public final class StreamRefMessages {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasSeqNr()) {
         memoizedIsInitialized = 0;
@@ -2882,8 +2964,9 @@ public final class StreamRefMessages {
      * Protobuf type {@code CumulativeDemand}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.stream.StreamRefMessages.CumulativeDemandOrBuilder {
+        akka.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:CumulativeDemand)
+        akka.stream.StreamRefMessages.CumulativeDemandOrBuilder {
       public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.stream.StreamRefMessages.internal_static_CumulativeDemand_descriptor;
@@ -3000,7 +3083,6 @@ public final class StreamRefMessages {
       }
       private int bitField0_;
 
-      // required int64 seqNr = 1;
       private long seqNr_ ;
       /**
        * <code>required int64 seqNr = 1;</code>
@@ -3044,10 +3126,10 @@ public final class StreamRefMessages {
     // @@protoc_insertion_point(class_scope:CumulativeDemand)
   }
 
-  public interface SequencedOnNextOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface SequencedOnNextOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:SequencedOnNext)
+      akka.protobuf.MessageOrBuilder {
 
-    // required int64 seqNr = 1;
     /**
      * <code>required int64 seqNr = 1;</code>
      */
@@ -3057,7 +3139,6 @@ public final class StreamRefMessages {
      */
     long getSeqNr();
 
-    // required .Payload payload = 2;
     /**
      * <code>required .Payload payload = 2;</code>
      */
@@ -3075,8 +3156,9 @@ public final class StreamRefMessages {
    * Protobuf type {@code SequencedOnNext}
    */
   public static final class SequencedOnNext extends
-      akka.protobuf.GeneratedMessage
-      implements SequencedOnNextOrBuilder {
+      akka.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:SequencedOnNext)
+      SequencedOnNextOrBuilder {
     // Use SequencedOnNext.newBuilder() to construct.
     private SequencedOnNext(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -3180,7 +3262,6 @@ public final class StreamRefMessages {
     }
 
     private int bitField0_;
-    // required int64 seqNr = 1;
     public static final int SEQNR_FIELD_NUMBER = 1;
     private long seqNr_;
     /**
@@ -3196,7 +3277,6 @@ public final class StreamRefMessages {
       return seqNr_;
     }
 
-    // required .Payload payload = 2;
     public static final int PAYLOAD_FIELD_NUMBER = 2;
     private akka.stream.StreamRefMessages.Payload payload_;
     /**
@@ -3225,7 +3305,8 @@ public final class StreamRefMessages {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasSeqNr()) {
         memoizedIsInitialized = 0;
@@ -3351,8 +3432,9 @@ public final class StreamRefMessages {
      * Protobuf type {@code SequencedOnNext}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.stream.StreamRefMessages.SequencedOnNextOrBuilder {
+        akka.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:SequencedOnNext)
+        akka.stream.StreamRefMessages.SequencedOnNextOrBuilder {
       public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.stream.StreamRefMessages.internal_static_SequencedOnNext_descriptor;
@@ -3495,7 +3577,6 @@ public final class StreamRefMessages {
       }
       private int bitField0_;
 
-      // required int64 seqNr = 1;
       private long seqNr_ ;
       /**
        * <code>required int64 seqNr = 1;</code>
@@ -3528,7 +3609,6 @@ public final class StreamRefMessages {
         return this;
       }
 
-      // required .Payload payload = 2;
       private akka.stream.StreamRefMessages.Payload payload_ = akka.stream.StreamRefMessages.Payload.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
           akka.stream.StreamRefMessages.Payload, akka.stream.StreamRefMessages.Payload.Builder, akka.stream.StreamRefMessages.PayloadOrBuilder> payloadBuilder_;
@@ -3637,7 +3717,7 @@ public final class StreamRefMessages {
         if (payloadBuilder_ == null) {
           payloadBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.stream.StreamRefMessages.Payload, akka.stream.StreamRefMessages.Payload.Builder, akka.stream.StreamRefMessages.PayloadOrBuilder>(
-                  payload_,
+                  getPayload(),
                   getParentForChildren(),
                   isClean());
           payload_ = null;
@@ -3656,10 +3736,10 @@ public final class StreamRefMessages {
     // @@protoc_insertion_point(class_scope:SequencedOnNext)
   }
 
-  public interface RemoteStreamFailureOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface RemoteStreamFailureOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:RemoteStreamFailure)
+      akka.protobuf.MessageOrBuilder {
 
-    // optional bytes cause = 1;
     /**
      * <code>optional bytes cause = 1;</code>
      */
@@ -3673,8 +3753,9 @@ public final class StreamRefMessages {
    * Protobuf type {@code RemoteStreamFailure}
    */
   public static final class RemoteStreamFailure extends
-      akka.protobuf.GeneratedMessage
-      implements RemoteStreamFailureOrBuilder {
+      akka.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:RemoteStreamFailure)
+      RemoteStreamFailureOrBuilder {
     // Use RemoteStreamFailure.newBuilder() to construct.
     private RemoteStreamFailure(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -3765,7 +3846,6 @@ public final class StreamRefMessages {
     }
 
     private int bitField0_;
-    // optional bytes cause = 1;
     public static final int CAUSE_FIELD_NUMBER = 1;
     private akka.protobuf.ByteString cause_;
     /**
@@ -3787,7 +3867,8 @@ public final class StreamRefMessages {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       memoizedIsInitialized = 1;
       return true;
@@ -3894,8 +3975,9 @@ public final class StreamRefMessages {
      * Protobuf type {@code RemoteStreamFailure}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.stream.StreamRefMessages.RemoteStreamFailureOrBuilder {
+        akka.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:RemoteStreamFailure)
+        akka.stream.StreamRefMessages.RemoteStreamFailureOrBuilder {
       public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.stream.StreamRefMessages.internal_static_RemoteStreamFailure_descriptor;
@@ -4008,7 +4090,6 @@ public final class StreamRefMessages {
       }
       private int bitField0_;
 
-      // optional bytes cause = 1;
       private akka.protobuf.ByteString cause_ = akka.protobuf.ByteString.EMPTY;
       /**
        * <code>optional bytes cause = 1;</code>
@@ -4055,10 +4136,10 @@ public final class StreamRefMessages {
     // @@protoc_insertion_point(class_scope:RemoteStreamFailure)
   }
 
-  public interface RemoteStreamCompletedOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface RemoteStreamCompletedOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:RemoteStreamCompleted)
+      akka.protobuf.MessageOrBuilder {
 
-    // required int64 seqNr = 1;
     /**
      * <code>required int64 seqNr = 1;</code>
      */
@@ -4072,8 +4153,9 @@ public final class StreamRefMessages {
    * Protobuf type {@code RemoteStreamCompleted}
    */
   public static final class RemoteStreamCompleted extends
-      akka.protobuf.GeneratedMessage
-      implements RemoteStreamCompletedOrBuilder {
+      akka.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:RemoteStreamCompleted)
+      RemoteStreamCompletedOrBuilder {
     // Use RemoteStreamCompleted.newBuilder() to construct.
     private RemoteStreamCompleted(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
@@ -4164,7 +4246,6 @@ public final class StreamRefMessages {
     }
 
     private int bitField0_;
-    // required int64 seqNr = 1;
     public static final int SEQNR_FIELD_NUMBER = 1;
     private long seqNr_;
     /**
@@ -4186,7 +4267,8 @@ public final class StreamRefMessages {
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
-      if (isInitialized != -1) return isInitialized == 1;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
 
       if (!hasSeqNr()) {
         memoizedIsInitialized = 0;
@@ -4297,8 +4379,9 @@ public final class StreamRefMessages {
      * Protobuf type {@code RemoteStreamCompleted}
      */
     public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.stream.StreamRefMessages.RemoteStreamCompletedOrBuilder {
+        akka.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:RemoteStreamCompleted)
+        akka.stream.StreamRefMessages.RemoteStreamCompletedOrBuilder {
       public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.stream.StreamRefMessages.internal_static_RemoteStreamCompleted_descriptor;
@@ -4415,7 +4498,6 @@ public final class StreamRefMessages {
       }
       private int bitField0_;
 
-      // required int64 seqNr = 1;
       private long seqNr_ ;
       /**
        * <code>required int64 seqNr = 1;</code>
@@ -4459,51 +4541,631 @@ public final class StreamRefMessages {
     // @@protoc_insertion_point(class_scope:RemoteStreamCompleted)
   }
 
-  private static akka.protobuf.Descriptors.Descriptor
+  public interface SerializedMessageOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:SerializedMessage)
+      akka.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>required bytes message = 1;</code>
+     */
+    boolean hasMessage();
+    /**
+     * <code>required bytes message = 1;</code>
+     */
+    akka.protobuf.ByteString getMessage();
+
+    /**
+     * <code>required int32 serializerId = 2;</code>
+     */
+    boolean hasSerializerId();
+    /**
+     * <code>required int32 serializerId = 2;</code>
+     */
+    int getSerializerId();
+
+    /**
+     * <code>optional bytes messageManifest = 3;</code>
+     */
+    boolean hasMessageManifest();
+    /**
+     * <code>optional bytes messageManifest = 3;</code>
+     */
+    akka.protobuf.ByteString getMessageManifest();
+  }
+  /**
+   * Protobuf type {@code SerializedMessage}
+   */
+  public static final class SerializedMessage extends
+      akka.protobuf.GeneratedMessage implements
+      // @@protoc_insertion_point(message_implements:SerializedMessage)
+      SerializedMessageOrBuilder {
+    // Use SerializedMessage.newBuilder() to construct.
+    private SerializedMessage(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private SerializedMessage(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final SerializedMessage defaultInstance;
+    public static SerializedMessage getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public SerializedMessage getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final akka.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final akka.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private SerializedMessage(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              bitField0_ |= 0x00000001;
+              message_ = input.readBytes();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              serializerId_ = input.readInt32();
+              break;
+            }
+            case 26: {
+              bitField0_ |= 0x00000004;
+              messageManifest_ = input.readBytes();
+              break;
+            }
+          }
+        }
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.stream.StreamRefMessages.internal_static_SerializedMessage_descriptor;
+    }
+
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.stream.StreamRefMessages.internal_static_SerializedMessage_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.stream.StreamRefMessages.SerializedMessage.class, akka.stream.StreamRefMessages.SerializedMessage.Builder.class);
+    }
+
+    public static akka.protobuf.Parser<SerializedMessage> PARSER =
+        new akka.protobuf.AbstractParser<SerializedMessage>() {
+      public SerializedMessage parsePartialFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
+        return new SerializedMessage(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public akka.protobuf.Parser<SerializedMessage> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    public static final int MESSAGE_FIELD_NUMBER = 1;
+    private akka.protobuf.ByteString message_;
+    /**
+     * <code>required bytes message = 1;</code>
+     */
+    public boolean hasMessage() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>required bytes message = 1;</code>
+     */
+    public akka.protobuf.ByteString getMessage() {
+      return message_;
+    }
+
+    public static final int SERIALIZERID_FIELD_NUMBER = 2;
+    private int serializerId_;
+    /**
+     * <code>required int32 serializerId = 2;</code>
+     */
+    public boolean hasSerializerId() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>required int32 serializerId = 2;</code>
+     */
+    public int getSerializerId() {
+      return serializerId_;
+    }
+
+    public static final int MESSAGEMANIFEST_FIELD_NUMBER = 3;
+    private akka.protobuf.ByteString messageManifest_;
+    /**
+     * <code>optional bytes messageManifest = 3;</code>
+     */
+    public boolean hasMessageManifest() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>optional bytes messageManifest = 3;</code>
+     */
+    public akka.protobuf.ByteString getMessageManifest() {
+      return messageManifest_;
+    }
+
+    private void initFields() {
+      message_ = akka.protobuf.ByteString.EMPTY;
+      serializerId_ = 0;
+      messageManifest_ = akka.protobuf.ByteString.EMPTY;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      if (!hasMessage()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasSerializerId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(akka.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeBytes(1, message_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeInt32(2, serializerId_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeBytes(3, messageManifest_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeBytesSize(1, message_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeInt32Size(2, serializerId_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeBytesSize(3, messageManifest_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static akka.stream.StreamRefMessages.SerializedMessage parseFrom(
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.stream.StreamRefMessages.SerializedMessage parseFrom(
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.stream.StreamRefMessages.SerializedMessage parseFrom(byte[] data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.stream.StreamRefMessages.SerializedMessage parseFrom(
+        byte[] data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.stream.StreamRefMessages.SerializedMessage parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.stream.StreamRefMessages.SerializedMessage parseFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static akka.stream.StreamRefMessages.SerializedMessage parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static akka.stream.StreamRefMessages.SerializedMessage parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static akka.stream.StreamRefMessages.SerializedMessage parseFrom(
+        akka.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.stream.StreamRefMessages.SerializedMessage parseFrom(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(akka.stream.StreamRefMessages.SerializedMessage prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code SerializedMessage}
+     */
+    public static final class Builder extends
+        akka.protobuf.GeneratedMessage.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:SerializedMessage)
+        akka.stream.StreamRefMessages.SerializedMessageOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.stream.StreamRefMessages.internal_static_SerializedMessage_descriptor;
+      }
+
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.stream.StreamRefMessages.internal_static_SerializedMessage_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.stream.StreamRefMessages.SerializedMessage.class, akka.stream.StreamRefMessages.SerializedMessage.Builder.class);
+      }
+
+      // Construct using akka.stream.StreamRefMessages.SerializedMessage.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        message_ = akka.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        serializerId_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        messageManifest_ = akka.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public akka.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.stream.StreamRefMessages.internal_static_SerializedMessage_descriptor;
+      }
+
+      public akka.stream.StreamRefMessages.SerializedMessage getDefaultInstanceForType() {
+        return akka.stream.StreamRefMessages.SerializedMessage.getDefaultInstance();
+      }
+
+      public akka.stream.StreamRefMessages.SerializedMessage build() {
+        akka.stream.StreamRefMessages.SerializedMessage result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public akka.stream.StreamRefMessages.SerializedMessage buildPartial() {
+        akka.stream.StreamRefMessages.SerializedMessage result = new akka.stream.StreamRefMessages.SerializedMessage(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.message_ = message_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.serializerId_ = serializerId_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.messageManifest_ = messageManifest_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(akka.protobuf.Message other) {
+        if (other instanceof akka.stream.StreamRefMessages.SerializedMessage) {
+          return mergeFrom((akka.stream.StreamRefMessages.SerializedMessage)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.stream.StreamRefMessages.SerializedMessage other) {
+        if (other == akka.stream.StreamRefMessages.SerializedMessage.getDefaultInstance()) return this;
+        if (other.hasMessage()) {
+          setMessage(other.getMessage());
+        }
+        if (other.hasSerializerId()) {
+          setSerializerId(other.getSerializerId());
+        }
+        if (other.hasMessageManifest()) {
+          setMessageManifest(other.getMessageManifest());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        if (!hasMessage()) {
+          
+          return false;
+        }
+        if (!hasSerializerId()) {
+          
+          return false;
+        }
+        return true;
+      }
+
+      public Builder mergeFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.stream.StreamRefMessages.SerializedMessage parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.stream.StreamRefMessages.SerializedMessage) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      private akka.protobuf.ByteString message_ = akka.protobuf.ByteString.EMPTY;
+      /**
+       * <code>required bytes message = 1;</code>
+       */
+      public boolean hasMessage() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>required bytes message = 1;</code>
+       */
+      public akka.protobuf.ByteString getMessage() {
+        return message_;
+      }
+      /**
+       * <code>required bytes message = 1;</code>
+       */
+      public Builder setMessage(akka.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        message_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required bytes message = 1;</code>
+       */
+      public Builder clearMessage() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        message_ = getDefaultInstance().getMessage();
+        onChanged();
+        return this;
+      }
+
+      private int serializerId_ ;
+      /**
+       * <code>required int32 serializerId = 2;</code>
+       */
+      public boolean hasSerializerId() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required int32 serializerId = 2;</code>
+       */
+      public int getSerializerId() {
+        return serializerId_;
+      }
+      /**
+       * <code>required int32 serializerId = 2;</code>
+       */
+      public Builder setSerializerId(int value) {
+        bitField0_ |= 0x00000002;
+        serializerId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required int32 serializerId = 2;</code>
+       */
+      public Builder clearSerializerId() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        serializerId_ = 0;
+        onChanged();
+        return this;
+      }
+
+      private akka.protobuf.ByteString messageManifest_ = akka.protobuf.ByteString.EMPTY;
+      /**
+       * <code>optional bytes messageManifest = 3;</code>
+       */
+      public boolean hasMessageManifest() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      /**
+       * <code>optional bytes messageManifest = 3;</code>
+       */
+      public akka.protobuf.ByteString getMessageManifest() {
+        return messageManifest_;
+      }
+      /**
+       * <code>optional bytes messageManifest = 3;</code>
+       */
+      public Builder setMessageManifest(akka.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        messageManifest_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bytes messageManifest = 3;</code>
+       */
+      public Builder clearMessageManifest() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        messageManifest_ = getDefaultInstance().getMessageManifest();
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:SerializedMessage)
+    }
+
+    static {
+      defaultInstance = new SerializedMessage(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:SerializedMessage)
+  }
+
+  private static final akka.protobuf.Descriptors.Descriptor
     internal_static_SinkRef_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_SinkRef_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobuf.Descriptors.Descriptor
     internal_static_SourceRef_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_SourceRef_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobuf.Descriptors.Descriptor
     internal_static_ActorRef_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ActorRef_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobuf.Descriptors.Descriptor
     internal_static_Payload_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Payload_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobuf.Descriptors.Descriptor
     internal_static_OnSubscribeHandshake_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_OnSubscribeHandshake_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobuf.Descriptors.Descriptor
     internal_static_CumulativeDemand_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_CumulativeDemand_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobuf.Descriptors.Descriptor
     internal_static_SequencedOnNext_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_SequencedOnNext_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobuf.Descriptors.Descriptor
     internal_static_RemoteStreamFailure_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_RemoteStreamFailure_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
+  private static final akka.protobuf.Descriptors.Descriptor
     internal_static_RemoteStreamCompleted_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_RemoteStreamCompleted_fieldAccessorTable;
+  private static final akka.protobuf.Descriptors.Descriptor
+    internal_static_SerializedMessage_descriptor;
+  private static
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_SerializedMessage_fieldAccessorTable;
 
   public static akka.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -4514,84 +5176,93 @@ public final class StreamRefMessages {
   static {
     java.lang.String[] descriptorData = {
       "\n\027StreamRefMessages.proto\"\'\n\007SinkRef\022\034\n\t" +
-      "targetRef\030\001 \002(\0132\t.ActorRef\")\n\tSourceRef\022" +
-      "\034\n\toriginRef\030\001 \002(\0132\t.ActorRef\"\030\n\010ActorRe" +
-      "f\022\014\n\004path\030\001 \002(\t\"Q\n\007Payload\022\027\n\017enclosedMe" +
-      "ssage\030\001 \002(\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017mes" +
-      "sageManifest\030\003 \001(\014\"4\n\024OnSubscribeHandsha" +
-      "ke\022\034\n\ttargetRef\030\001 \002(\0132\t.ActorRef\"!\n\020Cumu" +
-      "lativeDemand\022\r\n\005seqNr\030\001 \002(\003\";\n\017Sequenced" +
-      "OnNext\022\r\n\005seqNr\030\001 \002(\003\022\031\n\007payload\030\002 \002(\0132\010" +
-      ".Payload\"$\n\023RemoteStreamFailure\022\r\n\005cause",
-      "\030\001 \001(\014\"&\n\025RemoteStreamCompleted\022\r\n\005seqNr" +
-      "\030\001 \002(\003B\017\n\013akka.streamH\001"
+      "targetRef\030\001 \002(\0132\t.ActorRef\"<\n\tSourceRef\022" +
+      "\034\n\toriginRef\030\001 \002(\0132\t.ActorRef\022\021\n\tisChunk" +
+      "ed\030\002 \001(\010\"\030\n\010ActorRef\022\014\n\004path\030\001 \002(\t\"Q\n\007Pa" +
+      "yload\022\027\n\017enclosedMessage\030\001 \002(\014\022\024\n\014serial" +
+      "izerId\030\002 \002(\005\022\027\n\017messageManifest\030\003 \001(\014\"4\n" +
+      "\024OnSubscribeHandshake\022\034\n\ttargetRef\030\001 \002(\013" +
+      "2\t.ActorRef\"!\n\020CumulativeDemand\022\r\n\005seqNr" +
+      "\030\001 \002(\003\";\n\017SequencedOnNext\022\r\n\005seqNr\030\001 \002(\003" +
+      "\022\031\n\007payload\030\002 \002(\0132\010.Payload\"$\n\023RemoteStr",
+      "eamFailure\022\r\n\005cause\030\001 \001(\014\"&\n\025RemoteStrea" +
+      "mCompleted\022\r\n\005seqNr\030\001 \002(\003\"S\n\021SerializedM" +
+      "essage\022\017\n\007message\030\001 \002(\014\022\024\n\014serializerId\030" +
+      "\002 \002(\005\022\027\n\017messageManifest\030\003 \001(\014B\017\n\013akka.s" +
+      "treamH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public akka.protobuf.ExtensionRegistry assignDescriptors(
-            akka.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_SinkRef_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_SinkRef_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_SinkRef_descriptor,
-              new java.lang.String[] { "TargetRef", });
-          internal_static_SourceRef_descriptor =
-            getDescriptor().getMessageTypes().get(1);
-          internal_static_SourceRef_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_SourceRef_descriptor,
-              new java.lang.String[] { "OriginRef", });
-          internal_static_ActorRef_descriptor =
-            getDescriptor().getMessageTypes().get(2);
-          internal_static_ActorRef_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_ActorRef_descriptor,
-              new java.lang.String[] { "Path", });
-          internal_static_Payload_descriptor =
-            getDescriptor().getMessageTypes().get(3);
-          internal_static_Payload_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_Payload_descriptor,
-              new java.lang.String[] { "EnclosedMessage", "SerializerId", "MessageManifest", });
-          internal_static_OnSubscribeHandshake_descriptor =
-            getDescriptor().getMessageTypes().get(4);
-          internal_static_OnSubscribeHandshake_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_OnSubscribeHandshake_descriptor,
-              new java.lang.String[] { "TargetRef", });
-          internal_static_CumulativeDemand_descriptor =
-            getDescriptor().getMessageTypes().get(5);
-          internal_static_CumulativeDemand_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_CumulativeDemand_descriptor,
-              new java.lang.String[] { "SeqNr", });
-          internal_static_SequencedOnNext_descriptor =
-            getDescriptor().getMessageTypes().get(6);
-          internal_static_SequencedOnNext_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_SequencedOnNext_descriptor,
-              new java.lang.String[] { "SeqNr", "Payload", });
-          internal_static_RemoteStreamFailure_descriptor =
-            getDescriptor().getMessageTypes().get(7);
-          internal_static_RemoteStreamFailure_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_RemoteStreamFailure_descriptor,
-              new java.lang.String[] { "Cause", });
-          internal_static_RemoteStreamCompleted_descriptor =
-            getDescriptor().getMessageTypes().get(8);
-          internal_static_RemoteStreamCompleted_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_RemoteStreamCompleted_descriptor,
-              new java.lang.String[] { "SeqNr", });
-          return null;
-        }
-      };
+        new akka.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
+          public akka.protobuf.ExtensionRegistry assignDescriptors(
+              akka.protobuf.Descriptors.FileDescriptor root) {
+            descriptor = root;
+            return null;
+          }
+        };
     akka.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new akka.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
+    internal_static_SinkRef_descriptor =
+      getDescriptor().getMessageTypes().get(0);
+    internal_static_SinkRef_fieldAccessorTable = new
+      akka.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_SinkRef_descriptor,
+        new java.lang.String[] { "TargetRef", });
+    internal_static_SourceRef_descriptor =
+      getDescriptor().getMessageTypes().get(1);
+    internal_static_SourceRef_fieldAccessorTable = new
+      akka.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_SourceRef_descriptor,
+        new java.lang.String[] { "OriginRef", "IsChunked", });
+    internal_static_ActorRef_descriptor =
+      getDescriptor().getMessageTypes().get(2);
+    internal_static_ActorRef_fieldAccessorTable = new
+      akka.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_ActorRef_descriptor,
+        new java.lang.String[] { "Path", });
+    internal_static_Payload_descriptor =
+      getDescriptor().getMessageTypes().get(3);
+    internal_static_Payload_fieldAccessorTable = new
+      akka.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_Payload_descriptor,
+        new java.lang.String[] { "EnclosedMessage", "SerializerId", "MessageManifest", });
+    internal_static_OnSubscribeHandshake_descriptor =
+      getDescriptor().getMessageTypes().get(4);
+    internal_static_OnSubscribeHandshake_fieldAccessorTable = new
+      akka.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_OnSubscribeHandshake_descriptor,
+        new java.lang.String[] { "TargetRef", });
+    internal_static_CumulativeDemand_descriptor =
+      getDescriptor().getMessageTypes().get(5);
+    internal_static_CumulativeDemand_fieldAccessorTable = new
+      akka.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_CumulativeDemand_descriptor,
+        new java.lang.String[] { "SeqNr", });
+    internal_static_SequencedOnNext_descriptor =
+      getDescriptor().getMessageTypes().get(6);
+    internal_static_SequencedOnNext_fieldAccessorTable = new
+      akka.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_SequencedOnNext_descriptor,
+        new java.lang.String[] { "SeqNr", "Payload", });
+    internal_static_RemoteStreamFailure_descriptor =
+      getDescriptor().getMessageTypes().get(7);
+    internal_static_RemoteStreamFailure_fieldAccessorTable = new
+      akka.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_RemoteStreamFailure_descriptor,
+        new java.lang.String[] { "Cause", });
+    internal_static_RemoteStreamCompleted_descriptor =
+      getDescriptor().getMessageTypes().get(8);
+    internal_static_RemoteStreamCompleted_fieldAccessorTable = new
+      akka.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_RemoteStreamCompleted_descriptor,
+        new java.lang.String[] { "SeqNr", });
+    internal_static_SerializedMessage_descriptor =
+      getDescriptor().getMessageTypes().get(9);
+    internal_static_SerializedMessage_fieldAccessorTable = new
+      akka.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_SerializedMessage_descriptor,
+        new java.lang.String[] { "Message", "SerializerId", "MessageManifest", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

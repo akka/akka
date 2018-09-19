@@ -5,8 +5,10 @@
 package akka.stream.scaladsl
 
 import akka.annotation.ApiMayChange
+import akka.stream.impl.streamref.Chunking
 import akka.stream.{ SinkRef, SourceRef, StreamRefAttributes }
 import akka.stream.impl.streamref.{ SinkRefStageImpl, SourceRefStageImpl }
+import akka.util.ByteString
 import akka.util.OptionVal
 
 import scala.concurrent.Future
@@ -31,7 +33,9 @@ object StreamRefs {
    */
   @ApiMayChange
   def sourceRef[T](): Sink[T, Future[SourceRef[T]]] =
-    Sink.fromGraph(new SinkRefStageImpl[T](OptionVal.None))
+    Chunking.chunk[T]
+      .toMat(Sink.fromGraph(new SinkRefStageImpl[ByteString](OptionVal.None, createChunked = true)))(Keep.right)
+      .asInstanceOf[Sink[T, Future[SourceRef[T]]]]
 
   /**
    * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),

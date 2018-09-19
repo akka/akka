@@ -15,6 +15,7 @@ message SinkRef {
 
 message SourceRef {
     required ActorRef originRef = 1;
+    optional bool isChunked = 2;
 }
 
 message ActorRef {
@@ -47,4 +48,10 @@ message RemoteStreamFailure {
 
 message RemoteStreamCompleted {
     required int64 seqNr = 1;
+}
+
+message SerializedMessage {
+    required bytes message = 1;
+    required int32 serializerId = 2;
+    optional bytes messageManifest = 3;
 }

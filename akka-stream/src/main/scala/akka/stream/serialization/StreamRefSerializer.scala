@@ -8,6 +8,7 @@ import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.serialization._
+import akka.stream.SourceRef
 import akka.stream.StreamRefMessages
 import akka.stream.impl.streamref._
 
@@ -126,6 +127,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
       .setOriginRef(
         StreamRefMessages.ActorRef.newBuilder()
           .setPath(Serialization.serializedActorPath(source.initialPartnerRef)))
+      .setIsChunked(source.isChunked)
       .build()
   }
 
@@ -148,7 +150,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
     val ref = StreamRefMessages.SourceRef.parseFrom(bytes)
     val initialPartnerRef = serialization.system.provider.resolveActorRef(ref.getOriginRef.getPath)
 
-    SourceRefImpl[Any](initialPartnerRef)
+    SourceRefImpl[Any](initialPartnerRef, ref.hasIsChunked && ref.getIsChunked)
   }
 
   private def deserializeSequencedOnNext(bytes: Array[Byte]): StreamRefsProtocol.SequencedOnNext[AnyRef] = {

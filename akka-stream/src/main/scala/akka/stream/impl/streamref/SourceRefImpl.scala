@@ -13,15 +13,23 @@ import akka.stream.actor.{ RequestStrategy, WatermarkRequestStrategy }
 import akka.stream.impl.FixedSizeBuffer
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
+import akka.util.ByteString
 import akka.util.{ OptionVal, PrettyDuration }
 
 import scala.concurrent.{ Future, Promise }
 
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi
-private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) extends SourceRef[T] {
-  def source: Source[T, NotUsed] =
-    Source.fromGraph(new SourceRefStageImpl(OptionVal.Some(initialPartnerRef))).mapMaterializedValue(_ ⇒ NotUsed)
+private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef, isChunked: Boolean) extends SourceRef[T] {
+  def source: Source[T, NotUsed] = {
+    def sourceRef[X] = Source.fromGraph(new SourceRefStageImpl[X](OptionVal.Some(initialPartnerRef))).mapMaterializedValue(_ ⇒ NotUsed)
+
+    if (!isChunked)
+      sourceRef[T]
+    else
+      sourceRef[ByteString]
+        .via(Chunking.unchunk[T])
+  }
 }
 
 /**

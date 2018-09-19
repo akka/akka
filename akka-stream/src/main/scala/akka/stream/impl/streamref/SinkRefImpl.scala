@@ -32,7 +32,8 @@ private[stream] final case class SinkRefImpl[In](initialPartnerRef: ActorRef) ex
  */
 @InternalApi
 private[stream] final class SinkRefStageImpl[In] private[akka] (
-  val initialPartnerRef: OptionVal[ActorRef]
+  val initialPartnerRef: OptionVal[ActorRef],
+  createChunked:         Boolean             = false
 ) extends GraphStageWithMaterializedValue[SinkShape[In], Future[SourceRef[In]]] {
 
   val in: Inlet[In] = Inlet[In](s"${Logging.simpleName(getClass)}($initialRefName).in")
@@ -101,7 +102,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (
 
         log.debug("Created SinkRef, pointing to remote Sink receiver: {}, local worker: {}", initialPartnerRef, self.ref)
 
-        promise.success(SourceRefImpl(self.ref))
+        promise.success(SourceRefImpl(self.ref, createChunked))
       }
 
       lazy val initialReceive: ((ActorRef, Any)) ⇒ Unit = {
