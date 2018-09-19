@@ -47,6 +47,11 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
   private val receiveTarget: ReceiveTarget[I] = new ReceiveTarget[I] {
     override def apply(ctx: ActorContext[_], msg: I): Behavior[I] =
       Behavior.interpretMessage(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], msg)
+
+    override def signal(ctx: ActorContext[_], signal: Signal): Behavior[I] =
+      Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], signal)
+
+    override def current(): Behavior[I] = nestedBehavior
   }
 
   private val signalTarget = new SignalTarget[I] {
@@ -56,7 +61,7 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
 
   // invoked pre-start to start/de-duplicate the initial behavior stack
   def preStart(ctx: typed.ActorContext[O]): Behavior[O] = {
-    val started = interceptor.preStart(ctx.asInstanceOf[ActorContext[I]], preStartTarget)
+    val started = interceptor.preStart(ctx, preStartTarget)
     deduplicate(started, ctx)
   }
 

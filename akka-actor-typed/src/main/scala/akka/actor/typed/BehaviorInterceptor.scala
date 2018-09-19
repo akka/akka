@@ -23,7 +23,7 @@ abstract class BehaviorInterceptor[O, I] {
    * @return The returned behavior will be the "started" behavior of the actor used to accept
    *         the next message or signal.
    */
-  def preStart(ctx: ActorContext[I], target: PreStartTarget[I]): Behavior[I] =
+  def preStart(ctx: ActorContext[O], target: PreStartTarget[I]): Behavior[I] =
     target.start(ctx)
 
   /**
@@ -72,6 +72,8 @@ object BehaviorInterceptor {
   @DoNotInherit
   trait ReceiveTarget[T] {
     def apply(ctx: ActorContext[_], msg: T): Behavior[T]
+    def current(): Behavior[T]
+    def signal(ctx: ActorContext[_], signal: Signal): Behavior[T]
   }
 
   /**
