@@ -168,13 +168,40 @@ import scala.annotation.switch
       pos += 1
       charsInObject += 1
       println("—S4—")
-    } else if (input == DoubleQuote) {
-      if (!isStartOfEscapeSequence) inStringExpression = !inStringExpression
+    } else if ((input == DoubleQuote) && isStartOfEscapeSequence && inStringExpression) {
       isStartOfEscapeSequence = false
       pos += 1
       charsInObject += 1
-      println("—S5—")
-    } else if (input == CurlyBraceStart && !inStringExpression && !inNakedExpression) {
+      println("—S5 A—")
+    } else if ((input == DoubleQuote) && (!isStartOfEscapeSequence) && (!inStringExpression) && !pastExpression && !inNakedExpression)  {
+      // we can start that whether we are insideObject or outsideObject
+      inStringExpression = true
+      pos += 1
+      charsInObject += 1
+      println("—S5 B—")
+    } else if ((input == DoubleQuote) && (!isStartOfEscapeSequence) && inStringExpression) {
+      inStringExpression = false
+      pos += 1
+      charsInObject += 1
+      if (outsideObject) {
+        pastExpression = true
+        // if we're insideObject, we're not pastExpression here; in fact we may find additional strings soon.
+      }
+      println("—S5 C—")
+
+      /* note:
+      - DoubleQuote && !inStringExpression && inNakedExpression is malformed
+      - DoubleQuote && !inStringExpression && pastExpression is malformed
+      - DoubleQuote && isStartOfEscapeSequence && !inStringExpression is malformed
+       */
+
+    } else if ((input != DoubleQuote) && inStringExpression) {
+      // we're in the string, let's accumulate
+      pos += 1
+      charsInObject += 1
+      println("—Sx2—")
+    }
+    else if (input == CurlyBraceStart && !inStringExpression && !inNakedExpression) {
       isStartOfEscapeSequence = false
       depth += 1
       pos += 1

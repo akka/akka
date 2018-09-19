@@ -246,6 +246,21 @@ class JsonFramingSpec extends AkkaSpec {
           | }""".stripMargin)
     }
 
+    "parse json array of mixed types" in {
+      val input =
+        """ [ {"name": "john"}, 2, true, "abcdef" ]"
+          |
+        """.stripMargin
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq("""{"name": "john"}""", "2", "true", """"abcdef"""")
+    }
+
 
 
     "emit single json element from string" in {
@@ -314,6 +329,25 @@ class JsonFramingSpec extends AkkaSpec {
       result.futureValue shouldBe Seq("1", "2", "3")
     }
 
+    "parse line delimited mixed objects" in {
+      val input =
+        """  {"name": "john"}
+          | 2
+          |true
+          |  "abcdef"
+        """.stripMargin
+      // intentionally shown with inconsistent post-stripping margins
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq("""{"name": "john"}""", "2", "true", """"abcdef"""")
+    }
+
+
     "parse comma delimited objects" in {
       val input =
         """  { "name": "john" }, { "name": "jack" }, { "name": "katie" }  """
@@ -356,6 +390,20 @@ class JsonFramingSpec extends AkkaSpec {
       result.futureValue shouldBe Seq("1", "2", "3")
     }
 
+    "parse comma delimited mixed objects" in {
+      val input =
+        """  {"name": "john"}, 2, true, "abcdef"
+          |
+        """.stripMargin
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq("""{"name": "john"}""", "2", "true", """"abcdef"""")
+    }
 
     "parse chunks successfully" in {
       val input: Seq[ByteString] = Seq(
