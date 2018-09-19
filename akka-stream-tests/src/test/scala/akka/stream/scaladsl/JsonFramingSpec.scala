@@ -495,13 +495,14 @@ class JsonFramingSpec extends AkkaSpec {
               |   }
               |}
               | """.stripMargin))
-          buffer.poll().get.utf8String shouldBe """{  "name": "john",
-                                                      |   "age": 101,
-                                                      |   "address": {
-                                                      |     "street": "Straight Street",
-                                                      |     "postcode": 1234
-                                                      |   }
-                                                      |}""".stripMargin
+          buffer.poll().get.utf8String shouldBe
+            """{  "name": "john",
+              |   "age": 101,
+              |   "address": {
+              |     "street": "Straight Street",
+              |     "postcode": 1234
+              |   }
+              |}""".stripMargin
         }
 
         "successfully parse single field having multiple level of nested object" in {
@@ -519,16 +520,17 @@ class JsonFramingSpec extends AkkaSpec {
               |   }
               |}
               | """.stripMargin))
-          buffer.poll().get.utf8String shouldBe """{  "name": "john",
-                                                      |   "age": 101,
-                                                      |   "address": {
-                                                      |     "street": {
-                                                      |       "name": "Straight",
-                                                      |       "type": "Avenue"
-                                                      |     },
-                                                      |     "postcode": 1234
-                                                      |   }
-                                                      |}""".stripMargin
+          buffer.poll().get.utf8String shouldBe
+            """{  "name": "john",
+              |   "age": 101,
+              |   "address": {
+              |     "street": {
+              |       "name": "Straight",
+              |       "type": "Avenue"
+              |     },
+              |     "postcode": 1234
+              |   }
+              |}""".stripMargin
         }
 
         "successfully parse an escaped backslash followed by a double quote" in {
@@ -541,9 +543,10 @@ class JsonFramingSpec extends AkkaSpec {
               | """.stripMargin
           ))
 
-          buffer.poll().get.utf8String shouldBe """{
-                                          | "key": "\\"
-                                          | }""".stripMargin
+          buffer.poll().get.utf8String shouldBe
+            """{
+              | "key": "\\"
+              | }""".stripMargin
         }
 
         "successfully parse a string that contains an escaped quote" in {
@@ -556,9 +559,10 @@ class JsonFramingSpec extends AkkaSpec {
               | """.stripMargin
           ))
 
-          buffer.poll().get.utf8String shouldBe """{
-                                                  | "key": "\""
-                                                  | }""".stripMargin
+          buffer.poll().get.utf8String shouldBe
+            """{
+              | "key": "\""
+              | }""".stripMargin
         }
 
         "successfully parse a string that contains escape sequence" in {
@@ -571,9 +575,10 @@ class JsonFramingSpec extends AkkaSpec {
               | """.stripMargin
           ))
 
-          buffer.poll().get.utf8String shouldBe """{
-                                                  | "key": "\\\""
-                                                  | }""".stripMargin
+          buffer.poll().get.utf8String shouldBe
+            """{
+              | "key": "\\\""
+              | }""".stripMargin
         }
       }
 
@@ -591,14 +596,15 @@ class JsonFramingSpec extends AkkaSpec {
               |   ]
               |}
               | """.stripMargin))
-          buffer.poll().get.utf8String shouldBe """{  "name": "john",
-                                                      |   "things": [
-                                                      |     1,
-                                                      |     "hey",
-                                                      |     3,
-                                                      |     "there"
-                                                      |   ]
-                                                      |}""".stripMargin
+          buffer.poll().get.utf8String shouldBe
+            """{  "name": "john",
+              |   "things": [
+              |     1,
+              |     "hey",
+              |     3,
+              |     "there"
+              |   ]
+              |}""".stripMargin
         }
       }
 
@@ -631,28 +637,29 @@ class JsonFramingSpec extends AkkaSpec {
               |}
               | """.stripMargin))
 
-          buffer.poll().get.utf8String shouldBe """{
-                                                      |  "name": "john",
-                                                      |  "addresses": [
-                                                      |    {
-                                                      |      "street": "3 Hopson Street",
-                                                      |      "postcode": "ABC-123",
-                                                      |      "tags": ["work", "office"],
-                                                      |      "contactTime": [
-                                                      |        {"time": "0900-1800", "timezone", "UTC"}
-                                                      |      ]
-                                                      |    },
-                                                      |    {
-                                                      |      "street": "12 Adielie Road",
-                                                      |      "postcode": "ZZY-888",
-                                                      |      "tags": ["home"],
-                                                      |      "contactTime": [
-                                                      |        {"time": "0800-0830", "timezone", "UTC"},
-                                                      |        {"time": "1800-2000", "timezone", "UTC"}
-                                                      |      ]
-                                                      |    }
-                                                      |  ]
-                                                      |}""".stripMargin
+          buffer.poll().get.utf8String shouldBe
+            """{
+              |  "name": "john",
+              |  "addresses": [
+              |    {
+              |      "street": "3 Hopson Street",
+              |      "postcode": "ABC-123",
+              |      "tags": ["work", "office"],
+              |      "contactTime": [
+              |        {"time": "0900-1800", "timezone", "UTC"}
+              |      ]
+              |    },
+              |    {
+              |      "street": "12 Adielie Road",
+              |      "postcode": "ZZY-888",
+              |      "tags": ["home"],
+              |      "contactTime": [
+              |        {"time": "0800-0830", "timezone", "UTC"},
+              |        {"time": "1800-2000", "timezone", "UTC"}
+              |      ]
+              |    }
+              |  ]
+              |}""".stripMargin
         }
       }
 
@@ -726,18 +733,30 @@ class JsonFramingSpec extends AkkaSpec {
         buffer.offer(ByteString("}"))
         buffer.poll().get.utf8String shouldBe """{ "name": "john"}"""
       }
+    }
 
-      "invalid json is supplied" should {
-        "fail if it's broken from the start" in {
+    "invalid json is supplied" which {
+      "is broken from the start" should {
+        "noticeably fail" in {
           val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""THIS IS NOT VALID { "name": "john"}"""))
+          a[FramingException] shouldBe thrownBy {
+            buffer.poll()
+          }
+        }
+      }
+
+      "is broken at the end" should {
+        "noticeably fail" in {
+          val buffer = new JsonObjectParser()
+          buffer.offer(ByteString("""{ "name": "john"} THIS IS NOT VALID"""))
           a[FramingException] shouldBe thrownBy { buffer.poll() }
         }
 
-        "fail if it's broken at the end" in {
+        "noticeably fail before emitting the last valid element" in {
           val buffer = new JsonObjectParser()
-          buffer.offer(ByteString("""{ "name": "john"} THIS IS NOT VALID"""))
-          buffer.poll() // first emitting the valid element
+          buffer.offer(ByteString("""{ "name": "paul"}, { "name": "john"} THIS IS NOT VALID"""))
+          buffer.poll() // this is '{ "name": "paul"}' and this should pass
           a[FramingException] shouldBe thrownBy { buffer.poll() }
         }
       }
