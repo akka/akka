@@ -59,6 +59,8 @@ import scala.annotation.switch
   private var charsInObject = 0
   private var completedObject = false
   private var inStringExpression = false
+  private var inNakedExpression = false
+  private var pastExpression = false
   private var isStartOfEscapeSequence = false
   private var lastInput = 0.toByte
 
@@ -89,21 +91,39 @@ import scala.annotation.switch
           val tf = trimFront
           trimFront = 0
 
-          if (tf == 0) Some(emit)
-          else {
-            val trimmed = emit.drop(tf)
+          val cio = charsInObject
+          charsInObject = 0
+
+          val result = if (tf == 0) {
+            val trimmed = emit.take(cio)
             if (trimmed.isEmpty) None
             else Some(trimmed)
           }
+          else {
+            val trimmed = emit.drop(tf).take(cio)
+            if (trimmed.isEmpty) None
+            else Some(trimmed)
+          }
+          println("result=", result.map(_.decodeString("UTF-8")))
+          result
       }
   }
 
   /** @return true if an entire valid JSON object was found, false otherwise */
   private def seekObject(): Boolean = {
     completedObject = false
+
     val bufSize = buffer.size
     while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject)
       proceed(buffer(pos))
+
+
+    println(s"done proceeding; pos=${pos} bufSize=$bufSize pastEx=$pastExpression complete=$completedObject")
+    if (pastExpression && (!completedObject)) {
+      /* there may be a straggler object here — no problem */
+      println("helping straggler object")
+      completedObject = true
+    }
 
     if (pos >= maximumObjectLength)
       throw new FramingException(s"""JSON element exceeded maximumObjectLength ($maximumObjectLength bytes)!""")
@@ -112,43 +132,98 @@ import scala.annotation.switch
   }
 
   private def proceed(input: Byte): Unit = {
-    if (input == SquareBraceStart && outsideObject) {
+    println("input=",input,input.toChar, s" this=(pos: $pos, depth=$depth, trimFront=$trimFront, charsInObject=$charsInObject, soe=${isStartOfEscapeSequence} inNaked=$inNakedExpression pastEx=$pastExpression inString=$inStringExpression insideObj=$insideObject)")
+
+    if (input == SquareBraceStart && outsideObjectOrString) {
       // outer object is an array
       pos += 1
       trimFront += 1
-    } else if (input == SquareBraceEnd && outsideObject) {
+      println("—S1—")
+    } else if (input == SquareBraceEnd && outsideObjectOrString) {
       // outer array completed!
-      pos = -1
-    } else if (input == Comma && outsideObject) {
-      // do nothing
-      pos += 1
-      trimFront += 1
+      if (pastExpression) {
+        completedObject = true
+        println("—S2 A—")
+      } else {
+        pos = -1
+        println("—S2 B—")
+      }
+
+    } else if ( ((input == Comma) || (input == LineBreak)) && outsideObjectOrString) {
+      if ((!inNakedExpression) && (!pastExpression)) {
+        // do nothing
+        pos += 1
+        trimFront += 1
+        println("—S3 A—")
+      } else {
+        pos += 1 // leave charsInObject as is
+        completedObject = true
+        inNakedExpression = false
+        pastExpression = false
+        println("—S3 B—")
+      }
     } else if (input == Backslash) {
       if (lastInput == Backslash & isStartOfEscapeSequence) isStartOfEscapeSequence = false
       else isStartOfEscapeSequence = true
       pos += 1
+      charsInObject += 1
+      println("—S4—")
     } else if (input == DoubleQuote) {
       if (!isStartOfEscapeSequence) inStringExpression = !inStringExpression
       isStartOfEscapeSequence = false
       pos += 1
-    } else if (input == CurlyBraceStart && !inStringExpression) {
+      charsInObject += 1
+      println("—S5—")
+    } else if (input == CurlyBraceStart && !inStringExpression && !inNakedExpression) {
       isStartOfEscapeSequence = false
       depth += 1
       pos += 1
-    } else if (input == CurlyBraceEnd && !inStringExpression) {
+      charsInObject += 1
+      println("—S6—")
+    } else if (input == CurlyBraceEnd && !inStringExpression && !inNakedExpression) {
       isStartOfEscapeSequence = false
       depth -= 1
       pos += 1
+      charsInObject += 1
       if (depth == 0) {
-        charsInObject = 0
-        completedObject = true
+        // we're ABOUT to call it completed, but we'll wait
+        pastExpression = true
+        println("—S7 C—")
+      } else {
+        println("—S7—")
       }
-    } else if (isWhitespace(input) && !inStringExpression) {
+    } else if (isWhitespace(input) && !inStringExpression && !inNakedExpression && (depth == 0)) {
       pos += 1
-      if (depth == 0) trimFront += 1
+      if (depth == 0) {
+        if (!pastExpression) trimFront += 1 // if inNakedExpression we need to charsInObject +=1 but we can't be here.
+        println("—S8 A—")
+      } else {
+        charsInObject += 1
+        println("—S8 B—")
+      }
     } else if (insideObject) {
       isStartOfEscapeSequence = false
       pos += 1
+      charsInObject += 1
+      println("—S9—")
+    } else if (!isWhitespace(input) && !inNakedExpression && outsideObject && !inStringExpression && !pastExpression) {
+      inNakedExpression = true
+      charsInObject += 1
+      pos += 1
+      println("—S10—")
+    } else if (!isWhitespace(input) && inNakedExpression && outsideObject && !inStringExpression && !pastExpression) {
+      pos += 1
+      charsInObject += 1
+      println("—S11—")
+    } else if (isWhitespace(input) && inNakedExpression && outsideObject && !inStringExpression && !pastExpression) {
+      pastExpression = true
+      inNakedExpression = false
+      pos += 1
+      println("—S12—")
+    } else if (isWhitespace(input) && inNakedExpression && outsideObject && !inStringExpression && pastExpression) {
+      /* skip whitespace after naked constant */
+      pos += 1
+      println("—S13—")
     } else {
       throw new FramingException(s"Invalid JSON encountered at position [$pos] of [$buffer]")
     }
@@ -160,6 +235,8 @@ import scala.annotation.switch
     !outsideObject
 
   @inline private final def outsideObject: Boolean =
-    depth == 0
+    (depth == 0)
 
+  @inline private final def outsideObjectOrString: Boolean =
+    (depth == 0) && (!inStringExpression) && (!isStartOfEscapeSequence)
 }
