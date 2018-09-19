@@ -358,17 +358,13 @@ class TimeoutsSpec extends StreamSpec {
     }
 
     // this one seems close to impossible to actually implement
-    "be effective for dangling upstream" in  pendingUntilFixed(assertAllStagesStopped {
+    "be effective for dangling upstream" in pendingUntilFixed(assertAllStagesStopped {
       val downstream = TestSubscriber.probe[String]()
       val (sub, pub) = Flow[Int].map(_.toString).runWith(Source.asSubscriber, Sink.asPublisher(false))
       pub.subscribe(downstream)
       downstream.ensureSubscription()
       downstream.expectError() shouldBe a[SubscriptionTimeoutException]
     })
-
-    "be effective for dangling Processors" in assertAllStagesStopped {
-      Flow[Int].map(_.toString).runWith(Source.asSubscriber, Sink.asPublisher(false))
-    }
 
   }
 
