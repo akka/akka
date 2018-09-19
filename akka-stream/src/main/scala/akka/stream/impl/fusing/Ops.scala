@@ -18,16 +18,17 @@ import akka.stream.impl.{ ReactiveStreamsCompliance, Buffer ⇒ BufferImpl }
 import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.{ Failure, Success, Try }
-import akka.stream.ActorAttributes.SupervisionStrategy
 
+import akka.stream.ActorAttributes.SupervisionStrategy
 import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.util.control.Exception.Catcher
+
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.util.OptionVal
 
@@ -1938,19 +1939,28 @@ private[stream] object Collect {
       try {
         currentIterator = plainFun(grab(in)).iterator
         pushPull()
-      } catch {
-        case NonFatal(ex) ⇒ decider(ex) match {
-          case Supervision.Stop   ⇒ failStage(ex)
-          case Supervision.Resume ⇒ if (!hasBeenPulled(in)) pull(in)
-          case Supervision.Restart ⇒
-            restartState()
-            if (!hasBeenPulled(in)) pull(in)
-        }
-      }
+      } catch handleException
 
     override def onUpstreamFinish(): Unit = onFinish()
 
-    override def onPull(): Unit = pushPull()
+    override def onPull(): Unit =
+      try pushPull()
+      catch handleException
+
+    private def handleException: Catcher[Unit] = {
+      case NonFatal(ex) ⇒ decider(ex) match {
+        case Supervision.Stop ⇒ failStage(ex)
+        case Supervision.Resume ⇒
+          if (isClosed(in)) completeStage()
+          else if (!hasBeenPulled(in)) pull(in)
+        case Supervision.Restart ⇒
+          if (isClosed(in)) completeStage()
+          else {
+            restartState()
+            if (!hasBeenPulled(in)) pull(in)
+          }
+      }
+    }
 
     private def restartState(): Unit = {
       plainFun = f()
