@@ -34,7 +34,7 @@ object StreamRefs {
   @ApiMayChange
   def sourceRef[T](): Sink[T, Future[SourceRef[T]]] =
     Chunking.chunk[T]
-      .toMat(Sink.fromGraph(new SinkRefStageImpl[ByteString](OptionVal.None, createChunked = true)))(Keep.right)
+      .toMat(Sink.fromGraph(new SinkRefStageImpl[ByteString](OptionVal.None)))(Keep.right)
       .asInstanceOf[Sink[T, Future[SourceRef[T]]]]
 
   /**

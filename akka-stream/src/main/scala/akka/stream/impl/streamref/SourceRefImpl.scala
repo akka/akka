@@ -20,15 +20,10 @@ import scala.concurrent.{ Future, Promise }
 
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi
-private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef, isChunked: Boolean) extends SourceRef[T] {
+private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) extends SourceRef[T] {
   def source: Source[T, NotUsed] = {
-    def sourceRef[X] = Source.fromGraph(new SourceRefStageImpl[X](OptionVal.Some(initialPartnerRef))).mapMaterializedValue(_ ⇒ NotUsed)
-
-    if (!isChunked)
-      sourceRef[T]
-    else
-      sourceRef[ByteString]
-        .via(Chunking.unchunk[T])
+    Source.fromGraph(new SourceRefStageImpl[ByteString](OptionVal.Some(initialPartnerRef))).mapMaterializedValue(_ ⇒ NotUsed)
+      .via(Chunking.unchunk[T])
   }
 }
 

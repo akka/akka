@@ -127,7 +127,6 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
       .setOriginRef(
         StreamRefMessages.ActorRef.newBuilder()
           .setPath(Serialization.serializedActorPath(source.initialPartnerRef)))
-      .setIsChunked(source.isChunked)
       .build()
   }
 
@@ -150,7 +149,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem) e
     val ref = StreamRefMessages.SourceRef.parseFrom(bytes)
     val initialPartnerRef = serialization.system.provider.resolveActorRef(ref.getOriginRef.getPath)
 
-    SourceRefImpl[Any](initialPartnerRef, ref.hasIsChunked && ref.getIsChunked)
+    SourceRefImpl[Any](initialPartnerRef)
   }
 
   private def deserializeSequencedOnNext(bytes: Array[Byte]): StreamRefsProtocol.SequencedOnNext[AnyRef] = {

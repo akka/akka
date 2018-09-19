@@ -15,7 +15,6 @@ message SinkRef {
 
 message SourceRef {
     required ActorRef originRef = 1;
-    optional bool isChunked = 2;
 }
 
 message ActorRef {
