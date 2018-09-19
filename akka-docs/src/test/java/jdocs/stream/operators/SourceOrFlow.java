@@ -11,6 +11,7 @@ import akka.stream.Attributes;
 import akka.stream.javadsl.Source;
 //#log
 
+import java.time.Duration;
 import java.util.Arrays;
 
 
@@ -30,22 +31,24 @@ class SourceOrFlow {
 
   void conflateExample() {
     //#conflate
-    Source.from(Arrays.asList(1, 10, 100))
-        .conflate((Integer acc, Integer el) -> acc + el);
+    Source.cycle(() -> Arrays.asList(1, 10, 100).iterator())
+        .throttle(10, Duration.ofSeconds(1)) // fast upstream
+        .conflate((Integer acc, Integer el) -> acc + el)
+        .throttle(1, Duration.ofSeconds(1)); // slow downstream
     //#conflate
   }
 
   static //#conflateWithSeed-type
-  class NewType {
+  class Summed {
 
     private final Integer el;
 
-    public NewType(Integer el) {
+    public Summed(Integer el) {
       this.el = el;
     }
 
-    public NewType sum(NewType other) {
-      return new NewType(this.el + other.el);
+    public Summed sum(Summed other) {
+      return new Summed(this.el + other.el);
     }
   }
   //#conflateWithSeed-type
@@ -53,8 +56,10 @@ class SourceOrFlow {
   void conflateWithSeedExample() {
     //#conflateWithSeed
 
-    Source.from(Arrays.asList(1, 10, 100))
-        .conflateWithSeed(NewType::new, (NewType acc, Integer el) -> acc.sum(new NewType(el)));
+    Source.cycle(() -> Arrays.asList(1, 10, 100).iterator())
+        .throttle(10, Duration.ofSeconds(1)) // fast upstream
+        .conflateWithSeed(Summed::new, (Summed acc, Integer el) -> acc.sum(new Summed(el)))
+        .throttle(1, Duration.ofSeconds(1)); // slow downstream
     //#conflateWithSeed
   }
 }
