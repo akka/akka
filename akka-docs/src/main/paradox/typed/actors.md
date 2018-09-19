@@ -109,6 +109,8 @@ Java
 We start an Actor system from the defined `main` behavior and send two `Start` messages that
 will kick-off the interaction between two separate `bot` actors and the single `greeter` actor.
 
+A normal application consists of a single `ActorSystem` which in turn contains many actors. 
+
 The console output may look like this:
 
 ```

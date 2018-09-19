@@ -18,11 +18,15 @@ TODO intro
 
 An actor can create, or _spawn_, an arbitrary number of child actors, which in turn can spawn children of their own, thus
 forming an actor hierarchy. @unidoc[akka.actor.typed.ActorSystem] hosts the hierarchy and there can be only one _root actor_,
-actor at the top of the hierarchy, per `ActorSystem`. The lifecycle of a child actor is tied to the parent -- a child
+actor at the top of the hierarchy of the `ActorSystem`. The lifecycle of a child actor is tied to the parent -- a child
 can stop itself or be stopped at any time but it can never outlive its parent.
 
-The root actor, also called the guardian actor, is created along with the `ActorSystem`. Messages sent to the actor system are directed to the root actor.
-The root actor is defined by the behavior used to create the `ActorSystem`, named `HelloWorldMain.main` in the example below:
+
+### The Guardian Actor
+
+The root actor, also called the guardian actor, is created along with the `ActorSystem`. Messages sent to the actor 
+system are directed to the root actor. The root actor is defined by the behavior used to create the `ActorSystem`, 
+named `HelloWorldMain.main` in the example below:
 
 Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world }
@@ -30,6 +34,17 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
 
+
+@@@ Note
+
+In the untyped counter part, the @unidoc[akka.actor.ActorSystem], the root actor was provided out of the box and you
+could spawn top-level actors from the outside of the `ActorSystem` using `actorOf`. @ref:[SpawnProtocol](#spawnprotocol)
+is a tool that mimics the old style of starting up actors.
+
+@@@ 
+
+
+### Spawning Children
 
 Child actors are spawned with @unidoc[akka.actor.typed.ActorContext]'s `spawn`. In the example below, when the root actor
 is started, it spawns a child actor described by the behavior `HelloWorld.greeter`. Additionally, when the root actor receives a
