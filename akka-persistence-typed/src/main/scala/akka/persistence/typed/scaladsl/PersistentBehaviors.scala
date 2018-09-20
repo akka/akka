@@ -24,7 +24,7 @@ object PersistentBehaviors {
    * when full function type is used. When defining the handler as a separate function value it can
    * be useful to use the alias for shorter type signature.
    */
-  type CommandHandler[Command, Event, State] = (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
+  type CommandHandler[Command, Event, State] = (State, Command) ⇒ Effect[Event, State]
 
   /**
    * Type alias for the event handler function defines how to act on commands.
@@ -41,7 +41,7 @@ object PersistentBehaviors {
   def receive[Command, Event, State](
     persistenceId:  String,
     emptyState:     State,
-    commandHandler: (ActorContext[Command], State, Command) ⇒ Effect[Event, State],
+    commandHandler: (State, Command) ⇒ Effect[Event, State],
     eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     PersistentBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
 
@@ -66,14 +66,14 @@ object PersistentBehaviors {
      *
      * @see [[Effect]] for possible effects of a command.
      */
-    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): (ActorContext[Command], State, Command) ⇒ Effect[Event, State] =
-      (_, _, cmd) ⇒ commandHandler(cmd)
+    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): (State, Command) ⇒ Effect[Event, State] =
+      (_, cmd) ⇒ commandHandler(cmd)
 
     /**
      * Select different command handlers based on current state.
      */
     def byState[Command, Event, State](
-      choice: State ⇒ (ActorContext[Command], State, Command) ⇒ Effect[Event, State]): (ActorContext[Command], State, Command) ⇒ Effect[Event, State] = {
+      choice: State ⇒ (State, Command) ⇒ Effect[Event, State]): (State, Command) ⇒ Effect[Event, State] = {
       new ByStateCommandHandler(choice)
     }
 
@@ -86,8 +86,8 @@ object PersistentBehaviors {
     choice: State ⇒ CommandHandler[Command, Event, State])
     extends CommandHandler[Command, Event, State] {
 
-    override def apply(ctx: ActorContext[Command], state: State, cmd: Command): Effect[Event, State] =
-      choice(state)(ctx, state, cmd)
+    override def apply(state: State, cmd: Command): Effect[Event, State] =
+      choice(state)(state, cmd)
 
   }
 }

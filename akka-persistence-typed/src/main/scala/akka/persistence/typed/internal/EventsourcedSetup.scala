@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext
 import akka.Done
 import akka.actor.typed.Logger
 import akka.actor.{ ActorRef, ExtendedActorSystem }
-import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer, TimerScheduler }
+import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer }
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
