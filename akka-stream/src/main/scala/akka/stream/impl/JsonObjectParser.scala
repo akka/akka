@@ -57,18 +57,18 @@ import scala.annotation.{ switch }
       override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
         if (input == SquareBraceStart) {
           pp.skip()
-          pp.state = MainArrayBeforeElement
+          pp.enterState(MainArrayBeforeElement)
         } else if (isWhitespace(input)) {
           pp.skip()
         } else if (input == DoubleQuote) {
           pp.take()
-          pp.state = InOuterString(NotArrayAfterElement, pp)
+          pp.enterState(InOuterString(NotArrayAfterElement, pp))
         } else if (input == CurlyBraceStart) {
           pp.take()
-          pp.state = pp.enterContainer(InOuterObject, NotArrayAfterElement)
+          pp.enterContainer(InOuterObject, NotArrayAfterElement)
         } else if (!isWhitespace(input)) {
           pp.take()
-          pp.state = InOuterNaked(NotArrayAfterElement, pp)
+          pp.enterState(InOuterNaked(NotArrayAfterElement, pp))
         } else {
           throw new FramingException(s"Invalid JSON encountered at position [$pp.pos] of [$pp.buffer]")
         }
@@ -88,19 +88,19 @@ import scala.annotation.{ switch }
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}]")
         case SquareBraceEnd ⇒
           pp.skip()
-          pp.state = AfterMainArray
+          pp.enterState(AfterMainArray)
         case SquareBraceStart ⇒
           pp.take()
-          pp.state = pp.enterContainer(InOuterArray, MainArrayAfterElement)
+          pp.enterContainer(InOuterArray, MainArrayAfterElement)
         case DoubleQuote ⇒
           pp.take()
-          pp.state = InOuterString(MainArrayAfterElement, pp)
+          pp.enterState(InOuterString(MainArrayAfterElement, pp))
         case CurlyBraceStart ⇒
           pp.take()
-          pp.state = pp.enterContainer(InOuterObject, MainArrayAfterElement)
+          pp.enterContainer(InOuterObject, MainArrayAfterElement)
         case _ if !isWhitespace(input) ⇒
           pp.take()
-          pp.state = InOuterNaked(MainArrayAfterElement, pp)
+          pp.enterState(InOuterNaked(MainArrayAfterElement, pp))
         case _ ⇒
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}]")
       }
@@ -129,10 +129,10 @@ import scala.annotation.{ switch }
           pp.skip()
         case Comma ⇒
           pp.skip()
-          pp.state = MainArrayBeforeElement
+          pp.enterState(MainArrayBeforeElement)
         case SquareBraceEnd ⇒
           pp.skip()
-          pp.state = AfterMainArray
+          pp.enterState(AfterMainArray)
         case _ ⇒
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] after JSON-style array element")
       }
@@ -147,13 +147,13 @@ import scala.annotation.{ switch }
 
       override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
         pp.take()
-        pp.state = pp.stateAfterBackslash
+        pp.enterState(pp.stateAfterBackslash)
         pp.stateAfterBackslash = UnknownState
       }
 
       def apply(nextState: ParserState, pp: JsonObjectParser): ParserState = {
         pp.stateAfterBackslash = nextState
-        pp.state = this
+        pp.enterState(this)
         this
       }
     }
@@ -171,14 +171,14 @@ import scala.annotation.{ switch }
 
     private trait LeaveContainerOnExit extends HasExitAction { this: ParserState ⇒
       final def exitAction(pp: JsonObjectParser): Unit = {
-        pp.state = pp.leaveContainer()
+        pp.leaveContainer()
       }
     }
 
     private trait CompleteObjectAndLeaveContainerOnExit extends HasExitAction { this: ParserState ⇒
       final def exitAction(pp: JsonObjectParser): Unit = {
         pp.objectDone()
-        pp.state = pp.leaveContainer()
+        pp.leaveContainer()
       }
     }
 
@@ -187,18 +187,17 @@ import scala.annotation.{ switch }
 
       def apply(nextState: ParserState, pp: JsonObjectParser): ParserState = {
         pp.stateAfterStringValue = nextState
-        pp.state = this
-        this
+        pp.enterState(this)
       }
 
       final override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
         case Backslash ⇒
           pp.take()
-          pp.state = AfterBackslash(this, pp)
+          pp.enterState(AfterBackslash(this, pp))
 
         case DoubleQuote ⇒
           pp.take()
-          pp.state = pp.stateAfterStringValue
+          pp.enterState(pp.stateAfterStringValue)
           pp.stateAfterStringValue = UnknownState
           exitAction(pp)
 
@@ -221,7 +220,7 @@ import scala.annotation.{ switch }
     private abstract class InNakedBase extends LeafParserState with HasExitAction {
       final def apply(nextState: ParserState, pp: JsonObjectParser): ParserState = {
         pp.stateAfterNakedValue = nextState
-        pp.state = this
+        pp.enterState(this)
         this
       }
 
@@ -229,7 +228,7 @@ import scala.annotation.{ switch }
         val nextState = pp.stateAfterNakedValue
         pp.stateAfterNakedValue = UnknownState
 
-        pp.state = nextState
+        pp.enterState(nextState)
         exitAction(pp)
         nextState.proceed(input, pp)
       }
@@ -265,7 +264,7 @@ import scala.annotation.{ switch }
 
         case DoubleQuote ⇒
           pp.take()
-          pp.state = InString(this, pp)
+          pp.enterState(InString(this, pp))
 
         case Comma | Colon ⇒
           /* in a real JSON parser we'd check whether the colon and commas appear at appropriate places. Here
@@ -274,15 +273,15 @@ import scala.annotation.{ switch }
 
         case CurlyBraceStart ⇒
           pp.take()
-          pp.state = pp.enterContainer(InObject, this)
+          pp.enterContainer(InObject, this)
 
         case SquareBraceStart ⇒
           pp.take()
-          pp.state = pp.enterContainer(InArray, this)
+          pp.enterContainer(InArray, this)
 
         case _ ⇒
           pp.take()
-          pp.state = InNaked(this, pp)
+          pp.enterState(InNaked(this, pp))
 
         //case _ =>
         //  throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}]")
@@ -312,11 +311,11 @@ import scala.annotation.{ switch }
       override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
         case Comma ⇒
           pp.skip()
-          pp.state = CommaSeparatedBeforeElement
+          pp.enterState(CommaSeparatedBeforeElement)
 
         case LineBreak ⇒
           pp.skip()
-          pp.state = LinebreakSeparatedBeforeElement
+          pp.enterState(LinebreakSeparatedBeforeElement)
 
         case _ if isWhitespace(input) ⇒
           pp.skip()
@@ -342,10 +341,10 @@ import scala.annotation.{ switch }
 
       def beforeNextItem: ParserState
 
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = (input: @switch) match {
+      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
         case _ if input == separator ⇒
           pp.skip()
-          pp.state = beforeNextItem
+          pp.enterState(beforeNextItem)
 
         case _ if isWhitespace(input) ⇒
           pp.skip()
@@ -372,15 +371,15 @@ import scala.annotation.{ switch }
       final override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
         case DoubleQuote ⇒
           pp.take()
-          pp.state = InOuterString(afterState, pp)
+          pp.enterState(InOuterString(afterState, pp))
 
         case SquareBraceStart ⇒
           pp.take()
-          pp.state = pp.enterContainer(InOuterArray, afterState)
+          pp.enterContainer(InOuterArray, afterState)
 
         case CurlyBraceStart ⇒
           pp.take()
-          pp.state = pp.enterContainer(InOuterObject, afterState)
+          pp.enterContainer(InOuterObject, afterState)
 
         case _ if input == afterState.separator ⇒
           pp.skip()
@@ -391,7 +390,7 @@ import scala.annotation.{ switch }
 
         case _ if !isWhitespace(input) ⇒
           pp.take()
-          pp.state = InOuterNaked(afterState, pp)
+          pp.enterState(InOuterNaked(afterState, pp))
       }
     }
 
@@ -498,30 +497,35 @@ import scala.annotation.{ switch }
 
   private def enterContainer(current: ParserState, next: ParserState): ParserState = {
     containerStack = ContainerStackLevel.Regular(this, current, next, containerStack)
-    current
+    enterState(current)
   }
 
   private def leaveContainer(): ParserState = {
     val nextState = containerStack.stateAtExit
     containerStack = containerStack.previous
-    nextState
+    enterState(nextState)
   }
 
-  def skip(): Unit = {
+  @inline private def skip(): Unit = {
     pos += 1
     if (charsInObject == 0) trimFront += 1
   }
 
-  def take(): Unit = {
+  @inline private def take(): Unit = {
     pos += 1
     charsInObject += 1
   }
 
-  def objectDone(): Unit = {
+  @inline private def enterState(state: ParserState): ParserState = {
+    this.state = state
+    state
+  }
+
+  private def objectDone(): Unit = {
     completedObject = true
   }
 
-  def debugCurrentSelection: String =
+  private def debugCurrentSelection: String =
     buffer.take(pos).drop(trimFront).take(charsInObject).utf8String
 
   /**
@@ -572,7 +576,9 @@ import scala.annotation.{ switch }
     completedObject = false
 
     val bufSize = buffer.size
-    while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject) {
+    val maxPos = Math.min(bufSize, maximumObjectLength)
+
+    while ((pos < maxPos) && !completedObject) {
       state.proceed(buffer(pos), this)
     }
 
