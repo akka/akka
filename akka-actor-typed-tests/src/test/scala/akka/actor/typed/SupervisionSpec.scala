@@ -506,6 +506,29 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       }
     }
 
+    "publish dropped messages while backing off" in {
+      val probe = TestProbe[Event]("evt")
+      val startedProbe = TestProbe[Event]("started")
+      val minBackoff = 10.seconds
+      val strategy = SupervisorStrategy
+        .restartWithBackoff(minBackoff, minBackoff, 0.0)
+      val behv = Behaviors.supervise(Behaviors.setup[Command] { _ ⇒
+        startedProbe.ref ! Started
+        targetBehavior(probe.ref)
+      }).onFailure[Exception](strategy)
+
+      val droppedMessagesProbe = TestProbe[Dropped]()
+      system.toUntyped.eventStream.subscribe(droppedMessagesProbe.ref.toUntyped, classOf[Dropped])
+      val ref = spawn(behv)
+      EventFilter[Exc1](occurrences = 1).intercept {
+        startedProbe.expectMessage(Started)
+        ref ! Throw(new Exc1)
+        probe.expectMessage(GotSignal(PreRestart))
+      }
+      ref ! Ping
+      droppedMessagesProbe.expectMessage(Dropped(Ping, ref))
+    }
+
     "restart after exponential backoff" in {
       val probe = TestProbe[Event]("evt")
       val startedProbe = TestProbe[Event]("started")
