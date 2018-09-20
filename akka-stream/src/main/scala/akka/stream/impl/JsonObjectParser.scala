@@ -321,6 +321,16 @@ import scala.annotation.{ switch }
         case _ if isWhitespace(input) ⇒
           pp.skip()
 
+        /* This is a tolerance; since there is no ambiguity, we can consider a next object immediately after
+          the previous, even without a Comma or Linebreak separator. Akka Stream 2.5.16 has historically supported that.
+
+          We can't extend the same tolerance to arrays, as any stream whose first non-whitespace character is a SquareBraceStart
+          will be considered to be a JSON Array stream
+           */
+        case CurlyBraceStart ⇒
+          pp.take()
+          pp.enterContainer(InOuterObject, NotArrayAfterElement)
+
         case _ ⇒
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — junk after value in linebreak or comma-separated stream")
       }
@@ -339,6 +349,16 @@ import scala.annotation.{ switch }
 
         case _ if isWhitespace(input) ⇒
           pp.skip()
+
+        /* This is a tolerance; since there is no ambiguity, we can consider a next object immediately after
+        the previous, even without a Comma or Linebreak separator. Akka Stream 2.5.16 has historically supported that.
+
+        We can't extend the same tolerance to arrays, as any stream whose first non-whitespace character is a SquareBraceStart
+        will be considered to be a JSON Array stream
+         */
+        case CurlyBraceStart ⇒
+          pp.take()
+          pp.enterContainer(InOuterObject, this)
 
         case _ ⇒
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — junk after value in $separatorName-separated stream")
