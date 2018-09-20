@@ -37,6 +37,10 @@ import scala.util.control.NonFatal
   }
 }
 
+/**
+  * INTERNAL API
+  */
+@InternalApi
 private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: SupervisorStrategy)(implicit ev: ClassTag[Thr]) extends BehaviorInterceptor[O, I] {
 
   private val throwableClass = implicitly[ClassTag[Thr]].runtimeClass
@@ -62,7 +66,7 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
 
   def log(ctx: ActorContext[_], t: Throwable): Unit = {
     if (strategy.loggingEnabled) {
-      ctx.asScala.log.error(t, "Supervisor [{}] saw failure: {}", this, t.getMessage)
+      ctx.asScala.log.error(t, "Supervisor {} saw failure: {}", this, t.getMessage)
     }
   }
 
