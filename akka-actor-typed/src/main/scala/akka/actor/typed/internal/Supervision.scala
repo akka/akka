@@ -141,12 +141,13 @@ class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strategy: Res
   private def restart(ctx: ActorContext[_], t: Throwable) = {
     val timeLeft = deadlineHasTimeLeft
     val newDeadline = if (deadline.isDefined && timeLeft) deadline else OptionVal.Some(Deadline.now + strategy.withinTimeRange)
-    restarts = if (timeLeft) restarts + 1 else 0
+    restarts = if (timeLeft) restarts + 1 else 1
     deadline = newDeadline
   }
 
   private def handleException(ctx: ActorContext[T], signalRestart: () ⇒ Unit): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
+      println(s"ex: $t. $restarts $deadlineHasTimeLeft $strategy")
       if (strategy.maxNrOfRetries != -1 && restarts >= strategy.maxNrOfRetries && deadlineHasTimeLeft) {
         throw t
       } else {
@@ -176,6 +177,16 @@ class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], b: 
   var blackhole = false
   var restartCount: Int = 0
 
+  override def aroundSignal(ctx: ActorContext[AnyRef], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+    if (blackhole) {
+      import akka.actor.typed.scaladsl.adapter._
+      ctx.asScala.system.toUntyped.eventStream.publish(Dropped(signal, ctx.asScala.self))
+      Behaviors.same
+    } else {
+      super.aroundSignal(ctx, signal, target)
+    }
+  }
+
   override def aroundReceive(ctx: ActorContext[AnyRef], msg: AnyRef, target: BehaviorInterceptor.ReceiveTarget[T]): Behavior[T] = {
     try {
       msg match {
@@ -201,8 +212,13 @@ class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], b: 
           }
           Behavior.same
         case _ ⇒
-          // TODO publish dropped message
-          target(ctx, msg.asInstanceOf[T])
+          if (blackhole) {
+            import akka.actor.typed.scaladsl.adapter._
+            ctx.asScala.system.toUntyped.eventStream.publish(Dropped(msg, ctx.asScala.self))
+            Behaviors.same
+          } else {
+            target(ctx, msg.asInstanceOf[T])
+          }
       }
     } catch handleReceiveException(ctx, target)
   }
@@ -217,7 +233,7 @@ class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], b: 
       try {
         target.signalRestart(ctx)
       } catch {
-        case NonFatal(t) ⇒ ctx.asScala.log.error(t, "failure during PreRestart")
+        case NonFatal(ex) ⇒ ctx.asScala.log.error(ex, "failure during PreRestart")
       }
       scheduleRestart(ctx, t)
   }
@@ -227,7 +243,7 @@ class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], b: 
       try {
         target(ctx, PreRestart)
       } catch {
-        case NonFatal(t) ⇒ ctx.asScala.log.error(t, "failure during PreRestart")
+        case NonFatal(ex) ⇒ ctx.asScala.log.error(ex, "failure during PreRestart")
       }
       scheduleRestart(ctx, t)
   }
