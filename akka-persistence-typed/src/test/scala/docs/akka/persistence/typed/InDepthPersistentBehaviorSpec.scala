@@ -7,7 +7,6 @@ package docs.akka.persistence.typed
 import akka.Done
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.typed.scaladsl.PersistentBehaviors
-import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
 import akka.persistence.typed.scaladsl.Effect
 
 object InDepthPersistentBehaviorSpec {
@@ -94,11 +93,12 @@ object InDepthPersistentBehaviorSpec {
   //#post-added-command-handler
 
   //#by-state-command-handler
-  private val commandHandler: (BlogState, BlogCommand) ⇒ Effect[BlogEvent, BlogState] =
-    CommandHandler.byState {
-      case state if state.isEmpty  ⇒ initial
-      case state if !state.isEmpty ⇒ postAdded
+  private val commandHandler: (BlogState, BlogCommand) ⇒ Effect[BlogEvent, BlogState] = { (state, command) ⇒
+    state match {
+      case state if state.isEmpty  ⇒ initial(state, command)
+      case state if !state.isEmpty ⇒ postAdded(state, command)
     }
+  }
   //#by-state-command-handler
 
   //#event-handler
