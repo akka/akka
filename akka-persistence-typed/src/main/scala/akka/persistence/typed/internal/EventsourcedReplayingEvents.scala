@@ -5,7 +5,7 @@
 package akka.persistence.typed.internal
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
@@ -13,7 +13,6 @@ import akka.persistence._
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
 import akka.persistence.typed.internal.EventsourcedBehavior._
 
-import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
 /***
@@ -155,7 +154,7 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
 
   protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] = try {
     tryReturnRecoveryPermit("replay completed successfully")
-    setup.recoveryCompleted(setup.commandContext, state.state)
+    setup.recoveryCompleted(state.state)
 
     val running = EventsourcedRunning[C, E, S](
       setup,

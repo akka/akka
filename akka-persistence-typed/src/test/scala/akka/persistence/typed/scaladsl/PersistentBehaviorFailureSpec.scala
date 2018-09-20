@@ -76,7 +76,7 @@ class PersistentBehaviorFailureSpec extends ScalaTestWithActorTestKit(Persistent
       probe.tell(event)
       state + event
     }
-  ).onRecoveryCompleted { (ctx, state) ⇒
+  ).onRecoveryCompleted { state ⇒
       probe.tell("starting")
     }.onPersistFailure(SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1))
 

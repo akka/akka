@@ -129,12 +129,11 @@ object PersistentActorCompileOnlyTest {
               dataByCorrelationId = state.dataByCorrelationId + (correlationId → data))
           case SideEffectAcknowledged(correlationId) ⇒
             state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
-        }).onRecoveryCompleted {
-          case (ctx, state) ⇒
-            state.dataByCorrelationId.foreach {
-              case (correlationId, data) ⇒ performSideEffect(ctx.self, correlationId, data)
-            }
-        }
+        }).onRecoveryCompleted(state ⇒
+          state.dataByCorrelationId.foreach {
+            case (correlationId, data) ⇒ performSideEffect(ctx.self, correlationId, data)
+          }
+        )
     )
 
   }
@@ -318,9 +317,9 @@ object PersistentActorCompileOnlyTest {
         eventHandler = (state, evt) ⇒ evt match {
           case ItemAdded(id)   ⇒ id +: state
           case ItemRemoved(id) ⇒ state.filter(_ != id)
-        }).onRecoveryCompleted((ctx, state) ⇒ {
+        }).onRecoveryCompleted(state ⇒
           state.foreach(id ⇒ metadataRegistry ! GetMetaData(id, adapt))
-        })
+        )
     }
   }
 

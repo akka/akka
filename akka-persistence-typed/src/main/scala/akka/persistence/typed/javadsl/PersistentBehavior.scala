@@ -10,14 +10,11 @@ import java.util.{ Collections, Optional }
 import akka.actor.typed
 import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior }
 import akka.actor.typed.Behavior.DeferredBehavior
-import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.persistence.SnapshotMetadata
 import akka.persistence.typed.{ EventAdapter, _ }
 import akka.persistence.typed.internal._
 import scala.util.{ Failure, Success }
-
-import akka.japi.pf.FI
 
 /** Java API */
 @ApiMayChange
@@ -155,15 +152,15 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private (val pe
       emptyState,
       (state, cmd) ⇒ commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
       eventHandler()(_, _))
-      .onRecoveryCompleted((ctx, state) ⇒ onRecoveryCompleted(state))
+      .onRecoveryCompleted(onRecoveryCompleted)
       .snapshotWhen(snapshotWhen)
       .withTagger(tagger)
-      .onSnapshot((ctx, meta, result) ⇒ {
+      .onSnapshot((meta, result) ⇒ {
         result match {
           case Success(_) ⇒
-            ctx.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
+            context.asScala.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
           case Failure(e) ⇒
-            ctx.log.error(e, "Save snapshot failed, snapshot metadata: [{}]", meta)
+            context.asScala.log.error(e, "Save snapshot failed, snapshot metadata: [{}]", meta)
         }
 
         onSnapshot(meta, result match {
