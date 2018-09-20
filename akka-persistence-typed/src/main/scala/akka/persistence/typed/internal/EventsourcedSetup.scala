@@ -34,8 +34,8 @@ private[persistence] final class EventsourcedSetup[C, E, S](
   val commandHandler:        PersistentBehaviors.CommandHandler[C, E, S],
   val eventHandler:          PersistentBehaviors.EventHandler[S, E],
   val writerIdentity:        WriterIdentity,
-  val recoveryCompleted:     (ActorContext[C], S) ⇒ Unit,
-  val onSnapshot:            (ActorContext[C], SnapshotMetadata, Try[Done]) ⇒ Unit,
+  val recoveryCompleted:     S ⇒ Unit,
+  val onSnapshot:            (SnapshotMetadata, Try[Done]) ⇒ Unit,
   val tagger:                E ⇒ Set[String],
   val eventAdapter:          EventAdapter[E, _],
   val snapshotWhen:          (S, E, Long) ⇒ Boolean,
@@ -46,6 +46,7 @@ private[persistence] final class EventsourcedSetup[C, E, S](
 ) {
   import akka.actor.typed.scaladsl.adapter._
 
+  // FIXME: do we really need it anymore?
   def commandContext: ActorContext[C] = context.asInstanceOf[ActorContext[C]]
 
   val persistence: Persistence = Persistence(context.system.toUntyped)

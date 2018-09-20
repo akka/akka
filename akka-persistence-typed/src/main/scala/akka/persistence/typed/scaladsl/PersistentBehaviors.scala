@@ -7,7 +7,6 @@ package akka.persistence.typed.scaladsl
 import akka.Done
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior.DeferredBehavior
-import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
@@ -50,7 +49,7 @@ object PersistentBehaviors {
    * a function:
    *
    * {{{
-   *   (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
+   *   (State, Command) ⇒ Effect[Event, State]
    * }}}
    *
    * Note that you can have different command handlers based on current state by using
@@ -97,12 +96,12 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State]
+  def onRecoveryCompleted(callback: State ⇒ Unit): PersistentBehavior[Command, Event, State]
 
   /**
    * The `callback` function is called to notify when a snapshot is complete.
    */
-  def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
+  def onSnapshot(callback: (SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
   /**
    * Initiates a snapshot if the given function returns true.

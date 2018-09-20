@@ -45,7 +45,7 @@ object BasicPersistentBehaviorsCompileOnly {
       eventHandler =
         (state, evt) ⇒
           throw new RuntimeException("TODO: process the event return the next state")
-    ).onRecoveryCompleted { (ctx, state) ⇒
+    ).onRecoveryCompleted { state ⇒
         throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
       }
   //#recovery
@@ -74,7 +74,7 @@ object BasicPersistentBehaviorsCompileOnly {
     eventHandler =
       (state, evt) ⇒
         throw new RuntimeException("TODO: process the event return the next state")
-  ).onRecoveryCompleted { (ctx, state) ⇒
+  ).onRecoveryCompleted { state ⇒
       throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
     }
 

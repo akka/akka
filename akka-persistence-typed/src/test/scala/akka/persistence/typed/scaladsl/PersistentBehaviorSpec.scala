@@ -209,11 +209,9 @@ object PersistentBehaviorSpec {
         case Incremented(delta) ⇒
           probe ! ((state, evt))
           State(state.value + delta, state.history :+ state.value)
-      }).onRecoveryCompleted {
-        case (_, _) ⇒
-      }
+      }).onRecoveryCompleted(_ ⇒ ())
       .onSnapshot {
-        case (_, _, result) ⇒
+        case (_, result) ⇒
           snapshotProbe ! result
       }
   }

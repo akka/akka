@@ -51,10 +51,9 @@ object RecoveryPermitterSpec {
         case command   ⇒ commandProbe.ref ! command; Effect.none
       },
       eventHandler = { (state, event) ⇒ eventProbe.ref ! event; state }
-    ).onRecoveryCompleted {
-        case (_, _) ⇒
-          eventProbe.ref ! Recovered
-          if (throwOnRecovery) throw new TE
+    ).onRecoveryCompleted { _ ⇒
+        eventProbe.ref ! Recovered
+        if (throwOnRecovery) throw new TE
       }
 
   def forwardingBehavior(target: TestProbe[Any]): Behavior[Any] =
