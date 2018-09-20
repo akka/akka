@@ -46,9 +46,6 @@ private[persistence] final class EventsourcedSetup[C, E, S](
 ) {
   import akka.actor.typed.scaladsl.adapter._
 
-  // FIXME: do we really need it anymore?
-  def commandContext: ActorContext[C] = context.asInstanceOf[ActorContext[C]]
-
   val persistence: Persistence = Persistence(context.system.toUntyped)
 
   val journal: ActorRef = persistence.journalFor(settings.journalPluginId)
