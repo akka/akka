@@ -9,15 +9,13 @@ import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.actor.setup.ActorSystemSetup
 import com.typesafe.config.{ Config, ConfigFactory }
+import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 
-import scala.concurrent.{ ExecutionContextExecutor, Future }
-import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, PropsAdapter }
+import akka.actor.typed.internal.adapter._
 import akka.util.Timeout
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
-
 import akka.actor.BootstrapSetup
-import akka.actor.typed.internal.adapter.GuardianActorAdapter
 import akka.actor.typed.receptionist.Receptionist
 
 /**
@@ -225,8 +223,12 @@ object ActorSystem {
     val appConfig = bootstrapSettings.flatMap(_.config).getOrElse(ConfigFactory.load(cl))
     val executionContext = bootstrapSettings.flatMap(_.defaultExecutionContext)
 
+    val promise = Promise[Terminated]()
+    val wrappedGuardian = WhenTerminated(guardianBehavior, promise)
+    val whenTerminatedSetup = WhenTerminatedSetup(promise.future)
+
     val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext,
-      Some(PropsAdapter(() ⇒ guardianBehavior, guardianProps, isGuardian = true)), setup)
+      Some(PropsAdapter(() ⇒ wrappedGuardian, guardianProps, isGuardian = true)), setup and whenTerminatedSetup)
     untyped.start()
 
     untyped.guardian ! GuardianActorAdapter.Start

@@ -66,6 +66,20 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
       }
     }
 
+    "shutdown with exception if guardian throws" in {
+      object MyException extends Exception("test throw")
+
+      val throwing =
+        Behaviors.receive[Done] {
+          case (ctx, Done) ⇒ throw MyException
+        }
+      withSystem("exception", throwing, doTerminate = false) { sys: ActorSystem[Done] ⇒
+        sys ! Done
+        val terminated = sys.whenTerminated.futureValue
+        terminated.failure shouldBe Some(MyException)
+      }
+    }
+
     "terminate the guardian actor" in {
       val inbox = TestInbox[String]("terminate")
       val sys = system(
