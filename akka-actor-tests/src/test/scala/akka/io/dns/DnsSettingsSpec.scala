@@ -23,6 +23,7 @@ class DnsSettingsSpec extends AkkaSpec {
           resolve-timeout = 1s
         """))
 
+      // Will differ based on name OS DNS servers so just validating it does not throw
       dnsSettings.NameServers
     }
 
