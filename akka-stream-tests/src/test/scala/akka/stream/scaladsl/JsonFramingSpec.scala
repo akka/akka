@@ -248,9 +248,9 @@ class JsonFramingSpec extends AkkaSpec {
 
     "parse json array of mixed types" in {
       val input =
-        """ [ {"name": "john"}, 2, true, "abcdef" ]"
+        """ [ {"name": "john"}, 2, true, "abcdef" ]
           |
-        """.stripMargin
+          |""".stripMargin
 
       val result = Source.single(ByteString(input))
         .via(JsonFraming.objectScanner(Int.MaxValue))
@@ -259,6 +259,21 @@ class JsonFramingSpec extends AkkaSpec {
         }
 
       result.futureValue shouldBe Seq("""{"name": "john"}""", "2", "true", """"abcdef"""")
+    }
+
+    "parse json array of nested arrays" in {
+      val input =
+        """ [ [ [ 1, 2], [ 3, 4 ] ], [ 5, [ 6, 7 ], 8 ] ]
+          |
+          |""".stripMargin
+
+      val result = Source.single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq("""[ [ 1, 2], [ 3, 4 ] ]""", """[ 5, [ 6, 7 ], 8 ]""")
     }
 
 
@@ -347,7 +362,6 @@ class JsonFramingSpec extends AkkaSpec {
       result.futureValue shouldBe Seq("""{"name": "john"}""", "2", "true", """"abcdef"""")
     }
 
-
     "parse comma delimited objects" in {
       val input =
         """  { "name": "john" }, { "name": "jack" }, { "name": "katie" }  """
@@ -415,7 +429,7 @@ class JsonFramingSpec extends AkkaSpec {
         """.stripMargin,
         """{ "na""",
         """me": "jack""",
-        """"}]"""").map(ByteString(_))
+        """"}]""").map(ByteString(_))
 
       val result = Source.apply(input)
         .via(JsonFraming.objectScanner(Int.MaxValue))
@@ -684,6 +698,8 @@ class JsonFramingSpec extends AkkaSpec {
               |  ]
               |}
               | """.stripMargin))
+          // please notice that the "contacttime" objects are not well-formed JSON. A real parser would complain
+          // this framing parser won't.
 
           buffer.poll().get.utf8String shouldBe
             """{
@@ -743,7 +759,7 @@ class JsonFramingSpec extends AkkaSpec {
               |  {
               |    "name": "katie",
               |    "age": 25
-              |  }
+              |  },
             """.stripMargin
 
           val buffer = new JsonObjectParser()
@@ -788,6 +804,7 @@ class JsonFramingSpec extends AkkaSpec {
         "noticeably fail" in {
           val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""THIS IS NOT VALID { "name": "john"}"""))
+          buffer.poll() // this returns "THIS", presumed to be a JSON keyword (which it isn't, but this is the real Json parser's problem))
           a[FramingException] shouldBe thrownBy {
             buffer.poll()
           }
@@ -798,14 +815,20 @@ class JsonFramingSpec extends AkkaSpec {
         "noticeably fail" in {
           val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""{ "name": "john"} THIS IS NOT VALID"""))
-          a[FramingException] shouldBe thrownBy { buffer.poll() }
+          buffer.poll().map(_.utf8String) should contain("""{ "name": "john"}""")
+          a[FramingException] shouldBe thrownBy {
+            buffer.poll()
+          }
         }
 
         "noticeably fail before emitting the last valid element" in {
           val buffer = new JsonObjectParser()
           buffer.offer(ByteString("""{ "name": "paul"}, { "name": "john"} THIS IS NOT VALID"""))
-          buffer.poll() // this is '{ "name": "paul"}' and this should pass
-          a[FramingException] shouldBe thrownBy { buffer.poll() }
+          buffer.poll().map(_.utf8String) should contain("""{ "name": "paul"}""")
+          buffer.poll().map(_.utf8String) should contain("""{ "name": "john"}""")
+          a[FramingException] shouldBe thrownBy {
+            buffer.poll()
+          }
         }
       }
     }
@@ -831,7 +854,7 @@ class JsonFramingSpec extends AkkaSpec {
       val input = List(
         """{ "name": "john" }""",
         """{ "name": "jack" }""",
-        """{ "name": "very very long name somehow. how did this happen?" }""").map(s ⇒ ByteString(s))
+        """{ "name": "very very long name somehow. how did this happen?" }""").map(s ⇒ ByteString(s + "\n"))
 
       val probe = Source(input)
         .via(JsonFraming.objectScanner(48))
@@ -845,6 +868,73 @@ class JsonFramingSpec extends AkkaSpec {
         .expectNext(ByteString("""{ "name": "jack" }"""))
         .request(1)
         .expectError().getMessage should include("exceeded")
+    }
+
+    "fail if anything 'line-separated follows' a first json array" in {
+      val input =
+        """
+          |[ true, false ]
+          |[ "def", "ghi" ]
+          |false
+          |4
+          |[ "abc", { "def": "ghi" } ]
+          |""".stripMargin
+
+      /* we can't reliably support this while also automatically supporting the "JSON Array of things" style */
+
+      val buffer = new JsonObjectParser()
+      buffer.offer(ByteString(input))
+
+      buffer.poll().map(_.utf8String) should contain("true")
+      buffer.poll().map(_.utf8String) should contain("false")
+      a[FramingException] shouldBe thrownBy {
+        buffer.poll()
+      }
+    }
+
+    "accept if any arrays 'line-separated follow' a first non-array" in {
+      val input =
+        """0
+          |[ true, false ]
+          |[ "def", "ghi" ]
+          |false
+          |4
+          |[ "abc", { "def": "ghi" } ]
+          |""".stripMargin
+
+      /* we can't reliably support this while also automatically supporting the "JSON Array of things" style */
+
+      val buffer = new JsonObjectParser()
+      buffer.offer(ByteString(input))
+
+      buffer.poll().map(_.utf8String) should contain("0")
+      buffer.poll().map(_.utf8String) should contain("[ true, false ]")
+      buffer.poll().map(_.utf8String) should contain("""[ "def", "ghi" ]""")
+      buffer.poll().map(_.utf8String) should contain("""false""")
+      buffer.poll().map(_.utf8String) should contain("""4""")
+      buffer.poll().map(_.utf8String) should contain("""[ "abc", { "def": "ghi" } ]""")
+      buffer.poll().map(_.utf8String) should be(empty)
+    }
+
+    "tolerate whitespace following a json array" in {
+      val input =
+        """
+          |[ true, false ]
+          |
+          |
+          |""".stripMargin + "     " +
+          """
+            |
+            |
+      """.stripMargin
+
+      val buffer = new JsonObjectParser()
+      buffer.offer(ByteString(input))
+
+      buffer.poll().map(_.utf8String) should contain("true")
+      buffer.poll().map(_.utf8String) should contain("false")
+      buffer.poll() should be(empty)
+
     }
   }
 }

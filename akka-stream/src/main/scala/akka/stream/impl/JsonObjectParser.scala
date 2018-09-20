@@ -8,7 +8,7 @@ import akka.annotation.InternalApi
 import akka.stream.scaladsl.Framing.FramingException
 import akka.util.ByteString
 
-import scala.annotation.switch
+import scala.annotation.{switch}
 
 /**
  * INTERNAL API: Use [[akka.stream.scaladsl.JsonFraming]] instead.
@@ -19,6 +19,7 @@ import scala.annotation.switch
   final val SquareBraceEnd = ']'.toByte
   final val CurlyBraceStart = '{'.toByte
   final val CurlyBraceEnd = '}'.toByte
+  final val Colon = ':'.toByte
   final val DoubleQuote = '"'.toByte
   final val Backslash = '\\'.toByte
   final val Comma = ','.toByte
@@ -36,6 +37,453 @@ import scala.annotation.switch
     case _          ⇒ false
   }
 
+
+  private sealed trait ParserState {
+    def proceed(input: Byte, pp: JsonObjectParser): Unit
+  }
+
+  private object ParserState {
+
+    object UnknownState extends ParserState {
+      override def toString: String = "Unknown"
+
+      override def proceed(input: Byte, pp: JsonObjectParser): Unit =
+        throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — unknown state")
+
+    }
+
+    object InitialState extends ParserState {
+      override def toString: String = "Initial"
+
+      override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
+        if (input == SquareBraceStart) {
+          pp.skip()
+          pp.state = MainArrayBeforeElement
+          println("—I1—")
+        } else if (isWhitespace(input)) {
+          pp.skip()
+          println("—I2—")
+        } else if (input == DoubleQuote) {
+          pp.take()
+          pp.state = InOuterString(NotArrayAfterElement, pp)
+          println("—I2—")
+        } else if (input == CurlyBraceStart) {
+          pp.take()
+          pp.state = pp.enterContainer(InOuterObject, NotArrayAfterElement)
+          println("—I3—")
+        } else if (!isWhitespace(input)) {
+          pp.take()
+          pp.state = InOuterNaked(NotArrayAfterElement, pp)
+          println("—I4—")
+        } else {
+          throw new FramingException(s"Invalid JSON encountered at position [$pp.pos] of [$pp.buffer]")
+        }
+      }
+    }
+
+    /**
+      * We are in this state whenever we're inside a JSON Array-style stream, before any element
+      */
+    private object MainArrayBeforeElement extends ParserState {
+      override def toString: String = "MainArrayBeforeElement"
+
+      override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
+          case _ if isWhitespace(input) =>
+            pp.skip()
+            println("—ABE 1—")
+          case Comma =>
+            throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}]")
+          case SquareBraceEnd =>
+            pp.skip()
+            pp.state = AfterMainArray
+            println("—ABE 2—")
+          case SquareBraceStart =>
+            pp.take()
+            pp.state = pp.enterContainer(InOuterArray, MainArrayAfterElement)
+            println("—ABE 3—")
+          case DoubleQuote =>
+            pp.take()
+            pp.state = InOuterString(MainArrayAfterElement, pp)
+            println("—ABE 4—")
+          case CurlyBraceStart =>
+            pp.take()
+            pp.state = pp.enterContainer(InOuterObject, MainArrayAfterElement)
+            println("—ABE 5—")
+          case _ if !isWhitespace(input) =>
+            pp.take()
+            pp.state = InOuterNaked(MainArrayAfterElement, pp)
+            println("—ABE 6—")
+          case _ =>
+            throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}]")
+        }
+
+    }
+
+    private object AfterMainArray extends ParserState {
+      override def toString: String = "AfterMainArray"
+
+      override def proceed(input: Byte, pp: JsonObjectParser): Unit = (input: @switch) match {
+          case _ if isWhitespace(input) =>
+            pp.skip()
+            println("—AA 1—")
+          case _ =>
+            throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] after closed JSON-style array")
+        }
+    }
+
+    private object MainArrayAfterElement extends ParserState {
+      override def toString: String = "MainArrayAfterElement"
+
+      /* note: we don't mark the object complete as it's been done, if necessary, as part of the
+      exit action that happened just before we ended up here.
+       */
+      override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
+        case _ if isWhitespace(input) =>
+          pp.skip()
+          println("—AAE 1—")
+        case Comma =>
+          pp.skip()
+          pp.state = MainArrayBeforeElement
+          println("—AAE 2—")
+        case SquareBraceEnd =>
+          pp.skip()
+          pp.state = AfterMainArray
+          println("—AAE 3—")
+        case _ =>
+          throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] after JSON-style array element")
+      }
+    }
+
+    private trait LeafParserState extends ParserState {
+      def apply(nextState: ParserState, pp: JsonObjectParser): ParserState
+    }
+
+    private object AfterBackslash extends LeafParserState {
+      override def toString: String = "AfterBackslash"
+
+      override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
+        pp.take()
+        pp.state = pp.stateAfterBackslash
+        pp.stateAfterBackslash = UnknownState
+      }
+
+      def apply(nextState: ParserState, pp: JsonObjectParser): ParserState = {
+        pp.stateAfterBackslash = nextState
+        pp.state = this
+        this
+      }
+    }
+
+    private trait HasExitAction { this: ParserState =>
+      def exitAction(pp: JsonObjectParser): Unit
+    }
+
+    private trait HasEmptyExitAction extends HasExitAction { this: ParserState =>
+      final def exitAction(pp: JsonObjectParser): Unit = { }
+    }
+    private trait CompleteObjectOnExitAction extends HasExitAction { this: ParserState =>
+      final def exitAction(pp: JsonObjectParser): Unit = pp.objectDone()
+    }
+
+    private trait LeaveContainerOnExit extends HasExitAction { this: ParserState =>
+      final def exitAction(pp: JsonObjectParser): Unit = {
+        pp.state = pp.leaveContainer()
+      }
+    }
+
+    private trait CompleteObjectAndLeaveContainerOnExit extends HasExitAction { this: ParserState =>
+      final def exitAction(pp: JsonObjectParser): Unit = {
+        pp.objectDone()
+        pp.state = pp.leaveContainer()
+      }
+    }
+
+
+    private abstract class InStringBase extends LeafParserState with HasExitAction {
+      def exitAction(pp: JsonObjectParser): Unit
+
+      def apply(nextState: ParserState, pp: JsonObjectParser): ParserState = {
+        pp.stateAfterStringValue = nextState
+        pp.state = this
+        this
+      }
+
+      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
+        case Backslash =>
+          pp.take()
+          pp.state = AfterBackslash(this, pp)
+
+        case DoubleQuote =>
+          pp.take()
+          pp.state = pp.stateAfterStringValue
+          pp.stateAfterStringValue = UnknownState
+          exitAction(pp)
+
+        case LineBreak | LineBreak2 =>
+          throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — line break in string")
+
+        case _ =>
+          pp.take()
+      }
+
+    }
+
+    private object InString extends InStringBase with HasEmptyExitAction {
+      override def toString: String = "InString"
+    }
+    private object InOuterString extends InStringBase with CompleteObjectOnExitAction {
+      override def toString: String = "InOuterString"
+    }
+
+    private abstract class InNakedBase extends LeafParserState with HasExitAction {
+      final def apply(nextState: ParserState, pp: JsonObjectParser): ParserState = {
+        pp.stateAfterNakedValue = nextState
+        pp.state = this
+        this
+      }
+
+      private def finish(input: Byte, pp: JsonObjectParser): Unit = {
+        val nextState = pp.stateAfterNakedValue
+        pp.stateAfterNakedValue = UnknownState
+
+        println(s"—IN 1— ⇒ $nextState")
+        pp.state = nextState
+        exitAction(pp)
+        nextState.proceed(input, pp)
+      }
+
+      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
+        case Comma | SquareBraceEnd | CurlyBraceEnd | LineBreak =>
+          finish(input, pp)
+
+        case _ if isWhitespace(input) =>
+          finish(input, pp)
+
+        case _ if !isWhitespace(input) =>
+          pp.take()
+          println("—IN 3—")
+      }
+    }
+
+    private object InNaked extends InNakedBase with HasEmptyExitAction{
+      override def toString: String = "InNaked"
+    }
+    private object InOuterNaked extends InNakedBase with CompleteObjectOnExitAction {
+      override def toString: String = "InOuterNaked"
+    }
+
+    private abstract class InContainerBase(containerEnd: Int)  extends ParserState with HasExitAction {
+      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
+        case _ if isWhitespace(input) =>
+          pp.take()
+          println("— IO 1 —")
+
+        case _ if input == containerEnd =>
+          /* this is our end! */
+          pp.take()
+          println("— IO 2 —")
+          exitAction(pp)
+
+        case DoubleQuote =>
+          pp.take()
+          pp.state = InString(this, pp)
+          println("— IO 3 —")
+
+        case  Comma | Colon =>
+          /* in a real JSON parser we'd check whether the colon and commas appear at appropriate places. Here
+          we do without: we're just framing JSON and this is good enough */
+          pp.take()
+          println("— IO 4 —")
+
+        case CurlyBraceStart =>
+          pp.take()
+          pp.state = pp.enterContainer(InObject, this)
+          println("— IO 5 —")
+
+        case SquareBraceStart =>
+          pp.take()
+          pp.state = pp.enterContainer(InArray, this)
+          println("— IO 6 —")
+
+
+        case _ =>
+          pp.take()
+          pp.state = InNaked(this, pp)
+
+        //case _ =>
+        //  throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}]")
+      }
+    }
+
+    private object InArray extends InContainerBase(SquareBraceEnd) with LeaveContainerOnExit{
+      override def toString: String = "InArray"
+    }
+    private object InOuterArray extends InContainerBase(SquareBraceEnd) with CompleteObjectAndLeaveContainerOnExit {
+      override def toString: String = "InOuterArray"
+    }
+
+
+    private object InObject extends InContainerBase(CurlyBraceEnd) with LeaveContainerOnExit {
+      override def toString: String = "InObject"
+    }
+    private object InOuterObject extends InContainerBase(CurlyBraceEnd) with CompleteObjectAndLeaveContainerOnExit {
+      override def toString: String = "InOuterObject"
+    }
+    
+    private object NotArrayAfterElement extends ParserState {
+      override def toString: String = "NotArrayAfter"
+
+      /* in this state we know we are not in a JSON array-formatted stream, but we don't yet know yet what kind of
+      separator is being used. We'll never revisit this state or InitialState once we meet a separator
+       */
+      override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
+        case Comma =>
+          pp.skip()
+          pp.state = CommaSeparatedBeforeElement
+          println("—NAAE 1—")
+
+        case LineBreak =>
+          pp.skip()
+          pp.state = LinebreakSeparatedBeforeElement
+          println("—NAAE 2—")
+
+        case _ if isWhitespace(input) =>
+          pp.skip()
+          println("— NAAE 3—")
+
+        case _ =>
+          throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — junk after value in linebreak or comma-separated stream")
+      }
+    }
+
+    private abstract sealed class SeparatorSeparatedAfterElement extends ParserState {
+      def separator: Int
+      def separatorName: String
+
+      def beforeNextItem: ParserState
+
+      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = (input: @switch) match {
+        case _ if input == separator =>
+          pp.skip()
+          pp.state = beforeNextItem
+          println("—SSAE 1—")
+
+        case _ if isWhitespace(input) =>
+          pp.skip()
+          println("—SSAE 2—")
+
+        case _ =>
+          throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — junk after value in $separatorName-separated stream")
+
+      }
+    }
+
+    private abstract sealed class SeparatorSeparatedBeforeElement extends ParserState {
+      def afterState: SeparatorSeparatedAfterElement
+
+      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
+        case DoubleQuote =>
+          pp.take()
+          pp.state = InOuterString(afterState, pp)
+          println("—SSBE 1—")
+
+        case SquareBraceStart =>
+          pp.take()
+          pp.state = pp.enterContainer(InOuterArray, afterState)
+          println("—SSBE 2—")
+
+        case CurlyBraceStart =>
+          pp.take()
+          pp.state = pp.enterContainer(InOuterObject, afterState)
+          println("—SSBE 3—")
+
+        case _ if input == afterState.separator =>
+          pp.skip()
+          /* note: effectively, empty lines are tolerated, ignored and skipped. Throw a FramingError if desired otherwise */
+          println("—SSBE 4—")
+
+        case _ if isWhitespace(input) =>
+          pp.skip()
+          println("—SSBE 5—")
+
+        case _ if !isWhitespace(input) =>
+          pp.take()
+          pp.state = InOuterNaked(afterState, pp)
+          println("—SSBE 6—")
+      }
+    }
+
+    private object LinebreakSeparatedBeforeElement extends SeparatorSeparatedBeforeElement {
+      override def toString: String = "LinebreakSeparatedBeforeElement"
+
+      override def afterState: SeparatorSeparatedAfterElement = LinebreakSeparatedAfterElement
+    }
+
+    private object LinebreakSeparatedAfterElement extends SeparatorSeparatedAfterElement {
+      override def toString: String = "LinebreakSeparatedAfterElement"
+
+      override def separator: Int = LineBreak
+
+      override def separatorName: String = "linebreak"
+
+      override def beforeNextItem: ParserState = LinebreakSeparatedBeforeElement
+    }
+
+    private object CommaSeparatedBeforeElement extends SeparatorSeparatedBeforeElement {
+      override def toString: String = "CommaSeparatedBeforeEement"
+
+      override def afterState: SeparatorSeparatedAfterElement = CommaSeparatedAfterElement
+    }
+
+    private object CommaSeparatedAfterElement extends SeparatorSeparatedAfterElement {
+      override def toString: String = "CommaSeparatedAfterElement"
+
+      override def separator: Int = Comma
+
+      override def separatorName: String = "comma"
+
+      override def beforeNextItem: ParserState = CommaSeparatedBeforeElement
+    }
+
+
+  }
+
+  private sealed trait ContainerStackLevel {
+    def current: ParserState
+
+    def next: ParserState
+
+    def previous: ContainerStackLevel
+
+    def level: Int
+
+    def pp: JsonObjectParser
+  }
+
+  private object ContainerStackLevel {
+    final case class Root(pp: JsonObjectParser) extends ContainerStackLevel {
+      def current: ParserState = ParserState.UnknownState
+
+      def next: ParserState = ParserState.UnknownState
+
+      def previous: ContainerStackLevel = {
+        throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — can't unpack")
+      }
+
+      def level: Int = 0
+
+    }
+
+    final case class Regular(pp: JsonObjectParser, current: ParserState, next: ParserState, previous: ContainerStackLevel) extends ContainerStackLevel {
+
+      def level: Int = 1 + previous.level
+
+      override def toString: String = s"Regular(_, ${current}, ${next}) → ${previous}"
+    }
+
+
+  }
+
 }
 
 /**
@@ -51,18 +499,46 @@ import scala.annotation.switch
   import JsonObjectParser._
 
   private var buffer: ByteString = ByteString.empty
-
   private var pos = 0 // latest position of pointer while scanning for json object end
   private var trimFront = 0 // number of chars to drop from the front of the bytestring before emitting (skip whitespace etc)
-  private var depth = 0 // counter of object-nesting depth, once hits 0 an object should be emitted
-
   private var charsInObject = 0
   private var completedObject = false
-  private var inStringExpression = false
-  private var inNakedExpression = false
-  private var pastExpression = false
-  private var isStartOfEscapeSequence = false
-  private var lastInput = 0.toByte
+  private var state: ParserState = ParserState.InitialState
+
+  private var containerStack: ContainerStackLevel = ContainerStackLevel.Root(this)
+  private var stateAfterBackslash: ParserState = ParserState.UnknownState
+  private var stateAfterStringValue: ParserState = ParserState.UnknownState
+  private var stateAfterNakedValue: ParserState = ParserState.UnknownState
+
+  private def enterContainer(current: ParserState, next: ParserState): ParserState = {
+    containerStack = ContainerStackLevel.Regular(this, current, next, containerStack)
+    current
+  }
+
+  private def leaveContainer(): ParserState = {
+    val nextState = containerStack.next
+    containerStack = containerStack.previous
+    nextState
+  }
+
+
+  def skip(): Unit = {
+    pos += 1
+    if (charsInObject == 0) trimFront += 1
+  }
+
+  def take(): Unit = {
+    pos += 1
+    charsInObject += 1
+  }
+
+  def objectDone(): Unit = {
+    completedObject = true
+  }
+
+  def debugCurrentSelection: String =
+    buffer.take(pos).drop(trimFront).take(charsInObject).utf8String
+
 
   /**
    * Appends input ByteString to internal byte string buffer.
@@ -104,7 +580,7 @@ import scala.annotation.switch
             if (trimmed.isEmpty) None
             else Some(trimmed)
           }
-          println("result=", result.map(_.decodeString("UTF-8")))
+          println("result=" + result.map(_.utf8String))
           result
       }
   }
@@ -114,16 +590,13 @@ import scala.annotation.switch
     completedObject = false
 
     val bufSize = buffer.size
-    while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject)
-      proceed(buffer(pos))
-
-
-    println(s"done proceeding; pos=${pos} bufSize=$bufSize pastEx=$pastExpression complete=$completedObject")
-    if (pastExpression && (!completedObject)) {
-      /* there may be a straggler object here — no problem */
-      println("helping straggler object")
-      completedObject = true
+    while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject) {
+      val input = buffer(pos)
+      println(s"input=${input}: >${input.toChar}< this=(pos: $pos, state=${state} sofar='${debugCurrentSelection}' level=${containerStack.level} containerStack=${containerStack})")
+      state.proceed(buffer(pos), this)
     }
+
+    println(s"done proceeding; pos=${pos} bufSize=$bufSize complete=$completedObject")
 
     if (pos >= maximumObjectLength)
       throw new FramingException(s"""JSON element exceeded maximumObjectLength ($maximumObjectLength bytes)!""")
@@ -131,139 +604,4 @@ import scala.annotation.switch
     completedObject
   }
 
-  private def proceed(input: Byte): Unit = {
-    println("input=",input,input.toChar, s" this=(pos: $pos, depth=$depth, trimFront=$trimFront, charsInObject=$charsInObject, soe=${isStartOfEscapeSequence} inNaked=$inNakedExpression pastEx=$pastExpression inString=$inStringExpression insideObj=$insideObject)")
-
-    if (input == SquareBraceStart && outsideObjectOrString) {
-      // outer object is an array
-      pos += 1
-      trimFront += 1
-      println("—S1—")
-    } else if (input == SquareBraceEnd && outsideObjectOrString) {
-      // outer array completed!
-      if (pastExpression) {
-        completedObject = true
-        println("—S2 A—")
-      } else {
-        pos = -1
-        println("—S2 B—")
-      }
-
-    } else if ( ((input == Comma) || (input == LineBreak)) && outsideObjectOrString) {
-      if ((!inNakedExpression) && (!pastExpression)) {
-        // do nothing
-        pos += 1
-        trimFront += 1
-        println("—S3 A—")
-      } else {
-        pos += 1 // leave charsInObject as is
-        completedObject = true
-        inNakedExpression = false
-        pastExpression = false
-        println("—S3 B—")
-      }
-    } else if (input == Backslash) {
-      if (lastInput == Backslash & isStartOfEscapeSequence) isStartOfEscapeSequence = false
-      else isStartOfEscapeSequence = true
-      pos += 1
-      charsInObject += 1
-      println("—S4—")
-    } else if ((input == DoubleQuote) && isStartOfEscapeSequence && inStringExpression) {
-      isStartOfEscapeSequence = false
-      pos += 1
-      charsInObject += 1
-      println("—S5 A—")
-    } else if ((input == DoubleQuote) && (!isStartOfEscapeSequence) && (!inStringExpression) && !pastExpression && !inNakedExpression)  {
-      // we can start that whether we are insideObject or outsideObject
-      inStringExpression = true
-      pos += 1
-      charsInObject += 1
-      println("—S5 B—")
-    } else if ((input == DoubleQuote) && (!isStartOfEscapeSequence) && inStringExpression) {
-      inStringExpression = false
-      pos += 1
-      charsInObject += 1
-      if (outsideObject) {
-        pastExpression = true
-        // if we're insideObject, we're not pastExpression here; in fact we may find additional strings soon.
-      }
-      println("—S5 C—")
-
-      /* note:
-      - DoubleQuote && !inStringExpression && inNakedExpression is malformed
-      - DoubleQuote && !inStringExpression && pastExpression is malformed
-      - DoubleQuote && isStartOfEscapeSequence && !inStringExpression is malformed
-       */
-
-    } else if ((input != DoubleQuote) && inStringExpression) {
-      // we're in the string, let's accumulate
-      pos += 1
-      charsInObject += 1
-      println("—Sx2—")
-    }
-    else if (input == CurlyBraceStart && !inStringExpression && !inNakedExpression) {
-      isStartOfEscapeSequence = false
-      depth += 1
-      pos += 1
-      charsInObject += 1
-      println("—S6—")
-    } else if (input == CurlyBraceEnd && !inStringExpression && !inNakedExpression) {
-      isStartOfEscapeSequence = false
-      depth -= 1
-      pos += 1
-      charsInObject += 1
-      if (depth == 0) {
-        // we're ABOUT to call it completed, but we'll wait
-        pastExpression = true
-        println("—S7 C—")
-      } else {
-        println("—S7—")
-      }
-    } else if (isWhitespace(input) && !inStringExpression && !inNakedExpression && (depth == 0)) {
-      pos += 1
-      if (depth == 0) {
-        if (!pastExpression) trimFront += 1 // if inNakedExpression we need to charsInObject +=1 but we can't be here.
-        println("—S8 A—")
-      } else {
-        charsInObject += 1
-        println("—S8 B—")
-      }
-    } else if (insideObject) {
-      isStartOfEscapeSequence = false
-      pos += 1
-      charsInObject += 1
-      println("—S9—")
-    } else if (!isWhitespace(input) && !inNakedExpression && outsideObject && !inStringExpression && !pastExpression) {
-      inNakedExpression = true
-      charsInObject += 1
-      pos += 1
-      println("—S10—")
-    } else if (!isWhitespace(input) && inNakedExpression && outsideObject && !inStringExpression && !pastExpression) {
-      pos += 1
-      charsInObject += 1
-      println("—S11—")
-    } else if (isWhitespace(input) && inNakedExpression && outsideObject && !inStringExpression && !pastExpression) {
-      pastExpression = true
-      inNakedExpression = false
-      pos += 1
-      println("—S12—")
-    } else if (isWhitespace(input) && inNakedExpression && outsideObject && !inStringExpression && pastExpression) {
-      /* skip whitespace after naked constant */
-      pos += 1
-      println("—S13—")
-    } else {
-      throw new FramingException(s"Invalid JSON encountered at position [$pos] of [$buffer]")
-    }
-
-    lastInput = input
-  }
-
-  @inline private final def insideObject: Boolean =
-    !outsideObject
-
-  @inline private final def outsideObject: Boolean =
-    (depth == 0)
-
-  @inline private final def outsideObjectOrString: Boolean =
-    (depth == 0) && (!inStringExpression) && (!isStartOfEscapeSequence)
 }
