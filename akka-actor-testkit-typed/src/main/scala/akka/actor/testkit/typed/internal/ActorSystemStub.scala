@@ -10,7 +10,7 @@ import akka.actor.typed.internal.ActorRefImpl
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Dispatchers, Extension, ExtensionId, Logger, Props, Settings, Terminated }
 import akka.annotation.InternalApi
 import akka.util.Timeout
-import akka.{ actor ⇒ untyped }
+import akka.{ actor ⇒ untyped, Done }
 import com.typesafe.config.ConfigFactory
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
@@ -62,8 +62,9 @@ import akka.actor.typed.internal.InternalRecipientRef
     terminationPromise.trySuccess(Terminated(this))
     terminationPromise.future
   }
-  override def whenTerminated: Future[akka.actor.typed.Terminated] = terminationPromise.future
-  override def getWhenTerminated: CompletionStage[Terminated] = FutureConverters.toJava(whenTerminated)
+  private val cachedWhenTerminatedFuture = terminationPromise.future.map(_ ⇒ Done)
+  override def whenTerminated: Future[Done] = cachedWhenTerminatedFuture
+  override def getWhenTerminated: CompletionStage[Done] = FutureConverters.toJava(whenTerminated)
   override val startTime: Long = System.currentTimeMillis()
   override def uptime: Long = System.currentTimeMillis() - startTime
   override def threadFactory: java.util.concurrent.ThreadFactory = new ThreadFactory {

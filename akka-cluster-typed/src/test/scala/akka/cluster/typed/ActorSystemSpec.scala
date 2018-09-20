@@ -29,11 +29,11 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
   case class Probe(msg: String, replyTo: ActorRef[String])
 
-  def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true)(block: ActorSystem[T] ⇒ Unit): Terminated = {
+  def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true)(block: ActorSystem[T] ⇒ Unit): Unit = {
     val sys = system(behavior, s"$suite-$name")
     try {
       block(sys)
-      if (doTerminate) sys.terminate().futureValue else sys.whenTerminated.futureValue
+      if (doTerminate) sys.terminate().futureValue
     } catch {
       case NonFatal(ex) ⇒
         sys.terminate()
@@ -43,7 +43,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
   "An ActorSystem" must {
     "start the guardian actor and terminate when it terminates" in {
-      val t = withSystem(
+      withSystem(
         "a",
         Behaviors.receive[Probe] { case (_, p) ⇒ p.replyTo ! p.msg; Behaviors.stopped }, doTerminate = false) { sys ⇒
           val inbox = TestInbox[String]("a")
@@ -52,10 +52,8 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
             inbox.hasMessages should ===(true)
           }
           inbox.receiveAll() should ===("hello" :: Nil)
+          sys.whenTerminated.futureValue
         }
-      val p = t.ref.path
-      p.name should ===("/")
-      p.address.system should ===(suite + "-a")
     }
 
     // see issue #24172

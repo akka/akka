@@ -4,7 +4,7 @@
 
 package akka.actor.typed
 
-import akka.{ actor ⇒ untyped }
+import akka.{ actor ⇒ untyped, Done }
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.ThreadFactory
 
@@ -113,13 +113,13 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
    * Returns a Future which will be completed after the ActorSystem has been terminated
    * and termination hooks have been executed.
    */
-  def whenTerminated: Future[Terminated]
+  def whenTerminated: Future[Done]
 
   /**
    * Returns a CompletionStage which will be completed after the ActorSystem has been terminated
    * and termination hooks have been executed.
    */
-  def getWhenTerminated: CompletionStage[Terminated]
+  def getWhenTerminated: CompletionStage[Done]
 
   /**
    * The deadLetter address is a destination that will accept (and discard)

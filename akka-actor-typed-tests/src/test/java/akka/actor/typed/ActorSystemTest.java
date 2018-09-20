@@ -5,6 +5,7 @@
 /** Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com> */
 package akka.actor.typed;
 
+import akka.Done;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
@@ -19,7 +20,7 @@ public class ActorSystemTest extends JUnitSuite {
   public void testGetWhenTerminated() throws Exception {
     final ActorSystem system = ActorSystem.create(Behavior.empty(), "GetWhenTerminatedSystem");
     system.terminate();
-    final CompletionStage<Terminated> cs = system.getWhenTerminated();
+    final CompletionStage<Done> cs = system.getWhenTerminated();
     cs.toCompletableFuture().get(2, SECONDS);
   }
 
