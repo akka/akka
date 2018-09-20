@@ -5,8 +5,10 @@
 package akka.persistence.typed.javadsl;
 
 import akka.actor.Scheduler;
+import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.EventAdapter;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.persistence.typed.SideEffect;
@@ -266,13 +268,24 @@ public class PersistentActorCompileOnlyTest {
         .thenAccept(sender::tell);
     }
 
+    // #actor-context
+    public Behavior<Command> behavior(String persistenceId) {
+      return Behaviors.setup(ctx -> new MyPersistentBehavior(persistenceId, ctx));
+    }
+
+    // #actor-context
+
+    // #actor-context
     class MyPersistentBehavior extends PersistentBehavior<Command, Event, RecoveryComplete.EventsInFlight> {
+
+      // this makes the context available to the command handler etc.
       private final ActorContext<Command> ctx;
 
       public MyPersistentBehavior(String persistenceId, ActorContext<Command> ctx) {
         super(persistenceId);
         this.ctx = ctx;
       }
+      // #actor-context
 
       @Override
       public EventsInFlight emptyState() {
@@ -307,4 +320,5 @@ public class PersistentActorCompileOnlyTest {
       }
     }
   }
+
 }

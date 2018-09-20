@@ -50,8 +50,7 @@ Next we'll discuss each of these in detail.
 
 ### Command handler
 
-The command handler is a function with @java[2 parameters for]@scala[3 parameters for the `ActorContext`,]
-current `State` and `Command`.
+The command handler is a function with 2 parameters, the current `State` and the incoming `Command`.
 
 A command handler returns an `Effect` directive that defines what event or events, if any, to persist. 
 Effects are created using @java[a factory that is returned via the `Effect()` method] @scala[the `Effect` factory]
@@ -127,7 +126,18 @@ Java
 
 The `PersistentBehavior` can then be run as with any plain typed actor as described in [typed actors documentation](actors-typed.md).
 
-@java[The `ActorContext` can be obtained with `Behaviors.setup` and be passed as a constructor parameter.]
+
+## Accessing the ActorContext
+
+If the persistent behavior needs to use the `ActorContext`, for example to spawn child actors, it can be obtained by 
+wrapping construction with `Behaviors.setup`:
+
+Scala
+:  @@snip [PersistentActorCompileOnyTest.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #actor-context }
+
+Java
+:  @@snip [PersistentActorCompileOnyTest.java](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #actor-context }
+
 
 
 ## Larger example
