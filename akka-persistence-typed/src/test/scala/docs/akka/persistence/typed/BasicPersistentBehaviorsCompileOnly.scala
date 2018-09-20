@@ -23,7 +23,7 @@ object BasicPersistentBehaviorsCompileOnly {
       persistenceId = "abc",
       emptyState = State(),
       commandHandler =
-        (ctx, state, cmd) ⇒
+        (state, cmd) ⇒
           throw new RuntimeException("TODO: process the command & return an Effect"),
       eventHandler =
         (state, evt) ⇒
@@ -40,7 +40,7 @@ object BasicPersistentBehaviorsCompileOnly {
       persistenceId = "abc",
       emptyState = State(),
       commandHandler =
-        (ctx, state, cmd) ⇒
+        (state, cmd) ⇒
           throw new RuntimeException("TODO: process the command & return an Effect"),
       eventHandler =
         (state, evt) ⇒
@@ -56,7 +56,7 @@ object BasicPersistentBehaviorsCompileOnly {
       persistenceId = "abc",
       emptyState = State(),
       commandHandler =
-        (ctx, state, cmd) ⇒
+        (state, cmd) ⇒
           throw new RuntimeException("TODO: process the command & return an Effect"),
       eventHandler =
         (state, evt) ⇒
@@ -69,7 +69,7 @@ object BasicPersistentBehaviorsCompileOnly {
     persistenceId = "abc",
     emptyState = State(),
     commandHandler =
-      (ctx, state, cmd) ⇒
+      (state, cmd) ⇒
         throw new RuntimeException("TODO: process the command & return an Effect"),
     eventHandler =
       (state, evt) ⇒

@@ -8,7 +8,6 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.persistence.typed.SideEffect
 
@@ -108,33 +107,35 @@ object PersistentActorCompileOnlyTest {
         .foreach(sender ! _)
     }
 
-    PersistentBehaviors.receive[Command, Event, EventsInFlight](
-      persistenceId = "recovery-complete-id",
+    val behavior: Behavior[Command] = Behaviors.setup(ctx ⇒
+      PersistentBehaviors.receive[Command, Event, EventsInFlight](
+        persistenceId = "recovery-complete-id",
 
-      emptyState = EventsInFlight(0, Map.empty),
+        emptyState = EventsInFlight(0, Map.empty),
 
-      commandHandler = (ctx: ActorContext[Command], state, cmd) ⇒ cmd match {
-        case DoSideEffect(data) ⇒
-          Effect.persist(IntentRecorded(state.nextCorrelationId, data)).thenRun { _ ⇒
-            performSideEffect(ctx.self, state.nextCorrelationId, data)
-          }
-        case AcknowledgeSideEffect(correlationId) ⇒
-          Effect.persist(SideEffectAcknowledged(correlationId))
-      },
+        commandHandler = (state, cmd) ⇒ cmd match {
+          case DoSideEffect(data) ⇒
+            Effect.persist(IntentRecorded(state.nextCorrelationId, data)).thenRun { _ ⇒
+              performSideEffect(ctx.self, state.nextCorrelationId, data)
+            }
+          case AcknowledgeSideEffect(correlationId) ⇒
+            Effect.persist(SideEffectAcknowledged(correlationId))
+        },
 
-      eventHandler = (state, evt) ⇒ evt match {
-        case IntentRecorded(correlationId, data) ⇒
-          EventsInFlight(
-            nextCorrelationId = correlationId + 1,
-            dataByCorrelationId = state.dataByCorrelationId + (correlationId → data))
-        case SideEffectAcknowledged(correlationId) ⇒
-          state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
-      }).onRecoveryCompleted {
-        case (ctx, state) ⇒
-          state.dataByCorrelationId.foreach {
-            case (correlationId, data) ⇒ performSideEffect(ctx.self, correlationId, data)
-          }
-      }
+        eventHandler = (state, evt) ⇒ evt match {
+          case IntentRecorded(correlationId, data) ⇒
+            EventsInFlight(
+              nextCorrelationId = correlationId + 1,
+              dataByCorrelationId = state.dataByCorrelationId + (correlationId → data))
+          case SideEffectAcknowledged(correlationId) ⇒
+            state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
+        }).onRecoveryCompleted {
+          case (ctx, state) ⇒
+            state.dataByCorrelationId.foreach {
+              case (correlationId, data) ⇒ performSideEffect(ctx.self, correlationId, data)
+            }
+        }
+    )
 
   }
 
@@ -218,23 +219,26 @@ object PersistentActorCompileOnlyTest {
 
     def worker(task: Task): Behavior[Nothing] = ???
 
-    PersistentBehaviors.receive[Command, Event, State](
-      persistenceId = "asdf",
-      emptyState = State(Nil),
-      commandHandler = (ctx, _, cmd) ⇒ cmd match {
-        case RegisterTask(task) ⇒
-          Effect.persist(TaskRegistered(task))
-            .thenRun { _ ⇒
-              val child = ctx.spawn[Nothing](worker(task), task)
-              // This assumes *any* termination of the child may trigger a `TaskDone`:
-              ctx.watchWith(child, TaskDone(task))
-            }
-        case TaskDone(task) ⇒ Effect.persist(TaskRemoved(task))
-      },
-      eventHandler = (state, evt) ⇒ evt match {
-        case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
-        case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
-      })
+    val behavior: Behavior[Command] = Behaviors.setup(ctx ⇒
+      PersistentBehaviors.receive[Command, Event, State](
+        persistenceId = "asdf",
+        emptyState = State(Nil),
+        commandHandler = (_, cmd) ⇒ cmd match {
+          case RegisterTask(task) ⇒
+            Effect.persist(TaskRegistered(task))
+              .thenRun { _ ⇒
+                val child = ctx.spawn[Nothing](worker(task), task)
+                // This assumes *any* termination of the child may trigger a `TaskDone`:
+                ctx.watchWith(child, TaskDone(task))
+              }
+          case TaskDone(task) ⇒ Effect.persist(TaskRemoved(task))
+        },
+        eventHandler = (state, evt) ⇒ evt match {
+          case TaskRegistered(task) ⇒ State(task :: state.tasksInFlight)
+          case TaskRemoved(task)    ⇒ State(state.tasksInFlight.filter(_ != task))
+        })
+    )
+
   }
 
   object Rehydrating {
@@ -269,9 +273,7 @@ object PersistentActorCompileOnlyTest {
 
     def isFullyHydrated(basket: Basket, ids: List[Id]) = basket.items.map(_.id) == ids
 
-    Behaviors.setup { ctx: ActorContext[Command] ⇒
-      // FIXME this doesn't work, wrapping not supported
-
+    val behavior: Behavior[Command] = Behaviors.setup { ctx ⇒
       var basket = Basket(Nil)
       var stash: Seq[Command] = Nil
       val adapt = ctx.messageAdapter((m: MetaData) ⇒ GotMetaData(m))
@@ -286,7 +288,7 @@ object PersistentActorCompileOnlyTest {
         emptyState = Nil,
         commandHandler =
           CommandHandler.byState(state ⇒
-            if (isFullyHydrated(basket, state)) (ctx, state, cmd) ⇒
+            if (isFullyHydrated(basket, state)) (state, cmd) ⇒
               cmd match {
                 case AddItem(id)    ⇒ addItem(id, ctx.self)
                 case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
@@ -297,7 +299,7 @@ object PersistentActorCompileOnlyTest {
                   sender ! basket.items.map(_.price).sum
                   Effect.none
               }
-            else (ctx, state, cmd) ⇒
+            else (state, cmd) ⇒
               cmd match {
                 case AddItem(id)    ⇒ addItem(id, ctx.self)
                 case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
@@ -350,7 +352,7 @@ object PersistentActorCompileOnlyTest {
       .andThen(commonChainedEffects) // add on common chained effect
     //#commonChainedEffects
 
-    val commandHandler: CommandHandler[Command, Event, Mood] = { (_, state, cmd) ⇒
+    val commandHandler: CommandHandler[Command, Event, Mood] = { (state, cmd) ⇒
       cmd match {
         case Greet(whom) ⇒
           println(s"Hi there, I'm $state!")

@@ -52,7 +52,7 @@ object AccountExample2 {
     }
 
   private val openedAccountHandler: CommandHandler[AccountCommand, AccountEvent, Account] = {
-    case (ctx, acc: OpenedAccount, cmd) ⇒ cmd match {
+    case (acc: OpenedAccount, cmd) ⇒ cmd match {
       case Deposit(amount) ⇒ Effect.persist(Deposited(amount))
 
       case Withdraw(amount) ⇒
