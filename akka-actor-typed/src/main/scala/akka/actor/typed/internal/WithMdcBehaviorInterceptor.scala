@@ -38,7 +38,7 @@ import scala.collection.immutable.HashMap
 
   import BehaviorInterceptor._
 
-  override def preStart(ctx: ActorContext[T], target: PreStartTarget[T]): Behavior[T] = {
+  override def aroundStart(ctx: ActorContext[T], target: PreStartTarget[T]): Behavior[T] = {
     // when declaring we expect the outermost to win
     // for example with
     // val behavior = ...

@@ -389,8 +389,9 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
     "stop when restart limit is hit" in {
       val probe = TestProbe[Event]("evt")
+      val resetTimeout = 500.millis
       val behv = Behaviors.supervise(targetBehavior(probe.ref))
-        .onFailure[Exc1](SupervisorStrategy.restartWithLimit(2, 1.minute))
+        .onFailure[Exc1](SupervisorStrategy.restartWithLimit(2, resetTimeout))
       val ref = spawn(behv)
       ref ! IncrementState
       ref ! GetState
@@ -406,6 +407,31 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       }
       ref ! GetState
       probe.expectNoMessage()
+    }
+
+    "reset fixed limit after timeout" in {
+      val probe = TestProbe[Event]("evt")
+      val resetTimeout = 500.millis
+      val behv = Behaviors.supervise(targetBehavior(probe.ref))
+        .onFailure[Exc1](SupervisorStrategy.restartWithLimit(2, resetTimeout))
+      val ref = spawn(behv)
+      ref ! IncrementState
+      ref ! GetState
+      probe.expectMessage(State(1, Map.empty))
+
+      EventFilter[Exc2](occurrences = 3).intercept {
+        ref ! Throw(new Exc2)
+        probe.expectMessage(GotSignal(PreRestart))
+        ref ! Throw(new Exc2)
+        probe.expectMessage(GotSignal(PreRestart))
+
+        probe.expectNoMessage(resetTimeout + 50.millis)
+
+        ref ! Throw(new Exc2)
+        probe.expectMessage(GotSignal(PreRestart))
+      }
+      ref ! GetState
+      probe.expectMessage(State(0, Map.empty))
     }
 
     "NOT stop children when restarting" in {

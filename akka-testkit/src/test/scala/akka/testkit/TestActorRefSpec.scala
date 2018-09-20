@@ -170,7 +170,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     "stop when sent a poison pill" in {
       EventFilter[ActorKilledException]() intercept {
         val a = TestActorRef(Props[WorkerActor])
-        val forwarder = system.actorOf(Props(new Actor {
+        system.actorOf(Props(new Actor {
           context.watch(a)
           def receive = {
             case t: Terminated ⇒ testActor forward WrappedTerminated(t)
