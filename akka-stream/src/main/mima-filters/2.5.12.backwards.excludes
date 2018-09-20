@@ -1,7 +1,7 @@
 # +str add in-line inspect operator for side effecting #24610
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.wireTap")
 
-# #24758 recreate already closed substreams 
+# #24758 recreate already closed substreams
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GroupBy.this")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.groupBy")
 
@@ -14,7 +14,3 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConne
 
 # #24891 add return type for FlowMonitorState.finished
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.FlowMonitorState.finished")
-
-# #24812 fix signature of monitor()
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.monitorMat")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.monitor")
