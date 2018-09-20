@@ -185,7 +185,8 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
         if (down) {
           // abrupt termination
-          Await.ready(system2.terminate(), 10.seconds)
+          system2.terminate()
+          Await.ready(system2.whenTerminated, 10.seconds)
           clusterNode1.manager ! Down(clusterNode2.selfMember.address)
         } else {
           clusterNode1.manager ! Leave(clusterNode2.selfMember.address)
@@ -295,7 +296,8 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         regProbe1.expectMessage(Pong)
 
         // abrupt termination
-        Await.ready(system2.terminate(), 10.seconds)
+        system2.terminate()
+        Await.ready(system2.whenTerminated, 10.seconds)
         clusterNode1.manager ! Down(clusterNode2.selfMember.address)
 
         regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
@@ -337,7 +339,8 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
         // abrupt termination but then a node with the same host:port comes online quickly
         system1.log.debug("Terminating system2: [{}]", clusterNode2.selfMember.uniqueAddress)
-        Await.ready(system2.terminate(), 10.seconds)
+        system2.terminate()
+        Await.ready(system2.whenTerminated, 10.seconds)
 
         val testKit3 = ActorTestKit(
           system1.name,
@@ -447,7 +450,8 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
         // abrupt termination but then a node with the same host:port comes online quickly
         system1.log.debug("Terminating system2: [{}]", clusterNode2.selfMember.uniqueAddress)
-        Await.ready(system2.terminate(), 10.seconds)
+        system2.terminate()
+        Await.ready(system2.whenTerminated, 10.seconds)
 
         val testKit3 = ActorTestKit(
           system1.name,
