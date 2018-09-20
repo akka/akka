@@ -71,8 +71,10 @@ class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually 
         val cluster1 = Cluster(system1)
         val cluster2 = Cluster(system2)
       } finally {
-        system1.terminate().futureValue
-        system2.terminate().futureValue
+        system1.terminate()
+        system1.whenTerminated.futureValue
+        system2.terminate()
+        system2.whenTerminated.futureValue
       }
 
     }
@@ -139,8 +141,10 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
           cluster2.isTerminated shouldEqual true
         }
       } finally {
-        system.terminate().futureValue
-        system2.terminate().futureValue
+        system.terminate()
+        system.whenTerminated.futureValue
+        system2.terminate()
+        system2.whenTerminated.futureValue
       }
     }
 
@@ -220,9 +224,12 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
         system3.whenTerminated.futureValue
 
       } finally {
-        system1.terminate().futureValue
-        system2.terminate().futureValue
-        system3.terminate().futureValue
+        system1.terminate()
+        system1.whenTerminated.futureValue
+        system2.terminate()
+        system2.whenTerminated.futureValue
+        system3.terminate()
+        system3.whenTerminated.futureValue
       }
     }
   }

@@ -44,7 +44,8 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       printer ! PrintMe("not message 2")
       // #fire-and-forget-doit
 
-      system.terminate().futureValue
+      system.terminate()
+      system.whenTerminated.futureValue
     }
 
     "contain a sample for request response" in {
