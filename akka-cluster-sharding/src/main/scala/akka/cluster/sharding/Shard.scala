@@ -226,7 +226,7 @@ private[akka] class Shard(
 
       if (state.entities.nonEmpty) {
         handOffStopper = Some(context.watch(context.actorOf(
-          handOffStopperProps(shardId, replyTo, idByRef.keySet, handOffStopMessage))))
+          handOffStopperProps(shardId, replyTo, idByRef.keySet, handOffStopMessage, settings.tuningParameters.handOffTimeout))))
 
         //During hand off we only care about watching for termination of the hand off stopper
         context become {
