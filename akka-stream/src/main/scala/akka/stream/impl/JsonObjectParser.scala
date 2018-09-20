@@ -413,35 +413,45 @@ import scala.annotation.{switch}
 
   }
 
-  private sealed trait ContainerStackLevel {
-    def current: ParserState
+  private sealed class ContainerStackLevel(_pp: JsonObjectParser, _current: ParserState, _stateAtExit: ParserState,
+                                           _previous: ContainerStackLevel) {
+    var current: ParserState = _current
+    var stateAtExit: ParserState = _stateAtExit
 
-    def next: ParserState
+    var previous: ContainerStackLevel = _previous
+    var next: ContainerStackLevel = _
 
-    def previous: ContainerStackLevel
+    val pp: JsonObjectParser = _pp
 
-    def level: Int
+    def level: Int = previous match {
+      case null => 0
+      case p => 1 + p.level
+    }
 
-    def pp: JsonObjectParser
+    override def toString: String = previous match {
+      case null => s"Root($pp)"
+      case _ => s"Regular(_, ${current}, ${stateAtExit}) → ${previous}"
+    }
   }
 
   private object ContainerStackLevel {
-    final case class Root(pp: JsonObjectParser) extends ContainerStackLevel {
-      def current: ParserState = ParserState.UnknownState
+    def Root(pp: JsonObjectParser): ContainerStackLevel = new ContainerStackLevel(pp, ParserState.UnknownState, ParserState.UnknownState, null)
 
-      def next: ParserState = ParserState.UnknownState
+    def Regular(pp: JsonObjectParser, current: ParserState, stateAtExit: ParserState, previous: ContainerStackLevel): ContainerStackLevel = {
+      /* this slightly ugly routine re-uses ContainerStackLevels in order to avoid allocating during stream processing */
 
-      def previous: ContainerStackLevel = {
-        throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — can't unpack")
+      previous.next match {
+        case null =>
+          val n = new ContainerStackLevel(pp, current, stateAtExit, previous)
+          previous.next = n
+          n
+        case reuse =>
+          reuse.current = current
+          reuse.stateAtExit = stateAtExit
+          reuse.previous = previous
+          // pp.containerStack.next = reuse
+          reuse
       }
-      def level: Int = 0
-    }
-
-    final case class Regular(pp: JsonObjectParser, current: ParserState, next: ParserState, previous: ContainerStackLevel) extends ContainerStackLevel {
-
-      def level: Int = 1 + previous.level
-
-      override def toString: String = s"Regular(_, ${current}, ${next}) → ${previous}"
     }
   }
 }
@@ -476,7 +486,7 @@ import scala.annotation.{switch}
   }
 
   private def leaveContainer(): ParserState = {
-    val nextState = containerStack.next
+    val nextState = containerStack.stateAtExit
     containerStack = containerStack.previous
     nextState
   }
