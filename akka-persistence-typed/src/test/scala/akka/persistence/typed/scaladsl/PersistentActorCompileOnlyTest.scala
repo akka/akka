@@ -432,4 +432,31 @@ object PersistentActorCompileOnlyTest {
 
   }
 
+
+  object WithContext {
+    sealed trait Command
+    sealed trait Event
+    class State
+
+    // #actor-context
+    val behavior: Behavior[String] =
+      Behaviors.setup { ctx =>
+        PersistentBehaviors.receive[String, String, State](
+          persistenceId = "myPersistenceId",
+          emptyState = new State,
+          commandHandler = CommandHandler.command {
+            cmd ⇒
+              ctx.log.info("Got command {}", cmd)
+              Effect.persist(cmd).thenRun { state =>
+                ctx.log.info("event persisted, new state {}", state)
+              }
+          },
+          eventHandler = {
+            case (state, _) ⇒ state
+          })
+      }
+    // #actor-context
+
+  }
+
 }
