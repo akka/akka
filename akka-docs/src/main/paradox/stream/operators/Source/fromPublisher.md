@@ -12,3 +12,6 @@ Integration with Reactive Streams, subscribes to a `org.reactivestreams.Publishe
 
 @@@
 
+## Description
+
+TODO: We would welcome help on contributing descriptions and examples, see: https://github.com/akka/akka/issues/25646

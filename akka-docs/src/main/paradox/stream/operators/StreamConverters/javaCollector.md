@@ -14,9 +14,4 @@ Create a sink which materializes into a @scala[`Future`] @java[`CompletionStage`
 
 ## Description
 
-
-
-@@@div { .callout }
-
-@@@
-
+TODO: We would welcome help on contributing descriptions and examples, see: https://github.com/akka/akka/issues/25646
