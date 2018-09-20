@@ -935,4 +935,87 @@ class JsonFramingSpec extends AkkaSpec {
 
     }
   }
+
+  "running tests used for benchmarking" should {
+    "work fine with a single object" in {
+      val json =
+        ByteString(
+          """{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false}"""
+        )
+
+      val bracket = new JsonObjectParser
+      bracket.offer(json)
+      bracket.poll() shouldNot be(empty)
+      bracket.poll() should be(empty)
+    }
+
+    "work fine when finding contiguous objects (without a separator)" in {
+      val json =
+        ByteString(
+          """{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false}"""
+        )
+
+      val bracket = new JsonObjectParser
+      bracket.offer(json)
+      // notice that json lacks a "," or "\n" at the end — so technically we have two contiguous objects.
+      // This is not well-formed JSON but is to be accepted practice
+      bracket.offer(json)
+      bracket.poll() shouldNot be(empty)
+      bracket.poll() shouldNot be(empty)
+      bracket.poll() should be(empty)
+    }
+
+    "work fine with five objects" in {
+      val json5 =
+        ByteString(
+          """|{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false},
+             |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
+             |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
+             |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
+             |{"fname":"Hank","name":"Smith","age":42,"id":1337,"boardMember":false}""".stripMargin
+        )
+      val bracket = new JsonObjectParser
+      bracket.offer(json5)
+      bracket.poll() shouldNot be(empty)
+      bracket.poll() shouldNot be(empty)
+      bracket.poll() shouldNot be(empty)
+      bracket.poll() shouldNot be(empty)
+      bracket.poll() shouldNot be(empty)
+      bracket.poll() should be(empty)
+    }
+
+    "work fine with twice five objects" in {
+      val json5 =
+        ByteString(
+          """|{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false},
+             |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
+             |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
+             |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
+             |{"fname":"Hank","name":"Smith","age":42,"id":1337,"boardMember":false}""".stripMargin
+        ) // note the lack of terminating ,
+
+      val bracket = new JsonObjectParser
+      bracket.offer(json5)
+      // no comma between the two lots
+      bracket.offer(json5)
+
+      for (i ← 0 until 10) {
+        bracket.poll() shouldNot be(empty)
+      }
+      bracket.poll() should be(empty)
+    }
+
+    "work fine with a mammooth json" in {
+      val jsonLong =
+        ByteString(
+          s"""{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false,"description":"${"a" * 1000000}"}"""
+        )
+
+      val bracket = new JsonObjectParser
+      bracket.offer(jsonLong)
+      bracket.poll() shouldNot be(empty)
+      bracket.poll() should be(empty)
+    }
+  }
 }
+
