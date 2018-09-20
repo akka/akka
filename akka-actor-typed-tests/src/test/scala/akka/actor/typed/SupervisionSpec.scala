@@ -820,7 +820,6 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
       actor ! "give me stacktrace"
       val stacktrace = probe.expectMessageType[Vector[StackTraceElement]]
-      stacktrace.foreach(println)
       stacktrace.count(_.toString.startsWith("akka.actor.typed.internal.SimpleSupervisor.aroundReceive")) should ===(2)
     }
 

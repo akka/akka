@@ -37,7 +37,7 @@ import scala.util.control.NonFatal
   }
 }
 
-abstract class AbstractSupervisor[O, I, Thr <: Throwable](ss: SupervisorStrategy)(implicit ev: ClassTag[Thr]) extends BehaviorInterceptor[O, I] {
+private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: SupervisorStrategy)(implicit ev: ClassTag[Thr]) extends BehaviorInterceptor[O, I] {
 
   private val throwableClass = implicitly[ClassTag[Thr]].runtimeClass
 
@@ -61,7 +61,7 @@ abstract class AbstractSupervisor[O, I, Thr <: Throwable](ss: SupervisorStrategy
   }
 
   def log(ctx: ActorContext[_], t: Throwable): Unit = {
-    if (ss.loggingEnabled) {
+    if (strategy.loggingEnabled) {
       ctx.asScala.log.error(t, "Supervisor [{}] saw failure: {}", this, t.getMessage)
     }
   }
@@ -74,7 +74,7 @@ abstract class AbstractSupervisor[O, I, Thr <: Throwable](ss: SupervisorStrategy
 /**
  * For cases where O == I for BehaviorInterceptor.
  */
-abstract class SimpleSupervisor[T, Thr <: Throwable: ClassTag](ss: SupervisorStrategy) extends AbstractSupervisor[T, T, Thr](ss) {
+private abstract class SimpleSupervisor[T, Thr <: Throwable: ClassTag](ss: SupervisorStrategy) extends AbstractSupervisor[T, T, Thr](ss) {
 
   override def aroundReceive(ctx: ActorContext[T], msg: T, target: BehaviorInterceptor.ReceiveTarget[T]): Behavior[T] = {
     try {
@@ -96,7 +96,7 @@ abstract class SimpleSupervisor[T, Thr <: Throwable: ClassTag](ss: SupervisorStr
     handleException(ctx)
 }
 
-class StopSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], strategy: Stop) extends SimpleSupervisor[T, Thr](strategy) {
+private class StopSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], strategy: Stop) extends SimpleSupervisor[T, Thr](strategy) {
   override def handleException(ctx: ActorContext[T]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       log(ctx, t)
@@ -104,7 +104,7 @@ class StopSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], strate
   }
 }
 
-class ResumeSupervisor[T, Thr <: Throwable: ClassTag](ss: Resume) extends SimpleSupervisor[T, Thr](ss) {
+private class ResumeSupervisor[T, Thr <: Throwable: ClassTag](ss: Resume) extends SimpleSupervisor[T, Thr](ss) {
   override protected def handleException(ctx: ActorContext[T]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       log(ctx, t)
@@ -112,10 +112,10 @@ class ResumeSupervisor[T, Thr <: Throwable: ClassTag](ss: Resume) extends Simple
   }
 }
 
-class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strategy: Restart)(implicit ev: ClassTag[Thr]) extends SimpleSupervisor[T, Thr](strategy) {
+private class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strategy: Restart)(implicit ev: ClassTag[Thr]) extends SimpleSupervisor[T, Thr](strategy) {
 
-  var restarts = 0
-  var deadline: OptionVal[Deadline] = OptionVal.None
+  private var restarts = 0
+  private var deadline: OptionVal[Deadline] = OptionVal.None
 
   private def deadlineHasTimeLeft: Boolean = deadline match {
     case OptionVal.None    ⇒ true
@@ -147,7 +147,6 @@ class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strategy: Res
 
   private def handleException(ctx: ActorContext[T], signalRestart: () ⇒ Unit): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
-      println(s"ex: $t. $restarts $deadlineHasTimeLeft $strategy")
       if (strategy.maxNrOfRetries != -1 && restarts >= strategy.maxNrOfRetries && deadlineHasTimeLeft) {
         throw t
       } else {
@@ -170,7 +169,7 @@ class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strategy: Res
   }
 }
 
-class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], b: Backoff) extends AbstractSupervisor[AnyRef, T, Thr](b) {
+private class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], b: Backoff) extends AbstractSupervisor[AnyRef, T, Thr](b) {
 
   import BackoffSupervisor._
 
@@ -205,9 +204,7 @@ class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], b: 
               Behaviors.empty
           }
         case ResetRestartCount(current) ⇒
-          println("Reset restart count: " + current)
           if (current == restartCount) {
-            println("Resetting")
             restartCount = 0
           }
           Behavior.same
@@ -259,10 +256,7 @@ class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior[T], b: 
 
 }
 
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] object BackoffSupervisor {
+private object BackoffSupervisor {
   /**
    * Calculates an exponential back off delay.
    */
