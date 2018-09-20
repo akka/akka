@@ -3212,7 +3212,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   /**
    * Materializes to `Pair<Mat, FlowMonitor<<Out>>`, which is unlike most other operators (!),
    * in which usually the default materialized value keeping semantics is to keep the left value
-   * (by passing `Keep.left()` to a `*Mat` version of a method). In this operator is an exception from
+   * (by passing `Keep.left()` to a `*Mat` version of a method). This operator is an exception from
    * that rule and keeps both values since dropping its sole purpose is to introduce that materialized value.
    *
    * The `FlowMonitor` allows monitoring of the current flow. All events are propagated

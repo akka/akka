@@ -6,8 +6,7 @@ package akka.stream.javadsl
 
 import akka.NotUsed
 import akka.event.LoggingAdapter
-import akka.japi.function
-import akka.japi.Util
+import akka.japi.{ Pair, Util, function }
 import akka.stream._
 import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._

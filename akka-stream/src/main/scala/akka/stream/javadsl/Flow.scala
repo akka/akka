@@ -3012,15 +3012,15 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   /**
    * Materializes to `Pair<Mat, FlowMonitor<<Out>>`, which is unlike most other operators (!),
    * in which usually the default materialized value keeping semantics is to keep the left value
-   * (by passing `Keep.left()` to a `*Mat` version of a method). In this operator is an exception from
+   * (by passing `Keep.left()` to a `*Mat` version of a method). This operator is an exception from
    * that rule and keeps both values since dropping its sole purpose is to introduce that materialized value.
    *
    * The `FlowMonitor[Out]` allows monitoring of the current flow. All events are propagated
    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
    * event, and may therefor affect performance.
    */
-  def monitor(): Flow[In, Out, FlowMonitor[Out]] =
-    monitorMat(Keep.right)
+  def monitor(): Flow[In, Out, Pair[Mat, FlowMonitor[Out]]] =
+    monitorMat(Keep.both)
 
   /**
    * Delays the initial element by the specified duration.
