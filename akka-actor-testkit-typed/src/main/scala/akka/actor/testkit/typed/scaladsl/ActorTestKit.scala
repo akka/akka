@@ -6,14 +6,13 @@ package akka.actor.testkit.typed.scaladsl
 
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
-import akka.annotation.ApiMayChange
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.actor.testkit.typed.TestKitSettings
-
 import akka.actor.testkit.typed.internal.{ ActorTestKitGuardian, TestKitUtils }
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import akka.actor.Scheduler
 import akka.util.Timeout
 

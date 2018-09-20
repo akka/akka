@@ -5,7 +5,6 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.actor.typed.SupervisorStrategy.{ Backoff, Restart, Resume, Stop }
 import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.actor.typed.internal._
 
@@ -16,9 +15,6 @@ import scala.reflect.ClassTag
  */
 @ApiMayChange
 object Behaviors {
-
-  private val _unitFunction = (_: ActorContext[Any], _: Any) ⇒ ()
-  private def unitFunction[T] = _unitFunction.asInstanceOf[((ActorContext[T], Signal) ⇒ Unit)]
 
   /**
    * `setup` is a factory for a behavior. Creation of the behavior instance is deferred until
@@ -188,22 +184,12 @@ object Behaviors {
 
   private final val NothingClassTag = ClassTag(classOf[Nothing])
   private final val ThrowableClassTag = ClassTag(classOf[Throwable])
-
   final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
     /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
     def onFailure[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy): Behavior[T] = {
       val tag = implicitly[ClassTag[Thr]]
       val effectiveTag = if (tag == NothingClassTag) ThrowableClassTag else tag
-      strategy match {
-        case r: Resume ⇒
-          Behaviors.intercept[T, T](new ResumeSupervisor(r)(effectiveTag))(wrapped)
-        case r: Restart ⇒
-          Behaviors.intercept[T, T](new RestartSupervisor(wrapped, r)(effectiveTag))(wrapped)
-        case r: Stop ⇒
-          Behaviors.intercept[T, T](new StopSupervisor(wrapped, r)(effectiveTag))(wrapped)
-        case r: Backoff ⇒
-          Behaviors.intercept[AnyRef, T](new BackoffSupervisor(wrapped, r)(effectiveTag))(wrapped).asInstanceOf[Behavior[T]]
-      }
+      Supervisor(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag)
     }
   }
 

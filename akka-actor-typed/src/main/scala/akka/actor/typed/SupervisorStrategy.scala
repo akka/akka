@@ -158,6 +158,8 @@ object SupervisorStrategy {
 
     override def withLoggingEnabled(enabled: Boolean): SupervisorStrategy =
       copy(loggingEnabled = enabled)
+
+    def unlimitedRestarts(): Boolean = maxNrOfRetries == -1
   }
 
   /**
