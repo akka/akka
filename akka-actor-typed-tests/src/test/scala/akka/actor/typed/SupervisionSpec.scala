@@ -685,7 +685,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     ) {
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
-        EventFilter[TE](occurrences = 2).intercept {
+        EventFilter[TE](occurrences = 1).intercept {
           spawn(behv)
 
           // restarted 2 times before it gave up

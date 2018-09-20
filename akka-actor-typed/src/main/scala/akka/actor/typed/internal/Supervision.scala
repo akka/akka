@@ -38,8 +38,8 @@ import scala.util.control.NonFatal
 }
 
 /**
-  * INTERNAL API
-  */
+ * INTERNAL API
+ */
 @InternalApi
 private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: SupervisorStrategy)(implicit ev: ClassTag[Thr]) extends BehaviorInterceptor[O, I] {
 
@@ -132,10 +132,11 @@ private class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strat
     } catch {
       case NonFatal(t: Thr) ⇒
         // if unlimited restarts then don't restart if starting fails as it would likely be an infinite restart loop
-        log(ctx, t)
         if (strategy.unlimitedRestarts() || ((restarts + 1) >= strategy.maxNrOfRetries && deadlineHasTimeLeft)) {
+          // don't log here as it'll be logged as ActorInitializationException
           throw t
         } else {
+          log(ctx, t)
           restart(ctx, t)
           aroundStart(ctx, target)
         }
