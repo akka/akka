@@ -177,8 +177,8 @@ Java
 
 @java[The commandler handler to process each command is decided by the state class (or state predicate) that is
 given to the `commandHandlerBuilder` and the match cases in the builders. Several builders can be composed with `orElse`:]
-@scala[The command handler to process each command is decided by a `CommandHandler.byState` command handler,
-which is a function from `State => CommandHandler`:]
+@scala[The command handler to process each command is composed by two levels of command handlers, 
+one which matches on the state and then delegates to the another handler, specific to the state:]
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #by-state-command-handler }

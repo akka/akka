@@ -153,25 +153,26 @@ object PersistentActorCompileOnlyTest {
     val b: Behavior[Command] = PersistentBehaviors.receive[Command, Event, Mood](
       persistenceId = "myPersistenceId",
       emptyState = Happy,
-      commandHandler = CommandHandler.byState {
-        case Happy ⇒ CommandHandler.command {
-          case Greet(whom) ⇒
-            println(s"Super happy to meet you $whom!")
-            Effect.none
-          case MoodSwing ⇒ Effect.persist(MoodChanged(Sad))
-        }
-        case Sad ⇒ CommandHandler.command {
-          case Greet(whom) ⇒
-            println(s"hi $whom")
-            Effect.none
-          case MoodSwing ⇒ Effect.persist(MoodChanged(Happy))
+      commandHandler = { (state, command) ⇒
+        state match {
+          case Happy ⇒ command match {
+            case Greet(whom) ⇒
+              println(s"Super happy to meet you $whom!")
+              Effect.none
+            case MoodSwing ⇒ Effect.persist(MoodChanged(Sad))
+          }
+          case Sad ⇒ command match {
+            case Greet(whom) ⇒
+              println(s"hi $whom")
+              Effect.none
+            case MoodSwing ⇒ Effect.persist(MoodChanged(Happy))
+          }
         }
       },
       eventHandler = {
         case (_, MoodChanged(to)) ⇒ to
       })
 
-    // FIXME this doesn't work, wrapping is not supported
     Behaviors.withTimers((timers: TimerScheduler[Command]) ⇒ {
       timers.startPeriodicTimer("swing", MoodSwing, 10.seconds)
       b
@@ -285,35 +286,34 @@ object PersistentActorCompileOnlyTest {
       PersistentBehaviors.receive[Command, Event, List[Id]](
         persistenceId = "basket-1",
         emptyState = Nil,
-        commandHandler =
-          CommandHandler.byState(state ⇒
-            if (isFullyHydrated(basket, state)) (state, cmd) ⇒
-              cmd match {
-                case AddItem(id)    ⇒ addItem(id, ctx.self)
-                case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
-                case GotMetaData(data) ⇒
-                  basket = basket.updatedWith(data)
-                  Effect.none
-                case GetTotalPrice(sender) ⇒
-                  sender ! basket.items.map(_.price).sum
-                  Effect.none
-              }
-            else (state, cmd) ⇒
-              cmd match {
-                case AddItem(id)    ⇒ addItem(id, ctx.self)
-                case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
-                case GotMetaData(data) ⇒
-                  basket = basket.updatedWith(data)
-                  if (isFullyHydrated(basket, state)) {
-                    stash.foreach(ctx.self ! _)
-                    stash = Nil
-                  }
-                  Effect.none
-                case cmd: GetTotalPrice ⇒
-                  stash :+= cmd
-                  Effect.none
-              }
-          ),
+        commandHandler = { (state, cmd) ⇒
+          if (isFullyHydrated(basket, state))
+            cmd match {
+              case AddItem(id)    ⇒ addItem(id, ctx.self)
+              case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
+              case GotMetaData(data) ⇒
+                basket = basket.updatedWith(data)
+                Effect.none
+              case GetTotalPrice(sender) ⇒
+                sender ! basket.items.map(_.price).sum
+                Effect.none
+            }
+          else
+            cmd match {
+              case AddItem(id)    ⇒ addItem(id, ctx.self)
+              case RemoveItem(id) ⇒ Effect.persist(ItemRemoved(id))
+              case GotMetaData(data) ⇒
+                basket = basket.updatedWith(data)
+                if (isFullyHydrated(basket, state)) {
+                  stash.foreach(ctx.self ! _)
+                  stash = Nil
+                }
+                Effect.none
+              case cmd: GetTotalPrice ⇒
+                stash :+= cmd
+                Effect.none
+            }
+        },
         eventHandler = (state, evt) ⇒ evt match {
           case ItemAdded(id)   ⇒ id +: state
           case ItemRemoved(id) ⇒ state.filter(_ != id)
@@ -432,7 +432,6 @@ object PersistentActorCompileOnlyTest {
 
   }
 
-
   object WithContext {
     sealed trait Command
     sealed trait Event
@@ -440,14 +439,14 @@ object PersistentActorCompileOnlyTest {
 
     // #actor-context
     val behavior: Behavior[String] =
-      Behaviors.setup { ctx =>
+      Behaviors.setup { ctx ⇒
         PersistentBehaviors.receive[String, String, State](
           persistenceId = "myPersistenceId",
           emptyState = new State,
           commandHandler = CommandHandler.command {
             cmd ⇒
               ctx.log.info("Got command {}", cmd)
-              Effect.persist(cmd).thenRun { state =>
+              Effect.persist(cmd).thenRun { state ⇒
                 ctx.log.info("event persisted, new state {}", state)
               }
           },

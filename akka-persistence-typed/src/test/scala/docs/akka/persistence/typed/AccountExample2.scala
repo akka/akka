@@ -80,12 +80,13 @@ object AccountExample2 {
   private val closedHandler: CommandHandler[AccountCommand, AccountEvent, Account] =
     CommandHandler.command(_ ⇒ Effect.unhandled)
 
-  private def commandHandler: CommandHandler[AccountCommand, AccountEvent, Account] =
-    CommandHandler.byState {
-      case EmptyAccount     ⇒ initialHandler
-      case OpenedAccount(_) ⇒ openedAccountHandler
-      case ClosedAccount    ⇒ closedHandler
+  private def commandHandler: CommandHandler[AccountCommand, AccountEvent, Account] = { (state, command) ⇒
+    state match {
+      case EmptyAccount     ⇒ initialHandler(state, command)
+      case OpenedAccount(_) ⇒ openedAccountHandler(state, command)
+      case ClosedAccount    ⇒ closedHandler(state, command)
     }
+  }
 
   private val eventHandler: (Account, AccountEvent) ⇒ Account =
     (state, event) ⇒ state.applyEvent(event)

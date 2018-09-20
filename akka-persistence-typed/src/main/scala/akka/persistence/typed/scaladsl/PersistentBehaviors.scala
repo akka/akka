@@ -52,9 +52,6 @@ object PersistentBehaviors {
    *   (State, Command) ⇒ Effect[Event, State]
    * }}}
    *
-   * Note that you can have different command handlers based on current state by using
-   * [[CommandHandler#byState]].
-   *
    * The [[CommandHandler#command]] is useful for simple commands that don't need the state
    * and context.
    */
@@ -67,14 +64,6 @@ object PersistentBehaviors {
      */
     def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): (State, Command) ⇒ Effect[Event, State] =
       (_, cmd) ⇒ commandHandler(cmd)
-
-    /**
-     * Select different command handlers based on current state.
-     */
-    def byState[Command, Event, State](
-      choice: State ⇒ (State, Command) ⇒ Effect[Event, State]): (State, Command) ⇒ Effect[Event, State] = {
-      new ByStateCommandHandler(choice)
-    }
 
   }
 
