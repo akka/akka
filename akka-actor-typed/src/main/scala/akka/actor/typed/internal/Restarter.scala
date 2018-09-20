@@ -8,9 +8,8 @@ package internal
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.actor.DeadLetterSuppression
-import akka.actor.typed.BehaviorInterceptor.{ ReceiveTarget, SignalTarget }
+import akka.actor.typed.BehaviorInterceptor.SignalTarget
 import akka.actor.typed.SupervisorStrategy._
-import akka.actor.typed.internal.BackoffRestarter.ScheduledRestart
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.util.{ OptionVal, PrettyDuration }
@@ -59,7 +58,7 @@ abstract class AbstractSupervisor[O, I, Thr <: Throwable](ss: SupervisorStrategy
     }
   }
 
-  override def preStart(ctx: ActorContext[O], target: BehaviorInterceptor.PreStartTarget[I]): Behavior[I] = {
+  override def aroundStart(ctx: ActorContext[O], target: BehaviorInterceptor.PreStartTarget[I]): Behavior[I] = {
     try {
       target.start(ctx)
     } catch handleExceptionOnStart(ctx)
@@ -127,36 +126,49 @@ class ResumeSupervisor[T, Thr <: Throwable: ClassTag](ss: Resume) extends Simple
 class RestartSupervisor[T, Thr <: Throwable](initial: Behavior[T], strategy: Restart)(implicit ev: ClassTag[Thr]) extends SimpleSupervisor[T, Thr](strategy) {
 
   var restarts = 0
+  var deadline: OptionVal[Deadline] = OptionVal.None
 
-  override def preStart(ctx: ActorContext[T], target: BehaviorInterceptor.PreStartTarget[T]): Behavior[T] = {
+  private def deadlineHasTimeLeft: Boolean = deadline match {
+    case OptionVal.None    ⇒ true
+    case OptionVal.Some(d) ⇒ d.hasTimeLeft
+  }
+
+  override def aroundStart(ctx: ActorContext[T], target: BehaviorInterceptor.PreStartTarget[T]): Behavior[T] = {
     try {
       target.start(ctx)
     } catch {
       case NonFatal(t: Thr) ⇒
-        log(ctx, t)
-        restarts += 1
         // if unlimited restarts then don't restart if starting fails as it would likely be an infinite restart loop
-        if (restarts != strategy.maxNrOfRetries && strategy.maxNrOfRetries != -1) {
-          preStart(ctx, target)
-        } else {
+        log(ctx, t)
+        if (((restarts + 1) >= strategy.maxNrOfRetries && deadlineHasTimeLeft) || strategy.maxNrOfRetries == -1) {
           throw t
+        } else {
+          ctx.asScala.log.info("Trying restart")
+          restart(ctx, t)
+          aroundStart(ctx, target)
         }
     }
   }
 
-  private def handleException(ctx: ActorContext[T], signalTarget: Signal ⇒ Behavior[T]): Catcher[Behavior[T]] = {
-    case NonFatal(t: Thr) ⇒
-      log(ctx, t)
-      restarts += 1
-      signalTarget(PreRestart)
-      if (restarts != strategy.maxNrOfRetries) {
-        // TODO what about exceptions here?
-        Behavior.validateAsInitial(Behavior.start(initial, ctx))
-      } else {
-        throw t
-      }
+  private def restart(ctx: ActorContext[_], t: Throwable) = {
+    val timeLeft = deadlineHasTimeLeft
+    val newDeadline = if (deadline.isDefined && timeLeft) deadline else OptionVal.Some(Deadline.now + strategy.withinTimeRange)
+    restarts = if (timeLeft) restarts + 1 else 0
+    deadline = newDeadline
   }
 
+  private def handleException(ctx: ActorContext[T], signalTarget: Signal ⇒ Behavior[T]): Catcher[Behavior[T]] = {
+    case NonFatal(t: Thr) ⇒
+      if (strategy.maxNrOfRetries != -1 && restarts >= strategy.maxNrOfRetries && deadlineHasTimeLeft) {
+        throw t
+      } else {
+        signalTarget(PreRestart)
+        log(ctx, t)
+        restart(ctx, t)
+        // TODO what about exceptions here?
+        Behavior.validateAsInitial(Behavior.start(initial, ctx))
+      }
+  }
 
   override protected def handleSignalException(ctx: ActorContext[T], target: SignalTarget[T]): Catcher[Behavior[T]] = {
     handleException(ctx, s ⇒ target(ctx, s))

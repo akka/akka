@@ -6,7 +6,7 @@ package akka.actor.testkit.typed.scaladsl
 
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.ApiMayChange
 import akka.actor.testkit.typed.TestKitSettings
 
 import akka.actor.testkit.typed.internal.{ ActorTestKitGuardian, TestKitUtils }
