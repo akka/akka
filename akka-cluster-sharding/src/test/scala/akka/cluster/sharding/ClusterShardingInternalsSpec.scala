@@ -5,12 +5,14 @@
 package akka.cluster.sharding
 
 import akka.actor.{ Actor, ExtendedActorSystem, NoSerializationVerificationNeeded, PoisonPill, Props }
+import akka.cluster.sharding.ShardCoordinator.Internal.ShardStopped
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.HandOffStopper
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, TestProbe }
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
+
 import scala.concurrent.duration._
 
 class ClusterShardingInternalsSpec extends AkkaSpec("""akka.actor.provider = "cluster"""") with MockitoSugar {
@@ -54,14 +56,19 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""akka.actor.provider = "cl
         }
       }
 
+      val probe = TestProbe()
+      val shardName = "test"
       val emptyHandlerActor = system.actorOf(Props(new EmptyHandlerActor))
       val handOffStopper = system.actorOf(
-        Props(new HandOffStopper("test", system.deadLetters, Set(emptyHandlerActor), HandOffStopMessage, 5.seconds))
+        Props(new HandOffStopper(shardName, probe.ref, Set(emptyHandlerActor), HandOffStopMessage, 5.seconds))
       )
 
       watch(emptyHandlerActor)
-      watch(handOffStopper)
       expectTerminated(emptyHandlerActor, 30.seconds)
+
+      probe.expectMsg(30.seconds, ShardStopped(shardName))
+
+      watch(handOffStopper)
       expectTerminated(handOffStopper, 30.seconds)
     }
   }
