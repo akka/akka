@@ -18,6 +18,15 @@ Log elements flowing through the stream as well as completion and erroring. By d
 completion signals are logged on debug level, and errors are logged on Error level.
 This can be changed by calling @scala[`Attributes.logLevels(...)`] @java[`Attributes.createLogLevels(...)`] on the given Flow.
 
+## Example
+
+Scala
+:   @@snip [SourceOrFlow.scala](/akka-docs/src/test/scala/docs/stream/operators/SourceOrFlow.scala) { #log }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #log }
+
+## Reactive Streams semantics 
 
 @@@div { .callout }
 
@@ -28,11 +37,3 @@ This can be changed by calling @scala[`Attributes.logLevels(...)`] @java[`Attrib
 **completes** when upstream completes
 
 @@@
-
-## Example
-
-Scala
-:   @@snip [SourceOrFlow.scala](/akka-docs/src/test/scala/docs/stream/operators/SourceOrFlow.scala) { #log }
-
-Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #log }
