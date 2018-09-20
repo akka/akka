@@ -12,3 +12,6 @@ Create a source that wraps a Java 8 `Stream`.
 
 @@@
 
+## Description
+
+TODO: We would welcome help on contributing descriptions and examples, see: https://github.com/akka/akka/issues/25646
