@@ -59,22 +59,17 @@ import scala.annotation.{switch}
         if (input == SquareBraceStart) {
           pp.skip()
           pp.state = MainArrayBeforeElement
-          println("—I1—")
         } else if (isWhitespace(input)) {
           pp.skip()
-          println("—I2—")
         } else if (input == DoubleQuote) {
           pp.take()
           pp.state = InOuterString(NotArrayAfterElement, pp)
-          println("—I2—")
         } else if (input == CurlyBraceStart) {
           pp.take()
           pp.state = pp.enterContainer(InOuterObject, NotArrayAfterElement)
-          println("—I3—")
         } else if (!isWhitespace(input)) {
           pp.take()
           pp.state = InOuterNaked(NotArrayAfterElement, pp)
-          println("—I4—")
         } else {
           throw new FramingException(s"Invalid JSON encountered at position [$pp.pos] of [$pp.buffer]")
         }
@@ -90,29 +85,23 @@ import scala.annotation.{switch}
       override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
           case _ if isWhitespace(input) =>
             pp.skip()
-            println("—ABE 1—")
           case Comma =>
             throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}]")
           case SquareBraceEnd =>
             pp.skip()
             pp.state = AfterMainArray
-            println("—ABE 2—")
           case SquareBraceStart =>
             pp.take()
             pp.state = pp.enterContainer(InOuterArray, MainArrayAfterElement)
-            println("—ABE 3—")
           case DoubleQuote =>
             pp.take()
             pp.state = InOuterString(MainArrayAfterElement, pp)
-            println("—ABE 4—")
           case CurlyBraceStart =>
             pp.take()
             pp.state = pp.enterContainer(InOuterObject, MainArrayAfterElement)
-            println("—ABE 5—")
           case _ if !isWhitespace(input) =>
             pp.take()
             pp.state = InOuterNaked(MainArrayAfterElement, pp)
-            println("—ABE 6—")
           case _ =>
             throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}]")
         }
@@ -125,7 +114,6 @@ import scala.annotation.{switch}
       override def proceed(input: Byte, pp: JsonObjectParser): Unit = (input: @switch) match {
           case _ if isWhitespace(input) =>
             pp.skip()
-            println("—AA 1—")
           case _ =>
             throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] after closed JSON-style array")
         }
@@ -140,15 +128,12 @@ import scala.annotation.{switch}
       override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
         case _ if isWhitespace(input) =>
           pp.skip()
-          println("—AAE 1—")
         case Comma =>
           pp.skip()
           pp.state = MainArrayBeforeElement
-          println("—AAE 2—")
         case SquareBraceEnd =>
           pp.skip()
           pp.state = AfterMainArray
-          println("—AAE 3—")
         case _ =>
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] after JSON-style array element")
       }
@@ -246,7 +231,6 @@ import scala.annotation.{switch}
         val nextState = pp.stateAfterNakedValue
         pp.stateAfterNakedValue = UnknownState
 
-        println(s"—IN 1— ⇒ $nextState")
         pp.state = nextState
         exitAction(pp)
         nextState.proceed(input, pp)
@@ -261,7 +245,6 @@ import scala.annotation.{switch}
 
         case _ if !isWhitespace(input) =>
           pp.take()
-          println("—IN 3—")
       }
     }
 
@@ -276,35 +259,28 @@ import scala.annotation.{switch}
       final override def proceed(input: Byte, pp: JsonObjectParser): Unit = input match {
         case _ if isWhitespace(input) =>
           pp.take()
-          println("— IO 1 —")
 
         case _ if input == containerEnd =>
           /* this is our end! */
           pp.take()
-          println("— IO 2 —")
           exitAction(pp)
 
         case DoubleQuote =>
           pp.take()
           pp.state = InString(this, pp)
-          println("— IO 3 —")
 
         case  Comma | Colon =>
           /* in a real JSON parser we'd check whether the colon and commas appear at appropriate places. Here
           we do without: we're just framing JSON and this is good enough */
           pp.take()
-          println("— IO 4 —")
 
         case CurlyBraceStart =>
           pp.take()
           pp.state = pp.enterContainer(InObject, this)
-          println("— IO 5 —")
 
         case SquareBraceStart =>
           pp.take()
           pp.state = pp.enterContainer(InArray, this)
-          println("— IO 6 —")
-
 
         case _ =>
           pp.take()
@@ -340,16 +316,13 @@ import scala.annotation.{switch}
         case Comma =>
           pp.skip()
           pp.state = CommaSeparatedBeforeElement
-          println("—NAAE 1—")
 
         case LineBreak =>
           pp.skip()
           pp.state = LinebreakSeparatedBeforeElement
-          println("—NAAE 2—")
 
         case _ if isWhitespace(input) =>
           pp.skip()
-          println("— NAAE 3—")
 
         case _ =>
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — junk after value in linebreak or comma-separated stream")
@@ -366,11 +339,9 @@ import scala.annotation.{switch}
         case _ if input == separator =>
           pp.skip()
           pp.state = beforeNextItem
-          println("—SSAE 1—")
 
         case _ if isWhitespace(input) =>
           pp.skip()
-          println("—SSAE 2—")
 
         case _ =>
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — junk after value in $separatorName-separated stream")
@@ -385,31 +356,25 @@ import scala.annotation.{switch}
         case DoubleQuote =>
           pp.take()
           pp.state = InOuterString(afterState, pp)
-          println("—SSBE 1—")
 
         case SquareBraceStart =>
           pp.take()
           pp.state = pp.enterContainer(InOuterArray, afterState)
-          println("—SSBE 2—")
 
         case CurlyBraceStart =>
           pp.take()
           pp.state = pp.enterContainer(InOuterObject, afterState)
-          println("—SSBE 3—")
 
         case _ if input == afterState.separator =>
           pp.skip()
           /* note: effectively, empty lines are tolerated, ignored and skipped. Throw a FramingError if desired otherwise */
-          println("—SSBE 4—")
 
         case _ if isWhitespace(input) =>
           pp.skip()
-          println("—SSBE 5—")
 
         case _ if !isWhitespace(input) =>
           pp.take()
           pp.state = InOuterNaked(afterState, pp)
-          println("—SSBE 6—")
       }
     }
 
@@ -469,9 +434,7 @@ import scala.annotation.{switch}
       def previous: ContainerStackLevel = {
         throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — can't unpack")
       }
-
       def level: Int = 0
-
     }
 
     final case class Regular(pp: JsonObjectParser, current: ParserState, next: ParserState, previous: ContainerStackLevel) extends ContainerStackLevel {
@@ -480,10 +443,7 @@ import scala.annotation.{switch}
 
       override def toString: String = s"Regular(_, ${current}, ${next}) → ${previous}"
     }
-
-
   }
-
 }
 
 /**
@@ -580,7 +540,6 @@ import scala.annotation.{switch}
             if (trimmed.isEmpty) None
             else Some(trimmed)
           }
-          println("result=" + result.map(_.utf8String))
           result
       }
   }
@@ -591,12 +550,8 @@ import scala.annotation.{switch}
 
     val bufSize = buffer.size
     while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject) {
-      val input = buffer(pos)
-      println(s"input=${input}: >${input.toChar}< this=(pos: $pos, state=${state} sofar='${debugCurrentSelection}' level=${containerStack.level} containerStack=${containerStack})")
       state.proceed(buffer(pos), this)
     }
-
-    println(s"done proceeding; pos=${pos} bufSize=$bufSize complete=$completedObject")
 
     if (pos >= maximumObjectLength)
       throw new FramingException(s"""JSON element exceeded maximumObjectLength ($maximumObjectLength bytes)!""")
