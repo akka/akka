@@ -7,7 +7,7 @@ package akka.actor.typed.internal
 import akka.actor.typed
 import akka.actor.typed.Behavior.{ SameBehavior, UnhandledBehavior }
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
-import akka.actor.typed.{ ActorContext, ActorRef, Behavior, BehaviorInterceptor, ExtensibleBehavior, Signal }
+import akka.actor.typed.{ ActorContext, ActorRef, Behavior, BehaviorInterceptor, ExtensibleBehavior, PreRestart, Signal }
 import akka.annotation.InternalApi
 import akka.util.LineNumbers
 
@@ -48,8 +48,8 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
     override def apply(ctx: ActorContext[_], msg: I): Behavior[I] =
       Behavior.interpretMessage(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], msg)
 
-    override def signal(ctx: ActorContext[_], signal: Signal): Behavior[I] =
-      Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], signal)
+    override def signalRestart(ctx: ActorContext[_]): Unit =
+      Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], PreRestart)
   }
 
   private val signalTarget = new SignalTarget[I] {
