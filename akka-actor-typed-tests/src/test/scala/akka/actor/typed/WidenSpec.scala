@@ -46,7 +46,7 @@ class WidenSpec extends ScalaTestWithActorTestKit(
       val probe = TestProbe[String]()
       val ref = spawn(intToString(probe.ref))
 
-      // non-convertible/filtered message 13 is logged as warning
+      // TestEventListener logs unhandled as warnings, silence that
       EventFilter.warning(occurrences = 1).intercept {
         ref ! 42
         ref ! 13
