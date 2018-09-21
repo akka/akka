@@ -34,7 +34,7 @@ object AccountExample1 {
     }
 
   private val openedAccountHandler: CommandHandler[AccountCommand, AccountEvent, Option[Account]] = {
-    case (ctx, Some(acc: OpenedAccount), cmd) ⇒ cmd match {
+    case (Some(acc: OpenedAccount), cmd) ⇒ cmd match {
       case Deposit(amount) ⇒ Effect.persist(Deposited(amount))
 
       case Withdraw(amount) ⇒
@@ -65,12 +65,13 @@ object AccountExample1 {
   private val closedHandler: CommandHandler[AccountCommand, AccountEvent, Option[Account]] =
     CommandHandler.command(_ ⇒ Effect.unhandled)
 
-  private def commandHandler: CommandHandler[AccountCommand, AccountEvent, Option[Account]] =
-    CommandHandler.byState {
-      case None                   ⇒ initialHandler
-      case Some(OpenedAccount(_)) ⇒ openedAccountHandler
-      case Some(ClosedAccount)    ⇒ closedHandler
+  private def commandHandler: CommandHandler[AccountCommand, AccountEvent, Option[Account]] = { (state, command) ⇒
+    state match {
+      case None                   ⇒ initialHandler(state, command)
+      case Some(OpenedAccount(_)) ⇒ openedAccountHandler(state, command)
+      case Some(ClosedAccount)    ⇒ closedHandler(state, command)
     }
+  }
 
   private val eventHandler: (Option[Account], AccountEvent) ⇒ Option[Account] = {
     case (None, AccountCreated) ⇒ Some(OpenedAccount(0.0))
