@@ -103,6 +103,10 @@ import scala.util.Try
       log.debug(s"Received message from [{}]: [{}]", remote, data)
       val msg = Message.parse(data)
       log.debug(s"Decoded: $msg")
+      // TODO remove me when #25460 is implemented
+      if (msg.flags.isTruncated) {
+        log.warning("DNS response truncated and fallback to TCP is not yet implemented. See #25460")
+      }
       val (recs, additionalRecs) = if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (Nil, Nil)
       val response = Answer(msg.id, recs, additionalRecs)
       inflightRequests.get(response.id) match {
