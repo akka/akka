@@ -7,6 +7,7 @@ package akka.cluster.sharding.typed
 import akka.actor.typed.{ ActorRef, Props }
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import akka.cluster.sharding.typed.scaladsl.ShardedEntity
 import akka.cluster.typed.{ MultiDcClusterActors, MultiNodeTypedClusterSpec }
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -26,6 +27,7 @@ object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
       """
         akka.loglevel = DEBUG
         akka.cluster.sharding {
+          number-of-shards = 10
           # First is likely to be ignored as shard coordinator not ready
           retry-interval = 0.2s
         }
@@ -66,14 +68,11 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
 
     "start sharding" in {
       val sharding = ClusterSharding(typedSystem)
-      val shardRegion: ActorRef[ShardingEnvelope[PingProtocol]] = sharding.spawn(
-        (_, _) ⇒ multiDcPinger,
-        Props.empty,
-        typeKey = typeKey,
-        ClusterShardingSettings(typedSystem),
-        10,
-        NoMore
-      )
+      val shardRegion: ActorRef[ShardingEnvelope[PingProtocol]] = sharding.start(
+        ShardedEntity(
+          _ ⇒ multiDcPinger,
+          typeKey,
+          NoMore))
       val probe = TestProbe[Pong]
       shardRegion ! ShardingEnvelope(entityId, Ping(probe.ref))
       probe.expectMessage(Pong(cluster.selfMember.dataCenter))
@@ -99,14 +98,12 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
 
   "be able to message cross dc via proxy" in {
     runOn(first, second) {
-      val proxy: ActorRef[ShardingEnvelope[PingProtocol]] = ClusterSharding(typedSystem).spawn(
-        (_, _) ⇒ multiDcPinger,
-        Props.empty,
-        typeKey = typeKey,
-        ClusterShardingSettings(typedSystem).withDataCenter("dc2"),
-        10,
-        NoMore
-      )
+      val proxy: ActorRef[ShardingEnvelope[PingProtocol]] = ClusterSharding(typedSystem).start(
+        ShardedEntity(
+          _ ⇒ multiDcPinger,
+          typeKey,
+          NoMore)
+          .withSettings(ClusterShardingSettings(typedSystem).withDataCenter("dc2")))
       val probe = TestProbe[Pong]
       proxy ! ShardingEnvelope(entityId, Ping(probe.ref))
       probe.expectMessage(remainingOrDefault, Pong("dc2"))

@@ -44,6 +44,8 @@ object ClusterShardingSpec {
 
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
 
+      akka.cluster.sharding.number-of-shards = 10
+
       akka.coordinated-shutdown.terminate-actor-system = off
 
       akka.actor {
@@ -176,45 +178,38 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       Behaviors.same
   }
 
-  private val shardingRef1: ActorRef[ShardingEnvelope[TestProtocol]] = sharding.spawn(
+  private val shardingRef1: ActorRef[ShardingEnvelope[TestProtocol]] = sharding.start(ShardedEntity(
     (shard, _) ⇒ behavior(shard),
-    Props.empty,
     typeKey,
-    ClusterShardingSettings(system),
-    10,
-    StopPlz())
+    StopPlz()))
 
-  private val shardingRef2 = sharding2.spawn(
+  private val shardingRef2 = sharding2.start(ShardedEntity(
     (shard, _) ⇒ behavior(shard),
-    Props.empty,
     typeKey,
-    ClusterShardingSettings(system2),
-    10,
-    StopPlz())
+    StopPlz()))
 
-  private val shardingRef3: ActorRef[IdTestProtocol] = sharding.spawnWithMessageExtractor(
+  private val shardingRef3: ActorRef[IdTestProtocol] = sharding.start(ShardedEntity(
     (shard, _) ⇒ behaviorWithId(shard),
-    Props.empty,
     typeKey2,
-    ClusterShardingSettings(system),
-    ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
+    IdStopPlz())
+    .withMessageExtractor(ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
       case IdReplyPlz(id, _)  ⇒ id
       case IdWhoAreYou(id, _) ⇒ id
       case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
-    },
-    None)
+    })
+  )
 
-  private val shardingRef4 = sharding2.spawnWithMessageExtractor(
+  private val shardingRef4 = sharding2.start(ShardedEntity(
     (shard, _) ⇒ behaviorWithId(shard),
-    Props.empty,
     typeKey2,
-    ClusterShardingSettings(system2),
-    ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
-      case IdReplyPlz(id, _)  ⇒ id
-      case IdWhoAreYou(id, _) ⇒ id
-      case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
-    },
-    None)
+    IdStopPlz())
+    .withMessageExtractor(
+      ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
+        case IdReplyPlz(id, _)  ⇒ id
+        case IdWhoAreYou(id, _) ⇒ id
+        case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
+      })
+  )
 
   def totalEntityCount1(): Int = {
     import akka.pattern.ask
@@ -263,13 +258,10 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       val p = TestProbe[String]()
       val typeKey3 = EntityTypeKey[TestProtocol]("passivate-test")
 
-      val shardingRef3: ActorRef[ShardingEnvelope[TestProtocol]] = sharding.spawn(
+      val shardingRef3: ActorRef[ShardingEnvelope[TestProtocol]] = sharding.start(ShardedEntity(
         (shard, _) ⇒ behavior(shard, Some(stopProbe.ref)),
-        Props.empty,
         typeKey3,
-        ClusterShardingSettings(system),
-        10,
-        StopPlz())
+        StopPlz()))
 
       shardingRef3 ! ShardingEnvelope(s"test1", ReplyPlz(p.ref))
       p.expectMessage("Hello!")
@@ -284,13 +276,10 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
     "fail if starting sharding for already used typeName, but with a different type" in {
       // sharding has been already started with EntityTypeKey[TestProtocol]("envelope-shard")
       val ex = intercept[Exception] {
-        sharding.spawn(
+        sharding.start(ShardedEntity(
           (shard, _) ⇒ behaviorWithId(shard),
-          Props.empty,
           EntityTypeKey[IdTestProtocol]("envelope-shard"),
-          ClusterShardingSettings(system),
-          10,
-          IdStopPlz())
+          IdStopPlz()))
       }
 
       ex.getMessage should include("already spawned")
@@ -350,7 +339,7 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       }
     }
 
-    "use the handOffStopMessage for leaving/rebalance" in {
+    "use the stopMessage for leaving/rebalance" in {
       var replies1 = Set.empty[String]
       (1 to 10).foreach { n ⇒
         val p = TestProbe[String]()

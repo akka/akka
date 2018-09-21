@@ -25,7 +25,8 @@ object ClusterShardingSettings {
 
   def fromConfig(config: Config): ClusterShardingSettings = {
     val untypedSettings = UntypedShardingSettings(config)
-    fromUntypedSettings(untypedSettings)
+    val numberOfShards = config.getInt("number-of-shards")
+    fromUntypedSettings(numberOfShards, untypedSettings)
   }
 
   /** Java API: Creates new cluster sharding settings object */
@@ -33,8 +34,9 @@ object ClusterShardingSettings {
     apply(system)
 
   /** INTERNAL API: Indended only for internal use, it is not recommended to keep converting between the setting types */
-  private[akka] def fromUntypedSettings(untypedSettings: UntypedShardingSettings): ClusterShardingSettings = {
+  private[akka] def fromUntypedSettings(numberOfShards: Int, untypedSettings: UntypedShardingSettings): ClusterShardingSettings = {
     new ClusterShardingSettings(
+      numberOfShards,
       role = untypedSettings.role,
       dataCenter = None,
       rememberEntities = untypedSettings.rememberEntities,
@@ -217,6 +219,7 @@ object ClusterShardingSettings {
 }
 
 /**
+ * @param numberOfShards number of shards used by the default [[HashCodeMessageExtractor]]
  * @param role Specifies that this entity type requires cluster nodes with a specific role.
  *   If the role is not specified all nodes in the cluster are used. If the given role does
  *   not match the role of the current node the `ShardRegion` will be started in proxy mode.
@@ -237,6 +240,7 @@ object ClusterShardingSettings {
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  */
 final class ClusterShardingSettings(
+  val numberOfShards:               Int,
   val role:                         Option[String],
   val dataCenter:                   Option[DataCenter],
   val rememberEntities:             Boolean,
@@ -262,6 +266,9 @@ final class ClusterShardingSettings(
   private[akka] def shouldHostShard(cluster: Cluster): Boolean =
     role.forall(cluster.selfMember.roles.contains) &&
       dataCenter.forall(cluster.selfMember.dataCenter.contains)
+
+  // no withNumberOfShards because it should be defined in configuration to be able to verify same
+  // value on all nodes with `JoinConfigCompatChecker`
 
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.option(role))
 
@@ -300,6 +307,7 @@ final class ClusterShardingSettings(
     tuningParameters:             ClusterShardingSettings.TuningParameters = tuningParameters,
     coordinatorSingletonSettings: ClusterSingletonManagerSettings          = coordinatorSingletonSettings): ClusterShardingSettings =
     new ClusterShardingSettings(
+      numberOfShards,
       role,
       dataCenter,
       rememberEntities,

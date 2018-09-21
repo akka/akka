@@ -209,7 +209,7 @@ That means they will start buffering incoming messages for that shard, in the sa
 shard location is unknown. During the rebalance process the coordinator will not answer any
 requests for the location of shards that are being rebalanced, i.e. local buffering will
 continue until the handoff is completed. The `ShardRegion` responsible for the rebalanced shard
-will stop all entities in that shard by sending the specified `handOffStopMessage`
+will stop all entities in that shard by sending the specified `stopMessage`
 (default `PoisonPill`) to them. When all entities have been terminated the `ShardRegion`
 owning the entities will acknowledge the handoff as completed to the coordinator.
 Thereafter the coordinator will reply to requests for the location of

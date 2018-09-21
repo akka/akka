@@ -5,8 +5,10 @@
 package docs.akka.cluster.sharding.typed
 
 import scala.concurrent.duration._
+
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.actor.typed.scaladsl.Behaviors
+import akka.cluster.sharding.typed.scaladsl.ShardedEntity
 import docs.akka.persistence.typed.InDepthPersistentBehaviorSpec
 import docs.akka.persistence.typed.InDepthPersistentBehaviorSpec.{ BlogCommand, PassivatePost }
 
@@ -45,17 +47,14 @@ object ShardingCompileOnlySpec {
     }
   //#counter
 
-  //#spawn
+  //#start
   val TypeKey = EntityTypeKey[CounterCommand]("Counter")
-  // if a extractor is defined then the type would be ActorRef[BasicCommand]
-  val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] = sharding.spawn(
-    behavior = (shard, entityId) ⇒ counter(entityId, 0),
-    props = Props.empty,
+
+  val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] = sharding.start(ShardedEntity(
+    create = entityId ⇒ counter(entityId, 0),
     typeKey = TypeKey,
-    settings = ClusterShardingSettings(system),
-    maxNumberOfShards = 10,
-    handOffStopMessage = GoodByeCounter)
-  //#spawn
+    stopMessage = GoodByeCounter))
+  //#start
 
   //#send
   // With an EntityRef
@@ -68,14 +67,12 @@ object ShardingCompileOnlySpec {
 
   import InDepthPersistentBehaviorSpec.behavior
   //#persistence
-  val ShardingTypeName = EntityTypeKey[BlogCommand]("BlogPost")
-  ClusterSharding(system).spawn[BlogCommand](
-    behavior = (shard, entityId) ⇒ behavior(entityId),
-    props = Props.empty,
-    typeKey = ShardingTypeName,
-    settings = ClusterShardingSettings(system),
-    maxNumberOfShards = 100,
-    handOffStopMessage = PassivatePost)
+  val BlogTypeKey = EntityTypeKey[BlogCommand]("BlogPost")
+
+  ClusterSharding(system).start(ShardedEntity(
+    create = entityId ⇒ behavior(entityId),
+    typeKey = BlogTypeKey,
+    stopMessage = PassivatePost))
   //#persistence
 
   //#counter-passivate
@@ -97,7 +94,7 @@ object ShardingCompileOnlySpec {
             shard ! ClusterSharding.Passivate(ctx.self)
             Behaviors.same
           case GoodByeCounter ⇒
-            // the handOffStopMessage, used for rebalance and passivate
+            // the stopMessage, used for rebalance and passivate
             Behaviors.stopped
         }
 
@@ -105,6 +102,11 @@ object ShardingCompileOnlySpec {
       become(0)
     }
   }
+
+  sharding.start(ShardedEntity(
+    create = (shard, entityId) ⇒ counter2(shard, entityId),
+    typeKey = TypeKey,
+    stopMessage = GoodByeCounter))
   //#counter-passivate
 
 }
