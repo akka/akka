@@ -106,10 +106,6 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "foldAsync",
       "newOnCompleteStage"
     ),
-    "FileIO" -> Seq(
-      "fromFile",
-      "toFile"
-    ),
     "ActorSink" → Seq(
       "actorRefWithAck"
     ),

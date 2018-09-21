@@ -106,7 +106,9 @@ Sources and sinks for reading and writing files can be found on `FileIO`.
 
 | |Operator|Description|
 |--|--|--|
-|FileIO|<a name="frompath"></a>@ref[fromPath](FileIO/fromPath.md)|Emit the contents of a file.|
+|FileIO|<a name="fromfile"></a>@ref[fromFile](FileIO/fromFile.md)|Emit the contents of a file.|
+|FileIO|<a name="frompath"></a>@ref[fromPath](FileIO/fromPath.md)|Emits the contents of a file from the given path.|
+|FileIO|<a name="tofile"></a>@ref[toFile](FileIO/toFile.md)|Create a sink which will write incoming `ByteString` s to a given file.|
 |FileIO|<a name="topath"></a>@ref[toPath](FileIO/toPath.md)|Create a sink which will write incoming `ByteString` s to a given file path.|
 
 ## Simple operators
@@ -397,7 +399,9 @@ Operators meant for inter-operating between Akka Streams and Actors:
 * [javaCollectorParallelUnordered](StreamConverters/javaCollectorParallelUnordered.md)
 * [asJavaStream](StreamConverters/asJavaStream.md)
 * [fromJavaStream](StreamConverters/fromJavaStream.md)
+* [fromFile](FileIO/fromFile.md)
 * [fromPath](FileIO/fromPath.md)
+* [toFile](FileIO/toFile.md)
 * [toPath](FileIO/toPath.md)
 * [ask](ActorFlow/ask.md)
 * [actorRef](ActorSink/actorRef.md)
