@@ -74,7 +74,6 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
   }
 
   private def deduplicate(interceptedResult: Behavior[I], ctx: ActorContext[O]): Behavior[O] = {
-    // FIXME does this same/stopped/unhandled really belong here? Also, it does not work
     val started = Behavior.start(interceptedResult, ctx.asInstanceOf[ActorContext[I]])
     if (started == UnhandledBehavior || started == SameBehavior || !Behavior.isAlive(started)) {
       started.asInstanceOf[Behavior[O]]
@@ -85,7 +84,7 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
         case _ ⇒ false
       }
 
-      if (duplicateInterceptExists) started.asInstanceOf[Behavior[O]] // FIXME is this really safe (we know there's a Behavior[O] in there though
+      if (duplicateInterceptExists) started.asInstanceOf[Behavior[O]]
       else new InterceptorImpl[O, I](interceptor, started)
     }
   }
