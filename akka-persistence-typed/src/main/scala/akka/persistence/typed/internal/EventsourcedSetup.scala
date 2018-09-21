@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext
 import akka.Done
 import akka.actor.typed.Logger
 import akka.actor.{ ActorRef, ExtendedActorSystem }
-import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer, TimerScheduler }
+import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer }
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
@@ -34,8 +34,8 @@ private[persistence] final class EventsourcedSetup[C, E, S](
   val commandHandler:        PersistentBehaviors.CommandHandler[C, E, S],
   val eventHandler:          PersistentBehaviors.EventHandler[S, E],
   val writerIdentity:        WriterIdentity,
-  val recoveryCompleted:     (ActorContext[C], S) ⇒ Unit,
-  val onSnapshot:            (ActorContext[C], SnapshotMetadata, Try[Done]) ⇒ Unit,
+  val recoveryCompleted:     S ⇒ Unit,
+  val onSnapshot:            (SnapshotMetadata, Try[Done]) ⇒ Unit,
   val tagger:                E ⇒ Set[String],
   val eventAdapter:          EventAdapter[E, _],
   val snapshotWhen:          (S, E, Long) ⇒ Boolean,
@@ -45,8 +45,6 @@ private[persistence] final class EventsourcedSetup[C, E, S](
   val internalStash:         StashBuffer[InternalProtocol]
 ) {
   import akka.actor.typed.scaladsl.adapter._
-
-  def commandContext: ActorContext[C] = context.asInstanceOf[ActorContext[C]]
 
   val persistence: Persistence = Persistence(context.system.toUntyped)
 

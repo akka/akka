@@ -72,8 +72,8 @@ object PerformanceSpec {
         eventHandler = {
           case (state, _) ⇒ state
         }
-      ).onRecoveryCompleted {
-          case (_, _) ⇒ if (parameters.every(1000)) print("r")
+      ).onRecoveryCompleted { _ ⇒
+          if (parameters.every(1000)) print("r")
         }
     }).onFailure(SupervisorStrategy.restart)
   }
