@@ -1,5 +1,11 @@
 # DNS Extension
 
+@@@ warning
+
+`async-dns` does not currently support TCP fallback and so DNS repsonses may be truncated. See [#25460](https://github.com/akka/akka/issues/25460)
+
+@@@
+
 @@@ note
 
 The `async-dns` API is marked as `ApiMayChange` as more information is expected to be added to the protocol.
