@@ -94,10 +94,8 @@ object InDepthPersistentBehaviorSpec {
 
   //#by-state-command-handler
   private val commandHandler: (BlogState, BlogCommand) ⇒ Effect[BlogEvent, BlogState] = { (state, command) ⇒
-    state match {
-      case state if state.isEmpty  ⇒ initial(state, command)
-      case state if !state.isEmpty ⇒ postAdded(state, command)
-    }
+    if (state.isEmpty) initial(state, command)
+    else postAdded(state, command)
   }
   //#by-state-command-handler
 

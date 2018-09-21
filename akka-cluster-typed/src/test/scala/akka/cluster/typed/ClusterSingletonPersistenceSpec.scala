@@ -39,7 +39,7 @@ object ClusterSingletonPersistenceSpec {
     PersistentBehaviors.receive[Command, String, String](
       persistenceId = "TheSingleton",
       emptyState = "",
-      commandHandler = (_, state, cmd) ⇒ cmd match {
+      commandHandler = (state, cmd) ⇒ cmd match {
         case Add(s) ⇒ Effect.persist(s)
         case Get(replyTo) ⇒
           replyTo ! state
