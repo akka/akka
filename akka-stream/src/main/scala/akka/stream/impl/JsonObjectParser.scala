@@ -580,8 +580,12 @@ import scala.annotation.{ switch, tailrec }
       (pos: @switch) match {
         case -1 | 0 ⇒ None
         case _ ⇒
-          val (emit, buf) = buffer.splitAt(pos)
-          buffer = buf.compact
+          val emit = buffer.take(pos)
+          val buf = buffer.drop(pos)
+          buffer = buf /* We don't compact; meaning we'll keep the underlying memory "as is" until the polled objects
+
+                          have all been consumed. Presumably, a JSON parse operation is to happen soon and these
+                          ByteStrings will become irrelevant and GC'd */
           pos = 0
 
           val tf = trimFront
