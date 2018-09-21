@@ -67,17 +67,6 @@ object PersistentBehaviors {
 
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi private[akka] final class ByStateCommandHandler[Command, Event, State](
-    choice: State ⇒ CommandHandler[Command, Event, State])
-    extends CommandHandler[Command, Event, State] {
-
-    override def apply(state: State, cmd: Command): Effect[Event, State] =
-      choice(state)(state, cmd)
-
-  }
 }
 
 trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command] {

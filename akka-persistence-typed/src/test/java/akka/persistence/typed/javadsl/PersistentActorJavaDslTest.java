@@ -506,5 +506,4 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
   //event-wrapper
 
-  // FIXME test with by state command handler
 }

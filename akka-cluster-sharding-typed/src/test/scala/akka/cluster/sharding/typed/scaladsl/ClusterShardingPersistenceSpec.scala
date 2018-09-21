@@ -47,7 +47,7 @@ object ClusterShardingPersistenceSpec {
     PersistentBehaviors.receive[Command, String, String](
       entityId,
       emptyState = "",
-      commandHandler = (_, state, cmd) ⇒ cmd match {
+      commandHandler = (state, cmd) ⇒ cmd match {
         case Add(s) ⇒ Effect.persist(s)
         case Get(replyTo) ⇒
           replyTo ! s"$entityId:$state"
