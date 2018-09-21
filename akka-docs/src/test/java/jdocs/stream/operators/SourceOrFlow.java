@@ -6,6 +6,11 @@ package jdocs.stream.operators;
 
 import akka.stream.javadsl.Flow;
 
+//#import
+import akka.stream.javadsl.Source;
+import java.util.Arrays;
+
+//#import
 //#log
 import akka.stream.Attributes;
 
@@ -23,5 +28,11 @@ class SourceOrFlow {
         Attributes.logLevelInfo())) // onFinish
     //#log
     ;
+  }
+
+  void zipWithIndexExample() {
+    //#zip-with-index
+    Source.from(Arrays.asList(7, 8, 9)).zipWithIndex();
+    //#zip-with-index
   }
 }

@@ -4,6 +4,10 @@
 
 package akka.stream.scaladsl
 
+//#import
+import akka.stream.scaladsl.Source
+
+//#import
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
@@ -20,8 +24,10 @@ class FlowZipWithIndexSpec extends StreamSpec {
 
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[(Int, Long)]()
-      Source(7 to 10).zipWithIndex.runWith(Sink.fromSubscriber(probe))
-
+      //#zip-with-index
+      Source(7 to 10).zipWithIndex
+      //#zip-with-index
+        .runWith(Sink.fromSubscriber(probe))
       val subscription = probe.expectSubscription()
 
       subscription.request(2)
