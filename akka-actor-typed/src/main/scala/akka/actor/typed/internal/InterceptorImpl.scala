@@ -138,9 +138,14 @@ private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction
   import BehaviorInterceptor._
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
-    // can only be elimintated if it is the same partial function
+    // If they use the same pf instance we can allow it, to have one way to workaround defining
+    // "recursive" narrowed behaviors.
     case WidenedInterceptor(`matcher`) ⇒ true
-    case _                             ⇒ false
+    case WidenedInterceptor(otherMatcher) ⇒
+      // there is no safe way to allow this
+      throw new IllegalStateException("Widen can only be used one time in the same behavior stack. " +
+        s"One defined in ${LineNumbers(matcher)}, and another in ${LineNumbers(otherMatcher)}")
+    case _ ⇒ false
   }
 
   def aroundReceive(ctx: ActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I] = {
