@@ -45,10 +45,10 @@ Java
 Each Entity type has a key that is then used to retrieve an EntityRef for a given entity identifier.
 
 Scala
-:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #spawn }
+:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #start }
 
 Java
-:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #spawn }
+:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #start }
 
 Messages to a specific entity are then sent via an EntityRef.
 It is also possible to wrap methods in a `ShardingEnvelop` or define extractor functions and send messages directly to the shard region.
@@ -62,8 +62,7 @@ Java
 ## Persistence example
 
 When using sharding entities can be moved to different nodes in the cluster. Persistence can be used to recover the state of
-an actor after it has moved. Currently Akka typed only has a Scala API for persistence, you can track the progress of the
-Java API [here](https://github.com/akka/akka/issues/24193).
+an actor after it has moved.
 
 Taking the larger example from the @ref:[persistence documentation](persistence.md#larger-example) and making it into
 a sharded entity is the same as for a non persistent behavior. The behavior:
@@ -71,10 +70,16 @@ a sharded entity is the same as for a non persistent behavior. The behavior:
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #behavior }
 
+Java
+:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #behavior }
+
 To create the entity:
 
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #persistence }
+
+Java
+:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #persistence }
 
 Sending messages to entities is the same as the example above. The only difference is when an entity is moved the state will be restored.
 See @ref:[persistence](persistence.md) for more details.
@@ -97,4 +102,5 @@ Scala
 :  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #counter-messages #counter-passivate }
 
 Java
-:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #counter-messages #counter-passivate }
+:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #counter-messages #counter-passivate #counter-passivate-start }
+

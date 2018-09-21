@@ -33,7 +33,7 @@ object ClusterSharding extends ExtensionId[ClusterSharding] {
    * When an entity is created an `ActorRef[ShardCommand]` is passed to the
    * factory method. The entity can request passivation by sending the [[Passivate]]
    * message to this ref. Sharding will then send back the specified
-   * `handOffStopMessage` message to the entity, which is then supposed to stop itself.
+   * `stopMessage` message to the entity, which is then supposed to stop itself.
    *
    * Not for user extension.
    */
@@ -43,10 +43,10 @@ object ClusterSharding extends ExtensionId[ClusterSharding] {
    * The entity can request passivation by sending the [[Passivate]] message
    * to the `ActorRef[ShardCommand]` that was passed in to the factory method
    * when creating the entity. Sharding will then send back the specified
-   * `handOffStopMessage` message to the entity, which is then supposed to stop
+   * `stopMessage` message to the entity, which is then supposed to stop
    * itself.
    */
-  final case class Passivate[A](entity: ActorRef[A]) extends ShardCommand with javadsl.ClusterSharding.ShardCommand
+  final case class Passivate[M](entity: ActorRef[M]) extends ShardCommand with javadsl.ClusterSharding.ShardCommand
 
 }
 
@@ -83,7 +83,7 @@ object ClusterSharding extends ExtensionId[ClusterSharding] {
  * to extract the entity identifier and the shard identifier from incoming messages.
  * A shard is a group of entities that will be managed together. For the first message in a
  * specific shard the `ShardRegion` requests the location of the shard from a central coordinator,
- * the [[ShardCoordinator]]. The `ShardCoordinator` decides which `ShardRegion`
+ * the [[akka.cluster.sharding.ShardCoordinator]]. The `ShardCoordinator` decides which `ShardRegion`
  * owns the shard. The `ShardRegion` receives the decided home of the shard
  * and if that is the `ShardRegion` instance itself it will create a local child
  * actor representing the entity and direct all messages for that entity to it.
@@ -117,7 +117,7 @@ object ClusterSharding extends ExtensionId[ClusterSharding] {
  * location.
  *
  * The logic that decides which shards to rebalance is defined in a plugable shard
- * allocation strategy. The default implementation [[LeastShardAllocationStrategy]]
+ * allocation strategy. The default implementation [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]]
  * picks shards for handoff from the `ShardRegion` with most number of previously allocated shards.
  * They will then be allocated to the `ShardRegion` with least number of previously allocated shards,
  * i.e. new members in the cluster. There is a configurable threshold of how large the difference
@@ -152,7 +152,7 @@ object ClusterSharding extends ExtensionId[ClusterSharding] {
  * in the mailbox will be dropped. To support graceful passivation without losing such
  * messages the entity actor can send [[ClusterSharding.Passivate]] to the `ActorRef[ShardCommand]`
  * that was passed in to the factory method when creating the entity..
- * The specified `handOffStopMessage` message will be sent back to the entity, which is
+ * The specified `stopMessage` message will be sent back to the entity, which is
  * then supposed to stop itself. Incoming messages will be buffered by the `ShardRegion`
  * between reception of `Passivate` and termination of the entity. Such buffered messages
  * are thereafter delivered to a new incarnation of the entity.
@@ -163,50 +163,17 @@ object ClusterSharding extends ExtensionId[ClusterSharding] {
  */
 @DoNotInherit
 trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding ⇒
-  import ClusterSharding.ShardCommand
 
   /**
-   * Spawn a shard region or a proxy depending on if the settings require role and if this node has
+   * Initialize sharding for the given `shardedEntity` factory settings.
+   *
+   * It will start a shard region or a proxy depending on if the settings require role and if this node has
    * such a role.
    *
-   * Messages are sent to the entities by wrapping the messages in a [[ShardingEnvelope]] with the entityId of the
-   * recipient actor.
-   * A [[HashCodeMessageExtractor]] will be used for extracting entityId and shardId
-   * [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] will be used for shard allocation strategy.
-   *
-   * @param behavior Create the behavior for an entity given a entityId
-   * @param typeKey A key that uniquely identifies the type of entity in this cluster
-   * @param handOffStopMessage Message sent to an entity to tell it to stop, e.g. when rebalanced.
-   * @tparam A The type of command the entity accepts
-   */
-  def spawn[A](
-    behavior:           (ActorRef[ShardCommand], String) ⇒ Behavior[A],
-    props:              Props,
-    typeKey:            EntityTypeKey[A],
-    settings:           ClusterShardingSettings,
-    maxNumberOfShards:  Int,
-    handOffStopMessage: A): ActorRef[ShardingEnvelope[A]]
-
-  /**
-   * Spawn a shard region or a proxy depending on if the settings require role and if this node
-   * has such a role.
-   *
-   * @param behavior Create the behavior for an entity given a entityId
-   * @param typeKey A key that uniquely identifies the type of entity in this cluster
-   * @param entityProps Props to apply when starting an entity
-   * @param messageExtractor Extract entityId, shardId, and unwrap messages.
-   * @param allocationStrategy Allocation strategy which decides on which nodes to allocate new shards,
-   *                           [[ClusterSharding#defaultShardAllocationStrategy]] is used if `None`
+   * @tparam M The type of message the entity accepts
    * @tparam E A possible envelope around the message the entity accepts
-   * @tparam A The type of command the entity accepts
    */
-  def spawnWithMessageExtractor[E, A](
-    behavior:           (ActorRef[ShardCommand], String) ⇒ Behavior[A],
-    entityProps:        Props,
-    typeKey:            EntityTypeKey[A],
-    settings:           ClusterShardingSettings,
-    messageExtractor:   ShardingMessageExtractor[E, A],
-    allocationStrategy: Option[ShardAllocationStrategy]): ActorRef[E]
+  def start[M, E](shardedEntity: ShardedEntity[M, E]): ActorRef[E]
 
   /**
    * Create an `ActorRef`-like reference to a specific sharded entity.
@@ -217,15 +184,107 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding �
    *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
-  def entityRefFor[A](typeKey: EntityTypeKey[A], entityId: String): EntityRef[A]
+  def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M]
 
-  /** The default ShardAllocationStrategy currently is [[LeastShardAllocationStrategy]] however could be changed in the future. */
+  /**
+   * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
+   * given `settings`. This could be changed in the future.
+   */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy
 
   /**
    * INTERNAL API
    */
   @InternalApi private[akka] def asJava: javadsl.ClusterSharding = javadslSelf
+}
+
+object ShardedEntity {
+
+  /**
+   * Defines how the entity should be created. Used in [[ClusterSharding#start]]. More optional
+   * settings can be defined using the `with` methods of the returned [[ShardedEntity]].
+   *
+   * @param create Create the behavior for an entity given an entityId
+   * @param typeKey A key that uniquely identifies the type of entity in this cluster
+   * @param stopMessage Message sent to an entity to tell it to stop, e.g. when rebalanced or passivated.
+   *
+   * @tparam M The type of message the entity accepts
+   */
+  def apply[M](
+    create:      String ⇒ Behavior[M],
+    typeKey:     EntityTypeKey[M],
+    stopMessage: M): ShardedEntity[M, ShardingEnvelope[M]] =
+    apply((_, entityId) ⇒ create(entityId), typeKey, stopMessage)
+
+  /**
+   * Defines how the entity should be created. Used in [[ClusterSharding#start]]. More optional
+   * settings can be defined using the `with` methods of the returned [[ShardedEntity]].
+   *
+   * @param create Create the behavior for an entity given `ShardCommand` ref and an entityId
+   * @param typeKey A key that uniquely identifies the type of entity in this cluster
+   * @param stopMessage Message sent to an entity to tell it to stop, e.g. when rebalanced or passivated.
+   * @tparam M The type of message the entity accepts
+   */
+  def apply[M](
+    create:      (ActorRef[ClusterSharding.ShardCommand], String) ⇒ Behavior[M],
+    typeKey:     EntityTypeKey[M],
+    stopMessage: M): ShardedEntity[M, ShardingEnvelope[M]] =
+    new ShardedEntity(create, typeKey, stopMessage, Props.empty, None, None, None)
+}
+
+/**
+ * Defines how the entity should be created. Used in [[ClusterSharding#start]].
+ */
+final class ShardedEntity[M, E] private[akka] (
+  val create:             (ActorRef[ClusterSharding.ShardCommand], String) ⇒ Behavior[M],
+  val typeKey:            EntityTypeKey[M],
+  val stopMessage:        M,
+  val entityProps:        Props,
+  val settings:           Option[ClusterShardingSettings],
+  val messageExtractor:   Option[ShardingMessageExtractor[E, M]],
+  val allocationStrategy: Option[ShardAllocationStrategy]) {
+
+  /**
+   * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
+   */
+  def withEntityProps(newEntityProps: Props): ShardedEntity[M, E] =
+    copy(entityProps = newEntityProps)
+
+  /**
+   * Additional settings, typically loaded from configuration.
+   */
+  def withSettings(newSettings: ClusterShardingSettings): ShardedEntity[M, E] =
+    copy(settings = Option(newSettings))
+
+  /**
+   *
+   * If a `messageExtractor` is not specified the messages are sent to the entities by wrapping
+   * them in [[ShardingEnvelope]] with the entityId of the recipient actor. That envelope
+   * is used by the [[HashCodeMessageExtractor]] for extracting entityId and shardId. The number of
+   * shards is then defined by `numberOfShards` in `ClusterShardingSettings`, which by default
+   * is configured with `akka.cluster.sharding.number-of-shards`.
+   */
+  def withMessageExtractor[Envelope](newExtractor: ShardingMessageExtractor[Envelope, M]): ShardedEntity[M, Envelope] =
+    new ShardedEntity(create, typeKey, stopMessage, entityProps, settings, Option(newExtractor), allocationStrategy)
+
+  /**
+   * Allocation strategy which decides on which nodes to allocate new shards,
+   * [[ClusterSharding#defaultShardAllocationStrategy]] is used if this is not specified.
+   */
+  def withAllocationStrategy(newAllocationStrategy: ShardAllocationStrategy): ShardedEntity[M, E] =
+    copy(allocationStrategy = Option(newAllocationStrategy))
+
+  private def copy(
+    create:             (ActorRef[ClusterSharding.ShardCommand], String) ⇒ Behavior[M] = create,
+    typeKey:            EntityTypeKey[M]                                               = typeKey,
+    stopMessage:        M                                                              = stopMessage,
+    entityProps:        Props                                                          = entityProps,
+    settings:           Option[ClusterShardingSettings]                                = settings,
+    allocationStrategy: Option[ShardAllocationStrategy]                                = allocationStrategy
+  ): ShardedEntity[M, E] = {
+    new ShardedEntity(create, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy)
+  }
+
 }
 
 /** Allows starting a specific Sharded Entity by its entity identifier */
@@ -235,9 +294,9 @@ object StartEntity {
    * Returns [[ShardingEnvelope]] which can be sent via Cluster Sharding in order to wake up the
    * specified (by `entityId`) Sharded Entity, ''without'' delivering a real message to it.
    */
-  def apply[A](entityId: String): ShardingEnvelope[A] = {
-    // StartEntity isn't really of type A, but erased and StartEntity is only handled internally, not delivered to the entity
-    new ShardingEnvelope[A](entityId, UntypedStartEntity(entityId).asInstanceOf[A])
+  def apply[M](entityId: String): ShardingEnvelope[M] = {
+    // StartEntity isn't really of type M, but erased and StartEntity is only handled internally, not delivered to the entity
+    new ShardingEnvelope[M](entityId, UntypedStartEntity(entityId).asInstanceOf[M])
   }
 }
 
@@ -271,7 +330,7 @@ object EntityTypeKey {
  * [[ActorRef]] and watch it in case such notification is desired.
  * Not for user extension.
  */
-@DoNotInherit trait EntityRef[A] {
+@DoNotInherit trait EntityRef[M] {
 
   /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*
@@ -283,7 +342,7 @@ object EntityTypeKey {
    * target.tell("Hello")
    * }}}
    */
-  def tell(msg: A): Unit
+  def tell(msg: M): Unit
 
   /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*
@@ -295,7 +354,7 @@ object EntityTypeKey {
    * target ! "Hello"
    * }}}
    */
-  def !(msg: A): Unit = this.tell(msg)
+  def !(msg: M): Unit = this.tell(msg)
 
   /**
    * Allows to "ask" the [[EntityRef]] for a reply.
@@ -313,7 +372,7 @@ object EntityTypeKey {
    *
    * Please note that an implicit [[akka.util.Timeout]] must be available to use this pattern.
    */
-  def ask[U](f: ActorRef[U] ⇒ A)(implicit timeout: Timeout): Future[U]
+  def ask[U](f: ActorRef[U] ⇒ M)(implicit timeout: Timeout): Future[U]
 
   /**
    * Allows to "ask" the [[EntityRef]] for a reply.
@@ -331,7 +390,7 @@ object EntityTypeKey {
    *
    * Please note that an implicit [[akka.util.Timeout]] must be available to use this pattern.
    */
-  def ?[U](message: ActorRef[U] ⇒ A)(implicit timeout: Timeout): Future[U] =
+  def ?[U](message: ActorRef[U] ⇒ M)(implicit timeout: Timeout): Future[U] =
     this.ask(message)(timeout)
 
 }
