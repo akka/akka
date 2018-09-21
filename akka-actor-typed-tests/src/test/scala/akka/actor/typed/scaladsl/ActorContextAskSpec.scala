@@ -47,9 +47,9 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
         Behaviors.same
       }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
 
-      val probe = TestProbe[AnyRef]()
+      val probe = TestProbe[Pong]()
 
-      val snitch = Behaviors.setup[Pong] { (ctx) ⇒
+      val snitch = Behaviors.setup[Pong] { ctx ⇒
 
         // Timeout comes from TypedAkkaSpec
 
@@ -58,10 +58,9 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
           case Failure(ex)   ⇒ throw ex
         }
 
-        Behaviors.receive {
-          case (ctx, pong: Pong) ⇒
-            probe.ref ! pong
-            Behaviors.same
+        Behaviors.receiveMessage { pong ⇒
+          probe.ref ! pong
+          Behaviors.same
         }
       }
 
