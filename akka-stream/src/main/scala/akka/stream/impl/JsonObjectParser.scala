@@ -15,14 +15,14 @@ import scala.annotation.{ switch }
  */
 @InternalApi private[akka] object JsonObjectParser {
 
-  final val SquareBraceStart = '['.toByte
-  final val SquareBraceEnd = ']'.toByte
-  final val CurlyBraceStart = '{'.toByte
-  final val CurlyBraceEnd = '}'.toByte
-  final val Colon = ':'.toByte
-  final val DoubleQuote = '"'.toByte
-  final val Backslash = '\\'.toByte
-  final val Comma = ','.toByte
+  final val SquareBraceStart = 91 // '['.toByte
+  final val SquareBraceEnd = 93 // ']'.toByte
+  final val CurlyBraceStart = 123 // '{'.toByte
+  final val CurlyBraceEnd = 125 // '}'.toByte
+  final val Colon = 58 // ':'.toByte
+  final val DoubleQuote = 34 // '"'.toByte
+  final val Backslash = 92 // '\\'.toByte
+  final val Comma = 44 // ','.toByte
 
   final val LineBreak = 10 // '\n'
   final val LineBreak2 = 13 // '\r'
