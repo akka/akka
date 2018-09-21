@@ -168,7 +168,6 @@ object ClusterShardingSpec {
       toMe ! "Hello!"
       Behaviors.same
   }
-
   val idTestProtocolMessageExtractor = ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
     case IdReplyPlz(id, _)  ⇒ id
     case IdWhoAreYou(id, _) ⇒ id
@@ -251,18 +250,6 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
         shardingRef1 ! ShardingEnvelope(s"test$n", ReplyPlz(p.ref))
         p.expectMessage("Hello!")
       }
-    }
-
-    "return the same ShardRegion if requested twice" in {
-      val sameShardRegion = sharding.spawn(
-        _ ⇒ behavior,
-        Props.empty,
-        typeKey,
-        ClusterShardingSettings(system),
-        10,
-        StopPlz())
-
-      sameShardRegion should be(shardingRef1)
     }
 
     "send messages via cluster sharding, without envelopes" in {

@@ -59,8 +59,8 @@ public class SingletonCompileOnlyTest {
             new GoodByeCounter()
     );
 
-      proxy.tell(new Increment());
-      //#singleton
+    proxy.tell(new Increment());
+    //#singleton
 
   }
 

@@ -192,7 +192,7 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding â
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M]
 
   /**
-   * Typed Actor for querying Cluster Sharding state
+   * Actor for querying Cluster Sharding state
    */
   def shardState: ActorRef[ClusterShardingQuery]
 

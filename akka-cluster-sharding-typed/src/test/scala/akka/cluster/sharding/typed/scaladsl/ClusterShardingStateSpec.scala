@@ -4,11 +4,11 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, ScalaTestWithActorTestKit, TestProbe }
-import akka.actor.typed.{ ActorRef, Props }
+import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.typed.ActorRef
 import akka.cluster.sharding.ShardRegion.{ CurrentShardRegionState, ShardState }
-import akka.cluster.sharding.typed.{ ClusterShardingSettings, GetShardRegionState, ShardingEnvelope, ShardingMessageExtractor }
 import akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec._
+import akka.cluster.sharding.typed.{ GetShardRegionState, ShardingMessageExtractor }
 import akka.cluster.typed.{ Cluster, Join }
 import org.scalatest.WordSpecLike
 
