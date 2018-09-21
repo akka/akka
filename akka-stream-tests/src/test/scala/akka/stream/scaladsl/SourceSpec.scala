@@ -6,9 +6,10 @@ package akka.stream.scaladsl
 
 import akka.testkit.DefaultTimeout
 import org.scalatest.time.{ Millis, Span }
-
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+
+import akka.stream.testkit.Utils.TE
 //#imports
 import akka.stream._
 
@@ -265,6 +266,34 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
         .grouped(10)
         .runWith(Sink.head)
         .futureValue should ===(immutable.Seq(false, true, false, true, false, true, false, true, false, true))
+    }
+
+    "fail stream when iterator throws" in {
+      Source
+        .fromIterator(() ⇒ (1 to 1000).toIterator.map(k ⇒ if (k < 10) k else throw TE("a")))
+        .runWith(Sink.ignore)
+        .failed.futureValue.getClass should ===(classOf[TE])
+
+      Source
+        .fromIterator(() ⇒ (1 to 1000).toIterator.map(_ ⇒ throw TE("b")))
+        .runWith(Sink.ignore)
+        .failed.futureValue.getClass should ===(classOf[TE])
+    }
+
+    "use decider when iterator throws" in {
+      Source
+        .fromIterator(() ⇒ (1 to 5).toIterator.map(k ⇒ if (k != 3) k else throw TE("a")))
+        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+        .grouped(10)
+        .runWith(Sink.head)
+        .futureValue should ===(List(1, 2))
+
+      Source
+        .fromIterator(() ⇒ (1 to 5).toIterator.map(_ ⇒ throw TE("b")))
+        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+        .grouped(10)
+        .runWith(Sink.headOption)
+        .futureValue should ===(None)
     }
   }
 
