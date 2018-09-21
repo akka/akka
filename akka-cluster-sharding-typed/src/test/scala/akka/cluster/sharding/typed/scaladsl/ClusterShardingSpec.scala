@@ -7,28 +7,29 @@ package akka.cluster.sharding.typed.scaladsl
 import java.nio.charset.StandardCharsets
 
 import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
 
 import akka.Done
 import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.ActorSystem
-import akka.actor.typed.Props
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.MemberStatus
-import akka.cluster.sharding.typed.{ ClusterShardingSettings, ShardingEnvelope, ShardingMessageExtractor }
+import akka.cluster.sharding.typed.ShardingEnvelope
+import akka.cluster.sharding.typed.ShardingMessageExtractor
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.cluster.typed.Leave
 import akka.serialization.SerializerWithStringManifest
-import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
-import org.scalatest.time.Span
 
 object ClusterShardingSpec {
   val config = ConfigFactory.parseString(
@@ -66,6 +67,7 @@ object ClusterShardingSpec {
   sealed trait TestProtocol extends java.io.Serializable
   final case class ReplyPlz(toMe: ActorRef[String]) extends TestProtocol
   final case class WhoAreYou(replyTo: ActorRef[String]) extends TestProtocol
+  final case class WhoAreYou2(x: Int, replyTo: ActorRef[String]) extends TestProtocol
   final case class StopPlz() extends TestProtocol
   final case class PassivatePlz() extends TestProtocol
 
@@ -126,6 +128,8 @@ object ClusterShardingSpec {
       case "C" ⇒ IdStopPlz()
     }
   }
+
+  final case class TheReply(s: String)
 
 }
 
@@ -310,6 +314,33 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       reply2.futureValue should startWith("I'm charlie")
 
       bobRef ! StopPlz()
+    }
+
+    "EntityRef - ActorContext.ask" in {
+      val aliceRef = sharding.entityRefFor(typeKey, "alice")
+
+      val p = TestProbe[TheReply]()
+
+      spawn(
+        Behaviors.setup[TheReply] { ctx ⇒
+          // FIXME is the implicit ClassTag difficult to use?
+          // it works fine when there is a single parameter apply,
+          // but trouble when more parameters and this doesn't compile
+          //ctx.ask(aliceRef)(x => WhoAreYou(x)) {
+          ctx.ask(aliceRef)(WhoAreYou) {
+            case Success(name) ⇒ TheReply(name)
+            case Failure(ex)   ⇒ TheReply(ex.getMessage)
+          }
+
+          Behaviors.receiveMessage[TheReply] { reply ⇒
+            p.ref ! reply
+            Behaviors.same
+          }
+        })
+
+      p.expectMessageType[TheReply].s should startWith("I'm alice")
+
+      aliceRef ! StopPlz()
     }
 
     "handle untyped StartEntity message" in {

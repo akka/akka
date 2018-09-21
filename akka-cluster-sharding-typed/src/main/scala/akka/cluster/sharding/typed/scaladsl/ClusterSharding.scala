@@ -16,7 +16,9 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.actor.typed.ExtensionSetup
+import akka.actor.typed.RecipientRef
 import akka.actor.typed.Props
+import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
@@ -330,7 +332,7 @@ object EntityTypeKey {
  * [[ActorRef]] and watch it in case such notification is desired.
  * Not for user extension.
  */
-@DoNotInherit trait EntityRef[M] {
+@DoNotInherit trait EntityRef[M] extends RecipientRef[M] { this: InternalRecipientRef[M] ⇒
 
   /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*
@@ -360,6 +362,9 @@ object EntityTypeKey {
    * Allows to "ask" the [[EntityRef]] for a reply.
    * See [[akka.actor.typed.scaladsl.AskPattern]] for a complete write-up of this pattern
    *
+   * Note that if you are inside of an actor you should prefer [[akka.actor.typed.scaladsl.ActorContext.ask]]
+   * as that provides better safety.
+   *
    * Example usage:
    * {{{
    * case class Request(msg: String, replyTo: ActorRef[Reply])
@@ -377,6 +382,9 @@ object EntityTypeKey {
   /**
    * Allows to "ask" the [[EntityRef]] for a reply.
    * See [[akka.actor.typed.scaladsl.AskPattern]] for a complete write-up of this pattern
+   *
+   * Note that if you are inside of an actor you should prefer [[akka.actor.typed.scaladsl.ActorContext.ask]]
+   * as that provides better safety.
    *
    * Example usage:
    * {{{
