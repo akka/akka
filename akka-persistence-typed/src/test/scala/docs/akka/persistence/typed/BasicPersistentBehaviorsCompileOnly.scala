@@ -23,7 +23,7 @@ object BasicPersistentBehaviorsCompileOnly {
       persistenceId = "abc",
       emptyState = State(),
       commandHandler =
-        (ctx, state, cmd) ⇒
+        (state, cmd) ⇒
           throw new RuntimeException("TODO: process the command & return an Effect"),
       eventHandler =
         (state, evt) ⇒
@@ -40,12 +40,12 @@ object BasicPersistentBehaviorsCompileOnly {
       persistenceId = "abc",
       emptyState = State(),
       commandHandler =
-        (ctx, state, cmd) ⇒
+        (state, cmd) ⇒
           throw new RuntimeException("TODO: process the command & return an Effect"),
       eventHandler =
         (state, evt) ⇒
           throw new RuntimeException("TODO: process the event return the next state")
-    ).onRecoveryCompleted { (ctx, state) ⇒
+    ).onRecoveryCompleted { state ⇒
         throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
       }
   //#recovery
@@ -56,7 +56,7 @@ object BasicPersistentBehaviorsCompileOnly {
       persistenceId = "abc",
       emptyState = State(),
       commandHandler =
-        (ctx, state, cmd) ⇒
+        (state, cmd) ⇒
           throw new RuntimeException("TODO: process the command & return an Effect"),
       eventHandler =
         (state, evt) ⇒
@@ -69,12 +69,12 @@ object BasicPersistentBehaviorsCompileOnly {
     persistenceId = "abc",
     emptyState = State(),
     commandHandler =
-      (ctx, state, cmd) ⇒
+      (state, cmd) ⇒
         throw new RuntimeException("TODO: process the command & return an Effect"),
     eventHandler =
       (state, evt) ⇒
         throw new RuntimeException("TODO: process the event return the next state")
-  ).onRecoveryCompleted { (ctx, state) ⇒
+  ).onRecoveryCompleted { state ⇒
       throw new RuntimeException("TODO: add some end-of-recovery side-effect here")
     }
 

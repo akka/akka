@@ -6,13 +6,12 @@ package akka.persistence.typed.scaladsl
 
 import java.util.UUID
 
-import akka.actor.typed.TypedAkkaSpecWithShutdown
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps }
 import akka.event.Logging
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.concurrent.Eventually
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import org.scalatest.WordSpecLike
 
 object OptionalSnapshotStoreSpec {
 
@@ -43,12 +42,7 @@ object OptionalSnapshotStoreSpec {
 
 }
 
-class OptionalSnapshotStoreSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
-
-  import OptionalSnapshotStoreSpec._
-
-  override def config: Config = ConfigFactory.parseString(
-    s"""
+class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
     akka.persistence.publish-plugin-commands = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.leveldb.dir = "target/journal-${classOf[OptionalSnapshotStoreSpec].getName}"
@@ -57,7 +51,9 @@ class OptionalSnapshotStoreSpec extends ActorTestKit with TypedAkkaSpecWithShutd
 
     # snapshot store plugin is NOT defined, things should still work
     akka.persistence.snapshot-store.local.dir = "target/snapshots-${classOf[OptionalSnapshotStoreSpec].getName}/"
-  """)
+    """) with WordSpecLike {
+
+  import OptionalSnapshotStoreSpec._
 
   private def logProbe[T](cl: Class[T]) = {
     val logProbe = TestProbe[Any]

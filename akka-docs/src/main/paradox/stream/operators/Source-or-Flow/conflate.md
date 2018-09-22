@@ -18,6 +18,17 @@ Allow for a slower downstream by passing incoming elements and a summary into an
 there is backpressure. The summary value must be of the same type as the incoming elements, for example the sum or
 average of incoming numbers, if aggregation should lead to a different type `conflateWithSeed` can be used:
 
+## Example
+
+Scala
+:   @@snip [SourceOrFlow.scala](/akka-docs/src/test/scala/docs/stream/operators/SourceOrFlow.scala) { #conflate }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #conflate }
+
+If downstream is slower the elements is conflated by summing them. This means that upstream can continue producing elements while downstream is applying backpressure. For example: downstream is backpressuring while 1, 10 and 100 arrives from upstream, then backpressure stops and the conflated 111 is emitted downstream.
+
+## Reactive Streams semantics 
 
 @@@div { .callout }
 

@@ -36,15 +36,15 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   emptyState:          State,
   commandHandler:      PersistentBehaviors.CommandHandler[Command, Event, State],
   eventHandler:        PersistentBehaviors.EventHandler[State, Event],
-  journalPluginId:     Option[String]                                              = None,
-  snapshotPluginId:    Option[String]                                              = None,
-  recoveryCompleted:   (ActorContext[Command], State) ⇒ Unit                       = ConstantFun.scalaAnyTwoToUnit,
-  tagger:              Event ⇒ Set[String]                                         = (_: Event) ⇒ Set.empty[String],
-  eventAdapter:        EventAdapter[Event, Any]                                    = NoOpEventAdapter.instance[Event],
-  snapshotWhen:        (State, Event, Long) ⇒ Boolean                              = ConstantFun.scalaAnyThreeToFalse,
-  recovery:            Recovery                                                    = Recovery(),
-  supervisionStrategy: SupervisorStrategy                                          = SupervisorStrategy.stop,
-  onSnapshot:          (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit = PersistentBehaviorImpl.defaultOnSnapshot[Command] _
+  journalPluginId:     Option[String]                                            = None,
+  snapshotPluginId:    Option[String]                                            = None,
+  recoveryCompleted:   State ⇒ Unit                                              = ConstantFun.scalaAnyToUnit,
+  tagger:              Event ⇒ Set[String]                                       = (_: Event) ⇒ Set.empty[String],
+  eventAdapter:        EventAdapter[Event, Any]                                  = NoOpEventAdapter.instance[Event],
+  snapshotWhen:        (State, Event, Long) ⇒ Boolean                            = ConstantFun.scalaAnyThreeToFalse,
+  recovery:            Recovery                                                  = Recovery(),
+  supervisionStrategy: SupervisorStrategy                                        = SupervisorStrategy.stop,
+  onSnapshot:          (SnapshotMetadata, Try[Done]) ⇒ Unit                      = ConstantFun.scalaAnyTwoToUnit
 ) extends PersistentBehavior[Command, Event, State] with EventsourcedStashReferenceManagement {
 
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
@@ -54,6 +54,12 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
 
         val internalStash = stashBuffer(settings)
 
+        // the default impl needs context which isn't available until here, so we
+        // use the anyTwoToUnit as a marker to use the default
+        val actualOnSnapshot: (SnapshotMetadata, Try[Done]) ⇒ Unit =
+          if (onSnapshot == ConstantFun.scalaAnyTwoToUnit) PersistentBehaviorImpl.defaultOnSnapshot[Command](ctx, _, _)
+          else onSnapshot
+
         val eventsourcedSetup = new EventsourcedSetup(
           ctx.asInstanceOf[ActorContext[InternalProtocol]],
           persistenceId,
@@ -62,7 +68,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
           eventHandler,
           WriterIdentity.newIdentity(),
           recoveryCompleted,
-          onSnapshot,
+          actualOnSnapshot,
           tagger,
           eventAdapter,
           snapshotWhen,
@@ -104,7 +110,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State] =
+  def onRecoveryCompleted(callback: State ⇒ Unit): PersistentBehavior[Command, Event, State] =
     copy(recoveryCompleted = callback)
 
   /**
@@ -171,7 +177,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   /**
    * The `callback` function is called to notify the actor that a snapshot has finished
    */
-  def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State] =
+  def onSnapshot(callback: (SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State] =
     copy(onSnapshot = callback)
 
   /**

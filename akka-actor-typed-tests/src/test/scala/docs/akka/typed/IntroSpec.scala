@@ -9,16 +9,16 @@ package docs.akka.typed
 import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Terminated }
+import org.scalatest.WordSpecLike
 //#imports
 //#fiddle_code
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
-import akka.actor.typed.TypedAkkaSpecWithShutdown
 
 object IntroSpec {
   //format: OFF
@@ -171,7 +171,7 @@ object IntroSpec {
 
 }
 
-class IntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import IntroSpec._
 

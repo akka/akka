@@ -422,9 +422,27 @@ A snapshot of the full state, `akka.cluster.ClusterEvent.CurrentClusterState`, i
 as the first message, followed by events for incremental updates.
 
 Note that you may receive an empty `CurrentClusterState`, containing no members,
+followed by `MemberUp` events from other nodes which already joined,
 if you start the subscription before the initial join procedure has completed.
+This may for example happen when you start the subscription immediately after `cluster.join()` like below.
 This is expected behavior. When the node has been accepted in the cluster you will
 receive `MemberUp` for that node, and other nodes.
+
+Scala
+:  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #join #subscribe }
+
+Java
+:  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #join #subscribe }
+
+To avoid receiving an empty `CurrentClusterState` at the beginning, you can use it like shown in the following example,
+to defer subscription until the `MemberUp` event for the own node is received:
+
+Scala
+:  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #join #register-on-memberup }
+
+Java
+:  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #join #register-on-memberup }
+
 
 If you find it inconvenient to handle the `CurrentClusterState` you can use
 @scala[`ClusterEvent.InitialStateAsEvents`] @java[`ClusterEvent.initialStateAsEvents()`] as parameter to `subscribe`.

@@ -5,15 +5,17 @@
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ ActorRef, PostStop, Props, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, PostStop, Props }
 import akka.testkit.EventFilter
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 object ActorContextAskSpec {
   val config = ConfigFactory.parseString(
@@ -30,9 +32,7 @@ object ActorContextAskSpec {
     """)
 }
 
-class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
-
-  override def config = ActorContextAskSpec.config
+class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.config) with WordSpecLike {
 
   implicit val untyped = system.toUntyped // FIXME no typed event filter yet
 
@@ -47,9 +47,9 @@ class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
         Behaviors.same
       }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
 
-      val probe = TestProbe[AnyRef]()
+      val probe = TestProbe[Pong]()
 
-      val snitch = Behaviors.setup[Pong] { (ctx) ⇒
+      val snitch = Behaviors.setup[Pong] { ctx ⇒
 
         // Timeout comes from TypedAkkaSpec
 
@@ -58,10 +58,9 @@ class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
           case Failure(ex)   ⇒ throw ex
         }
 
-        Behaviors.receive {
-          case (ctx, pong: Pong) ⇒
-            probe.ref ! pong
-            Behaviors.same
+        Behaviors.receiveMessage { pong ⇒
+          probe.ref ! pong
+          Behaviors.same
         }
       }
 

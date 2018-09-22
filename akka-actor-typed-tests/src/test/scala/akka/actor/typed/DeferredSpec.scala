@@ -8,10 +8,10 @@ import akka.testkit.EventFilter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
-import scala.util.control.NoStackTrace
 
+import scala.util.control.NoStackTrace
 import akka.actor.ActorInitializationException
-import com.typesafe.config.ConfigFactory
+import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 object DeferredSpec {
   sealed trait Command
@@ -29,12 +29,10 @@ object DeferredSpec {
     })
 }
 
-class DeferredSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
-
-  override def config = ConfigFactory.parseString(
-    """
-      akka.loggers = [akka.testkit.TestEventListener]
-    """)
+class DeferredSpec extends ScalaTestWithActorTestKit(
+  """
+    akka.loggers = [akka.testkit.TestEventListener]
+    """) with WordSpecLike {
 
   import DeferredSpec._
   implicit val testSettings = TestKitSettings(system)
@@ -150,7 +148,7 @@ class DeferredSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   }
 }
 
-class DeferredStubbedSpec extends TypedAkkaSpec {
+class DeferredStubbedSpec extends WordSpec with Matchers {
 
   import DeferredSpec._
 

@@ -47,6 +47,12 @@ Some modules are excluded from the binary compatibility guarantees, such as:
  * `*-testkit` modules - since these are to be used only in tests, which usually are re-compiled and run on demand
  * `*-tck` modules - since they may want to add new tests (or force configuring something), in order to discover possible failures in an existing implementation that the TCK is supposed to be testing. Compatibility here is not *guaranteed*, however it is attempted to make the upgrade process as smooth as possible.
  * all @ref:[may change](may-change.md) modules - which by definition are subject to rapid iteration and change. Read more about that in @ref:[Modules marked "May Change"](may-change.md)
+ 
+### When will a deprecated method be removed entirely
+
+Once a method has been deprecated then the guideline* is that it will be kept, at minimum, for one **full** minor version release. For example, if it is deprecated in version 2.5.2 then it will remain through the rest of 2.5, as well as the entirety of 2.6. 
+
+*This is a guideline because in **rare** instances, after careful consideration, an exception may be made and the method removed earlier.
 
 <a id="24versioningchange"></a>
 ## Change in versioning scheme, stronger compatibility since 2.4

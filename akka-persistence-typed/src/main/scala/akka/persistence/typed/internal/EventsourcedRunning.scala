@@ -70,15 +70,13 @@ private[akka] object EventsourcedRunning {
   extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
   import EventsourcedRunning.EventsourcedState
 
-  private def commandContext = setup.commandContext
-
   private val runningCmdsMdc = MDC.create(setup.persistenceId, MDC.RunningCmds)
   private val persistingEventsMdc = MDC.create(setup.persistenceId, MDC.PersistingEvents)
 
   def handlingCommands(state: EventsourcedState[S]): Behavior[InternalProtocol] = {
 
     def onCommand(state: EventsourcedState[S], cmd: C): Behavior[InternalProtocol] = {
-      val effect = setup.commandHandler(commandContext, state.state, cmd)
+      val effect = setup.commandHandler(state.state, cmd)
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
     }
 
@@ -255,10 +253,10 @@ private[akka] object EventsourcedRunning {
     outer:    Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
     response match {
       case SaveSnapshotSuccess(meta) ⇒
-        setup.onSnapshot(commandContext, meta, Success(Done))
+        setup.onSnapshot(meta, Success(Done))
         outer
       case SaveSnapshotFailure(meta, ex) ⇒
-        setup.onSnapshot(commandContext, meta, Failure(ex))
+        setup.onSnapshot(meta, Failure(ex))
         outer
 
       // FIXME not implemented

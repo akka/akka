@@ -4,16 +4,17 @@
 
 package akka.actor.typed.scaladsl
 
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.TestException
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.Props
-import akka.actor.typed.TestException
-import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.testkit.EventFilter
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
+import org.scalatest.WordSpecLike
 
 object MessageAdapterSpec {
   val config = ConfigFactory.parseString(
@@ -31,9 +32,8 @@ object MessageAdapterSpec {
     """)
 }
 
-class MessageAdapterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.config) with WordSpecLike {
 
-  override def config = MessageAdapterSpec.config
   implicit val untyped = system.toUntyped // FIXME no typed event filter yet
 
   "Message adapters" must {

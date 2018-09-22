@@ -4,15 +4,16 @@
 
 package docs.akka.typed
 
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.SpawnProtocol.Spawn
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, Behavior, SpawnProtocol, TypedAkkaSpecWithShutdown, Props, DispatcherSelector }
+import akka.actor.typed.{ ActorRef, Behavior, DispatcherSelector, Props, SpawnProtocol }
 import akka.dispatch.Dispatcher
-import org.scalatest.concurrent.ScalaFutures
 import DispatchersDocSpec._
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import com.typesafe.config.ConfigFactory
+import org.scalatest.WordSpecLike
 
 object DispatchersDocSpec {
 
@@ -55,9 +56,7 @@ object DispatchersDocSpec {
 
 }
 
-class DispatchersDocSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with ScalaFutures {
-
-  override def config: Config = DispatchersDocSpec.config
+class DispatchersDocSpec extends ScalaTestWithActorTestKit(DispatchersDocSpec.config) with WordSpecLike {
 
   "Actor Dispatchers" should {
     "support default and blocking dispatcher" in {

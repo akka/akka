@@ -7,14 +7,15 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, SupervisorStrategy, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, SupervisorStrategy }
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
 import akka.actor.testkit.typed.TE
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.concurrent.Eventually
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 object PerformanceSpec {
 
@@ -71,8 +72,8 @@ object PerformanceSpec {
         eventHandler = {
           case (state, _) ⇒ state
         }
-      ).onRecoveryCompleted {
-          case (_, _) ⇒ if (parameters.every(1000)) print("r")
+      ).onRecoveryCompleted { _ ⇒
+          if (parameters.every(1000)) print("r")
         }
     }).onFailure(SupervisorStrategy.restart)
   }
@@ -89,15 +90,7 @@ object PerformanceSpec {
     }
 }
 
-class PerformanceSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
-
-  import PerformanceSpec._
-
-  val loadCycles = system.settings.config.getInt("akka.persistence.performance.cycles.load")
-
-  override def config: Config =
-    ConfigFactory.parseString(
-      s"""
+class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseString(s"""
       akka.actor.serialize-creators = off
       akka.actor.serialize-messages = off
       akka.actor.warn-about-java-serializer-usage = off
@@ -107,7 +100,11 @@ class PerformanceSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with E
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "target/snapshots-PerformanceSpec/"
       akka.test.single-expect-default = 10s
-    """).withFallback(ConfigFactory.parseString(PerformanceSpec.config))
+      """).withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with WordSpecLike {
+
+  import PerformanceSpec._
+
+  val loadCycles = system.settings.config.getInt("akka.persistence.performance.cycles.load")
 
   def stressPersistentActor(persistentActor: ActorRef[Command], probe: TestProbe[Command],
                             failAt: Option[Long], description: String): Unit = {
