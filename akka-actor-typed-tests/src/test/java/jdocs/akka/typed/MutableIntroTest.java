@@ -6,7 +6,9 @@ package jdocs.akka.typed;
 
 //#imports
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.Terminated;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Behaviors.Receive;
 import akka.actor.typed.javadsl.ActorContext;
@@ -138,4 +140,53 @@ public class MutableIntroTest {
   }
   //#chatroom-actor
 
+
+  //#chatroom-gabbler
+  public static abstract class Gabbler {
+    private Gabbler() {
+    }
+
+    public static Behavior<ChatRoom.SessionEvent> behavior() {
+      return Behaviors.receive(ChatRoom.SessionEvent.class)
+          .onMessage(ChatRoom.SessionDenied.class, (ctx, msg) -> {
+            System.out.println("cannot start chat room session: " + msg.reason);
+            return Behaviors.stopped();
+          })
+          .onMessage(ChatRoom.SessionGranted.class, (ctx, msg) -> {
+            msg.handle.tell(new ChatRoom.PostMessage("Hello World!"));
+            return Behaviors.same();
+          })
+          .onMessage(ChatRoom.MessagePosted.class, (ctx, msg) -> {
+            System.out.println("message has been posted by '" +
+                msg.screenName +"': " + msg.message);
+            return Behaviors.stopped();
+          })
+          .build();
+    }
+
+  }
+  //#chatroom-gabbler
+
+  public static void runChatRoom() throws Exception {
+
+    //#chatroom-main
+    Behavior<Void> main = Behaviors.setup(ctx -> {
+      ActorRef<ChatRoom.RoomCommand> chatRoom =
+          ctx.spawn(ChatRoom.behavior(), "chatRoom");
+      ActorRef<ChatRoom.SessionEvent> gabbler =
+          ctx.spawn(Gabbler.behavior(), "gabbler");
+      ctx.watch(gabbler);
+      chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
+
+      return Behaviors.receive(Void.class)
+          .onSignal(Terminated.class, (c, sig) -> Behaviors.stopped())
+          .build();
+    });
+
+    final ActorSystem<Void> system =
+        ActorSystem.create(main, "ChatRoomDemo");
+
+    system.getWhenTerminated().toCompletableFuture().get();
+    //#chatroom-main
+  }
 }
