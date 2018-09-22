@@ -4,6 +4,7 @@
 
 package akka.actor.testkit.typed.scaladsl
 
+import akka.actor.testkit.typed.scaladsl.AsyncTestingExampleSpec.Pong
 import akka.actor.typed.scaladsl.Behaviors
 
 import scala.concurrent.duration._
@@ -80,6 +81,17 @@ class TestProbeSpec extends AbstractActorSpec {
         probe.fishForMessage(300.millis) {
           case "one" ⇒ FishingOutcomes.continue
           case "two" ⇒ FishingOutcomes.fail("not the fish I'm looking for")
+        }
+      }
+    }
+
+    "throw an AssertionError when the fishing probe times out" in {
+      val probe = TestProbe[Pong]()
+
+      assertThrows[AssertionError] {
+        probe.fishForMessage(100.millis) { _ ⇒
+          Thread.sleep(150)
+          FishingOutcomes.complete
         }
       }
     }
