@@ -4,7 +4,6 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.testkit.typed.scaladsl.AsyncTestingExampleSpec.Pong
 import akka.actor.typed.scaladsl.Behaviors
 import scala.concurrent.duration._
 import org.scalatest.WordSpecLike
@@ -86,7 +85,7 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     "throw an AssertionError when the fishing probe times out" in {
-      val probe = TestProbe[Pong]()
+      val probe = TestProbe[AnyRef]()
 
       assertThrows[AssertionError] {
         probe.fishForMessage(100.millis) { _ ⇒
