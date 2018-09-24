@@ -4,7 +4,7 @@
 
 package akka.actor.typed
 
-import akka.annotation.DoNotInherit
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 /**
  * A behavior interceptor allows for intercepting message and signal reception and perform arbitrary logic -
@@ -23,7 +23,7 @@ abstract class BehaviorInterceptor[O, I] {
    * @return The returned behavior will be the "started" behavior of the actor used to accept
    *         the next message or signal.
    */
-  def preStart(ctx: ActorContext[I], target: PreStartTarget[I]): Behavior[I] =
+  def aroundStart(ctx: ActorContext[O], target: PreStartTarget[I]): Behavior[I] =
     target.start(ctx)
 
   /**
@@ -72,6 +72,17 @@ object BehaviorInterceptor {
   @DoNotInherit
   trait ReceiveTarget[T] {
     def apply(ctx: ActorContext[_], msg: T): Behavior[T]
+
+    /**
+     * INTERNAL API
+     *
+     * Signal that the received message will result in a simulated restart
+     * by the [[BehaviorInterceptor]]. A [[PreRestart]] will be sent to the
+     * current behavior but the returned Behavior is ignored as a restart
+     * is taking place.
+     */
+    @InternalApi
+    private[akka] def signalRestart(ctx: ActorContext[_]): Unit
   }
 
   /**

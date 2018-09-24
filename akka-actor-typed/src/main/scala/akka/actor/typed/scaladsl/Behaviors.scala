@@ -16,9 +16,6 @@ import scala.reflect.ClassTag
 @ApiMayChange
 object Behaviors {
 
-  private val _unitFunction = (_: ActorContext[Any], _: Any) ⇒ ()
-  private def unitFunction[T] = _unitFunction.asInstanceOf[((ActorContext[T], Signal) ⇒ Unit)]
-
   /**
    * `setup` is a factory for a behavior. Creation of the behavior instance is deferred until
    * the actor is started, as opposed to [[Behaviors.receive]] that creates the behavior instance
