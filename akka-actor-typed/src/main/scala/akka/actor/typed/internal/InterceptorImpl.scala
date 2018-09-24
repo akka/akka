@@ -7,7 +7,7 @@ package akka.actor.typed.internal
 import akka.actor.typed
 import akka.actor.typed.Behavior.{ SameBehavior, UnhandledBehavior }
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
-import akka.actor.typed.{ ActorContext, ActorRef, Behavior, BehaviorInterceptor, ExtensibleBehavior, Signal }
+import akka.actor.typed.{ ActorContext, ActorRef, Behavior, BehaviorInterceptor, ExtensibleBehavior, PreRestart, Signal }
 import akka.annotation.InternalApi
 import akka.util.LineNumbers
 
@@ -47,6 +47,9 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
   private val receiveTarget: ReceiveTarget[I] = new ReceiveTarget[I] {
     override def apply(ctx: ActorContext[_], msg: I): Behavior[I] =
       Behavior.interpretMessage(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], msg)
+
+    override def signalRestart(ctx: ActorContext[_]): Unit =
+      Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[ActorContext[I]], PreRestart)
   }
 
   private val signalTarget = new SignalTarget[I] {
@@ -56,7 +59,7 @@ private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterce
 
   // invoked pre-start to start/de-duplicate the initial behavior stack
   def preStart(ctx: typed.ActorContext[O]): Behavior[O] = {
-    val started = interceptor.preStart(ctx.asInstanceOf[ActorContext[I]], preStartTarget)
+    val started = interceptor.aroundStart(ctx, preStartTarget)
     deduplicate(started, ctx)
   }
 

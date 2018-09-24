@@ -176,7 +176,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
     "allow an interceptor to replace started behavior" in {
       val interceptor = new BehaviorInterceptor[String, String] {
 
-        override def preStart(ctx: ActorContext[String], target: PreStartTarget[String]): Behavior[String] = {
+        override def aroundStart(ctx: ActorContext[String], target: PreStartTarget[String]): Behavior[String] = {
           Behaviors.stopped
         }
 
