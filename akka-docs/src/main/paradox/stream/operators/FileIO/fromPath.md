@@ -1,6 +1,6 @@
 # FileIO.fromPath
 
-Emit the contents of a file.
+Emits the contents of a file from the given path.
 
 @ref[File IO Sinks and Sources](../index.md#file-io-sinks-and-sources)
 
@@ -14,5 +14,14 @@ Emit the contents of a file.
 
 ## Description
 
-Emit the contents of a file, as `ByteString`s, materializes into a @scala[`Future`] @java[`CompletionStage`] which will be completed with
+Emits the contents of a file from the given path, as `ByteString`s, materializes into a @scala[`Future`] @java[`CompletionStage`] which will be completed with
 a `IOResult` upon reaching the end of the file or if there is a failure.
+
+## Example
+
+Scala
+:  @@snip [StreamFileDocSpec.scala](/akka-docs/src/test/scala/docs/stream/io/StreamFileDocSpec.scala) { #file-source }
+
+Java
+:  @@snip [StreamFileDocTest.java](/akka-docs/src/test/java/jdocs/stream/io/StreamFileDocTest.java) { #file-source }
+
