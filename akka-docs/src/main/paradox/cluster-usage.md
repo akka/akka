@@ -227,7 +227,7 @@ and don't stop all of them at the same time.
 Instead of manually configuring seed nodes, which is useful in development or statically assigned node IPs, you may want
 to automate the discovery of seed nodes using your cloud providers or cluster orchestrator, or some other form of service
 discovery (such as managed DNS). The open source Akka Management library includes the
-[Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module which handles
+[Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap/index.html) module which handles
 just that. Please refer to its documentation for more details.
 
 ### Programatically joining to seed nodes with `joinSeedNodes`
