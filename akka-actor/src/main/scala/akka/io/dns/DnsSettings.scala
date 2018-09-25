@@ -11,7 +11,7 @@ import java.util
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
+import com.typesafe.config.{ Config, ConfigValueType }
 
 import scala.collection.JavaConverters._
 import scala.collection.{ breakOut, immutable }
@@ -25,13 +25,22 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
   import DnsSettings._
 
   val NameServers: List[InetSocketAddress] = {
-    val addrs = Try(c.getString("nameservers")).toOption.toList
-      .flatMap {
-        case "default" ⇒ getDefaultNameServers(system).getOrElse(failUnableToDetermineDefaultNameservers)
-        case address   ⇒ parseNameserverAddress(address) :: Nil
-      }
-    if (addrs.nonEmpty) addrs
-    else c.getStringList("nameservers").asScala.map(parseNameserverAddress)(breakOut)
+    c.getValue("nameservers").valueType() match {
+      case ConfigValueType.STRING ⇒
+        c.getString("nameservers") match {
+          case "default" ⇒
+            val osAddresses = getDefaultNameServers(system).getOrElse(failUnableToDetermineDefaultNameservers)
+            if (osAddresses.isEmpty) failUnableToDetermineDefaultNameservers
+            osAddresses
+          case other ⇒
+            parseNameserverAddress(other) :: Nil
+        }
+      case ConfigValueType.LIST ⇒
+        val userAddresses = c.getStringList("nameservers").asScala.map(parseNameserverAddress)(breakOut)
+        require(userAddresses.nonEmpty, "nameservers can not be empty")
+        userAddresses.toList
+      case _ ⇒ throw new IllegalArgumentException("Invalid type for nameservers. Must be a string or string list")
+    }
   }
 
   val ResolveTimeout: FiniteDuration = c.getDuration("resolve-timeout").asScala
@@ -40,7 +49,8 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
 
   def failUnableToDetermineDefaultNameservers =
     throw new IllegalStateException("Unable to obtain default nameservers from JNDI or via reflection. " +
-      "Please set `akka.io.dns.async-dns.nameservers` explicitly in order to be able to resolve domain names.")
+      "Please set `akka.io.dns.async-dns.nameservers` explicitly in order to be able to resolve domain names. "
+    )
 
 }
 
