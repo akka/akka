@@ -175,7 +175,7 @@ The source code of this sample can be found in the
 @@@ note
   When starting clusters on cloud systems such as Kubernetes, AWS, Google Cloud, Azure, Mesos or others which maintain 
   DNS or other ways of discovering nodes, you may want to use the automatic joining process implemented by the open source
-  [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module.
+  [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap/index.html) module.
 @@@
 
 ### Joining configured seed nodes
