@@ -2980,9 +2980,35 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
    * event, and may therefor affect performance.
+   *
    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
    */
+  @Deprecated
+  @deprecated("Use monitor() or monitorMat(combine) instead", "2.5.17")
   def monitor[Mat2]()(combine: (Mat, FlowMonitor[Out]) ⇒ Mat2): ReprMat[Out, Mat2] =
     viaMat(GraphStages.monitor)(combine)
+
+  /**
+   * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
+   * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+   * event, and may therefor affect performance.
+   *
+   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+   */
+  def monitorMat[Mat2](combine: (Mat, FlowMonitor[Out]) ⇒ Mat2): ReprMat[Out, Mat2] =
+    viaMat(GraphStages.monitor)(combine)
+
+  /**
+   * Materializes to `(Mat, FlowMonitor[Out])`, which is unlike most other operators (!),
+   * in which usually the default materialized value keeping semantics is to keep the left value
+   * (by passing `Keep.left()` to a `*Mat` version of a method). This operator is an exception from
+   * that rule and keeps both values since dropping its sole purpose is to introduce that materialized value.
+   *
+   * The `FlowMonitor[Out]` allows monitoring of the current flow. All events are propagated
+   * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+   * event, and may therefor affect performance.
+   */
+  def monitor: ReprMat[Out, (Mat, FlowMonitor[Out])] =
+    monitorMat(Keep.both)
 
 }
