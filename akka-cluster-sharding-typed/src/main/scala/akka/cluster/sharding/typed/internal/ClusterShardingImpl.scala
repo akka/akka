@@ -196,7 +196,7 @@ import akka.util.Timeout
 
     typeNames.putIfAbsent(typeKey.name, messageClassName) match {
       case spawnedMessageClassName: String if messageClassName != spawnedMessageClassName ⇒
-        throw new IllegalArgumentException(s"[${typeKey.name}] already spawned for [$spawnedMessageClassName]")
+        throw new IllegalArgumentException(s"[${typeKey.name}] already started for [$spawnedMessageClassName]")
       case _ ⇒ ()
     }
 
@@ -204,11 +204,13 @@ import akka.util.Timeout
   }
 
   override def entityRefFor[M](typeKey: scaladsl.EntityTypeKey[M], entityId: String): scaladsl.EntityRef[M] = {
-    new EntityRefImpl[M](untypedSharding.shardRegion(typeKey.name), entityId, system.scheduler)
+    new EntityRefImpl[M](untypedSharding.shardRegion(typeKey.name), entityId,
+      typeKey.asInstanceOf[EntityTypeKeyImpl[M]], system.scheduler)
   }
 
   override def entityRefFor[M](typeKey: javadsl.EntityTypeKey[M], entityId: String): javadsl.EntityRef[M] = {
-    new EntityRefImpl[M](untypedSharding.shardRegion(typeKey.name), entityId, system.scheduler)
+    new EntityRefImpl[M](untypedSharding.shardRegion(typeKey.name), entityId,
+      typeKey.asInstanceOf[EntityTypeKeyImpl[M]], system.scheduler)
   }
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
@@ -223,7 +225,7 @@ import akka.util.Timeout
  * INTERNAL API
  */
 @InternalApi private[akka] final class EntityRefImpl[M](shardRegion: akka.actor.ActorRef, entityId: String,
-                                                        scheduler: Scheduler)
+                                                        typeKey: EntityTypeKeyImpl[M], scheduler: Scheduler)
   extends javadsl.EntityRef[M] with scaladsl.EntityRef[M] with InternalRecipientRef[M] {
 
   override def tell(msg: M): Unit =
@@ -250,16 +252,19 @@ import akka.util.Timeout
       if (untyped.isTerminated)
         (
           adapt.ActorRefAdapter[U](untyped.provider.deadLetters),
-          Future.failed[U](new AskTimeoutException(s"Recipient[$untyped] had already been terminated.")),
+          Future.failed[U](new AskTimeoutException(
+            s"Recipient shard region of [${EntityRefImpl.this}] had already been terminated.")),
           null)
       else if (timeout.duration.length <= 0)
         (
           adapt.ActorRefAdapter[U](untyped.provider.deadLetters),
-          Future.failed[U](new IllegalArgumentException(s"Timeout length must be positive, question not sent to [$untyped]")),
+          Future.failed[U](new IllegalArgumentException(
+            s"Timeout length must be positive, question not sent to [${EntityRefImpl.this}]")),
           null
         )
       else {
-        val a = PromiseActorRef(untyped.provider, timeout, untyped, "unknown")
+        // note that the real messageClassName will be set afterwards, replyTo pattern
+        val a = PromiseActorRef(untyped.provider, timeout, targetName = EntityRefImpl.this, messageClassName = "unknown")
         val b = adapt.ActorRefAdapter[U](a)
         (b, a.result.future.asInstanceOf[Future[U]], a)
       }
@@ -280,6 +285,8 @@ import akka.util.Timeout
     import akka.actor.typed.scaladsl.adapter._
     shardRegion.toTyped.asInstanceOf[InternalRecipientRef[_]].isTerminated
   }
+
+  override def toString: String = s"EntityRef($typeKey, $entityId)"
 
 }
 
