@@ -20,12 +20,13 @@ import akka.stream.scaladsl.Sink
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.{ Success, Try }
+
 import akka.persistence.journal.inmem.InmemJournal
+import akka.persistence.typed.AutoConfirmation
 import org.scalatest.WordSpecLike
 
 object PersistentBehaviorSpec {
@@ -80,6 +81,7 @@ object PersistentBehaviorSpec {
   final case object IncrementLater extends Command
   final case object IncrementAfterReceiveTimeout extends Command
   final case object IncrementTwiceAndThenLog extends Command
+  final case class IncrementWithAutoConfirmation(override val replyTo: ActorRef[Done]) extends Command with AutoConfirmation
   final case object DoNothingAndThenLog extends Command
   final case object EmptyEventsListAndThenLog extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
@@ -147,6 +149,9 @@ object PersistentBehaviorSpec {
 
         case IncrementWithPersistAll(n) ⇒
           Effect.persist((0 until n).map(_ ⇒ Incremented(1)))
+
+        case _: IncrementWithAutoConfirmation ⇒
+          Effect.persist(Incremented(1))
 
         case GetValue(replyTo) ⇒
           replyTo ! state
@@ -348,6 +353,19 @@ class PersistentBehaviorSpec extends ScalaTestWithActorTestKit(PersistentBehavio
       c ! GetValue(probe.ref)
       probe.expectMessage(State(0, Vector.empty))
       loggingProbe.expectMessage(firstLogging)
+    }
+
+    "confirm automatically for AutoConfirmation commands" in {
+      val c = spawn(counter(nextPid))
+      val probe = TestProbe[Done]
+      c ! IncrementWithAutoConfirmation(probe.ref)
+      probe.expectMessage(Done)
+      c ! IncrementWithAutoConfirmation(probe.ref)
+      c ! IncrementWithAutoConfirmation(probe.ref)
+      probe.expectMessage(Done)
+      probe.expectMessage(Done)
+
+      // FIXME also test that no reply when not persisting, e.g. stashing command
     }
 
     "work when wrapped in other behavior" in {

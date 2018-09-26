@@ -16,10 +16,12 @@ import akka.persistence.typed.{ Callback, EventRejectedException, SideEffect, St
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, MDC }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
 import akka.persistence.typed.scaladsl.Effect
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.{ Failure, Success }
+
+import akka.persistence.typed.AutoConfirmation
+import akka.persistence.typed.AutoConfirmationSideEffect
 
 /**
  * INTERNAL API
@@ -77,6 +79,7 @@ private[akka] object EventsourcedRunning {
 
     def onCommand(state: EventsourcedState[S], cmd: C): Behavior[InternalProtocol] = {
       val effect = setup.commandHandler(state.state, cmd)
+
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
     }
 
@@ -90,6 +93,11 @@ private[akka] object EventsourcedRunning {
         setup.log.debug(
           s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
           msg.getClass.getName, effect, sideEffects.size)
+
+      def sideEffectsInclAutoConfirmation: immutable.Seq[SideEffect[S]] = msg match {
+        case a: AutoConfirmation ⇒ AutoConfirmationSideEffect[S](a) +: sideEffects
+        case _                   ⇒ sideEffects
+      }
 
       effect match {
         case CompositeEffect(eff, currentSideEffects) ⇒
@@ -108,7 +116,7 @@ private[akka] object EventsourcedRunning {
 
           val shouldSnapshotAfterPersist = setup.snapshotWhen(newState2.state, event, newState2.seqNr)
 
-          persistingEvents(newState2, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects)
+          persistingEvents(newState2, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffectsInclAutoConfirmation)
 
         case PersistAll(events) ⇒
           if (events.nonEmpty) {
@@ -127,10 +135,11 @@ private[akka] object EventsourcedRunning {
 
             val newState2 = internalPersistAll(eventsToPersist, newState)
 
-            persistingEvents(newState2, events.size, shouldSnapshotAfterPersist, sideEffects)
+            persistingEvents(newState2, events.size, shouldSnapshotAfterPersist, sideEffectsInclAutoConfirmation)
 
           } else {
             // run side-effects even when no events are emitted
+            // but no auto confirmation, e.g. the command might have just been stashed
             tryUnstash(applySideEffects(sideEffects, state))
           }
 
@@ -294,6 +303,10 @@ private[akka] object EventsourcedRunning {
 
     case Callback(sideEffects) ⇒
       sideEffects(state.state)
+      Behaviors.same
+
+    case AutoConfirmationSideEffect(cmd) ⇒
+      cmd.replyTo ! Done
       Behaviors.same
 
     case _ ⇒
