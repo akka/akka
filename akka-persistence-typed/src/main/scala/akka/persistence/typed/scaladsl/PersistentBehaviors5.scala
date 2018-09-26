@@ -14,12 +14,12 @@ import akka.persistence.typed.EventAdapter
 
 /*
 API experiment with factory for command and event handler
-- no ActorContext, passed via `Behaviors.setup` (if needed)
-- nothing special, using defs for different command handlers
+- no enclosing class
+- nothing special at all, using defs for different command handlers
+- see AccountExample5 and AccountExample5b
 */
 
 object PersistentBehaviors5 {
-
 
   /**
    * Type alias for the command handler function that defines how to act on commands.

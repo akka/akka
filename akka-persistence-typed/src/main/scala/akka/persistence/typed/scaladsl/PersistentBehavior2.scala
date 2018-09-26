@@ -12,8 +12,8 @@ import akka.annotation.InternalApi
 
 /*
 API experiment with abstract class.
-- no ActorContext, passed via `Behaviors.setup` (if needed)
-- commandHandler and eventHandler defined as functions
+- commandHandler and eventHandler defined as functions inside enclosing class
+- see AccountExample2b
  */
 
 // FIXME why is >: Null needed?

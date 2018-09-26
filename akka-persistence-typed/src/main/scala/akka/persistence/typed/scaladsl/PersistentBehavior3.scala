@@ -12,12 +12,9 @@ import akka.annotation.InternalApi
 
 /*
 API experiment with abstract class.
-- no ActorContext, passed via `Behaviors.setup` (if needed)
 - onCommand (commandHandler) and onEvent (eventHandler) are methods
 - see also alignment with scaladsl.MutableBehavior
-- The reason we can't have methods like this in javadsl is that Java doesn't have pattern matching.
-  We have to use builders for defining how to handle commands/events and those builders should not be
-  built for each command/event.
+- see AccountExample3b
  */
 
 // FIXME why is >: Null needed?

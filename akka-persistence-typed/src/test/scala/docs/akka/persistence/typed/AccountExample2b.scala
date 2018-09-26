@@ -10,6 +10,12 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.PersistentBehavior2
 
+/*
+API experiment with abstract class.
+- commandHandler and eventHandler defined as functions inside enclosing class
+- using PersistentBehavior2
+ */
+
 object AccountExample2b {
 
   object AccountEntity {

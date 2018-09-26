@@ -7,17 +7,16 @@ package docs.akka.persistence.typed
 import akka.actor.typed.Behavior
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.PersistentBehaviors5
-import akka.persistence.typed.scaladsl.PersistentBehaviors5.CommandHandler
-import akka.persistence.typed.scaladsl.PersistentBehaviors5.EventHandler
 
 /*
 API experiment with factory for command and event handler
+- same as AccountExample5 but with explicit types rather than type alias
 - no enclosing class
 - nothing special at all, using defs for different command handlers
 - using PersistentBehaviors5
 */
 
-object AccountExample5 {
+object AccountExample5b {
 
   object AccountEntity {
     sealed trait AccountCommand
@@ -88,7 +87,9 @@ object AccountExample5 {
     private def closedHandler(cmd: AccountCommand): Effect[AccountEvent, Account] =
       Effect.unhandled
 
-    private val commandHandler: CommandHandler[AccountCommand, AccountEvent, Account] = {
+    // slightly more verbose than the CommandHandler type alias, but it's more clear that it's just a function
+
+    private val commandHandler: (Account, AccountCommand) ⇒ Effect[AccountEvent, Account] = {
       (state, cmd) ⇒
         state match {
           case EmptyAccount              ⇒ initialHandler(cmd)
@@ -97,9 +98,13 @@ object AccountExample5 {
         }
     }
 
-    private val eventHandler: EventHandler[Account, AccountEvent] = {
+    private val eventHandler: (Account, AccountEvent) ⇒ Account = {
       (state, event) ⇒ state.applyEvent(event)
     }
+
+    // Note that after defining command, event and state classes you would probably start here when writing this.
+    // When filling in th parameters of PersistentBehaviors5.receive you can use IntelliJ alt+Enter > createValue
+    // to generate the stub with types for the command and event handlers.
 
     def behavior(accountNumber: String): Behavior[AccountEntity.AccountCommand] = {
       PersistentBehaviors5.receive(
@@ -109,6 +114,7 @@ object AccountExample5 {
         eventHandler
       )
     }
+
   }
 
 }

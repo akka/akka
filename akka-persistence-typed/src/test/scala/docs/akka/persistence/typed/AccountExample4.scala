@@ -13,6 +13,14 @@ import akka.persistence.typed.scaladsl.PersistentBehaviors4.CommandHandler
 import akka.persistence.typed.scaladsl.PersistentBehaviors4.SubStateCommandHandler
 import akka.persistence.typed.scaladsl.PersistentBehaviors4.HandlerFactory
 
+/*
+API experiment with factory for command and event handler
+- commandHandler and eventHandler defined as functions as before, without enclosing class
+- to avoid repeating type parameters when several command handlers are defined a HandlerFactory
+  can be used
+- using PersistentBehaviors4
+*/
+
 object AccountExample4 {
 
   object AccountEntity {

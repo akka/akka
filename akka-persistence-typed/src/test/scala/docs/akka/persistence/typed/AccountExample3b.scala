@@ -10,6 +10,13 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.PersistentBehavior3
 
+/*
+API experiment with abstract class.
+- onCommand (commandHandler) and onEvent (eventHandler) are methods
+- see also alignment with scaladsl.MutableBehavior
+- using PersistentBehavior3
+ */
+
 object AccountExample3b {
 
   object AccountEntity {

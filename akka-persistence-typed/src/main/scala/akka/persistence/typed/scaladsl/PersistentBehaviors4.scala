@@ -14,10 +14,10 @@ import akka.persistence.typed.EventAdapter
 
 /*
 API experiment with factory for command and event handler
-- no ActorContext, passed via `Behaviors.setup` (if needed)
-- commandHandler and eventHandler defined as functions as before
+- commandHandler and eventHandler defined as functions as before, without enclosing class
 - to avoid repeating type parameters when several command handlers are defined a HandlerFactory
   can be used
+- see AccountExample4
 */
 
 object PersistentBehaviors4 {
