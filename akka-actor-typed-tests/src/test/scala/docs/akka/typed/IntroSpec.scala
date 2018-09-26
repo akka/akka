@@ -229,7 +229,6 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         }
 
       val system = ActorSystem(main, "ChatRoomDemo")
-      Await.result(system.whenTerminated, 3.seconds)
       //#chatroom-main
     }
   }

@@ -305,8 +305,6 @@ public class IntroTest {
 
     final ActorSystem<Void> system =
       ActorSystem.create(main, "ChatRoomDemo");
-
-    system.getWhenTerminated().toCompletableFuture().get();
     //#chatroom-main
   }
 

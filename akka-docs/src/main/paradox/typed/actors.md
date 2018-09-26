@@ -268,10 +268,11 @@ called `ctx.watch` for it. This allows us to shut down the Actor system: when
 the main Actor terminates there is nothing more to do.
 
 Therefore after creating the Actor system with the `main` Actor’s
-`Behavior` the only thing we do is await its termination.
+`Behavior` we can let the `main` method return, the `ActorSystem` will continue running and 
+the JVM alive until the root actor stops.
 
 
-## Class based Actors behaviors
+## Class based Actor behaviors
 
 The samples shown so far are all based on a functional programming style 
 where you pass a function to a factory which then constructs a behavior, for stateful 
@@ -280,15 +281,19 @@ whenever you need to act on a changed state. We recommend that you default to us
 this style for defining actors as it makes the behaviors easier to reason about, easier 
 to compose with other behaviors and requires less boilerplate.
 
-In some cases there might still be a use for something that is closer to the untyped style of 
-defining the actor behavior where a concrete class for the actor behavior is defined
-and mutable state is kept inside of it as fields. 
+In some cases there might still be a use for something that is closer to an object oriented style 
+where a concrete class for the actor behavior is defined and mutable state is kept inside of it as fields. 
 
 Some reasons why you may want to do this are:
 
-* lambdas in Java can only close over final or effectively final fields, making it 
+@java[
+* Java lambdas can only close over final or effectively final fields, making it 
   impractical to use this style in behaviors that mutate their fields
 * some state is not immutable, e.g. immutable collections are not widely used in Java
+]
+@scala[
+* some state is not immutable
+]
 * it could be more familiar and easier to migrate existing untyped actors to this style
 * mutable state can sometimes have better performance, e.g. mutable collections and 
   avoiding allocating new instance for next behavior (be sure to benchmark if this is your 
@@ -333,6 +338,11 @@ Java
 The state is managed through fields in the class, just like with a regular object oriented class.
 As the state is mutable, we never return a different behavior from the message logic, but can return
 the `MutableBehavior` instance itself (`this`) as a behavior to use for processing the next message coming in.
+We could also return `Behavior.same` to achieve the same.
+
+It is also possible to return a new different `MutableBehavior`, for example to represent a different state in a 
+finite state machine (FSM), or use one of the functional behavior factories to combine the object oriented 
+with the functional style for different parts of the lifecycle of the same Actor behavior.
 
 When a new `GetSession` command comes in we add that client to the
 list of current sessions. Then we also need to create the session’s
@@ -340,6 +350,11 @@ list of current sessions. Then we also need to create the session’s
 create a very simple Actor that repackages the `PostMessage`
 command into a `PublishSessionMessage` command which also includes the
 screen name.
+
+To implement the logic where we spawn a child for the session we need access 
+to the `ActorContext`. This is injected as a constructor parameter upon creation 
+of the behavior, note how we combine the `MutableBehavior` with  `Behaviors.setup` 
+to do this in the `behavior` method. 
 
 The behavior that we declare here can handle both subtypes of `RoomCommand`.
 `GetSession` has been explained already and the
@@ -368,7 +383,7 @@ problematic, so passing an @scala[`ActorRef[PublishSessionMessage]`]@java[`Actor
 
 In order to see this chat room in action we need to write a client Actor that can use it, for this 
 stateless actor it doesn't make much sense to use the `MutableBehavior` so let's just reuse the
-lambda based gabbler from the sample above:
+functional style gabbler from the sample above:
 
 Scala
 :  @@snip [MutableIntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/MutableIntroSpec.scala) {  #chatroom-gabbler }
@@ -410,8 +425,8 @@ called `ctx.watch` for it. This allows us to shut down the Actor system: when
 the main Actor terminates there is nothing more to do.
 
 Therefore after creating the Actor system with the `main` Actor’s
-`Behavior` the only thing we do is await its termination.
-
+`Behavior` we can let the `main` method return, the `ActorSystem` will continue running and 
+the JVM alive until the root actor stops.
 
 
 ## Relation to Akka (untyped) Actors

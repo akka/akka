@@ -130,7 +130,6 @@ class MutableIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       val system = ActorSystem(main, "ChatRoomDemo")
       system ! "go"
-      Await.result(system.whenTerminated, 1.second)
       //#chatroom-main
     }
   }
