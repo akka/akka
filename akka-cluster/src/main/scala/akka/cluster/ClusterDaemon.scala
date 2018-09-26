@@ -855,10 +855,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       val newGossip = localGossip copy (overview = newOverview)
       updateLatestGossip(newGossip)
       log.warning(
-        "Cluster Node [{}] - Marking node as TERMINATED [{}], due to quarantine. Node roles [{}]",
+        "Cluster Node [{}] - Marking node as TERMINATED [{}], due to quarantine. Node roles [{}]. " +
+          "It must still be marked as down before it's removed.",
         selfAddress, node.address, selfRoles.mkString(","))
       publishMembershipState()
-      downing(node.address)
     }
   }
 
