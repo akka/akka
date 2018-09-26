@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, Props, Timers }
 import akka.annotation.InternalApi
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.io.dns.{ ARecord, DnsProtocol, DnsSettings }
+import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, DnsSettings }
 import akka.io.dns.internal.AsyncDnsManager.CacheCleanup
 import akka.io.{ Dns, DnsExt, PeriodicCacheCleanup }
 import akka.routing.FromConfig
@@ -74,7 +74,10 @@ private[io] final class AsyncDnsManager(val ext: DnsExt) extends Actor
       val adapted = DnsProtocol.Resolve(name)
       val reply = (resolver ? adapted).mapTo[DnsProtocol.Resolved]
         .map { asyncResolved ⇒
-          val ips = asyncResolved.records.collect { case a: ARecord ⇒ a.ip }
+          val ips = asyncResolved.records.collect {
+            case a: ARecord    ⇒ a.ip
+            case a: AAAARecord ⇒ a.ip
+          }
           Dns.Resolved(asyncResolved.name, ips)
         }
       reply pipeTo sender
