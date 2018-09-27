@@ -16,16 +16,15 @@ import akka.persistence.typed.{ EventAdapter, _ }
 import akka.persistence.typed.internal._
 import scala.util.{ Failure, Success }
 
-/** Java API */
 @ApiMayChange
-abstract class PersistentBehavior[Command, Event, State >: Null] private (val persistenceId: PersistenceId, supervisorStrategy: Option[BackoffSupervisorStrategy]) extends DeferredBehavior[Command] {
+abstract class PersistentBehavior[Command, Event, State >: Null] private[akka] (val persistenceId: PersistenceId, supervisorStrategy: Optional[BackoffSupervisorStrategy]) extends DeferredBehavior[Command] {
 
   def this(persistenceId: PersistenceId) = {
-    this(persistenceId, None)
+    this(persistenceId, Optional.empty[BackoffSupervisorStrategy])
   }
 
   def this(persistenceId: PersistenceId, backoffSupervisorStrategy: BackoffSupervisorStrategy) = {
-    this(persistenceId, Some(backoffSupervisorStrategy))
+    this(persistenceId, Optional.ofNullable(backoffSupervisorStrategy))
   }
 
   /**
@@ -169,7 +168,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private (val pe
         })
       }).eventAdapter(eventAdapter())
 
-    if (supervisorStrategy.isDefined)
+    if (supervisorStrategy.isPresent)
       behavior.onPersistFailure(supervisorStrategy.get)
     else
       behavior
@@ -177,3 +176,25 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private (val pe
 
 }
 
+/**
+ * FIXME This is not completed for javadsl yet. The compiler is not enforcing the replies yet.
+ *
+ * A [[PersistentBehavior]] that is enforcing that replies to commands are not forgotten.
+ * There will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
+ * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
+ */
+@ApiMayChange
+abstract class PersistentBehaviorWithEnforcedReplies[Command, Event, State >: Null](persistenceId: PersistenceId, backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])
+  extends PersistentBehavior[Command, Event, State](persistenceId, backoffSupervisorStrategy) {
+
+  def this(persistenceId: PersistenceId) = {
+    this(persistenceId, Optional.empty[BackoffSupervisorStrategy])
+  }
+
+  def this(persistenceId: PersistenceId, backoffSupervisorStrategy: BackoffSupervisorStrategy) = {
+    this(persistenceId, Optional.ofNullable(backoffSupervisorStrategy))
+  }
+
+  // FIXME override commandHandler and commandHandlerBuilder to require the ReplyEffect return type,
+  // which is unfortunately intrusive to the CommandHandlerBuilder
+}

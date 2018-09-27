@@ -4,6 +4,7 @@
 
 package akka.persistence.typed
 
+import akka.actor.typed.ActorRef
 import akka.japi.function
 import akka.annotation.{ DoNotInherit, InternalApi }
 
@@ -19,7 +20,23 @@ sealed abstract class SideEffect[State]
 
 /** INTERNAL API */
 @InternalApi
-final private[akka] case class Callback[State](effect: State ⇒ Unit) extends SideEffect[State]
+private[akka] class Callback[State](val sideEffect: State ⇒ Unit) extends SideEffect[State] {
+  override def toString: String = "Callback"
+}
+
+/** INTERNAL API */
+@InternalApi
+final private[akka] class ReplyEffectImpl[ReplyMessage, State](replyTo: ActorRef[ReplyMessage], replyWithMessage: State ⇒ ReplyMessage)
+  extends Callback[State](state ⇒ replyTo ! replyWithMessage(state)) {
+  override def toString: String = "Reply"
+}
+
+/** INTERNAL API */
+@InternalApi
+final private[akka] class NoReplyEffectImpl[State]
+  extends Callback[State](_ ⇒ ()) {
+  override def toString: String = "NoReply"
+}
 
 /** INTERNAL API */
 @InternalApi
@@ -30,7 +47,7 @@ object SideEffect {
    * Create a ChainedEffect that can be run after Effects
    */
   def apply[State](callback: State ⇒ Unit): SideEffect[State] =
-    Callback(callback)
+    new Callback(callback)
 
   /**
    * Java API
@@ -38,7 +55,7 @@ object SideEffect {
    * Create a ChainedEffect that can be run after Effects
    */
   def create[State](callback: function.Procedure[State]): SideEffect[State] =
-    Callback(s ⇒ callback.apply(s))
+    new Callback(s ⇒ callback.apply(s))
 
   def stop[State](): SideEffect[State] = Stop.asInstanceOf[SideEffect[State]]
 }

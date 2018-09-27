@@ -4,37 +4,41 @@
 
 package akka.persistence.typed.internal
 
+import scala.collection.immutable
+
 import akka.persistence.typed.{ SideEffect, javadsl, scaladsl }
 
-import scala.collection.{ immutable ⇒ im }
 import akka.annotation.InternalApi
-import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.NoReplyEffectImpl
 
 /** INTERNAL API */
 @InternalApi
-private[akka] abstract class EffectImpl[+Event, State] extends javadsl.Effect[Event, State] with scaladsl.Effect[Event, State] {
+private[akka] abstract class EffectImpl[+Event, State] extends javadsl.ReplyEffect[Event, State] with scaladsl.ReplyEffect[Event, State] {
   /* All events that will be persisted in this effect */
-  override def events: im.Seq[Event] = Nil
+  override def events: immutable.Seq[Event] = Nil
 
   override def andThen(chainedEffect: SideEffect[State]): EffectImpl[Event, State] =
     CompositeEffect(this, chainedEffect)
+
+  override def thenNoReply(): EffectImpl[Event, State] =
+    CompositeEffect(this, new NoReplyEffectImpl[State])
 
 }
 
 /** INTERNAL API */
 @InternalApi
 private[akka] object CompositeEffect {
-  def apply[Event, State](effect: Effect[Event, State], sideEffects: SideEffect[State]): EffectImpl[Event, State] =
+  def apply[Event, State](effect: scaladsl.Effect[Event, State], sideEffects: SideEffect[State]): CompositeEffect[Event, State] =
     CompositeEffect[Event, State](effect, sideEffects :: Nil)
 }
 
 /** INTERNAL API */
 @InternalApi
 private[akka] final case class CompositeEffect[Event, State](
-  persistingEffect: Effect[Event, State],
-  _sideEffects:     im.Seq[SideEffect[State]]) extends EffectImpl[Event, State] {
+  persistingEffect: scaladsl.Effect[Event, State],
+  _sideEffects:     immutable.Seq[SideEffect[State]]) extends EffectImpl[Event, State] {
 
-  override val events = persistingEffect.events
+  override val events: immutable.Seq[Event] = persistingEffect.events
 
   override def toString: String =
     s"CompositeEffect($persistingEffect, sideEffects: ${_sideEffects.size})"
@@ -52,7 +56,7 @@ private[akka] case class Persist[Event, State](event: Event) extends EffectImpl[
 
 /** INTERNAL API */
 @InternalApi
-private[akka] case class PersistAll[Event, State](override val events: im.Seq[Event]) extends EffectImpl[Event, State]
+private[akka] case class PersistAll[Event, State](override val events: immutable.Seq[Event]) extends EffectImpl[Event, State]
 
 /** INTERNAL API */
 @InternalApi

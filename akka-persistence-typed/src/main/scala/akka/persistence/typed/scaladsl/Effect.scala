@@ -4,12 +4,13 @@
 
 package akka.persistence.typed.scaladsl
 
-import akka.japi.function
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.{ SideEffect, Stop }
 import akka.persistence.typed.internal._
-
 import scala.collection.{ immutable ⇒ im }
+
+import akka.persistence.typed.ExpectingReply
+import akka.persistence.typed.ReplyEffectImpl
 
 /**
  * Factories for effects - how a persistent actor reacts on a command
@@ -58,6 +59,30 @@ object Effect {
    * Side effects can be chained with `andThen`
    */
   def stop[Event, State]: Effect[Event, State] = none.andThenStop()
+
+  /**
+   * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
+   * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
+   *
+   * This has the same semantics as `cmd.replyTo.tell`.
+   *
+   * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
+   * when the `PersistentBehavior` is created with [[PersistentBehavior.withEnforcedReplies]]. When
+   * `withEnforcedReplies` is used there will be compilation errors if the returned effect isn't a [[ReplyEffect]].
+   * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
+   * finding mistakes.
+   */
+  def reply[ReplyMessage, Event, State](cmd: ExpectingReply[ReplyMessage])(replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
+    none[Event, State].thenReply[ReplyMessage](cmd)(_ ⇒ replyWithMessage)
+
+  /**
+   * When [[PersistentBehavior.withEnforcedReplies]] is used there will be compilation errors if the returned effect
+   * isn't a [[ReplyEffect]]. This `noReply` can be used as a conscious decision that a reply shouldn't be
+   * sent for a specific command or the reply will be sent later.
+   */
+  def noReply[Event, State]: ReplyEffect[Event, State] =
+    none.thenNoReply()
+
 }
 
 /**
@@ -91,5 +116,37 @@ trait Effect[+Event, State] {
   def andThenStop(): Effect[Event, State] = {
     CompositeEffect(this, Stop.asInstanceOf[SideEffect[State]])
   }
+
+  /**
+   * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
+   * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
+   *
+   * This has the same semantics as `cmd.replyTo.tell`.
+   *
+   * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
+   * when the `PersistentBehavior` is created with [[PersistentBehavior.withEnforcedReplies]]. When
+   * `withEnforcedReplies` is used there will be compilation errors if the returned effect isn't a [[ReplyEffect]].
+   * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
+   * finding mistakes.
+   */
+  def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage])(replyWithMessage: State ⇒ ReplyMessage): ReplyEffect[Event, State] =
+    CompositeEffect(this, new ReplyEffectImpl[ReplyMessage, State](cmd.replyTo, replyWithMessage))
+
+  /**
+   * When [[PersistentBehavior.withEnforcedReplies]] is used there will be compilation errors if the returned effect
+   * isn't a [[ReplyEffect]]. This `thenNoReply` can be used as a conscious decision that a reply shouldn't be
+   * sent for a specific command or the reply will be sent later.
+   */
+  def thenNoReply(): ReplyEffect[Event, State]
+
 }
+
+/**
+ * [[PersistentBehavior.withEnforcedReplies]] can be used to enforce that replies are not forgotten.
+ * Then there will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
+ * created with [[Effect.reply]], [[Effect.noReply]], [[Effect.thenReply]], or [[Effect.thenNoReply]].
+ *
+ * Not intended for user extension.
+ */
+@DoNotInherit trait ReplyEffect[+Event, State] extends Effect[Event, State]
 
