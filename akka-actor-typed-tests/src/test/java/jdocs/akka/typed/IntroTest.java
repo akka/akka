@@ -298,9 +298,12 @@ public class IntroTest {
       ctx.watch(gabbler);
       chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
 
-      return Behaviors.receive(Void.class)
-        .onSignal(Terminated.class, (c, sig) -> Behaviors.stopped())
-        .build();
+      return Behaviors.<Void>receiveSignal(
+          (c, sig) -> {
+            if (sig instanceof Terminated) return Behaviors.stopped();
+            else return Behaviors.unhandled();
+          }
+      );
     });
 
     final ActorSystem<Void> system =

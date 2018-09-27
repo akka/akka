@@ -5,6 +5,7 @@
 package jdocs.akka.typed;
 
 //#imports
+import akka.NotUsed;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
@@ -178,9 +179,12 @@ public class MutableIntroTest {
       ctx.watch(gabbler);
       chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
 
-      return Behaviors.receive(Void.class)
-          .onSignal(Terminated.class, (c, sig) -> Behaviors.stopped())
-          .build();
+      return Behaviors.<Void>receiveSignal(
+          (c, sig) -> {
+            if (sig instanceof Terminated) return Behaviors.stopped();
+            else return Behaviors.unhandled();
+          }
+      );
     });
 
     final ActorSystem<Void> system =
