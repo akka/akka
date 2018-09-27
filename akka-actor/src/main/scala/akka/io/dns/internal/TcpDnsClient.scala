@@ -16,14 +16,24 @@ import akka.util.ByteString
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class TcpDnsClient(ns: InetSocketAddress) extends Actor with ActorLogging with Stash {
+@InternalApi private[akka] class TcpDnsClient(ns: InetSocketAddress, answerRecipient: ActorRef) extends Actor with ActorLogging with Stash {
+  import TcpDnsClient._
 
   import context.system
 
-  log.warning("Connecting to [{}]", ns)
-  IO(Tcp) ! Tcp.Connect(ns)
+  override def receive: Receive = idle
 
-  override def receive: Receive = {
+  val tcp = IO(Tcp)
+
+  val idle: Receive = {
+    case _: Message ⇒
+      stash()
+      log.warning("Connecting to [{}]", ns)
+      tcp ! Tcp.Connect(ns)
+      context.become(connecting)
+  }
+
+  val connecting: Receive = {
     case CommandFailed(_: Connect) ⇒
       log.warning("Failed to connect to [{}]", ns)
     // TODO
@@ -36,12 +46,6 @@ import akka.util.ByteString
     case _: Message ⇒
       stash()
   }
-
-  def encodeLength(length: Int): ByteString =
-    ByteString((length / 256).toByte, length.toByte)
-
-  def decodeLength(data: ByteString): Int =
-    ((data(0).toInt + 256) % 256) * 256 + ((data(1) + 256) % 256)
 
   def ready(connection: ActorRef): Receive = {
     case msg: Message ⇒
@@ -63,8 +67,16 @@ import akka.util.ByteString
         log.warning("TCP DNS response truncated")
       }
       val (recs, additionalRecs) = if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (Nil, Nil)
-      context.parent ! Answer(msg.id, recs, additionalRecs)
+      answerRecipient ! Answer(msg.id, recs, additionalRecs)
     case PeerClosed ⇒
-      log.warning("Peer closed")
+      context.become(idle)
   }
+
+}
+private[internal] object TcpDnsClient {
+  def encodeLength(length: Int): ByteString =
+    ByteString((length / 256).toByte, length.toByte)
+
+  def decodeLength(data: ByteString): Int =
+    ((data(0).toInt + 256) % 256) * 256 + ((data(1) + 256) % 256)
 }
