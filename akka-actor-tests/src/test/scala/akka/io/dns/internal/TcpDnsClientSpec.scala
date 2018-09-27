@@ -49,5 +49,59 @@ class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
       // Expect a reconnect
       tcpExtensionProbe.expectMsg(Tcp.Connect(dnsServerAddress))
     }
+
+    "accept a fragmented TCP response" in {
+      val tcpExtensionProbe = TestProbe()
+      val answerProbe = TestProbe()
+
+      val client = system.actorOf(Props(new TcpDnsClient(dnsServerAddress, answerProbe.ref) {
+        override val tcp = tcpExtensionProbe.ref
+      }))
+
+      client ! exampleRequestMessage
+
+      tcpExtensionProbe.expectMsg(Tcp.Connect(dnsServerAddress))
+      tcpExtensionProbe.lastSender ! Connected(dnsServerAddress, localAddress)
+      expectMsgType[Register]
+      val registered = tcpExtensionProbe.lastSender
+
+      expectMsgType[Tcp.Write]
+      expectMsgType[Tcp.Write]
+      val fullResponse = encodeLength(exampleResponseMessage.write().length) ++ exampleResponseMessage.write()
+      registered ! Tcp.Received(fullResponse.take(8))
+      registered ! Tcp.Received(fullResponse.drop(8))
+
+      answerProbe.expectMsg(Answer(42, Nil))
+    }
+
+    "accept merged TCP responses" in {
+      val tcpExtensionProbe = TestProbe()
+      val answerProbe = TestProbe()
+
+      val client = system.actorOf(Props(new TcpDnsClient(dnsServerAddress, answerProbe.ref) {
+        override val tcp = tcpExtensionProbe.ref
+      }))
+
+      client ! exampleRequestMessage
+      client ! exampleRequestMessage.copy(id = 43)
+
+      tcpExtensionProbe.expectMsg(Tcp.Connect(dnsServerAddress))
+      tcpExtensionProbe.lastSender ! Connected(dnsServerAddress, localAddress)
+      expectMsgType[Register]
+      val registered = tcpExtensionProbe.lastSender
+
+      expectMsgType[Tcp.Write]
+      expectMsgType[Tcp.Write]
+      expectMsgType[Tcp.Write]
+      expectMsgType[Tcp.Write]
+      val fullResponse =
+        encodeLength(exampleResponseMessage.write().length) ++ exampleResponseMessage.write() ++
+          encodeLength(exampleResponseMessage.write().length) ++ exampleResponseMessage.copy(id = 43).write()
+      registered ! Tcp.Received(fullResponse.take(8))
+      registered ! Tcp.Received(fullResponse.drop(8))
+
+      answerProbe.expectMsg(Answer(42, Nil))
+      answerProbe.expectMsg(Answer(43, Nil))
+    }
   }
 }

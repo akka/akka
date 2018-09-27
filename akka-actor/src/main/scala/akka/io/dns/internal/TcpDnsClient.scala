@@ -29,17 +29,16 @@ import akka.util.ByteString
   val idle: Receive = {
     case _: Message ⇒
       stash()
-      log.warning("Connecting to [{}]", ns)
+      log.debug("Connecting to [{}]", ns)
       tcp ! Tcp.Connect(ns)
       context.become(connecting)
   }
 
   val connecting: Receive = {
     case CommandFailed(_: Connect) ⇒
-      log.warning("Failed to connect to [{}]", ns)
-      throw new AkkaException("Connecting failed")
+      throw new AkkaException(s"Failed to connect to TCP DNS server at [$ns]")
     case _: Tcp.Connected ⇒
-      log.debug(s"Connected to TCP address [{}]", ns)
+      log.debug("Connected to TCP address [{}]", ns)
       val connection = sender()
       context.become(ready(connection))
       connection ! Register(self)
@@ -48,31 +47,44 @@ import akka.util.ByteString
       stash()
   }
 
-  def ready(connection: ActorRef): Receive = {
+  def ready(connection: ActorRef, buffer: ByteString = ByteString.empty): Receive = {
     case msg: Message ⇒
-      log.warning("Sending message to connection")
       val bytes = msg.write()
       connection ! Tcp.Write(encodeLength(bytes.length) ++ bytes)
     case CommandFailed(_: Write) ⇒
-      log.warning("Write failed")
       throw new AkkaException("Write failed")
-    case Received(data) ⇒
-      log.warning("Received data")
-      require(data.length > 2, "Expected a response datagram starting with the size")
-      val expectedLength = decodeLength(data)
-      log.warning(s"First 2 bytes are ${data(0)} and ${data(1)}, totalling $expectedLength")
-      require(data.length == expectedLength + 2, s"Expected a full response datagram of length ${expectedLength}, got ${data.length - 2} data bytes instead.")
-      val msg = Message.parse(data.drop(2))
-      log.debug(s"Decoded: $msg")
-      if (msg.flags.isTruncated) {
-        log.warning("TCP DNS response truncated")
+    case Received(newData) ⇒
+      val data = buffer ++ newData
+      // TCP DNS responses are prefixed by 2 bytes encoding the length of the response
+      val prefixSize = 2
+      if (data.length < prefixSize)
+        context.become(ready(connection, data))
+      else {
+        val expectedPayloadLength = decodeLength(data)
+        if (data.drop(prefixSize).length < expectedPayloadLength)
+          context.become(ready(connection, data))
+        else {
+          val payload = data.drop(prefixSize).take(expectedPayloadLength)
+          answerRecipient ! parseResponse(payload)
+          context.become(ready(connection))
+          if (data.length > expectedPayloadLength + prefixSize) {
+            self ! Received(data.drop(expectedPayloadLength + prefixSize))
+          }
+        }
       }
-      val (recs, additionalRecs) = if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (Nil, Nil)
-      answerRecipient ! Answer(msg.id, recs, additionalRecs)
     case PeerClosed ⇒
       context.become(idle)
   }
 
+  private def parseResponse(data: ByteString) = {
+    val msg = Message.parse(data)
+    log.debug("Decoded TCP DNS response [{}]", msg)
+    if (msg.flags.isTruncated) {
+      log.warning("TCP DNS response truncated")
+    }
+    val (recs, additionalRecs) = if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (Nil, Nil)
+    Answer(msg.id, recs, additionalRecs)
+  }
 }
 private[internal] object TcpDnsClient {
   def encodeLength(length: Int): ByteString =

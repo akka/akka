@@ -54,7 +54,7 @@ import scala.concurrent.duration._
 
   def receive: Receive = {
     case Udp.Bound(local) ⇒
-      log.debug(s"Bound to UDP address [{}]", local)
+      log.debug("Bound to UDP address [{}]", local)
       context.become(ready(sender()))
       unstashAll()
     case _: Question4 ⇒
@@ -77,21 +77,21 @@ import scala.concurrent.duration._
       log.debug("Resolving [{}] (A)", name)
       val msg = message(name, id, RecordType.A)
       inflightRequests += (id -> (sender(), msg))
-      log.debug(s"Message [{}] to [{}]: [{}]", id, ns, msg)
+      log.debug("Message [{}] to [{}]: [{}]", id, ns, msg)
       socket ! Udp.Send(msg.write(), ns)
 
     case Question6(id, name) ⇒
       log.debug("Resolving [{}] (AAAA)", name)
       val msg = message(name, id, RecordType.AAAA)
       inflightRequests += (id -> (sender(), msg))
-      log.debug(s"Message to [{}]: [{}]", ns, msg)
+      log.debug("Message to [{}]: [{}]", ns, msg)
       socket ! Udp.Send(msg.write(), ns)
 
     case SrvQuestion(id, name) ⇒
       log.debug("Resolving [{}] (SRV)", name)
       val msg = message(name, id, RecordType.SRV)
       inflightRequests += (id -> (sender(), msg))
-      log.debug(s"Message to {}: msg", ns, msg)
+      log.debug("Message to [{}]: [{}]", ns, msg)
       socket ! Udp.Send(msg.write(), ns)
 
     case Udp.CommandFailed(cmd) ⇒
@@ -111,10 +111,10 @@ import scala.concurrent.duration._
           log.warning("Dns client failed to send {}", cmd)
       }
     case Udp.Received(data, remote) ⇒
-      log.debug(s"Received message from [{}]: [{}]", remote, data)
+      log.debug("Received message from [{}]: [{}]", remote, data)
       val msg = Message.parse(data)
-      log.debug(s"Decoded: $msg")
-      // TODO remove me when #25460 is implemented
+      log.debug("Decoded UDP DNS response [{}]", data)
+
       if (msg.flags.isTruncated) {
         log.debug("DNS response truncated, falling back to TCP")
         inflightRequests.get(msg.id) match {
