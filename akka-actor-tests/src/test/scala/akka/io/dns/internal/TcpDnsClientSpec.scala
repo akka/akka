@@ -6,9 +6,9 @@ package akka.io.dns.internal
 
 import java.net.InetSocketAddress
 
-import akka.actor.Props
+import akka.actor.{ Props, Terminated }
 import akka.io.Tcp
-import akka.io.Tcp.{ Connected, PeerClosed, Register }
+import akka.io.Tcp.{ CommandFailed, Connected, PeerClosed, Register }
 import akka.io.dns.internal.DnsClient.Answer
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 

@@ -11,9 +11,11 @@ import akka.actor.{ Actor, ActorLogging, ActorRef, NoSerializationVerificationNe
 import akka.annotation.InternalApi
 import akka.io.dns.{ RecordClass, RecordType, ResourceRecord }
 import akka.io.{ IO, Udp }
+import akka.pattern.BackoffSupervisor
 
 import scala.collection.{ immutable ⇒ im }
 import scala.util.Try
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API
@@ -42,7 +44,13 @@ import scala.util.Try
 
   var inflightRequests: Map[Short, (ActorRef, Message)] = Map.empty
 
-  val tcpDnsClient = context.actorOf(Props(classOf[TcpDnsClient], ns), "tcpDnsClient")
+  val tcpDnsClient = context.actorOf(BackoffSupervisor.props(
+    Props(classOf[TcpDnsClient], ns, self),
+    childName = "tcpDnsClient",
+    minBackoff = 10.millis,
+    maxBackoff = 20.seconds,
+    randomFactor = 0.1
+  ), "tcpDnsClientSupervisor")
 
   def receive: Receive = {
     case Udp.Bound(local) ⇒
