@@ -13,6 +13,8 @@ import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.internal._
 import scala.util.Try
 
+import akka.annotation.DoNotInherit
+import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 
 object PersistentBehavior {
@@ -46,6 +48,18 @@ object PersistentBehavior {
     PersistentBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
 
   /**
+   * Create a `Behavior` for a persistent actor that is enforcing that replies to commands are not forgotten.
+   * Then there will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
+   * created with [[Effect.reply]], [[Effect.noReply]], [[Effect.thenReply]], or [[Effect.thenNoReply]].
+   */
+  def withEnforcedReplies[Command <: ExpectingReply[_], Event, State](
+    persistenceId:  PersistenceId,
+    emptyState:     State,
+    commandHandler: (State, Command) ⇒ ReplyEffect[Event, State],
+    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
+    PersistentBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
+
+  /**
    * The `CommandHandler` defines how to act on commands. A `CommandHandler` is
    * a function:
    *
@@ -70,7 +84,10 @@ object PersistentBehavior {
 
 }
 
-trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command] {
+/**
+ * Not intended for user extension.
+ */
+@DoNotInherit trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command] {
   /**
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
