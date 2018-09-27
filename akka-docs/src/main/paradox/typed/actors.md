@@ -139,6 +139,8 @@ The console output may look like this:
 
 ## A More Complex Example
 
+### Functional Style
+
 The next example is more realistic and demonstrates some important patterns:
 
 * Using a sealed trait and case class/objects to represent multiple messages an actor can receive
@@ -210,7 +212,7 @@ former simply speaks more languages than the latter. The opposite would be
 problematic, so passing an @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] where
 @scala[`ActorRef[RoomCommand]`]@java[`ActorRef<RoomCommand>`] is required will lead to a type error.
 
-### Trying it out
+#### Trying it out
 
 In order to see this chat room in action we need to write a client Actor that can use it:
 
@@ -272,34 +274,40 @@ Therefore after creating the Actor system with the `main` Actor’s
 the JVM alive until the root actor stops.
 
 
-## Class based Actor behaviors
+### Object-oriented style
 
 The samples shown so far are all based on a functional programming style 
 where you pass a function to a factory which then constructs a behavior, for stateful 
 actors this means passing immutable state around as parameters and switching to a new behavior 
-whenever you need to act on a changed state. We recommend that you default to using 
-this style for defining actors as it makes the behaviors easier to reason about, easier 
-to compose with other behaviors and requires less boilerplate.
-
-In some cases there might still be a use for something that is closer to an object oriented style 
-where a concrete class for the actor behavior is defined and mutable state is kept inside of it as fields. 
+whenever you need to act on a changed state. An alternative way to express the same is a more 
+object oriented style where a concrete class for the actor behavior is defined and mutable 
+state is kept inside of it as fields. 
 
 Some reasons why you may want to do this are:
 
-@java[
-* Java lambdas can only close over final or effectively final fields, making it 
-  impractical to use this style in behaviors that mutate their fields
-* some state is not immutable, e.g. immutable collections are not widely used in Java
-]
-@scala[
-* some state is not immutable
-]
-* it could be more familiar and easier to migrate existing untyped actors to this style
-* mutable state can sometimes have better performance, e.g. mutable collections and 
-  avoiding allocating new instance for next behavior (be sure to benchmark if this is your 
-  motivation)
+@@@ div {.group-java}
 
-### MutableBehavior API
+ * Java lambdas can only close over final or effectively final fields, making it 
+   impractical to use this style in behaviors that mutate their fields
+ * some state is not immutable, e.g. immutable collections are not widely used in Java
+ * it could be more familiar and easier to migrate existing untyped actors to this style
+ * mutable state can sometimes have better performance, e.g. mutable collections and 
+   avoiding allocating new instance for next behavior (be sure to benchmark if this is your 
+   motivation)
+
+@@@
+
+@@@ div {.group-scala}
+
+ * some state is not immutable
+ * it could be more familiar and easier to migrate existing untyped actors to this style
+ * mutable state can sometimes have better performance, e.g. mutable collections and 
+   avoiding allocating new instance for next behavior (be sure to benchmark if this is your 
+   motivation)
+
+@@@
+
+#### MutableBehavior API
 
 Defining a class based actor behavior starts with extending 
 @scala[`akka.actor.typed.scaladsl.MutableBehavior[T]`]
@@ -379,7 +387,7 @@ former simply speaks more languages than the latter. The opposite would be
 problematic, so passing an @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] where
 @scala[`ActorRef[RoomCommand]`]@java[`ActorRef<RoomCommand>`] is required will lead to a type error.
 
-### Trying it out
+#### Trying it out
 
 In order to see this chat room in action we need to write a client Actor that can use it, for this 
 stateless actor it doesn't make much sense to use the `MutableBehavior` so let's just reuse the
