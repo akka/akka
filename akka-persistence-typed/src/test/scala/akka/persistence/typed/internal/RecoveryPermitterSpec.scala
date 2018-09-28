@@ -11,8 +11,8 @@ import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.Persistence
 import akka.persistence.RecoveryPermitter.{ RecoveryPermitGranted, RequestRecoveryPermit, ReturnRecoveryPermit }
-import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
-import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
+import akka.persistence.typed.scaladsl.PersistentBehavior.CommandHandler
+import akka.persistence.typed.scaladsl.{ Effect, PersistentBehavior }
 import akka.testkit.EventFilter
 
 import scala.concurrent.duration._
@@ -43,7 +43,7 @@ object RecoveryPermitterSpec {
     commandProbe:    TestProbe[Any],
     eventProbe:      TestProbe[Any],
     throwOnRecovery: Boolean        = false): Behavior[Command] =
-    PersistentBehaviors.receive[Command, Event, State](
+    PersistentBehavior[Command, Event, State](
       persistenceId = name,
       emptyState = EmptyState,
       commandHandler = CommandHandler.command {

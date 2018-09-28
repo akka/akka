@@ -6,8 +6,8 @@ package docs.akka.persistence.typed
 
 import akka.actor.typed.Behavior
 import akka.persistence.typed.scaladsl.Effect
-import akka.persistence.typed.scaladsl.PersistentBehaviors
-import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
+import akka.persistence.typed.scaladsl.PersistentBehavior
+import akka.persistence.typed.scaladsl.PersistentBehavior.CommandHandler
 
 object AccountExample1 {
 
@@ -89,7 +89,7 @@ object AccountExample1 {
   }
 
   def behavior(accountNumber: String): Behavior[AccountCommand] =
-    PersistentBehaviors.receive[AccountCommand, AccountEvent, Option[Account]](
+    PersistentBehavior[AccountCommand, AccountEvent, Option[Account]](
       persistenceId = accountNumber,
       emptyState = None,
       commandHandler = commandHandler,

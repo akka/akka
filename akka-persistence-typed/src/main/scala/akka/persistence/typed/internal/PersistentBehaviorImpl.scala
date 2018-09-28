@@ -34,17 +34,17 @@ private[akka] object PersistentBehaviorImpl {
 private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   persistenceId:       String,
   emptyState:          State,
-  commandHandler:      PersistentBehaviors.CommandHandler[Command, Event, State],
-  eventHandler:        PersistentBehaviors.EventHandler[State, Event],
-  journalPluginId:     Option[String]                                            = None,
-  snapshotPluginId:    Option[String]                                            = None,
-  recoveryCompleted:   State ⇒ Unit                                              = ConstantFun.scalaAnyToUnit,
-  tagger:              Event ⇒ Set[String]                                       = (_: Event) ⇒ Set.empty[String],
-  eventAdapter:        EventAdapter[Event, Any]                                  = NoOpEventAdapter.instance[Event],
-  snapshotWhen:        (State, Event, Long) ⇒ Boolean                            = ConstantFun.scalaAnyThreeToFalse,
-  recovery:            Recovery                                                  = Recovery(),
-  supervisionStrategy: SupervisorStrategy                                        = SupervisorStrategy.stop,
-  onSnapshot:          (SnapshotMetadata, Try[Done]) ⇒ Unit                      = ConstantFun.scalaAnyTwoToUnit
+  commandHandler:      PersistentBehavior.CommandHandler[Command, Event, State],
+  eventHandler:        PersistentBehavior.EventHandler[State, Event],
+  journalPluginId:     Option[String]                                           = None,
+  snapshotPluginId:    Option[String]                                           = None,
+  recoveryCompleted:   State ⇒ Unit                                             = ConstantFun.scalaAnyToUnit,
+  tagger:              Event ⇒ Set[String]                                      = (_: Event) ⇒ Set.empty[String],
+  eventAdapter:        EventAdapter[Event, Any]                                 = NoOpEventAdapter.instance[Event],
+  snapshotWhen:        (State, Event, Long) ⇒ Boolean                           = ConstantFun.scalaAnyThreeToFalse,
+  recovery:            Recovery                                                 = Recovery(),
+  supervisionStrategy: SupervisorStrategy                                       = SupervisorStrategy.stop,
+  onSnapshot:          (SnapshotMetadata, Try[Done]) ⇒ Unit                     = ConstantFun.scalaAnyTwoToUnit
 ) extends PersistentBehavior[Command, Event, State] with EventsourcedStashReferenceManagement {
 
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {

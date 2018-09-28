@@ -15,7 +15,7 @@ import akka.persistence._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.internal.EventsourcedBehavior.MDC
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
-import akka.persistence.typed.scaladsl.PersistentBehaviors
+import akka.persistence.typed.scaladsl.PersistentBehavior
 import akka.util.Collections.EmptyImmutableSeq
 import akka.util.OptionVal
 import scala.util.Try
@@ -31,8 +31,8 @@ private[persistence] final class EventsourcedSetup[C, E, S](
   val context:               ActorContext[InternalProtocol],
   val persistenceId:         String,
   val emptyState:            S,
-  val commandHandler:        PersistentBehaviors.CommandHandler[C, E, S],
-  val eventHandler:          PersistentBehaviors.EventHandler[S, E],
+  val commandHandler:        PersistentBehavior.CommandHandler[C, E, S],
+  val eventHandler:          PersistentBehavior.EventHandler[S, E],
   val writerIdentity:        WriterIdentity,
   val recoveryCompleted:     S ⇒ Unit,
   val onSnapshot:            (SnapshotMetadata, Try[Done]) ⇒ Unit,
