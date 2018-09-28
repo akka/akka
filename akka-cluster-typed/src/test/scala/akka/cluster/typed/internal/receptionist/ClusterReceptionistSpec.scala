@@ -10,7 +10,7 @@ import akka.actor.{ ExtendedActorSystem, RootActorPath }
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ ActorRef, ActorRefResolver }
+import akka.actor.typed.{ ActorRef, ActorRefResolver, scaladsl }
 import akka.cluster.MemberStatus
 import akka.cluster.typed.{ Cluster, Join }
 import akka.serialization.SerializerWithStringManifest
@@ -25,7 +25,7 @@ import scala.concurrent.duration._
 object ClusterReceptionistSpec {
   val config = ConfigFactory.parseString(
     s"""
-      # akka.loglevel = DEBUG # issue #24960
+      akka.loglevel = DEBUG # issue #24960
       akka.actor {
         provider = cluster
         serialize-messages = off
@@ -297,7 +297,13 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
     }
 
     "not lose removals on concurrent updates to same key" in {
-      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-5", ClusterReceptionistSpec.config)
+      val config = ConfigFactory.parseString(
+        """
+          # disable delta propagation so we can have repeatable concurrent writes
+          # without delta reaching between nodes already
+          akka.cluster.distributed-data.delta-crdt.enabled=false
+        """).withFallback(ClusterReceptionistSpec.config)
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-5", config)
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
       val system2 = testKit2.system
@@ -315,9 +321,11 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) == 2)
 
         // one actor on each node up front
-        val actor1 = testKit1.spawn(Behaviors.receiveMessage[AnyRef] {
-          case "stop" ⇒ Behaviors.stopped
-          case _      ⇒ Behaviors.same
+        val actor1 = testKit1.spawn(Behaviors.receive[AnyRef] {
+          case (ctx, "stop") ⇒
+            ctx.log.info("Stopping")
+            Behaviors.stopped
+          case _ ⇒ Behaviors.same
         }, "actor1")
         val actor2 = testKit2.spawn(Behaviors.empty[AnyRef], "actor2")
 
@@ -339,17 +347,19 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
         // TheKey -> Set(actor1) seen by both nodes, now,
         // remove on node1 and add on node2 (hopefully) concurrently
-        system2.receptionist ! Register(TheKey, actor2)
+        system2.receptionist ! Register(TheKey, actor2, regProbe2.ref)
         actor1 ! "stop"
+        regProbe2.expectMessage(Registered(TheKey, actor2))
+        system2.log.info("actor2 registered")
 
         // we should now, eventually, see the removal on both nodes
-        regProbe1.fishForMessage(5.seconds) {
+        regProbe1.fishForMessage(10.seconds) {
           case TheKey.Listing(actors) if actors.size == 1 ⇒
             FishingOutcomes.complete
           case _ ⇒
             FishingOutcomes.continue
         }
-        regProbe2.fishForMessage(5.seconds) {
+        regProbe2.fishForMessage(10.seconds) {
           case TheKey.Listing(actors) if actors.size == 1 ⇒
             FishingOutcomes.complete
           case _ ⇒

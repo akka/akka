@@ -16,6 +16,7 @@ import akka.cluster.ddata.{ DistributedData, ORMultiMap, ORMultiMapKey, Replicat
 import akka.cluster.{ Cluster, ClusterEvent, UniqueAddress }
 import akka.remote.AddressUidExtension
 import akka.util.TypedMultiMap
+import scala.concurrent.duration._
 
 import scala.language.existentials
 
@@ -46,6 +47,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     key:   DDataKey,
     value: ORMultiMap[ServiceKey[_], Entry]) extends InternalCommand
   private case object RemoveTick extends InternalCommand
+  private case object PruneTombstonesTick extends InternalCommand
 
   // captures setup/dependencies so we can avoid doing it over and over again
   final class Setup(ctx: ActorContext[Command]) {
@@ -54,43 +56,50 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     val replicator = DistributedData(untypedSystem).replicator
     val selfSystemUid = AddressUidExtension(untypedSystem).longAddressUid
     implicit val cluster = Cluster(untypedSystem)
+    def newTombstoneDeadline() = Deadline(cluster.settings.PruneGossipTombstonesAfter)
     def selfUniqueAddress: UniqueAddress = cluster.selfUniqueAddress
   }
 
-  override def behavior: Behavior[Command] = Behaviors.setup { ctx ⇒
+  override def behavior: Behavior[Command] =
+    Behaviors.setup { ctx ⇒
+      Behaviors.withTimers { timers ⇒
 
-    val setup = new Setup(ctx)
-    val registry = ShardedServiceRegistry(setup.settings.distributedKeyCount)
+        val setup = new Setup(ctx)
+        val registry = ShardedServiceRegistry(setup.settings.distributedKeyCount)
 
-    // subscribe to changes from other nodes
-    val replicatorMessageAdapter: ActorRef[Replicator.ReplicatorMessage] =
-      ctx.messageAdapter[Replicator.ReplicatorMessage] {
-        case changed: Replicator.Changed[_] @unchecked ⇒
-          ChangeFromReplicator(
-            changed.key.asInstanceOf[DDataKey],
-            changed.dataValue.asInstanceOf[ORMultiMap[ServiceKey[_], Entry]])
+        // subscribe to changes from other nodes
+        val replicatorMessageAdapter: ActorRef[Replicator.ReplicatorMessage] =
+          ctx.messageAdapter[Replicator.ReplicatorMessage] {
+            case changed: Replicator.Changed[_] @unchecked ⇒
+              ChangeFromReplicator(
+                changed.key.asInstanceOf[DDataKey],
+                changed.dataValue.asInstanceOf[ORMultiMap[ServiceKey[_], Entry]])
+          }
+
+        registry.allDdataKeys.foreach(key ⇒
+          setup.replicator ! Replicator.Subscribe(key, replicatorMessageAdapter.toUntyped)
+        )
+
+        // remove entries when members are removed
+        val clusterEventMessageAdapter: ActorRef[MemberRemoved] =
+          ctx.messageAdapter[MemberRemoved] { case MemberRemoved(member, _) ⇒ NodeRemoved(member.uniqueAddress) }
+        setup.cluster.subscribe(clusterEventMessageAdapter.toUntyped, ClusterEvent.InitialStateAsEvents, classOf[MemberRemoved])
+
+        // also periodic cleanup in case removal from ORMultiMap is skipped due to concurrent update,
+        // which is possible for OR CRDTs - done with an adapter to leverage the existing NodesRemoved message
+        timers.startPeriodicTimer("remove-nodes", RemoveTick, setup.settings.pruningInterval)
+
+        // default tomstone keepalive is 24h (based on prune-gossip-tombstones-after) and keeping the actorrefs
+        // around isn't very costly so don't prune often
+        timers.startPeriodicTimer("prune-tombstones", PruneTombstonesTick, 1.hour)
+
+        behavior(
+          setup,
+          registry,
+          TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV]
+        )
       }
-
-    registry.allDdataKeys.foreach(key ⇒
-      setup.replicator ! Replicator.Subscribe(key, replicatorMessageAdapter.toUntyped)
-    )
-
-    // remove entries when members are removed
-    val clusterEventMessageAdapter: ActorRef[MemberRemoved] =
-      ctx.messageAdapter[MemberRemoved] { case MemberRemoved(member, _) ⇒ NodeRemoved(member.uniqueAddress) }
-    setup.cluster.subscribe(clusterEventMessageAdapter.toUntyped, ClusterEvent.InitialStateAsEvents, classOf[MemberRemoved])
-
-    // also periodic cleanup in case removal from ORMultiMap is skipped due to concurrent update,
-    // which is possible for OR CRDTs - done with an adapter to leverage the existing NodesRemoved message
-    ctx.system.scheduler.schedule(setup.settings.pruningInterval, setup.settings.pruningInterval,
-      ctx.self.toUntyped, RemoveTick)(ctx.system.executionContext)
-
-    behavior(
-      setup,
-      registry,
-      TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV]
-    )
-  }
+    }
 
   /**
    * @param registry The last seen state from the replicator - only updated when we get an update from th replicator
@@ -160,8 +169,19 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
                   ServiceRegistry(registry).removeAll(removalForKey).toORMultiMap
                 }
             }
+
+            // tombstone removals so they are not re-added by merging with other concurrent
+            // registrations for the same key
+            val removedActors = removals.flatMap { case (_, actors) ⇒ actors }
+            val deadline = setup.newTombstoneDeadline()
+            val registryWithTombstones =
+              removedActors.foldLeft(registry)((registry, entry) ⇒
+                registry.addTombstone(entry.ref, deadline)
+              )
+            next(registryWithTombstones)
+          } else {
+            Behaviors.same
           }
-          Behaviors.same
 
         } else Behaviors.same
       }
@@ -206,7 +226,9 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry ⇒
             ServiceRegistry(registry).removeBinding(key, entry).toORMultiMap
           }
-          Behaviors.same
+          // tombstone removals so they are not re-added by merging with other concurrent
+          // registrations for the same key
+          next(newState = registry.addTombstone(serviceInstance, setup.newTombstoneDeadline()))
 
         case ChangeFromReplicator(ddataKey, value) ⇒
           // every change will come back this way - this is where the local notifications happens
@@ -216,13 +238,31 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           if (changedKeys.nonEmpty) {
             if (ctx.log.isDebugEnabled) {
               ctx.log.debug(
-                "Change from replicator: [{}], changes: [{}]",
+                "Change from replicator: [{}], changes: [{}], tombstones [{}]",
                 newState.entries.entries,
                 changedKeys.map(key ⇒
                   key.asServiceKey.id -> newState.entriesFor(key).mkString("[", ", ", "]")
-                ).mkString(", "))
+                ).mkString(", "),
+                registry.tombstones.mkString(", ")
+              )
             }
-            changedKeys.foreach(notifySubscribersFor(_, newState))
+            changedKeys.foreach { changedKey ⇒
+              // FIXME we should also not notify the subscribers about tombstoned refs reappearing
+              notifySubscribersFor(changedKey, newState)
+
+              // because of how ORMultiMap/ORset works, we could have a case where an actor we removed
+              // is re-introduced because of a concurrent update, in that case we need to re-remove it
+              val serviceKey = changedKey.asServiceKey
+              val tombstonedButReAdded =
+                newRegistry.actorRefsFor(serviceKey).filter(newRegistry.hasTombstone)
+              tombstonedButReAdded.foreach { actorRef ⇒
+                ctx.log.info("Saw actorref that was tomstoned {}, re-removing.", actorRef)
+                replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry ⇒
+                  ServiceRegistry(registry).removeBinding(serviceKey, Entry(actorRef, setup.selfSystemUid)).toORMultiMap
+                }
+              }
+            }
+
             next(newRegistry)
           } else {
             Behaviors.same
@@ -250,6 +290,14 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             }
           } else
             Behavior.same
+
+        case PruneTombstonesTick ⇒
+          val prunedRegistry = registry.pruneTombstones()
+          if (prunedRegistry eq registry) Behaviors.same
+          else {
+            ctx.log.debug(s"Pruning tombstones")
+            next(prunedRegistry)
+          }
       }
 
       Behaviors.receive[Command] { (ctx, msg) ⇒

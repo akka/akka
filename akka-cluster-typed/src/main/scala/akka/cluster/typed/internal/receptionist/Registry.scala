@@ -11,6 +11,9 @@ import akka.annotation.InternalApi
 import akka.cluster.{ Cluster, UniqueAddress }
 import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey }
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, EmptyORMultiMap, Entry }
+import akka.util.Timeout
+
+import scala.concurrent.duration.Deadline
 
 /**
  * INTERNAL API
@@ -21,7 +24,7 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, 
       val key = ORMultiMapKey[ServiceKey[_], Entry](s"ReceptionistKey_$n")
       key -> new ServiceRegistry(EmptyORMultiMap)
     }.toMap
-    new ShardedServiceRegistry(emptyRegistries)
+    new ShardedServiceRegistry(emptyRegistries, Set.empty)
   }
 
 }
@@ -30,9 +33,14 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, 
  * Two level structure for keeping service registry to be able to shard entries over multiple ddata keys (to not
  * get too large ddata messages)
  *
+ * @param tombstones Local actors that were stopped and should not be re-added to the available set of actors
+ *                   for a key. Since the only way to unregister is to stop, we don't need to keep track of
+ *                   the service key
  * INTERNAL API
  */
-@InternalApi private[akka] final class ShardedServiceRegistry(serviceRegistries: Map[DDataKey, ServiceRegistry]) {
+@InternalApi private[akka] final case class ShardedServiceRegistry(
+  serviceRegistries: Map[DDataKey, ServiceRegistry],
+  tombstones:        Set[(ActorRef[_], Deadline)]) {
 
   private val keys = serviceRegistries.keySet.toArray
 
@@ -54,7 +62,7 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, 
   }
 
   def withServiceRegistry(dDataKey: DDataKey, registry: ServiceRegistry): ShardedServiceRegistry =
-    new ShardedServiceRegistry(serviceRegistries + (dDataKey -> registry))
+    copy(serviceRegistries + (dDataKey -> registry), tombstones)
 
   def allUniqueAddressesInState(selfUniqueAddress: UniqueAddress): Set[UniqueAddress] =
     allEntries.collect {
@@ -76,6 +84,20 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, 
         acc + (ddataKey -> updated)
     }
 
+  def addTombstone(actorRef: ActorRef[_], deadline: Deadline): ShardedServiceRegistry =
+    copy(tombstones = tombstones + (actorRef -> deadline))
+
+  def hasTombstone(actorRef: ActorRef[_]): Boolean =
+    tombstones.exists {
+      case (ref, _) ⇒ ref == actorRef
+    }
+
+  def pruneTombstones(): ShardedServiceRegistry = {
+    copy(tombstones = tombstones.filter {
+      case (ref, deadline) ⇒ deadline.hasTimeLeft
+    })
+  }
+
 }
 
 /**
@@ -91,10 +113,10 @@ import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, 
     entries.getOrElse(key.asServiceKey, Set.empty[Entry])
 
   def addBinding[T](key: ServiceKey[T], value: Entry)(implicit cluster: Cluster): ServiceRegistry =
-    ServiceRegistry(entries.addBinding(key, value))
+    copy(entries = entries.addBinding(key, value))
 
   def removeBinding[T](key: ServiceKey[T], value: Entry)(implicit cluster: Cluster): ServiceRegistry =
-    ServiceRegistry(entries.removeBinding(key, value))
+    copy(entries = entries.removeBinding(key, value))
 
   def removeAll(entries: Map[AbstractServiceKey, Set[Entry]])(implicit cluster: Cluster): ServiceRegistry = {
     entries.foldLeft(this) {
