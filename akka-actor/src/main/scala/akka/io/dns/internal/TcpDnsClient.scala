@@ -17,14 +17,12 @@ import akka.util.ByteString
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class TcpDnsClient(ns: InetSocketAddress, answerRecipient: ActorRef) extends Actor with ActorLogging with Stash {
+@InternalApi private[akka] class TcpDnsClient(tcp: ActorRef, ns: InetSocketAddress, answerRecipient: ActorRef) extends Actor with ActorLogging with Stash {
   import TcpDnsClient._
 
   import context.system
 
   override def receive: Receive = idle
-
-  val tcp = IO(Tcp)
 
   val idle: Receive = {
     case _: Message ⇒
@@ -64,11 +62,10 @@ import akka.util.ByteString
         if (data.drop(prefixSize).length < expectedPayloadLength)
           context.become(ready(connection, data))
         else {
-          val payload = data.drop(prefixSize).take(expectedPayloadLength)
-          answerRecipient ! parseResponse(payload)
+          answerRecipient ! parseResponse(data.drop(prefixSize))
           context.become(ready(connection))
-          if (data.length > expectedPayloadLength + prefixSize) {
-            self ! Received(data.drop(expectedPayloadLength + prefixSize))
+          if (data.length > prefixSize + expectedPayloadLength) {
+            self ! Received(data.drop(prefixSize + expectedPayloadLength))
           }
         }
       }

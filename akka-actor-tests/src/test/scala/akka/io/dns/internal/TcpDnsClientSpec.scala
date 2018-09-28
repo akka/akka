@@ -9,15 +9,19 @@ import java.net.InetSocketAddress
 import akka.actor.{ Props, Terminated }
 import akka.io.Tcp
 import akka.io.Tcp.{ CommandFailed, Connected, PeerClosed, Register }
+import akka.io.dns.{ RecordClass, RecordType }
 import akka.io.dns.internal.DnsClient.Answer
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+
+import scala.collection.immutable.Seq
 
 class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
   import TcpDnsClient._
 
   "The async TCP DNS client" should {
-    val exampleRequestMessage = Message(42, MessageFlags())
-    val exampleResponseMessage = Message(42, MessageFlags())
+    val exampleRequestMessage =
+      Message(42, MessageFlags(), questions = Seq(Question("akka.io", RecordType.A, RecordClass.IN)))
+    val exampleResponseMessage = Message(42, MessageFlags(answer = true))
     val dnsServerAddress = InetSocketAddress.createUnresolved("foo", 53)
     val localAddress = InetSocketAddress.createUnresolved("localhost", 13441)
 
@@ -25,9 +29,7 @@ class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
       val tcpExtensionProbe = TestProbe()
       val answerProbe = TestProbe()
 
-      val client = system.actorOf(Props(new TcpDnsClient(dnsServerAddress, answerProbe.ref) {
-        override val tcp = tcpExtensionProbe.ref
-      }))
+      val client = system.actorOf(Props(new TcpDnsClient(tcpExtensionProbe.ref, dnsServerAddress, answerProbe.ref)))
 
       client ! exampleRequestMessage
 
@@ -36,7 +38,6 @@ class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
       expectMsgType[Register]
       val registered = tcpExtensionProbe.lastSender
 
-      expectMsgType[Tcp.Write]
       expectMsgType[Tcp.Write]
       registered ! Tcp.Received(encodeLength(exampleResponseMessage.write().length) ++ exampleResponseMessage.write())
 
@@ -54,9 +55,7 @@ class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
       val tcpExtensionProbe = TestProbe()
       val answerProbe = TestProbe()
 
-      val client = system.actorOf(Props(new TcpDnsClient(dnsServerAddress, answerProbe.ref) {
-        override val tcp = tcpExtensionProbe.ref
-      }))
+      val client = system.actorOf(Props(new TcpDnsClient(tcpExtensionProbe.ref, dnsServerAddress, answerProbe.ref)))
 
       client ! exampleRequestMessage
 
@@ -65,7 +64,6 @@ class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
       expectMsgType[Register]
       val registered = tcpExtensionProbe.lastSender
 
-      expectMsgType[Tcp.Write]
       expectMsgType[Tcp.Write]
       val fullResponse = encodeLength(exampleResponseMessage.write().length) ++ exampleResponseMessage.write()
       registered ! Tcp.Received(fullResponse.take(8))
@@ -78,9 +76,7 @@ class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
       val tcpExtensionProbe = TestProbe()
       val answerProbe = TestProbe()
 
-      val client = system.actorOf(Props(new TcpDnsClient(dnsServerAddress, answerProbe.ref) {
-        override val tcp = tcpExtensionProbe.ref
-      }))
+      val client = system.actorOf(Props(new TcpDnsClient(tcpExtensionProbe.ref, dnsServerAddress, answerProbe.ref)))
 
       client ! exampleRequestMessage
       client ! exampleRequestMessage.copy(id = 43)
@@ -90,8 +86,6 @@ class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
       expectMsgType[Register]
       val registered = tcpExtensionProbe.lastSender
 
-      expectMsgType[Tcp.Write]
-      expectMsgType[Tcp.Write]
       expectMsgType[Tcp.Write]
       expectMsgType[Tcp.Write]
       val fullResponse =
