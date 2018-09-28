@@ -58,6 +58,8 @@ object ORMultiMap {
  * [[ORMap]] with an [[ORSet]] for the map's value.
  *
  * This class is immutable, i.e. "modifying" methods return a new instance.
+ *
+ * Note that on concurrent adds and removals for the same key (on the same set), removals can be lost.
  */
 @SerialVersionUID(1L)
 final class ORMultiMap[A, B] private[akka] (

@@ -15,18 +15,17 @@ import akka.cluster.MemberStatus
 import akka.cluster.typed.{ Cluster, Join }
 import akka.serialization.SerializerWithStringManifest
 import akka.actor.testkit.typed.FishingOutcome
-import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, FishingOutcomes, TestProbe }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 object ClusterReceptionistSpec {
   val config = ConfigFactory.parseString(
     s"""
-      akka.loglevel = DEBUG # issue #24960
+      # akka.loglevel = DEBUG # issue #24960
       akka.actor {
         provider = cluster
         serialize-messages = off
@@ -41,6 +40,7 @@ object ClusterReceptionistSpec {
         }
       }
       akka.remote.artery.enabled = true
+      akka.remote.artery.transport = tcp
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
       akka.cluster {
@@ -290,6 +290,72 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         } finally {
           testKit3.shutdownTestKit()
         }
+      } finally {
+        testKit1.shutdownTestKit()
+        if (!system1.whenTerminated.isCompleted) testKit2.shutdownTestKit()
+      }
+    }
+
+    "not lose removals on concurrent updates to same key" in {
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-5", ClusterReceptionistSpec.config)
+      val system1 = testKit1.system
+      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
+      val system2 = testKit2.system
+
+      val TheKey = ServiceKey[AnyRef]("whatever")
+      try {
+        val clusterNode1 = Cluster(system1)
+        val clusterNode2 = Cluster(system2)
+        clusterNode1.manager ! Join(clusterNode1.selfMember.address)
+        clusterNode2.manager ! Join(clusterNode1.selfMember.address)
+
+        val regProbe1 = TestProbe[AnyRef]()(system1)
+        val regProbe2 = TestProbe[AnyRef]()(system2)
+
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) == 2)
+
+        // one actor on each node up front
+        val actor1 = testKit1.spawn(Behaviors.receiveMessage[AnyRef] {
+          case "stop" ⇒ Behaviors.stopped
+          case _      ⇒ Behaviors.same
+        }, "actor1")
+        val actor2 = testKit2.spawn(Behaviors.empty[AnyRef], "actor2")
+
+        system1.receptionist ! Register(TheKey, actor1)
+        system1.receptionist ! Subscribe(TheKey, regProbe1.ref)
+        regProbe1.awaitAssert(
+          regProbe1.expectMessage(Listing(TheKey, Set(actor1))),
+          5.seconds
+        )
+
+        system2.receptionist ! Subscribe(TheKey, regProbe2.ref)
+        regProbe2.fishForMessage(10.seconds) {
+          case TheKey.Listing(actors) if actors.nonEmpty ⇒
+            println(actors)
+            FishingOutcomes.complete
+          case _ ⇒ FishingOutcomes.continue
+        }
+        system1.log.info("Saw actor on both nodes")
+
+        // TheKey -> Set(actor1) seen by both nodes, now,
+        // remove on node1 and add on node2 (hopefully) concurrently
+        system2.receptionist ! Register(TheKey, actor2)
+        actor1 ! "stop"
+
+        // we should now, eventually, see the removal on both nodes
+        regProbe1.fishForMessage(5.seconds) {
+          case TheKey.Listing(actors) if actors.size == 1 ⇒
+            FishingOutcomes.complete
+          case _ ⇒
+            FishingOutcomes.continue
+        }
+        regProbe2.fishForMessage(5.seconds) {
+          case TheKey.Listing(actors) if actors.size == 1 ⇒
+            FishingOutcomes.complete
+          case _ ⇒
+            FishingOutcomes.continue
+        }
+
       } finally {
         testKit1.shutdownTestKit()
         if (!system1.whenTerminated.isCompleted) testKit2.shutdownTestKit()
