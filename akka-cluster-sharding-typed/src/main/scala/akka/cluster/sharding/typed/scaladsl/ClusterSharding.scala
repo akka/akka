@@ -19,6 +19,7 @@ import akka.actor.typed.ExtensionSetup
 import akka.actor.typed.RecipientRef
 import akka.actor.typed.Props
 import akka.actor.typed.internal.InternalRecipientRef
+import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
@@ -26,6 +27,7 @@ import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.cluster.sharding.ShardRegion.{ StartEntity ⇒ UntypedStartEntity }
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.scaladsl.PersistentBehavior
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
 
@@ -168,7 +170,7 @@ object ClusterSharding extends ExtensionId[ClusterSharding] {
 trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding ⇒
 
   /**
-   * Initialize sharding for the given `shardedEntity` factory settings.
+   * Initialize sharding for the given `entity` factory settings.
    *
    * It will start a shard region or a proxy depending on if the settings require role and if this node has
    * such a role.
@@ -176,7 +178,7 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding �
    * @tparam M The type of message the entity accepts
    * @tparam E A possible envelope around the message the entity accepts
    */
-  def start[M, E](shardedEntity: ShardedEntity[M, E]): ActorRef[E]
+  def start[M, E](entity: Entity[M, E]): ActorRef[E]
 
   /**
    * Create an `ActorRef`-like reference to a specific sharded entity.
@@ -201,45 +203,33 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding �
   @InternalApi private[akka] def asJava: javadsl.ClusterSharding = javadslSelf
 }
 
-object ShardedEntity {
+object Entity {
 
   /**
    * Defines how the entity should be created. Used in [[ClusterSharding#start]]. More optional
-   * settings can be defined using the `with` methods of the returned [[ShardedEntity]].
+   * settings can be defined using the `with` methods of the returned [[Entity]].
    *
-   * @param create Create the behavior for an entity given an entityId
+   * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent actors
+   * is very common and therefore [[PersistentEntity]] is provided as a convenience for creating such
+   * [[PersistentBehavior]].
+   *
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
-   * @param stopMessage Message sent to an entity to tell it to stop, e.g. when rebalanced or passivated.
-   *
-   * @tparam M The type of message the entity accepts
-   */
-  def apply[M](
-    create:      String ⇒ Behavior[M],
-    typeKey:     EntityTypeKey[M],
-    stopMessage: M): ShardedEntity[M, ShardingEnvelope[M]] =
-    apply((_, entityId) ⇒ create(entityId), typeKey, stopMessage)
-
-  /**
-   * Defines how the entity should be created. Used in [[ClusterSharding#start]]. More optional
-   * settings can be defined using the `with` methods of the returned [[ShardedEntity]].
-   *
-   * @param create Create the behavior for an entity given `ShardCommand` ref and an entityId
-   * @param typeKey A key that uniquely identifies the type of entity in this cluster
+   * @param createBehavior Create the behavior for an entity given a [[EntityContext]] (includes entityId)
    * @param stopMessage Message sent to an entity to tell it to stop, e.g. when rebalanced or passivated.
    * @tparam M The type of message the entity accepts
    */
   def apply[M](
-    create:      (ActorRef[ClusterSharding.ShardCommand], String) ⇒ Behavior[M],
-    typeKey:     EntityTypeKey[M],
-    stopMessage: M): ShardedEntity[M, ShardingEnvelope[M]] =
-    new ShardedEntity(create, typeKey, stopMessage, Props.empty, None, None, None)
+    typeKey:        EntityTypeKey[M],
+    createBehavior: EntityContext ⇒ Behavior[M],
+    stopMessage:    M): Entity[M, ShardingEnvelope[M]] =
+    new Entity(createBehavior, typeKey, stopMessage, Props.empty, None, None, None)
 }
 
 /**
  * Defines how the entity should be created. Used in [[ClusterSharding#start]].
  */
-final class ShardedEntity[M, E] private[akka] (
-  val create:             (ActorRef[ClusterSharding.ShardCommand], String) ⇒ Behavior[M],
+final class Entity[M, E] private[akka] (
+  val createBehavior:     EntityContext ⇒ Behavior[M],
   val typeKey:            EntityTypeKey[M],
   val stopMessage:        M,
   val entityProps:        Props,
@@ -250,13 +240,13 @@ final class ShardedEntity[M, E] private[akka] (
   /**
    * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
    */
-  def withEntityProps(newEntityProps: Props): ShardedEntity[M, E] =
+  def withEntityProps(newEntityProps: Props): Entity[M, E] =
     copy(entityProps = newEntityProps)
 
   /**
    * Additional settings, typically loaded from configuration.
    */
-  def withSettings(newSettings: ClusterShardingSettings): ShardedEntity[M, E] =
+  def withSettings(newSettings: ClusterShardingSettings): Entity[M, E] =
     copy(settings = Option(newSettings))
 
   /**
@@ -267,28 +257,35 @@ final class ShardedEntity[M, E] private[akka] (
    * shards is then defined by `numberOfShards` in `ClusterShardingSettings`, which by default
    * is configured with `akka.cluster.sharding.number-of-shards`.
    */
-  def withMessageExtractor[Envelope](newExtractor: ShardingMessageExtractor[Envelope, M]): ShardedEntity[M, Envelope] =
-    new ShardedEntity(create, typeKey, stopMessage, entityProps, settings, Option(newExtractor), allocationStrategy)
+  def withMessageExtractor[Envelope](newExtractor: ShardingMessageExtractor[Envelope, M]): Entity[M, Envelope] =
+    new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, Option(newExtractor), allocationStrategy)
 
   /**
    * Allocation strategy which decides on which nodes to allocate new shards,
    * [[ClusterSharding#defaultShardAllocationStrategy]] is used if this is not specified.
    */
-  def withAllocationStrategy(newAllocationStrategy: ShardAllocationStrategy): ShardedEntity[M, E] =
+  def withAllocationStrategy(newAllocationStrategy: ShardAllocationStrategy): Entity[M, E] =
     copy(allocationStrategy = Option(newAllocationStrategy))
 
   private def copy(
-    create:             (ActorRef[ClusterSharding.ShardCommand], String) ⇒ Behavior[M] = create,
-    typeKey:            EntityTypeKey[M]                                               = typeKey,
-    stopMessage:        M                                                              = stopMessage,
-    entityProps:        Props                                                          = entityProps,
-    settings:           Option[ClusterShardingSettings]                                = settings,
-    allocationStrategy: Option[ShardAllocationStrategy]                                = allocationStrategy
-  ): ShardedEntity[M, E] = {
-    new ShardedEntity(create, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy)
+    createBehavior:     EntityContext ⇒ Behavior[M]     = createBehavior,
+    typeKey:            EntityTypeKey[M]                = typeKey,
+    stopMessage:        M                               = stopMessage,
+    entityProps:        Props                           = entityProps,
+    settings:           Option[ClusterShardingSettings] = settings,
+    allocationStrategy: Option[ShardAllocationStrategy] = allocationStrategy
+  ): Entity[M, E] = {
+    new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy)
   }
 
 }
+
+/**
+ * Parameter to [[Entity.apply]]
+ */
+final class EntityContext(
+  val entityId: String,
+  val shard:    ActorRef[ClusterSharding.ShardCommand])
 
 /** Allows starting a specific Sharded Entity by its entity identifier */
 object StartEntity {

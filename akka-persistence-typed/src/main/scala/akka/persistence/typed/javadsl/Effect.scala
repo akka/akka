@@ -14,6 +14,11 @@ import akka.persistence.typed.ExpectingReply
 
 object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
 
+/**
+ * Factory methods for creating [[Effect]] directives.
+ *
+ * Not for user extension
+ */
 @DoNotInherit sealed class EffectFactories[Command, Event, State] {
   /**
    * Persist a single event
