@@ -4,14 +4,14 @@
 
 package akka.io.dns.internal
 
-import java.net.{ InetAddress, InetSocketAddress }
+import java.net.{ Inet4Address, Inet6Address, InetAddress, InetSocketAddress }
 import java.nio.charset.StandardCharsets
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory, Props }
 import akka.annotation.InternalApi
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.dns.internal.DnsClient._
-import akka.io.dns.{ ARecord, DnsProtocol, DnsSettings, ResourceRecord }
+import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, DnsSettings, ResourceRecord }
 import akka.pattern.{ ask, pipe }
 import akka.util.{ Helpers, Timeout }
 
@@ -59,7 +59,10 @@ private[io] final class AsyncDnsResolver(
       Future.fromTry {
         Try {
           val address = InetAddress.getByName(name) // only checks validity, since known to be IP address
-          val record = ARecord(name, Int.MaxValue, address)
+          val record = address match {
+            case _: Inet4Address           ⇒ ARecord(name, Int.MaxValue, address)
+            case ipv6address: Inet6Address ⇒ AAAARecord(name, Int.MaxValue, ipv6address)
+          }
           DnsProtocol.Resolved(name, record :: Nil)
         }
       }

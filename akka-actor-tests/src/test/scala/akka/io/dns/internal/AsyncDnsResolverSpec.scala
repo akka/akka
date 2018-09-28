@@ -114,9 +114,7 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       r ! Resolve(name)
       dnsClient1.expectNoMessage(50.millis)
       val answer = expectMsgType[Resolved]
-      answer.records.collect { case r: ARecord ⇒ r }.toSet shouldEqual Set(
-        ARecord("1:2:3:0:0:0:0:0", Int.MaxValue, InetAddress.getByName("1:2:3:0:0:0:0:0"))
-      )
+      val Seq(AAAARecord("1:2:3:0:0:0:0:0", Int.MaxValue, _)) = answer.records.collect { case r: AAAARecord ⇒ r }
     }
 
     "return additional records for SRV requests" in {
