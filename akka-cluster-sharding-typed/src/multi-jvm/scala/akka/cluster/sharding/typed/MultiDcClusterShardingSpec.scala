@@ -7,7 +7,7 @@ package akka.cluster.sharding.typed
 import akka.actor.typed.{ ActorRef, Props }
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import akka.cluster.sharding.typed.scaladsl.ShardedEntity
+import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.typed.{ MultiDcClusterActors, MultiNodeTypedClusterSpec }
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -69,9 +69,9 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
     "start sharding" in {
       val sharding = ClusterSharding(typedSystem)
       val shardRegion: ActorRef[ShardingEnvelope[PingProtocol]] = sharding.start(
-        ShardedEntity(
-          _ ⇒ multiDcPinger,
+        Entity(
           typeKey,
+          _ ⇒ multiDcPinger,
           NoMore))
       val probe = TestProbe[Pong]
       shardRegion ! ShardingEnvelope(entityId, Ping(probe.ref))
@@ -99,9 +99,9 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
   "be able to message cross dc via proxy" in {
     runOn(first, second) {
       val proxy: ActorRef[ShardingEnvelope[PingProtocol]] = ClusterSharding(typedSystem).start(
-        ShardedEntity(
-          _ ⇒ multiDcPinger,
+        Entity(
           typeKey,
+          _ ⇒ multiDcPinger,
           NoMore)
           .withSettings(ClusterShardingSettings(typedSystem).withDataCenter("dc2")))
       val probe = TestProbe[Pong]
