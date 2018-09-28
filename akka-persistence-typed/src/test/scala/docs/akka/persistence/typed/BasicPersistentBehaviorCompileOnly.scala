@@ -7,11 +7,11 @@ package docs.akka.persistence.typed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.typed.scaladsl.PersistentBehaviors
+import akka.persistence.typed.scaladsl.PersistentBehavior
 
 import scala.concurrent.duration._
 
-object BasicPersistentBehaviorsCompileOnly {
+object BasicPersistentBehaviorCompileOnly {
 
   //#structure
   sealed trait Command
@@ -19,7 +19,7 @@ object BasicPersistentBehaviorsCompileOnly {
   case class State()
 
   val behavior: Behavior[Command] =
-    PersistentBehaviors.receive[Command, Event, State](
+    PersistentBehavior[Command, Event, State](
       persistenceId = "abc",
       emptyState = State(),
       commandHandler =
@@ -36,7 +36,7 @@ object BasicPersistentBehaviorsCompileOnly {
 
   //#recovery
   val recoveryBehavior: Behavior[Command] =
-    PersistentBehaviors.receive[Command, Event, State](
+    PersistentBehavior[Command, Event, State](
       persistenceId = "abc",
       emptyState = State(),
       commandHandler =
@@ -52,7 +52,7 @@ object BasicPersistentBehaviorsCompileOnly {
 
   //#tagging
   val taggingBehavior: Behavior[Command] =
-    PersistentBehaviors.receive[Command, Event, State](
+    PersistentBehavior[Command, Event, State](
       persistenceId = "abc",
       emptyState = State(),
       commandHandler =
@@ -65,7 +65,7 @@ object BasicPersistentBehaviorsCompileOnly {
   //#tagging
 
   //#wrapPersistentBehavior
-  val samplePersistentBehavior = PersistentBehaviors.receive[Command, Event, State](
+  val samplePersistentBehavior = PersistentBehavior[Command, Event, State](
     persistenceId = "abc",
     emptyState = State(),
     commandHandler =

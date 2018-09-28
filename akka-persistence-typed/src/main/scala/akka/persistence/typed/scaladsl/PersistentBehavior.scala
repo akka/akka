@@ -14,7 +14,7 @@ import akka.persistence.typed.internal._
 
 import scala.util.Try
 
-object PersistentBehaviors {
+object PersistentBehavior {
 
   /**
    * Type alias for the command handler function for reacting on events having been persisted.
@@ -37,7 +37,7 @@ object PersistentBehaviors {
   /**
    * Create a `Behavior` for a persistent actor.
    */
-  def receive[Command, Event, State](
+  def apply[Command, Event, State](
     persistenceId:  String,
     emptyState:     State,
     commandHandler: (State, Command) ⇒ Effect[Event, State],
