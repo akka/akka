@@ -9,7 +9,7 @@ import java.util.UUID
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps }
 import akka.event.Logging
-import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
+import akka.persistence.typed.scaladsl.PersistentBehavior.CommandHandler
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import org.scalatest.WordSpecLike
 
@@ -26,7 +26,7 @@ object OptionalSnapshotStoreSpec {
   def persistentBehavior(
     probe: TestProbe[State],
     name:  String           = UUID.randomUUID().toString) =
-    PersistentBehaviors.receive[Command, Event, State](
+    PersistentBehavior[Command, Event, State](
       persistenceId = name,
       emptyState = State(),
       commandHandler = CommandHandler.command {
