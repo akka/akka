@@ -11,8 +11,9 @@ import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.internal._
-
 import scala.util.Try
+
+import akka.persistence.typed.PersistenceId
 
 object PersistentBehavior {
 
@@ -38,7 +39,7 @@ object PersistentBehavior {
    * Create a `Behavior` for a persistent actor.
    */
   def apply[Command, Event, State](
-    persistenceId:  String,
+    persistenceId:  PersistenceId,
     emptyState:     State,
     commandHandler: (State, Command) ⇒ Effect[Event, State],
     eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =

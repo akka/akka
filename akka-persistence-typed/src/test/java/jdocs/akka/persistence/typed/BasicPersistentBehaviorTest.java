@@ -8,6 +8,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.PersistentBehavior;
@@ -25,7 +26,7 @@ public class BasicPersistentBehaviorTest {
 
   //#supervision
   public static class MyPersistentBehavior extends PersistentBehavior<Command, Event, State> {
-    public MyPersistentBehavior(String persistenceId) {
+    public MyPersistentBehavior(PersistenceId persistenceId) {
       super(persistenceId, SupervisorStrategy.restartWithBackoff(Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2));
     }
     //#supervision
@@ -64,12 +65,13 @@ public class BasicPersistentBehaviorTest {
     //#tagging
   }
 
-  static PersistentBehavior<Command, Event, State> persistentBehavior = new MyPersistentBehavior("pid");
+  static PersistentBehavior<Command, Event, State> persistentBehavior =
+      new MyPersistentBehavior(new PersistenceId("pid"));
   //#structure
 
   //#wrapPersistentBehavior
   static Behavior<Command> debugAlwaysSnapshot = Behaviors.setup((context) -> {
-            return new MyPersistentBehavior("pid") {
+            return new MyPersistentBehavior(new PersistenceId("pid")) {
               @Override
               public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
                 context.getLog().info("Snapshot actor {} => state: {}",

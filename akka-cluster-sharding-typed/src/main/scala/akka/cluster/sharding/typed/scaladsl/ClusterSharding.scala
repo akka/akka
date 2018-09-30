@@ -25,6 +25,7 @@ import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.cluster.sharding.ShardRegion.{ StartEntity ⇒ UntypedStartEntity }
+import akka.persistence.typed.PersistenceId
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
 
@@ -309,6 +310,12 @@ object StartEntity {
  */
 @DoNotInherit trait EntityTypeKey[T] {
   def name: String
+
+  /**
+   * Constructs a [[PersistenceId]] from this EntityTypeKey` and the given `entityId` by
+   * concatenating them with `|` separator.
+   */
+  def persistenceIdFrom(entityId: String): PersistenceId
 }
 
 object EntityTypeKey {

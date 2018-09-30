@@ -7,6 +7,7 @@ package jdocs.akka.persistence.typed;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.CommandHandlerBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
@@ -66,7 +67,7 @@ public class AccountExample extends PersistentBehavior<AccountExample.AccountCom
   }
 
   public AccountExample(ActorContext<AccountCommand> context, String accountNumber) {
-    super(accountNumber);
+    super(new PersistenceId(accountNumber));
   }
 
   @Override

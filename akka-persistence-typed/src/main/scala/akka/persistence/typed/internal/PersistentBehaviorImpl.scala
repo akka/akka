@@ -14,8 +14,9 @@ import akka.persistence.typed.{ EventAdapter, NoOpEventAdapter }
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
-
 import scala.util.{ Failure, Success, Try }
+
+import akka.persistence.typed.PersistenceId
 
 @InternalApi
 private[akka] object PersistentBehaviorImpl {
@@ -32,7 +33,7 @@ private[akka] object PersistentBehaviorImpl {
 
 @InternalApi
 private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
-  persistenceId:       String,
+  persistenceId:       PersistenceId,
   emptyState:          State,
   commandHandler:      PersistentBehavior.CommandHandler[Command, Event, State],
   eventHandler:        PersistentBehavior.EventHandler[State, Event],

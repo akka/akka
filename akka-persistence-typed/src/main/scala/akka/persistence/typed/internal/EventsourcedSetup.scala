@@ -21,6 +21,7 @@ import akka.util.OptionVal
 import scala.util.Try
 
 import akka.actor.Cancellable
+import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol.RecoveryTickEvent
 
 /**
@@ -29,7 +30,7 @@ import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol.Rec
 @InternalApi
 private[persistence] final class EventsourcedSetup[C, E, S](
   val context:               ActorContext[InternalProtocol],
-  val persistenceId:         String,
+  val persistenceId:         PersistenceId,
   val emptyState:            S,
   val commandHandler:        PersistentBehavior.CommandHandler[C, E, S],
   val eventHandler:          PersistentBehavior.EventHandler[S, E],

@@ -7,6 +7,7 @@ package jdocs.akka.persistence.typed;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.PersistentBehavior;
@@ -84,10 +85,10 @@ public class MovieWatchList extends PersistentBehavior<MovieWatchList.Command, M
   }
 
   public static Behavior<Command> behavior(String userId) {
-    return new MovieWatchList("movies-" + userId);
+    return new MovieWatchList(new PersistenceId("movies-" + userId));
   }
 
-  public MovieWatchList(String persistenceId) {
+  public MovieWatchList(PersistenceId persistenceId) {
     super(persistenceId);
   }
 

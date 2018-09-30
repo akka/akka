@@ -9,6 +9,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.CommandHandlerBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
@@ -153,7 +154,7 @@ public class InDepthPersistentBehaviorTest {
 
     private final ActorContext<BlogCommand> ctx;
 
-    public BlogBehavior(String persistenceId, ActorContext<BlogCommand> ctx) {
+    public BlogBehavior(PersistenceId persistenceId, ActorContext<BlogCommand> ctx) {
       super(persistenceId);
       this.ctx = ctx;
     }
@@ -238,7 +239,7 @@ public class InDepthPersistentBehaviorTest {
     //#behavior
     public static Behavior<BlogCommand> behavior(String entityId) {
       return Behaviors.setup(ctx ->
-          new BlogBehavior("Blog-" + entityId, ctx)
+          new BlogBehavior(new PersistenceId("Blog-" + entityId), ctx)
       );
     }
 
