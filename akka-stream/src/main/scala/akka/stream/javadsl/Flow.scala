@@ -2588,6 +2588,21 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
     idleTimeout(timeout.asScala)
 
   /**
+    * Terminate processing (and cancel the upstream publisher) if the time between two processed
+    * elements exceeds the provided timeout.
+    *
+    * '''Emits when''' upstream emits an element
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes
+    *
+    * '''Cancels when''' downstream cancels or timeout elapses between two emitted elements
+    */
+  def completeAfterIdleTimeout(timeout: java.time.Duration): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.completeAfterIdleTimeout(timeout.asScala))
+
+  /**
    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
    * the stream is failed with a [[java.util.concurrent.TimeoutException]]. The timeout is checked periodically,
    * so the resolution of the check is one period (equals to timeout value).

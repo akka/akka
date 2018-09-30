@@ -133,6 +133,44 @@ class TimeoutsSpec extends StreamSpec {
 
   }
 
+  "CompleteAfterIdleTimeout" must {
+
+    "pass through elements unmodified" in assertAllStagesStopped {
+      Await.result(
+        Source(1 to 100).completeAfterIdleTimeout(2.seconds).grouped(200).runWith(Sink.head),
+        3.seconds) should ===(1 to 100)
+    }
+
+    "pass through error unmodified" in assertAllStagesStopped {
+      a[TE] shouldBe thrownBy {
+        Await.result(
+          Source(1 to 100).concat(Source.failed(TE("test")))
+            .completeAfterIdleTimeout(2.seconds)
+            .grouped(200).runWith(Sink.head),
+          3.seconds)
+      }
+    }
+
+    "complete if time between elements is too large" in assertAllStagesStopped {
+      val upstreamProbe = TestPublisher.probe[Int]()
+      val downstreamProbe = TestSubscriber.probe[Int]()
+      Source.fromPublisher(upstreamProbe)
+        .completeAfterIdleTimeout(1.seconds)
+        .runWith(Sink.fromSubscriber(downstreamProbe))
+
+      // Two seconds in overall, but won't timeout until time between elements is large enough
+      // (i.e. this works differently from completionTimeout)
+      for (_ ← 1 to 4) {
+        upstreamProbe.sendNext(1)
+        downstreamProbe.requestNext(1)
+        downstreamProbe.expectNoMsg(500.millis) // No timeout yet
+      }
+
+      downstreamProbe.expectComplete()
+    }
+
+  }
+
   "BackpressureTimeout" must {
 
     "pass through elements unmodified" in assertAllStagesStopped {
