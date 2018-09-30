@@ -6,7 +6,6 @@ package akka
 
 import java.io.{File, FileNotFoundException}
 
-import _root_.io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
 import com.lightbend.paradox.markdown._
 import com.lightbend.paradox.sbt.ParadoxPlugin.autoImport._
 import org.pegdown.Printer
@@ -15,7 +14,6 @@ import sbt.Keys._
 import sbt._
 
 import scala.io.{Codec, Source}
-
 import scala.collection.JavaConverters._
 
 object ParadoxSupport {
@@ -24,8 +22,13 @@ object ParadoxSupport {
       val log = streams.value.log
       val classpath = (fullClasspath in Compile).value.files.map(_.toURI.toURL).toArray
       val classloader = new java.net.URLClassLoader(classpath, this.getClass().getClassLoader())
-      lazy val scanner = new FastClasspathScanner("akka").addClassLoader(classloader).scan()
-      val allClasses = scanner.getNamesOfAllClasses.asScala.toVector
+      import _root_.io.github.classgraph.ClassGraph
+      lazy val scanner = new ClassGraph()
+        .whitelistPackages("akka")
+        .verbose()
+        .addClassLoader(classloader)
+        .scan()
+      val allClasses = scanner.getAllClasses.getNames.asScala.toVector
       Def.task { Seq(
         { context: Writer.Context ⇒
                     new SignatureDirective(context.location.tree.label, context.properties, msg ⇒ log.warn(msg))
