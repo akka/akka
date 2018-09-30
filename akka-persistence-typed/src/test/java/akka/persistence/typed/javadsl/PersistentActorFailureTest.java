@@ -10,6 +10,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.ActorContext;
+import akka.persistence.typed.PersistenceId;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
@@ -24,7 +25,7 @@ class FailingPersistentActor extends PersistentBehavior<String, String, String> 
 
     private final ActorRef<String> probe;
 
-    FailingPersistentActor(String persistenceId, ActorRef<String> probe) {
+    FailingPersistentActor(PersistenceId persistenceId, ActorRef<String> probe) {
         super(persistenceId, SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1));
         this.probe = probe;
     }
@@ -63,14 +64,14 @@ public class PersistentActorFailureTest extends JUnitSuite {
     @ClassRule
     public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
-    public static Behavior<String> fail(String pid, ActorRef<String> probe) {
+    public static Behavior<String> fail(PersistenceId pid, ActorRef<String> probe) {
         return new FailingPersistentActor(pid, probe);
     }
 
     @Test
     public void persistEvents() throws Exception {
         TestProbe<String> probe = testKit.createTestProbe();
-        Behavior<String> p1 = fail("fail-first-2", probe.ref());
+        Behavior<String> p1 = fail(new PersistenceId("fail-first-2"), probe.ref());
         ActorRef<String> c = testKit.spawn(p1);
         probe.expectMessage("starting");
         // fail

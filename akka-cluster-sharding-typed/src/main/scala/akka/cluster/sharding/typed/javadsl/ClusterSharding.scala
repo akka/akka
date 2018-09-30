@@ -20,6 +20,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function ⇒ JFunction }
+import akka.persistence.typed.PersistenceId
 import akka.util.Timeout
 
 @FunctionalInterface
@@ -310,6 +311,12 @@ object StartEntity {
    * INTERNAL API
    */
   @InternalApi private[akka] def asScala: scaladsl.EntityTypeKey[T] = scaladslSelf
+
+  /**
+   * Constructs a [[PersistenceId]] from this EntityTypeKey` and the given `entityId` by
+   * concatenating them with `|` separator.
+   */
+  def persistenceIdFrom(entityId: String): PersistenceId
 }
 
 object EntityTypeKey {

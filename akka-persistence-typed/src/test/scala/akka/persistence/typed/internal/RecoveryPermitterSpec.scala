@@ -14,10 +14,11 @@ import akka.persistence.RecoveryPermitter.{ RecoveryPermitGranted, RequestRecove
 import akka.persistence.typed.scaladsl.PersistentBehavior.CommandHandler
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehavior }
 import akka.testkit.EventFilter
-
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.persistence.typed.PersistenceId
 import org.scalatest.WordSpecLike
 
 object RecoveryPermitterSpec {
@@ -44,7 +45,7 @@ object RecoveryPermitterSpec {
     eventProbe:      TestProbe[Any],
     throwOnRecovery: Boolean        = false): Behavior[Command] =
     PersistentBehavior[Command, Event, State](
-      persistenceId = name,
+      persistenceId = PersistenceId(name),
       emptyState = EmptyState,
       commandHandler = CommandHandler.command {
         case StopActor ⇒ Effect.stop

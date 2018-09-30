@@ -6,6 +6,7 @@ package docs.akka.persistence.typed
 
 import akka.Done
 import akka.actor.typed.{ ActorRef, Behavior }
+import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.PersistentBehavior
 import akka.persistence.typed.scaladsl.Effect
 
@@ -120,7 +121,7 @@ object InDepthPersistentBehaviorSpec {
   //#behavior
   def behavior(entityId: String): Behavior[BlogCommand] =
     PersistentBehavior[BlogCommand, BlogEvent, BlogState](
-      persistenceId = "Blog-" + entityId,
+      persistenceId = PersistenceId(s"Blog-$entityId"),
       emptyState = BlogState.empty,
       commandHandler,
       eventHandler)

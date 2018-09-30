@@ -6,6 +6,7 @@ package jdocs.akka.persistence.typed;
 
 import akka.Done;
 import akka.actor.typed.ActorRef;
+import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.CommandHandlerBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
@@ -150,7 +151,7 @@ public class OptionalBlogState {
           .matchCommand(PassivatePost.class, (state, cmd) -> Effect().stop());
     }
 
-    public BlogBehavior(String persistenceId) {
+    public BlogBehavior(PersistenceId persistenceId) {
       super(persistenceId);
     }
 

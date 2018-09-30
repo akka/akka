@@ -13,6 +13,7 @@ import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehavior }
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ WordSpec, WordSpecLike }
 
@@ -43,9 +44,11 @@ object ClusterShardingPersistenceSpec {
   final case class Get(replyTo: ActorRef[String]) extends Command
   final case object StopPlz extends Command
 
+  val typeKey = EntityTypeKey[Command]("test")
+
   def persistentActor(entityId: String): Behavior[Command] =
     PersistentBehavior[Command, String, String](
-      entityId,
+      persistenceId = typeKey.persistenceIdFrom(entityId),
       emptyState = "",
       commandHandler = (state, cmd) ⇒ cmd match {
         case Add(s) ⇒ Effect.persist(s)
@@ -55,8 +58,6 @@ object ClusterShardingPersistenceSpec {
         case StopPlz ⇒ Effect.stop
       },
       eventHandler = (state, evt) ⇒ if (state.isEmpty) evt else state + "|" + evt)
-
-  val typeKey = EntityTypeKey[Command]("test")
 
 }
 
