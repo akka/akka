@@ -708,6 +708,7 @@ class ClusterSingletonManager(
       stay
 
     case Event(Terminated(ref), d @ OldestData(singleton, _)) if ref == singleton ⇒
+      logInfo("Singleton actor [{}] was terminated", singleton.path)
       stay using d.copy(singletonTerminated = true)
 
     case Event(SelfExiting, _) ⇒
@@ -742,6 +743,7 @@ class ClusterSingletonManager(
       gotoHandingOver(singleton, singletonTerminated, None)
 
     case Event(Terminated(ref), d @ WasOldestData(singleton, _, _)) if ref == singleton ⇒
+      logInfo("Singleton actor [{}] was terminated", singleton.path)
       stay using d.copy(singletonTerminated = true)
 
     case Event(SelfExiting, _) ⇒
@@ -757,6 +759,7 @@ class ClusterSingletonManager(
       handOverDone(handOverTo)
     } else {
       handOverTo foreach { _ ! HandOverInProgress }
+      logInfo("Singleton manager stopping singleton actor [{}]", singleton.path)
       singleton ! terminationMessage
       goto(HandingOver) using HandingOverData(singleton, handOverTo)
     }
@@ -793,12 +796,14 @@ class ClusterSingletonManager(
   }
 
   def gotoStopping(singleton: ActorRef): State = {
+    logInfo("Singleton manager starting singleton actor [{}]", singleton.path)
     singleton ! terminationMessage
     goto(Stopping) using StoppingData(singleton)
   }
 
   when(Stopping) {
     case (Event(Terminated(ref), StoppingData(singleton))) if ref == singleton ⇒
+      logInfo("Singleton actor [{}] was terminated", singleton.path)
       stop()
   }
 
