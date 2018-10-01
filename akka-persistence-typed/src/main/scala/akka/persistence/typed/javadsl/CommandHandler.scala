@@ -6,6 +6,7 @@ package akka.persistence.typed.javadsl
 
 import java.util.function.BiFunction
 import java.util.function.Predicate
+import java.util.function.{ Function ⇒ JFunction }
 
 import akka.annotation.InternalApi
 import akka.persistence.typed.internal._
@@ -23,18 +24,14 @@ trait CommandHandler[Command, Event, State] {
 
 object CommandHandlerBuilder {
 
-  private val _trueStatePredicate: Predicate[Any] = new Predicate[Any] {
-    override def test(t: Any): Boolean = true
-  }
-
-  private def trueStatePredicate[S]: Predicate[S] = _trueStatePredicate.asInstanceOf[Predicate[S]]
-
   /**
    * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
    * @return A new, mutable, command handler builder
    */
   def builder[Command, Event, S <: State, State](stateClass: Class[S]): CommandHandlerBuilder[Command, Event, S, State] =
-    new CommandHandlerBuilder(stateClass, statePredicate = trueStatePredicate)
+    new CommandHandlerBuilder(statePredicate = new Predicate[S] {
+      override def test(state: S): Boolean = state != null && stateClass.isAssignableFrom(state.getClass)
+    })
 
   /**
    * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
@@ -42,7 +39,7 @@ object CommandHandlerBuilder {
    * @return A new, mutable, command handler builder
    */
   def builder[Command, Event, State](statePredicate: Predicate[State]): CommandHandlerBuilder[Command, Event, State, State] =
-    new CommandHandlerBuilder(classOf[Any].asInstanceOf[Class[State]], statePredicate)
+    new CommandHandlerBuilder(statePredicate)
 
   /**
    * INTERNAL API
@@ -54,7 +51,7 @@ object CommandHandlerBuilder {
 }
 
 final class CommandHandlerBuilder[Command, Event, S <: State, State] @InternalApi private[persistence] (
-  val stateClass: Class[S], val statePredicate: Predicate[S]) {
+  val statePredicate: Predicate[S]) {
   import CommandHandlerBuilder.CommandHandlerCase
 
   private var cases: List[CommandHandlerCase[Command, Event, State]] = Nil
@@ -62,7 +59,7 @@ final class CommandHandlerBuilder[Command, Event, S <: State, State] @InternalAp
   private def addCase(predicate: Command ⇒ Boolean, handler: BiFunction[S, Command, Effect[Event, State]]): Unit = {
     cases = CommandHandlerCase[Command, Event, State](
       commandPredicate = predicate,
-      statePredicate = state ⇒ stateClass.isAssignableFrom(state.getClass) && statePredicate.test(state.asInstanceOf[S]),
+      statePredicate = state ⇒ statePredicate.test(state.asInstanceOf[S]),
       handler.asInstanceOf[BiFunction[State, Command, Effect[Event, State]]]) :: cases
   }
 
@@ -74,9 +71,37 @@ final class CommandHandlerBuilder[Command, Event, S <: State, State] @InternalAp
     this
   }
 
+  /**
+   * Match any command which the given `predicate` returns true for.
+   *
+   * Use this when then `State` is not needed in the `handler`, otherwise there is an overloaded method that pass
+   * the state in a `BiFunction`.
+   */
+  def matchCommand(predicate: Predicate[Command], handler: JFunction[Command, Effect[Event, State]]): CommandHandlerBuilder[Command, Event, S, State] = {
+    addCase(cmd ⇒ predicate.test(cmd), new BiFunction[S, Command, Effect[Event, State]] {
+      override def apply(state: S, cmd: Command): Effect[Event, State] = handler(cmd)
+    })
+    this
+  }
+
+  /**
+   * Match commands that are of the given `commandClass` or subclass thereof
+   */
   def matchCommand[C <: Command](commandClass: Class[C], handler: BiFunction[S, C, Effect[Event, State]]): CommandHandlerBuilder[Command, Event, S, State] = {
     addCase(cmd ⇒ commandClass.isAssignableFrom(cmd.getClass), handler.asInstanceOf[BiFunction[S, Command, Effect[Event, State]]])
     this
+  }
+
+  /**
+   * Match commands that are of the given `commandClass` or subclass thereof.
+   *
+   * Use this when then `State` is not needed in the `handler`, otherwise there is an overloaded method that pass
+   * the state in a `BiFunction`.
+   */
+  def matchCommand[C <: Command](commandClass: Class[C], handler: JFunction[C, Effect[Event, State]]): CommandHandlerBuilder[Command, Event, S, State] = {
+    matchCommand[C](commandClass, new BiFunction[S, C, Effect[Event, State]] {
+      override def apply(state: S, cmd: C): Effect[Event, State] = handler(cmd)
+    })
   }
 
   /**
@@ -84,7 +109,7 @@ final class CommandHandlerBuilder[Command, Event, S <: State, State] @InternalAp
    * by the handlers in `other`.
    */
   def orElse[S2 <: State](other: CommandHandlerBuilder[Command, Event, S2, State]): CommandHandlerBuilder[Command, Event, S2, State] = {
-    val newBuilder = new CommandHandlerBuilder[Command, Event, S2, State](other.stateClass, other.statePredicate)
+    val newBuilder = new CommandHandlerBuilder[Command, Event, S2, State](other.statePredicate)
     // problem with overloaded constructor with `cases` as parameter
     newBuilder.cases = other.cases ::: cases
     newBuilder
