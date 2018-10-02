@@ -21,6 +21,10 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 
 class PrintMyActorRefActor extends AbstractActor {
+  static Props props() {
+    return Props.create(PrintMyActorRefActor::new);
+  }
+
   @Override
   public Receive createReceive() {
     return receiveBuilder()
@@ -35,10 +39,14 @@ class PrintMyActorRefActor extends AbstractActor {
 
 //#start-stop
 class StartStopActor1 extends AbstractActor {
+  static Props props() {
+    return Props.create(StartStopActor1::new);
+  }
+
   @Override
   public void preStart() {
     System.out.println("first started");
-    getContext().actorOf(Props.create(StartStopActor2.class), "second");
+    getContext().actorOf(StartStopActor2.props(), "second");
   }
 
   @Override
@@ -57,6 +65,11 @@ class StartStopActor1 extends AbstractActor {
 }
 
 class StartStopActor2 extends AbstractActor {
+
+  static Props props() {
+    return Props.create(StartStopActor2::new);
+  }
+
   @Override
   public void preStart() {
     System.out.println("second started");
@@ -79,7 +92,11 @@ class StartStopActor2 extends AbstractActor {
 
 //#supervise
 class SupervisingActor extends AbstractActor {
-  ActorRef child = getContext().actorOf(Props.create(SupervisedActor.class), "supervised-actor");
+  static Props props() {
+    return Props.create(SupervisingActor::new);
+  }
+
+  ActorRef child = getContext().actorOf(SupervisedActor.props(), "supervised-actor");
 
   @Override
   public Receive createReceive() {
@@ -92,6 +109,10 @@ class SupervisingActor extends AbstractActor {
 }
 
 class SupervisedActor extends AbstractActor {
+  static Props props() {
+    return Props.create(SupervisedActor::new);
+  }
+
   @Override
   public void preStart() {
     System.out.println("supervised actor started");
@@ -119,7 +140,7 @@ public class ActorHierarchyExperiments {
   public static void main(String[] args) throws java.io.IOException {
     ActorSystem system = ActorSystem.create("testSystem");
 
-    ActorRef firstRef = system.actorOf(Props.create(PrintMyActorRefActor.class), "first-actor");
+    ActorRef firstRef = system.actorOf(PrintMyActorRefActor.props(), "first-actor");
     System.out.println("First: " + firstRef);
     firstRef.tell("printit", ActorRef.noSender());
 
@@ -151,7 +172,7 @@ class ActorHierarchyExperimentsTest extends JUnitSuite {
   @Test
   public void testStartAndStopActors() {
     //#start-stop-main
-    ActorRef first = system.actorOf(Props.create(StartStopActor1.class), "first");
+    ActorRef first = system.actorOf(StartStopActor1.props(), "first");
     first.tell("stop", ActorRef.noSender());
     //#start-stop-main
   }
@@ -159,7 +180,7 @@ class ActorHierarchyExperimentsTest extends JUnitSuite {
   @Test
   public void testSuperviseActors() {
     //#supervise-main
-    ActorRef supervisingActor = system.actorOf(Props.create(SupervisingActor.class), "supervising-actor");
+    ActorRef supervisingActor = system.actorOf(SupervisingActor.props(), "supervising-actor");
     supervisingActor.tell("failChild", ActorRef.noSender());
     //#supervise-main
   }

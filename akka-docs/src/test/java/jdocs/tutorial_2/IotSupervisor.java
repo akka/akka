@@ -15,7 +15,7 @@ public class IotSupervisor extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
   public static Props props() {
-    return Props.create(IotSupervisor.class);
+    return Props.create(IotSupervisor::new);
   }
 
   @Override
