@@ -170,6 +170,58 @@ class GraphZipLatestSpec
       }
     }
 
+    "complete when either source completes and requesting element" in {
+      forAll(Gen.oneOf(first, second)) { select ⇒
+        val (probe, bools, ints) = testGraph[Boolean, Int]
+
+        Given("either source completes")
+        select((bools, ints)).sendComplete()
+
+        And("request for one element")
+        probe.request(1)
+
+        Then("subscribes and completes")
+        probe.expectComplete()
+      }
+    }
+
+    "complete when either source completes with some pending element" in {
+      forAll(Gen.oneOf(first, second)) { select ⇒
+        val (probe, bools, ints) = testGraph[Boolean, Int]
+
+        Given("one element pushed on each source")
+        bools.sendNext(true)
+        ints.sendNext(1)
+
+        And("either source completes")
+        select((bools, ints)).sendComplete()
+
+        Then("should emit first element then complete")
+        probe.requestNext((true, 1))
+        probe.expectComplete()
+      }
+    }
+
+    "complete if no pending demand" in {
+      forAll(Gen.oneOf(first, second)) { select ⇒
+        val (probe, bools, ints) = testGraph[Boolean, Int]
+
+        Given("request for one element")
+        probe.request(1)
+
+        Given("one element pushed on each source and tuple emitted")
+        bools.sendNext(true)
+        ints.sendNext(1)
+        probe.expectNext((true, 1))
+
+        And("either source completes")
+        select((bools, ints)).sendComplete()
+
+        Then("should complete")
+        probe.expectComplete()
+      }
+    }
+
     "fail when either source has error" in {
       forAll(Gen.oneOf(first, second)) { select ⇒
         val (probe, bools, ints) = testGraph[Boolean, Int]
