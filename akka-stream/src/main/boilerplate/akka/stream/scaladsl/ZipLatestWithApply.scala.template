@@ -9,7 +9,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 
 trait ZipLatestWithApply {
 
-  [2..20#/**
+  [2..22#/**
    * Create a new `ZipLatestWith` specialized for 1 inputs.
    *
    * @param zipper zipping-function from the input values to the output value
@@ -22,7 +22,7 @@ trait ZipLatestWithApply {
 
 }
 
-[2..20#/** `ZipLatestWith` specialized for 1 inputs */
+[2..22#/** `ZipLatestWith` specialized for 1 inputs */
 class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[FanInShape1[[#A1#], O]] {
   override def initialAttributes = Attributes.name("ZipLatestWith1")
   override val shape: FanInShape1[[#A1#], O] = new FanInShape1[[#A1#], O]("ZipLatestWith1")
@@ -57,7 +57,7 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[
             } else {
                 waitingForTuple = true
             }
-            pullAllIfNeeded()
+            tryPullAllIfNeeded()
           }
         }
       )
@@ -73,7 +73,7 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[
         staleTupleValues = true
       }
 
-      private def pullAllIfNeeded(): Unit = {
+      private def tryPullAllIfNeeded(): Unit = {
         [#if (!hasBeenPulled(in0)) {
           tryPull(in0)
         }#
@@ -91,7 +91,7 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[
               if (outer.waitingForTuple && outer.hasAllValues) {
                   outer.pushOutput()
                   outer.waitingForTuple = false
-                  outer.pullAllIfNeeded()
+                  outer.tryPullAllIfNeeded()
               }
          }
 

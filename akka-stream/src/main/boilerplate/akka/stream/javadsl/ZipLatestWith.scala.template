@@ -36,7 +36,7 @@ object ZipLatestWith {
   def create[A, B, Out](f: function.Function2[A, B, Out]): Graph[FanInShape2[A, B, Out], NotUsed] =
     scaladsl.ZipLatestWith(f.apply _)
 
-  [3..20#/** Create a new `ZipLatestWith` specialized for 1 inputs.
+  [3..22#/** Create a new `ZipLatestWith` specialized for 1 inputs.
    *
    * @param f zipping-function from the input values to the output value
    * @param attributes optional attributes for this vertex
