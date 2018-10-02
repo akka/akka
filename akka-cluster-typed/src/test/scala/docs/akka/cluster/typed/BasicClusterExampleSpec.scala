@@ -47,6 +47,7 @@ akka {
   val configSystem2 = ConfigFactory.parseString(
     s"""
         akka.remote.netty.tcp.port = 0
+        akka.remote.artery.canonical.port = 0
      """
   ).withFallback(configSystem1)
 }
@@ -97,7 +98,10 @@ akka {
 #config
      """)
 
-  val noPort = ConfigFactory.parseString("akka.remote.netty.tcp.port = 0")
+  val noPort = ConfigFactory.parseString("""
+      akka.remote.netty.tcp.port = 0
+      akka.remote.artery.canonical.port = 0
+    """)
 
 }
 
