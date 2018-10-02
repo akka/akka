@@ -45,7 +45,7 @@ public class DeviceGroupQuery extends AbstractActor {
   }
 
   public static Props props(Map<ActorRef, String> actorToDeviceId, long requestId, ActorRef requester, FiniteDuration timeout) {
-    return Props.create(() -> new DeviceGroupQuery(actorToDeviceId, requestId, requester, timeout));
+    return Props.create(DeviceGroupQuery.class, () -> new DeviceGroupQuery(actorToDeviceId, requestId, requester, timeout));
   }
 
   @Override

@@ -195,7 +195,7 @@ public class ParentChildTest extends AbstractJavaTest {
     // didn't put final on these in order to make the parent fit in one line in the html docs
     //#test-fabricated-parent
     TestProbe proxy = new TestProbe(system);
-    ActorRef parent = system.actorOf(Props.create(new FabricatedParentCreator(proxy)));
+    ActorRef parent = system.actorOf(Props.create(Actor.class, new FabricatedParentCreator(proxy)));
 
     proxy.send(parent, "ping");
     proxy.expectMsg("pong");

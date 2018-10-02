@@ -22,7 +22,7 @@ import akka.actor.Props;
 
 class PrintMyActorRefActor extends AbstractActor {
   static Props props() {
-    return Props.create(PrintMyActorRefActor::new);
+    return Props.create(PrintMyActorRefActor.class, PrintMyActorRefActor::new);
   }
 
   @Override
@@ -40,7 +40,7 @@ class PrintMyActorRefActor extends AbstractActor {
 //#start-stop
 class StartStopActor1 extends AbstractActor {
   static Props props() {
-    return Props.create(StartStopActor1::new);
+    return Props.create(StartStopActor1.class, StartStopActor1::new);
   }
 
   @Override
@@ -67,7 +67,7 @@ class StartStopActor1 extends AbstractActor {
 class StartStopActor2 extends AbstractActor {
 
   static Props props() {
-    return Props.create(StartStopActor2::new);
+    return Props.create(StartStopActor2.class, StartStopActor2::new);
   }
 
   @Override
@@ -93,7 +93,7 @@ class StartStopActor2 extends AbstractActor {
 //#supervise
 class SupervisingActor extends AbstractActor {
   static Props props() {
-    return Props.create(SupervisingActor::new);
+    return Props.create(SupervisingActor.class, SupervisingActor::new);
   }
 
   ActorRef child = getContext().actorOf(SupervisedActor.props(), "supervised-actor");
@@ -110,7 +110,7 @@ class SupervisingActor extends AbstractActor {
 
 class SupervisedActor extends AbstractActor {
   static Props props() {
-    return Props.create(SupervisedActor::new);
+    return Props.create(SupervisedActor.class, SupervisedActor::new);
   }
 
   @Override

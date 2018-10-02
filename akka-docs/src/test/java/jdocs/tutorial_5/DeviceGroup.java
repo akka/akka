@@ -28,7 +28,7 @@ public class DeviceGroup extends AbstractActor {
   }
 
   public static Props props(String groupId) {
-    return Props.create(() -> new DeviceGroup(groupId));
+    return Props.create(DeviceGroup.class, () -> new DeviceGroup(groupId));
   }
 
   public static final class RequestDeviceList {
