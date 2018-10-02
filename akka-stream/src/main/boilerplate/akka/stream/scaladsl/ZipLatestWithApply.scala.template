@@ -37,7 +37,7 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[
       [#val inlet0 = new ZipLatestInlet(in0)#
       ]
       var waitingForTuple = false
-      var waitingForNextTuple = false
+      var staleTupleValues = true
 
       override def preStart(): Unit = {
         [#pull(in0)#
@@ -49,14 +49,12 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[
         new OutHandler {
           override def onPull(): Unit = {
             if (hasAllValues) {
-                if (waitingForNextTuple) {
+                if (staleTupleValues) {
                     waitingForTuple = true
                 } else {
                     pushOutput()
                 }
-            }
-            else
-            {
+            } else {
                 waitingForTuple = true
             }
             pullAllIfNeeded()
@@ -72,12 +70,12 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[
       private def pushOutput(): Unit = {
         push(out, zipper([#inlet0.value#,]))
         if (willShutDown) completeStage()
-        waitingForNextTuple = true
+        staleTupleValues = true
       }
 
       private def pullAllIfNeeded(): Unit = {
         [#if (!hasBeenPulled(in0)) {
-          pull(in0)
+          tryPull(in0)
         }#
         ]
       }
@@ -89,7 +87,7 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[
          override def onPush() = {
               value = outer.grab(in)
               hasValue = true
-              outer.waitingForNextTuple = false
+              outer.staleTupleValues = false
               if (outer.waitingForTuple && outer.hasAllValues) {
                   outer.pushOutput()
                   outer.waitingForTuple = false
@@ -98,7 +96,7 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[
          }
 
          override def onUpstreamFinish(): Unit = {
-           if (!outer.isAvailable(in)) outer.completeStage()
+           if (outer.staleTupleValues) completeStage()
            outer.willShutDown = true
          }
        }
