@@ -5,10 +5,10 @@
 package akka.io.dns
 
 import collection.JavaConverters._
-import akka.testkit.{ AkkaSpec, SocketUtil }
+import akka.testkit.AkkaSpec
 import com.spotify.docker.client.DefaultDockerClient
 import com.spotify.docker.client.DockerClient.LogsParam
-import com.spotify.docker.client.messages.{ ContainerConfig, HostConfig, PortBinding, Volume }
+import com.spotify.docker.client.messages.{ ContainerConfig, HostConfig, PortBinding }
 import org.scalatest.concurrent.Eventually
 
 trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
@@ -21,11 +21,13 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
   override def atStartup(): Unit = {
     self.atStartup()
 
-    val image = "sameersbn/bind:9.11.3-20180713"
+    // https://github.com/sameersbn/docker-bind/pull/61
+    val image = "raboof/bind:9.11.3-20180713-nochown"
     client.pull(image)
 
     val containerConfig = ContainerConfig.builder()
       .image(image)
+      .env("NO_CHOWN=true")
       .hostConfig(
         HostConfig.builder()
           .portBindings(Map(
