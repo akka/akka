@@ -10,6 +10,7 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.{ Attributes, Inlet, SinkShape, ActorMaterializer }
 import akka.stream.stage.{ InHandler, AsyncCallback, GraphStageLogic, GraphStageWithMaterializedValue }
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 import scala.concurrent.{ Await, Promise, Future }
 import scala.concurrent.duration._

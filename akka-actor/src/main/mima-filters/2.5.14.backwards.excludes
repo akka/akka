@@ -1,0 +1,17 @@
+# #25340 ReceiveTimeout
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.checkReceiveTimeout")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.dungeon.ReceiveTimeout.checkReceiveTimeout")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.ReceiveTimeout.checkReceiveTimeout$default$1")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.ReceiveTimeout.checkReceiveTimeout")
+
+# Additional records support for async dns, DnsProtocol is marked with ApiMayChange
+ProblemFilters.exclude[MissingTypesProblem]("akka.io.dns.DnsProtocol$Resolved$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.DnsProtocol#Resolved.results")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.DnsProtocol#Resolved.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.DnsProtocol#Resolved.getResults")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.DnsProtocol#Resolved.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.internal.DnsClient#Answer.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.internal.DnsClient#Answer.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.io.dns.internal.DnsClient$Answer$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.internal.DnsClient#Answer.apply")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.internal.AsyncDnsCache.put")

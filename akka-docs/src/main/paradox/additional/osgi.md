@@ -1,5 +1,21 @@
 # Akka in OSGi
 
+## Dependency
+
+To use Akka in OSGi, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-osgi_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Sample project
+
+You can look at the
+@extref[OSGi Dining Hakkers example project](samples:akka-samples-osgi-dining-hakkers)
+to see what this looks like in practice.
+
 ## Background
 
 [OSGi](http://www.osgi.org/developer) is a mature packaging and deployment standard for component-based systems. It
@@ -96,24 +112,8 @@ dynamic in this way. ActorRefs may safely be exposed to other bundles.
 To bootstrap Akka inside an OSGi environment, you can use the `akka.osgi.ActorSystemActivator` class
 to conveniently set up the ActorSystem.
 
-@@snip [Activator.scala]($akka$/akka-osgi/src/test/scala/docs/osgi/Activator.scala) { #Activator }
+@@snip [Activator.scala](/akka-osgi/src/test/scala/docs/osgi/Activator.scala) { #Activator }
 
 The goal here is to map the OSGi lifecycle more directly to the Akka lifecycle. The `ActorSystemActivator` creates
 the actor system with a class loader that finds resources (`application.conf` and `reference.conf` files) and classes
 from the application bundle and all transitive dependencies.
-
-The `ActorSystemActivator` class is included in the `akka-osgi` artifact:
-
-@@@vars
-```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-osgi_$scala.binary_version$</artifactId>
-  <version>$akka.version$</version>
-</dependency>
-```
-@@@
-
-## Sample
-
-A complete sample project is provided in @extref[akka-sample-osgi-dining-hakkers](samples:akka-sample-osgi-dining-hakkers)

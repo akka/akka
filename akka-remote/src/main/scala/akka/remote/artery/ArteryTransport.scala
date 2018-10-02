@@ -45,7 +45,6 @@ import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
 import akka.remote.artery.compress._
-import akka.remote.artery.aeron.AeronSource
 import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
 import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
 import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
@@ -62,7 +61,7 @@ import akka.util.WildcardIndex
 
 /**
  * INTERNAL API
- * Inbound API that is used by the stream stages.
+ * Inbound API that is used by the stream operators.
  * Separate trait to facilitate testing without real transport.
  */
 private[remote] trait InboundContext {
@@ -72,7 +71,7 @@ private[remote] trait InboundContext {
   def localAddress: UniqueAddress
 
   /**
-   * An inbound stage can send control message, e.g. a reply, to the origin
+   * An inbound operator can send control message, e.g. a reply, to the origin
    * address with this method. It will be sent over the control sub-channel.
    */
   def sendControl(to: Address, message: ControlMessage): Unit
@@ -189,7 +188,7 @@ private[remote] final class AssociationState(
 
 /**
  * INTERNAL API
- * Outbound association API that is used by the stream stages.
+ * Outbound association API that is used by the stream operators.
  * Separate trait to facilitate testing without real transport.
  */
 private[remote] trait OutboundContext {
@@ -208,7 +207,7 @@ private[remote] trait OutboundContext {
   def quarantine(reason: String): Unit
 
   /**
-   * An inbound stage can send control message, e.g. a HandshakeReq, to the remote
+   * An inbound operator can send control message, e.g. a HandshakeReq, to the remote
    * address of this association. It will be sent over the control sub-channel.
    */
   def sendControl(message: ControlMessage): Unit
@@ -219,7 +218,7 @@ private[remote] trait OutboundContext {
   def isOrdinaryMessageStreamActive(): Boolean
 
   /**
-   * An outbound stage can listen to control messages
+   * An outbound operator can listen to control messages
    * via this observer subject.
    */
   def controlSubject: ControlMessageSubject
@@ -302,6 +301,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   import ArteryTransport._
   import FlightRecorderEvents._
 
+  type LifeCycle
+
   // these vars are initialized once in the start method
   @volatile private[this] var _localAddress: UniqueAddress = _
   @volatile private[this] var _bindAddress: UniqueAddress = _
@@ -320,7 +321,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   /**
    * Compression tables must be created once, such that inbound lane restarts don't cause dropping of the tables.
-   * However are the InboundCompressions are owned by the Decoder stage, and any call into them must be looped through the Decoder!
+   * However are the InboundCompressions are owned by the Decoder operator, and any call into them must be looped through the Decoder!
    *
    * Use `inboundCompressionAccess` (provided by the materialized `Decoder`) to call into the compression infrastructure.
    */
@@ -339,14 +340,14 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   def bindAddress: UniqueAddress = _bindAddress
   override def localAddress: UniqueAddress = _localAddress
-  override def defaultAddress: Address = localAddress.address
+  override def defaultAddress: Address = if (_localAddress eq null) null else localAddress.address
   override def addresses: Set[Address] = _addresses
   override def localAddressForRemote(remote: Address): Address = defaultAddress
 
   protected val killSwitch: SharedKillSwitch = KillSwitches.shared("transportKillSwitch")
 
   // keyed by the streamId
-  protected val streamMatValues = new AtomicReference(Map.empty[Int, InboundStreamMatValues])
+  protected val streamMatValues = new AtomicReference(Map.empty[Int, InboundStreamMatValues[LifeCycle]])
   private[this] val hasBeenShutdown = new AtomicBoolean(false)
 
   private val testState = new SharedTestState
@@ -485,7 +486,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         val b = env.originUid
         val hashA = 23 + a
         val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
-        math.abs(hash) % inboundLanes
+        math.abs(hash % inboundLanes)
       case OptionVal.None ⇒
         // the lane is set by the DuplicateHandshakeReq stage, otherwise 0
         env.lane
@@ -656,7 +657,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   protected def shutdownTransport(): Future[Done]
 
-  @tailrec final protected def updateStreamMatValues(streamId: Int, values: InboundStreamMatValues): Unit = {
+  @tailrec final protected def updateStreamMatValues(streamId: Int, values: InboundStreamMatValues[LifeCycle]): Unit = {
     val prev = streamMatValues.get()
     if (!streamMatValues.compareAndSet(prev, prev + (streamId → values))) {
       updateStreamMatValues(streamId, values)
@@ -735,8 +736,12 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   }
 
   override def quarantine(remoteAddress: Address, uid: Option[Long], reason: String): Unit = {
+    quarantine(remoteAddress, uid, reason, harmless = false)
+  }
+
+  def quarantine(remoteAddress: Address, uid: Option[Long], reason: String, harmless: Boolean): Unit = {
     try {
-      association(remoteAddress).quarantine(reason, uid)
+      association(remoteAddress).quarantine(reason, uid, harmless)
     } catch {
       case ShuttingDown ⇒ // silence it
     }
@@ -771,15 +776,16 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, settings.Advanced.HandshakeTimeout,
-        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval))
+        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval, Duration.Undefined))
       .viaMat(createEncoder(bufferPool, streamId))(Keep.right)
   }
 
   def outboundControl(outboundContext: OutboundContext): Sink[OutboundEnvelope, (OutboundControlIngress, Future[Done])] = {
-
+    val livenessProbeInterval = (settings.Advanced.QuarantineIdleOutboundAfter / 10)
+      .max(settings.Advanced.HandshakeRetryInterval)
     Flow.fromGraph(killSwitch.flow[OutboundEnvelope])
       .via(new OutboundHandshake(system, outboundContext, outboundEnvelopePool, settings.Advanced.HandshakeTimeout,
-        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval))
+        settings.Advanced.HandshakeRetryInterval, settings.Advanced.InjectHandshakeInterval, livenessProbeInterval))
       .via(new SystemMessageDelivery(outboundContext, system.deadLetters, settings.Advanced.SystemMessageResendInterval,
         settings.Advanced.SysMsgBufferSize))
       // note that System messages must not be dropped before the SystemMessageDelivery stage
@@ -812,13 +818,20 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   // Checks for termination hint messages and sends an ACK for those (not processing them further)
   // Purpose of this stage is flushing, the sender can wait for the ACKs up to try flushing
   // pending messages.
-  def terminationHintReplier(): Flow[InboundEnvelope, InboundEnvelope, NotUsed] = {
+  def terminationHintReplier(inControlStream: Boolean): Flow[InboundEnvelope, InboundEnvelope, NotUsed] = {
     Flow[InboundEnvelope].filter { envelope ⇒
       envelope.message match {
-        case _: ActorSystemTerminating ⇒
+        case ActorSystemTerminating(from) ⇒
           envelope.sender match {
-            case OptionVal.Some(snd) ⇒ snd.tell(ActorSystemTerminatingAck(localAddress), ActorRef.noSender)
-            case OptionVal.None      ⇒ log.error("Expected sender for ActorSystemTerminating message")
+            case OptionVal.Some(snd) ⇒
+              snd.tell(ActorSystemTerminatingAck(localAddress), ActorRef.noSender)
+              if (inControlStream)
+                system.scheduler.scheduleOnce(settings.Advanced.ShutdownFlushTimeout) {
+                  if (!isShutdown)
+                    quarantine(from.address, Some(from.uid), "ActorSystem terminated", harmless = true)
+                }(materializer.executionContext)
+            case OptionVal.None ⇒
+              log.error("Expected sender for ActorSystemTerminating message from [{}]", from)
           }
           false
         case _ ⇒ true
@@ -830,7 +843,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     Flow[InboundEnvelope]
       .via(createDeserializer(bufferPool))
       .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
-      .via(terminationHintReplier())
+      .via(terminationHintReplier(inControlStream = false))
       .via(new InboundHandshake(this, inControlStream = false))
       .via(new InboundQuarantineCheck(this))
       .toMat(messageDispatcherSink)(Keep.right)
@@ -849,7 +862,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     Flow[InboundEnvelope]
       .via(createDeserializer(envelopeBufferPool))
       .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
-      .via(terminationHintReplier())
+      .via(terminationHintReplier(inControlStream = true))
       .via(new InboundHandshake(this, inControlStream = true))
       .via(new InboundQuarantineCheck(this))
       .viaMat(new InboundControlJunction)(Keep.right)
@@ -905,9 +918,9 @@ private[remote] object ArteryTransport {
   // thrown when the transport is shutting down and something triggers a new association
   object ShuttingDown extends RuntimeException with NoStackTrace
 
-  final case class InboundStreamMatValues(
-    aeronSourceLifecycle: Option[AeronSource.ResourceLifecycle],
-    completed:            Future[Done])
+  final case class InboundStreamMatValues[LifeCycle](
+    lifeCycle: LifeCycle,
+    completed: Future[Done])
 
   def autoSelectPort(hostname: String, udp: Boolean): Int = {
     if (udp) {

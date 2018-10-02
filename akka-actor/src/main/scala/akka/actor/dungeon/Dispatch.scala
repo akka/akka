@@ -12,15 +12,14 @@ import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
 import akka.util.Unsafe
 import akka.actor._
-import akka.serialization.SerializationExtension
-
+import akka.serialization.{ DisabledJavaSerializer, SerializationExtension, Serializers }
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.control.Exception.Catcher
+
 import akka.dispatch.MailboxType
 import akka.dispatch.ProducesMessageQueue
-import akka.serialization.SerializerWithStringManifest
 import akka.dispatch.UnboundedMailbox
-import akka.serialization.DisabledJavaSerializer
+import akka.serialization.Serialization
 
 @SerialVersionUID(1L)
 final case class SerializationCheckFailedException private (msg: Object, cause: Throwable)
@@ -172,14 +171,14 @@ private[akka] trait Dispatch { this: ActorCell ⇒
     if (serializer.isInstanceOf[DisabledJavaSerializer] && !s.shouldWarnAboutJavaSerializer(obj.getClass, serializer))
       obj // skip check for known "local" messages
     else {
-      val bytes = serializer.toBinary(obj)
-      serializer match {
-        case ser2: SerializerWithStringManifest ⇒
-          val manifest = ser2.manifest(obj)
-          s.deserialize(bytes, serializer.identifier, manifest).get
-        case _ ⇒
-          s.deserialize(bytes, obj.getClass).get
-      }
+      val oldInfo = Serialization.currentTransportInformation.value
+      try {
+        if (oldInfo eq null)
+          Serialization.currentTransportInformation.value = system.provider.serializationInformation
+        val bytes = serializer.toBinary(obj)
+        val ms = Serializers.manifestFor(serializer, obj)
+        s.deserialize(bytes, serializer.identifier, ms).get
+      } finally Serialization.currentTransportInformation.value = oldInfo
     }
   }
 

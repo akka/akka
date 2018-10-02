@@ -1,12 +1,13 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import java.io.File
 
 import akka.actor._
-import akka.cluster.{ Cluster, MemberStatus }
+import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testconductor.RoleName
@@ -57,7 +58,6 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: S
   val third = role("third")
 
   commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.cluster.auto-down-unreachable-after = 0s
     akka.remote.log-remote-lifecycle-events = off
@@ -76,7 +76,7 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: S
       dir = target/ShardingRememberEntitiesNewExtractorSpec/sharding-ddata
       map-size = 10 MiB
     }
-    """))
+    """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   val roleConfig = ConfigFactory.parseString(
     """
@@ -133,12 +133,12 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterSh
   val storageLocations = List(new File(system.settings.config.getString(
     "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
-  override protected def atStartup() {
+  override protected def atStartup(): Unit = {
     storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
   }
 
-  override protected def afterTermination() {
+  override protected def afterTermination(): Unit = {
     storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 

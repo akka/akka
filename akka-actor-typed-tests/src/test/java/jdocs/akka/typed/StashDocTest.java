@@ -12,8 +12,8 @@ import akka.Done;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.testkit.typed.javadsl.TestInbox;
-import akka.testkit.typed.javadsl.BehaviorTestKit;
+import akka.actor.testkit.typed.javadsl.TestInbox;
+import akka.actor.testkit.typed.javadsl.BehaviorTestKit;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 

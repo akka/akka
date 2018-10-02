@@ -15,9 +15,9 @@ import akka.pattern.ask
 import akka.pattern.pipe
 import akka.dispatch.ExecutionContexts
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration._
 import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
+import akka.util.JavaDurationConverters._
 import akka.actor.ActorSystem
 import scala.concurrent.Future
 import java.util.concurrent.TimeoutException
@@ -119,6 +119,14 @@ final case class ScatterGatherFirstCompletedPool(
    */
   def this(nr: Int, within: FiniteDuration) = this(nrOfInstances = nr, within = within)
 
+  /**
+   * Java API
+   * @param nr initial number of routees in the pool
+   * @param within expecting at least one reply within this duration, otherwise
+   *   it will reply with [[akka.pattern.AskTimeoutException]] in a [[akka.actor.Status.Failure]]
+   */
+  def this(nr: Int, within: java.time.Duration) = this(nr, within.asScala)
+
   override def createRouter(system: ActorSystem): Router = new Router(ScatterGatherFirstCompletedRoutingLogic(within))
 
   override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
@@ -185,6 +193,16 @@ final case class ScatterGatherFirstCompletedGroup(
    */
   def this(routeePaths: java.lang.Iterable[String], within: FiniteDuration) =
     this(paths = immutableSeq(routeePaths), within = within)
+
+  /**
+   * Java API
+   * @param routeePaths string representation of the actor paths of the routees, messages are
+   *   sent with [[akka.actor.ActorSelection]] to these paths
+   * @param within expecting at least one reply within this duration, otherwise
+   *   it will reply with [[akka.pattern.AskTimeoutException]] in a [[akka.actor.Status.Failure]]
+   */
+  def this(routeePaths: java.lang.Iterable[String], within: java.time.Duration) =
+    this(immutableSeq(routeePaths), within.asScala)
 
   override def paths(system: ActorSystem): immutable.Iterable[String] = this.paths
 

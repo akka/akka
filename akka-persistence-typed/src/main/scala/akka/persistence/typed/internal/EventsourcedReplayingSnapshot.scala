@@ -20,7 +20,7 @@ import akka.persistence.typed.internal.EventsourcedBehavior._
  *
  * In this behavior the recovery process is initiated.
  * We try to obtain a snapshot from the configured snapshot store,
- * and if it exists, we use it instead of the `initialState`.
+ * and if it exists, we use it instead of the initial `emptyState`.
  *
  * Once snapshot recovery is done (or no snapshot was selected),
  * recovery of events continues in [[EventsourcedReplayingEvents]].
@@ -32,7 +32,7 @@ import akka.persistence.typed.internal.EventsourcedBehavior._
 private[akka] object EventsourcedReplayingSnapshot {
 
   def apply[C, E, S](setup: EventsourcedSetup[C, E, S]): Behavior[InternalProtocol] =
-    new EventsourcedReplayingSnapshot(setup).createBehavior()
+    new EventsourcedReplayingSnapshot(setup.setMdc(MDC.ReplayingSnapshot)).createBehavior()
 
 }
 
@@ -41,19 +41,18 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
   extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
 
   def createBehavior(): Behavior[InternalProtocol] = {
-    startRecoveryTimer()
+    // protect against snapshot stalling forever because of journal overloaded and such
+    setup.startRecoveryTimer(snapshot = true)
 
     loadSnapshot(setup.recovery.fromSnapshot, setup.recovery.toSequenceNr)
 
-    withMdc(setup, MDC.ReplayingSnapshot) {
-      Behaviors.receiveMessage[InternalProtocol] {
-        case SnapshotterResponse(r)      ⇒ onSnapshotterResponse(r)
-        case JournalResponse(r)          ⇒ onJournalResponse(r)
-        case RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot)
-        case cmd: IncomingCommand[C]     ⇒ onCommand(cmd)
-        case RecoveryPermitGranted       ⇒ Behaviors.unhandled // should not happen, we already have the permit
-      }.receiveSignal(returnPermitOnStop)
-    }
+    Behaviors.receiveMessage[InternalProtocol] {
+      case SnapshotterResponse(r)      ⇒ onSnapshotterResponse(r)
+      case JournalResponse(r)          ⇒ onJournalResponse(r)
+      case RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot)
+      case cmd: IncomingCommand[C]     ⇒ onCommand(cmd)
+      case RecoveryPermitGranted       ⇒ Behaviors.unhandled // should not happen, we already have the permit
+    }.receiveSignal(returnPermitOnStop)
   }
 
   /**
@@ -65,7 +64,7 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
    * @param event the event that was processed in `receiveRecover`, if the exception was thrown there
    */
   private def onRecoveryFailure(cause: Throwable, event: Option[Any]): Behavior[InternalProtocol] = {
-    cancelRecoveryTimer(setup.timers)
+    setup.cancelRecoveryTimer()
 
     event match {
       case Some(evt) ⇒
@@ -98,7 +97,7 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
   def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
     response match {
       case LoadSnapshotResult(sso, toSnr) ⇒
-        var state: S = setup.initialState
+        var state: S = setup.emptyState
 
         val seqNr: Long = sso match {
           case Some(SelectedSnapshot(metadata, snapshot)) ⇒
@@ -110,7 +109,6 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
         becomeReplayingEvents(state, seqNr, toSnr)
 
       case LoadSnapshotFailed(cause) ⇒
-        cancelRecoveryTimer(setup.timers)
         onRecoveryFailure(cause, event = None)
 
       case _ ⇒
@@ -119,24 +117,12 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
   }
 
   private def becomeReplayingEvents(state: S, lastSequenceNr: Long, toSnr: Long): Behavior[InternalProtocol] = {
-    cancelRecoveryTimer(setup.timers)
-
-    val rec = setup.recovery.copy(
-      toSequenceNr = toSnr,
-      fromSnapshot = SnapshotSelectionCriteria.None
-    )
+    setup.cancelRecoveryTimer()
 
     EventsourcedReplayingEvents[C, E, S](
-      setup.copy(recovery = rec),
-      // setup.internalStash, // TODO move it out of setup
-      EventsourcedReplayingEvents.ReplayingState(lastSequenceNr, state)
+      setup,
+      EventsourcedReplayingEvents.ReplayingState(lastSequenceNr, state, eventSeenInInterval = false, toSnr)
     )
   }
-
-  // protect against snapshot stalling forever because of journal overloaded and such
-  private val SnapRecoveryTickTimerKey = "snapshot-recovery-tick"
-  private def startRecoveryTimer(): Unit =
-    setup.timers.startPeriodicTimer(SnapRecoveryTickTimerKey, RecoveryTickEvent(snapshot = true), setup.settings.recoveryEventTimeout)
-  private def cancelRecoveryTimer(timers: TimerScheduler[_]): Unit = timers.cancel(SnapRecoveryTickTimerKey)
 
 }

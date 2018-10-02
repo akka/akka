@@ -1,5 +1,17 @@
 # Routing
 
+## Dependency
+
+To use Routing, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 Messages can be sent via a router to efficiently route them to destination actors, known as
 its *routees*. A `Router` can be used inside or outside of an actor, and you can manage the
 routees yourselves or use a self contained router actor with configuration capabilities.
@@ -14,10 +26,10 @@ also possible to [create your own](#custom-router).
 The following example illustrates how to use a `Router` and manage the routees from within an actor.
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #router-in-actor }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #router-in-actor }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #router-in-actor }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #router-in-actor }
 
 We create a `Router` and specify that it should use `RoundRobinRoutingLogic` when routing the
 messages to the routees.
@@ -85,22 +97,22 @@ few exceptions. These are documented in the [Specially Handled Messages](#router
 The following code and configuration snippets show how to create a [round-robin](#round-robin-router) router that forwards messages to five `Worker` routees. The
 routees will be created as the router's children.
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-pool }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-pool-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #round-robin-pool-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #round-robin-pool-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #round-robin-pool-1 }
 
 Here is the same example, but with the router configuration provided programmatically instead of
 from configuration.
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-pool-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #round-robin-pool-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #round-robin-pool-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #round-robin-pool-2 }
 
 #### Remote Deployed Routees
 
@@ -111,10 +123,10 @@ fashion. In order to deploy routees remotely, wrap the router configuration in a
 deployment requires the `akka-remote` module to be included in the classpath.
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #remoteRoutees }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #remoteRoutees }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #remoteRoutees }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #remoteRoutees }
 
 #### Senders
 
@@ -122,20 +134,20 @@ By default, when a routee sends a message, it will @ref:[implicitly set itself a
 ](actors.md#actors-tell-sender).
 
 Scala
-:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #reply-without-sender }
+:  @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #reply-without-sender }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #reply-with-self }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #reply-with-self }
 
 However, it is often useful for routees to set the *router* as a sender. For example, you might want
 to set the router as the sender if you want to hide the details of the routees behind the router.
 The following code snippet shows how to set the parent router as sender.
 
 Scala
-:  @@snip [ActorDocSpec.scala]($code$/scala/docs/actor/ActorDocSpec.scala) { #reply-with-sender }
+:  @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #reply-with-sender }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #reply-with-parent }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #reply-with-parent }
 
 #### Supervision
 
@@ -161,13 +173,13 @@ is to make the default behave such that adding `.withRouter` to a child’s defi
 change the supervision strategy applied to the child. This might be an inefficiency that you can avoid 
 by specifying the strategy when defining the router.
 
-Setting the strategy is easily done:
+Setting the strategy is done like this:
 
 Scala
-:  @@snip [RoutingSpec.scala]($akka$/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala) { #supervision }
+:  @@snip [RoutingSpec.scala](/akka-actor-tests/src/test/scala/akka/routing/RoutingSpec.scala) { #supervision }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #supervision }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #supervision }
 
 @@@ note
 
@@ -181,49 +193,49 @@ a resizer.
 ### Group
 
 Sometimes, rather than having the router actor create its routees, it is desirable to create routees
-separately and provide them to the router for its use. You can do this by passing an
+separately and provide them to the router for its use. You can do this by passing in
 paths of the routees to the router's configuration. Messages will be sent with `ActorSelection` 
-to these paths.  
+to these paths, wildcards can be and will result in the same @ref:[semantics as explicitly using `ActorSelection`](general/addressing.md#querying-the-logical-actor-hierarchy).
 
 The example below shows how to create a router by providing it with the path strings of three
 routee actors. 
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-group }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-group }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-group-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #round-robin-group-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #round-robin-group-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #round-robin-group-1 }
 
 Here is the same example, but with the router configuration provided programmatically instead of
 from configuration.
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-group-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #paths #round-robin-group-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #round-robin-group-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #paths #round-robin-group-2 }
 
 The routee actors are created externally from the router:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #create-workers }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #create-workers }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #create-workers }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #create-workers }
 
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #create-worker-actors }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #create-worker-actors }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #create-worker-actors }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #create-worker-actors }
 
 The paths may contain protocol and address information for actors running on remote hosts.
 Remoting requires the `akka-remote` module to be included in the classpath.
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group }
 
 ## Router usage
 
@@ -234,10 +246,10 @@ Note that deployment paths in the configuration starts with `/parent/` followed 
 of the router actor. 
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #create-parent }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #create-parent }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #create-parent }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #create-parent }
 
 <a id="round-robin-router"></a>
 ### RoundRobinPool and RoundRobinGroup
@@ -246,39 +258,39 @@ Routes in a [round-robin](http://en.wikipedia.org/wiki/Round-robin) fashion to i
 
 RoundRobinPool defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-pool }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-pool-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #round-robin-pool-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #round-robin-pool-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #round-robin-pool-1 }
 
 RoundRobinPool defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-pool-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #round-robin-pool-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #round-robin-pool-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #round-robin-pool-2 }
 
 RoundRobinGroup defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-group }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-group }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #round-robin-group-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #round-robin-group-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #round-robin-group-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #round-robin-group-1 }
 
 RoundRobinGroup defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #round-robin-group-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #paths #round-robin-group-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #paths #round-robin-group-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #paths #round-robin-group-2 }
 
 ### RandomPool and RandomGroup
 
@@ -286,39 +298,39 @@ This router type selects one of its routees randomly for each message.
 
 RandomPool defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-random-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-random-pool }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #random-pool-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #random-pool-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #random-pool-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #random-pool-1 }
 
 RandomPool defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #random-pool-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #random-pool-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #random-pool-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #random-pool-2 }
 
 RandomGroup defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-random-group }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-random-group }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #random-group-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #random-group-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #random-group-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #random-group-1 }
 
 RandomGroup defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #random-group-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #paths #random-group-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #paths #random-group-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #paths #random-group-2 }
 
 <a id="balancing-pool"></a>
 ### BalancingPool
@@ -350,27 +362,27 @@ as described in [Specially Handled Messages](#router-special-messages).
 
 BalancingPool defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-balancing-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-balancing-pool }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #balancing-pool-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #balancing-pool-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #balancing-pool-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #balancing-pool-1 }
 
 BalancingPool defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #balancing-pool-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #balancing-pool-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #balancing-pool-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #balancing-pool-2 }
 
 Addition configuration for the balancing dispatcher, which is used by the pool,
 can be configured in the `pool-dispatcher` section of the router deployment
 configuration.
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-balancing-pool2 }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-balancing-pool2 }
 
 The `BalancingPool` automatically uses a special `BalancingDispatcher` for its
 routees - disregarding any dispatcher that is set on the routee Props object.
@@ -383,14 +395,14 @@ can be configured as explained in @ref:[Dispatchers](dispatchers.md). In situati
 routees are expected to perform blocking operations it may be useful to replace it
 with a `thread-pool-executor` hinting the number of allocated threads explicitly:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-balancing-pool3 }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-balancing-pool3 }
 
 It is also possible to change the `mailbox` used by the balancing dispatcher for
 scenarios where the default unbounded mailbox is not well suited. An example of such
 a scenario could arise whether there exists the need to manage priority for each message.
 You can then implement a priority mailbox and configure your dispatcher:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-balancing-pool4 }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-balancing-pool4 }
 
 @@@ note
 
@@ -416,21 +428,21 @@ since their mailbox size is unknown
 
 SmallestMailboxPool defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-smallest-mailbox-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-smallest-mailbox-pool }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #smallest-mailbox-pool-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #smallest-mailbox-pool-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #smallest-mailbox-pool-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #smallest-mailbox-pool-1 }
 
 SmallestMailboxPool defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #smallest-mailbox-pool-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #smallest-mailbox-pool-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #smallest-mailbox-pool-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #smallest-mailbox-pool-2 }
 
 There is no Group variant of the SmallestMailboxPool because the size of the mailbox
 and the internal dispatching state of the actor is not practically available from the paths
@@ -442,41 +454,41 @@ A broadcast router forwards the message it receives to *all* its routees.
 
 BroadcastPool defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-broadcast-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-broadcast-pool }
 
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #broadcast-pool-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #broadcast-pool-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #broadcast-pool-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #broadcast-pool-1 }
 
 BroadcastPool defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #broadcast-pool-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #broadcast-pool-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #broadcast-pool-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #broadcast-pool-2 }
 
 BroadcastGroup defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-broadcast-group }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-broadcast-group }
 
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #broadcast-group-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #broadcast-group-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #broadcast-group-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #broadcast-group-1 }
 
 BroadcastGroup defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #broadcast-group-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #paths #broadcast-group-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #paths #broadcast-group-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #paths #broadcast-group-2 }
 
 @@@ note
 
@@ -497,41 +509,41 @@ It is expecting at least one reply within a configured duration, otherwise it wi
 
 ScatterGatherFirstCompletedPool defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-scatter-gather-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-scatter-gather-pool }
 
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #scatter-gather-pool-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #scatter-gather-pool-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #scatter-gather-pool-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #scatter-gather-pool-1 }
 
 ScatterGatherFirstCompletedPool defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #scatter-gather-pool-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #scatter-gather-pool-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #scatter-gather-pool-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #scatter-gather-pool-2 }
 
 ScatterGatherFirstCompletedGroup defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-scatter-gather-group }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-scatter-gather-group }
 
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #scatter-gather-group-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #scatter-gather-group-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #scatter-gather-group-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #scatter-gather-group-1 }
 
 ScatterGatherFirstCompletedGroup defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #scatter-gather-group-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #paths #scatter-gather-group-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #paths #scatter-gather-group-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #paths #scatter-gather-group-2 }
 
 ### TailChoppingPool and TailChoppingGroup
 
@@ -547,39 +559,39 @@ This optimisation was described nicely in a blog post by Peter Bailis:
 
 TailChoppingPool defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-tail-chopping-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-tail-chopping-pool }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #tail-chopping-pool-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #tail-chopping-pool-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #tail-chopping-pool-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #tail-chopping-pool-1 }
 
 TailChoppingPool defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #tail-chopping-pool-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #tail-chopping-pool-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #tail-chopping-pool-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #tail-chopping-pool-2 }
 
 TailChoppingGroup defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-tail-chopping-group }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-tail-chopping-group }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #tail-chopping-group-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #tail-chopping-group-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #tail-chopping-group-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #tail-chopping-group-1 }
 
 TailChoppingGroup defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #tail-chopping-group-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #paths #tail-chopping-group-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #paths #tail-chopping-group-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #paths #tail-chopping-group-2 }
 
 ### ConsistentHashingPool and ConsistentHashingGroup
 
@@ -606,17 +618,17 @@ the same time for one router. The @scala[`hashMapping`]@java[`withHashMapper`] i
 Code example:
 
 Scala
-:  @@snip [ConsistentHashingRouterDocSpec.scala]($code$/scala/docs/routing/ConsistentHashingRouterDocSpec.scala) { #cache-actor }
+:  @@snip [ConsistentHashingRouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/ConsistentHashingRouterDocSpec.scala) { #cache-actor }
 
 Java
-:  @@snip [ConsistentHashingRouterDocTest.java]($code$/java/jdocs/routing/ConsistentHashingRouterDocTest.java) { #cache-actor }
+:  @@snip [ConsistentHashingRouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/ConsistentHashingRouterDocTest.java) { #cache-actor }
 
 
 Scala
-:  @@snip [ConsistentHashingRouterDocSpec.scala]($code$/scala/docs/routing/ConsistentHashingRouterDocSpec.scala) { #consistent-hashing-router }
+:  @@snip [ConsistentHashingRouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/ConsistentHashingRouterDocSpec.scala) { #consistent-hashing-router }
 
 Java
-:  @@snip [ConsistentHashingRouterDocTest.java]($code$/java/jdocs/routing/ConsistentHashingRouterDocTest.java) { #consistent-hashing-router }
+:  @@snip [ConsistentHashingRouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/ConsistentHashingRouterDocTest.java) { #consistent-hashing-router }
 
 In the above example you see that the `Get` message implements `ConsistentHashable` itself,
 while the `Entry` message is wrapped in a `ConsistentHashableEnvelope`. The `Evict`
@@ -624,39 +636,39 @@ message is handled by the `hashMapping` partial function.
 
 ConsistentHashingPool defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-consistent-hashing-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-consistent-hashing-pool }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #consistent-hashing-pool-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #consistent-hashing-pool-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #consistent-hashing-pool-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #consistent-hashing-pool-1 }
 
 ConsistentHashingPool defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #consistent-hashing-pool-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #consistent-hashing-pool-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #consistent-hashing-pool-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #consistent-hashing-pool-2 }
 
 ConsistentHashingGroup defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-consistent-hashing-group }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-consistent-hashing-group }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #consistent-hashing-group-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #consistent-hashing-group-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #consistent-hashing-group-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #consistent-hashing-group-1 }
 
 ConsistentHashingGroup defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #paths #consistent-hashing-group-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #paths #consistent-hashing-group-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #paths #consistent-hashing-group-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #paths #consistent-hashing-group-2 }
 
 `virtual-nodes-factor` is the number of virtual nodes per routee that is used in the 
 consistent hash node ring to make the distribution more uniform.
@@ -682,10 +694,10 @@ The example below shows how you would use a `Broadcast` message to send a very i
 to every routee of a router.
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #broadcastDavyJonesWarning }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #broadcastDavyJonesWarning }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #broadcastDavyJonesWarning }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #broadcastDavyJonesWarning }
 
 In this example the router receives the `Broadcast` message, extracts its payload
 (`"Watch out for Davy Jones' locker"`), and then sends the payload on to all of the router's
@@ -706,10 +718,10 @@ receives a `PoisonPill` message, that actor will be stopped. See the @ref:[Poiso
 documentation for details.
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #poisonPill }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #poisonPill }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #poisonPill }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #poisonPill }
 
 For a router, which normally passes on messages to routees, it is important to realise that
 `PoisonPill` messages are processed by the router only. `PoisonPill` messages sent to a router
@@ -728,10 +740,10 @@ routee will receive the `PoisonPill` message. Note that this will stop all route
 routees aren't children of the router, i.e. even routees programmatically provided to the router.
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #broadcastPoisonPill }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #broadcastPoisonPill }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #broadcastPoisonPill }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #broadcastPoisonPill }
 
 With the code shown above, each routee will receive a `PoisonPill` message. Each routee will
 continue to process its messages as normal, eventually processing the `PoisonPill`. This will
@@ -759,10 +771,10 @@ supervision directive that is applied to the router. Routees that are not the ro
 those that were created externally to the router, will not be affected.
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #kill }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #kill }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #kill }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #kill }
 
 As with the `PoisonPill` message, there is a distinction between killing a router, which
 indirectly kills its children (who happen to be routees), and killing routees directly (some of whom
@@ -770,10 +782,10 @@ may not be children.) To kill routees directly the router should be sent a `Kill
 in a `Broadcast` message.
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #broadcastKill }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #broadcastKill }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #broadcastKill }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #broadcastKill }
 
 ### Management Messages
 
@@ -805,13 +817,13 @@ pressure is lower than certain threshold. Both thresholds are configurable.
 
 Pool with default resizer defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-resize-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-resize-pool }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #resize-pool-1 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #resize-pool-1 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #resize-pool-1 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #resize-pool-1 }
 
 Several more configuration options are available and described in `akka.actor.deployment.default.resizer`
 section of the reference @ref:[configuration](general/configuration.md).
@@ -819,10 +831,10 @@ section of the reference @ref:[configuration](general/configuration.md).
 Pool with resizer defined in code:
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #resize-pool-2 }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #resize-pool-2 }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #resize-pool-2 }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #resize-pool-2 }
 
 *It is also worth pointing out that if you define the ``router`` in the configuration file then this value
 will be used instead of any programmatically sent parameters.*
@@ -855,13 +867,13 @@ The memory usage is O(n) where n is the number of sizes you allow, i.e. upperBou
 
 Pool with `OptimalSizeExploringResizer` defined in configuration:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-optimal-size-exploring-resize-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-optimal-size-exploring-resize-pool }
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #optimal-size-exploring-resize-pool }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #optimal-size-exploring-resize-pool }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #optimal-size-exploring-resize-pool }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #optimal-size-exploring-resize-pool }
 
 Several more configuration options are available and described in `akka.actor.deployment.default.optimal-size-exploring-resizer`
 section of the reference @ref:[configuration](general/configuration.md).
@@ -892,7 +904,7 @@ routing logic directly in their `ActorRef` rather than in the router actor. Mess
 a router's `ActorRef` can be immediately routed to the routee, bypassing the single-threaded
 router actor entirely.
 
-The cost to this is, of course, that the internals of routing code are more complicated than if
+The cost to this is that the internals of routing code are more complicated than if
 routers were implemented with normal actors. Fortunately all of this complexity is invisible to
 consumers of the routing API. However, it is something to be aware of when implementing your own
 routers.
@@ -916,10 +928,10 @@ The router created in this example is replicating each message to a few destinat
 Start with the routing logic:
 
 Scala
-:  @@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #routing-logic }
+:  @@snip [CustomRouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/CustomRouterDocSpec.scala) { #routing-logic }
 
 Java
-:  @@snip [CustomRouterDocTest.java]($code$/java/jdocs/routing/CustomRouterDocTest.java) { #routing-logic }
+:  @@snip [CustomRouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/CustomRouterDocTest.java) { #routing-logic }
 
 `select` will be called for each message and in this example pick a few destinations by round-robin,
 by reusing the existing `RoundRobinRoutingLogic` and wrap the result in a `SeveralRoutees`
@@ -930,10 +942,10 @@ The implementation of the routing logic must be thread safe, since it might be u
 A unit test of the routing logic: 
 
 Scala
-:  @@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #unit-test-logic }
+:  @@snip [CustomRouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/CustomRouterDocSpec.scala) { #unit-test-logic }
 
 Java
-:  @@snip [CustomRouterDocTest.java]($code$/java/jdocs/routing/CustomRouterDocTest.java) { #unit-test-logic }
+:  @@snip [CustomRouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/CustomRouterDocTest.java) { #unit-test-logic }
 
 You could stop here and use the `RedundancyRoutingLogic` with a `akka.routing.Router`
 as described in [A Simple Router](#simple-router).
@@ -944,27 +956,27 @@ Create a class that extends `Pool`, `Group` or `CustomRouterConfig`. That class 
 for the routing logic and holds the configuration for the router. Here we make it a `Group`.
 
 Scala
-:  @@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #group }
+:  @@snip [CustomRouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/CustomRouterDocSpec.scala) { #group }
 
 Java
-:  @@snip [RedundancyGroup.java]($code$/java/jdocs/routing/RedundancyGroup.java) { #group }
+:  @@snip [RedundancyGroup.java](/akka-docs/src/test/java/jdocs/routing/RedundancyGroup.java) { #group }
 
 This can be used exactly as the router actors provided by Akka.
 
 Scala
-:  @@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #usage-1 }
+:  @@snip [CustomRouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/CustomRouterDocSpec.scala) { #usage-1 }
 
 Java
-:  @@snip [CustomRouterDocTest.java]($code$/java/jdocs/routing/CustomRouterDocTest.java) { #usage-1 }
+:  @@snip [CustomRouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/CustomRouterDocTest.java) { #usage-1 }
 
 Note that we added a constructor in `RedundancyGroup` that takes a `Config` parameter.
 That makes it possible to define it in configuration.
 
 Scala
-:  @@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #config }
+:  @@snip [CustomRouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/CustomRouterDocSpec.scala) { #config }
 
 Java
-:  @@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #jconfig }
+:  @@snip [CustomRouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/CustomRouterDocSpec.scala) { #jconfig }
 
 Note the fully qualified class name in the `router` property. The router class must extend
 `akka.routing.RouterConfig` (`Pool`, `Group` or `CustomRouterConfig`) and have 
@@ -972,10 +984,10 @@ constructor with one `com.typesafe.config.Config` parameter.
 The deployment section of the configuration is passed to the constructor.
 
 Scala
-:  @@snip [CustomRouterDocSpec.scala]($code$/scala/docs/routing/CustomRouterDocSpec.scala) { #usage-2 }
+:  @@snip [CustomRouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/CustomRouterDocSpec.scala) { #usage-2 }
 
 Java
-:  @@snip [CustomRouterDocTest.java]($code$/java/jdocs/routing/CustomRouterDocTest.java) { #usage-2 }
+:  @@snip [CustomRouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/CustomRouterDocTest.java) { #usage-2 }
 
 ## Configuring Dispatchers
 
@@ -985,7 +997,7 @@ The dispatcher for created children of the pool will be taken from
 To make it easy to define the dispatcher of the routees of the pool you can
 define the dispatcher inline in the deployment section of the config.
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-pool-dispatcher }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-pool-dispatcher }
 
 That is the only thing you need to do enable a dedicated dispatcher for a
 pool.
@@ -1007,10 +1019,10 @@ property in their constructor or factory method, custom routers have to
 implement the method in a suitable way.
 
 Scala
-:  @@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #dispatchers }
+:  @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #dispatchers }
 
 Java
-:  @@snip [RouterDocTest.java]($code$/java/jdocs/routing/RouterDocTest.java) { #dispatchers }
+:  @@snip [RouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/RouterDocTest.java) { #dispatchers }
 
 @@@ note
 

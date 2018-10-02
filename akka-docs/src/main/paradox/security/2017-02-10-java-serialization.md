@@ -2,7 +2,7 @@
 
 ### Date
 
-10 Feburary 2017
+10 February 2017
 
 ### Description of Vulnerability
 

@@ -7,8 +7,7 @@ package jdocs.actor;
 //#imports1
 import akka.actor.Props;
 import jdocs.AbstractJavaTest;
-import scala.concurrent.duration.Duration;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 //#imports1
 
 //#imports2
@@ -34,12 +33,12 @@ public class SchedulerDocTest extends AbstractJavaTest {
   @Test
   public void scheduleOneOffTask() {
     //#schedule-one-off-message
-    system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
+    system.scheduler().scheduleOnce(Duration.ofMillis(50),
       testActor, "foo", system.dispatcher(), null);
     //#schedule-one-off-message
 
     //#schedule-one-off-thunk
-    system.scheduler().scheduleOnce(Duration.create(50, TimeUnit.MILLISECONDS),
+    system.scheduler().scheduleOnce(Duration.ofMillis(50),
       new Runnable() {
         @Override
         public void run() {
@@ -67,8 +66,8 @@ public class SchedulerDocTest extends AbstractJavaTest {
 
     //This will schedule to send the Tick-message
     //to the tickActor after 0ms repeating every 50ms
-    Cancellable cancellable = system.scheduler().schedule(Duration.Zero(),
-    Duration.create(50, TimeUnit.MILLISECONDS), tickActor, "Tick",
+    Cancellable cancellable = system.scheduler().schedule(Duration.ZERO,
+     Duration.ofMillis(50), tickActor, "Tick",
     system.dispatcher(), null);
 
     //This cancels further Ticks to be sent

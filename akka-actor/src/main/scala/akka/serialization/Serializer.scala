@@ -4,10 +4,6 @@
 
 package akka.serialization
 
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- */
-
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, NotSerializableException, ObjectOutputStream }
 import java.nio.ByteBuffer
 import java.util.concurrent.Callable
@@ -76,6 +72,16 @@ trait Serializer {
   final def fromBinary(bytes: Array[Byte], clazz: Class[_]): AnyRef = fromBinary(bytes, Option(clazz))
 }
 
+object Serializers {
+
+  // NOTE!!! If you change this method it is likely that DaemonMsgCreateSerializer.serialize needs the changes too.
+  def manifestFor(s: Serializer, message: AnyRef): String = s match {
+    case s2: SerializerWithStringManifest ⇒ s2.manifest(message)
+    case _                                ⇒ if (s.includeManifest) message.getClass.getName else ""
+  }
+
+}
+
 /**
  * A Serializer represents a bimap between an object and an array of bytes representing that object.
  *
@@ -95,12 +101,8 @@ trait Serializer {
  * start-up, where two constructors are tried in order:
  *
  * <ul>
- * <li>taking exactly one argument of type [[akka.actor.ExtendedActorSystem]];
- * this should be the preferred one because all reflective loading of classes
- * during deserialization should use ExtendedActorSystem.dynamicAccess (see
- * [[akka.actor.DynamicAccess]]), and</li>
- * <li>without arguments, which is only an option if the serializer does not
- * load classes using reflection.</li>
+ * <li>taking exactly one argument of type [[akka.actor.ExtendedActorSystem]], and</li>
+ * <li>without arguments</li>
  * </ul>
  *
  * <b>Be sure to always use the </b>[[akka.actor.DynamicAccess]]<b> for loading classes!</b> This is necessary to
@@ -129,8 +131,7 @@ abstract class SerializerWithStringManifest extends Serializer {
   def toBinary(o: AnyRef): Array[Byte]
 
   /**
-   * Produces an object from an array of bytes, with an optional type-hint;
-   * the class should be loaded using ActorSystem.dynamicAccess.
+   * Produces an object from an array of bytes, with an optional type-hint.
    *
    * It's recommended to throw `java.io.NotSerializableException` in `fromBinary`
    * if the manifest is unknown. This makes it possible to introduce new message
@@ -287,13 +288,13 @@ object JavaSerializer {
    * If you are using Serializers yourself, outside of SerializationExtension,
    * you'll need to surround the serialization/deserialization with:
    *
-   * currentSystem.withValue(system) {
+   * JavaSerializer.currentSystem.withValue(system) {
    *   ...code...
    * }
    *
    * or
    *
-   * currentSystem.withValue(system, callable)
+   * JavaSerializer.currentSystem.withValue(system, callable)
    */
   val currentSystem = new CurrentSystem
   final class CurrentSystem extends DynamicVariable[ExtendedActorSystem](null) {

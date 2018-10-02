@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.ddata
 
 import scala.concurrent.duration._
@@ -259,7 +260,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     enterBarrierAfterTestStep()
   }
 
-  "be replicated after succesful update" in {
+  "be replicated after successful update" in {
     val changedProbe = TestProbe()
     runOn(first, second) {
       replicator ! Subscribe(KeyC, changedProbe.ref)
@@ -402,14 +403,14 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
       replicator ! Update(KeyE, GCounter(), writeMajority)(_ + 50)
       expectMsg(UpdateSuccess(KeyE, None))
     }
-    enterBarrier("write-inital-majority")
+    enterBarrier("write-initial-majority")
 
     runOn(first, second, third) {
       replicator ! Get(KeyE, readMajority)
       val c150 = expectMsgPF() { case g @ GetSuccess(KeyE, _) ⇒ g.get(KeyE) }
       c150.value should be(150)
     }
-    enterBarrier("read-inital-majority")
+    enterBarrier("read-initial-majority")
 
     runOn(first) {
       testConductor.blackhole(first, third, Direction.Both).await

@@ -6,12 +6,11 @@ package jdocs.circuitbreaker;
 
 import akka.actor.ActorRef;
 import akka.actor.ReceiveTimeout;
-import akka.actor.AbstractActor.Receive;
 import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.pattern.CircuitBreaker;
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 
 public class TellPatternJavaActor extends AbstractActor {
 
@@ -23,12 +22,8 @@ public class TellPatternJavaActor extends AbstractActor {
     this.target  = targetActor;
     this.breaker = new CircuitBreaker(
       getContext().dispatcher(), getContext().system().scheduler(),
-      5, Duration.create(10, "s"), Duration.create(1, "m"))
-      .onOpen(new Runnable() {
-        public void run() {
-          notifyMeOnOpen();
-        }
-      });
+      5, Duration.ofSeconds(10), Duration.ofMinutes(1))
+      .addOnOpenListener(this::notifyMeOnOpen);
   }
 
   public void notifyMeOnOpen() {

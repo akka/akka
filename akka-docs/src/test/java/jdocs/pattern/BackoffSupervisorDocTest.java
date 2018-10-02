@@ -9,10 +9,8 @@ import akka.pattern.Backoff;
 import akka.pattern.BackoffSupervisor;
 import akka.testkit.TestActors.EchoActor;
 //#backoff-imports
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 //#backoff-imports
-
-import java.util.concurrent.TimeUnit;
 
 public class BackoffSupervisorDocTest {
 
@@ -24,8 +22,8 @@ public class BackoffSupervisorDocTest {
       Backoff.onStop(
         childProps,
         "myEcho",
-        Duration.create(3, TimeUnit.SECONDS),
-        Duration.create(30, TimeUnit.SECONDS),
+        Duration.ofSeconds(3),
+        Duration.ofSeconds(30),
         0.2)); // adds 20% "noise" to vary the intervals slightly
 
     system.actorOf(supervisorProps, "echoSupervisor");
@@ -40,8 +38,8 @@ public class BackoffSupervisorDocTest {
       Backoff.onFailure(
         childProps,
         "myEcho",
-        Duration.create(3, TimeUnit.SECONDS),
-        Duration.create(30, TimeUnit.SECONDS),
+        Duration.ofSeconds(3),
+        Duration.ofSeconds(30),
         0.2)); // adds 20% "noise" to vary the intervals slightly
 
     system.actorOf(supervisorProps, "echoSupervisor");

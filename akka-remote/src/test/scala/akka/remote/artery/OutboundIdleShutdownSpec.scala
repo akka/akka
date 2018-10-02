@@ -105,9 +105,6 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
           assertStreamActive(association, Association.OrdinaryQueueIndex, expected = false)
         }
 
-        Thread.sleep(2000)
-        //        localArtery.quarantine(remoteAddress, Some(remoteUid), "Test")
-
         // the outbound streams are inactive and association quarantined, then it's completely removed
         eventually {
           localArtery.remoteAddresses should not contain remoteAddress

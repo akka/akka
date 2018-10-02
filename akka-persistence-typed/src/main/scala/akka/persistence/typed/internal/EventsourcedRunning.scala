@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.internal
 
+import akka.Done
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.MutableBehavior
@@ -11,11 +12,14 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
+import akka.persistence.typed.{ Callback, EventRejectedException, SideEffect, Stop }
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, MDC }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
+import akka.persistence.typed.scaladsl.Effect
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.util.{ Failure, Success }
 
 /**
  * INTERNAL API
@@ -55,7 +59,7 @@ private[akka] object EventsourcedRunning {
   }
 
   def apply[C, E, S](setup: EventsourcedSetup[C, E, S], state: EventsourcedState[S]): Behavior[InternalProtocol] =
-    new EventsourcedRunning(setup).handlingCommands(state)
+    new EventsourcedRunning(setup.setMdc(MDC.RunningCmds)).handlingCommands(state)
 }
 
 // ===============================================
@@ -66,26 +70,26 @@ private[akka] object EventsourcedRunning {
   extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
   import EventsourcedRunning.EventsourcedState
 
-  import EventsourcedBehavior.withMdc
-
-  private def log = setup.log
-  private def commandContext = setup.commandContext
+  private val runningCmdsMdc = MDC.create(setup.persistenceId, MDC.RunningCmds)
+  private val persistingEventsMdc = MDC.create(setup.persistenceId, MDC.PersistingEvents)
 
   def handlingCommands(state: EventsourcedState[S]): Behavior[InternalProtocol] = {
 
     def onCommand(state: EventsourcedState[S], cmd: C): Behavior[InternalProtocol] = {
-      val effect = setup.commandHandler(commandContext, state.state, cmd)
+      val effect = setup.commandHandler(state.state, cmd)
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
     }
 
     @tailrec def applyEffects(
       msg:         Any,
       state:       EventsourcedState[S],
-      effect:      EffectImpl[E, S],
-      sideEffects: immutable.Seq[ChainableEffect[_, S]] = Nil
+      effect:      Effect[E, S],
+      sideEffects: immutable.Seq[SideEffect[S]] = Nil
     ): Behavior[InternalProtocol] = {
-      if (log.isDebugEnabled)
-        log.debug(s"Handled command [{}], resulting effect: [{}], side effects: [{}]", msg.getClass.getName, effect, sideEffects.size)
+      if (setup.log.isDebugEnabled)
+        setup.log.debug(
+          s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
+          msg.getClass.getName, effect, sideEffects.size)
 
       effect match {
         case CompositeEffect(eff, currentSideEffects) ⇒
@@ -97,7 +101,8 @@ private[akka] object EventsourcedRunning {
           // the invalid event, in case such validation is implemented in the event handler.
           // also, ensure that there is an event handler for each single event
           val newState = state.applyEvent(setup, event)
-          val eventToPersist = tagEvent(event)
+
+          val eventToPersist = adaptEvent(event)
 
           val newState2 = internalPersist(newState, eventToPersist)
 
@@ -118,7 +123,7 @@ private[akka] object EventsourcedRunning {
                 (currentState.applyEvent(setup, event), shouldSnapshot)
             }
 
-            val eventsToPersist = events.map(tagEvent)
+            val eventsToPersist = events.map(adaptEvent)
 
             val newState2 = internalPersistAll(eventsToPersist, newState)
 
@@ -129,28 +134,30 @@ private[akka] object EventsourcedRunning {
             tryUnstash(applySideEffects(sideEffects, state))
           }
 
-        case _: PersistNothing.type @unchecked ⇒
+        case _: PersistNothing.type ⇒
           tryUnstash(applySideEffects(sideEffects, state))
 
-        case _: Unhandled.type @unchecked ⇒
+        case _: Unhandled.type ⇒
           applySideEffects(sideEffects, state)
           Behavior.unhandled
-
-        case c: ChainableEffect[_, S] ⇒
-          applySideEffect(c, state)
       }
     }
 
-    def tagEvent(event: E): Any = {
+    def adaptEvent(event: E): Any = {
       val tags = setup.tagger(event)
-      if (tags.isEmpty) event else Tagged(event, tags)
+      val adaptedEvent = setup.eventAdapter.toJournal(event)
+      if (tags.isEmpty)
+        adaptedEvent
+      else
+        Tagged(adaptedEvent, tags)
     }
 
-    withMdc(setup, MDC.RunningCmds) {
-      Behaviors.receiveMessage[EventsourcedBehavior.InternalProtocol] {
-        case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
-        case _                                ⇒ Behaviors.unhandled
-      }
+    setup.setMdc(runningCmdsMdc)
+
+    Behaviors.receiveMessage[EventsourcedBehavior.InternalProtocol] {
+      case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
+      case SnapshotterResponse(r)           ⇒ onSnapshotterResponse(r, Behaviors.same)
+      case _                                ⇒ Behaviors.unhandled
     }
 
   }
@@ -161,25 +168,24 @@ private[akka] object EventsourcedRunning {
     state:                      EventsourcedState[S],
     numberOfEvents:             Int,
     shouldSnapshotAfterPersist: Boolean,
-    sideEffects:                immutable.Seq[ChainableEffect[_, S]]
+    sideEffects:                immutable.Seq[SideEffect[S]]
   ): Behavior[InternalProtocol] = {
-    withMdc(setup, MDC.PersistingEvents) {
-      new PersistingEvents(state, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
-    }
+    setup.setMdc(persistingEventsMdc)
+    new PersistingEvents(state, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
   }
 
   class PersistingEvents(
     var state:                  EventsourcedState[S],
     numberOfEvents:             Int,
     shouldSnapshotAfterPersist: Boolean,
-    var sideEffects:            immutable.Seq[ChainableEffect[_, S]])
+    var sideEffects:            immutable.Seq[SideEffect[S]])
     extends MutableBehavior[EventsourcedBehavior.InternalProtocol] {
 
     private var eventCounter = 0
 
     override def onMessage(msg: EventsourcedBehavior.InternalProtocol): Behavior[EventsourcedBehavior.InternalProtocol] = {
       msg match {
-        case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r)
+        case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r, this)
         case JournalResponse(r)                ⇒ onJournalResponse(r)
         case in: IncomingCommand[C @unchecked] ⇒ onCommand(in)
         case RecoveryTickEvent(_)              ⇒ Behaviors.unhandled
@@ -218,13 +224,12 @@ private[akka] object EventsourcedRunning {
 
         case WriteMessageRejected(p, cause, id) ⇒
           if (id == setup.writerIdentity.instanceId) {
-            onPersistRejected(cause, p.payload, p.sequenceNr) // does not stop (by design)
-            onWriteResponse(p)
+            throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
         case WriteMessageFailure(p, cause, id) ⇒
           if (id == setup.writerIdentity.instanceId)
-            onPersistFailureThenStop(cause, p.payload, p.sequenceNr)
+            throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           else this
 
         case WriteMessagesSuccessful ⇒
@@ -241,47 +246,34 @@ private[akka] object EventsourcedRunning {
       }
     }
 
-    private def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
-      setup.log.error(
-        cause,
-        "Rejected to persist event type [{}] with sequence number [{}] for persistenceId [{}] due to [{}].",
-        event.getClass.getName, seqNr, setup.persistenceId, cause.getMessage)
+  }
+
+  private def onSnapshotterResponse(
+    response: SnapshotProtocol.Response,
+    outer:    Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+    response match {
+      case SaveSnapshotSuccess(meta) ⇒
+        setup.onSnapshot(meta, Success(Done))
+        outer
+      case SaveSnapshotFailure(meta, ex) ⇒
+        setup.onSnapshot(meta, Failure(ex))
+        outer
+
+      // FIXME not implemented
+      case DeleteSnapshotFailure(_, _)  ⇒ ???
+      case DeleteSnapshotSuccess(_)     ⇒ ???
+      case DeleteSnapshotsFailure(_, _) ⇒ ???
+      case DeleteSnapshotsSuccess(_)    ⇒ ???
+
+      // ignore LoadSnapshot messages
+      case _ ⇒
+        Behaviors.unhandled
     }
-
-    private def onPersistFailureThenStop(cause: Throwable, event: Any, seqNr: Long): Behavior[InternalProtocol] = {
-      setup.log.error(cause, "Failed to persist event type [{}] with sequence number [{}] for persistenceId [{}].",
-        event.getClass.getName, seqNr, setup.persistenceId)
-
-      // FIXME see #24479 for reconsidering the stopping behaviour
-      Behaviors.stopped
-    }
-
-    private def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
-      response match {
-        case SaveSnapshotSuccess(meta) ⇒
-          setup.context.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
-          this
-        case SaveSnapshotFailure(meta, ex) ⇒
-          setup.context.log.error(ex, "Save snapshot failed, snapshot metadata: [{}]", meta)
-          this // FIXME https://github.com/akka/akka/issues/24637 should we provide callback for this? to allow Stop
-
-        // FIXME not implemented
-        case DeleteSnapshotFailure(_, _)  ⇒ ???
-        case DeleteSnapshotSuccess(_)     ⇒ ???
-        case DeleteSnapshotsFailure(_, _) ⇒ ???
-        case DeleteSnapshotsSuccess(_)    ⇒ ???
-
-        // ignore LoadSnapshot messages
-        case _ ⇒
-          Behaviors.unhandled
-      }
-    }
-
   }
 
   // --------------------------
 
-  def applySideEffects(effects: immutable.Seq[ChainableEffect[_, S]], state: EventsourcedState[S]): Behavior[InternalProtocol] = {
+  def applySideEffects(effects: immutable.Seq[SideEffect[S]], state: EventsourcedState[S]): Behavior[InternalProtocol] = {
     var res: Behavior[InternalProtocol] = handlingCommands(state)
     val it = effects.iterator
 
@@ -296,16 +288,16 @@ private[akka] object EventsourcedRunning {
     res
   }
 
-  def applySideEffect(effect: ChainableEffect[_, S], state: EventsourcedState[S]): Behavior[InternalProtocol] = effect match {
+  def applySideEffect(effect: SideEffect[S], state: EventsourcedState[S]): Behavior[InternalProtocol] = effect match {
     case _: Stop.type @unchecked ⇒
       Behaviors.stopped
 
-    case SideEffect(sideEffects) ⇒
+    case Callback(sideEffects) ⇒
       sideEffects(state.state)
       Behaviors.same
 
     case _ ⇒
-      throw new IllegalArgumentException(s"Not supported effect detected [${effect.getClass.getName}]!")
+      throw new IllegalArgumentException(s"Not supported side effect detected [${effect.getClass.getName}]!")
   }
 
 }

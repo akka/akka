@@ -13,28 +13,15 @@ import com.typesafe.config.Config
 
 import scala.concurrent.duration._
 
-/** INTERNAL API */
-@InternalApi
-private[akka] trait EventsourcedSettings {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object EventsourcedSettings {
 
-  def stashCapacity: Int
-  def logOnStashing: Boolean
-  def stashOverflowStrategyConfigurator: String
+  def apply(system: ActorSystem[_], journalPluginId: String, snapshotPluginId: String): EventsourcedSettings =
+    apply(system.settings.config, journalPluginId, snapshotPluginId)
 
-  def recoveryEventTimeout: FiniteDuration
-
-  def journalPluginId: String
-  def withJournalPluginId(id: String): EventsourcedSettings
-  def snapshotPluginId: String
-  def withSnapshotPluginId(id: String): EventsourcedSettings
-}
-
-object EventsourcedSettings {
-
-  def apply(system: ActorSystem[_]): EventsourcedSettings =
-    apply(system.settings.config)
-
-  def apply(config: Config): EventsourcedSettings = {
+  def apply(config: Config, journalPluginId: String, snapshotPluginId: String): EventsourcedSettings = {
     val typedConfig = config.getConfig("akka.persistence.typed")
 
     // StashOverflowStrategy
@@ -45,13 +32,17 @@ object EventsourcedSettings {
 
     val logOnStashing = typedConfig.getBoolean("log-stashing")
 
-    EventsourcedSettingsImpl(
-      config,
+    val journalConfig = journalConfigFor(config, journalPluginId)
+    val recoveryEventTimeout: FiniteDuration =
+      journalConfig.getDuration("recovery-event-timeout", TimeUnit.MILLISECONDS).millis
+
+    EventsourcedSettings(
       stashCapacity = stashCapacity,
       stashOverflowStrategyConfigurator,
       logOnStashing = logOnStashing,
-      journalPluginId = "",
-      snapshotPluginId = ""
+      recoveryEventTimeout,
+      journalPluginId,
+      snapshotPluginId
     )
   }
 
@@ -68,22 +59,16 @@ object EventsourcedSettings {
 }
 
 @InternalApi
-private[persistence] final case class EventsourcedSettingsImpl(
-  private val config:                Config,
+private[akka] final case class EventsourcedSettings(
   stashCapacity:                     Int,
   stashOverflowStrategyConfigurator: String,
   logOnStashing:                     Boolean,
+  recoveryEventTimeout:              FiniteDuration,
   journalPluginId:                   String,
-  snapshotPluginId:                  String
-) extends EventsourcedSettings {
+  snapshotPluginId:                  String) {
 
-  def withJournalPluginId(id: String): EventsourcedSettings =
-    copy(journalPluginId = id)
-  def withSnapshotPluginId(id: String): EventsourcedSettings =
-    copy(snapshotPluginId = id)
-
-  private val journalConfig = EventsourcedSettings.journalConfigFor(config, journalPluginId)
-  val recoveryEventTimeout = journalConfig.getDuration("recovery-event-timeout", TimeUnit.MILLISECONDS).millis
+  require(journalPluginId != null, "journal plugin id must not be null; use empty string for 'default' journal")
+  require(snapshotPluginId != null, "snapshot plugin id must not be null; use empty string for 'default' snapshot store")
 
 }
 

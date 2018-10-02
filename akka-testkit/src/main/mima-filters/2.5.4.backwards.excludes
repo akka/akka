@@ -1,3 +1,6 @@
 # #23224 TestKit expectNoMsg fix
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.expectNoMessage")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.expectNoMessage$default$1")
+
+# incompatibility on Scala 2.12
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.testkit.TestKitBase.awaitAssert")

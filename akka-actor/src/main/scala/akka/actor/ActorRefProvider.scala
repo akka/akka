@@ -5,23 +5,30 @@
 package akka.actor
 
 import akka.dispatch.sysmsg._
-import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.routing._
 import akka.event._
-import akka.util.{ Helpers }
+import akka.util.Helpers
 import akka.japi.Util.immutableSeq
 import akka.util.Collections.EmptyImmutableSeq
 import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.annotation.implicitNotFound
+
 import akka.ConfigurationException
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.dispatch.Mailboxes
+import akka.serialization.Serialization
+import akka.util.OptionVal
 
 /**
  * Interface for all ActorRef providers to implement.
+ * Not intended for extension outside of Akka.
  */
-trait ActorRefProvider {
+@DoNotInherit trait ActorRefProvider {
 
   /**
    * Reference to the supervisor of guardian and systemGuardian; this is
@@ -179,6 +186,9 @@ trait ActorRefProvider {
    * Obtain the external address of the default transport.
    */
   def getDefaultAddress: Address
+
+  /** INTERNAL API */
+  @InternalApi private[akka] def serializationInformation: Serialization.Information
 }
 
 /**
@@ -400,7 +410,7 @@ private[akka] object LocalActorRefProvider {
     }
 
     // guardian MUST NOT lose its children during restart
-    override def preRestart(cause: Throwable, msg: Option[Any]) {}
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {}
   }
 
   /**
@@ -447,7 +457,7 @@ private[akka] object LocalActorRefProvider {
       }
 
     // guardian MUST NOT lose its children during restart
-    override def preRestart(cause: Throwable, msg: Option[Any]) {}
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {}
   }
 
 }
@@ -643,7 +653,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     tempContainer.removeChild(path.name)
   }
 
-  private[akka] def init(_system: ActorSystemImpl) {
+  private[akka] def init(_system: ActorSystemImpl): Unit = {
     system = _system
     rootGuardian.start()
     // chain death watchers so that killing guardian stops the application
@@ -689,14 +699,16 @@ private[akka] class LocalActorRefProvider private[akka] (
   def resolveActorRef(path: String): ActorRef = path match {
     case ActorPathExtractor(address, elems) if address == rootPath.address ⇒ resolveActorRef(rootGuardian, elems)
     case _ ⇒
-      log.debug("resolve of unknown path [{}] failed", path)
+      log.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
       deadLetters
   }
 
   def resolveActorRef(path: ActorPath): ActorRef = {
     if (path.root == rootPath) resolveActorRef(rootGuardian, path.elements)
     else {
-      log.debug("resolve of foreign ActorPath [{}] failed", path)
+      log.debug(
+        "Resolve (deserialization) of foreign path [{}] doesn't match root path [{}], using deadLetters.",
+        path, rootPath)
       deadLetters
     }
   }
@@ -706,11 +718,15 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   private[akka] def resolveActorRef(ref: InternalActorRef, pathElements: Iterable[String]): InternalActorRef =
     if (pathElements.isEmpty) {
-      log.debug("resolve of empty path sequence fails (per definition)")
+      log.debug("Resolve (deserialization) of empty path doesn't match an active actor, using deadLetters.")
       deadLetters
     } else ref.getChild(pathElements.iterator) match {
       case Nobody ⇒
-        log.debug("resolve of path sequence [/{}] failed", pathElements.mkString("/"))
+        if (log.isDebugEnabled)
+          log.debug(
+            "Resolve (deserialization) of path [{}] doesn't match an active actor. " +
+              "It has probably been stopped, using deadLetters.",
+            pathElements.mkString("/"))
         new EmptyLocalActorRef(system.provider, ref.path / pathElements, eventStream)
       case x ⇒ x
     }
@@ -789,4 +805,21 @@ private[akka] class LocalActorRefProvider private[akka] (
   def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
 
   def getDefaultAddress: Address = rootPath.address
+
+  // no need for volatile, only intended as cached value, not necessarily a singleton value
+  private var serializationInformationCache: OptionVal[Serialization.Information] = OptionVal.None
+  @InternalApi override private[akka] def serializationInformation: Serialization.Information = {
+    Serialization.Information(getDefaultAddress, system)
+    serializationInformationCache match {
+      case OptionVal.Some(info) ⇒ info
+      case OptionVal.None ⇒
+        if (system eq null)
+          throw new IllegalStateException("Too early access of serializationInformation")
+        else {
+          val info = Serialization.Information(rootPath.address, system)
+          serializationInformationCache = OptionVal.Some(info)
+          info
+        }
+    }
+  }
 }

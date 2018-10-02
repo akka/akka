@@ -6,10 +6,12 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.Utils.{ TE, assertAllStagesStopped }
+import akka.stream.scaladsl.RestartWithBackoffFlow.Delay
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.{ ActorMaterializer, OverflowStrategy }
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.{ ActorMaterializer, Attributes, OverflowStrategy }
 import akka.testkit.{ DefaultTimeout, TestDuration }
 import akka.{ Done, NotUsed }
 
@@ -464,10 +466,12 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
     def setupFlow(minBackoff: FiniteDuration, maxBackoff: FiniteDuration, maxRestarts: Int = -1, onlyOnFailures: Boolean = false) = {
       val created = new AtomicInteger()
-      val (flowInSource, flowInProbe) = TestSource.probe[String]
+
+      val (flowInSource: TestPublisher.Probe[String], flowInProbe: TestSubscriber.Probe[String]) = TestSource.probe[String]
         .buffer(4, OverflowStrategy.backpressure)
         .toMat(TestSink.probe)(Keep.both).run()
-      val (flowOutProbe, flowOutSource) = TestSource.probe[String].toMat(BroadcastHub.sink)(Keep.both).run()
+
+      val (flowOutProbe: TestPublisher.Probe[String], flowOutSource: Source[String, NotUsed]) = TestSource.probe[String].toMat(BroadcastHub.sink)(Keep.both).run()
 
       // We can't just use ordinary probes here because we're expecting them to get started/restarted. Instead, we
       // simply use the probes as a message bus for feeding and capturing events.
@@ -476,6 +480,10 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
         Flow.fromSinkAndSource(
           Flow[String]
             .takeWhile(_ != "cancel")
+            .map {
+              case "in error" ⇒ throw TE("in error")
+              case other      ⇒ other
+            }
             .to(Sink.foreach(flowInSource.sendNext)
               .mapMaterializedValue(_.onComplete {
                 case Success(_) ⇒ flowInSource.sendNext("in complete")
@@ -736,5 +744,23 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       created.get() should ===(2)
     }
 
+    "onFailuresWithBackoff, wrapped flow exception should restart configured times" in {
+      val flowCreations = new AtomicInteger(0)
+      val failsSomeTimes = Flow[Int].map { i ⇒
+        if (i % 3 == 0) throw TE("fail") else i
+      }
+
+      val restartOnFailures =
+        RestartFlow.onFailuresWithBackoff(1.second, 2.seconds, 0.2, 2)(() ⇒ {
+          flowCreations.incrementAndGet()
+          failsSomeTimes
+        }).addAttributes(Attributes(Delay(100.millis)))
+
+      val elements = Source(1 to 7)
+        .via(restartOnFailures)
+        .runWith(Sink.seq).futureValue
+      elements shouldEqual List(1, 2, 4, 5, 7)
+      flowCreations.get() shouldEqual 3
+    }
   }
 }

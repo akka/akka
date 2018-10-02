@@ -44,11 +44,21 @@ trait JournalCapabilityFlags extends CapabilityFlags {
    */
   protected def supportsRejectingNonSerializableObjects: CapabilityFlag
 
+  /**
+   * When `true` enables tests which check if the Journal properly serialize and
+   * deserialize events.
+   */
+  protected def supportsSerialization: CapabilityFlag
+
 }
 //#journal-flags
 
 //#snapshot-store-flags
 trait SnapshotStoreCapabilityFlags extends CapabilityFlags {
-  // no flags currently
+  /**
+   * When `true` enables tests which check if the snapshot store properly serialize and
+   * deserialize snapshots.
+   */
+  protected def supportsSerialization: CapabilityFlag
 }
 //#snapshot-store-flags

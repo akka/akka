@@ -4,11 +4,14 @@
 
 package akka.actor.typed
 
+import akka.testkit.EventFilter
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.scaladsl._
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl._
 
 import scala.util.control.NoStackTrace
+import akka.actor.ActorInitializationException
+import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 object DeferredSpec {
   sealed trait Command
@@ -26,10 +29,17 @@ object DeferredSpec {
     })
 }
 
-class DeferredSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class DeferredSpec extends ScalaTestWithActorTestKit(
+  """
+    akka.loggers = [akka.testkit.TestEventListener]
+    """) with WordSpecLike {
 
   import DeferredSpec._
   implicit val testSettings = TestKitSettings(system)
+
+  // FIXME eventfilter support in typed testkit
+  import scaladsl.adapter._
+  implicit val untypedSystem = system.toUntyped
 
   "Deferred behavior" must {
     "must create underlying" in {
@@ -58,9 +68,11 @@ class DeferredSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
             Behaviors.stopped
         }
       }
-      spawn(behv)
-      probe.expectMessage(Started)
-      probe.expectMessage(Pong)
+      EventFilter[ActorInitializationException](occurrences = 1).intercept {
+        spawn(behv)
+        probe.expectMessage(Started)
+        probe.expectMessage(Pong)
+      }
     }
 
     "must stop when deferred result it Stopped" in {
@@ -122,10 +134,21 @@ class DeferredSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       monitorProbe.expectMessage(Ping)
       probe.expectMessage(Pong)
     }
+
+    "must not allow setup(same)" in {
+      val probe = TestProbe[Any]()
+      val behv = Behaviors.setup[Command] { _ ⇒
+        Behaviors.setup[Command] { _ ⇒ Behaviors.same }
+      }
+      EventFilter[ActorInitializationException](occurrences = 1).intercept {
+        val ref = spawn(behv)
+        probe.expectTerminated(ref, probe.remainingOrDefault)
+      }
+    }
   }
 }
 
-class DeferredStubbedSpec extends TypedAkkaSpec {
+class DeferredStubbedSpec extends WordSpec with Matchers {
 
   import DeferredSpec._
 

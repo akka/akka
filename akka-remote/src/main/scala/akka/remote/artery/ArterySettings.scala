@@ -144,11 +144,18 @@ private[akka] final class ArterySettings private (config: Config) {
     val GiveUpSystemMessageAfter: FiniteDuration =
       config.getMillisDuration("give-up-system-message-after").requiring(interval ⇒
         interval > Duration.Zero, "give-up-system-message-after must be more than zero")
+    val StopIdleOutboundAfter: FiniteDuration = config.getMillisDuration("stop-idle-outbound-after")
+      .requiring(interval ⇒ interval > Duration.Zero, "stop-idle-outbound-after must be more than zero")
+    val QuarantineIdleOutboundAfter: FiniteDuration = config.getMillisDuration("quarantine-idle-outbound-after")
+      .requiring(
+        interval ⇒ interval > StopIdleOutboundAfter,
+        "quarantine-idle-outbound-after must be greater than stop-idle-outbound-after")
+    val StopQuarantinedAfterIdle: FiniteDuration =
+      config.getMillisDuration("stop-quarantined-after-idle").requiring(interval ⇒
+        interval > Duration.Zero, "stop-quarantined-after-idle must be more than zero")
     val RemoveQuarantinedAssociationAfter: FiniteDuration =
       config.getMillisDuration("remove-quarantined-association-after").requiring(interval ⇒
         interval > Duration.Zero, "remove-quarantined-association-after must be more than zero")
-    val StopIdleOutboundAfter: FiniteDuration = config.getMillisDuration("stop-idle-outbound-after").requiring(interval ⇒
-      interval > Duration.Zero, "stop-idle-outbound-after must be more than zero")
     val ShutdownFlushTimeout: FiniteDuration =
       config.getMillisDuration("shutdown-flush-timeout").requiring(interval ⇒
         interval > Duration.Zero, "shutdown-flush-timeout must be more than zero")
@@ -163,9 +170,6 @@ private[akka] final class ArterySettings private (config: Config) {
       config.getMillisDuration("outbound-restart-timeout").requiring(interval ⇒
         interval > Duration.Zero, "outbound-restart-timeout must be more than zero")
     val OutboundMaxRestarts: Int = getInt("outbound-max-restarts")
-    val StopQuarantinedAfterIdle: FiniteDuration =
-      config.getMillisDuration("stop-quarantined-after-idle").requiring(interval ⇒
-        interval > Duration.Zero, "stop-quarantined-after-idle must be more than zero")
     val ClientLivenessTimeout: FiniteDuration =
       config.getMillisDuration("client-liveness-timeout").requiring(interval ⇒
         interval > Duration.Zero, "client-liveness-timeout must be more than zero")

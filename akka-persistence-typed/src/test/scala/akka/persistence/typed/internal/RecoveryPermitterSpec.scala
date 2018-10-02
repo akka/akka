@@ -5,19 +5,20 @@
 package akka.persistence.typed.internal
 
 import akka.actor.PoisonPill
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps }
-import akka.actor.typed.{ ActorRef, Behavior, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.Persistence
 import akka.persistence.RecoveryPermitter.{ RecoveryPermitGranted, RequestRecoveryPermit, ReturnRecoveryPermit }
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.concurrent.Eventually
+import akka.testkit.EventFilter
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 object RecoveryPermitterSpec {
 
@@ -44,16 +45,15 @@ object RecoveryPermitterSpec {
     throwOnRecovery: Boolean        = false): Behavior[Command] =
     PersistentBehaviors.receive[Command, Event, State](
       persistenceId = name,
-      initialState = EmptyState,
+      emptyState = EmptyState,
       commandHandler = CommandHandler.command {
         case StopActor ⇒ Effect.stop
         case command   ⇒ commandProbe.ref ! command; Effect.none
       },
       eventHandler = { (state, event) ⇒ eventProbe.ref ! event; state }
-    ).onRecoveryCompleted {
-        case (_, _) ⇒
-          eventProbe.ref ! Recovered
-          if (throwOnRecovery) throw new TE
+    ).onRecoveryCompleted { _ ⇒
+        eventProbe.ref ! Recovered
+        if (throwOnRecovery) throw new TE
       }
 
   def forwardingBehavior(target: TestProbe[Any]): Behavior[Any] =
@@ -62,29 +62,29 @@ object RecoveryPermitterSpec {
     }
 }
 
-class RecoveryPermitterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
+class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
+      akka.persistence.max-concurrent-recoveries = 3
+      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+      akka.actor.warn-about-java-serializer-usage = off
+      akka.loggers = ["akka.testkit.TestEventListener"]
+      """) with WordSpecLike {
 
   import RecoveryPermitterSpec._
 
-  override def config: Config = ConfigFactory.parseString(
-    s"""
-        akka.persistence.max-concurrent-recoveries = 3
-        akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-        akka.actor.warn-about-java-serializer-usage = off
-      """)
+  implicit val untypedSystem = system.toUntyped
 
-  private val permitter = Persistence(system.toUntyped).recoveryPermitter
+  private val permitter = Persistence(untypedSystem).recoveryPermitter
 
   def requestPermit(p: TestProbe[Any]): Unit = {
     permitter.tell(RequestRecoveryPermit, p.ref.toUntyped)
     p.expectMessage(RecoveryPermitGranted)
   }
 
-  val p1 = TestProbe[Any]()
-  val p2 = TestProbe[Any]()
-  val p3 = TestProbe[Any]()
-  val p4 = TestProbe[Any]()
-  val p5 = TestProbe[Any]()
+  val p1 = createTestProbe[Any]()
+  val p2 = createTestProbe[Any]()
+  val p3 = createTestProbe[Any]()
+  val p4 = createTestProbe[Any]()
+  val p5 = createTestProbe[Any]()
 
   "RecoveryPermitter" must {
     "grant permits up to the limit" in {
@@ -182,23 +182,25 @@ class RecoveryPermitterSpec extends ActorTestKit with TypedAkkaSpecWithShutdown 
       requestPermit(p1)
       requestPermit(p2)
 
-      val stopProbe = TestProbe[ActorRef[Command]]()
-      val parent = spawn(
-        Behaviors.setup[Command](ctx ⇒ {
-          val persistentActor =
-            ctx.spawnAnonymous(persistentBehavior("p3", p3, p3, throwOnRecovery = true))
-          ctx.watch(persistentActor)
-          Behaviors.receive[Command] {
-            case (_, StopActor) ⇒
-              stopProbe.ref ! persistentActor
-              ctx.stop(persistentActor)
-              Behavior.same
-            case (_, message) ⇒
-              persistentActor ! message
-              Behaviors.same
-          }
-        })
-      )
+      val stopProbe = createTestProbe[ActorRef[Command]]()
+      val parent =
+        EventFilter.error(occurrences = 1, start = "Exception during recovery.").intercept {
+          spawn(
+            Behaviors.setup[Command](ctx ⇒ {
+              val persistentActor =
+                ctx.spawnAnonymous(persistentBehavior("p3", p3, p3, throwOnRecovery = true))
+              Behaviors.receive[Command] {
+                case (_, StopActor) ⇒
+                  stopProbe.ref ! persistentActor
+                  ctx.stop(persistentActor)
+                  Behavior.same
+                case (_, message) ⇒
+                  persistentActor ! message
+                  Behaviors.same
+              }
+            })
+          )
+        }
       p3.expectMessage(Recovered)
       // stop it
       parent ! StopActor

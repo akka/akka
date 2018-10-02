@@ -9,15 +9,15 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.*;
-import akka.testkit.typed.javadsl.TestProbe;
+import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.util.Timeout;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -239,7 +239,8 @@ public class InteractionPatternsTest extends JUnitSuite {
     ref.tell(new PrintMe("message 2"));
     // #fire-and-forget-doit
 
-    Await.ready(system.terminate(), Duration.create(3, TimeUnit.SECONDS));
+    system.terminate();
+    system.getWhenTerminated().toCompletableFuture().get(5, TimeUnit.SECONDS);
   }
 
   //#timer
@@ -284,12 +285,12 @@ public class InteractionPatternsTest extends JUnitSuite {
   private static class TimeoutMsg implements Msg {
   }
 
-  public static Behavior<Msg> behavior(ActorRef<Batch> target, FiniteDuration after, int maxSize) {
+  public static Behavior<Msg> behavior(ActorRef<Batch> target, Duration after, int maxSize) {
     return Behaviors.withTimers(timers -> idle(timers, target, after, maxSize));
   }
 
   private static Behavior<Msg> idle(TimerScheduler<Msg> timers, ActorRef<Batch> target,
-                                    FiniteDuration after, int maxSize) {
+                                    Duration after, int maxSize) {
     return Behaviors.receive(Msg.class)
       .onMessage(Msg.class, (ctx, msg) -> {
         timers.startSingleTimer(TIMER_KEY, new TimeoutMsg(), after);
@@ -301,7 +302,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   }
 
   private static Behavior<Msg> active(List<Msg> buffer, TimerScheduler<Msg> timers,
-                                      ActorRef<Batch> target, FiniteDuration after, int maxSize) {
+                                      ActorRef<Batch> target, Duration after, int maxSize) {
     return Behaviors.receive(Msg.class)
       .onMessage(TimeoutMsg.class, (ctx, msg) -> {
         target.tell(new Batch(buffer));
@@ -326,19 +327,20 @@ public class InteractionPatternsTest extends JUnitSuite {
     final ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "timers-sample");
     TestProbe<Batch> probe = TestProbe.create("batcher", system);
     ActorRef<Msg> bufferer = Await.result(system.systemActorOf(
-      behavior(probe.ref(), new FiniteDuration(1, TimeUnit.SECONDS), 10),
-      "batcher", Props.empty(), akka.util.Timeout.apply(1, TimeUnit.SECONDS)),
-      new FiniteDuration(1, TimeUnit.SECONDS));
+      behavior(probe.ref(), Duration.ofSeconds(1), 10),
+      "batcher", Props.empty(), akka.util.Timeout.create(Duration.ofSeconds(1))),
+        FiniteDuration.create(3, TimeUnit.SECONDS));
 
     ExcitingMessage msgOne = new ExcitingMessage("one");
     ExcitingMessage msgTwo = new ExcitingMessage("two");
     bufferer.tell(msgOne);
     bufferer.tell(msgTwo);
-    probe.expectNoMessage(new FiniteDuration(1, TimeUnit.MILLISECONDS));
-    probe.expectMessage(new FiniteDuration(2, TimeUnit.SECONDS),
+    probe.expectNoMessage(Duration.ofMillis(1));
+    probe.expectMessage(Duration.ofSeconds(2),
       new Batch(Arrays.asList(msgOne, msgTwo)));
 
-    Await.ready(system.terminate(), Duration.create(3, TimeUnit.SECONDS));
+    system.terminate();
+    system.getWhenTerminated().toCompletableFuture().get(5, TimeUnit.SECONDS);
   }
 
 

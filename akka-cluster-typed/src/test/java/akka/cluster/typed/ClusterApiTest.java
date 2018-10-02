@@ -6,7 +6,7 @@ package akka.cluster.typed;
 
 import akka.cluster.ClusterEvent;
 import akka.actor.typed.ActorSystem;
-import akka.testkit.typed.javadsl.TestProbe;
+import akka.actor.testkit.typed.javadsl.TestProbe;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.Test;

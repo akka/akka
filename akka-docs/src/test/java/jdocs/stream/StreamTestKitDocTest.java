@@ -20,14 +20,11 @@ import org.junit.*;
 import static org.junit.Assert.assertEquals;
 
 import akka.actor.*;
-import akka.testkit.*;
 import akka.japi.Pair;
 import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.testkit.*;
 import akka.stream.testkit.javadsl.*;
-import akka.testkit.TestProbe;
-import scala.concurrent.duration.FiniteDuration;
 
 
 public class StreamTestKitDocTest extends AbstractJavaTest {
@@ -96,14 +93,12 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
       .from(Arrays.asList(1, 2, 3, 4))
       .grouped(2);
 
-    final TestProbe probe = new TestProbe(system);
+    final TestKit probe = new TestKit(system);
     final CompletionStage<List<List<Integer>>> future = sourceUnderTest
       .grouped(2)
       .runWith(Sink.head(), mat);
-    akka.pattern.PatternsCS.pipe(future, system.dispatcher()).to(probe.ref());
-    probe.expectMsg(FiniteDuration.create(3, TimeUnit.SECONDS),
-      Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4))
-    );
+    akka.pattern.PatternsCS.pipe(future, system.dispatcher()).to(probe.getRef());
+    probe.expectMsg(Duration.ofSeconds(3), Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4)));
     //#pipeto-testprobe
   }
 
@@ -117,14 +112,13 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
       Duration.ofMillis(200),
       Tick.TOCK);
 
-    final TestProbe probe = new TestProbe(system);
-    final Cancellable cancellable = sourceUnderTest
-      .to(Sink.actorRef(probe.ref(), Tick.COMPLETED)).run(mat);
-    probe.expectMsg(FiniteDuration.create(3, TimeUnit.SECONDS), Tick.TOCK);
-    probe.expectNoMsg(FiniteDuration.create(100, TimeUnit.MILLISECONDS));
-    probe.expectMsg(FiniteDuration.create(3, TimeUnit.SECONDS), Tick.TOCK);
+    final TestKit probe = new TestKit(system);
+    final Cancellable cancellable = sourceUnderTest.to(Sink.actorRef(probe.getRef(), Tick.COMPLETED)).run(mat);
+    probe.expectMsg(Duration.ofSeconds(3), Tick.TOCK);
+    probe.expectNoMessage(Duration.ofMillis(100));
+    probe.expectMsg(Duration.ofSeconds(3), Tick.TOCK);
     cancellable.cancel();
-    probe.expectMsg(FiniteDuration.create(3, TimeUnit.SECONDS), Tick.COMPLETED);
+    probe.expectMsg(Duration.ofSeconds(3), Tick.COMPLETED);
     //#sink-actorref
   }
 
@@ -207,7 +201,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     //#test-source-and-sink
     final Flow<Integer, Integer, NotUsed> flowUnderTest = Flow.of(Integer.class)
       .mapAsyncUnordered(2, sleep -> akka.pattern.PatternsCS.after(
-        FiniteDuration.create(10, TimeUnit.MILLISECONDS),
+        Duration.ofMillis(10),
         system.scheduler(),
         system.dispatcher(),
         CompletableFuture.completedFuture(sleep)

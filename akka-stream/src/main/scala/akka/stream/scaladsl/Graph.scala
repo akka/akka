@@ -718,7 +718,7 @@ object Partition {
   case class PartitionOutOfBoundsException(msg: String) extends IndexOutOfBoundsException(msg) with NoStackTrace
 
   /**
-   * Create a new `Partition` stage with the specified input type. This method sets `eagerCancel` to `false`.
+   * Create a new `Partition` operator with the specified input type. This method sets `eagerCancel` to `false`.
    * To specify a different value for the `eagerCancel` parameter, then instantiate Partition using the constructor.
    *
    * If `eagerCancel` is true, partition cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
@@ -753,7 +753,7 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int, val e
   def this(outputPorts: Int, partitioner: T ⇒ Int) = this(outputPorts, partitioner, false)
 
   val in: Inlet[T] = Inlet[T]("Partition.in")
-  val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i)) // FIXME BC make this immutable.IndexedSeq as type + Vector as concret impl
+  val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i)) // FIXME BC make this immutable.IndexedSeq as type + Vector as concrete impl
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler {
@@ -840,7 +840,10 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int, val e
 
 object Balance {
   /**
-   * Create a new `Balance` with the specified number of output ports.
+   * Create a new `Balance` with the specified number of output ports. This method sets `eagerCancel` to `false`.
+   * To specify a different value for the `eagerCancel` parameter, then instantiate Balance using the constructor.
+   *
+   * If `eagerCancel` is true, balance cancels upstream if any of its downstreams cancel, if false, when all have cancelled.
    *
    * @param outputPorts number of output ports
    * @param waitForAllDownstreams if you use `waitForAllDownstreams = true` it will not start emitting
@@ -848,7 +851,7 @@ object Balance {
    *   default value is `false`
    */
   def apply[T](outputPorts: Int, waitForAllDownstreams: Boolean = false): Balance[T] =
-    new Balance(outputPorts, waitForAllDownstreams)
+    new Balance(outputPorts, waitForAllDownstreams, false)
 }
 
 /**
@@ -864,11 +867,16 @@ object Balance {
  *
  * '''Completes when''' upstream completes
  *
- * '''Cancels when''' all downstreams cancel
+ * '''Cancels when''' If eagerCancel is enabled: when any downstream cancels; otherwise: when all downstreams cancel
  */
-final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
+final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean, val eagerCancel: Boolean) extends GraphStage[UniformFanOutShape[T, T]] {
   // one output might seem counter intuitive but saves us from special handling in other places
   require(outputPorts >= 1, "A Balance must have one or more output ports")
+
+  @Deprecated
+  @deprecated("Use the constructor which also specifies the `eagerCancel` parameter", since = "2.5.12")
+  def this(outputPorts: Int, waitForAllDownstreams: Boolean) = this(outputPorts, waitForAllDownstreams, false)
+
   val in: Inlet[T] = Inlet[T]("Balance.in")
   val out: immutable.IndexedSeq[Outlet[T]] = Vector.tabulate(outputPorts)(i ⇒ Outlet[T]("Balance.out" + i))
   override def initialAttributes = DefaultAttributes.balance
@@ -890,8 +898,8 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean)
         if (!isClosed(out)) {
           push(out, grab(in))
           if (!noPending) pull(in)
-        } else {
-          // try to find one output that isn't closed
+        } else if (!noPending) {
+          // if they are pending outlets, try to find one output that isn't closed
           dequeueAndDispatch()
         }
       }
@@ -923,11 +931,14 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean)
         }
 
         override def onDownstreamFinish() = {
-          downstreamsRunning -= 1
-          if (downstreamsRunning == 0) completeStage()
-          else if (!hasPulled && needDownstreamPulls > 0) {
-            needDownstreamPulls -= 1
-            if (needDownstreamPulls == 0 && !hasBeenPulled(in)) pull(in)
+          if (eagerCancel) completeStage()
+          else {
+            downstreamsRunning -= 1
+            if (downstreamsRunning == 0) completeStage()
+            else if (!hasPulled && needDownstreamPulls > 0) {
+              needDownstreamPulls -= 1
+              if (needDownstreamPulls == 0 && !hasBeenPulled(in)) pull(in)
+            }
           }
         }
       })
@@ -1200,9 +1211,9 @@ object OrElse {
  * Takes two streams and passes the first through, the secondary stream is only passed
  * through if the primary stream completes without passing any elements through. When
  * the first element is passed through from the primary the secondary is cancelled.
- * Both incoming streams are materialized when the stage is materialized.
+ * Both incoming streams are materialized when the operator is materialized.
  *
- * On errors the stage is failed regardless of source of the error.
+ * On errors the operator is failed regardless of source of the error.
  *
  * '''Emits when''' element is available from primary stream or the primary stream closed without emitting any elements and an element
  *                  is available from the secondary stream
@@ -1369,7 +1380,7 @@ object GraphDSL extends GraphApply {
      * It is possible to call this method multiple times to get multiple [[Outlet]] instances if necessary. All of
      * the outlets will emit the materialized value.
      *
-     * Be careful to not to feed the result of this outlet to a stage that produces the materialized value itself (for
+     * Be careful to not to feed the result of this outlet to an operator that produces the materialized value itself (for
      * example to a [[Sink#fold]] that contributes to the materialized value) since that might lead to an unresolvable
      * dependency cycle.
      *

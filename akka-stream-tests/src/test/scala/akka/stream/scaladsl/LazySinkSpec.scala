@@ -14,6 +14,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 
 import scala.concurrent.{ Await, Future, Promise }

@@ -1,22 +1,34 @@
 # Modularity, Composition and Hierarchy
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 Akka Streams provide a uniform model of stream processing graphs, which allows flexible composition of reusable
 components. In this chapter we show how these look like from the conceptual and API perspective, demonstrating
 the modularity aspects of the library.
 
 ## Basics of composition and modularity
 
-Every processing stage used in Akka Streams can be imagined as a "box" with input and output ports where elements to
-be processed arrive and leave the stage. In this view, a `Source` is nothing else than a "box" with a single
+Every operator used in Akka Streams can be imagined as a "box" with input and output ports where elements to
+be processed arrive and leave the operator. In this view, a `Source` is nothing else than a "box" with a single
 output port, or, a `BidiFlow` is a "box" with exactly two input and two output ports. In the figure below
-we illustrate the most common used stages viewed as "boxes".
+we illustrate the most commonly used operators viewed as "boxes".
 
 ![compose_shapes.png](../images/compose_shapes.png)
 
-The *linear* stages are `Source`, `Sink`
-and `Flow`, as these can be used to compose strict chains of processing stages.
-Fan-in and Fan-out stages have usually multiple input or multiple output ports, therefore they allow to build
-more complex graph layouts, not just chains. `BidiFlow` stages are usually useful in IO related tasks, where
+The *linear* operators are `Source`, `Sink`
+and `Flow`, as these can be used to compose strict chains of operators.
+Fan-in and Fan-out operators have usually multiple input or multiple output ports, therefore they allow to build
+more complex graph layouts, not only chains. `BidiFlow` operators are usually useful in IO related tasks, where
 there are input and output channels to be handled. Due to the specific shape of `BidiFlow` it is easy to
 stack them on top of each other to build a layered protocol for example. The `TLS` support in Akka is for example
 implemented as a `BidiFlow`.
@@ -28,7 +40,7 @@ to interact with. One good example is the `Http` server component, which is enco
 `BidiFlow` which interfaces with the client TCP connection using an input-output port pair accepting and sending
 `ByteString` s, while its upper ports emit and receive `HttpRequest` and `HttpResponse` instances.
 
-The following figure demonstrates various composite stages, that contain various other type of stages internally, but
+The following figure demonstrates various composite operators, that contain various other type of operators internally, but
 hiding them behind a *shape* that looks like a `Source`, `Flow`, etc.
 
 ![compose_composites.png](../images/compose_composites.png)
@@ -67,24 +79,24 @@ with the rest of the graph), but this demonstrates the uniform underlying model.
 If we try to build a code snippet that corresponds to the above diagram, our first try might look like this:
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #non-nested-flow }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #non-nested-flow }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #non-nested-flow }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #non-nested-flow }
 
 
 It is clear however that there is no nesting present in our first attempt, since the library cannot figure out
 where we intended to put composite module boundaries, it is our responsibility to do that. If we are using the
 DSL provided by the `Flow`, `Source`, `Sink` classes then nesting can be achieved by calling one of the
-methods `withAttributes()` or `named()` (where the latter is just a shorthand for adding a name attribute).
+methods `withAttributes()` or `named()` (where the latter is a shorthand for adding a name attribute).
 
 The following code demonstrates how to achieve the desired nesting:
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #nested-flow }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #nested-flow }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #nested-flow }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #nested-flow }
 
 Once we have hidden the internals of our components, they act like any other built-in component of similar shape. If
 we hide some of the internals of our composites, the result looks just like if any other predefine component has been
@@ -96,15 +108,15 @@ If we look at usage of built-in components, and our custom components, there is 
 snippet below demonstrates.
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #reuse }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #reuse }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #reuse }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #reuse }
 
 ## Composing complex systems
 
 In the previous section we explored the possibility of composition, and hierarchy, but we stayed away from non-linear,
-generalized graph components. There is nothing in Akka Streams though that enforces that stream processing layouts
+generalized operators. There is nothing in Akka Streams though that enforces that stream processing layouts
 can only be linear. The DSL for `Source` and friends is optimized for creating such linear chains, as they are
 the most common in practice. There is a more advanced DSL for building complex graphs, that can be used if more
 flexibility is needed. We will see that the difference between the two DSLs is only on the surface: the concepts they
@@ -115,25 +127,25 @@ As a first example, let's look at a more complex layout:
 ![compose_graph.png](../images/compose_graph.png)
 
 The diagram shows a `RunnableGraph` (remember, if there are no unwired ports, the graph is closed, and therefore
-can be materialized) that encapsulates a non-trivial stream processing network. It contains fan-in, fan-out stages,
+can be materialized) that encapsulates a non-trivial stream processing network. It contains fan-in, fan-out operators,
 directed and non-directed cycles. The `runnable()` method of the `GraphDSL` object allows the creation of a
 general, closed, and runnable graph. For example the network on the diagram can be realized like this:
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #complex-graph }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #complex-graph }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #complex-graph }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #complex-graph }
 
 In the code above we used the implicit port numbering feature (to make the graph more readable and similar to the diagram)
 and we imported `Source` s, `Sink` s and `Flow` s explicitly. It is possible to refer to the ports
-explicitly, and it is not necessary to import our linear stages via `add()`, so another version might look like this:
+explicitly, and it is not necessary to import our linear operators via `add()`, so another version might look like this:
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #complex-graph-alt }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #complex-graph-alt }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #complex-graph-alt }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #complex-graph-alt }
 
 Similar to the case in the first section, so far we have not considered modularity. We created a complex graph, but
 the layout is flat, not modularized. We will modify our example, and create a reusable component with the graph DSL.
@@ -145,12 +157,12 @@ from the previous example, what remains is a partial graph:
 We can recreate a similar graph in code, using the DSL in a similar way than before:
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #partial-graph }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #partial-graph }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #partial-graph }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #partial-graph }
 
-The only new addition is the return value of the builder block, which is a `Shape`. All graphs (including
+The only new addition is the return value of the builder block, which is a `Shape`. All operators (including
 `Source`, `BidiFlow`, etc) have a shape, which encodes the *typed* ports of the module. In our example
 there is exactly one input and output port left, so we can declare it to have a `FlowShape` by returning an
 instance of it. While it is possible to create new `Shape` types, it is usually recommended to use one of the
@@ -164,14 +176,14 @@ it is a good practice to give names to modules to help debugging.
 Since our partial graph has the right shape, it can be already used in the simpler, linear DSL:
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #partial-use }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #partial-use }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #partial-use }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #partial-use }
 
 It is not possible to use it as a `Flow` yet, though (i.e. we cannot call `.filter()` on it), but `Flow`
-has a `fromGraph()` method that just adds the DSL to a `FlowShape`. There are similar methods on `Source`,
-`Sink` and `BidiShape`, so it is easy to get back to the simpler DSL if a graph has the right shape.
+has a `fromGraph()` method that adds the DSL to a `FlowShape`. There are similar methods on `Source`,
+`Sink` and `BidiShape`, so it is easy to get back to the simpler DSL if an operator has the right shape.
 For convenience, it is also possible to skip the partial graph creation, and use one of the convenience creator methods.
 To demonstrate this, we will create the following graph:
 
@@ -180,10 +192,10 @@ To demonstrate this, we will create the following graph:
 The code version of the above closed graph might look like this:
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #partial-flow-dsl }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #partial-flow-dsl }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #partial-flow-dsl }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #partial-flow-dsl }
 
 @@@ note
 
@@ -192,14 +204,14 @@ throw an exception if this is violated.
 
 @@@
 
-We are still in debt of demonstrating that `RunnableGraph` is a component just like any other, which can
+We are still in debt of demonstrating that `RunnableGraph` is a component like any other, which can
 be embedded in graphs. In the following snippet we embed one closed graph in another:
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #embed-closed }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #embed-closed }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #embed-closed }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #embed-closed }
 
 The type of the imported module indicates that the imported module has a `ClosedShape`, and so we are not
 able to wire it to anything else inside the enclosing closed graph. Nevertheless, this "island" is embedded properly,
@@ -231,8 +243,8 @@ needs to return a different object that provides the necessary interaction capab
  * a network of running processing entities, inaccessible from the outside
  * a materialized value, optionally providing a controlled interaction capability with the network
 
-Unlike actors though, each of the processing stages might provide a materialized value, so when we compose multiple
-stages or modules, we need to combine the materialized value as well (there are default rules which make this easier,
+Unlike actors though, each of the operators might provide a materialized value, so when we compose multiple
+operators or modules, we need to combine the materialized value as well (there are default rules which make this easier,
 for example *to()* and *via()* takes care of the most common case of taking the materialized value to the left.
 See @ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat) for details). 
 We demonstrate how this works by a code example and a diagram which graphically demonstrates what is happening.
@@ -246,20 +258,20 @@ materialized type of @scala[`Promise[[Option[Int]]`] @java[`CompletableFuture<Op
 type is of the nested module (indicated by the color *red* on the diagram):
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-1 }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-1 }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-1 }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-1 }
 
 Next, we create a composite `Flow` from two smaller components. Here, the second enclosed `Flow` has a
 materialized type of @scala[`Future[OutgoingConnection]`] @java[`CompletionStage<OutgoingConnection>`], and we propagate this to the parent by using `Keep.right`
 as the combiner function (indicated by the color *yellow* on the diagram):
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-2 }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-2 }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-2 }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-2 }
 
 As a third step, we create a composite `Sink`, using our `nestedFlow` as a building block. In this snippet, both
 the enclosed `Flow` and the folding `Sink` has a materialized value that is interesting for us, so
@@ -267,28 +279,28 @@ we use `Keep.both` to get a `Pair` of them as the materialized type of `nestedSi
 *blue* on the diagram)
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-3 }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-3 }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-3 }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-3 }
 
 As the last example, we wire together `nestedSource` and `nestedSink` and we use a custom combiner function to
-create a yet another materialized type of the resulting `RunnableGraph`. This combiner function just ignores
+create a yet another materialized type of the resulting `RunnableGraph`. This combiner function ignores
 the @scala[`Future[String]`] @java[`CompletionStage<String>`] part, and wraps the other two values in a custom case class `MyClass`
 (indicated by color *purple* on the diagram):
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-4 }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #mat-combine-4 }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-4a }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-4a }
     
-    @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-4b }
+    @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #mat-combine-4b }
 
 
 @@@ note
 
-The nested structure in the above example is not necessary for combining the materialized values, it just
+The nested structure in the above example is not necessary for combining the materialized values, it 
 demonstrates how the two features work together. See @ref:[Combining materialized values](stream-flows-and-basics.md#flow-combine-mat) for further examples
 of combining materialized values without nesting and hierarchy involved.
 
@@ -299,23 +311,23 @@ of combining materialized values without nesting and hierarchy involved.
 We have seen that we can use `named()` to introduce a nesting level in the fluid DSL (and also explicit nesting by using
 `create()` from `GraphDSL`). Apart from having the effect of adding a nesting level, `named()` is actually
 a shorthand for calling `withAttributes(Attributes.name("someName"))`. Attributes provide a way to fine-tune certain
-aspects of the materialized running entity. For example buffer sizes for asynchronous stages can be controlled via
-attributes (see @ref:[Buffers for asynchronous stages](stream-rate.md#async-stream-buffers)). When it comes to hierarchic composition, attributes are inherited
+aspects of the materialized running entity. For example buffer sizes for asynchronous operators can be controlled via
+attributes (see @ref:[Buffers for asynchronous operators](stream-rate.md#async-stream-buffers)). When it comes to hierarchic composition, attributes are inherited
 by nested modules, unless they override them with a custom value.
 
 The code below, a modification of an earlier example sets the `inputBuffer` attribute on certain modules, but not
 on others:
 
 Scala
-:   @@snip [CompositionDocSpec.scala]($code$/scala/docs/stream/CompositionDocSpec.scala) { #attributes-inheritance }
+:   @@snip [CompositionDocSpec.scala](/akka-docs/src/test/scala/docs/stream/CompositionDocSpec.scala) { #attributes-inheritance }
 
 Java
-:   @@snip [CompositionDocTest.java]($code$/java/jdocs/stream/CompositionDocTest.java) { #attributes-inheritance }
+:   @@snip [CompositionDocTest.java](/akka-docs/src/test/java/jdocs/stream/CompositionDocTest.java) { #attributes-inheritance }
 
 The effect is, that each module inherits the `inputBuffer` attribute from its enclosing parent, unless it has
 the same attribute explicitly set. `nestedSource` gets the default attributes from the materializer itself. `nestedSink`
 on the other hand has this attribute set, so it will be used by all nested modules. `nestedFlow` will inherit from `nestedSink`
-except the `map` stage which has again an explicitly provided attribute overriding the inherited one.
+except the `map` operator which has again an explicitly provided attribute overriding the inherited one.
 
 ![compose_attributes.png](../images/compose_attributes.png)
 

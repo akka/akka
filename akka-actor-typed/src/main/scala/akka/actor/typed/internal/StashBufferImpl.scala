@@ -7,7 +7,6 @@ package akka.actor.typed.internal
 import java.util.function.Consumer
 import java.util.function.{ Function ⇒ JFunction }
 
-import akka.actor.typed.ActorContext
 import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl
 import akka.actor.typed.scaladsl
@@ -95,13 +94,12 @@ import akka.util.ConstantFun
   override def unstashAll(ctx: javadsl.ActorContext[T], behavior: Behavior[T]): Behavior[T] =
     unstashAll(ctx.asScala, behavior)
 
-  override def unstash(scaladslCtx: scaladsl.ActorContext[T], behavior: Behavior[T],
+  override def unstash(ctx: scaladsl.ActorContext[T], behavior: Behavior[T],
                        numberOfMessages: Int, wrap: T ⇒ T): Behavior[T] = {
     val iter = new Iterator[T] {
       override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
       override def next(): T = wrap(StashBufferImpl.this.dropHead())
     }.take(numberOfMessages)
-    val ctx = scaladslCtx.asInstanceOf[ActorContext[T]]
     Behavior.interpretMessages[T](behavior, ctx, iter)
   }
 

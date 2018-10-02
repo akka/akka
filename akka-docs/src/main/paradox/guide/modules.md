@@ -26,7 +26,13 @@ This page does not list all available modules, but overviews the main functional
 
 ### Actor library
 
-The core Akka library is `akka-actor`. But, actors are used across Akka libraries, providing a consistent, integrated model that relieves you from individually
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-actor_$scala.binary_version$
+  version=$akka.version$
+}
+
+The core Akka library is `akka-actor`, but actors are used across Akka libraries, providing a consistent, integrated model that relieves you from individually
 solving the challenges that arise in concurrent or distributed system design. From a birds-eye view,
 actors are a programming paradigm that takes encapsulation, one of the pillars of OOP, to its extreme.
 Unlike objects, actors encapsulate not only their
@@ -45,6 +51,12 @@ Challenges that actors solve include the following:
 
 ### Remoting
 
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-remote_$scala.binary_version$
+  version=$akka.version$
+}
+
 Remoting enables actors that live on different computers, to seamlessly exchange messages.
 While distributed as a JAR artifact, Remoting resembles a module more than it does a library. You enable it mostly
 with configuration and it has only a few APIs. Thanks to the actor model, a remote and local message send looks exactly the
@@ -61,6 +73,12 @@ Challenges Remoting solves include the following:
 * How to multiplex communications from an unrelated set of actors on the same network connection, all transparently.
 
 ### Cluster
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster_$scala.binary_version$
+  version=$akka.version$
+}
 
 If you have a set of actor systems that cooperate to solve some business problem, then you likely want to manage these set of
 systems in a disciplined way. While Remoting solves the problem of addressing and communicating with components of
@@ -79,6 +97,12 @@ Challenges the Cluster module solves include the following:
 
 ### Cluster Sharding
 
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster-sharding_$scala.binary_version$
+  version=$akka.version$
+}
+
 Sharding helps to solve the problem of distributing a set of actors among members of an Akka cluster.
 Sharding is a pattern that mostly used together with Persistence to balance a large set of persistent entities
 (backed by actors) to members of a cluster and also migrate them to other nodes when members crash or leave.
@@ -91,6 +115,12 @@ Challenges that Sharding solves include the following:
 * How to ensure that an entity does not exist on multiple systems at the same time and hence keeps consistent.
 
 ### Cluster Singleton
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster-singleton_$scala.binary_version$
+  version=$akka.version$
+}
 
 A common (in fact, a bit too common) use case in distributed systems is to have a single entity responsible
 for a given task which is shared among other members of the cluster and migrated if the host system fails.
@@ -107,6 +137,12 @@ The Singleton module can be used to solve these challenges:
 
 ### Cluster Publish-Subscribe
 
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster-tools_$scala.binary_version$
+  version=$akka.version$
+}
+
 For coordination among systems, it is often necessary to distribute messages to all, or one system of a set of
 interested systems in a cluster. This pattern is usually called publish-subscribe and this module solves this exact
 problem. It is possible to broadcast messages to all subscribers of a topic or send a message to an arbitrary actor that has expressed interest.
@@ -118,6 +154,12 @@ Cluster Publish-Subscribe is intended to solve the following challenges:
 * How to subscribe and unsubscribe for events of a certain topic in the cluster.
 
 ### Persistence
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-persistence_$scala.binary_version$
+  version=$akka.version$
+}
 
 Just like objects in OOP, actors keep their state in volatile memory. Once the system is shut down, gracefully or
 because of a crash, all data that was in memory is lost. Persistence provides patterns to enable actors to persist
@@ -135,6 +177,12 @@ Persistence tackles the following challenges:
 
 ### Distributed Data
 
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-distributed-data_$scala.binary_version$
+  version=$akka.version$
+}
+
 In situations where eventual consistency is acceptable, it is possible to share data between nodes in
 an Akka Cluster and accept both reads and writes even in the face of cluster partitions. This can be
 achieved using [Conflict Free Replicated Data Types](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type) (CRDTs), where writes on different nodes can
@@ -148,10 +196,16 @@ Distributed Data is intended to solve the following challenges:
 
 ### Streams
 
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-stream_$scala.binary_version$
+  version=$akka.version$
+}
+
 Actors are a fundamental model for concurrency, but there are common patterns where their use requires the user
 to implement the same pattern over and over. Very common is the scenario where a chain, or graph, of actors, need to
 process a potentially large, or infinite, stream of sequential events and properly coordinate resource usage so that
-faster processing stages does not overwhelm slower ones in the chain or graph. Streams provide a higher-level
+faster processing stages do not overwhelm slower ones in the chain or graph. Streams provide a higher-level
 abstraction on top of actors that simplifies writing such processing networks, handling all the fine details in the
 background and providing a safe, typed, composable programming model. Streams is also an implementation
 of the [Reactive Streams standard](http://www.reactive-streams.org) which enables integration with all third
@@ -166,6 +220,8 @@ Streams solve the following challenges:
 
 ### HTTP
 
+[Akka HTTP](https://doc.akka.io/docs/akka-http/current) is a separate module from Akka.
+
 The de facto standard for providing APIs remotely, internal or external, is [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol). Akka provides a library to construct or consume such HTTP services by giving a set of tools to create HTTP services (and serve them) and a client that can be
 used to consume other services. These tools are particularly suited to streaming in and out a large set of data or real-time events by leveraging the underlying model of Akka Streams.
 
@@ -177,7 +233,7 @@ Some of the challenges that HTTP tackles:
 
 ### Example of module use
 
-Akka modules integrate together seamlessly. For example, think of a large set of stateful business objects, such as documents or shopping carts, that website users access. If you model these as sharded entities, using Sharding and Persistence, they will be balanced across a cluster that you can scale out on-demand. They will be available during spikes that come from advertising campaigns or before holidays will be handled, even if some systems crash. You can also easily take the real-time stream of domain events with Persistence Query and use Streams to pipe them into a streaming Fast Data engine. Then, take the output of that engine as a Stream, manipulate it using Akka Streams
+Akka modules integrate together seamlessly. For example, think of a large set of stateful business objects, such as documents or shopping carts, that website users access. If you model these as sharded entities, using Sharding and Persistence, they will be balanced across a cluster that you can scale out on-demand. They will be available during spikes that come from advertising campaigns or before holidays will be handled, even if some systems crash. You can also take the real-time stream of domain events with Persistence Query and use Streams to pipe them into a streaming Fast Data engine. Then, take the output of that engine as a Stream, manipulate it using Akka Streams
 operators and expose it as web socket connections served by a load balanced set of HTTP servers hosted by your cluster
 to power your real-time business analytics tool.
 

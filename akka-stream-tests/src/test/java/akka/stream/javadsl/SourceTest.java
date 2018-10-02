@@ -8,10 +8,14 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
+import akka.actor.Status;
 import akka.japi.Pair;
 import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
+//#imports
 import akka.stream.*;
+
+//#imports
 import akka.stream.scaladsl.FlowSpec;
 import akka.util.ConstantFun;
 import akka.stream.stage.*;
@@ -33,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
+import static akka.NotUsed.notUsed;
 import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static akka.stream.testkit.TestPublisher.ManualProbe;
 import static org.junit.Assert.*;
@@ -327,6 +332,22 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustBeAbleToUseSingle() throws Exception {
+    //#source-single
+    CompletionStage<List<String>> future = Source.single("A").runWith(Sink.seq(), materializer);
+    CompletableFuture<List<String>> completableFuture = future.toCompletableFuture();
+    completableFuture.thenAccept(result -> System.out.printf("collected elements: %s\n", result));
+    // result list will contain exactly one element "A"
+
+    //#source-single
+    // DO NOT use get() directly in your production code!
+    List<String> result = completableFuture.get();
+    assertEquals(1, result.size());
+    assertEquals("A", result.get(0));
+
+  }
+
+  @Test
   public void mustBeAbleToUsePrefixAndTail() throws Exception {
     final TestKit probe = new TestKit(system);
     final Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5, 6);
@@ -440,18 +461,19 @@ public class SourceTest extends StreamTest {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
     })).run(materializer);
-    probe.expectNoMsg(FiniteDuration.create(600, TimeUnit.MILLISECONDS));
+    probe.expectNoMessage(Duration.ofMillis(600));
     probe.expectMsgEquals("tick");
-    probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
+    probe.expectNoMessage(Duration.ofMillis(200));
     probe.expectMsgEquals("tick");
-    probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
+    probe.expectNoMessage(Duration.ofMillis(200));
+    cancellable.cancel();
   }
 
   @Test
   @SuppressWarnings("unused")
   public void mustCompileMethodsWithJavaDuration() {
     Source<NotUsed, Cancellable> tickSource = Source.tick(Duration.ofSeconds(1),
-            Duration.ofMillis(500), NotUsed.getInstance());
+            Duration.ofMillis(500), notUsed());
   }
 
   @Test
@@ -546,6 +568,7 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals(1);
     ref.tell(2, ActorRef.noSender());
     probe.expectMsgEquals(2);
+    ref.tell(new Status.Success("ok"), ActorRef.noSender());
   }
 
   @Test
@@ -642,9 +665,9 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals(0);
     probe.expectMsgEquals(1);
 
-    FiniteDuration duration = FiniteDuration.apply(200, TimeUnit.MILLISECONDS);
+    Duration duration = Duration.ofMillis(200);
 
-    probe.expectNoMsg(duration);
+    probe.expectNoMessage(duration);
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote
 
 import akka.remote.transport.AssociationHandle
@@ -26,9 +27,6 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(
     ConfigFactory.parseString("""
-      akka.loglevel = DEBUG
-      akka.remote.log-remote-lifecycle-events = DEBUG
-
       # Keep it long, we don't want reconnects
       akka.remote.retry-gate-closed-for  = 1 s
 
@@ -133,7 +131,6 @@ abstract class RemoteRestartedQuarantinedSpec
         // retry because it's possible to loose the initial message here, see issue #17314
         val probe = TestProbe()(freshSystem)
         probe.awaitAssert({
-          println(s"# --") // FIXME
           freshSystem.actorSelection(RootActorPath(firstAddress) / "user" / "subject").tell(Identify("subject"), probe.ref)
           probe.expectMsgType[ActorIdentity](1.second).ref should not be (None)
         }, 30.seconds)

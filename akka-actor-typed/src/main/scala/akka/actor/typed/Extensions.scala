@@ -5,6 +5,7 @@
 package akka.actor.typed
 
 import akka.annotation.DoNotInherit
+import akka.actor.setup.Setup
 
 /**
  * Marker trait/interface for extensions. An extension can be registered in the ActorSystem and is guaranteed to only
@@ -45,7 +46,7 @@ trait Extension
  * // can be loaded eagerly on system startup through configuration
  * // note that the name is the JVM/Java class name, with a dollar sign in the end
  * // and not the Scala object name
- * akka.typed.extensions = ["com.example.MyExt$"]
+ * akka.actor.typed.extensions = ["com.example.MyExt$"]
  *
  * // Allows access like this from Scala
  * MyExt().someMethodOnTheExtension()
@@ -56,7 +57,7 @@ trait Extension
  * *Java API*
  *
  * To implement an extension in Java you should first create an `ExtensionId` singleton by implementing a static method
- * called `getInstance`, this is needed to be able to list the extension among the `akka.typed.extensions` in the configuration
+ * called `getInstance`, this is needed to be able to list the extension among the `akka.actor.typed.extensions` in the configuration
  * and have it loaded when the actor system starts up.
  *
  * {{{
@@ -89,7 +90,7 @@ trait Extension
  * }
  *
  * // can be loaded eagerly on system startup through configuration
- * akka.typed.extensions = ["com.example.MyExt"]
+ * akka.actor.typed.extensions = ["com.example.MyExt"]
  *
  * // Allows access like this from Scala
  * MyExt.someMethodOnTheExtension()
@@ -97,7 +98,12 @@ trait Extension
  * MyExt.get(system).someMethodOnTheExtension()
  * }}}
  *
+ * For testing purposes extensions typically provide a concrete [[ExtensionSetup]]
+ * that can be used in [[akka.actor.setup.ActorSystemSetup]] when starting the [[ActorSystem]]
+ * to replace the default implementation of the extension.
+ *
  * @tparam T The concrete extension type
+ * @see [[ExtensionSetup]]
  */
 abstract class ExtensionId[T <: Extension] {
 
@@ -113,6 +119,11 @@ abstract class ExtensionId[T <: Extension] {
 
   override final def hashCode: Int = System.identityHashCode(this)
   override final def equals(other: Any): Boolean = this eq other.asInstanceOf[AnyRef]
+
+  /**
+   * Java API: The identifier of the extension
+   */
+  def id: ExtensionId[T] = this
 }
 
 /**
@@ -144,3 +155,24 @@ trait Extensions {
   def hasExtension(ext: ExtensionId[_ <: Extension]): Boolean
 }
 
+/**
+ * Each extension typically provide a concrete `ExtensionSetup` that can be used in
+ * [[akka.actor.setup.ActorSystemSetup]] when starting the [[ActorSystem]] to replace the default
+ * implementation of the extension. Intended for tests that need to replace
+ * extension with stub/mock implementations.
+ */
+abstract class ExtensionSetup[T <: Extension](
+  val extId:           ExtensionId[T],
+  val createExtension: java.util.function.Function[ActorSystem[_], T])
+  extends Setup
+
+/**
+ * Scala 2.11 API: Each extension typically provide a concrete `ExtensionSetup` that can be used in
+ * [[akka.actor.setup.ActorSystemSetup]] when starting the [[ActorSystem]] to replace the default
+ * implementation of the extension. Intended for tests that need to replace
+ * extension with stub/mock implementations.
+ */
+abstract class AbstractExtensionSetup[T <: Extension](extId: ExtensionId[T], createExtension: ActorSystem[_] ⇒ T)
+  extends ExtensionSetup[T](extId, new java.util.function.Function[ActorSystem[_], T] {
+    override def apply(sys: ActorSystem[_]): T = createExtension.apply(sys)
+  }) // TODO can be simplified when compiled only with Scala >= 2.12

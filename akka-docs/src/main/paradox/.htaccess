@@ -1,2 +1,3 @@
 RedirectMatch 301 ^(.*)/scala/(.*) $1/$2?language=scala
 RedirectMatch 301 ^(.*)/java/(.*) $1/$2?language=java
+RedirectMatch 301 ^(.*)/stream/stages-overview\.html.* $1/stream/operators/index.html

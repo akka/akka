@@ -11,6 +11,7 @@ import akka.actor.ActorSystem
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.{ ActorMaterializer, _ }
 import akka.testkit.TestLatch
@@ -338,6 +339,33 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       mat.shutdown()
 
       Await.ready(closeLatch, remainingOrDefault)
+    }
+
+    // these two reproduces different aspects of #24839
+    "close resource when stream is quickly cancelled" in assertAllStagesStopped {
+      val closePromise = Promise[Done]()
+      Source.unfoldResourceAsync[String, Unit](
+        // delay it a bit to give cancellation time to come upstream
+        () ⇒ akka.pattern.after(100.millis, system.scheduler)(Future.successful(())),
+        _ ⇒ Future.successful(Some("whatever")),
+        _ ⇒ closePromise.success(Done).future
+      ).runWith(Sink.cancelled)
+
+      closePromise.future.futureValue should ===(Done)
+    }
+
+    "close resource when stream is quickly cancelled reproducer 2" in {
+      val closed = Promise[Done]()
+      Source
+        .unfoldResourceAsync[String, Iterator[String]](
+          { () ⇒ Future(Iterator("a", "b", "c")) },
+          { m ⇒ Future(if (m.hasNext) Some(m.next()) else None) },
+          { _ ⇒ closed.success(Done).future }
+        )
+        .map(m ⇒ println(s"Elem=> $m"))
+        .runWith(Sink.cancelled)
+
+      closed.future.futureValue // will timeout if bug is still here
     }
   }
 

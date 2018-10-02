@@ -5,17 +5,15 @@
 package docs.akka.typed
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ DeathPactException, SupervisorStrategy, TypedAkkaSpecWithShutdown }
-import akka.testkit.typed.scaladsl.ActorTestKit
-import com.typesafe.config.ConfigFactory
+import akka.actor.typed.{ DeathPactException, SupervisorStrategy }
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
-class FaultToleranceDocSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
-
-  override def config = ConfigFactory.parseString(
-    """
+class FaultToleranceDocSpec extends ScalaTestWithActorTestKit(
+  """
       # silenced to not put noise in test logs
       akka.loglevel = OFF
-    """)
+    """) with WordSpecLike {
 
   "Bubbling of failures" must {
 

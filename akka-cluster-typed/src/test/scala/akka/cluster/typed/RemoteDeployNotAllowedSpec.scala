@@ -5,12 +5,14 @@
 package akka.cluster.typed
 
 import akka.actor.typed.ActorSystem
-import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.{ WordSpec, WordSpecLike }
 
 object RemoteDeployNotAllowedSpec {
   def config = ConfigFactory.parseString(
@@ -43,9 +45,7 @@ object RemoteDeployNotAllowedSpec {
     """).withFallback(config)
 }
 
-class RemoteDeployNotAllowedSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
-
-  override def config = RemoteDeployNotAllowedSpec.config
+class RemoteDeployNotAllowedSpec extends ScalaTestWithActorTestKit(RemoteDeployNotAllowedSpec.config) with WordSpecLike {
 
   "Typed cluster" must {
 

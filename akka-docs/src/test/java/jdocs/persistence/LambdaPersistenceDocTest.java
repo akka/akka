@@ -8,11 +8,10 @@ import akka.actor.*;
 import akka.japi.Procedure;
 import akka.pattern.BackoffSupervisor;
 import akka.persistence.*;
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 
 import java.io.Serializable;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 public class LambdaPersistenceDocTest {
 
@@ -122,8 +121,8 @@ public class LambdaPersistenceDocTest {
         final Props props = BackoffSupervisor.props(
           childProps,
           "myActor",
-          Duration.create(3, TimeUnit.SECONDS),
-          Duration.create(30, TimeUnit.SECONDS),
+          Duration.ofSeconds(3),
+          Duration.ofSeconds(30),
           0.2);
         getContext().actorOf(props, "mySupervisor");
         super.preStart();

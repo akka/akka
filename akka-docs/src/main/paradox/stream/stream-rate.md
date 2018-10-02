@@ -1,22 +1,34 @@
 # Buffers and working with rate
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 When upstream and downstream rates differ, especially when the throughput has spikes, it can be useful to introduce
 buffers in a stream. In this chapter we cover how buffers are used in Akka Streams.
 
 <a id="async-stream-buffers"></a>
-## Buffers for asynchronous stages
+## Buffers for asynchronous operators
 
-In this section we will discuss internal buffers that are introduced as an optimization when using asynchronous stages.
+In this section we will discuss internal buffers that are introduced as an optimization when using asynchronous operators.
 
-To run a stage asynchronously it has to be marked explicitly as such using the @scala[@scaladoc[`.async`](akka.stream.Graph#shape:S)]@java[@javadoc[`.async()`](akka.stream.Graph#async--)] method. Being run
-asynchronously means that a stage, after handing out an element to its downstream consumer is able to immediately
+To run an operator asynchronously it has to be marked explicitly as such using the @scala[@scaladoc[`.async`](akka.stream.Graph#shape:S)]@java[@javadoc[`.async()`](akka.stream.Graph#async--)] method. Being run
+asynchronously means that an operator, after handing out an element to its downstream consumer is able to immediately
 process the next message. To demonstrate what we mean by this, let's take a look at the following example:
 
 Scala
-:   @@snip [StreamBuffersRateSpec.scala]($code$/scala/docs/stream/StreamBuffersRateSpec.scala) { #pipelining }
+:   @@snip [StreamBuffersRateSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamBuffersRateSpec.scala) { #pipelining }
 
 Java
-:   @@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #pipelining }
+:   @@snip [StreamBuffersRateDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamBuffersRateDocTest.java) { #pipelining }
 
 Running the above example, one of the possible outputs looks like this:
 
@@ -34,7 +46,7 @@ C: 3
 
 Note that the order is *not* `A:1, B:1, C:1, A:2, B:2, C:2,` which would correspond to the normal fused synchronous
 execution model of flows where an element completely passes through the processing pipeline before the next element
-enters the flow. The next element is processed by an asynchronous stage as soon as it is emitted the previous one.
+enters the flow. The next element is processed by an asynchronous operator as soon as it is emitted the previous one.
 
 While pipelining in general increases throughput, in practice there is a cost of passing an element through the
 asynchronous (and therefore thread crossing) boundary which is significant. To amortize this cost Akka Streams uses
@@ -46,14 +58,14 @@ propagating the backpressure signal through the asynchronous boundary.
 
 While this internal protocol is mostly invisible to the user (apart from its throughput increasing effects) there are
 situations when these details get exposed. In all of our previous examples we always assumed that the rate of the
-processing chain is strictly coordinated through the backpressure signal causing all stages to process no faster than
+processing chain is strictly coordinated through the backpressure signal causing all operators to process no faster than
 the throughput of the connected chain. There are tools in Akka Streams however that enable the rates of different segments
 of a processing chain to be "detached" or to define the maximum throughput of the stream through external timing sources.
 These situations are exactly those where the internal batching buffering strategy suddenly becomes non-transparent.
 
 ### Internal buffers and their effect
 
-As we have explained, for performance reasons Akka Streams introduces a buffer for every asynchronous processing stage.
+As we have explained, for performance reasons Akka Streams introduces a buffer for every asynchronous operator.
 The purpose of these buffers is solely optimization, in fact the size of 1 would be the most natural choice if there
 would be no need for throughput improvements. Therefore it is recommended to keep these buffer sizes small,
 and increase them only to a level suitable for the throughput requirements of the application. Default buffer sizes
@@ -67,27 +79,27 @@ Alternatively they can be set by passing a
 @scala[@scaladoc[`ActorMaterializerSettings`](akka.stream.ActorMaterializerSettings)]@java[@javadoc[`ActorMaterializerSettings`](akka.stream.ActorMaterializerSettings)] to the materializer:
 
 Scala
-:   @@snip [StreamBuffersRateSpec.scala]($code$/scala/docs/stream/StreamBuffersRateSpec.scala) { #materializer-buffer }
+:   @@snip [StreamBuffersRateSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamBuffersRateSpec.scala) { #materializer-buffer }
 
 Java
-:   @@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #materializer-buffer }
+:   @@snip [StreamBuffersRateDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamBuffersRateDocTest.java) { #materializer-buffer }
 
 If the buffer size needs to be set for segments of a @scala[@scaladoc[`Flow`](akka.stream.scaladsl.Flow)]@java[@javadoc[`Flow`](akka.stream.javadsl.Flow)] only, it is possible by defining a separate
 @scala[@scaladoc[`Flow`](akka.stream.scaladsl.Flow)]@java[@javadoc[`Flow`](akka.stream.javadsl.Flow)] with these attributes:
 
 Scala
-:   @@snip [StreamBuffersRateSpec.scala]($code$/scala/docs/stream/StreamBuffersRateSpec.scala) { #section-buffer }
+:   @@snip [StreamBuffersRateSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamBuffersRateSpec.scala) { #section-buffer }
 
 Java
-:   @@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #section-buffer }
+:   @@snip [StreamBuffersRateDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamBuffersRateDocTest.java) { #section-buffer }
 
 Here is an example of a code that demonstrate some of the issues caused by internal buffers:
 
 Scala
-:   @@snip [StreamBuffersRateSpec.scala]($code$/scala/docs/stream/StreamBuffersRateSpec.scala) { #buffering-abstraction-leak }
+:   @@snip [StreamBuffersRateSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamBuffersRateSpec.scala) { #buffering-abstraction-leak }
 
 Java
-:   @@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #buffering-abstraction-leak }
+:   @@snip [StreamBuffersRateDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamBuffersRateDocTest.java) { #buffering-abstraction-leak }
 
 Running the above example one would expect the number *3* to be printed in every 3 seconds (the `conflateWithSeed`
 step here is configured so that it counts the number of elements received before the downstream @scala[@scaladoc[`ZipWith`](akka.stream.scaladsl.ZipWith$)]@java[@javadoc[`ZipWith`](akka.stream.javadsl.ZipWith$)] consumes
@@ -98,7 +110,7 @@ a leading 1 though which is caused by an initial prefetch of the @scala[@scalado
 
 @@@ note
 
-In general, when time or rate driven processing stages exhibit strange behavior, one of the first solutions to try
+In general, when time or rate driven operators exhibit strange behavior, one of the first solutions to try
 should be to decrease the input buffer of the affected elements to 1.
 
 @@@
@@ -112,10 +124,10 @@ The example below will ensure that 1000 jobs (but not more) are dequeued from an
 stored locally in memory - relieving the external system:
 
 Scala
-:   @@snip [StreamBuffersRateSpec.scala]($code$/scala/docs/stream/StreamBuffersRateSpec.scala) { #explicit-buffers-backpressure }
+:   @@snip [StreamBuffersRateSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamBuffersRateSpec.scala) { #explicit-buffers-backpressure }
 
 Java
-:   @@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-backpressure }
+:   @@snip [StreamBuffersRateDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-backpressure }
 
 
 The next example will also queue up 1000 jobs locally, but if there are more jobs waiting
@@ -125,19 +137,19 @@ it must be noted that this will drop the *youngest* waiting job. If some "fairne
 we want to be nice to jobs that has been waiting for long, then this option can be useful.
 
 Scala
-:   @@snip [StreamBuffersRateSpec.scala]($code$/scala/docs/stream/StreamBuffersRateSpec.scala) { #explicit-buffers-droptail }
+:   @@snip [StreamBuffersRateSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamBuffersRateSpec.scala) { #explicit-buffers-droptail }
 
 Java
-:   @@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-droptail }
+:   @@snip [StreamBuffersRateDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-droptail }
 
 Instead of dropping the youngest element from the tail of the buffer a new element can be dropped without
 enqueueing it to the buffer at all.
 
 Scala
-:   @@snip [StreamBuffersRateSpec.scala]($code$/scala/docs/stream/StreamBuffersRateSpec.scala) { #explicit-buffers-dropnew }
+:   @@snip [StreamBuffersRateSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamBuffersRateSpec.scala) { #explicit-buffers-dropnew }
 
 Java
-:   @@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-dropnew }
+:   @@snip [StreamBuffersRateDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-dropnew }
 
 Here is another example with a queue of 1000 jobs, but it makes space for the new element by
 dropping one element from the *head* of the buffer. This is the *oldest*
@@ -147,32 +159,32 @@ retransmitted soon, (in fact a retransmitted duplicate might be already in the q
 so it makes sense to drop it first.
 
 Scala
-:   @@snip [StreamBuffersRateSpec.scala]($code$/scala/docs/stream/StreamBuffersRateSpec.scala) { #explicit-buffers-drophead }
+:   @@snip [StreamBuffersRateSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamBuffersRateSpec.scala) { #explicit-buffers-drophead }
 
 Java
-:   @@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-drophead }
+:   @@snip [StreamBuffersRateDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-drophead }
 
 Compared to the dropping strategies above, dropBuffer drops all the 1000
 jobs it has enqueued once the buffer gets full. This aggressive strategy
 is useful when dropping jobs is preferred to delaying jobs.
 
 Scala
-:   @@snip [StreamBuffersRateSpec.scala]($code$/scala/docs/stream/StreamBuffersRateSpec.scala) { #explicit-buffers-dropbuffer }
+:   @@snip [StreamBuffersRateSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamBuffersRateSpec.scala) { #explicit-buffers-dropbuffer }
 
 Java
-:   @@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-dropbuffer }
+:   @@snip [StreamBuffersRateDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-dropbuffer }
 
 If our imaginary external job provider is a client using our API, we might
 want to enforce that the client cannot have more than 1000 queued jobs
 otherwise we consider it flooding and terminate the connection. This is
-easily achievable by the error strategy which simply fails the stream
+achievable by the error strategy which fails the stream
 once the buffer gets full.
 
 Scala
-:   @@snip [StreamBuffersRateSpec.scala]($code$/scala/docs/stream/StreamBuffersRateSpec.scala) { #explicit-buffers-fail }
+:   @@snip [StreamBuffersRateSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamBuffersRateSpec.scala) { #explicit-buffers-fail }
 
 Java
-:   @@snip [StreamBuffersRateDocTest.java]($code$/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-fail }
+:   @@snip [StreamBuffersRateDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamBuffersRateDocTest.java) { #explicit-buffers-fail }
 
 ## Rate transformation
 
@@ -185,10 +197,10 @@ Below is an example snippet that summarizes fast stream of elements to a standar
 that have arrived while the stats have been calculated.
 
 Scala
-:   @@snip [RateTransformationDocSpec.scala]($code$/scala/docs/stream/RateTransformationDocSpec.scala) { #conflate-summarize }
+:   @@snip [RateTransformationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/RateTransformationDocSpec.scala) { #conflate-summarize }
 
 Java
-:   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #conflate-summarize }
+:   @@snip [RateTransformationDocTest.java](/akka-docs/src/test/java/jdocs/stream/RateTransformationDocTest.java) { #conflate-summarize }
 
 This example demonstrates that such flow's rate is decoupled. The element rate at the start of the flow can be much
 higher than the element rate at the end of the flow.
@@ -198,14 +210,14 @@ The example below demonstrates how `conflate` can be used to randomly drop eleme
 to keep up with the producer.
 
 Scala
-:   @@snip [RateTransformationDocSpec.scala]($code$/scala/docs/stream/RateTransformationDocSpec.scala) { #conflate-sample }
+:   @@snip [RateTransformationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/RateTransformationDocSpec.scala) { #conflate-sample }
 
 Java
-:   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #conflate-sample }
+:   @@snip [RateTransformationDocTest.java](/akka-docs/src/test/java/jdocs/stream/RateTransformationDocTest.java) { #conflate-sample }
 
 ### Understanding extrapolate and expand
 
-Now we will discuss two stages, `extrapolate` and `expand`, helping to deal with slow producers that are unable to keep 
+Now we will discuss two operators, `extrapolate` and `expand`, helping to deal with slow producers that are unable to keep 
 up with the demand coming from consumers.
 They allow for additional values to be sent as elements to a consumer.
 
@@ -213,36 +225,36 @@ As a simple use case of `extrapolate`, here is a flow that repeats the last emit
 the consumer signals demand and the producer cannot supply new elements yet.
 
 Scala
-:   @@snip [RateTransformationDocSpec.scala]($code$/scala/docs/stream/RateTransformationDocSpec.scala) { #extrapolate-last }
+:   @@snip [RateTransformationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/RateTransformationDocSpec.scala) { #extrapolate-last }
 
 Java
-:   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #extrapolate-last }
+:   @@snip [RateTransformationDocTest.java](/akka-docs/src/test/java/jdocs/stream/RateTransformationDocTest.java) { #extrapolate-last }
 
 For situations where there may be downstream demand before any element is emitted from upstream, 
 you can use the `initial` parameter of `extrapolate` to "seed" the stream.
 
 Scala
-:   @@snip [RateTransformationDocSpec.scala]($code$/scala/docs/stream/RateTransformationDocSpec.scala) { #extrapolate-seed }
+:   @@snip [RateTransformationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/RateTransformationDocSpec.scala) { #extrapolate-seed }
 
 Java
-:   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #extrapolate-seed }
+:   @@snip [RateTransformationDocTest.java](/akka-docs/src/test/java/jdocs/stream/RateTransformationDocTest.java) { #extrapolate-seed }
 
 `extrapolate` and `expand` also allow to produce metainformation based on demand signalled from the downstream. 
 Leveraging this, here is a flow that tracks and reports a drift between a fast consumer and a slow producer. 
 
 Scala
-:   @@snip [RateTransformationDocSpec.scala]($code$/scala/docs/stream/RateTransformationDocSpec.scala) { #extrapolate-drift }
+:   @@snip [RateTransformationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/RateTransformationDocSpec.scala) { #extrapolate-drift }
 
 Java
-:   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #extrapolate-drift }
+:   @@snip [RateTransformationDocTest.java](/akka-docs/src/test/java/jdocs/stream/RateTransformationDocTest.java) { #extrapolate-drift }
 
 And here's a more concise representation with `expand`.
 
 Scala
-:   @@snip [RateTransformationDocSpec.scala]($code$/scala/docs/stream/RateTransformationDocSpec.scala) { #expand-drift }
+:   @@snip [RateTransformationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/RateTransformationDocSpec.scala) { #expand-drift }
 
 Java
-:   @@snip [RateTransformationDocTest.java]($code$/java/jdocs/stream/RateTransformationDocTest.java) { #expand-drift }
+:   @@snip [RateTransformationDocTest.java](/akka-docs/src/test/java/jdocs/stream/RateTransformationDocTest.java) { #expand-drift }
 
 The difference is due to the different handling of the `Iterator`-generating argument.
 

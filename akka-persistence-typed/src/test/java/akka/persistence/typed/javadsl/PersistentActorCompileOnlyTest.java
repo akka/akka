@@ -5,8 +5,13 @@
 package akka.persistence.typed.javadsl;
 
 import akka.actor.Scheduler;
+import akka.actor.typed.Behavior;
+import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.ActorRef;
-import akka.testkit.typed.javadsl.TestInbox;
+import akka.actor.typed.javadsl.Behaviors;
+import akka.persistence.typed.EventAdapter;
+import akka.actor.testkit.typed.javadsl.TestInbox;
+import akka.persistence.typed.SideEffect;
 import akka.util.Timeout;
 
 import java.util.*;
@@ -17,7 +22,32 @@ import static akka.actor.typed.javadsl.AskPattern.ask;
 
 public class PersistentActorCompileOnlyTest {
 
+
   public static abstract class Simple {
+
+    //#event-wrapper
+    public static class Wrapper<T> {
+      private final T t;
+      public Wrapper(T t) {
+        this.t = t;
+      }
+      public T getT() {
+        return t;
+      }
+    }
+
+    public static class EventAdapterExample extends EventAdapter<SimpleEvent, Wrapper<SimpleEvent>> {
+      @Override
+      public Wrapper<SimpleEvent> toJournal(SimpleEvent simpleEvent) {
+        return new Wrapper<>(simpleEvent);
+      }
+      @Override
+      public SimpleEvent fromJournal(Wrapper<SimpleEvent> simpleEventWrapper) {
+        return simpleEventWrapper.getT();
+      }
+    }
+    //#event-wrapper
+
     //#command
     public static class SimpleCommand {
       public final String data;
@@ -45,6 +75,7 @@ public class PersistentActorCompileOnlyTest {
       SimpleState(List<String> events) {
         this.events = events;
       }
+
       SimpleState() {
         this.events = new ArrayList<>();
       }
@@ -62,24 +93,32 @@ public class PersistentActorCompileOnlyTest {
     //#behavior
     public static PersistentBehavior<SimpleCommand, SimpleEvent, SimpleState> pb = new PersistentBehavior<SimpleCommand, SimpleEvent, SimpleState>("p1") {
       @Override
-      public SimpleState initialState() {
+      public SimpleState emptyState() {
         return new SimpleState();
       }
 
       //#command-handler
       @Override
       public CommandHandler<SimpleCommand, SimpleEvent, SimpleState> commandHandler() {
-        return (ctx, state, cmd) -> Effect().persist(new SimpleEvent(cmd.data));
+        return (state, cmd) -> Effect().persist(new SimpleEvent(cmd.data));
       }
       //#command-handler
 
       //#event-handler
       @Override
-      public EventHandler<SimpleEvent, SimpleState> eventHandler() {
+      public EventHandler<SimpleState, SimpleEvent> eventHandler() {
         return (state, event) -> state.addEvent(event);
       }
       //#event-handler
+
+      //#install-event-adapter
+      @Override
+      public EventAdapter<SimpleEvent, Wrapper<SimpleEvent>> eventAdapter() {
+        return new EventAdapterExample();
+      }
+      //#install-event-adapter
     };
+
     //#behavior
   }
 
@@ -113,22 +152,33 @@ public class PersistentActorCompileOnlyTest {
       private List<String> events = new ArrayList<>();
     }
 
+    //#commonChainedEffects
+    // Factored out Chained effect
+    static final SideEffect<ExampleState>  commonChainedEffect = SideEffect.create(s -> System.out.println("Command handled!"));
+
+    //#commonChainedEffects
+
     private PersistentBehavior<MyCommand, MyEvent, ExampleState> pa = new PersistentBehavior<MyCommand, MyEvent, ExampleState>("pa") {
       @Override
-      public ExampleState initialState() {
+      public ExampleState emptyState() {
         return new ExampleState();
       }
 
       @Override
       public CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler() {
-        return commandHandlerBuilder()
-          .matchCommand(Cmd.class, (ctx, state, cmd) -> Effect().persist(new Evt(cmd.data))
-            .andThen(() -> cmd.sender.tell(new Ack())))
-          .build();
+
+     //#commonChainedEffects
+     return commandHandlerBuilder(ExampleState.class)
+       .matchCommand(Cmd.class, (state, cmd) -> Effect().persist(new Evt(cmd.data))
+         .andThen(() -> cmd.sender.tell(new Ack()))
+         .andThen(commonChainedEffect)
+       )
+       .build();
+     //#commonChainedEffects
       }
 
       @Override
-      public EventHandler<MyEvent, ExampleState> eventHandler() {
+      public EventHandler<ExampleState, MyEvent> eventHandler() {
         return eventHandlerBuilder()
           .matchEvent(Evt.class, (state, event) -> {
             state.events.add(event.data);
@@ -218,28 +268,42 @@ public class PersistentActorCompileOnlyTest {
         .thenAccept(sender::tell);
     }
 
+    // #actor-context
+    public Behavior<Command> behavior(String persistenceId) {
+      return Behaviors.setup(ctx -> new MyPersistentBehavior(persistenceId, ctx));
+    }
+
+    // #actor-context
+
+    // #actor-context
     class MyPersistentBehavior extends PersistentBehavior<Command, Event, RecoveryComplete.EventsInFlight> {
-      public MyPersistentBehavior(String persistenceId) {
+
+      // this makes the context available to the command handler etc.
+      private final ActorContext<Command> ctx;
+
+      public MyPersistentBehavior(String persistenceId, ActorContext<Command> ctx) {
         super(persistenceId);
+        this.ctx = ctx;
       }
+      // #actor-context
 
       @Override
-      public EventsInFlight initialState() {
+      public EventsInFlight emptyState() {
         return new EventsInFlight(0, Collections.emptyMap());
       }
 
       @Override
       public CommandHandler<Command, Event, EventsInFlight> commandHandler() {
-        return commandHandlerBuilder()
+        return commandHandlerBuilder(EventsInFlight.class)
           .matchCommand(DoSideEffect.class,
-            (ctx, state, cmd) -> Effect().persist(new IntentRecord(state.nextCorrelationId, cmd.data))
+            (state, cmd) -> Effect().persist(new IntentRecord(state.nextCorrelationId, cmd.data))
               .andThen(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data, ctx.getSystem().scheduler())))
-          .matchCommand(AcknowledgeSideEffect.class, (ctx, state, command) -> Effect().persist(new SideEffectAcknowledged(command.correlationId)))
+          .matchCommand(AcknowledgeSideEffect.class, (state, command) -> Effect().persist(new SideEffectAcknowledged(command.correlationId)))
           .build();
       }
 
       @Override
-      public EventHandler<Event, EventsInFlight> eventHandler() {
+      public EventHandler<EventsInFlight, Event> eventHandler() {
         return eventHandlerBuilder()
           .matchEvent(IntentRecord.class, (state, event) -> {
             int nextCorrelationId = event.correlationId;
@@ -256,4 +320,5 @@ public class PersistentActorCompileOnlyTest {
       }
     }
   }
+
 }

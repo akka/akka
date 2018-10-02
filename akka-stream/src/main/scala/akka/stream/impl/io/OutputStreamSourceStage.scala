@@ -37,7 +37,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
   override val shape: SourceShape[ByteString] = SourceShape.of(out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, OutputStream) = {
-    val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+    val maxBuffer = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max
 
     require(maxBuffer > 0, "Buffer size must be greater than 0")
 
@@ -50,7 +50,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
       var close: Option[Promise[Unit]] = None
 
       private var dispatcher: ExecutionContext = null // set in preStart
-      private var blockingThread: Thread = null // for postStop interrupt
+      private val blockingThreadRef: AtomicReference[Thread] = new AtomicReference() // for postStop interrupt
 
       private val downstreamCallback: AsyncCallback[Try[ByteString]] =
         getAsyncCallback {
@@ -114,8 +114,9 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
         override def onPull(): Unit = {
           implicit val ec = dispatcher
           Future {
+            val currentThread = Thread.currentThread()
             // keep track of the thread for postStop interrupt
-            blockingThread = Thread.currentThread()
+            blockingThreadRef.compareAndSet(null, currentThread)
             try {
               dataQueue.take()
             } catch {
@@ -123,7 +124,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
                 Thread.interrupted()
                 ByteString.empty
             } finally {
-              blockingThread = null
+              blockingThreadRef.compareAndSet(currentThread, null);
             }
           }.onComplete(downstreamCallback.invoke)
         }
@@ -136,6 +137,7 @@ final private[stream] class OutputStreamSourceStage(writeTimeout: FiniteDuration
         // if blocked reading, make sure the take() completes
         dataQueue.put(ByteString.empty)
         // interrupt any pending blocking take
+        val blockingThread = blockingThreadRef.get()
         if (blockingThread != null)
           blockingThread.interrupt()
         super.postStop()

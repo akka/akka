@@ -6,6 +6,7 @@ package akka.pattern
 
 import akka.actor._
 import akka.testkit._
+import org.scalatest.concurrent.Eventually
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
 import scala.concurrent.duration._
@@ -42,11 +43,11 @@ object BackoffSupervisorSpec {
   }
 }
 
-class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
+class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually {
   import BackoffSupervisorSpec._
 
-  def onStopOptions(props: Props = Child.props(testActor)) = Backoff.onStop(props, "c1", 100.millis, 3.seconds, 0.2)
-  def onFailureOptions(props: Props = Child.props(testActor)) = Backoff.onFailure(props, "c1", 100.millis, 3.seconds, 0.2)
+  def onStopOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) = Backoff.onStop(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
+  def onFailureOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) = Backoff.onFailure(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
   def create(options: BackoffOptions) = system.actorOf(BackoffSupervisor.props(options))
 
   "BackoffSupervisor" must {
@@ -178,7 +179,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
 
     "reply to sender if replyWhileStopped is specified" in {
       filterException[TestException] {
-        val supervisor = create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2).withReplyWhileStopped("child was stopped"))
+        val supervisor = create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1).withReplyWhileStopped("child was stopped"))
         supervisor ! BackoffSupervisor.GetCurrentChild
         val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
         watch(c1)
@@ -200,7 +201,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
 
     "not reply to sender if replyWhileStopped is NOT specified" in {
       filterException[TestException] {
-        val supervisor = create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2))
+        val supervisor = create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1))
         supervisor ! BackoffSupervisor.GetCurrentChild
         val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
         watch(c1)
@@ -240,6 +241,97 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender {
 
         val calculatedValue = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
         assert(calculatedValue === expectedResult)
+      }
+    }
+
+    "stop restarting the child after reaching maxNrOfRetries limit (Backoff.onStop)" in {
+      val supervisor = create(onStopOptions(maxNrOfRetries = 2))
+      def waitForChild: Option[ActorRef] = {
+        eventually(timeout(1.second), interval(50.millis)) {
+          supervisor ! BackoffSupervisor.GetCurrentChild
+          val c = expectMsgType[BackoffSupervisor.CurrentChild].ref
+          c.isDefined shouldBe true
+        }
+
+        supervisor ! BackoffSupervisor.GetCurrentChild
+        expectMsgType[BackoffSupervisor.CurrentChild].ref
+      }
+
+      watch(supervisor)
+
+      supervisor ! BackoffSupervisor.GetRestartCount
+      expectMsg(BackoffSupervisor.RestartCount(0))
+
+      supervisor ! BackoffSupervisor.GetCurrentChild
+      val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
+      watch(c1)
+      c1 ! PoisonPill
+      expectTerminated(c1)
+
+      supervisor ! BackoffSupervisor.GetRestartCount
+      expectMsg(BackoffSupervisor.RestartCount(1))
+
+      val c2 = waitForChild.get
+      awaitAssert(c2 should !==(c1))
+      watch(c2)
+      c2 ! PoisonPill
+      expectTerminated(c2)
+
+      supervisor ! BackoffSupervisor.GetRestartCount
+      expectMsg(BackoffSupervisor.RestartCount(2))
+
+      val c3 = waitForChild.get
+      awaitAssert(c3 should !==(c2))
+      watch(c3)
+      c3 ! PoisonPill
+      expectTerminated(c3)
+      expectTerminated(supervisor)
+    }
+
+    "stop restarting the child after reaching maxNrOfRetries limit (Backoff.onFailure)" in {
+      filterException[TestException] {
+        val supervisor = create(onFailureOptions(maxNrOfRetries = 2))
+
+        def waitForChild: Option[ActorRef] = {
+          eventually(timeout(1.second), interval(50.millis)) {
+            supervisor ! BackoffSupervisor.GetCurrentChild
+            val c = expectMsgType[BackoffSupervisor.CurrentChild].ref
+            c.isDefined shouldBe true
+          }
+
+          supervisor ! BackoffSupervisor.GetCurrentChild
+          expectMsgType[BackoffSupervisor.CurrentChild].ref
+        }
+
+        watch(supervisor)
+
+        supervisor ! BackoffSupervisor.GetRestartCount
+        expectMsg(BackoffSupervisor.RestartCount(0))
+
+        supervisor ! BackoffSupervisor.GetCurrentChild
+        val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
+        watch(c1)
+        c1 ! "boom"
+        expectTerminated(c1)
+
+        supervisor ! BackoffSupervisor.GetRestartCount
+        expectMsg(BackoffSupervisor.RestartCount(1))
+
+        val c2 = waitForChild.get
+        awaitAssert(c2 should !==(c1))
+        watch(c2)
+        c2 ! "boom"
+        expectTerminated(c2)
+
+        supervisor ! BackoffSupervisor.GetRestartCount
+        expectMsg(BackoffSupervisor.RestartCount(2))
+
+        val c3 = waitForChild.get
+        awaitAssert(c3 should !==(c2))
+        watch(c3)
+        c3 ! "boom"
+        expectTerminated(c3)
+        expectTerminated(supervisor)
       }
     }
   }

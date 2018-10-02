@@ -21,12 +21,12 @@ object RemoteDeploymentWhitelistSpec {
       case x             ⇒ target = sender(); sender() ! x
     }
 
-    override def preStart() {}
-    override def preRestart(cause: Throwable, msg: Option[Any]) {
+    override def preStart(): Unit = {}
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
       target ! "preRestart"
     }
-    override def postRestart(cause: Throwable) {}
-    override def postStop() {
+    override def postRestart(cause: Throwable): Unit = {}
+    override def postStop(): Unit = {
       target ! "postStop"
     }
   }
@@ -39,12 +39,12 @@ object RemoteDeploymentWhitelistSpec {
       case x             ⇒ target = sender(); sender() ! x
     }
 
-    override def preStart() {}
-    override def preRestart(cause: Throwable, msg: Option[Any]) {
+    override def preStart(): Unit = {}
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
       target ! "preRestart"
     }
-    override def postRestart(cause: Throwable) {}
-    override def postStop() {
+    override def postRestart(cause: Throwable): Unit = {}
+    override def postStop(): Unit = {
       target ! "postStop"
     }
   }
@@ -81,7 +81,7 @@ object RemoteDeploymentWhitelistSpec {
     }
   """)
 
-  def muteSystem(system: ActorSystem) {
+  def muteSystem(system: ActorSystem): Unit = {
     system.eventStream.publish(TestEvent.Mute(
       EventFilter.error(start = "AssociationError"),
       EventFilter.warning(start = "AssociationError"),
@@ -121,7 +121,7 @@ class RemoteDeploymentWhitelistSpec extends AkkaSpec(RemoteDeploymentWhitelistSp
       EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
   }
 
-  override def afterTermination() {
+  override def afterTermination(): Unit = {
     shutdown(remoteSystem)
     AssociationRegistry.clear()
   }

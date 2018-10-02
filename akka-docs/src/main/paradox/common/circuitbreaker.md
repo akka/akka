@@ -72,13 +72,11 @@ Here's how a `CircuitBreaker` would be configured for:
 * a reset timeout of 1 minute
 
 
-#### Scala
+Scala
+:  @@snip [CircuitBreakerDocSpec.scala](/akka-docs/src/test/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #imports1 #circuit-breaker-initialization }
 
-@@snip [CircuitBreakerDocSpec.scala]($code$/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #imports1 #circuit-breaker-initialization }
-
-#### Java
-
-@@snip [DangerousJavaActor.java]($code$/java/jdocs/circuitbreaker/DangerousJavaActor.java) { #imports1 #circuit-breaker-initialization }
+Java
+:  @@snip [DangerousJavaActor.java](/akka-docs/src/test/java/jdocs/circuitbreaker/DangerousJavaActor.java) { #imports1 #circuit-breaker-initialization }
 
 ### Future & Synchronous based API
 
@@ -86,17 +84,15 @@ Once a circuit breaker actor has been initialized, interacting with that actor i
 
 The Synchronous API would also wrap your call with the circuit breaker logic, however, it uses the `withSyncCircuitBreaker` and receives a method that is not wrapped in a `Future`.
 
-#### Scala
+Scala
+: @@snip [CircuitBreakerDocSpec.scala](/akka-docs/src/test/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #circuit-breaker-usage }
 
-@@snip [CircuitBreakerDocSpec.scala]($code$/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #circuit-breaker-usage }
-
-#### Java
-
-@@snip [DangerousJavaActor.java]($code$/java/jdocs/circuitbreaker/DangerousJavaActor.java) { #circuit-breaker-usage }
+Java
+:  @@snip [DangerousJavaActor.java](/akka-docs/src/test/java/jdocs/circuitbreaker/DangerousJavaActor.java) { #circuit-breaker-usage }
 
 @@@ note
 
-Using the `CircuitBreaker` companion object's *apply* or *create* methods
+Using the `CircuitBreaker` companion object's @scala[*apply*]@java[*create*] method
 will return a `CircuitBreaker` where callbacks are executed in the caller's thread.
 This can be useful if the asynchronous `Future` behavior is unnecessary, for
 example invoking a synchronous-only API.
@@ -119,22 +115,16 @@ Akka circuit breaker provides a way to achieve such use case:
 
 All methods above accepts an argument `defineFailureFn`
 
-#### Scala
+Type of `defineFailureFn`: @scala[`Try[T] ⇒ Boolean`]@java[`BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]`]
 
-Type of `defineFailureFn`: `Try[T] ⇒ Boolean`
+@scala[This is a function which takes in a `Try[T]` and returns a `Boolean`. The `Try[T]` correspond to the `Future[T]` of the protected call.]
+@java[The response of a protected call is modelled using `Optional[T]` for a successful return value and `Optional[Throwable]` for exceptions.] This function should return `true` if the call should increase failure count, else false.
 
-This is a function which takes in a `Try[T]` and return a `Boolean`. The `Try[T]` correspond to the `Future[T]` of the protected call. This function should return `true` if the call should increase failure count, else false.
+Scala
+:  @@snip [CircuitBreakerDocSpec.scala](/akka-docs/src/test/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #even-no-as-failure }
 
-@@snip [CircuitBreakerDocSpec.scala]($code$/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #even-no-as-failure }
-
-#### Java
-
-Type of `defineFailureFn`:  `BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]`
-
-For Java Api, the signature is a bit different as there's no `Try` in Java, so the response of protected call is modelled using `Optional[T]` for succeeded return value and `Optional[Throwable]` for exception, and the rules of return type is the same.
-Ie. this function should return `true` if the call should increase failure count, else false.
-
-@@snip [EvenNoFailureJavaExample.java]($code$/java/jdocs/circuitbreaker/EvenNoFailureJavaExample.java) { #even-no-as-failure }
+Java
+:  @@snip [EvenNoFailureJavaExample.java](/akka-docs/src/test/java/jdocs/circuitbreaker/EvenNoFailureJavaExample.java) { #even-no-as-failure }
 
 ### Low level API
 
@@ -144,14 +134,12 @@ As can be seen in the examples below, a `Tell Protection` pattern could be imple
 
 @@@ note
 
-The below examples doesn't make a remote call when the state is *HalfOpen*. Using the power-user APIs, it is your responsibility to judge when to make remote calls in *HalfOpen*.
+The below example doesn't make a remote call when the state is *HalfOpen*. Using the power-user APIs, it is your responsibility to judge when to make remote calls in *HalfOpen*.
 
 @@@
 
-#### Scala
+Scala
+:  @@snip [CircuitBreakerDocSpec.scala](/akka-docs/src/test/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #circuit-breaker-tell-pattern }
 
-@@snip [CircuitBreakerDocSpec.scala]($code$/scala/docs/circuitbreaker/CircuitBreakerDocSpec.scala) { #circuit-breaker-tell-pattern }
-
-#### Java
-
-@@snip [TellPatternJavaActor.java]($code$/java/jdocs/circuitbreaker/TellPatternJavaActor.java) { #circuit-breaker-tell-pattern }
+Java
+:  @@snip [TellPatternJavaActor.java](/akka-docs/src/test/java/jdocs/circuitbreaker/TellPatternJavaActor.java) { #circuit-breaker-tell-pattern }

@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import java.io.File
@@ -106,12 +107,12 @@ abstract class ClusterShardingLeavingSpec(config: ClusterShardingLeavingSpecConf
   val storageLocations = List(new File(system.settings.config.getString(
     "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
-  override protected def atStartup() {
+  override protected def atStartup(): Unit = {
     storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
   }
 
-  override protected def afterTermination() {
+  override protected def afterTermination(): Unit = {
     storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 

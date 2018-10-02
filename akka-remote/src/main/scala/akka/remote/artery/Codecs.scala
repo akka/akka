@@ -14,7 +14,7 @@ import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
 import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.artery.compress._
 import akka.remote.{ MessageSerializer, OversizedPayloadException, RemoteActorRefProvider, UniqueAddress }
-import akka.serialization.{ Serialization, SerializationExtension }
+import akka.serialization.{ Serialization, SerializationExtension, Serializers }
 import akka.stream._
 import akka.stream.stage._
 import akka.util.{ OptionVal, Unsafe }
@@ -23,7 +23,6 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 import akka.remote.artery.OutboundHandshake.HandshakeReq
-import akka.serialization.SerializerWithStringManifest
 
 /**
  * INTERNAL API
@@ -58,10 +57,9 @@ private[remote] class Encoder(
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging with OutboundCompressionAccess {
 
       private val headerBuilder = HeaderBuilder.out()
-      headerBuilder setVersion version
-      headerBuilder setUid uniqueLocalAddress.uid
+      headerBuilder.setVersion(version)
+      headerBuilder.setUid(uniqueLocalAddress.uid)
       private val localAddress = uniqueLocalAddress.address
-      private val serializationInfo = Serialization.Information(localAddress, system)
 
       // lazy init of SerializationExtension to avoid loading serializers before ActorRefProvider has been initialized
       private var _serialization: OptionVal[Serialization] = OptionVal.None
@@ -105,34 +103,34 @@ private[remote] class Encoder(
         // without depending on compression tables being in sync when systems are restarted
         headerBuilder.useOutboundCompression(!outboundEnvelope.message.isInstanceOf[ArteryMessage])
 
-        // internally compression is applied by the builder:
-        outboundEnvelope.recipient match {
-          case OptionVal.Some(r) ⇒ headerBuilder setRecipientActorRef r
-          case OptionVal.None    ⇒ headerBuilder.setNoRecipient()
-        }
-
+        // Important to set Serialization.currentTransportInformation because setRecipientActorRef
+        // and setSenderActorRef are using using Serialization.serializedActorPath.
+        // Avoiding currentTransportInformation.withValue due to thunk allocation.
+        val oldInfo = Serialization.currentTransportInformation.value
         try {
-          // avoiding currentTransportInformation.withValue due to thunk allocation
-          val oldValue = Serialization.currentTransportInformation.value
-          try {
-            Serialization.currentTransportInformation.value = serializationInfo
+          Serialization.currentTransportInformation.value = serialization.serializationInformation
 
-            outboundEnvelope.sender match {
-              case OptionVal.None    ⇒ headerBuilder.setNoSender()
-              case OptionVal.Some(s) ⇒ headerBuilder setSenderActorRef s
-            }
+          // internally compression is applied by the builder:
+          outboundEnvelope.recipient match {
+            case OptionVal.Some(r) ⇒ headerBuilder.setRecipientActorRef(r)
+            case OptionVal.None    ⇒ headerBuilder.setNoRecipient()
+          }
 
-            val startTime: Long = if (instruments.timeSerialization) System.nanoTime else 0
-            if (instruments.nonEmpty)
-              headerBuilder.setRemoteInstruments(instruments)
+          outboundEnvelope.sender match {
+            case OptionVal.None    ⇒ headerBuilder.setNoSender()
+            case OptionVal.Some(s) ⇒ headerBuilder.setSenderActorRef(s)
+          }
 
-            MessageSerializer.serializeForArtery(serialization, outboundEnvelope, headerBuilder, envelope)
+          val startTime: Long = if (instruments.timeSerialization) System.nanoTime else 0
+          if (instruments.nonEmpty)
+            headerBuilder.setRemoteInstruments(instruments)
 
-            if (instruments.nonEmpty) {
-              val time = if (instruments.timeSerialization) System.nanoTime - startTime else 0
-              instruments.messageSent(outboundEnvelope, envelope.byteBuffer.position(), time)
-            }
-          } finally Serialization.currentTransportInformation.value = oldValue
+          MessageSerializer.serializeForArtery(serialization, outboundEnvelope, headerBuilder, envelope)
+
+          if (instruments.nonEmpty) {
+            val time = if (instruments.timeSerialization) System.nanoTime - startTime else 0
+            instruments.messageSent(outboundEnvelope, envelope.byteBuffer.position(), time)
+          }
 
           envelope.byteBuffer.flip()
 
@@ -163,6 +161,7 @@ private[remote] class Encoder(
                 pull(in)
             }
         } finally {
+          Serialization.currentTransportInformation.value = oldInfo
           outboundEnvelope match {
             case r: ReusableOutboundEnvelope ⇒ outboundEnvelopePool.release(r)
             case _                           ⇒ // no need to release it
@@ -208,15 +207,15 @@ private[remote] object Decoder {
 
   private object Tick
 
-  /** Materialized value of [[Encoder]] which allows safely calling into the stage to interfact with compression tables. */
+  /** Materialized value of [[Encoder]] which allows safely calling into the operator to interfact with compression tables. */
   private[remote] trait InboundCompressionAccess {
     def confirmActorRefCompressionAdvertisementAck(ack: ActorRefCompressionAdvertisementAck): Future[Done]
     def confirmClassManifestCompressionAdvertisementAck(ack: ClassManifestCompressionAdvertisementAck): Future[Done]
     def closeCompressionFor(originUid: Long): Future[Done]
 
-    /** For testing purposes, usually triggered by timer from within Decoder stage. */
+    /** For testing purposes, usually triggered by timer from within Decoder operator. */
     def runNextActorRefAdvertisement(): Unit
-    /** For testing purposes, usually triggered by timer from within Decoder stage. */
+    /** For testing purposes, usually triggered by timer from within Decoder operator. */
     def runNextClassManifestAdvertisement(): Unit
     /** For testing purposes */
     def currentCompressionOriginUids: Future[Set[Long]]
@@ -643,7 +642,7 @@ private[remote] class Deserializer(
 /**
  * INTERNAL API: The HandshakeReq message must be passed in each inbound lane to
  * ensure that it arrives before any application message. Otherwise there is a risk
- * that an application message arrives in the InboundHandshake stage before the
+ * that an application message arrives in the InboundHandshake operator before the
  * handshake is completed and then it would be dropped.
  */
 private[remote] class DuplicateHandshakeReq(
@@ -674,11 +673,7 @@ private[remote] class DuplicateHandshakeReq(
         if (_serializerId == -1) {
           val serialization = SerializationExtension(system)
           val ser = serialization.serializerFor(classOf[HandshakeReq])
-          _manifest = ser match {
-            case s: SerializerWithStringManifest ⇒
-              s.manifest(HandshakeReq(inboundContext.localAddress, inboundContext.localAddress.address))
-            case _ ⇒ ""
-          }
+          _manifest = Serializers.manifestFor(ser, HandshakeReq(inboundContext.localAddress, inboundContext.localAddress.address))
           _serializerId = ser.identifier
         }
       }

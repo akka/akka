@@ -556,7 +556,8 @@ private[remote] class EndpointWriter(
   var lastAck: Option[Ack] = None
 
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
-    case NonFatal(e) ⇒ publishAndThrow(e, Logging.ErrorLevel)
+    case e: ShutDownAssociation ⇒ publishAndThrow(e, Logging.InfoLevel)
+    case NonFatal(e)            ⇒ publishAndThrow(e, Logging.ErrorLevel)
   }
 
   val provider = RARP(extendedSystem).provider
@@ -817,6 +818,9 @@ private[remote] class EndpointWriter(
     case e: NotSerializableException ⇒
       log.error(e, "Serializer not defined for message type [{}]. Transient association error (association remains live)", s.message.getClass)
       true
+    case e: IllegalArgumentException ⇒
+      log.error(e, "Serializer not defined for message type [{}]. Transient association error (association remains live)", s.message.getClass)
+      true
     case e: MessageSerializer.SerializationException ⇒
       log.error(e, "{} Transient association error (association remains live)", e.getMessage)
       true
@@ -994,14 +998,8 @@ private[remote] class EndpointReader(
           } else try
             msgDispatch.dispatch(msg.recipient, msg.recipientAddress, msg.serializedMessage, msg.senderOption)
           catch {
-            case e: NotSerializableException ⇒
-              val sm = msg.serializedMessage
-              log.warning(
-                "Serializer not defined for message with serializer id [{}] and manifest [{}]. " +
-                  "Transient association error (association remains live). {}",
-                sm.getSerializerId,
-                if (sm.hasMessageManifest) sm.getMessageManifest.toStringUtf8 else "",
-                e.getMessage)
+            case e: NotSerializableException ⇒ logTransientSerializationError(msg, e)
+            case e: IllegalArgumentException ⇒ logTransientSerializationError(msg, e)
           }
 
         case None ⇒
@@ -1020,15 +1018,36 @@ private[remote] class EndpointReader(
 
   }
 
+  private def logTransientSerializationError(msg: AkkaPduCodec.Message, error: Exception): Unit = {
+    val sm = msg.serializedMessage
+    log.warning(
+      "Serializer not defined for message with serializer id [{}] and manifest [{}]. " +
+        "Transient association error (association remains live). {}",
+      sm.getSerializerId,
+      if (sm.hasMessageManifest) sm.getMessageManifest.toStringUtf8 else "",
+      error.getMessage)
+  }
+
   def notReading: Receive = {
     case Disassociated(info) ⇒ handleDisassociated(info)
 
     case StopReading(writer, replyTo) ⇒
       replyTo ! StoppedReading(writer)
 
-    case InboundPayload(p) ⇒
-      val (ackOption, _) = tryDecodeMessageAndAck(p)
+    case InboundPayload(p) if p.size <= transport.maximumPayloadBytes ⇒
+      val (ackOption, msgOption) = tryDecodeMessageAndAck(p)
       for (ack ← ackOption; reliableDelivery ← reliableDeliverySupervisor) reliableDelivery ! ack
+
+      if (log.isWarningEnabled)
+        log.warning("Discarding inbound message to [{}] in read-only association to [{}]. " +
+          "If this happens often you may consider using akka.remote.use-passive-connections=off " +
+          "or use Artery TCP.", msgOption.map(_.recipient).getOrElse("unknown"), remoteAddress)
+
+    case InboundPayload(oversized) ⇒
+      log.error(
+        new OversizedPayloadException(s"Discarding oversized payload received in read-only association: " +
+          s"max allowed size [${transport.maximumPayloadBytes}] bytes, actual size [${oversized.size}] bytes."),
+        "Transient error while reading from association (association remains live)")
 
     case _ ⇒
   }

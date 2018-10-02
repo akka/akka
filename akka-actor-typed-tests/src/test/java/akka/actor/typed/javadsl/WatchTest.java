@@ -8,15 +8,17 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import akka.Done;
-import akka.testkit.typed.javadsl.TestKitJunitResource;
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import org.junit.ClassRule;
 import org.scalatest.junit.JUnitSuite;
-import scala.concurrent.duration.Duration;
 import akka.util.Timeout;
 import org.junit.Test;
 
 import akka.actor.typed.*;
 
+import java.time.Duration;
+
+import static akka.Done.done;
 import static akka.actor.typed.javadsl.Behaviors.*;
 
 public class WatchTest extends JUnitSuite {
@@ -40,8 +42,7 @@ public class WatchTest extends JUnitSuite {
   static final class CustomTerminationMessage implements Message {
   }
 
-  // final FiniteDuration fiveSeconds = FiniteDuration.create(5, TimeUnit.SECONDS);
-  final Timeout timeout = new Timeout(Duration.create(5, TimeUnit.SECONDS));
+  final Timeout timeout = Timeout.create(Duration.ofSeconds(5));
 
   final Behavior<Stop> exitingActor = receive((ctx, msg) -> {
     System.out.println("Stopping!");
@@ -53,7 +54,7 @@ public class WatchTest extends JUnitSuite {
       (ctx, msg) -> unhandled(),
       (ctx, sig) -> {
         if (sig instanceof Terminated) {
-          replyWhenTerminated.tell(Done.getInstance());
+          replyWhenTerminated.tell(done());
         }
         return same();
       }
@@ -64,7 +65,7 @@ public class WatchTest extends JUnitSuite {
     return receive(
       (ctx, msg) -> {
         if (msg instanceof CustomTerminationMessage) {
-          replyWhenReceived.tell(Done.getInstance());
+          replyWhenReceived.tell(done());
           return same();
         } else {
           return unhandled();

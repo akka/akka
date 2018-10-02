@@ -27,7 +27,7 @@ object QueueOfferResult {
   final case object Dropped extends QueueOfferResult
 
   /**
-   * Java API: The `Enqueued` singleton instance
+   * Java API: The `Dropped` singleton instance
    */
   def dropped: QueueOfferResult = Dropped
 

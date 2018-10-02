@@ -98,7 +98,7 @@ class LevelDbBatchingBenchmark {
 
   // TOOLS
 
-  private def deleteStorage(sys: ActorSystem) {
+  private def deleteStorage(sys: ActorSystem): Unit = {
     val storageLocations = List(
       "akka.persistence.journal.leveldb.dir",
       "akka.persistence.journal.leveldb-shared.store.dir",

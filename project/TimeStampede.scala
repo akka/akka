@@ -23,7 +23,7 @@ object TimeStampede extends AutoPlugin {
 
   def stampVersion = Command.command("stampVersion") { state ⇒
     val extracted = Project.extract(state)
-    extracted.append(List(version in ThisBuild ~= stamp), state)
+    extracted.appendWithSession(List(version in ThisBuild ~= stamp), state)
   }
 
   def stamp(version: String): String = {

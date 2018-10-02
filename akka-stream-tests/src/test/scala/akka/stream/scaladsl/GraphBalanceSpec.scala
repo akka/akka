@@ -11,6 +11,7 @@ import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class GraphBalanceSpec extends StreamSpec {
 
@@ -229,7 +230,7 @@ class GraphBalanceSpec extends StreamSpec {
       c1.expectComplete()
     }
 
-    "cancel upstream when downstreams cancel" in assertAllStagesStopped {
+    "cancel upstream when all downstreams cancel if eagerCancel is false" in assertAllStagesStopped {
       val p1 = TestPublisher.manualProbe[Int]()
       val c1 = TestSubscriber.manualProbe[Int]()
       val c2 = TestSubscriber.manualProbe[Int]()
@@ -257,6 +258,36 @@ class GraphBalanceSpec extends StreamSpec {
 
       sub1.cancel()
       sub2.cancel()
+      bsub.expectCancellation()
+    }
+
+    "cancel upstream when any downstream cancel if eagerCancel is true" in assertAllStagesStopped {
+      val p1 = TestPublisher.manualProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
+
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+        val balance = b.add(new Balance[Int](2, waitForAllDownstreams = false, eagerCancel = true))
+        Source.fromPublisher(p1.getPublisher) ~> balance.in
+        balance.out(0) ~> Sink.fromSubscriber(c1)
+        balance.out(1) ~> Sink.fromSubscriber(c2)
+        ClosedShape
+      }).run()
+
+      val bsub = p1.expectSubscription()
+      val sub1 = c1.expectSubscription()
+      val sub2 = c2.expectSubscription()
+
+      sub1.request(1)
+      p1.expectRequest(bsub, 16)
+      bsub.sendNext(1)
+      c1.expectNext(1)
+
+      sub2.request(1)
+      bsub.sendNext(2)
+      c2.expectNext(2)
+
+      sub1.cancel()
       bsub.expectCancellation()
     }
 
@@ -288,6 +319,44 @@ class GraphBalanceSpec extends StreamSpec {
       bsub.sendNext(2)
 
       sub1.cancel()
+      bsub.expectCancellation()
+    }
+
+    // Bug #25387
+    "not dequeue from empty outlet buffer" in assertAllStagesStopped {
+      val p1 = TestPublisher.manualProbe[Int]()
+      val c1 = TestSubscriber.manualProbe[Int]()
+      val c2 = TestSubscriber.manualProbe[Int]()
+      val c3 = TestSubscriber.manualProbe[Int]()
+
+      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
+        val balance = b.add(Balance[Int](3))
+        Source.fromPublisher(p1.getPublisher) ~> balance.in
+        balance.out(0) ~> Sink.fromSubscriber(c1)
+        balance.out(1) ~> Sink.fromSubscriber(c2)
+        balance.out(2) ~> Sink.fromSubscriber(c3)
+
+        ClosedShape
+      }).run()
+
+      val bsub = p1.expectSubscription()
+      val sub1 = c1.expectSubscription()
+      val sub2 = c2.expectSubscription()
+      val sub3 = c3.expectSubscription()
+
+      sub1.request(1)
+      sub1.cancel()
+      sub2.request(1)
+      sub2.cancel()
+
+      p1.expectRequest(bsub, 16)
+      bsub.sendNext(1)
+
+      sub3.request(1)
+      c3.expectNext(1)
+
+      sub3.cancel()
+
       bsub.expectCancellation()
     }
   }

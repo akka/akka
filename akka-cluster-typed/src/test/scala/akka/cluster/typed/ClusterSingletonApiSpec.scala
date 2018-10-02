@@ -9,13 +9,16 @@ import java.nio.charset.StandardCharsets
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.typed.TestKitSettings
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-import akka.actor.typed.{ ActorRef, ActorRefResolver, Props, TypedAkkaSpecWithShutdown }
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.{ ActorRef, ActorRefResolver, Props }
 import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 object ClusterSingletonApiSpec {
 
@@ -86,10 +89,8 @@ object ClusterSingletonApiSpec {
   }
 }
 
-class ClusterSingletonApiSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class ClusterSingletonApiSpec extends ScalaTestWithActorTestKit(ClusterSingletonApiSpec.config) with WordSpecLike {
   import ClusterSingletonApiSpec._
-
-  override def config = ClusterSingletonApiSpec.config
 
   implicit val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)

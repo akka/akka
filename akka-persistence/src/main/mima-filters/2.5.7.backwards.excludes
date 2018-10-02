@@ -2,4 +2,5 @@
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Eventsourced.akka$persistence$Eventsourced$$super$stash")
 
 # #24076 PersistentActor with Timers
-ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.AbstractPersistentActorLike.createReceiveRecover")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.AbstractPersistentActor.createReceiveRecover")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.AbstractPersistentActorWithAtLeastOnceDelivery.createReceiveRecover")

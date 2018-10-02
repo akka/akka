@@ -5,7 +5,7 @@
 package akka.stream
 
 /**
- * Represents a mode that decides how to deal exceed rate for Throttle combinator
+ * Represents a mode that decides how to deal exceed rate for Throttle operator
  */
 sealed abstract class ThrottleMode
 

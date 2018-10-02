@@ -7,10 +7,10 @@ package akka.actor.dungeon
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.collection.immutable
+
 import akka.actor._
-import akka.serialization.SerializationExtension
-import akka.util.{ Unsafe, Helpers }
-import akka.serialization.SerializerWithStringManifest
+import akka.serialization.{ Serialization, SerializationExtension, Serializers }
+import akka.util.{ Helpers, Unsafe }
 import java.util.Optional
 
 private[akka] object Children {
@@ -242,27 +242,27 @@ private[akka] trait Children { this: ActorCell ⇒
   }
 
   private def makeChild(cell: ActorCell, props: Props, name: String, async: Boolean, systemService: Boolean): ActorRef = {
-    if (cell.system.settings.SerializeAllCreators && !systemService && props.deploy.scope != LocalScope)
+    if (cell.system.settings.SerializeAllCreators && !systemService && props.deploy.scope != LocalScope) {
+      val oldInfo = Serialization.currentTransportInformation.value
       try {
         val ser = SerializationExtension(cell.system)
+        if (oldInfo eq null)
+          Serialization.currentTransportInformation.value = system.provider.serializationInformation
+
         props.args forall (arg ⇒
           arg == null ||
-            arg.isInstanceOf[NoSerializationVerificationNeeded] ||
-            {
+            arg.isInstanceOf[NoSerializationVerificationNeeded] || {
               val o = arg.asInstanceOf[AnyRef]
               val serializer = ser.findSerializerFor(o)
               val bytes = serializer.toBinary(o)
-              serializer match {
-                case ser2: SerializerWithStringManifest ⇒
-                  val manifest = ser2.manifest(o)
-                  ser.deserialize(bytes, serializer.identifier, manifest).get != null
-                case _ ⇒
-                  ser.deserialize(bytes, arg.getClass).get != null
-              }
+              val ms = Serializers.manifestFor(serializer, o)
+              ser.deserialize(bytes, serializer.identifier, ms).get != null
             })
       } catch {
         case NonFatal(e) ⇒ throw new IllegalArgumentException(s"pre-creation serialization check failed at [${cell.self.path}/$name]", e)
-      }
+      } finally Serialization.currentTransportInformation.value = oldInfo
+    }
+
     /*
      * in case we are currently terminating, fail external attachChild requests
      * (internal calls cannot happen anyway because we are suspended)

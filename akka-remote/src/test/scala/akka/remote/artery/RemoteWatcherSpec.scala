@@ -55,7 +55,7 @@ object RemoteWatcherSpec {
       // that doesn't interfere with the real watch that is going on in the background
       context.system.eventStream.publish(TestRemoteWatcher.AddressTerm(address))
 
-    override def quarantine(address: Address, uid: Option[Long], reason: String): Unit = {
+    override def quarantine(address: Address, uid: Option[Long], reason: String, harmless: Boolean): Unit = {
       // don't quarantine in remoting, but publish a testable message
       context.system.eventStream.publish(TestRemoteWatcher.Quarantined(address, uid))
     }
@@ -79,7 +79,7 @@ class RemoteWatcherSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultCon
     akka.remote.transport.AssociationHandle.Disassociated.getClass,
     akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
 
-  override def afterTermination() {
+  override def afterTermination(): Unit = {
     shutdown(remoteSystem)
     super.afterTermination()
   }

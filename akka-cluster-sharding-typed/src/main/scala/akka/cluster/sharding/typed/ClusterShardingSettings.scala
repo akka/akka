@@ -4,16 +4,18 @@
 
 package akka.cluster.sharding.typed
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
+import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.{ ClusterShardingSettings ⇒ UntypedShardingSettings }
 import akka.cluster.singleton.{ ClusterSingletonManagerSettings ⇒ UntypedClusterSingletonManagerSettings }
-import akka.actor.typed.ActorSystem
-import akka.cluster.typed.{ Cluster, ClusterSingletonManagerSettings }
+import akka.cluster.typed.Cluster
+import akka.cluster.typed.ClusterSingletonManagerSettings
 import com.typesafe.config.Config
-import akka.cluster.ClusterSettings.DataCenter
-
-import scala.concurrent.duration.FiniteDuration
+import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {
 
@@ -23,7 +25,8 @@ object ClusterShardingSettings {
 
   def fromConfig(config: Config): ClusterShardingSettings = {
     val untypedSettings = UntypedShardingSettings(config)
-    fromUntypedSettings(untypedSettings)
+    val numberOfShards = config.getInt("number-of-shards")
+    fromUntypedSettings(numberOfShards, untypedSettings)
   }
 
   /** Java API: Creates new cluster sharding settings object */
@@ -31,8 +34,9 @@ object ClusterShardingSettings {
     apply(system)
 
   /** INTERNAL API: Indended only for internal use, it is not recommended to keep converting between the setting types */
-  private[akka] def fromUntypedSettings(untypedSettings: UntypedShardingSettings): ClusterShardingSettings = {
+  private[akka] def fromUntypedSettings(numberOfShards: Int, untypedSettings: UntypedShardingSettings): ClusterShardingSettings = {
     new ClusterShardingSettings(
+      numberOfShards,
       role = untypedSettings.role,
       dataCenter = None,
       rememberEntities = untypedSettings.rememberEntities,
@@ -147,21 +151,31 @@ object ClusterShardingSettings {
 
     def withBufferSize(value: Int): TuningParameters = copy(bufferSize = value)
     def withCoordinatorFailureBackoff(value: FiniteDuration): TuningParameters = copy(coordinatorFailureBackoff = value)
+    def withCoordinatorFailureBackoff(value: java.time.Duration): TuningParameters = withCoordinatorFailureBackoff(value.asScala)
     def withEntityRecoveryConstantRateStrategyFrequency(value: FiniteDuration): TuningParameters = copy(entityRecoveryConstantRateStrategyFrequency = value)
+    def withEntityRecoveryConstantRateStrategyFrequency(value: java.time.Duration): TuningParameters = withEntityRecoveryConstantRateStrategyFrequency(value.asScala)
     def withEntityRecoveryConstantRateStrategyNumberOfEntities(value: Int): TuningParameters = copy(entityRecoveryConstantRateStrategyNumberOfEntities = value)
     def withEntityRecoveryStrategy(value: java.lang.String): TuningParameters = copy(entityRecoveryStrategy = value)
     def withEntityRestartBackoff(value: FiniteDuration): TuningParameters = copy(entityRestartBackoff = value)
+    def withEntityRestartBackoff(value: java.time.Duration): TuningParameters = withEntityRestartBackoff(value.asScala)
     def withHandOffTimeout(value: FiniteDuration): TuningParameters = copy(handOffTimeout = value)
+    def withHandOffTimeout(value: java.time.Duration): TuningParameters = withHandOffTimeout(value.asScala)
     def withKeepNrOfBatches(value: Int): TuningParameters = copy(keepNrOfBatches = value)
     def withLeastShardAllocationMaxSimultaneousRebalance(value: Int): TuningParameters = copy(leastShardAllocationMaxSimultaneousRebalance = value)
     def withLeastShardAllocationRebalanceThreshold(value: Int): TuningParameters = copy(leastShardAllocationRebalanceThreshold = value)
     def withRebalanceInterval(value: FiniteDuration): TuningParameters = copy(rebalanceInterval = value)
+    def withRebalanceInterval(value: java.time.Duration): TuningParameters = withRebalanceInterval(value.asScala)
     def withRetryInterval(value: FiniteDuration): TuningParameters = copy(retryInterval = value)
+    def withRetryInterval(value: java.time.Duration): TuningParameters = withRetryInterval(value.asScala)
     def withShardFailureBackoff(value: FiniteDuration): TuningParameters = copy(shardFailureBackoff = value)
+    def withShardFailureBackoff(value: java.time.Duration): TuningParameters = withShardFailureBackoff(value.asScala)
     def withShardStartTimeout(value: FiniteDuration): TuningParameters = copy(shardStartTimeout = value)
+    def withShardStartTimeout(value: java.time.Duration): TuningParameters = withShardStartTimeout(value.asScala)
     def withSnapshotAfter(value: Int): TuningParameters = copy(snapshotAfter = value)
     def withUpdatingStateTimeout(value: FiniteDuration): TuningParameters = copy(updatingStateTimeout = value)
+    def withUpdatingStateTimeout(value: java.time.Duration): TuningParameters = withUpdatingStateTimeout(value.asScala)
     def withWaitingForStateTimeout(value: FiniteDuration): TuningParameters = copy(waitingForStateTimeout = value)
+    def withWaitingForStateTimeout(value: java.time.Duration): TuningParameters = withWaitingForStateTimeout(value.asScala)
 
     private def copy(
       bufferSize:                                         Int              = bufferSize,
@@ -205,6 +219,7 @@ object ClusterShardingSettings {
 }
 
 /**
+ * @param numberOfShards number of shards used by the default [[HashCodeMessageExtractor]]
  * @param role Specifies that this entity type requires cluster nodes with a specific role.
  *   If the role is not specified all nodes in the cluster are used. If the given role does
  *   not match the role of the current node the `ShardRegion` will be started in proxy mode.
@@ -225,6 +240,7 @@ object ClusterShardingSettings {
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  */
 final class ClusterShardingSettings(
+  val numberOfShards:               Int,
   val role:                         Option[String],
   val dataCenter:                   Option[DataCenter],
   val rememberEntities:             Boolean,
@@ -234,7 +250,8 @@ final class ClusterShardingSettings(
   val tuningParameters:             ClusterShardingSettings.TuningParameters,
   val coordinatorSingletonSettings: ClusterSingletonManagerSettings) extends NoSerializationVerificationNeeded {
 
-  import akka.cluster.sharding.typed.ClusterShardingSettings.{ StateStoreModeDData, StateStoreModePersistence }
+  import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
+  import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModePersistence
   require(
     stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
     s"Unknown 'state-store-mode' [$stateStoreMode], " +
@@ -249,6 +266,9 @@ final class ClusterShardingSettings(
   private[akka] def shouldHostShard(cluster: Cluster): Boolean =
     role.forall(cluster.selfMember.roles.contains) &&
       dataCenter.forall(cluster.selfMember.dataCenter.contains)
+
+  // no withNumberOfShards because it should be defined in configuration to be able to verify same
+  // value on all nodes with `JoinConfigCompatChecker`
 
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.option(role))
 
@@ -287,6 +307,7 @@ final class ClusterShardingSettings(
     tuningParameters:             ClusterShardingSettings.TuningParameters = tuningParameters,
     coordinatorSingletonSettings: ClusterSingletonManagerSettings          = coordinatorSingletonSettings): ClusterShardingSettings =
     new ClusterShardingSettings(
+      numberOfShards,
       role,
       dataCenter,
       rememberEntities,

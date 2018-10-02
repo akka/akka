@@ -5,10 +5,15 @@
 package akka.stream.scaladsl
 
 import akka.testkit.DefaultTimeout
-import org.scalatest.time.{ Span, Millis }
+import org.scalatest.time.{ Millis, Span }
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+
+import akka.stream.testkit.Utils.TE
+//#imports
 import akka.stream._
+
+//#imports
 import akka.stream.testkit._
 import akka.NotUsed
 import akka.testkit.EventFilter
@@ -24,6 +29,19 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
   implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
   "Single Source" must {
+
+    "produce exactly one element" in {
+      implicit val ec = system.dispatcher
+      //#source-single
+      val s: Future[immutable.Seq[Int]] = Source.single(1).runWith(Sink.seq)
+      s.foreach(list ⇒ println(s"Collected elements: $list")) // prints: Collected elements: List(1)
+
+      //#source-single
+
+      s.futureValue should ===(immutable.Seq(1))
+
+    }
+
     "produce element" in {
       val p = Source.single(1).runWith(Sink.asPublisher(false))
       val c = TestSubscriber.manualProbe[Int]()
@@ -103,7 +121,6 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val out = TestSubscriber.manualProbe[Int]
 
       Source.combine(source(0), source(1), source(2))(Merge(_)).to(Sink.fromSubscriber(out)).run()
-
       val sub = out.expectSubscription()
       sub.request(3)
 
@@ -139,6 +156,20 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val gotten = for (_ ← 0 to 1) yield out.expectNext()
       gotten.toSet should ===(Set(0, 1))
       out.expectComplete()
+    }
+
+    "combine using Concat strategy two inputs with simplified API" in {
+      //#combine
+      val sources = immutable.Seq(
+        Source(List(1, 2, 3)),
+        Source(List(10, 20, 30)))
+
+      Source.combine(sources(0), sources(1))(Concat(_))
+        .runWith(Sink.seq)
+        // This will produce the Seq(1, 2, 3, 10, 20, 30)
+        //#combine
+        .futureValue should ===(immutable.Seq(1, 2, 3, 10, 20, 30))
+
     }
 
     "combine from two inputs with combinedMat and take a materialized value" in {
@@ -235,6 +266,34 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
         .grouped(10)
         .runWith(Sink.head)
         .futureValue should ===(immutable.Seq(false, true, false, true, false, true, false, true, false, true))
+    }
+
+    "fail stream when iterator throws" in {
+      Source
+        .fromIterator(() ⇒ (1 to 1000).toIterator.map(k ⇒ if (k < 10) k else throw TE("a")))
+        .runWith(Sink.ignore)
+        .failed.futureValue.getClass should ===(classOf[TE])
+
+      Source
+        .fromIterator(() ⇒ (1 to 1000).toIterator.map(_ ⇒ throw TE("b")))
+        .runWith(Sink.ignore)
+        .failed.futureValue.getClass should ===(classOf[TE])
+    }
+
+    "use decider when iterator throws" in {
+      Source
+        .fromIterator(() ⇒ (1 to 5).toIterator.map(k ⇒ if (k != 3) k else throw TE("a")))
+        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+        .grouped(10)
+        .runWith(Sink.head)
+        .futureValue should ===(List(1, 2))
+
+      Source
+        .fromIterator(() ⇒ (1 to 5).toIterator.map(_ ⇒ throw TE("b")))
+        .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
+        .grouped(10)
+        .runWith(Sink.headOption)
+        .futureValue should ===(None)
     }
   }
 

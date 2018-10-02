@@ -1,15 +1,8 @@
 # Testing Actor Systems
 
-As with any piece of software, automated tests are a very important part of the
-development cycle. The actor model presents a different view on how units of
-code are delimited and how they interact, which has an influence on how to
-perform tests.
-
-Akka comes with a dedicated module `akka-testkit` for supporting tests.
-
 ## Dependency
 
-To use Akka Testkit, add the module to your project:
+To use Akka Testkit, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -18,10 +11,19 @@ To use Akka Testkit, add the module to your project:
   scope="test"
 }
 
+## Introduction
+
+As with any piece of software, automated tests are a very important part of the
+development cycle. The actor model presents a different view on how units of
+code are delimited and how they interact, which has an influence on how to
+perform tests.
+
+Akka comes with a dedicated module `akka-testkit` for supporting tests.
+
 ## Asynchronous Testing: `TestKit`
 
 Testkit allows you to test your actors in a controlled but realistic
-environment. The definition of the environment depends of course very much on
+environment. The definition of the environment depends very much on
 the problem at hand and the level at which you intend to test, ranging from
 simple checks to full system tests.
 
@@ -36,10 +38,10 @@ The `TestKit` class contains a collection of tools which makes this
 common task easy.
 
 Scala
-:   @@snip [PlainWordSpec.scala]($code$/scala/docs/testkit/PlainWordSpec.scala) { #plain-spec }
+:   @@snip [PlainWordSpec.scala](/akka-docs/src/test/scala/docs/testkit/PlainWordSpec.scala) { #plain-spec }
 
 Java
-:   @@snip [TestKitSampleTest.java]($code$/java/jdocs/testkit/TestKitSampleTest.java) { #fullsample }
+:   @@snip [TestKitSampleTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitSampleTest.java) { #fullsample }
 
 The `TestKit` contains an actor named `testActor` which is the
 entry point for messages to be examined with the various `expectMsg...`
@@ -69,17 +71,17 @@ The above mentioned @scala[`expectMsg`]@java[`expectMsgEquals`] is not the only 
 assertions concerning received messages, the full set is this:
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-expect }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-expect }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-expect }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-expect }
 
 In these examples, the maximum durations you will find mentioned below are left
 out, in which case they use the default value from configuration item
 `akka.test.single-expect-default` which itself defaults to 3 seconds (or they
 obey the innermost enclosing `Within` as detailed [below](#testkit-within)). The full signatures are:
 
-* @scala[`expectMsg[T](d: Duration, msg: T): T`]@java[`public <T> T expectMsgEquals(FiniteDuration max, T msg)`]
+* @scala[`expectMsg[T](d: Duration, msg: T): T`]@java[`public <T> T expectMsgEquals(Duration max, T msg)`]
    The given message object must be received within the specified time; the
 object will be returned.
 * @scala[`expectMsgPF[T](d: Duration)(pf: PartialFunction[Any, T]): T`]@java[`public <T> T expectMsgPF(Duration max, String hint, Function<Object, T> f)`]
@@ -89,7 +91,7 @@ the @scala[partial] function to the received message is returned. @scala[The dur
 be left unspecified (empty parentheses are required in this case) to use
 the deadline from the innermost enclosing [within](#testkit-within)
 block instead.]
-* @scala[`expectMsgClass[T](d: Duration, c: Class[T]): T`]@java[`public <T> T expectMsgClass(FiniteDuration max, Class<T> c)`]
+* @scala[`expectMsgClass[T](d: Duration, c: Class[T]): T`]@java[`public <T> T expectMsgClass(Duration max, Class<T> c)`]
    An object which is an instance of the given `Class` must be received
 within the allotted time frame; the object will be returned. Note that this
 does a conformance check; if you need the class to be equal, @scala[have a look at
@@ -109,12 +111,12 @@ method is approximately equivalent to
    An object must be received within the given time, and it must be equal (
 compared with @scala[`==`]@java[`equals()`]) to at least one of the passed reference objects; the
 received object will be returned.
-* @scala[`expectMsgAnyClassOf[T](d: Duration, obj: Class[_ <: T]*): T`]@java[`public <T> T expectMsgAnyClassOf(FiniteDuration max, Class<? extends T>... c)`]
+* @scala[`expectMsgAnyClassOf[T](d: Duration, obj: Class[_ <: T]*): T`]@java[`public <T> T expectMsgAnyClassOf(Duration max, Class<? extends T>... c)`]
    An object must be received within the given time, and it must be an
 instance of at least one of the supplied `Class` objects; the
 received object will be returned. Note that this does a conformance check,
 if you need the class to be equal you need to verify that afterwards.
-* @scala[`expectMsgAllOf[T](d: Duration, obj: T*): Seq[T]`]@java[`public List<Object> expectMsgAllOf(FiniteDuration max, Object... msg)`]
+* @scala[`expectMsgAllOf[T](d: Duration, obj: T*): Seq[T]`]@java[`public List<Object> expectMsgAllOf(Duration max, Object... msg)`]
    A number of objects matching the size of the supplied object array must be
 received within the given time, and for each of the given objects there
 must exist at least one among the received ones which equals (compared with
@@ -137,11 +139,11 @@ instance of this class. The full sequence of received objects is returned.
 
 @@@
 
-* @scala[`expectNoMsg(d: Duration)`]@java[`public void expectNoMsg(FiniteDuration max)`]
+* @scala[`expectNoMessage(d: Duration)`]@java[`public void expectNoMessage(Duration max)`]
    No message must be received within the given time. This also fails if a
 message has been received before calling this method which has not been
 removed from the queue using one of the other methods.
-* @scala[`receiveN(n: Int, d: Duration): Seq[AnyRef]`]@java[`List<Object> receiveN(int n, FiniteDuration max)`]
+* @scala[`receiveN(n: Int, d: Duration): Seq[AnyRef]`]@java[`List<Object> receiveN(int n, Duration max)`]
    `n` messages must be received within the given time; the received
 messages are returned.
 
@@ -215,10 +217,10 @@ allows assertions on log messages, including those which are generated by
 exceptions:
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #event-filter }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #event-filter }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-event-filter }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-event-filter }
 
 If a number of occurrences is specific—as demonstrated above—then `intercept`
 will block until that number of matching messages have been received or the
@@ -246,18 +248,18 @@ you want to test timing-sensitive behavior this can come in handy. Say for
 instance you want to test an actor that schedules a task:
 
 Scala
-:  @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #timer }
+:  @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #timer }
 
 Java
-:  @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #timer }
+:  @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #timer }
 
 You can override the method that does the scheduling in your test:
 
 Scala
-:  @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #timer-test }
+:  @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #timer-test }
 
 Java
-:  @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #timer-test }
+:  @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #timer-test }
 
 <a id="testkit-within"></a>
 ### Timing Assertions
@@ -270,14 +272,10 @@ checked external to the examination, which is facilitated by a new construct
 for managing time constraints:
 
 Scala
-:   ```scala
-within([min, ]max) {
-  ...
-}
-```
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-within }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-within }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-within }
 
 The block @scala[given to]@java[in] `within` must complete after a @ref:[Duration](common/duration.md) which
 is between `min` and `max`, where the former defaults to zero. The
@@ -287,13 +285,11 @@ you do not specify it, it is inherited from the innermost enclosing
 `within` block.
 
 It should be noted that if the last message-receiving assertion of the block is
-`expectNoMsg` or `receiveWhile`, the final check of the
+`expectNoMessage` or `receiveWhile`, the final check of the
 `within` is skipped in order to avoid false positives due to wake-up
 latencies. This means that while individual contained assertions still use the
 maximum time bound, the overall block may take arbitrarily longer in this case.
 
-Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-within }
 
 @@@ note
 
@@ -305,7 +301,7 @@ wall time, not CPU time or system time.
 @@@ div { .group-scala }
 
 Ray Roestenburg has written a great article on using the TestKit:
-[http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html](http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html).
+[https://web.archive.org/web/20180114133958/http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html](https://web.archive.org/web/20180114133958/http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html).
 His full example is also available @ref:[here](testing.md#example).
 
 @@@
@@ -315,26 +311,26 @@ His full example is also available @ref:[here](testing.md#example).
 The tight timeouts you use during testing on your lightning-fast notebook will
 invariably lead to spurious test failures on the heavily loaded Jenkins server
 (or similar). To account for this situation, all maximum durations are
-internally scaled by a factor taken from the [Configuration](),
+internally scaled by a factor taken from the @ref:[Configuration](general/configuration.md#config-akka-testkit),
 `akka.test.timefactor`, which defaults to 1.
 
 You can scale other durations with the same factor by using the @scala[implicit conversion
 in `akka.testkit` package object to add dilated function to `Duration`]@java[`dilated` method in `TestKit`].
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #duration-dilation }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #duration-dilation }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #duration-dilation }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #duration-dilation }
 
 @@@ div { .group-scala }
 
 ### Resolving Conflicts with Implicit ActorRef
 
 If you want the sender of messages inside your TestKit-based tests to be the `testActor`
-simply mix in `ImplicitSender` into your test.
+ mix in `ImplicitSender` into your test.
 
-@@snip [PlainWordSpec.scala]($code$/scala/docs/testkit/PlainWordSpec.scala) { #implicit-sender }
+@@snip [PlainWordSpec.scala](/akka-docs/src/test/scala/docs/testkit/PlainWordSpec.scala) { #implicit-sender }
 
 @@@
 
@@ -349,12 +345,12 @@ implementation called `TestProbe`.] The functionality is best explained
 using a small example:
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #imports-test-probe }
-@@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #my-double-echo }
-@@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-probe }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #imports-test-probe }
+@@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #my-double-echo }
+@@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-probe }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-probe }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-probe }
 
 @scala[Here the system under test is simulated by `MyDoubleEcho`, which is
 supposed to mirror its input to two outputs. Attaching two test probes enables
@@ -369,19 +365,19 @@ If you have many test probes, you can name them to get meaningful actor names
 in test logs and assertions:
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-probe-with-custom-name }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-probe-with-custom-name }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-probe-with-custom-name }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-probe-with-custom-name }
 
 Probes may also be equipped with custom assertions to make your test code even
 more concise and clear:
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-special-probe }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-special-probe }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-special-probe }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-special-probe }
 
 You have complete flexibility here in mixing and matching the `TestKit`
 facilities with your own checks and choosing an intuitive name for it. In real
@@ -404,10 +400,10 @@ means that it is dangerous to try watching e.g. `TestActorRef` from a
 A @scala[`TestProbe`]@java[`TestKit`] can register itself for DeathWatch of any other actor:
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-probe-watch }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-probe-watch }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-probe-watch }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-probe-watch }
 
 #### Replying to Messages Received by Probes
 
@@ -418,10 +414,10 @@ so they can also reply]@java[The probe stores the sender of the last dequeued me
 for having the probe reply to the last received message]:
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-probe-reply }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-probe-reply }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-probe-reply }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-probe-reply }
 
 #### Forwarding Messages Received by Probes
 
@@ -433,11 +429,11 @@ network functioning]@java[The probe can also forward a received message (i.e. af
 reception), retaining the original sender]:
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-probe-forward-actors }
-@@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-probe-forward }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-probe-forward-actors }
+@@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-probe-forward }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-probe-forward }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-probe-forward }
 
 @scala[The `dest` actor will receive the same message invocation as if no test probe
 had intervened.]
@@ -452,10 +448,10 @@ This code can be used to forward messages, e.g. in a chain `A --> Probe -->
 B`, as long as a certain protocol is obeyed.
 
 Scala
-:   @@snip [TestProbeSpec.scala]($akka$/akka-testkit/src/test/scala/akka/testkit/TestProbeSpec.scala) { #autopilot }
+:   @@snip [TestProbeSpec.scala](/akka-testkit/src/test/scala/akka/testkit/TestProbeSpec.scala) { #autopilot }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-auto-pilot }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-auto-pilot }
 
 The `run` method must return the auto-pilot for the next message, @scala[which
 may be `KeepRunning` to retain the current one or `NoAutoPilot`
@@ -471,10 +467,10 @@ do not react to each other's deadlines or to the deadline set in an enclosing
 `TestKit` instance:
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-within-probe }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-within-probe }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-within-probe }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-within-probe }
 
 Here, the @scala[`expectMsg`]@java[`expectMsgEquals`] call will use the default timeout.
 
@@ -496,10 +492,10 @@ Conversely, a parent's binding to its child can be lessened as follows:
 For example, the structure of the code you want to test may follow this pattern:
 
 Scala
-:   @@snip [ParentChildSpec.scala]($code$/scala/docs/testkit/ParentChildSpec.scala) { #test-example }
+:   @@snip [ParentChildSpec.scala](/akka-docs/src/test/scala/docs/testkit/ParentChildSpec.scala) { #test-example }
 
 Java
-:   @@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-example }
+:   @@snip [ParentChildTest.java](/akka-docs/src/test/java/jdocs/testkit/ParentChildTest.java) { #test-example }
 
 #### Introduce child to its parent
 
@@ -507,10 +503,10 @@ The first option is to avoid use of the `context.parent` function and create
 a child with a custom parent by passing an explicit reference to its parent instead.
 
 Scala
-:   @@snip [ParentChildSpec.scala]($code$/scala/docs/testkit/ParentChildSpec.scala) { #test-dependentchild }
+:   @@snip [ParentChildSpec.scala](/akka-docs/src/test/scala/docs/testkit/ParentChildSpec.scala) { #test-dependentchild }
 
 Java
-:   @@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-dependentchild }
+:   @@snip [ParentChildTest.java](/akka-docs/src/test/java/jdocs/testkit/ParentChildTest.java) { #test-dependentchild }
 
 #### Create the child using @scala[TestProbe]@java[TestKit]
 
@@ -519,10 +515,10 @@ This will cause any messages the child actor sends to @scala[*context.parent*]@j
 end up in the test probe.
 
 Scala
-:   @@snip [ParentChildSpec.scala]($code$/scala/docs/testkit/ParentChildSpec.scala) { #test-TestProbe-parent }
+:   @@snip [ParentChildSpec.scala](/akka-docs/src/test/scala/docs/testkit/ParentChildSpec.scala) { #test-TestProbe-parent }
 
 Java
-:   @@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-TestProbe-parent }
+:   @@snip [ParentChildTest.java](/akka-docs/src/test/java/jdocs/testkit/ParentChildTest.java) { #test-TestProbe-parent }
 
 #### Using a fabricated parent
 
@@ -531,11 +527,11 @@ create a fabricated parent in your test. This, however, does not enable you to t
 the parent actor in isolation.
 
 Scala
-:   @@snip [ParentChildSpec.scala]($code$/scala/docs/testkit/ParentChildSpec.scala) { #test-fabricated-parent }
+:   @@snip [ParentChildSpec.scala](/akka-docs/src/test/scala/docs/testkit/ParentChildSpec.scala) { #test-fabricated-parent }
 
 Java
-:   @@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-fabricated-parent-creator }
-@@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-fabricated-parent }
+:   @@snip [ParentChildTest.java](/akka-docs/src/test/java/jdocs/testkit/ParentChildTest.java) { #test-fabricated-parent-creator }
+@@snip [ParentChildTest.java](/akka-docs/src/test/java/jdocs/testkit/ParentChildTest.java) { #test-fabricated-parent }
 
 #### Externalize child making from the parent
 
@@ -543,28 +539,28 @@ Alternatively, you can tell the parent how to create its child. There are two wa
 to do this: by giving it a `Props` object or by giving it a function which takes care of creating the child actor:
 
 Scala
-:   @@snip [ParentChildSpec.scala]($code$/scala/docs/testkit/ParentChildSpec.scala) { #test-dependentparent }
+:   @@snip [ParentChildSpec.scala](/akka-docs/src/test/scala/docs/testkit/ParentChildSpec.scala) { #test-dependentparent }
 
 Java
-:   @@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-dependentparent }
-@@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #test-dependentparent-generic }
+:   @@snip [ParentChildTest.java](/akka-docs/src/test/java/jdocs/testkit/ParentChildTest.java) { #test-dependentparent }
+@@snip [ParentChildTest.java](/akka-docs/src/test/java/jdocs/testkit/ParentChildTest.java) { #test-dependentparent-generic }
 
 
 Creating the @scala[`Props`]@java[`Actor`] is straightforward and the function may look like this in your test code:
 
 Scala
-:   @@snip [ParentChildSpec.scala]($code$/scala/docs/testkit/ParentChildSpec.scala) { #child-maker-test }
+:   @@snip [ParentChildSpec.scala](/akka-docs/src/test/scala/docs/testkit/ParentChildSpec.scala) { #child-maker-test }
 
 Java
-:   @@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #child-maker-test }
+:   @@snip [ParentChildTest.java](/akka-docs/src/test/java/jdocs/testkit/ParentChildTest.java) { #child-maker-test }
 
 And like this in your application code:
 
 Scala
-:   @@snip [ParentChildSpec.scala]($code$/scala/docs/testkit/ParentChildSpec.scala) { #child-maker-prod }
+:   @@snip [ParentChildSpec.scala](/akka-docs/src/test/scala/docs/testkit/ParentChildSpec.scala) { #child-maker-prod }
 
 Java
-:   @@snip [ParentChildTest.java]($code$/java/jdocs/testkit/ParentChildTest.java) { #child-maker-prod }
+:   @@snip [ParentChildTest.java](/akka-docs/src/test/java/jdocs/testkit/ParentChildTest.java) { #child-maker-prod }
 
 Which of these methods is the best depends on what is most important to test. The
 most generic option is to create the parent actor by passing it a function that is
@@ -585,10 +581,10 @@ so long as all intervening actors run on this dispatcher.
 Just set the dispatcher as you normally would:
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #calling-thread-dispatcher }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #calling-thread-dispatcher }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #calling-thread-dispatcher }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #calling-thread-dispatcher }
 
 ### How it works
 
@@ -598,8 +594,8 @@ simplest example for this situation is an actor which sends a message to
 itself. In this case, processing cannot continue immediately as that would
 violate the actor model, so the invocation is queued and will be processed when
 the active invocation on that actor finishes its processing; thus, it will be
-processed on the calling thread, but simply after the actor finishes its
-previous work. In the other case, the invocation is simply processed
+processed on the calling thread, but after the actor finishes its
+previous work. In the other case, the invocation is processed
 immediately on the current thread. Futures scheduled via this dispatcher are
 also executed immediately.
 
@@ -718,13 +714,13 @@ options:
 
 @@@ div { .group-scala }
 * *Logging of message invocations on certain actors*
-   This is enabled by a setting in the [Configuration]() — namely
+   This is enabled by a setting in the @ref:[Configuration](general/configuration.md#config-akka-actor) — namely
 `akka.actor.debug.receive` — which enables the `loggable`
 statement to be applied to an actor’s `receive` function:
 
-@@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #logging-receive }
+@@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #logging-receive }
 
-If the aforementioned setting is not given in the [Configuration](), this method will
+If the aforementioned setting is not given in the @ref:[Configuration](general/configuration.md#config-akka-actor), this method will
 pass through the given `Receive` function unmodified, meaning that
 there is no runtime cost unless actually enabled.
 
@@ -778,7 +774,7 @@ support.
 If for some reason it is a problem to inherit from `TestKit` due to it
 being a concrete class instead of a trait, there’s `TestKitBase`:
 
-@@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-kit-base }
+@@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-kit-base }
 
 The `implicit lazy val system` must be declared exactly like that (you can of
 course pass arguments to the actor system factory as needed) because trait
@@ -819,9 +815,11 @@ to the @ref:[reference configuration](general/configuration.md#config-akka-testk
 
 ## Example
 
-Ray Roestenburg's example code from [his blog](http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html) adapted to work with Akka 2.x.
+Ray Roestenburg's example code from his blog, which unfortunately is only available on
+[web archive](https://web.archive.org/web/20180114133958/http://roestenburg.agilesquad.com/2011/02/unit-testing-akka-actors-with-testkit_12.html),
+adapted to work with Akka 2.x.
 
-@@snip [TestKitUsageSpec.scala]($code$/scala/docs/testkit/TestKitUsageSpec.scala) { #testkit-usage }
+@@snip [TestKitUsageSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestKitUsageSpec.scala) { #testkit-usage }
 
 @@@
 
@@ -867,10 +865,10 @@ traditional unit testing techniques on the contained methods. Obtaining a
 reference is done like this:
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-actor-ref }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-actor-ref }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-actor-ref }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-actor-ref }
 
 Since `TestActorRef` is generic in the actor type it returns the
 underlying actor with its proper static type. From this point on you may bring
@@ -886,7 +884,7 @@ If your actor under test is a `FSM`, you may use the special
 `TestFSMRef` which offers all features of a normal `TestActorRef`
 and in addition allows access to the internal state:
 
-@@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-fsm-ref }
+@@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-fsm-ref }
 
 Due to a limitation in Scala’s type inference, there is only the factory method
 shown above, so you will probably write code like `TestFSMRef(new MyFSM)`
@@ -916,10 +914,10 @@ described below (see [CallingThreadDispatcher](#callingthreaddispatcher)); this 
 implicitly for any actor instantiated into a `TestActorRef`.
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-behavior }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-behavior }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-behavior }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-behavior }
 
 As the `TestActorRef` is a subclass of `LocalActorRef` with a few
 special extras, also aspects like supervision and restarting work properly, but
@@ -945,19 +943,19 @@ dispatcher to `CallingThreadDispatcher.global` and it sets the
 
 If you want to test the actor behavior, including hotswapping, but without
 involving a dispatcher and without having the `TestActorRef` swallow
-any thrown exceptions, then there is another mode available for you: just use
+any thrown exceptions, then there is another mode available for you: use
 the `receive` method on `TestActorRef`, which will be forwarded to the
 underlying actor:
 
 Scala
-:   @@snip [TestkitDocSpec.scala]($code$/scala/docs/testkit/TestkitDocSpec.scala) { #test-expecting-exceptions }
+:   @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-expecting-exceptions }
 
 Java
-:   @@snip [TestKitDocTest.java]($code$/java/jdocs/testkit/TestKitDocTest.java) { #test-expecting-exceptions }
+:   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-expecting-exceptions }
 
 ### Use Cases
 
-You may of course mix and match both modi operandi of `TestActorRef` as
+You may mix and match both modi operandi of `TestActorRef` as
 suits your test needs:
 
  * one common use case is setting up the actor into a specific internal state

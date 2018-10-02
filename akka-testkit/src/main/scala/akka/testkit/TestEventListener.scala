@@ -177,8 +177,7 @@ object EventFilter {
       message ne null)(occurrences)
 
   /**
-   * Create a filter for Error events which do not have a cause set (i.e. use
-   * implicitly supplied Logging.Error.NoCause). See apply() for more details.
+   * Create a filter for Error events. See apply() for more details.
    */
   def error(message: String = null, source: String = null, start: String = "", pattern: String = null, occurrences: Int = Int.MaxValue): EventFilter =
     ErrorFilter(Logging.Error.NoCause.getClass, Option(source),
@@ -282,7 +281,7 @@ final case class ErrorFilter(
 
   def matches(event: LogEvent) = {
     event match {
-      case Error(cause, src, _, msg) if throwable isInstance cause ⇒
+      case Error(cause, src, _, msg) if (throwable eq Error.NoCause.getClass) || (throwable isInstance cause) ⇒
         (msg == null && cause.getMessage == null && cause.getStackTrace.length == 0) ||
           doMatch(src, msg) || doMatch(src, cause.getMessage)
       case _ ⇒ false
@@ -526,7 +525,7 @@ class TestEventListener extends Logging.DefaultLogger {
 
   def addFilter(filter: EventFilter): Unit = filters ::= filter
 
-  def removeFilter(filter: EventFilter) {
+  def removeFilter(filter: EventFilter): Unit = {
     @scala.annotation.tailrec
     def removeFirst(list: List[EventFilter], zipped: List[EventFilter] = Nil): List[EventFilter] = list match {
       case head :: tail if head == filter ⇒ tail.reverse_:::(zipped)

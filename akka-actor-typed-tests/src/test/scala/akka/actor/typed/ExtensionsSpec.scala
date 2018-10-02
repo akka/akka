@@ -9,12 +9,20 @@ import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.Future
+import akka.actor.BootstrapSetup
+import akka.actor.setup.ActorSystemSetup
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 class DummyExtension1 extends Extension
 object DummyExtension1 extends ExtensionId[DummyExtension1] {
   def createExtension(system: ActorSystem[_]) = new DummyExtension1
   def get(system: ActorSystem[_]): DummyExtension1 = apply(system)
 }
+class DummyExtension1Setup(factory: ActorSystem[_] ⇒ DummyExtension1)
+  extends AbstractExtensionSetup[DummyExtension1](DummyExtension1, factory)
+
+class DummyExtension1ViaSetup extends DummyExtension1
 
 class SlowExtension extends Extension
 object SlowExtension extends ExtensionId[SlowExtension] {
@@ -44,30 +52,39 @@ object InstanceCountingExtension extends ExtensionId[DummyExtension1] {
   }
 }
 
-class ExtensionsSpec extends TypedAkkaSpec {
+object ExtensionsSpec {
+  val config = ConfigFactory.parseString(
+    """
+akka.actor.typed {
+  library-extensions += "akka.actor.typed.InstanceCountingExtension"
+}
+   """).resolve()
+}
+
+class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   "The extensions subsystem" must {
     "return the same instance for the same id" in
-      withEmptyActorSystem("ExtensionsSpec01") { system ⇒
-        val instance1 = system.registerExtension(DummyExtension1)
-        val instance2 = system.registerExtension(DummyExtension1)
+      withEmptyActorSystem("ExtensionsSpec01") { sys ⇒
+        val instance1 = sys.registerExtension(DummyExtension1)
+        val instance2 = sys.registerExtension(DummyExtension1)
 
         instance1 should be theSameInstanceAs instance2
 
-        val instance3 = DummyExtension1(system)
+        val instance3 = DummyExtension1(sys)
         instance3 should be theSameInstanceAs instance2
 
-        val instance4 = DummyExtension1.get(system)
+        val instance4 = DummyExtension1.get(sys)
         instance4 should be theSameInstanceAs instance3
       }
 
     "return the same instance for the same id concurrently" in
-      withEmptyActorSystem("ExtensionsSpec02") { system ⇒
+      withEmptyActorSystem("ExtensionsSpec02") { sys ⇒
         // not exactly water tight but better than nothing
-        import system.executionContext
+        import sys.executionContext
         val futures = (0 to 1000).map(n ⇒
           Future {
-            system.registerExtension(SlowExtension)
+            sys.registerExtension(SlowExtension)
           }
         )
 
@@ -82,22 +99,22 @@ class ExtensionsSpec extends TypedAkkaSpec {
     "load extensions from the configuration" in
       withEmptyActorSystem("ExtensionsSpec03", Some(ConfigFactory.parseString(
         """
-          akka.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
+          akka.actor.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
         """))
-      ) { system ⇒
-        system.hasExtension(DummyExtension1) should ===(true)
-        system.extension(DummyExtension1) shouldBe a[DummyExtension1]
+      ) { sys ⇒
+        sys.hasExtension(DummyExtension1) should ===(true)
+        sys.extension(DummyExtension1) shouldBe a[DummyExtension1]
 
-        system.hasExtension(SlowExtension) should ===(true)
-        system.extension(SlowExtension) shouldBe a[SlowExtension]
+        sys.hasExtension(SlowExtension) should ===(true)
+        sys.extension(SlowExtension) shouldBe a[SlowExtension]
       }
 
     "handle extensions that fail to initialize" in {
       def create(): Unit = {
-        ActorSystem[Any](Behavior.EmptyBehavior, "ExtensionsSpec04", config = Some(ConfigFactory.parseString(
+        ActorSystem[Any](Behavior.EmptyBehavior, "ExtensionsSpec04", ConfigFactory.parseString(
           """
-          akka.typed.extensions = ["akka.actor.typed.FailingToLoadExtension$"]
-        """)))
+          akka.actor.typed.extensions = ["akka.actor.typed.FailingToLoadExtension$"]
+        """))
       }
 
       intercept[RuntimeException] {
@@ -110,20 +127,20 @@ class ExtensionsSpec extends TypedAkkaSpec {
     }
 
     "support multiple instances of the same type of extension (with different ids)" in
-      withEmptyActorSystem("ExtensionsSpec06") { system ⇒
+      withEmptyActorSystem("ExtensionsSpec06") { sys ⇒
         val id1 = new MultiExtensionId(1)
         val id2 = new MultiExtensionId(2)
 
-        system.registerExtension(id1).n should ===(1)
-        system.registerExtension(id2).n should ===(2)
-        system.registerExtension(id1).n should ===(1)
+        sys.registerExtension(id1).n should ===(1)
+        sys.registerExtension(id2).n should ===(2)
+        sys.registerExtension(id1).n should ===(1)
       }
 
     "allow for auto-loading of library-extensions" in
-      withEmptyActorSystem("ExtensionsSpec06") { system ⇒
-        val listedExtensions = system.settings.config.getStringList("akka.typed.library-extensions")
+      withEmptyActorSystem("ExtensionsSpec06") { sys ⇒
+        val listedExtensions = sys.settings.config.getStringList("akka.actor.typed.library-extensions")
         listedExtensions.size should be > 0
-        // could be initalized by other tests, so at least once
+        // could be initialized by other tests, so at least once
         InstanceCountingExtension.createCount.get() should be > 0
       }
 
@@ -131,7 +148,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
       intercept[RuntimeException] {
         withEmptyActorSystem(
           "ExtensionsSpec07",
-          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.actor.typed.FailingToLoadExtension$""""))
+          Some(ConfigFactory.parseString("""akka.actor.typed.library-extensions += "akka.actor.typed.FailingToLoadExtension$""""))
         ) { _ ⇒ () }
       }
 
@@ -139,15 +156,15 @@ class ExtensionsSpec extends TypedAkkaSpec {
       intercept[RuntimeException] {
         withEmptyActorSystem(
           "ExtensionsSpec08",
-          Some(ConfigFactory.parseString("""akka.typed.library-extensions += "akka.actor.typed.MissingExtension""""))
+          Some(ConfigFactory.parseString("""akka.actor.typed.library-extensions += "akka.actor.typed.MissingExtension""""))
         ) { _ ⇒ () }
       }
 
     "load an extension implemented in Java" in
-      withEmptyActorSystem("ExtensionsSpec09") { system ⇒
+      withEmptyActorSystem("ExtensionsSpec09") { sys ⇒
         // no way to make apply work cleanly with extensions implemented in Java
-        val instance1 = ExtensionsTest.MyExtension.get(system)
-        val instance2 = ExtensionsTest.MyExtension.get(system)
+        val instance1 = ExtensionsTest.MyExtension.get(sys)
+        val instance2 = ExtensionsTest.MyExtension.get(sys)
 
         instance1 should be theSameInstanceAs instance2
       }
@@ -155,7 +172,7 @@ class ExtensionsSpec extends TypedAkkaSpec {
     "load registered typed extensions eagerly even for untyped system" in {
       import akka.actor.typed.scaladsl.adapter._
       val beforeCreation = InstanceCountingExtension.createCount.get()
-      val untypedSystem = akka.actor.ActorSystem()
+      val untypedSystem = akka.actor.ActorSystem("as", ExtensionsSpec.config)
       try {
         val before = InstanceCountingExtension.createCount.get()
         InstanceCountingExtension(untypedSystem.toTyped)
@@ -183,10 +200,36 @@ class ExtensionsSpec extends TypedAkkaSpec {
         untypedSystem.terminate().futureValue
       }
     }
+
+    "override extensions via ActorSystemSetup" in
+      withEmptyActorSystem("ExtensionsSpec10", Some(ConfigFactory.parseString(
+        """
+          akka.actor.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
+        """)),
+        Some(ActorSystemSetup(new DummyExtension1Setup(sys ⇒ new DummyExtension1ViaSetup)))
+      ) { sys ⇒
+          sys.hasExtension(DummyExtension1) should ===(true)
+          sys.extension(DummyExtension1) shouldBe a[DummyExtension1ViaSetup]
+          DummyExtension1(sys) shouldBe a[DummyExtension1ViaSetup]
+          DummyExtension1(sys) shouldBe theSameInstanceAs(DummyExtension1(sys))
+
+          sys.hasExtension(SlowExtension) should ===(true)
+          sys.extension(SlowExtension) shouldBe a[SlowExtension]
+        }
   }
 
-  def withEmptyActorSystem[T](name: String, config: Option[Config] = None)(f: ActorSystem[_] ⇒ T): T = {
-    val system = ActorSystem[Any](Behavior.EmptyBehavior, name, config = config)
-    try f(system) finally system.terminate().futureValue
+  def withEmptyActorSystem[T](name: String, config: Option[Config] = None, setup: Option[ActorSystemSetup] = None)(
+    f: ActorSystem[_] ⇒ T): T = {
+
+    val bootstrap = config match {
+      case Some(c) ⇒ BootstrapSetup(c)
+      case None    ⇒ BootstrapSetup(ExtensionsSpec.config)
+    }
+    val sys = setup match {
+      case None    ⇒ ActorSystem[Any](Behavior.EmptyBehavior, name, bootstrap)
+      case Some(s) ⇒ ActorSystem[Any](Behavior.EmptyBehavior, name, s.and(bootstrap))
+    }
+
+    try f(sys) finally sys.terminate().futureValue
   }
 }

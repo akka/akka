@@ -4,10 +4,9 @@
 
 package jdocs.sharding;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.Optional;
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorInitializationException;
@@ -17,7 +16,6 @@ import akka.actor.OneForOneStrategy;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.SupervisorStrategy;
-import akka.actor.Terminated;
 import akka.actor.ReceiveTimeout;
 //#counter-extractor
 import akka.cluster.sharding.ShardRegion;
@@ -31,7 +29,6 @@ import akka.cluster.sharding.ClusterShardingSettings;
 
 //#counter-start
 import akka.persistence.AbstractPersistentActor;
-import akka.cluster.Cluster;
 import akka.japi.pf.DeciderBuilder;
 
 // Doc code, compile only
@@ -200,7 +197,7 @@ public class ClusterShardingTest {
     @Override
     public void preStart() throws Exception {
       super.preStart();
-      getContext().setReceiveTimeout(Duration.create(120, SECONDS));
+      getContext().setReceiveTimeout(Duration.ofSeconds(120));
     }
 
     void updateState(CounterChanged event) {

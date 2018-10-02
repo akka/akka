@@ -5,7 +5,7 @@
 package akka.persistence.typed.internal
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
@@ -13,7 +13,6 @@ import akka.persistence._
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
 import akka.persistence.typed.internal.EventsourcedBehavior._
 
-import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
 /***
@@ -37,45 +36,42 @@ private[persistence] object EventsourcedReplayingEvents {
   private[persistence] final case class ReplayingState[State](
     seqNr:               Long,
     state:               State,
-    eventSeenInInterval: Boolean = false
+    eventSeenInInterval: Boolean,
+    toSeqNr:             Long
   )
 
   def apply[C, E, S](
     setup: EventsourcedSetup[C, E, S],
     state: ReplayingState[S]
   ): Behavior[InternalProtocol] =
-    new EventsourcedReplayingEvents(setup).createBehavior(state)
+    new EventsourcedReplayingEvents(setup.setMdc(MDC.ReplayingEvents)).createBehavior(state)
 
 }
 
 @InternalApi
 private[persistence] class EventsourcedReplayingEvents[C, E, S](override val setup: EventsourcedSetup[C, E, S])
   extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
-  import setup.context.log
   import EventsourcedReplayingEvents.ReplayingState
 
   def createBehavior(state: ReplayingState[S]): Behavior[InternalProtocol] = {
     Behaviors.setup { _ ⇒
-      startRecoveryTimer(setup.timers, setup.settings.recoveryEventTimeout)
+      // protect against event recovery stalling forever because of journal overloaded and such
+      setup.startRecoveryTimer(snapshot = false)
 
-      replayEvents(state.seqNr + 1L, setup.recovery.toSequenceNr)
+      replayEvents(state.seqNr + 1L, state.toSeqNr)
 
-      withMdc(setup, MDC.ReplayingEvents) {
-        stay(state)
-      }
+      stay(state)
     }
   }
 
   private def stay(state: ReplayingState[S]): Behavior[InternalProtocol] =
-    withMdc(setup, MDC.ReplayingEvents) {
-      Behaviors.receiveMessage[InternalProtocol] {
-        case JournalResponse(r)      ⇒ onJournalResponse(state, r)
-        case SnapshotterResponse(r)  ⇒ onSnapshotterResponse(r)
-        case RecoveryTickEvent(snap) ⇒ onRecoveryTick(state, snap)
-        case cmd: IncomingCommand[C] ⇒ onCommand(cmd)
-        case RecoveryPermitGranted   ⇒ Behaviors.unhandled // should not happen, we already have the permit
-      }.receiveSignal(returnPermitOnStop)
-    }
+    Behaviors.receiveMessage[InternalProtocol] {
+      case JournalResponse(r)      ⇒ onJournalResponse(state, r)
+      case SnapshotterResponse(r)  ⇒ onSnapshotterResponse(r)
+      case RecoveryTickEvent(snap) ⇒ onRecoveryTick(state, snap)
+      case cmd: IncomingCommand[C] ⇒ onCommand(cmd)
+      case RecoveryPermitGranted   ⇒ Behaviors.unhandled // should not happen, we already have the permit
+    }.receiveSignal(returnPermitOnStop)
 
   private def onJournalResponse(
     state:    ReplayingState[S],
@@ -83,7 +79,7 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
     try {
       response match {
         case ReplayedMessage(repr) ⇒
-          val event = repr.payload.asInstanceOf[E]
+          val event = setup.eventAdapter.fromJournal(repr.payload.asInstanceOf[setup.eventAdapter.Per])
 
           try {
             val newState = state.copy(
@@ -95,9 +91,7 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
             case NonFatal(ex) ⇒ onRecoveryFailure(ex, repr.sequenceNr, Some(event))
           }
         case RecoverySuccess(highestSeqNr) ⇒
-          log.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
-          cancelRecoveryTimer(setup.timers)
-
+          setup.log.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
           onRecoveryCompleted(state)
 
         case ReplayMessagesFailure(cause) ⇒
@@ -123,9 +117,8 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
       if (state.eventSeenInInterval) {
         stay(state.copy(eventSeenInInterval = false))
       } else {
-        cancelRecoveryTimer(setup.timers)
         val msg = s"Replay timed out, didn't get event within ]${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.seqNr}]"
-        onRecoveryFailure(new RecoveryTimedOut(msg), state.seqNr, None) // TODO allow users to hook into this?
+        onRecoveryFailure(new RecoveryTimedOut(msg), state.seqNr, None)
       }
     } else {
       // snapshot timeout, but we're already in the events recovery phase
@@ -146,22 +139,22 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
    * @param message the message that was being processed when the exception was thrown
    */
   protected def onRecoveryFailure(cause: Throwable, sequenceNr: Long, message: Option[Any]): Behavior[InternalProtocol] = {
-    cancelRecoveryTimer(setup.timers)
+    setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
 
-    message match {
+    val msg = message match {
       case Some(evt) ⇒
-        setup.log.error(cause, "Exception during recovery while handling [{}] with sequence number [{}].", evt.getClass.getName, sequenceNr)
+        s"Exception during recovery while handling [${evt.getClass.getName}] with sequence number [$sequenceNr]. PersistenceId: [${setup.persistence}]"
       case None ⇒
-        setup.log.error(cause, "Exception during recovery.  Last known sequence number [{}]", setup.persistenceId, sequenceNr)
+        s"Exception during recovery.  Last known sequence number [$sequenceNr]. PersistenceId: [${setup.persistenceId}]"
     }
 
-    Behaviors.stopped
+    throw new JournalFailureException(msg, cause)
   }
 
   protected def onRecoveryCompleted(state: ReplayingState[S]): Behavior[InternalProtocol] = try {
     tryReturnRecoveryPermit("replay completed successfully")
-    setup.recoveryCompleted(setup.commandContext, state.state)
+    setup.recoveryCompleted(state.state)
 
     val running = EventsourcedRunning[C, E, S](
       setup,
@@ -170,14 +163,8 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
 
     tryUnstash(running)
   } finally {
-    cancelRecoveryTimer(setup.timers)
+    setup.cancelRecoveryTimer()
   }
-
-  // protect against event recovery stalling forever because of journal overloaded and such
-  private val EventRecoveryTickTimerKey = "event-recovery-tick"
-  private def startRecoveryTimer(timers: TimerScheduler[InternalProtocol], timeout: FiniteDuration): Unit =
-    timers.startPeriodicTimer(EventRecoveryTickTimerKey, RecoveryTickEvent(snapshot = false), timeout)
-  private def cancelRecoveryTimer(timers: TimerScheduler[InternalProtocol]): Unit = timers.cancel(EventRecoveryTickTimerKey)
 
 }
 

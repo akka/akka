@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 import akka.pattern.ask
 import scala.concurrent.Await
 import akka.util.Helpers.ConfigOps
+import akka.util.JavaDurationConverters._
 
 /**
  * This object contains elements which make writing actors and related code
@@ -124,6 +125,15 @@ abstract class Inbox {
    */
   @throws(classOf[java.util.concurrent.TimeoutException])
   def receive(max: FiniteDuration): Any
+
+  /**
+   * Receive the next message from this Inbox. This call will return immediately
+   * if the internal actor previously received a message, or it will block for
+   * up to the specified duration to await reception of a message. If no message
+   * is received a [[java.util.concurrent.TimeoutException]] will be raised.
+   */
+  @throws(classOf[java.util.concurrent.TimeoutException])
+  def receive(max: java.time.Duration): Any = receive(max.asScala)
 
   /**
    * Have the internal actor watch the target actor. When the target actor

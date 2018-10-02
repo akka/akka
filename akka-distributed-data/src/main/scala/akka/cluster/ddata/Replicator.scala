@@ -52,6 +52,7 @@ import akka.annotation.InternalApi
 import scala.collection.immutable.TreeSet
 import akka.cluster.MemberStatus
 import scala.annotation.varargs
+import akka.util.JavaDurationConverters._
 
 object ReplicatorSettings {
 
@@ -290,11 +291,27 @@ object Replicator {
   }
   final case class ReadFrom(n: Int, timeout: FiniteDuration) extends ReadConsistency {
     require(n >= 2, "ReadFrom n must be >= 2, use ReadLocal for n=1")
+
+    /**
+     * Java API
+     */
+    def this(n: Int, timeout: java.time.Duration) = this(n, timeout.asScala)
   }
   final case class ReadMajority(timeout: FiniteDuration, minCap: Int = DefaultMajorityMinCap) extends ReadConsistency {
     def this(timeout: FiniteDuration) = this(timeout, DefaultMajorityMinCap)
+
+    /**
+     * Java API
+     */
+    def this(timeout: java.time.Duration) = this(timeout.asScala, DefaultMajorityMinCap)
   }
-  final case class ReadAll(timeout: FiniteDuration) extends ReadConsistency
+  final case class ReadAll(timeout: FiniteDuration) extends ReadConsistency {
+
+    /**
+     * Java API
+     */
+    def this(timeout: java.time.Duration) = this(timeout.asScala)
+  }
 
   sealed trait WriteConsistency {
     def timeout: FiniteDuration
@@ -304,11 +321,27 @@ object Replicator {
   }
   final case class WriteTo(n: Int, timeout: FiniteDuration) extends WriteConsistency {
     require(n >= 2, "WriteTo n must be >= 2, use WriteLocal for n=1")
+
+    /**
+     * Java API
+     */
+    def this(n: Int, timeout: java.time.Duration) = this(n, timeout.asScala)
   }
   final case class WriteMajority(timeout: FiniteDuration, minCap: Int = DefaultMajorityMinCap) extends WriteConsistency {
     def this(timeout: FiniteDuration) = this(timeout, DefaultMajorityMinCap)
+
+    /**
+     * Java API
+     */
+    def this(timeout: java.time.Duration) = this(timeout.asScala, DefaultMajorityMinCap)
   }
-  final case class WriteAll(timeout: FiniteDuration) extends WriteConsistency
+  final case class WriteAll(timeout: FiniteDuration) extends WriteConsistency {
+
+    /**
+     * Java API
+     */
+    def this(timeout: java.time.Duration) = this(timeout.asScala)
+  }
 
   /**
    * Java API: The `ReadLocal` instance
@@ -814,6 +847,7 @@ object Replicator {
           override def zero: DeltaReplicatedData = this
           override def delta: Option[ReplicatedDelta] = None
           override def resetDelta: ReplicatedData = this
+          override def toString: String = "NoDeltaPlaceholder"
         }
     }
     case object DeltaNack extends ReplicatorMessage with DeadLetterSuppression
@@ -1623,7 +1657,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         }
         val chunk = (statusCount % totChunks).toInt
         val status = Status(dataEntries.collect {
-          case (key, (_, _)) if math.abs(key.hashCode) % totChunks == chunk ⇒ (key, getDigest(key))
+          case (key, (_, _)) if math.abs(key.hashCode % totChunks) == chunk ⇒ (key, getDigest(key))
         }, chunk, totChunks)
         to ! status
       }
@@ -1651,7 +1685,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val otherKeys = otherDigests.keySet
     val myKeys =
       if (totChunks == 1) dataEntries.keySet
-      else dataEntries.keysIterator.filter(key ⇒ math.abs(key.hashCode) % totChunks == chunk).toSet
+      else dataEntries.keysIterator.filter(key ⇒ math.abs(key.hashCode % totChunks) == chunk).toSet
     val otherMissingKeys = myKeys diff otherKeys
     val keys = (otherDifferentKeys ++ otherMissingKeys).take(maxDeltaElements)
     if (keys.nonEmpty) {
@@ -1915,13 +1949,17 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   def doneWhenRemainingSize: Int
 
-  lazy val (primaryNodes, secondaryNodes) = {
+  def primaryAndSecondaryNodes(requiresCausalDeliveryOfDeltas: Boolean): (Vector[Address], Vector[Address]) = {
     val primarySize = nodes.size - doneWhenRemainingSize
     if (primarySize >= nodes.size)
-      (nodes, Set.empty[Address])
+      (nodes.toVector, Vector.empty[Address])
     else {
-      // Prefer to use reachable nodes over the unreachable nodes first
-      val orderedNodes = scala.util.Random.shuffle(reachableNodes.toVector) ++ scala.util.Random.shuffle(unreachable.toVector)
+      // Prefer to use reachable nodes over the unreachable nodes first.
+      // When RequiresCausalDeliveryOfDeltas use deterministic order to so that sequence numbers of subsequent
+      // updates are in sync on the destination nodes.
+      val orderedNodes =
+        if (requiresCausalDeliveryOfDeltas) reachableNodes.toVector.sorted ++ unreachable.toVector.sorted
+        else scala.util.Random.shuffle(reachableNodes.toVector) ++ scala.util.Random.shuffle(unreachable.toVector)
       val (p, s) = orderedNodes.splitAt(primarySize)
       (p, s.take(MaxSecondaryNodes))
     }
@@ -1997,6 +2035,14 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   var gotLocalStoreReply = !durable
   var gotWriteNackFrom = Set.empty[Address]
 
+  private val (primaryNodes, secondaryNodes) = {
+    val requiresCausalDeliveryOfDeltas = delta match {
+      case None    ⇒ false
+      case Some(d) ⇒ d.dataEnvelope.data.isInstanceOf[RequiresCausalDeliveryOfDeltas]
+    }
+    primaryAndSecondaryNodes(requiresCausalDeliveryOfDeltas)
+  }
+
   override def preStart(): Unit = {
     val msg = deltaMsg match {
       case Some(d) ⇒ d
@@ -2015,7 +2061,10 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       gotWriteNackFrom += senderAddress()
       if (isDone) reply(isTimeout = false)
     case DeltaNack ⇒
-    // ok, will be retried with full state
+      // Deltas must be applied in order and we can't keep track of ordering of
+      // simultaneous updates so there is a chance that the delta could not be applied.
+      // Try again with the full state
+      sender() ! writeMsg
 
     case _: Replicator.UpdateSuccess[_] ⇒
       gotLocalStoreReply = true
@@ -2114,6 +2163,10 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   }
 
   val readMsg = Read(key.id)
+
+  private val (primaryNodes, secondaryNodes) = {
+    primaryAndSecondaryNodes(requiresCausalDeliveryOfDeltas = false)
+  }
 
   override def preStart(): Unit = {
     primaryNodes.foreach { replica(_) ! readMsg }

@@ -168,7 +168,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   private val regions: ConcurrentHashMap[String, ActorRef] = new ConcurrentHashMap
   private val proxies: ConcurrentHashMap[String, ActorRef] = new ConcurrentHashMap
 
-  private lazy val guardian = {
+  private lazy val guardian: ActorRef = {
     val guardianName: String =
       system.settings.config.getString("akka.cluster.sharding.guardian-name")
     val dispatcher = system.settings.config
@@ -229,13 +229,17 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     handOffStopMessage: Any): ActorRef = {
 
     if (settings.shouldHostShard(cluster)) {
-
-      implicit val timeout = system.settings.CreationTimeout
-      val startMsg = Start(typeName, entityProps, settings,
-        extractEntityId, extractShardId, allocationStrategy, handOffStopMessage)
-      val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
-      regions.put(typeName, shardRegion)
-      shardRegion
+      regions.get(typeName) match {
+        case null ⇒
+          // it's ok to Start several time, the guardian will deduplicate concurrent requests
+          implicit val timeout = system.settings.CreationTimeout
+          val startMsg = Start(typeName, entityProps, settings,
+            extractEntityId, extractShardId, allocationStrategy, handOffStopMessage)
+          val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
+          regions.put(typeName, shardRegion)
+          shardRegion
+        case ref ⇒ ref // already started, use cached ActorRef
+      }
     } else {
       log.debug("Starting Shard Region Proxy [{}] (no actors will be hosted on this node)...", typeName)
 
@@ -414,13 +418,18 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     extractEntityId: ShardRegion.ExtractEntityId,
     extractShardId:  ShardRegion.ExtractShardId): ActorRef = {
 
-    implicit val timeout = system.settings.CreationTimeout
-    val settings = ClusterShardingSettings(system).withRole(role)
-    val startMsg = StartProxy(typeName, dataCenter, settings, extractEntityId, extractShardId)
-    val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
-    // it must be possible to start several proxies, one per data center
-    proxies.put(proxyName(typeName, dataCenter), shardRegion)
-    shardRegion
+    proxies.get(proxyName(typeName, dataCenter)) match {
+      case null ⇒
+        // it's ok to StartProxy several time, the guardian will deduplicate concurrent requests
+        implicit val timeout = system.settings.CreationTimeout
+        val settings = ClusterShardingSettings(system).withRole(role)
+        val startMsg = StartProxy(typeName, dataCenter, settings, extractEntityId, extractShardId)
+        val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
+        // it must be possible to start several proxies, one per data center
+        proxies.put(proxyName(typeName, dataCenter), shardRegion)
+        shardRegion
+      case ref ⇒ ref // already started, use cached ActorRef
+    }
   }
 
   private def proxyName(typeName: String, dataCenter: Option[DataCenter]): String = {
@@ -533,6 +542,10 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     }
   }
 
+  /**
+   * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
+   * given `settings`. This could be changed in the future.
+   */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
     val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
     val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
@@ -610,7 +623,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
       context.system.deadLetters
   }
 
-  def receive = {
+  def receive: Receive = {
     case Start(typeName,
       entityProps,
       settings,
@@ -638,7 +651,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
               childName = "coordinator",
               minBackoff = coordinatorFailureBackoff,
               maxBackoff = coordinatorFailureBackoff * 5,
-              randomFactor = 0.2)
+              randomFactor = 0.2,
+              maxNrOfRetries = -1)
               .withDeploy(Deploy.local)
             val singletonSettings = settings.coordinatorSingletonSettings
               .withSingletonName("singleton")

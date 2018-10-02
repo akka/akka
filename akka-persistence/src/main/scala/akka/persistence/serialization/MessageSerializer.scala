@@ -39,12 +39,6 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
 
   override val includeManifest: Boolean = true
 
-  private lazy val transportInformation: Option[Serialization.Information] = {
-    val address = system.provider.getDefaultAddress
-    if (address.hasLocalScope) None
-    else Some(Serialization.Information(address, system))
-  }
-
   /**
    * Serializes persistent messages. Delegates serialization of a persistent
    * message's payload to a matching `akka.serialization.Serializer`.
@@ -167,26 +161,20 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       val serializer = serialization.findSerializerFor(payload)
       val builder = mf.PersistentPayload.newBuilder()
 
-      serializer match {
-        case ser2: SerializerWithStringManifest ⇒
-          val manifest = ser2.manifest(payload)
-          if (manifest != PersistentRepr.Undefined)
-            builder.setPayloadManifest(ByteString.copyFromUtf8(manifest))
-        case _ ⇒
-          if (serializer.includeManifest)
-            builder.setPayloadManifest(ByteString.copyFromUtf8(payload.getClass.getName))
-      }
+      val ms = Serializers.manifestFor(serializer, payload)
+      if (ms.nonEmpty) builder.setPayloadManifest(ByteString.copyFromUtf8(ms))
 
       builder.setPayload(ByteString.copyFrom(serializer.toBinary(payload)))
       builder.setSerializerId(serializer.identifier)
       builder
     }
 
-    // serialize actor references with full address information (defaultAddress)
-    transportInformation match {
-      case Some(ti) ⇒ Serialization.currentTransportInformation.withValue(ti) { payloadBuilder() }
-      case None     ⇒ payloadBuilder()
-    }
+    val oldInfo = Serialization.currentTransportInformation.value
+    try {
+      if (oldInfo eq null)
+        Serialization.currentTransportInformation.value = system.provider.serializationInformation
+      payloadBuilder()
+    } finally Serialization.currentTransportInformation.value = oldInfo
   }
 
   //

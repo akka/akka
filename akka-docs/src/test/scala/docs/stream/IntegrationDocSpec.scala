@@ -9,22 +9,21 @@ import akka.NotUsed
 import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
 import akka.stream.scaladsl._
-import akka.stream.ActorMaterializer
+import akka.stream._
+
 import scala.concurrent.Future
 import akka.testkit.TestProbe
-import akka.actor.ActorRef
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Status }
 import com.typesafe.config.ConfigFactory
-import akka.actor.Actor
-import akka.actor.Props
 import akka.util.Timeout
-import akka.stream.Attributes
-import akka.stream.ActorAttributes
+
 import scala.concurrent.ExecutionContext
-import akka.stream.ActorMaterializerSettings
 import java.util.concurrent.atomic.AtomicInteger
-import akka.stream.Supervision
+
 import akka.stream.scaladsl.Flow
 import akka.Done
+import akka.actor.Status.Status
+import akka.stream.QueueOfferResult.{ Dropped, Enqueued }
 
 object IntegrationDocSpec {
   import TwitterStreamQuickstartDocSpec._
@@ -194,6 +193,73 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     probe.expectMsg("mmartynas@somewhere.com")
     probe.expectMsg("akkateam@somewhere.com")
   }
+
+  "actorRefWithAck" in {
+    //#actorRefWithAck
+    val words: Source[String, NotUsed] =
+      Source(List("hello", "hi"))
+
+    // sent from actor to stream to "ack" processing of given element
+    val AckMessage = AckingReceiver.Ack
+
+    // sent from stream to actor to indicate start, end or failure of stream:
+    val InitMessage = AckingReceiver.StreamInitialized
+    val OnCompleteMessage = AckingReceiver.StreamCompleted
+    val onErrorMessage = (ex: Throwable) ⇒ AckingReceiver.StreamFailure(ex)
+
+    val probe = TestProbe()
+    val receiver = system.actorOf(
+      Props(new AckingReceiver(probe.ref, ackWith = AckMessage)))
+    val sink = Sink.actorRefWithAck(
+      receiver,
+      onInitMessage = InitMessage,
+      ackMessage = AckMessage,
+      onCompleteMessage = OnCompleteMessage,
+      onFailureMessage = onErrorMessage
+    )
+
+    words
+      .map(_.toLowerCase)
+      .runWith(sink)
+
+    probe.expectMsg("Stream initialized!")
+    probe.expectMsg("hello")
+    probe.expectMsg("hi")
+    probe.expectMsg("Stream completed!")
+    //#actorRefWithAck
+  }
+
+  //#actorRefWithAck-actor
+  object AckingReceiver {
+    case object Ack
+
+    case object StreamInitialized
+    case object StreamCompleted
+    final case class StreamFailure(ex: Throwable)
+  }
+
+  class AckingReceiver(probe: ActorRef, ackWith: Any) extends Actor with ActorLogging {
+    import AckingReceiver._
+
+    def receive: Receive = {
+      case StreamInitialized ⇒
+        log.info("Stream initialized!")
+        probe ! "Stream initialized!"
+        sender() ! Ack // ack to allow the stream to proceed sending more elements
+
+      case el: String ⇒
+        log.info("Received element: {}", el)
+        probe ! el
+        sender() ! Ack // ack to allow the stream to proceed sending more elements
+
+      case StreamCompleted ⇒
+        log.info("Stream completed!")
+        probe ! "Stream completed!"
+      case StreamFailure(ex) ⇒
+        log.error(ex, "Stream failed!")
+    }
+  }
+  //#actorRefWithAck-actor
 
   "lookup email with mapAsync and supervision" in {
     val addressSystem = new AddressSystem2
@@ -405,6 +471,32 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
       "after: H",
       "after: I",
       "after: J"))
+  }
+
+  "illustrate use of source queue" in {
+    //#source-queue
+    val bufferSize = 5
+    val elementsToProcess = 3
+
+    val queue = Source
+      .queue[Int](bufferSize, OverflowStrategy.backpressure)
+      .throttle(elementsToProcess, 3.second)
+      .map(x ⇒ x * x)
+      .toMat(Sink.foreach(x ⇒ println(s"completed $x")))(Keep.left)
+      .run()
+
+    val source = Source(1 to 10)
+
+    implicit val ec = system.dispatcher
+    source.mapAsync(1)(x ⇒ {
+      queue.offer(x).map {
+        case QueueOfferResult.Enqueued    ⇒ println(s"enqueued $x")
+        case QueueOfferResult.Dropped     ⇒ println(s"dropped $x")
+        case QueueOfferResult.Failure(ex) ⇒ println(s"Offer failed ${ex.getMessage}")
+        case QueueOfferResult.QueueClosed ⇒ println("Source Queue closed")
+      }
+    }).runWith(Sink.ignore)
+    //#source-queue
   }
 
 }

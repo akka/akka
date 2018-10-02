@@ -1,5 +1,17 @@
 # Mailboxes
 
+## Dependency
+
+To use Mailboxes, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 An Akka `Mailbox` holds the messages that are destined for an `Actor`.
 Normally each `Actor` has its own mailbox, but with for example a `BalancingPool`
 all routees will share a single mailbox instance.
@@ -13,15 +25,15 @@ by having that actor @scala[extend]@java[implement] the parameterized @scala[tra
 an example:
 
 Scala
-:   @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #required-mailbox-class }
+:   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #required-mailbox-class }
 
 Java
-:   @@snip [MyBoundedActor.java]($code$/java/jdocs/actor/MyBoundedActor.java) { #my-bounded-untyped-actor }
+:   @@snip [MyBoundedActor.java](/akka-docs/src/test/java/jdocs/actor/MyBoundedActor.java) { #my-bounded-untyped-actor }
 
 The type parameter to the `RequiresMessageQueue` @scala[trait]@java[interface] needs to be mapped to a mailbox in
 configuration like this:
 
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #bounded-mailbox-config #required-mailbox-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #bounded-mailbox-config #required-mailbox-config }
 
 Now every time you create an actor of type `MyBoundedActor` it will try to get a bounded
 mailbox. If the actor has a different mailbox configured in deployment, either directly or via
@@ -63,7 +75,8 @@ then that names a configuration section describing the mailbox type to be
 used.
  2. If the actor’s `Props` contains a mailbox selection—i.e. `withMailbox`
 was called on it—then that names a configuration section describing the
-mailbox type to be used.
+mailbox type to be used (note that this needs to be an absolute config path, 
+for example `myapp.special-mailbox`, and is not nested inside the `akka` namespace).
  3. If the dispatcher’s configuration section contains a `mailbox-type` key
 the same section will be used to configure the mailbox type.
  4. If the actor requires a mailbox type as described above then the mapping for
@@ -186,46 +199,46 @@ The following mailboxes should only be used with zero `mailbox-push-timeout-time
 How to create a PriorityMailbox:
 
 Scala
-:   @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-mailbox }
+:   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-mailbox }
 
 Java
-:   @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #prio-mailbox }
+:   @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #prio-mailbox }
 
 And then add it to the configuration:
 
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-dispatcher-config }
 
 And then an example on how you would use it:
 
 Scala
-:   @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-dispatcher }
+:   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-dispatcher }
 
 Java
-:   @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #prio-dispatcher }
+:   @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #prio-dispatcher }
 
-It is also possible to configure a mailbox type directly like this:
+It is also possible to configure a mailbox type directly like this (this is a top-level configuration entry):
 
 Scala
-:   @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-mailbox-config #mailbox-deployment-config }
+:   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-mailbox-config #mailbox-deployment-config }
 
 Java
-:   @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-mailbox-config-java #mailbox-deployment-config }
+:   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #prio-mailbox-config-java #mailbox-deployment-config }
 
 And then use it either from deployment like this:
 
 Scala
-:   @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-mailbox-in-config }
+:   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-mailbox-in-config }
 
 Java
-:   @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-mailbox-in-config }
+:   @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-mailbox-in-config }
 
 Or code like this:
 
 Scala
-:   @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-mailbox-in-code }
+:   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-mailbox-in-code }
 
 Java
-:   @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-mailbox-in-code }
+:   @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-mailbox-in-code }
 
 ### ControlAwareMailbox
 
@@ -234,42 +247,42 @@ immediately no matter how many other messages are already in its mailbox.
 
 It can be configured like this:
 
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #control-aware-mailbox-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #control-aware-mailbox-config }
 
 Control messages need to extend the `ControlMessage` trait:
 
 Scala
-:   @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #control-aware-mailbox-messages }
+:   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #control-aware-mailbox-messages }
 
 Java
-:   @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #control-aware-mailbox-messages }
+:   @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #control-aware-mailbox-messages }
 
 And then an example on how you would use it:
 
 Scala
-:   @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #control-aware-dispatcher }
+:   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #control-aware-dispatcher }
 
 Java
-:   @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #control-aware-dispatcher }
+:   @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #control-aware-dispatcher }
 
 ## Creating your own Mailbox type
 
 An example is worth a thousand quacks:
 
 Scala
-:   @@snip [MyUnboundedMailbox.scala]($code$/scala/docs/dispatcher/MyUnboundedMailbox.scala) { #mailbox-marker-interface }
+:   @@snip [MyUnboundedMailbox.scala](/akka-docs/src/test/scala/docs/dispatcher/MyUnboundedMailbox.scala) { #mailbox-marker-interface }
 
 Java
-:   @@snip [MyUnboundedMessageQueueSemantics.java]($code$/java/jdocs/dispatcher/MyUnboundedMessageQueueSemantics.java) { #mailbox-marker-interface }
+:   @@snip [MyUnboundedMessageQueueSemantics.java](/akka-docs/src/test/java/jdocs/dispatcher/MyUnboundedMessageQueueSemantics.java) { #mailbox-marker-interface }
 
 
 Scala
-:   @@snip [MyUnboundedMailbox.scala]($code$/scala/docs/dispatcher/MyUnboundedMailbox.scala) { #mailbox-implementation-example }
+:   @@snip [MyUnboundedMailbox.scala](/akka-docs/src/test/scala/docs/dispatcher/MyUnboundedMailbox.scala) { #mailbox-implementation-example }
 
 Java
-:   @@snip [MyUnboundedMailbox.java]($code$/java/jdocs/dispatcher/MyUnboundedMailbox.java) { #mailbox-implementation-example }
+:   @@snip [MyUnboundedMailbox.java](/akka-docs/src/test/java/jdocs/dispatcher/MyUnboundedMailbox.java) { #mailbox-implementation-example }
 
-And then you just specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher
+And then you specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher
 configuration, or the mailbox configuration.
 
 @@@ note
@@ -286,15 +299,15 @@ dispatcher or mailbox setting using it.
 
 You can also use the mailbox as a requirement on the dispatcher like this:
 
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #custom-mailbox-config-java }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #custom-mailbox-config-java }
 
 Or by defining the requirement on your actor class like this:
 
 Scala
-:   @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #require-mailbox-on-actor }
+:   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #require-mailbox-on-actor }
 
 Java
-:   @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #require-mailbox-on-actor }
+:   @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #require-mailbox-on-actor }
 
 ## Special Semantics of `system.actorOf`
 

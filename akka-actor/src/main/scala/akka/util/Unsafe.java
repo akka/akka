@@ -50,7 +50,7 @@ public final class Unsafe {
         } else {
             final char[] chars = (char[]) instance.getObject(str, stringValueFieldOffset);
             int i = 0;
-            while (i < chars.length) {
+            while (i < str.length()) {
                 bytes[i] = (byte) chars[i++];
             }
         }

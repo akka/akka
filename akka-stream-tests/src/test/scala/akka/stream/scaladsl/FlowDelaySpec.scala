@@ -8,6 +8,7 @@ import akka.Done
 import akka.stream.Attributes._
 import akka.stream.OverflowStrategies.EmitEarly
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream._
@@ -128,7 +129,7 @@ class FlowDelaySpec extends StreamSpec {
         .withAttributes(inputBuffer(16, 16))
         .runWith(TestSink.probe[Int])
         .request(100)
-        .expectError(new BufferOverflowException("Buffer overflow for delay combinator (max capacity was: 16)!"))
+        .expectError(new BufferOverflowException("Buffer overflow for delay operator (max capacity was: 16)!"))
 
     }
 

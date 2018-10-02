@@ -10,13 +10,13 @@ import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.Duration;
 
 import static org.junit.Assert.*;
 
 import static jdocs.actor.fsm.FSMDocTest.StateType.*;
 import static jdocs.actor.fsm.FSMDocTest.Messages.*;
-import static java.util.concurrent.TimeUnit.*;
+
+import java.time.Duration;
 
 public class FSMDocTest extends AbstractJavaTest {
   static ActorSystem system;
@@ -64,7 +64,7 @@ public class FSMDocTest extends AbstractJavaTest {
     //#modifier-syntax
     when(SomeState, matchAnyEvent((msg, data) -> {
         return goTo(Processing).using(newData).
-          forMax(Duration.create(5, SECONDS)).replying(WillDo);
+          forMax(Duration.ofSeconds(5)).replying(WillDo);
     }));
     //#modifier-syntax
 
@@ -74,8 +74,8 @@ public class FSMDocTest extends AbstractJavaTest {
 
     //#transition-syntax
     onTransition(
-      matchState(Active, Idle, () -> setTimer("timeout",
-        Tick, Duration.create(1, SECONDS), true)).
+      matchState(Idle, Active, () -> setTimer("timeout",
+        Tick, Duration.ofSeconds(1L), true)).
       state(Active, null, () -> cancelTimer("timeout")).
       state(null, Idle, (f, t) -> log().info("entering Idle from " + f)));
     //#transition-syntax

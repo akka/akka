@@ -17,12 +17,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import akka.persistence.fsm.PersistentFSM.CurrentState;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
-import scala.concurrent.duration.Duration;
 
 import static akka.persistence.fsm.PersistentFSM.FSMState;
 
@@ -129,13 +128,13 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
-            within(duration("0.9 seconds"), remainingOrDefault(), () -> {
+            within(Duration.ofMillis(900), getRemainingOrDefault(), () -> {
                 PersistentFSM.Transition st = expectMsgClass(PersistentFSM.Transition.class);
                 assertTransition(st, fsmRef, UserState.SHOPPING, UserState.INACTIVE);
                 return null;
             });
 
-            within(duration("1.9 seconds"), remainingOrDefault(), () -> expectTerminated(fsmRef));
+            within(Duration.ofMillis(1900), getRemainingOrDefault(), () -> expectTerminated(fsmRef));
         }};
     }
 
@@ -296,7 +295,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             PersistentFSM.Transition stateTransition = expectMsgClass(PersistentFSM.Transition.class);
             assertTransition(stateTransition, fsmRef, UserState.LOOKING_AROUND, UserState.SHOPPING);
 
-            expectNoMsg(duration("0.6seconds")); //randomly chosen delay, less than the timeout, before stopping the FSM
+            expectNoMessage(Duration.ofMillis(600)); //randomly chosen delay, less than the timeout, before stopping the FSM
             fsmRef.tell(PoisonPill.getInstance(), ActorRef.noSender());
             expectTerminated(fsmRef);
 
@@ -308,13 +307,13 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.SHOPPING);
 
-            within(duration("0.9 seconds"), remainingOrDefault(), () -> {
+            within(Duration.ofMillis(900), getRemainingOrDefault(), () -> {
                 PersistentFSM.Transition st = expectMsgClass(PersistentFSM.Transition.class);
                 assertTransition(st, recoveredFsmRef, UserState.SHOPPING, UserState.INACTIVE);
                 return null;
             });
 
-            expectNoMsg(duration("0.9 seconds")); //randomly chosen delay, less than the timeout, before stopping the FSM
+            expectNoMessage(Duration.ofMillis(900)); //randomly chosen delay, less than the timeout, before stopping the FSM
             recoveredFsmRef.tell(PoisonPill.getInstance(), ActorRef.noSender());
             expectTerminated(recoveredFsmRef);
 
@@ -325,7 +324,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
             currentState = expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
             assertEquals(currentState.state(), UserState.INACTIVE);
 
-            within(duration("1.9 seconds"), remainingOrDefault(), () -> expectTerminated(recoveredFsmRef2));
+            within(Duration.ofMillis(1900), getRemainingOrDefault(), () -> expectTerminated(recoveredFsmRef2));
 
         }};
     }
@@ -511,8 +510,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 matchEvent(AddItem.class,
                     (event, data) ->
                         goTo(UserState.SHOPPING).applying(new ItemAdded(event.getItem()))
-                            .forMax(Duration.create(1, TimeUnit.SECONDS))
-                )
+                            .forMax(Duration.ofSeconds(1)))
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
             );
 
@@ -520,7 +518,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 matchEvent(AddItem.class,
                     (event, data) ->
                         stay().applying(new ItemAdded(event.getItem()))
-                           .forMax(Duration.create(1, TimeUnit.SECONDS)))
+                           .forMax(Duration.ofSeconds(1)))
                 .event(Buy.class,
                     //#customer-andthen-example
                     (event, data) ->
@@ -544,7 +542,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
                 .event(StateTimeout$.class,
                     (event, data) ->
-                        goTo(UserState.INACTIVE).forMax(Duration.create(2, TimeUnit.SECONDS)))
+                        goTo(UserState.INACTIVE).forMax(Duration.ofSeconds(2)))
             );
 
 
@@ -552,7 +550,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
                 matchEvent(AddItem.class,
                     (event, data) ->
                         goTo(UserState.SHOPPING).applying(new ItemAdded(event.getItem()))
-                            .forMax(Duration.create(1, TimeUnit.SECONDS)))
+                            .forMax(Duration.ofSeconds(1)))
                 .event(GetCurrentCart.class, (event, data) -> stay().replying(data))
                 .event(StateTimeout$.class,
                     (event, data) ->
@@ -641,7 +639,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
         new TestKit(system) {{
             ActorRef persistentActor = system.actorOf(Props.create(PFSMwithLog.class));
             persistentActor.tell("check", getRef());
-            expectMsg(duration("1000 millis"), "started");
+            expectMsg(Duration.ofSeconds(1), "started");
         }};
     }
 }

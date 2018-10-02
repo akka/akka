@@ -1,36 +1,14 @@
 # Cluster Metrics Extension
 
-## Introduction
+## Dependency
 
-The member nodes of the cluster can collect system health metrics and publish that to other cluster nodes
-and to the registered subscribers on the system event bus with the help of Cluster Metrics Extension.
+To use Cluster Metrics Extension, you must add the following dependency in your project:
 
-Cluster metrics information is primarily used for load-balancing routers,
-and can also be used to implement advanced metrics-based node life cycles,
-such as "Node Let-it-crash" when CPU steal time becomes excessive.
-
-Cluster Metrics Extension is a separate Akka module delivered in `akka-cluster-metrics` jar.
-
-To enable usage of the extension you need to add the following dependency to your project:
-:
-
-Scala
-:  @@@ vars
-```
-"com.typesafe.akka" % "akka-cluster-metrics_$scala.binary_version$" % "$akka.version$"
-```
-@@@
-
-Java
-:  @@@ vars
-```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-cluster-metrics_$scala.binary_version$</artifactId>
-  <version>$akka.version$</version>
-</dependency>
-```
-@@@
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster-metrics_$scala.binary_version$
+  version=$akka.version$
+}
 
 and add the following configuration stanza to your `application.conf`
 :
@@ -38,6 +16,23 @@ and add the following configuration stanza to your `application.conf`
 ```
 akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
 ```
+
+## Introduction
+
+To enable usage of the extension you need to add the following dependency to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-cluster-metrics_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+The member nodes of the cluster can collect system health metrics and publish that to other cluster nodes
+and to the registered subscribers on the system event bus with the help of Cluster Metrics Extension.
+
+Cluster metrics information is primarily used for load-balancing routers,
+and can also be used to implement advanced metrics-based node life cycles,
+such as "Node Let-it-crash" when CPU steal time becomes excessive.
 
 Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up), if that feature is enabled,
 will participate in Cluster Metrics collection and dissemination.
@@ -114,26 +109,13 @@ unique per instance directory. You can control the extract directory with the
 
 @@@
 
-To enable usage of Sigar you can add the following dependency to the user project
-:
+To enable usage of Sigar you can add the following dependency to the user project:
 
-Scala
-:  @@@vars
-```
-"io.kamon" % "sigar-loader" % "$sigar_loader.version$"
-```
-@@@
-
-Java
-:  @@@vars
-```
-<dependency>
-  <groupId>io.kamon</groupId>
-  <artifactId>sigar-loader</artifactId>
-  <version>$sigar_loader.version$</version>
-</dependency>
-```
-@@@
+@@dependency[sbt,Maven,Gradle] {
+  group="io.kamon"
+  artifact="sigar-loader"
+  version="$sigar_loader.version$"
+}
 
 You can download Kamon sigar-loader from [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Csigar-loader)
 
@@ -156,18 +138,18 @@ Let's take a look at this router in action. What can be more demanding than calc
 The backend worker that performs the factorial calculation:
 
 Scala
-:  @@snip [FactorialBackend.scala]($code$/scala/docs/cluster/FactorialBackend.scala) { #backend }
+:  @@snip [FactorialBackend.scala](/akka-docs/src/test/scala/docs/cluster/FactorialBackend.scala) { #backend }
 
 Java
-:  @@snip [FactorialBackend.java]($code$/java/jdocs/cluster/FactorialBackend.java) { #backend }
+:  @@snip [FactorialBackend.java](/akka-docs/src/test/java/jdocs/cluster/FactorialBackend.java) { #backend }
 
 The frontend that receives user jobs and delegates to the backends via the router:
 
 Scala
-:  @@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #frontend }
+:  @@snip [FactorialFrontend.scala](/akka-docs/src/test/scala/docs/cluster/FactorialFrontend.scala) { #frontend }
 
 Java
-:  @@snip [FactorialFrontend.java]($code$/java/jdocs/cluster/FactorialFrontend.java) { #frontend }
+:  @@snip [FactorialFrontend.java](/akka-docs/src/test/java/jdocs/cluster/FactorialFrontend.java) { #frontend }
 
 As you can see, the router is defined in the same way as other routers, and in this case it is configured as follows:
 
@@ -198,10 +180,10 @@ other things work in the same way as other routers.
 The same type of router could also have been defined in code:
 
 Scala
-:  @@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #router-lookup-in-code #router-deploy-in-code }
+:  @@snip [FactorialFrontend.scala](/akka-docs/src/test/scala/docs/cluster/FactorialFrontend.scala) { #router-lookup-in-code #router-deploy-in-code }
 
 Java
-:  @@snip [FactorialFrontend.java]($code$/java/jdocs/cluster/FactorialFrontend.java) { #router-lookup-in-code #router-deploy-in-code }
+:  @@snip [FactorialFrontend.java](/akka-docs/src/test/java/jdocs/cluster/FactorialFrontend.java) { #router-lookup-in-code #router-deploy-in-code }
 
 The easiest way to run **Adaptive Load Balancing** example yourself is to download the ready to run
 @scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)] @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
@@ -214,10 +196,10 @@ The source code of this sample can be found in the
 It is possible to subscribe to the metrics events directly to implement other functionality.
 
 Scala
-:  @@snip [MetricsListener.scala]($code$/scala/docs/cluster/MetricsListener.scala) { #metrics-listener }
+:  @@snip [MetricsListener.scala](/akka-docs/src/test/scala/docs/cluster/MetricsListener.scala) { #metrics-listener }
 
 Java
-:  @@snip [MetricsListener.java]($code$/java/jdocs/cluster/MetricsListener.java) { #metrics-listener }
+:  @@snip [MetricsListener.java](/akka-docs/src/test/java/jdocs/cluster/MetricsListener.java) { #metrics-listener }
 
 ## Custom Metrics Collector
 
@@ -235,4 +217,4 @@ Custom metrics collector implementation class must be specified in the
 
 The Cluster metrics extension can be configured with the following properties:
 
-@@snip [reference.conf]($akka$/akka-cluster-metrics/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-cluster-metrics/src/main/resources/reference.conf)

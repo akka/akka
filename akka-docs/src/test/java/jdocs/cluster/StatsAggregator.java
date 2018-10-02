@@ -6,11 +6,10 @@ package jdocs.cluster;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import jdocs.cluster.StatsMessages.JobFailed;
 import jdocs.cluster.StatsMessages.StatsResult;
-import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ReceiveTimeout;
 import akka.actor.AbstractActor;
@@ -29,7 +28,7 @@ public class StatsAggregator extends AbstractActor {
 
   @Override
   public void preStart() {
-    getContext().setReceiveTimeout(Duration.create(3, TimeUnit.SECONDS));
+    getContext().setReceiveTimeout(Duration.ofSeconds(3));
   }
 
   @Override

@@ -42,14 +42,14 @@ implementations like Akka Streams offer a nice user API).
 
 The Akka Streams API is completely decoupled from the Reactive Streams
 interfaces. While Akka Streams focus on the formulation of transformations on
-data streams the scope of Reactive Streams is just to define a common mechanism
+data streams the scope of Reactive Streams is to define a common mechanism
 of how to move data across an asynchronous boundary without losses, buffering
 or resource exhaustion.
 
 The relationship between these two is that the Akka Streams API is geared
 towards end-users while the Akka Streams implementation uses the Reactive
-Streams interfaces internally to pass data between the different processing
-stages. For this reason you will not find any resemblance between the Reactive
+Streams interfaces internally to pass data between the different operators.
+For this reason you will not find any resemblance between the Reactive
 Streams interfaces and the Akka Streams API. This is in line with the
 expectations of the Reactive Streams project, whose primary purpose is to
 define interfaces such that different streaming implementation can
@@ -69,7 +69,7 @@ look like and what they can do.
 point.
  * The bottom-up learners may feel more at home rummaging through the
 @ref:[Streams Cookbook](stream-cookbook.md).
- * For a complete overview of the built-in processing stages you can look at the
-table in @ref:[stages overview](stages-overview.md)
+ * For a complete overview of the built-in processing operators you can look at the
+@ref:[operator index](operators/index.md)
  * The other sections can be read sequentially or as needed during the previous
 steps, each digging deeper into specific topics.

@@ -44,6 +44,8 @@ object ClusterSingletonManagerSettings {
    */
   def apply(system: ActorSystem): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
+      // note that this setting has some additional logic inside the ClusterSingletonManager
+      // falling back to DowningProvider.downRemovalMargin if it is off/Zero
       .withRemovalMargin(Cluster(system).settings.DownRemovalMargin)
 
   /**
@@ -726,7 +728,7 @@ class ClusterSingletonManager(
         setTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), handOverRetryInterval, repeat = false)
         stay
       } else
-        throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [${newOldestOption}] never occured")
+        throw new ClusterSingletonManagerIsStuck(s"Expected hand-over to [${newOldestOption}] never occurred")
 
     case Event(HandOverToMe, WasOldestData(singleton, singletonTerminated, _)) ⇒
       gotoHandingOver(singleton, singletonTerminated, Some(sender()))
@@ -804,6 +806,9 @@ class ClusterSingletonManager(
     case Event(MemberRemoved(m, _), _) if m.uniqueAddress == cluster.selfUniqueAddress ⇒
       logInfo("Self removed, stopping ClusterSingletonManager")
       stop()
+    case Event(_: OldestChanged, _) ⇒
+      // not interested anymore - waiting for removal
+      stay
   }
 
   def selfMemberExited(): Unit = {

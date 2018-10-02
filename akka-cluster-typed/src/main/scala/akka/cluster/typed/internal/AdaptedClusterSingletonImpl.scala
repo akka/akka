@@ -10,10 +10,10 @@ import java.util.function.{ Function ⇒ JFunction }
 import akka.actor.{ ExtendedActorSystem, InvalidActorNameException }
 import akka.annotation.InternalApi
 import akka.cluster.singleton.{ ClusterSingletonProxy, ClusterSingletonManager ⇒ OldSingletonManager }
-import akka.actor.typed.Behavior.UntypedPropsBehavior
 import akka.cluster.typed.{ Cluster, ClusterSingleton, ClusterSingletonImpl, ClusterSingletonSettings }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
+import akka.cluster.ClusterSettings.DataCenter
 
 /**
  * INTERNAL API:
@@ -21,28 +21,26 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 @InternalApi
 private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) extends ClusterSingleton {
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted actor systems can be used for the typed cluster singleton")
+
   import ClusterSingletonImpl._
   import akka.actor.typed.scaladsl.adapter._
 
   private lazy val cluster = Cluster(system)
   private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
 
-  private val proxies = new ConcurrentHashMap[String, ActorRef[_]]()
+  private val proxies = new ConcurrentHashMap[(String, Option[DataCenter]), ActorRef[_]]()
 
   override def spawn[A](
     behavior:           Behavior[A],
     singletonName:      String,
     props:              Props,
     settings:           ClusterSingletonSettings,
-    terminationMessage: A) = {
+    terminationMessage: A): ActorRef[A] = {
 
     if (settings.shouldRunManager(cluster)) {
       val managerName = managerNameFor(singletonName)
       // start singleton on this node
-      val untypedProps = behavior match {
-        case u: UntypedPropsBehavior[_] ⇒ u.untypedProps(props) // PersistentBehavior
-        case _                          ⇒ PropsAdapter(behavior, props)
-      }
+      val untypedProps = PropsAdapter(behavior, props)
       try {
         untypedSystem.systemActorOf(
           OldSingletonManager.props(untypedProps, terminationMessage, settings.toManagerSettings(singletonName)),
@@ -53,15 +51,19 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
       }
     }
 
-    val proxyCreator = new JFunction[String, ActorRef[_]] {
-      def apply(singletonName: String): ActorRef[_] = {
-        val proxyName = s"singletonProxy$singletonName"
+    getProxy(singletonName, settings)
+  }
+
+  private def getProxy[T](name: String, settings: ClusterSingletonSettings): ActorRef[T] = {
+    val proxyCreator = new JFunction[(String, Option[DataCenter]), ActorRef[_]] {
+      def apply(singletonNameAndDc: (String, Option[DataCenter])): ActorRef[_] = {
+        val (singletonName, _) = singletonNameAndDc
+        val proxyName = s"singletonProxy$singletonName-${settings.dataCenter.getOrElse("no-dc")}"
         untypedSystem.systemActorOf(
           ClusterSingletonProxy.props(s"/system/${managerNameFor(singletonName)}", settings.toProxySettings(singletonName)),
           proxyName)
       }
     }
-
-    proxies.computeIfAbsent(singletonName, proxyCreator).asInstanceOf[ActorRef[A]]
+    proxies.computeIfAbsent((name, settings.dataCenter), proxyCreator).asInstanceOf[ActorRef[T]]
   }
 }

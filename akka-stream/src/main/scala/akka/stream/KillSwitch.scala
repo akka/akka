@@ -184,7 +184,7 @@ private[stream] final class TerminationSignal {
 
 /**
  * A [[UniqueKillSwitch]] is always a result of a materialization (unlike [[SharedKillSwitch]] which is constructed
- * before any materialization) and it always controls that graph and stage which yielded the materialized value.
+ * before any materialization) and it always controls that graph and operator which yielded the materialized value.
  *
  * After calling [[UniqueKillSwitch#shutdown()]] the running instance of the [[Graph]] of [[FlowShape]] that materialized to the
  * [[UniqueKillSwitch]] will complete its downstream and cancel its upstream (unless if finished or failed already in which

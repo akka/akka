@@ -5,21 +5,21 @@
 package jdocs.akka.typed;
 
 //#imports
+
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Terminated;
+import akka.actor.typed.Props;
+import akka.actor.typed.DispatcherSelector;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.actor.typed.javadsl.AskPattern;
-import akka.util.Timeout;
 
 //#imports
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 public class IntroTest {
 
@@ -42,35 +42,112 @@ public class IntroTest {
 
     public static final class Greeted {
       public final String whom;
+      public final ActorRef<Greet> from;
 
-      public Greeted(String whom) {
+      public Greeted(String whom, ActorRef<Greet> from) {
         this.whom = whom;
+        this.from = from;
       }
     }
 
     public static final Behavior<Greet> greeter = Behaviors.receive((ctx, msg) -> {
-      System.out.println("Hello " + msg.whom + "!");
-      msg.replyTo.tell(new Greeted(msg.whom));
+      ctx.getLog().info("Hello {}!", msg.whom);
+      msg.replyTo.tell(new Greeted(msg.whom, ctx.getSelf()));
       return Behaviors.same();
     });
   }
   //#hello-world-actor
 
-  public static void main(String[] args) {
-    //#hello-world
-    final ActorSystem<HelloWorld.Greet> system =
-      ActorSystem.create(HelloWorld.greeter, "hello");
+  //#hello-world-bot
+  public abstract static class HelloWorldBot {
+    private HelloWorldBot() {
+    }
 
-    final CompletionStage<HelloWorld.Greeted> reply =
-      AskPattern.ask(system,
-        (ActorRef<HelloWorld.Greeted> replyTo) -> new HelloWorld.Greet("world", replyTo),
-        new Timeout(3, TimeUnit.SECONDS), system.scheduler());
+    public static final Behavior<HelloWorld.Greeted> bot(int greetingCounter, int max) {
+      return Behaviors.receive((ctx, msg) -> {
+        int n = greetingCounter + 1;
+        ctx.getLog().info("Greeting {} for {}", n, msg.whom);
+        if (n == max) {
+          return Behaviors.stopped();
+        } else {
+          msg.from.tell(new HelloWorld.Greet(msg.whom, ctx.getSelf()));
+          return bot(n, max);
+        }
+      });
+    }
+  }
+  //#hello-world-bot
 
-    reply.thenAccept(greeting -> {
-      System.out.println("result: " + greeting.whom);
-      system.terminate();
-    });
+  //#hello-world-main
+  public abstract static class HelloWorldMain {
+    private HelloWorldMain() {
+    }
+
+    public static class Start {
+      public final String name;
+
+      public Start(String name) {
+        this.name = name;
+      }
+    }
+
+    public static final Behavior<Start> main =
+      Behaviors.setup(context -> {
+        final ActorRef<HelloWorld.Greet> greeter =
+            context.spawn(HelloWorld.greeter, "greeter");
+
+        return Behaviors.receiveMessage(msg -> {
+          ActorRef<HelloWorld.Greeted> replyTo =
+              context.spawn(HelloWorldBot.bot(0, 3), msg.name);
+          greeter.tell(new HelloWorld.Greet(msg.name, replyTo));
+          return Behaviors.same();
+        });
+      });
+  }
+  //#hello-world-main
+
+  public abstract static class CustomDispatchersExample {
+    private CustomDispatchersExample() {
+    }
+
+    public static class Start {
+      public final String name;
+
+      public Start(String name) {
+        this.name = name;
+      }
+    }
+
+    //#hello-world-main-with-dispatchers
+    public static final Behavior<Start> main =
+      Behaviors.setup(context -> {
+        final String dispatcherPath = "akka.actor.default-blocking-io-dispatcher";
+
+        Props props = DispatcherSelector.fromConfig(dispatcherPath);
+        final ActorRef<HelloWorld.Greet> greeter =
+            context.spawn(HelloWorld.greeter, "greeter", props);
+
+        return Behaviors.receiveMessage(msg -> {
+          ActorRef<HelloWorld.Greeted> replyTo =
+              context.spawn(HelloWorldBot.bot(0, 3), msg.name);
+          greeter.tell(new HelloWorld.Greet(msg.name, replyTo));
+          return Behaviors.same();
+        });
+      });
+    //#hello-world-main-with-dispatchers
+  }
+
+  public static void main(String[] args) throws Exception {
     //#hello-world
+    final ActorSystem<HelloWorldMain.Start> system =
+      ActorSystem.create(HelloWorldMain.main, "hello");
+
+    system.tell(new HelloWorldMain.Start("World"));
+    system.tell(new HelloWorldMain.Start("Akka"));
+    //#hello-world
+
+    Thread.sleep(3000);
+    system.terminate();
   }
 
   //#chatroom-actor
@@ -221,15 +298,16 @@ public class IntroTest {
       ctx.watch(gabbler);
       chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
 
-      return Behaviors.receive(Void.class)
-        .onSignal(Terminated.class, (c, sig) -> Behaviors.stopped())
-        .build();
+      return Behaviors.<Void>receiveSignal(
+          (c, sig) -> {
+            if (sig instanceof Terminated) return Behaviors.stopped();
+            else return Behaviors.unhandled();
+          }
+      );
     });
 
     final ActorSystem<Void> system =
       ActorSystem.create(main, "ChatRoomDemo");
-
-    system.getWhenTerminated().toCompletableFuture().get();
     //#chatroom-main
   }
 

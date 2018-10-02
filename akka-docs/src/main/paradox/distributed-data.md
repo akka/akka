@@ -1,5 +1,24 @@
 # Distributed Data
 
+## Dependency
+
+To use Akka Distributed Data, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-distributed-data_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Sample project
+
+You can look at the
+@java[@extref[Distributed Data example project](samples:akka-samples-distributed-data-java)]
+@scala[@extref[Distributed Data example project](samples:akka-samples-distributed-data-scala)]
+to see what this looks like in practice.
+
+## Introduction
+
 *Akka Distributed Data* is useful when you need to share data between nodes in an
 Akka Cluster. The data is accessed with an actor providing a key-value store like API.
 The keys are unique identifiers with type information of the data values. The values
@@ -18,16 +37,6 @@ you can also implement your own custom data types.
 It is eventually consistent and geared toward providing high read and write availability
 (partition tolerance), with low latency. Note that in an eventually consistent system a read may return an
 out-of-date value.
-
-## Dependency
-
-To use Akka Distributed Data, add the module to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-distributed-data_$scala.binary_version$"
-  version="$akka.version$"
-}
 
 ## Using the Replicator
 
@@ -52,10 +61,10 @@ adds or removes elements from a `ORSet` (observed-remove set). It also subscribe
 changes of this.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #data-bot }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #data-bot }
 
 Java
-: @@snip [DataBot.java]($code$/java/jdocs/ddata/DataBot.java) { #data-bot }
+: @@snip [DataBot.java](/akka-docs/src/test/java/jdocs/ddata/DataBot.java) { #data-bot }
 
 <a id="replicator-update"></a>
 ### Update
@@ -71,11 +80,8 @@ The `modify` function is called by the `Replicator` actor and must therefore be 
 function that only uses the data parameter and stable fields from enclosing scope. It must
 for example not access the sender (@scala[`sender()`]@java[`getSender()`]) reference of an enclosing actor.
 
-`Update`
- is intended to only be sent from an actor running in same local
-`ActorSystem`
- as
-: the `Replicator`, because the `modify` function is typically not serializable.
+`Update` is intended to only be sent from an actor running in same local `ActorSystem`
+ as the `Replicator`, because the `modify` function is typically not serializable.
 
 
 You supply a write consistency level which has the following meaning:
@@ -91,17 +97,17 @@ at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 (or all nodes in the cluster role group)
 
 When you specify to write to `n` out of `x`  nodes, the update will first replicate to `n` nodes.
-If there are not enough Acks after 1/5th of the timeout, the update will be replicated to `n` other
+If there are not enough Acks after a 1/5th of the timeout, the update will be replicated to `n` other
 nodes. If there are less than n nodes left all of the remaining nodes are used. Reachable nodes
 are preferred over unreachable nodes.
 
 Note that `WriteMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #update }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #update }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #update }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #update }
 
 As reply of the `Update` a `Replicator.UpdateSuccess` is sent to the sender of the
 `Update` if the value was successfully replicated according to the supplied consistency
@@ -111,17 +117,17 @@ or was rolled back. It may still have been replicated to some nodes, and will ev
 be replicated to all nodes with the gossip protocol.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #update-response1 }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #update-response1 }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #update-response1 }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #update-response1 }
 
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #update-response2 }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #update-response2 }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #update-response2 }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #update-response2 }
 
 You will always see your own writes. For example if you send two `Update` messages
 changing the value of the same `key`, the `modify` function of the second message will
@@ -133,10 +139,10 @@ way to pass contextual information (e.g. original sender) without having to use 
 or maintain local correlation data structures.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #update-request-context }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #update-request-context }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #update-request-context }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #update-request-context }
 
 <a id="replicator-get"></a>
 ### Get
@@ -156,10 +162,10 @@ at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 Note that `ReadMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #get }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #get }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #get }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #get }
 
 As reply of the `Get` a `Replicator.GetSuccess` is sent to the sender of the
 `Get` if the value was successfully retrieved according to the supplied consistency
@@ -167,17 +173,17 @@ level within the supplied timeout. Otherwise a `Replicator.GetFailure` is sent.
 If the key does not exist the reply will be `Replicator.NotFound`.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #get-response1 }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #get-response1 }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #get-response1 }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #get-response1 }
 
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #get-response2 }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #get-response2 }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #get-response2 }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #get-response2 }
 
 You will always read your own writes. For example if you send a `Update` message
 followed by a `Get` of the same `key` the `Get` will retrieve the change that was
@@ -190,10 +196,10 @@ In the `Get` message you can pass an optional request context in the same way as
 to after receiving and transforming `GetSuccess`.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #get-request-context }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #get-request-context }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #get-request-context }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #get-request-context }
 
 ### Consistency
 
@@ -246,29 +252,29 @@ the total size of the cluster.
 Here is an example of using `WriteMajority` and `ReadMajority`:
 
 Scala
-: @@snip [ShoppingCart.scala]($code$/scala/docs/ddata/ShoppingCart.scala) { #read-write-majority }
+: @@snip [ShoppingCart.scala](/akka-docs/src/test/scala/docs/ddata/ShoppingCart.scala) { #read-write-majority }
 
 Java
-: @@snip [ShoppingCart.java]($code$/java/jdocs/ddata/ShoppingCart.java) { #read-write-majority }
+: @@snip [ShoppingCart.java](/akka-docs/src/test/java/jdocs/ddata/ShoppingCart.java) { #read-write-majority }
 
 
 Scala
-: @@snip [ShoppingCart.scala]($code$/scala/docs/ddata/ShoppingCart.scala) { #get-cart }
+: @@snip [ShoppingCart.scala](/akka-docs/src/test/scala/docs/ddata/ShoppingCart.scala) { #get-cart }
 
 Java
-: @@snip [ShoppingCart.java]($code$/java/jdocs/ddata/ShoppingCart.java) { #get-cart }
+: @@snip [ShoppingCart.java](/akka-docs/src/test/java/jdocs/ddata/ShoppingCart.java) { #get-cart }
 
 
 Scala
-: @@snip [ShoppingCart.scala]($code$/scala/docs/ddata/ShoppingCart.scala) { #add-item }
+: @@snip [ShoppingCart.scala](/akka-docs/src/test/scala/docs/ddata/ShoppingCart.scala) { #add-item }
 
 Java
-: @@snip [ShoppingCart.java]($code$/java/jdocs/ddata/ShoppingCart.java) { #add-item }
+: @@snip [ShoppingCart.java](/akka-docs/src/test/java/jdocs/ddata/ShoppingCart.java) { #add-item }
 
 In some rare cases, when performing an `Update` it is needed to first try to fetch latest data from
 other nodes. That can be done by first sending a `Get` with `ReadMajority` and then continue with
 the `Update` when the `GetSuccess`, `GetFailure` or `NotFound` reply is received. This might be
-needed when you need to base a decision on latest information or when removing entries from `ORSet`
+needed when you need to base a decision on latest information or when removing entries from an `ORSet`
 or `ORMap`. If an entry is added to an `ORSet` or `ORMap` from one node and removed from another
 node the entry will only be removed if the added entry is visible on the node where the removal is
 performed (hence the name observed-removed set).
@@ -276,10 +282,10 @@ performed (hence the name observed-removed set).
 The following example illustrates how to do that:
 
 Scala
-: @@snip [ShoppingCart.scala]($code$/scala/docs/ddata/ShoppingCart.scala) { #remove-item }
+: @@snip [ShoppingCart.scala](/akka-docs/src/test/scala/docs/ddata/ShoppingCart.scala) { #remove-item }
 
 Java
-: @@snip [ShoppingCart.java]($code$/java/jdocs/ddata/ShoppingCart.java) { #remove-item }
+: @@snip [ShoppingCart.java](/akka-docs/src/test/java/jdocs/ddata/ShoppingCart.java) { #remove-item }
 
 @@@ warning
 
@@ -305,10 +311,10 @@ The subscriber is automatically removed if the subscriber is terminated. A subsc
 also be deregistered with the `Replicator.Unsubscribe` message.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #subscribe }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #subscribe }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #subscribe }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #subscribe }
 
 ### Delete
 
@@ -330,10 +336,10 @@ In the *Delete* message you can pass an optional request context in the same way
 to after receiving and transforming *DeleteSuccess*.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #delete }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #delete }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #delete }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #delete }
 
 @@@ warning
 
@@ -349,7 +355,7 @@ types that support both updates and removals, for example `ORMap` or `ORSet`.
 ### delta-CRDT
 
 [Delta State Replicated Data Types](http://arxiv.org/abs/1603.01529)
-are supported. delta-CRDT is a way to reduce the need for sending the full state
+are supported. A delta-CRDT is a way to reduce the need for sending the full state
 for updates. For example adding element `'c'` and `'d'` to set `{'a', 'b'}` would
 result in sending the delta `{'c', 'd'}` and merge that with the state on the
 receiving side, resulting in set `{'a', 'b', 'c', 'd'}`.
@@ -358,7 +364,7 @@ The protocol for replicating the deltas supports causal consistency if the data 
 is marked with `RequiresCausalDeliveryOfDeltas`. Otherwise it is only eventually
 consistent. Without causal consistency it means that if elements `'c'` and `'d'` are
 added in two separate *Update* operations these deltas may occasionally be propagated
-to nodes in different order than the causal order of the updates. For this example it
+to nodes in a different order to the causal order of the updates. For this example it
 can result in that set `{'a', 'b', 'd'}` can be seen before element 'c' is seen. Eventually
 it will be `{'a', 'b', 'c', 'd'}`.
 
@@ -396,14 +402,14 @@ each node.
 If you need both increments and decrements you can use the `PNCounter` (positive/negative counter).
 
 It is tracking the increments (P) separate from the decrements (N). Both P and N are represented
-as two internal `GCounter`. Merge is handled by merging the internal P and N counters.
+as two internal `GCounter`s. Merge is handled by merging the internal P and N counters.
 The value of the counter is the value of the P counter minus the value of the N counter.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #pncounter }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #pncounter }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #pncounter }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #pncounter }
 
 `GCounter` and `PNCounter` have support for [delta-CRDT](#delta-crdt) and don't need causal
 delivery of deltas.
@@ -414,22 +420,22 @@ values they are guaranteed to be replicated together as one unit, which is somet
 related data.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #pncountermap }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #pncountermap }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #pncountermap }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #pncountermap }
 
 ### Sets
 
 If you only need to add elements to a set and not remove elements the `GSet` (grow-only set) is
 the data type to use. The elements can be any type of values that can be serialized.
-Merge is simply the union of the two sets.
+Merge is the union of the two sets.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #gset }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #gset }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #gset }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #gset }
 
 `GSet` has support for [delta-CRDT](#delta-crdt) and it doesn't require causal delivery of deltas.
 
@@ -443,10 +449,10 @@ called "birth dot". The version vector and the dots are used by the `merge` func
 track causality of the operations and resolve concurrent updates.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #orset }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #orset }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #orset }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #orset }
 
 `ORSet` has support for [delta-CRDT](#delta-crdt) and it requires causal delivery of deltas.
 
@@ -480,10 +486,10 @@ uses delta propagation to deliver updates. Effectively, the update for map is th
 being the key and full update for the respective value (`ORSet`, `PNCounter` or `LWWRegister`) kept in the map.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #ormultimap }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #ormultimap }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #ormultimap }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #ormultimap }
 
 When a data entry is changed the full state of that entry is replicated to other nodes, i.e.
 when you update a map, the whole map is replicated. Therefore, instead of using one `ORMap`
@@ -496,7 +502,7 @@ together.
 There is a special version of `ORMultiMap`, created by using separate constructor
 `ORMultiMap.emptyWithValueDeltas[A, B]`, that also propagates the updates to its values (of `ORSet` type) as deltas.
 This means that the `ORMultiMap` initiated with `ORMultiMap.emptyWithValueDeltas` propagates its updates as pairs
-consisting of delta of the key and delta of the value. It is much more efficient in terms of network bandwith consumed.
+consisting of delta of the key and delta of the value. It is much more efficient in terms of network bandwidth consumed.
 
 However, this behavior has not been made default for `ORMultiMap` and if you wish to use it in your code, you
 need to replace invocations of `ORMultiMap.empty[A, B]` (or `ORMultiMap()`) with `ORMultiMap.emptyWithValueDeltas[A, B]`
@@ -519,10 +525,10 @@ in the below section about `LWWRegister`.
 to `true`. Thereafter it cannot be changed. `true` wins over `false` in merge.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #flag }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #flag }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #flag }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #flag }
 
 `LWWRegister` (last writer wins register) can hold any (serializable) value.
 
@@ -534,20 +540,20 @@ Merge takes the register updated by the node with lowest address (`UniqueAddress
 if the timestamps are exactly the same.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #lwwregister }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #lwwregister }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #lwwregister }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #lwwregister }
 
 Instead of using timestamps based on `System.currentTimeMillis()` time it is possible to
 use a timestamp value based on something else, for example an increasing version number
 from a database record that is used for optimistic concurrency control.
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #lwwregister-custom-clock }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #lwwregister-custom-clock }
 
 Java
-: @@snip [DistributedDataDocTest.java]($code$/java/jdocs/ddata/DistributedDataDocTest.java) { #lwwregister-custom-clock }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #lwwregister-custom-clock }
 
 For first-write-wins semantics you can use the `LWWRegister#reverseClock` instead of the
 `LWWRegister#defaultClock`.
@@ -561,7 +567,7 @@ changing and writing the value with `WriteMajority` (or more).
 
 ### Custom Data Type
 
-You can rather easily implement your own data types. The only requirement is that it implements
+You can implement your own data types. The only requirement is that it implements
 the @scala[`merge`]@java[`mergeData`] function of the @scala[`ReplicatedData`]@java[`AbstractReplicatedData`] trait.
 
 A nice property of stateful CRDTs is that they typically compose nicely, i.e. you can combine several
@@ -573,10 +579,10 @@ to keep track of addition and removals.  A `TwoPhaseSet` is a set where an eleme
 removed, but never added again thereafter.
 
 Scala
-: @@snip [TwoPhaseSet.scala]($code$/scala/docs/ddata/TwoPhaseSet.scala) { #twophaseset }
+: @@snip [TwoPhaseSet.scala](/akka-docs/src/test/scala/docs/ddata/TwoPhaseSet.scala) { #twophaseset }
 
 Java
-: @@snip [TwoPhaseSet.java]($code$/java/jdocs/ddata/TwoPhaseSet.java) { #twophaseset }
+: @@snip [TwoPhaseSet.java](/akka-docs/src/test/java/jdocs/ddata/TwoPhaseSet.java) { #twophaseset }
 
 Data types should be immutable, i.e. "modifying" methods should return a new instance.
 
@@ -596,15 +602,15 @@ deterministically in the serialization.
 
 This is a protobuf representation of the above `TwoPhaseSet`:
 
-@@snip [TwoPhaseSetMessages.proto]($code$/../main/protobuf/TwoPhaseSetMessages.proto) { #twophaseset }
+@@snip [TwoPhaseSetMessages.proto](/akka-docs/src/test/../main/protobuf/TwoPhaseSetMessages.proto) { #twophaseset }
 
 The serializer for the `TwoPhaseSet`:
 
 Scala
-: @@snip [TwoPhaseSetSerializer.scala]($code$/scala/docs/ddata/protobuf/TwoPhaseSetSerializer.scala) { #serializer }
+: @@snip [TwoPhaseSetSerializer.scala](/akka-docs/src/test/scala/docs/ddata/protobuf/TwoPhaseSetSerializer.scala) { #serializer }
 
 Java
-: @@snip [TwoPhaseSetSerializer.java]($code$/java/jdocs/ddata/protobuf/TwoPhaseSetSerializer.java) { #serializer }
+: @@snip [TwoPhaseSetSerializer.java](/akka-docs/src/test/java/jdocs/ddata/protobuf/TwoPhaseSetSerializer.java) { #serializer }
 
 Note that the elements of the sets are sorted so the SHA-1 digests are the same
 for the same elements.
@@ -612,25 +618,25 @@ for the same elements.
 You register the serializer in configuration:
 
 Scala
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #serializer-config }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #serializer-config }
 
 Java
-: @@snip [DistributedDataDocSpec.scala]($code$/scala/docs/ddata/DistributedDataDocSpec.scala) { #japi-serializer-config }
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #japi-serializer-config }
 
 Using compression can sometimes be a good idea to reduce the data size. Gzip compression is
 provided by the @scala[`akka.cluster.ddata.protobuf.SerializationSupport` trait]@java[`akka.cluster.ddata.protobuf.AbstractSerializationSupport` interface]:
 
 Scala
-: @@snip [TwoPhaseSetSerializer.scala]($code$/scala/docs/ddata/protobuf/TwoPhaseSetSerializer.scala) { #compression }
+: @@snip [TwoPhaseSetSerializer.scala](/akka-docs/src/test/scala/docs/ddata/protobuf/TwoPhaseSetSerializer.scala) { #compression }
 
 Java
-: @@snip [TwoPhaseSetSerializerWithCompression.java]($code$/java/jdocs/ddata/protobuf/TwoPhaseSetSerializerWithCompression.java) { #compression }
+: @@snip [TwoPhaseSetSerializerWithCompression.java](/akka-docs/src/test/java/jdocs/ddata/protobuf/TwoPhaseSetSerializerWithCompression.java) { #compression }
 
 The two embedded `GSet` can be serialized as illustrated above, but in general when composing
 new data types from the existing built in types it is better to make use of the existing
 serializer for those types. This can be done by declaring those as bytes fields in protobuf:
 
-@@snip [TwoPhaseSetMessages.proto]($code$/../main/protobuf/TwoPhaseSetMessages.proto) { #twophaseset2 }
+@@snip [TwoPhaseSetMessages.proto](/akka-docs/src/test/../main/protobuf/TwoPhaseSetMessages.proto) { #twophaseset2 }
 
 and use the methods `otherMessageToProto` and `otherMessageFromBinary` that are provided
 by the `SerializationSupport` trait to serialize and deserialize the `GSet` instances. This
@@ -638,10 +644,10 @@ works with any type that has a registered Akka serializer. This is how such an s
 look like for the `TwoPhaseSet`:
 
 Scala
-: @@snip [TwoPhaseSetSerializer2.scala]($code$/scala/docs/ddata/protobuf/TwoPhaseSetSerializer2.scala) { #serializer }
+: @@snip [TwoPhaseSetSerializer2.scala](/akka-docs/src/test/scala/docs/ddata/protobuf/TwoPhaseSetSerializer2.scala) { #serializer }
 
 Java
-: @@snip [TwoPhaseSetSerializer2.java]($code$/java/jdocs/ddata/protobuf/TwoPhaseSetSerializer2.java) { #serializer }
+: @@snip [TwoPhaseSetSerializer2.java](/akka-docs/src/test/java/jdocs/ddata/protobuf/TwoPhaseSetSerializer2.java) { #serializer }
 
 <a id="ddata-durable"></a>
 ### Durable Storage
@@ -703,7 +709,7 @@ actor system to make the name unique. If using a dynamically assigned
 port (0) it will be different each time and the previously stored data
 will not be loaded.
 
-Making the data durable has of course a performance cost. By default, each update is flushed
+Making the data durable has a performance cost. By default, each update is flushed
 to disk before the `UpdateSuccess` reply is sent. For better performance, but with the risk of losing
 the last writes if the JVM crashes, you can enable write behind mode. Changes are then accumulated during
 a time period before it is written to LMDB and flushed to disk. Enabling write behind is especially
@@ -712,7 +718,7 @@ that will be serialized and stored. The risk of losing writes if the JVM crashes
 data is typically replicated to other nodes immediately according to the given `WriteConsistency`.
 
 ```
-akka.cluster.distributed-data.lmdb.write-behind-interval = 200 ms
+akka.cluster.distributed-data.durable.lmdb.write-behind-interval = 200 ms
 ```
 
 Note that you should be prepared to receive `WriteFailure` as reply to an `Update` of a
@@ -775,46 +781,15 @@ data entries, because then the remote message size will be too large.
 
 ## Learn More about CRDTs
 
- * [The Final Causal Frontier](http://www.ustream.tv/recorded/61448875)
-talk by Sean Cribbs
  * [Eventually Consistent Data Structures](https://vimeo.com/43903960)
 talk by Sean Cribbs
- * [Strong Eventual Consistency and Conflict-free Replicated Data Types](http://research.microsoft.com/apps/video/default.aspx?id=153540&r=1)
+ * [Strong Eventual Consistency and Conflict-free Replicated Data Types (video)](https://www.youtube.com/watch?v=oyUHd894w18&feature=youtu.be)
 talk by Mark Shapiro
  * [A comprehensive study of Convergent and Commutative Replicated Data Types](http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf)
 paper by Mark Shapiro et. al.
-
-## Dependencies
-
-To use Distributed Data you must add the following dependency in your project.
-
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-distributed-data" % "$akka.version$"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-distributed-data_$scala.binary_version$', version: '$akka.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-distributed-data_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
 
 ## Configuration
 
 The `DistributedData` extension can be configured with the following properties:
 
-@@snip [reference.conf]($akka$/akka-distributed-data/src/main/resources/reference.conf) { #distributed-data }
+@@snip [reference.conf](/akka-distributed-data/src/main/resources/reference.conf) { #distributed-data }

@@ -11,7 +11,7 @@ import akka.actor.TypedActor._
 import akka.japi.{ Option ⇒ JOption }
 import akka.pattern.ask
 import akka.routing.RoundRobinGroup
-import akka.serialization.JavaSerializer
+import akka.serialization.{ JavaSerializer, SerializerWithStringManifest }
 import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, TimingTest, filterEvents }
 import akka.util.Timeout
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
@@ -32,6 +32,8 @@ object TypedActorSpec {
         fixed-pool-size = 60
       }
     }
+    akka.actor.serializers.sample = "akka.actor.TypedActorSpec$SampleSerializerWithStringManifest$"
+    akka.actor.serialization-bindings."akka.actor.TypedActorSpec$WithStringSerializedClass" = sample
     akka.actor.serialize-messages = off
     """
 
@@ -101,12 +103,12 @@ object TypedActorSpec {
 
     def nullReturn(): Any = null
 
-    def incr()
+    def incr(): Unit
 
     @throws(classOf[TimeoutException])
     def read(): Int
 
-    def testMethodCallSerialization(foo: Foo, s: String, i: Int): Unit = throw new IllegalStateException("expected")
+    def testMethodCallSerialization(foo: Foo, s: String, i: Int, o: WithStringSerializedClass): Unit = throw new IllegalStateException("expected")
   }
 
   class Bar extends Foo with Serializable {
@@ -146,7 +148,7 @@ object TypedActorSpec {
 
     var internalNumber = 0
 
-    def incr() {
+    def incr(): Unit = {
       internalNumber += 1
     }
 
@@ -200,8 +202,35 @@ object TypedActorSpec {
     }
   }
 
-  trait F { def f(pow: Boolean): Int }
-  class FI extends F { def f(pow: Boolean): Int = if (pow) throw new IllegalStateException("expected") else 1 }
+  trait F {
+    def f(pow: Boolean): Int
+  }
+
+  class FI extends F {
+    def f(pow: Boolean): Int = if (pow) throw new IllegalStateException("expected") else 1
+  }
+
+  object SampleSerializerWithStringManifest extends SerializerWithStringManifest {
+
+    val manifest = "M"
+
+    override def identifier: Int = 777
+
+    override def manifest(o: AnyRef): String = manifest
+
+    override def toBinary(o: AnyRef): Array[Byte] = o match {
+      case _: WithStringSerializedClass ⇒ Array(255.toByte)
+      case _                            ⇒ throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
+    }
+
+    override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
+      case manifest if bytes.length == 1 && bytes(0) == 255.toByte ⇒ WithStringSerializedClass()
+      case _ ⇒ throw new IllegalArgumentException(s"Cannot deserialize object with manifest $manifest")
+    }
+  }
+
+  case class WithStringSerializedClass()
+
 }
 
 class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
@@ -445,7 +474,7 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       import java.io._
       val someFoo: Foo = new Bar
       JavaSerializer.currentSystem.withValue(system.asInstanceOf[ExtendedActorSystem]) {
-        val m = TypedActor.MethodCall(classOf[Foo].getDeclaredMethod("testMethodCallSerialization", Array[Class[_]](classOf[Foo], classOf[String], classOf[Int]): _*), Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef]))
+        val m = TypedActor.MethodCall(classOf[Foo].getDeclaredMethod("testMethodCallSerialization", Array[Class[_]](classOf[Foo], classOf[String], classOf[Int], classOf[WithStringSerializedClass]): _*), Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef], WithStringSerializedClass()))
         val baos = new ByteArrayOutputStream(8192 * 4)
         val out = new ObjectOutputStream(baos)
 
@@ -457,12 +486,14 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
         val mNew = in.readObject().asInstanceOf[TypedActor.MethodCall]
 
         mNew.method should ===(m.method)
-        mNew.parameters should have size 3
+        mNew.parameters should have size 4
         mNew.parameters(0) should not be null
         mNew.parameters(0).getClass should ===(classOf[Bar])
         mNew.parameters(1) should ===(null)
         mNew.parameters(2) should not be null
         mNew.parameters(2).asInstanceOf[Int] should ===(1)
+        mNew.parameters(3) should not be null
+        mNew.parameters(3).asInstanceOf[WithStringSerializedClass] should ===(WithStringSerializedClass())
       }
     }
 

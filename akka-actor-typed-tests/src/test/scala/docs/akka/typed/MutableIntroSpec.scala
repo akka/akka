@@ -10,10 +10,11 @@ import java.nio.charset.StandardCharsets
 
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, MutableBehavior }
-import akka.testkit.typed.scaladsl.ActorTestKit
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 //#imports
 
 object MutableIntroSpec {
@@ -86,7 +87,7 @@ object MutableIntroSpec {
 
 }
 
-class MutableIntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class MutableIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import MutableIntroSpec._
 
@@ -129,7 +130,6 @@ class MutableIntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
       val system = ActorSystem(main, "ChatRoomDemo")
       system ! "go"
-      Await.result(system.whenTerminated, 1.second)
       //#chatroom-main
     }
   }

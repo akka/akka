@@ -1,0 +1,15 @@
+# #25175 eliminate extraneous takeWhile$default$2 method in Java DSL
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Flow.takeWhile$default$2")
+
+# Wrong return type of FlowMonitorState.finished #24885
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.FlowMonitorState.finished")
+
+# JsonObjectParser.Whitespace removal #25260
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.JsonObjectParser.Whitespace")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.Tab")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.Space")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.LineBreak2")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.LineBreak")
+
+# Merged impls of Sink.last / Sink.lastOption / Sink.takeLast
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.LastOptionStage")

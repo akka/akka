@@ -1,13 +1,14 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import scala.concurrent.duration._
 import java.io.File
 
 import akka.actor._
-import akka.cluster.Cluster
+import akka.cluster.{ Cluster, MultiNodeClusterSpec }
 import akka.cluster.sharding.ShardRegion.GracefulShutdown
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
@@ -63,7 +64,7 @@ abstract class ClusterShardingGracefulShutdownSpecConfig(val mode: String) exten
       dir = target/ClusterShardingGracefulShutdownSpec/sharding-ddata
       map-size = 10 MiB
     }
-    """))
+    """).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 object PersistentClusterShardingGracefulShutdownSpecConfig extends ClusterShardingGracefulShutdownSpecConfig("persistence")
@@ -87,12 +88,12 @@ abstract class ClusterShardingGracefulShutdownSpec(config: ClusterShardingGracef
   val storageLocations = List(new File(system.settings.config.getString(
     "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
-  override protected def atStartup() {
+  override protected def atStartup(): Unit = {
     storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
   }
 
-  override protected def afterTermination() {
+  override protected def afterTermination(): Unit = {
     storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 

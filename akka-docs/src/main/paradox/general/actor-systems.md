@@ -22,7 +22,7 @@ so create one per logical application.
 
 Like in an economic organization, actors naturally form hierarchies. One actor,
 which is to oversee a certain function in the program might want to split up
-its task into smaller, more manageable pieces. For this purpose it starts child
+its task into smaller, more manageable pieces. For this purpose, it starts child
 actors which it supervises. While the details of supervision are explained
 @ref:[here](supervision.md), we shall concentrate on the underlying concepts in
 this section. The only prerequisite is to know that each actor has exactly one
@@ -43,7 +43,7 @@ communicated to the right person, a better solution can be found than if
 trying to keep everything “under the carpet”.
 
 Now, the difficulty in designing such a system is how to decide who should
-supervise what. There is of course no single best solution, but there are a few
+supervise what. There is no single best solution, but there are a few
 guidelines which might be helpful:
 
  * If one actor manages the work another actor is doing, e.g. by passing on
@@ -64,14 +64,14 @@ influence on the supervisor strategy, and it should be noted that a
 functional dependency alone is not a criterion for deciding where to place a
 certain child actor in the hierarchy.
 
-There are of course always exceptions to these rules, but no matter whether you
+There are always exceptions to these rules, but no matter whether you
 follow the rules or break them, you should always have a reason.
 
 ## Configuration Container
 
 The actor system as a collaborating ensemble of actors is the natural unit for
 managing shared facilities like scheduling services, configuration, logging,
-etc. Several actor systems with different configuration may co-exist within the
+etc. Several actor systems with different configurations may co-exist within the
 same JVM without problems, there is no global shared state within Akka itself.
 Couple this with the transparent communication between actor systems—within one
 node or across a network connection—to see that actor systems themselves can be

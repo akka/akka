@@ -4,8 +4,9 @@
 
 package akka.stream.io
 
-import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
-import java.nio.file.{ Files, Path, StandardOpenOption }
+import java.nio.channels.NonWritableChannelException
+import java.nio.file.StandardOpenOption.{ CREATE, READ, WRITE }
+import java.nio.file._
 
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
@@ -15,6 +16,7 @@ import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.scaladsl.{ FileIO, Sink, Source }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream._
 import akka.util.ByteString
 import com.google.common.jimfs.{ Configuration, Jimfs }
@@ -22,6 +24,7 @@ import com.google.common.jimfs.{ Configuration, Jimfs }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
@@ -222,9 +225,16 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         checkFileContents(f, TestLines.takeWhile(!_.contains('b')).mkString(""))
       }
     }
+
+    "complete with failure when file cannot be open" in {
+      val completion = Source.single(ByteString("42"))
+        .runWith(FileIO.toPath(fs.getPath("/I/hope/this/file/doesnt/exist.txt")))
+
+      completion.failed.futureValue shouldBe an[NoSuchFileException]
+    }
   }
 
-  private def targetFile(block: Path ⇒ Unit, create: Boolean = true) {
+  private def targetFile(block: Path ⇒ Unit, create: Boolean = true): Unit = {
     val targetFile = Files.createTempFile(fs.getPath("/"), "synchronous-file-sink", ".tmp")
     if (!create) Files.delete(targetFile)
     try block(targetFile) finally Files.delete(targetFile)

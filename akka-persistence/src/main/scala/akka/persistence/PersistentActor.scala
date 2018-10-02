@@ -99,9 +99,15 @@ object Recovery {
 
   /**
    * Convenience method for skipping recovery in [[PersistentActor]].
+   *
+   * It will still retrieve previously highest sequence number so that new events are persisted with
+   * higher sequence numbers rather than starting from 1 and assuming that there are no
+   * previous event with that sequence number.
+   *
    * @see [[Recovery]]
    */
   val none: Recovery = Recovery(toSequenceNr = 0L, fromSnapshot = SnapshotSelectionCriteria.None)
+
 }
 
 final class RecoveryTimedOut(message: String) extends RuntimeException(message) with NoStackTrace

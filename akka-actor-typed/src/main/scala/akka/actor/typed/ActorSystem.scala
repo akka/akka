@@ -4,21 +4,19 @@
 
 package akka.actor.typed
 
-import scala.concurrent.ExecutionContext
 import akka.{ actor ⇒ a }
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.actor.setup.ActorSystemSetup
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.{ ExecutionContextExecutor, Future }
+
 import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, PropsAdapter }
 import akka.util.Timeout
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
-import java.util.Optional
-
 import akka.actor.BootstrapSetup
+import akka.actor.typed.internal.InternalRecipientRef
 import akka.actor.typed.internal.adapter.GuardianActorAdapter
 import akka.actor.typed.receptionist.Receptionist
 
@@ -33,7 +31,7 @@ import akka.actor.typed.receptionist.Receptionist
  */
 @DoNotInherit
 @ApiMayChange
-abstract class ActorSystem[-T] extends ActorRef[T] with Extensions {
+abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: InternalRecipientRef[T] ⇒
   /**
    * The name of this actor system, used to distinguish multiple ones within
    * the same JVM & class loader.
@@ -125,20 +123,19 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions {
   def deadLetters[U]: ActorRef[U]
 
   /**
-   * Create a string representation of the actor hierarchy within this system.
+   * Create a string representation of the actor hierarchy within this system
+   * for debugging purposes.
    *
    * The format of the string is subject to change, i.e. no stable “API”.
    */
   def printTree: String
 
   /**
-   * Ask the system guardian of this system to create an actor from the given
-   * behavior and props and with the given name. The name does not need to
-   * be unique since the guardian will prefix it with a running number when
-   * creating the child actor.
+   * Create an actor in the "/system" namespace. This actor will be shut down
+   * during system.terminate only after all user actors have terminated.
    *
    * The returned Future of [[ActorRef]] may be converted into an [[ActorRef]]
-   * to which messages can immediately be sent by using the [[ActorRef$.apply[T](s*]]
+   * to which messages can immediately be sent by using the `ActorRef.apply`
    * method.
    */
   def systemActorOf[U](behavior: Behavior[U], name: String, props: Props = Props.empty)(implicit timeout: Timeout): Future[ActorRef[U]]
@@ -151,21 +148,15 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions {
 }
 
 object ActorSystem {
+
   /**
    * Scala API: Create an ActorSystem
    */
   def apply[T](
     guardianBehavior: Behavior[T],
-    name:             String,
-    guardianProps:    Props                    = Props.empty,
-    config:           Option[Config]           = None,
-    classLoader:      Option[ClassLoader]      = None,
-    executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
-    Behavior.validateAsInitial(guardianBehavior)
-    val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
-    val appConfig = config.getOrElse(ConfigFactory.load(cl))
-    createInternal(name, guardianBehavior, guardianProps, Some(appConfig), classLoader, executionContext)
-  }
+    name:             String
+  ): ActorSystem[T] = createInternal(name, guardianBehavior, Props.empty, ActorSystemSetup.create(BootstrapSetup()))
+
   /**
    * Scala API: Create an ActorSystem
    */
@@ -173,21 +164,23 @@ object ActorSystem {
     guardianBehavior: Behavior[T],
     name:             String,
     config:           Config
-  ): ActorSystem[T] = apply(guardianBehavior, name, config = Some(config))
+  ): ActorSystem[T] =
+    createInternal(name, guardianBehavior, Props.empty, ActorSystemSetup.create(BootstrapSetup(config)))
 
   /**
-   * Java API: Create an ActorSystem
+   * Scala API: Creates a new actor system with the specified name and settings
+   * The core actor system settings are defined in [[BootstrapSetup]]
    */
-  def create[T](
-    guardianBehavior: Behavior[T],
-    name:             String,
-    guardianProps:    Optional[Props],
-    config:           Optional[Config],
-    classLoader:      Optional[ClassLoader],
-    executionContext: Optional[ExecutionContext]): ActorSystem[T] = {
-    import scala.compat.java8.OptionConverters._
-    apply(guardianBehavior, name, guardianProps.asScala.getOrElse(EmptyProps), config.asScala, classLoader.asScala, executionContext.asScala)
+  def apply[T](guardianBehavior: Behavior[T], name: String, setup: ActorSystemSetup, guardianProps: Props = Props.empty): ActorSystem[T] = {
+    createInternal(name, guardianBehavior, guardianProps, setup)
   }
+
+  /**
+   * Scala API: Shortcut for creating an actor system with custom bootstrap settings.
+   * Same behavior as calling `ActorSystem(name, ActorSystemSetup(bootstrapSetup))`
+   */
+  def apply[T](guardianBehavior: Behavior[T], name: String, bootstrapSetup: BootstrapSetup): ActorSystem[T] =
+    apply(guardianBehavior, name, ActorSystemSetup.create(bootstrapSetup))
 
   /**
    * Java API: Create an ActorSystem
@@ -199,7 +192,21 @@ object ActorSystem {
    * Java API: Create an ActorSystem
    */
   def create[T](guardianBehavior: Behavior[T], name: String, config: Config): ActorSystem[T] =
-    apply(guardianBehavior, name, config = Some(config))
+    apply(guardianBehavior, name, config)
+
+  /**
+   * Java API: Creates a new actor system with the specified name and settings
+   * The core actor system settings are defined in [[BootstrapSetup]]
+   */
+  def create[T](guardianBehavior: Behavior[T], name: String, setups: ActorSystemSetup): ActorSystem[T] =
+    apply(guardianBehavior, name, setups)
+
+  /**
+   * Java API: Shortcut for creating an actor system with custom bootstrap settings.
+   * Same behavior as calling `ActorSystem.create(name, ActorSystemSetup.create(bootstrapSettings))`
+   */
+  def create[T](guardianBehavior: Behavior[T], name: String, bootstrapSetup: BootstrapSetup): ActorSystem[T] =
+    create(guardianBehavior, name, ActorSystemSetup.create(bootstrapSetup))
 
   /**
    * Create an ActorSystem based on the untyped [[akka.actor.ActorSystem]]
@@ -207,16 +214,17 @@ object ActorSystem {
    * system typed and untyped actors can coexist.
    */
   private def createInternal[T](name: String, guardianBehavior: Behavior[T],
-                                guardianProps:    Props                    = Props.empty,
-                                config:           Option[Config]           = None,
-                                classLoader:      Option[ClassLoader]      = None,
-                                executionContext: Option[ExecutionContext] = None): ActorSystem[T] = {
+                                guardianProps: Props,
+                                setup:         ActorSystemSetup): ActorSystem[T] = {
 
     Behavior.validateAsInitial(guardianBehavior)
     require(Behavior.isAlive(guardianBehavior))
-    val cl = classLoader.getOrElse(akka.actor.ActorSystem.findClassLoader())
-    val appConfig = config.getOrElse(ConfigFactory.load(cl))
-    val setup = ActorSystemSetup(BootstrapSetup(classLoader, config, executionContext))
+
+    val bootstrapSettings = setup.get[BootstrapSetup]
+    val cl = bootstrapSettings.flatMap(_.classLoader).getOrElse(akka.actor.ActorSystem.findClassLoader())
+    val appConfig = bootstrapSettings.flatMap(_.config).getOrElse(ConfigFactory.load(cl))
+    val executionContext = bootstrapSettings.flatMap(_.defaultExecutionContext)
+
     val untyped = new a.ActorSystemImpl(name, appConfig, cl, executionContext,
       Some(PropsAdapter(() ⇒ guardianBehavior, guardianProps, isGuardian = true)), setup)
     untyped.start()
@@ -248,6 +256,8 @@ final class Settings(val config: Config, val untyped: a.ActorSystem.Settings, va
   private var foundSettings = List.empty[String]
 
   foundSettings = foundSettings.reverse
+
+  def setup: ActorSystemSetup = untyped.setup
 
   override def toString: String = s"Settings($name,\n  ${foundSettings.mkString("\n  ")})"
 }

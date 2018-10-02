@@ -14,7 +14,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import akka.Done;
 import akka.NotUsed;
 import akka.japi.Pair;
 import akka.japi.function.Function;
@@ -23,10 +22,6 @@ import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-import akka.japi.function.Function2;
 import akka.testkit.AkkaSpec;
 import akka.testkit.AkkaJUnitActorSystemResource;
 

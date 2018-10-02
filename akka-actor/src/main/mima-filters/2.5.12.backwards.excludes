@@ -1,0 +1,10 @@
+# #25067 Serialization.Information
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorRefProvider.serializationInformation")
+
+# #24646 java.time.Duration
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.AbstractActor#ActorContext.cancelReceiveTimeout")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.AbstractActor#ActorContext.setReceiveTimeout")
+
+# #24989 Fix NotInfluenceReceiveTimeout behavior when used with Timers trait
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.actor.TimerSchedulerImpl$TimerMsg")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.TimerSchedulerImpl$TimerMsg$")

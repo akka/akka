@@ -12,8 +12,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
-import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 
 import com.typesafe.config.ConfigFactory;
 
@@ -22,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import akka.actor.ActorSystem;
 
@@ -278,7 +276,7 @@ public class RouterDocTest extends AbstractJavaTest {
     //#scatter-gather-pool-1
 
     //#scatter-gather-pool-2
-    FiniteDuration within = FiniteDuration.create(10, TimeUnit.SECONDS); 
+    Duration within = Duration.ofSeconds(10);
     ActorRef router18 =
       getContext().actorOf(new ScatterGatherFirstCompletedPool(5, within).props(
         Props.create(Worker.class)), "router18");
@@ -290,7 +288,7 @@ public class RouterDocTest extends AbstractJavaTest {
     //#scatter-gather-group-1
 
     //#scatter-gather-group-2
-    FiniteDuration within2 = FiniteDuration.create(10, TimeUnit.SECONDS);
+    Duration within2 = Duration.ofSeconds(10);
     ActorRef router20 =
       getContext().actorOf(new ScatterGatherFirstCompletedGroup(paths, within2).props(), 
         "router20");
@@ -303,8 +301,8 @@ public class RouterDocTest extends AbstractJavaTest {
     //#tail-chopping-pool-1
 
     //#tail-chopping-pool-2
-    FiniteDuration within3 = FiniteDuration.create(10, TimeUnit.SECONDS);
-    FiniteDuration interval = FiniteDuration.create(20, TimeUnit.MILLISECONDS);
+    Duration within3 = Duration.ofSeconds(10);
+    Duration interval = Duration.ofMillis(20);
     ActorRef router22 =
       getContext().actorOf(new TailChoppingPool(5, within3, interval).props(
         Props.create(Worker.class)), "router22");
@@ -316,8 +314,8 @@ public class RouterDocTest extends AbstractJavaTest {
     //#tail-chopping-group-1
 
     //#tail-chopping-group-2
-    FiniteDuration within4 = FiniteDuration.create(10, TimeUnit.SECONDS);
-    FiniteDuration interval2 = FiniteDuration.create(20, TimeUnit.MILLISECONDS);
+    Duration within4 = Duration.ofSeconds(10);
+    Duration interval2 = Duration.ofMillis(20);
     ActorRef router24 =
       getContext().actorOf(new TailChoppingGroup(paths, within4, interval2).props(),
         "router24");
@@ -481,7 +479,7 @@ public class RouterDocTest extends AbstractJavaTest {
   public void demonstrateSupervisor() {
     //#supervision
     final SupervisorStrategy strategy =
-      new OneForOneStrategy(5, Duration.create(1, TimeUnit.MINUTES),
+      new OneForOneStrategy(5, Duration.ofMinutes(1),
         Collections.<Class<? extends Throwable>>singletonList(Exception.class));
     final ActorRef router = system.actorOf(new RoundRobinPool(5).
       withSupervisorStrategy(strategy).props(Props.create(Echo.class)));

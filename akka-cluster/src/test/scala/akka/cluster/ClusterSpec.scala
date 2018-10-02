@@ -235,7 +235,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         akka.remote.artery.canonical.port = 0
         akka.coordinated-shutdown.terminate-actor-system = on
         akka.cluster.run-coordinated-shutdown-when-down = on
-akka.loglevel=DEBUG
         """))
       try {
         val probe = TestProbe()(sys3)

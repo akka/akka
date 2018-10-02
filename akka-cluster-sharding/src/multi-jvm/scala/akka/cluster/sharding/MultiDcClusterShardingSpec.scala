@@ -1,16 +1,15 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.Props
-import akka.cluster.Cluster
-import akka.cluster.MemberStatus
+import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
 import akka.cluster.sharding.ShardRegion.CurrentRegions
 import akka.cluster.sharding.ShardRegion.GetCurrentRegions
 import akka.remote.testconductor.RoleName
@@ -54,14 +53,17 @@ object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
   val fourth = role("fourth")
 
   commonConfig(ConfigFactory.parseString(s"""
-    # DEBUG because of failing test, issue #23741
-    akka.loglevel = DEBUG
-    akka.cluster.debug.verbose-heartbeat-logging = on
-    akka.cluster.debug.verbose-gossip-logging = on
-    akka.actor.provider = "cluster"
+    akka.loglevel = DEBUG # issue #23741
+    akka.cluster {
+      debug.verbose-heartbeat-logging = on
+      debug.verbose-gossip-logging = on
+      auto-down-unreachable-after = 0s
+      sharding {
+        retry-interval = 200ms
+      }
+    }
     akka.remote.log-remote-lifecycle-events = on
-    akka.cluster.auto-down-unreachable-after = 0s
-    """))
+    """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second) {
     ConfigFactory.parseString("akka.cluster.multi-data-center.self-data-center = DC1")
@@ -72,19 +74,15 @@ object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
   }
 }
 
-class MultiDcClusterShardingMultiJvmNode1 extends MultiDcClusterShardingSpec
-class MultiDcClusterShardingMultiJvmNode2 extends MultiDcClusterShardingSpec
-class MultiDcClusterShardingMultiJvmNode3 extends MultiDcClusterShardingSpec
-class MultiDcClusterShardingMultiJvmNode4 extends MultiDcClusterShardingSpec
+class MultiDcClusterShardingSpecMultiJvmNode1 extends MultiDcClusterShardingSpec
+class MultiDcClusterShardingSpecMultiJvmNode2 extends MultiDcClusterShardingSpec
+class MultiDcClusterShardingSpecMultiJvmNode3 extends MultiDcClusterShardingSpec
+class MultiDcClusterShardingSpecMultiJvmNode4 extends MultiDcClusterShardingSpec
 
-abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterShardingSpecConfig)
+abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterShardingSpecConfig) with MultiNodeClusterSpec
   with STMultiNodeSpec with ImplicitSender {
   import MultiDcClusterShardingSpec._
   import MultiDcClusterShardingSpecConfig._
-
-  override def initialParticipants = roles.size
-
-  val cluster = Cluster(system)
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
@@ -123,7 +121,7 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
     }, 10.seconds)
   }
 
-  s"Cluster sharding in multi data center cluster" must {
+  "Cluster sharding in multi data center cluster" must {
     "join cluster" in within(20.seconds) {
       join(first, first)
       join(second, first)
@@ -131,8 +129,10 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
       join(fourth, first)
 
       awaitAssert({
-        Cluster(system).state.members.size should ===(4)
-        Cluster(system).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        withClue(s"Members: ${Cluster(system).state}") {
+          Cluster(system).state.members.size should ===(4)
+          Cluster(system).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        }
       }, 10.seconds)
 
       runOn(first, second) {

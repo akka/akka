@@ -10,10 +10,12 @@ import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.singleton.{ ClusterSingletonProxySettings, ClusterSingletonManagerSettings ⇒ UntypedClusterSingletonManagerSettings }
 import akka.cluster.typed.internal.AdaptedClusterSingletonImpl
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props }
+import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
 import scala.concurrent.duration._
-
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+
+import akka.actor.typed.ExtensionSetup
 
 object ClusterSingletonSettings {
   def apply(
@@ -60,8 +62,10 @@ final class ClusterSingletonSettings(
   def withNoDataCenter(): ClusterSingletonSettings = copy(dataCenter = None)
 
   def withRemovalMargin(removalMargin: FiniteDuration): ClusterSingletonSettings = copy(removalMargin = removalMargin)
+  def withRemovalMargin(removalMargin: java.time.Duration): ClusterSingletonSettings = withRemovalMargin(removalMargin.asScala)
 
   def withHandoverRetryInterval(handOverRetryInterval: FiniteDuration): ClusterSingletonSettings = copy(handOverRetryInterval = handOverRetryInterval)
+  def withHandoverRetryInterval(handOverRetryInterval: java.time.Duration): ClusterSingletonSettings = withHandoverRetryInterval(handOverRetryInterval.asScala)
 
   def withBufferSize(bufferSize: Int): ClusterSingletonSettings = copy(bufferSize = bufferSize)
 
@@ -85,17 +89,21 @@ final class ClusterSingletonSettings(
    * INTERNAL API:
    */
   @InternalApi
-  private[akka] def toProxySettings(singletonName: String): ClusterSingletonProxySettings =
+  private[akka] def toProxySettings(singletonName: String): ClusterSingletonProxySettings = {
     new ClusterSingletonProxySettings(singletonName, role, singletonIdentificationInterval, bufferSize)
+      .withDataCenter(dataCenter)
+  }
 
   /**
    * INTERNAL API:
    */
   @InternalApi
-  private[akka] def shouldRunManager(cluster: Cluster): Boolean =
+  private[akka] def shouldRunManager(cluster: Cluster): Boolean = {
     (role.isEmpty || cluster.selfMember.roles(role.get)) &&
       (dataCenter.isEmpty || dataCenter.contains(cluster.selfMember.dataCenter))
+  }
 
+  override def toString = s"ClusterSingletonSettings($role, $dataCenter, $singletonIdentificationInterval, $removalMargin, $handOverRetryInterval, $bufferSize)"
 }
 
 object ClusterSingleton extends ExtensionId[ClusterSingleton] {
@@ -113,14 +121,18 @@ object ClusterSingleton extends ExtensionId[ClusterSingleton] {
  */
 @InternalApi
 private[akka] object ClusterSingletonImpl {
-  def managerNameFor(singletonName: String) = s"singletonManager${singletonName}"
+  def managerNameFor(singletonName: String) = s"singletonManager$singletonName"
 }
 
 /**
- * Not intended for user extension.
+ * This class is not intended for user extension other than for test purposes (e.g.
+ * stub implementation). More methods may be added in the future and that may break
+ * such implementations.
  */
 @DoNotInherit
 abstract class ClusterSingleton extends Extension {
+
+  // FIXME align with ClusterSharding API, issue #25480
 
   /**
    * Start if needed and provide a proxy to a named singleton
@@ -138,7 +150,6 @@ abstract class ClusterSingleton extends Extension {
     settings:           ClusterSingletonSettings,
     terminationMessage: A
   ): ActorRef[A]
-
 }
 
 object ClusterSingletonManagerSettings {
@@ -213,13 +224,17 @@ final class ClusterSingletonManagerSettings(
 
   def withRole(role: String): ClusterSingletonManagerSettings = copy(role = UntypedClusterSingletonManagerSettings.roleOption(role))
 
-  def withRole(role: Option[String]) = copy(role = role)
+  def withRole(role: Option[String]): ClusterSingletonManagerSettings = copy(role = role)
 
   def withRemovalMargin(removalMargin: FiniteDuration): ClusterSingletonManagerSettings =
     copy(removalMargin = removalMargin)
+  def withRemovalMargin(removalMargin: java.time.Duration): ClusterSingletonManagerSettings =
+    withRemovalMargin(removalMargin.asScala)
 
   def withHandOverRetryInterval(retryInterval: FiniteDuration): ClusterSingletonManagerSettings =
     copy(handOverRetryInterval = retryInterval)
+  def withHandOverRetryInterval(retryInterval: java.time.Duration): ClusterSingletonManagerSettings =
+    withHandOverRetryInterval(retryInterval.asScala)
 
   private def copy(
     singletonName:         String         = singletonName,
@@ -229,3 +244,18 @@ final class ClusterSingletonManagerSettings(
     new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
 }
 
+object ClusterSingletonSetup {
+  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ ClusterSingleton): ClusterSingletonSetup =
+    new ClusterSingletonSetup(new java.util.function.Function[ActorSystem[_], ClusterSingleton] {
+      override def apply(sys: ActorSystem[_]): ClusterSingleton = createExtension(sys)
+    }) // TODO can be simplified when compiled only with Scala >= 2.12
+
+}
+
+/**
+ * Can be used in [[akka.actor.setup.ActorSystemSetup]] when starting the [[ActorSystem]]
+ * to replace the default implementation of the [[ClusterSingleton]] extension. Intended
+ * for tests that need to replace extension with stub/mock implementations.
+ */
+final class ClusterSingletonSetup(createExtension: java.util.function.Function[ActorSystem[_], ClusterSingleton])
+  extends ExtensionSetup[ClusterSingleton](ClusterSingleton, createExtension)

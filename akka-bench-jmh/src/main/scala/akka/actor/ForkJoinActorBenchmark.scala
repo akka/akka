@@ -22,13 +22,13 @@ import scala.concurrent.duration._
 class ForkJoinActorBenchmark {
   import ForkJoinActorBenchmark._
 
-  @Param(Array("5", "25", "50"))
+  @Param(Array("50"))
   var tpt = 0
 
   @Param(Array(coresStr)) // coresStr, cores2xStr, cores4xStr
   var threads = ""
 
-  @Param(Array("SingleConsumerOnlyUnboundedMailbox")) //"default"
+  @Param(Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox", "akka.actor.ManyToOneArrayMailbox", "akka.actor.JCToolsMailbox"))
   var mailbox = ""
 
   implicit var system: ActorSystem = _
@@ -38,27 +38,22 @@ class ForkJoinActorBenchmark {
 
     requireRightNumberOfCores(cores)
 
-    val mailboxConf = mailbox match {
-      case "default" ⇒ ""
-      case "SingleConsumerOnlyUnboundedMailbox" ⇒
-        s"""default-mailbox.mailbox-type = "${classOf[akka.dispatch.SingleConsumerOnlyUnboundedMailbox].getName}""""
-    }
-
     system = ActorSystem("ForkJoinActorBenchmark", ConfigFactory.parseString(
       s"""
         akka {
-          log-dead-letters = off
+           log-dead-letters = off
+           default-mailbox.mailbox-capacity = 512
            actor {
-             default-dispatcher {
+             fjp-dispatcher {
                executor = "fork-join-executor"
                fork-join-executor {
                  parallelism-min = $threads
-                 parallelism-factor = 1
+                 parallelism-factor = 1.0
                  parallelism-max = $threads
                }
                throughput = $tpt
+               mailbox-type = "$mailbox"
              }
-             $mailboxConf
            }
          }
       """
@@ -71,21 +66,21 @@ class ForkJoinActorBenchmark {
     Await.ready(system.whenTerminated, 15.seconds)
   }
 
-  @Benchmark
-  @OperationsPerInvocation(totalMessagesTwoActors)
-  def pingPong(): Unit = benchmarkPingPongActors(messages, twoActors, "default-dispatcher", tpt, timeout)
+  //  @Benchmark
+  //  @OperationsPerInvocation(totalMessagesTwoActors)
+  //  def pingPong(): Unit = benchmarkPingPongActors(messages, twoActors, "fjp-dispatcher", tpt, timeout)
 
   @Benchmark
   @OperationsPerInvocation(totalMessagesLessThanCores)
-  def pingPongLessActorsThanCores(): Unit = benchmarkPingPongActors(messages, lessThanCoresActors, "default-dispatcher", tpt, timeout)
+  def pingPongLessActorsThanCores(): Unit = benchmarkPingPongActors(messages, lessThanCoresActors, "fjp-dispatcher", tpt, timeout)
 
-  @Benchmark
-  @OperationsPerInvocation(totalMessagesSameAsCores)
-  def pingPongSameNumberOfActorsAsCores(): Unit = benchmarkPingPongActors(messages, sameAsCoresActors, "default-dispatcher", tpt, timeout)
+  //  @Benchmark
+  //  @OperationsPerInvocation(totalMessagesSameAsCores)
+  //  def pingPongSameNumberOfActorsAsCores(): Unit = benchmarkPingPongActors(messages, sameAsCoresActors, "fjp-dispatcher", tpt, timeout)
 
   @Benchmark
   @OperationsPerInvocation(totalMessagesMoreThanCores)
-  def pingPongMoreActorsThanCores(): Unit = benchmarkPingPongActors(messages, moreThanCoresActors, "default-dispatcher", tpt, timeout)
+  def pingPongMoreActorsThanCores(): Unit = benchmarkPingPongActors(messages, moreThanCoresActors, "fjp-dispatcher", tpt, timeout)
 
   //  @Benchmark
   //  @Measurement(timeUnit = TimeUnit.MILLISECONDS)

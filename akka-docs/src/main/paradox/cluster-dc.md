@@ -25,13 +25,13 @@ data centers but that may result in problems like:
 
 * Management of Cluster membership is stalled during network partitions as described in a 
   separate section below. This means that nodes would not be able to be added and removed 
-  during network partitions across data centers.
+  during network partitions between data centers.
 * More frequent false positive failure detection for network connections across data centers.
   It's not possible to have different settings for the failure detection within vs. across
   data centers.
 * Downing/removal of nodes in the case of network partitions should typically be treated
-  differently for failures within vs. across data centers. For network partitions across the 
-  system should typically not down the unreachable nodes, but instead wait until it heals or
+  differently for failures within vs. across data centers. For network partitions between
+  data centers the system should typically not down the unreachable nodes, but instead wait until it heals or
   a decision is made by a human or external monitoring system. For failures within same
   data center automatic, more aggressive, downing mechanisms can be employed for quick fail over.
 * Quick fail over of Cluster Singleton and Cluster Sharding from one data center to another
@@ -48,8 +48,11 @@ top of the Cluster membership information are lost. For example, it wouldn't be 
 to use @ref[Distributed Data](distributed-data.md) across the separate clusters.
 
 We often recommend implementing a micro-service as one Akka Cluster. The external API of the
-service would be HTTP or a message broker, and not Akka Remoting or Cluster, but the internal
-communication within the service that is running on several nodes would use ordinary actor 
+service would be HTTP, gRPC or a message broker, and not Akka Remoting or Cluster (see additional discussion
+ in the Lagom Framework docs: 
+@scala[[Internal and External Communication](https://www.lagomframework.com/documentation/current/scala/InternalAndExternalCommunication.html)]
+@java[[Internal and External Communication](https://www.lagomframework.com/documentation/current/java/InternalAndExternalCommunication.html)]), 
+but the internal communication within the service that is running on several nodes would use ordinary actor 
 messaging or the tools based on Akka Cluster. When deploying this service to multiple data
 centers it would be inconvenient if the internal communication could not use ordinary actor 
 messaging because it was separated into several Akka Clusters. The benefit of using Akka
@@ -95,10 +98,10 @@ if you see this in log messages.
 You can retrieve information about what data center a member belongs to:
 
 Scala
-:  @@snip [ClusterDocSpec.scala]($code$/scala/docs/cluster/ClusterDocSpec.scala) { #dcAccess }
+:  @@snip [ClusterDocSpec.scala](/akka-docs/src/test/scala/docs/cluster/ClusterDocSpec.scala) { #dcAccess }
 
 Java
-:  @@snip [ClusterDocTest.java]($code$/java/jdocs/cluster/ClusterDocTest.java) { #dcAccess }
+:  @@snip [ClusterDocTest.java](/akka-docs/src/test/java/jdocs/cluster/ClusterDocTest.java) { #dcAccess }
 
 ## Failure Detection
 
@@ -153,10 +156,10 @@ having a global singleton in one data center and accessing it from other data ce
 This is how to create a singleton proxy for a specific data center:
 
 Scala
-:  @@snip [ClusterSingletonManagerSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-proxy-dc }
+:  @@snip [ClusterSingletonManagerSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-proxy-dc }
 
 Java
-:  @@snip [ClusterSingletonManagerTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-proxy-dc }
+:  @@snip [ClusterSingletonManagerTest.java](/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-proxy-dc }
 
 If using the own data center as the `withDataCenter` parameter that would be a proxy for the singleton in the own data center, which
 is also the default if `withDataCenter` is not given.
@@ -175,9 +178,8 @@ other data centers.
 Especially when used together with Akka Persistence that is based on the single-writer principle
 it is important to avoid running the same entity at multiple locations at the same time with a
 shared data store. That would result in corrupt data since the events stored by different instances
-may be interleaved and would be interpreted differently in a later replay. Lightbend's Akka Team 
-is working on a solution that will support multiple active entities that will work nicely together 
-with Cluster Sharding across multiple data centers.
+may be interleaved and would be interpreted differently in a later replay. For active active persistent
+entities see Lightbend's [Multi-DC Persistence](https://developer.lightbend.com/docs/akka-commercial-addons/current/persistence-dc/index.html)
 
 If you need global entities you have to pick one data center to host that entity type and only start
 `ClusterSharding` on nodes of that data center. If the data center is unreachable from another data center the
@@ -191,10 +193,10 @@ accessing them from other data centers.
 This is how to create a sharding proxy for a specific data center:
 
 Scala
-:  @@snip [ClusterShardingSpec.scala]($akka$/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #proxy-dc }
+:  @@snip [ClusterShardingSpec.scala](/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #proxy-dc }
 
 Java
-:  @@snip [ClusterShardingTest.java]($code$/java/jdocs/sharding/ClusterShardingTest.java) { #proxy-dc }
+:  @@snip [ClusterShardingTest.java](/akka-docs/src/test/java/jdocs/sharding/ClusterShardingTest.java) { #proxy-dc }
 
 Another way to manage global entities is to make sure that certain entity ids are located in 
 only one data center by routing the messages to the right region. For example, the routing function

@@ -5,8 +5,9 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.actor.typed.Behavior.UntypedPropsBehavior
+import akka.actor.ExtendedActorSystem
 import akka.actor.typed.internal.adapter._
+import akka.annotation.InternalApi
 
 /**
  * Scala API: Adapters between typed and untyped actors and actor systems.
@@ -38,21 +39,11 @@ package object adapter {
   implicit class UntypedActorSystemOps(val sys: akka.actor.ActorSystem) extends AnyVal {
 
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] = {
-      behavior match {
-        case b: UntypedPropsBehavior[_] ⇒
-          ActorRefAdapter(sys.actorOf(b.untypedProps(props)))
-        case _ ⇒
-          ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props)))
-      }
+      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props)))
     }
 
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] = {
-      behavior match {
-        case b: UntypedPropsBehavior[_] ⇒
-          ActorRefAdapter(sys.actorOf(b.untypedProps(props), name))
-        case _ ⇒
-          ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props), name))
-      }
+      ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props), name))
     }
 
     def toTyped: ActorSystem[Nothing] = AdapterExtension(sys).adapter
@@ -63,6 +54,13 @@ package object adapter {
    */
   implicit class TypedActorSystemOps(val sys: ActorSystem[_]) extends AnyVal {
     def toUntyped: akka.actor.ActorSystem = ActorSystemAdapter.toUntyped(sys)
+
+    /**
+     * INTERNAL API
+     */
+    @InternalApi private[akka] def internalSystemActorOf[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U] = {
+      toUntyped.asInstanceOf[ExtendedActorSystem].systemActorOf(PropsAdapter(behavior, props), name)
+    }
   }
 
   /**
@@ -98,6 +96,19 @@ package object adapter {
    */
   implicit class TypedActorRefOps(val ref: ActorRef[_]) extends AnyVal {
     def toUntyped: akka.actor.ActorRef = ActorRefAdapter.toUntyped(ref)
+  }
+
+  /**
+   * Extension methods added to [[akka.actor.ActorRef]].
+   */
+  implicit class UntypedActorRefOps(val ref: akka.actor.ActorRef) extends AnyVal {
+
+    /**
+     * Adapt the untyped `ActorRef` to typed `ActorRef[T]`. There is also an
+     * automatic implicit conversion for this, but this more explicit variant might
+     * sometimes be preferred.
+     */
+    def toTyped[T]: ActorRef[T] = ActorRefAdapter(ref)
   }
 
   /**

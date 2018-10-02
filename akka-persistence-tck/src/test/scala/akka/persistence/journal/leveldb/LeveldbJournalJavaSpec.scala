@@ -15,4 +15,6 @@ class LeveldbJournalJavaSpec extends JournalSpec(
   with PluginCleanup {
 
   override def supportsRejectingNonSerializableObjects = true
+
+  override def supportsSerialization = true
 }

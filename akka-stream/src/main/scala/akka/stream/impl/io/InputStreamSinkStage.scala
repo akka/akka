@@ -25,6 +25,7 @@ private[stream] object InputStreamSinkStage {
   case object Close extends AdapterToStageMessage
 
   sealed trait StreamToAdapterMessage
+  // Only non-empty ByteString is expected as Data
   case class Data(data: ByteString) extends StreamToAdapterMessage
   case object Finished extends StreamToAdapterMessage
   case object Initialized extends StreamToAdapterMessage
@@ -45,7 +46,7 @@ private[stream] object InputStreamSinkStage {
   override val shape: SinkShape[ByteString] = SinkShape.of(in)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, InputStream) = {
-    val maxBuffer = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+    val maxBuffer = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max
     require(maxBuffer > 0, "Buffer size must be greater than 0")
 
     val dataQueue = new LinkedBlockingDeque[StreamToAdapterMessage](maxBuffer + 2)
@@ -74,7 +75,10 @@ private[stream] object InputStreamSinkStage {
       def onPush(): Unit = {
         //1 is buffer for Finished or Failed callback
         require(dataQueue.remainingCapacity() > 1)
-        dataQueue.add(Data(grab(in)))
+        val bs = grab(in)
+        if (bs.nonEmpty) {
+          dataQueue.add(Data(bs))
+        }
         if (dataQueue.remainingCapacity() > 1) sendPullIfAllowed()
       }
 
@@ -127,9 +131,12 @@ private[stream] object InputStreamSinkStage {
 
   @scala.throws(classOf[IOException])
   override def read(): Int = {
-    val a = Array[Byte](1)
-    if (read(a, 0, 1) != -1) a(0) & 0xff
-    else -1
+    val a = new Array[Byte](1)
+    read(a, 0, 1) match {
+      case 1   ⇒ a(0) & 0xff
+      case -1  ⇒ -1
+      case len ⇒ throw new IllegalStateException(s"Invalid length [$len]")
+    }
   }
 
   @scala.throws(classOf[IOException])

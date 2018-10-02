@@ -1,18 +1,20 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
-import akka.cluster.ddata.{ ReplicatorSettings, Replicator }
-import akka.cluster.sharding.ShardCoordinator.Internal.{ ShardStopped, HandOff }
+import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
+import akka.cluster.sharding.ShardCoordinator.Internal.{ HandOff, ShardStopped }
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.cluster.sharding.ShardRegion.GetCurrentRegions
 import akka.cluster.sharding.ShardRegion.CurrentRegions
+
 import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor._
-import akka.cluster.Cluster
+import akka.cluster.{ Cluster, MultiNodeClusterSpec }
 import akka.persistence.PersistentActor
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.SharedLeveldbJournal
@@ -24,6 +26,7 @@ import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.testkit.TestEvent.Mute
 import java.io.File
+
 import org.apache.commons.io.FileUtils
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.cluster.singleton.ClusterSingletonManagerSettings
@@ -164,7 +167,7 @@ abstract class ClusterShardingSpecConfig(
       }
     }
     akka.testconductor.barrier-timeout = 70s
-    """))
+    """).withFallback(MultiNodeClusterSpec.clusterConfig))
   nodeConfig(sixth) {
     ConfigFactory.parseString("""akka.cluster.roles = ["frontend"]""")
   }
@@ -251,21 +254,20 @@ class DDataClusterShardingWithEntityRecoveryMultiJvmNode5 extends DDataClusterSh
 class DDataClusterShardingWithEntityRecoveryMultiJvmNode6 extends DDataClusterShardingSpec
 class DDataClusterShardingWithEntityRecoveryMultiJvmNode7 extends DDataClusterShardingSpec
 
-abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
+abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends MultiNodeSpec(config) with MultiNodeClusterSpec
+  with STMultiNodeSpec with ImplicitSender {
   import ClusterShardingSpec._
   import config._
-
-  override def initialParticipants = roles.size
 
   val storageLocations = List(new File(system.settings.config.getString(
     "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
-  override protected def atStartup() {
+  override protected def atStartup(): Unit = {
     storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
   }
 
-  override protected def afterTermination() {
+  override protected def afterTermination(): Unit = {
     storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
   }
 
@@ -307,7 +309,8 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig) extends Mu
           childName = "coordinator",
           minBackoff = 5.seconds,
           maxBackoff = 5.seconds,
-          randomFactor = 0.1).withDeploy(Deploy.local)
+          randomFactor = 0.1,
+          maxNrOfRetries = -1).withDeploy(Deploy.local)
         system.actorOf(
           ClusterSingletonManager.props(
             singletonProps,

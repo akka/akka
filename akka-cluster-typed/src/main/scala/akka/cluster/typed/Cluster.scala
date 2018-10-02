@@ -11,8 +11,9 @@ import akka.cluster._
 import akka.japi.Util
 import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
 import akka.cluster.typed.internal.AdapterClusterImpl
-
 import scala.collection.immutable
+
+import akka.actor.typed.ExtensionSetup
 
 /**
  * Messages for subscribing to changes in the cluster state
@@ -158,7 +159,9 @@ object Cluster extends ExtensionId[Cluster] {
 }
 
 /**
- * Not intended for user extension.
+ * This class is not intended for user extension other than for test purposes (e.g.
+ * stub implementation). More methods may be added in the future and that may break
+ * such implementations.
  */
 @DoNotInherit
 abstract class Cluster extends Extension {
@@ -183,3 +186,19 @@ abstract class Cluster extends Extension {
   def manager: ActorRef[ClusterCommand]
 
 }
+
+object ClusterSetup {
+  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ Cluster): ClusterSetup =
+    new ClusterSetup(new java.util.function.Function[ActorSystem[_], Cluster] {
+      override def apply(sys: ActorSystem[_]): Cluster = createExtension(sys)
+    }) // TODO can be simplified when compiled only with Scala >= 2.12
+
+}
+
+/**
+ * Can be used in [[akka.actor.setup.ActorSystemSetup]] when starting the [[ActorSystem]]
+ * to replace the default implementation of the [[Cluster]] extension. Intended
+ * for tests that need to replace extension with stub/mock implementations.
+ */
+final class ClusterSetup(createExtension: java.util.function.Function[ActorSystem[_], Cluster])
+  extends ExtensionSetup[Cluster](Cluster, createExtension)

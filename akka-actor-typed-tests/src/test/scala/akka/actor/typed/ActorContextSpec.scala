@@ -6,9 +6,13 @@ package akka.actor.typed
 
 import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
+import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 object ActorSpecMessages {
 
@@ -58,17 +62,24 @@ object ActorSpecMessages {
 
 }
 
-abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import ActorSpecMessages._
 
   def decoration[T]: Behavior[T] ⇒ Behavior[T]
 
-  implicit class BehaviorDecorator[T](behavior: Behavior[T]) {
-    def decorate: Behavior[T] = decoration(behavior)
+  implicit class BehaviorDecorator[T](behavior: Behavior[T])(implicit ev: ClassTag[T]) {
+    def decorate: Behavior[T] = decoration[T](behavior)
   }
 
   "An ActorContext" must {
+
+    "be usable from Behavior.interpretMessage" in {
+      // compilation only
+      lazy val b: Behavior[String] = Behaviors.receive { (ctx, msg) ⇒
+        Behavior.interpretMessage(b, ctx, msg)
+      }
+    }
 
     "canonicalize behaviors" in {
       val probe = TestProbe[Event]()
@@ -576,7 +587,6 @@ abstract class ActorContextSpec extends ActorTestKit with TypedAkkaSpecWithShutd
     }
   }
 
-  override def afterAll(): Unit = shutdownTestKit()
 }
 
 class NormalActorContextSpec extends ActorContextSpec {
@@ -599,7 +609,15 @@ class NestedDeferredActorContextSpec extends ActorContextSpec {
   override def decoration[T] = b ⇒ Behaviors.setup(_ ⇒ Behaviors.setup(_ ⇒ b))
 }
 
-class TapActorContextSpec extends ActorContextSpec {
+class InterceptActorContextSpec extends ActorContextSpec {
+  import BehaviorInterceptor._
 
-  override def decoration[T] = b ⇒ Behaviors.tap((_, _) ⇒ (), (_, _) ⇒ (), b)
+  def tap[T] = new BehaviorInterceptor[T, T] {
+    override def aroundReceive(ctx: ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] =
+      target(ctx, msg)
+    override def aroundSignal(ctx: ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] =
+      target(ctx, signal)
+  }
+
+  override def decoration[T]: Behavior[T] ⇒ Behavior[T] = b ⇒ Behaviors.intercept[T, T](tap)(b)
 }

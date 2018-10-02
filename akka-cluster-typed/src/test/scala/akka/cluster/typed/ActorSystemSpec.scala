@@ -7,7 +7,7 @@ package akka.cluster.typed
 import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, PostStop, Terminated }
-import akka.testkit.typed.scaladsl.TestInbox
+import akka.actor.testkit.typed.scaladsl.TestInbox
 import com.typesafe.config.ConfigFactory
 import org.scalatest._
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }

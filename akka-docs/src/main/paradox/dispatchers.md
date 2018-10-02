@@ -1,5 +1,17 @@
 # Dispatchers
 
+## Dependency
+
+Dispatchers are part of core akka, which means that they are part of the akka-actor dependency:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 An Akka `MessageDispatcher` is what makes Akka Actors "tick", it is the engine of the machine so to speak.
 All `MessageDispatcher` implementations are also an `ExecutionContext`, which means that they can be used
 to execute arbitrary code, for instance @ref:[Futures](futures.md).
@@ -19,17 +31,17 @@ gives excellent performance in most cases.
 Dispatchers implement the `ExecutionContext` interface and can thus be used to run `Future` invocations etc.
 
 Scala
-:  @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #lookup }
+:  @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #lookup }
 
 Java
-:  @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #lookup }
+:  @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #lookup }
 ## Setting the dispatcher for an Actor
 
 So in case you want to give your `Actor` a different dispatcher than the default, you need to do two things, of which the first
 is to configure the dispatcher:
 
 <!--same config text for Scala & Java-->
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #my-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #my-dispatcher-config }
 
 @@@ note
 
@@ -43,7 +55,7 @@ You can read more about parallelism in the JDK's [ForkJoinPool documentation](ht
 Another example that uses the "thread-pool-executor":
 
 <!--same config text for Scala & Java-->
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
 
 @@@ note
 
@@ -57,23 +69,23 @@ For more options, see the default-dispatcher section of the @ref:[configuration]
 Then you create the actor as usual and define the dispatcher in the deployment configuration.
 
 Scala
-:  @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-dispatcher-in-config }
+:  @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-dispatcher-in-config }
 
 Java
-:  @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-dispatcher-in-config }
+:  @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-dispatcher-in-config }
 
 <!--same config text for Scala & Java-->
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #dispatcher-deployment-config } 
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #dispatcher-deployment-config } 
 
 An alternative to the deployment configuration is to define the dispatcher in code.
 If you define the `dispatcher` in the deployment configuration then this value will be used instead
 of programmatically provided parameter.
 
 Scala
-:  @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-dispatcher-in-code }
+:  @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-dispatcher-in-code }
 
 Java
-:  @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-dispatcher-in-code }
+:  @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-dispatcher-in-code }
 
 @@@ note
 
@@ -128,40 +140,40 @@ There are 3 different types of message dispatchers:
 
 Configuring a dispatcher with fixed thread pool size, e.g. for actors that perform blocking IO:
 
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
 
 And then using it:
 
 Scala
-:  @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-fixed-pool-size-dispatcher }
+:  @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-fixed-pool-size-dispatcher }
 
 Java
-:  @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-fixed-pool-size-dispatcher }
+:  @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-fixed-pool-size-dispatcher }
 
 Another example that uses the thread pool based on the number of cores (e.g. for CPU bound tasks)
 
 <!--same config text for Scala & Java-->
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-thread-pool-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-thread-pool-dispatcher-config }
 
 A different kind of dispatcher that uses an affinity pool may increase throughput in cases where there is relatively small
 number of actors that maintain some internal state. The affinity pool tries its best to ensure that an actor is always
 scheduled to run on the same thread. This actor to thread pinning aims to decrease CPU cache misses which can result 
 in significant throughput improvement.
 
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #affinity-pool-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #affinity-pool-dispatcher-config }
 
 Configuring a `PinnedDispatcher`:
 
 <!--same config text for Scala & Java-->
-@@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-pinned-dispatcher-config }
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-pinned-dispatcher-config }
 
 And then using it:
 
 Scala
-:  @@snip [DispatcherDocSpec.scala]($code$/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-pinned-dispatcher }
+:  @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #defining-pinned-dispatcher }
 
 Java
-:  @@snip [DispatcherDocTest.java]($code$/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-pinned-dispatcher }
+:  @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #defining-pinned-dispatcher }
 
 Note that `thread-pool-executor` configuration as per the above `my-thread-pool-dispatcher` example is
 NOT applicable. This is because every actor will have its own thread pool when using `PinnedDispatcher`,
@@ -181,23 +193,23 @@ is typically that (network) I/O occurs under the covers.
 
 
 Scala
-:   @@snip [BlockingDispatcherSample.scala]($akka$/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #blocking-in-actor }
+:   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #blocking-in-actor }
 
 Java
-:   @@snip [BlockingDispatcherSample.java]($akka$/akka-docs/src/test/java/jdocs/actor/BlockingActor.java) { #blocking-in-actor  }
+:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/BlockingActor.java) { #blocking-in-actor  }
 
 
 When facing this, you
-may be tempted to just wrap the blocking call inside a `Future` and work
+may be tempted to wrap the blocking call inside a `Future` and work
 with that instead, but this strategy is too simple: you are quite likely to
 find bottlenecks or run out of memory or threads when the application runs
 under increased load.
 
 Scala
-:   @@snip [BlockingDispatcherSample.scala]($akka$/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #blocking-in-future }
+:   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #blocking-in-future }
 
 Java
-:   @@snip [BlockingDispatcherSample.java]($akka$/akka-docs/src/test/java/jdocs/actor/BlockingFutureActor.java) { #blocking-in-future  }
+:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/BlockingFutureActor.java) { #blocking-in-future  }
 
 
 ### Problem: Blocking on default dispatcher
@@ -244,17 +256,17 @@ including Streams, Http and other reactive libraries built on top of it.
 Let's set up an application with the above `BlockingFutureActor` and the following `PrintActor`.
 
 Scala
-:   @@snip [BlockingDispatcherSample.scala]($akka$/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #print-actor }
+:   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #print-actor }
 
 Java
-:   @@snip [BlockingDispatcherSample.java]($akka$/akka-docs/src/test/java/jdocs/actor/PrintActor.java) { #print-actor }
+:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/PrintActor.java) { #print-actor }
 
 
 Scala
-:   @@snip [BlockingDispatcherSample.scala]($akka$/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #blocking-main }
+:   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #blocking-main }
 
 Java
-:   @@snip [BlockingDispatcherSample.java]($akka$/akka-docs/src/test/java/jdocs/actor/BlockingDispatcherTest.java) { #blocking-main }
+:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/BlockingDispatcherTest.java) { #blocking-main }
 
 
 Here the app is sending 100 messages to `BlockingFutureActor` and `PrintActor` and large numbers
@@ -314,7 +326,7 @@ In `application.conf`, the dispatcher dedicated to blocking behavior should
 be configured as follows:
 
 <!--same config text for Scala & Java-->
-@@snip [BlockingDispatcherSample.scala]($akka$/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #my-blocking-dispatcher-config }
+@@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #my-blocking-dispatcher-config }
 
 A `thread-pool-executor` based dispatcher allows us to set a limit on the number of threads it will host,
 and this way we gain tight control over how at-most-how-many blocked threads will be in the system.
@@ -327,16 +339,16 @@ Whenever blocking has to be done, use the above configured dispatcher
 instead of the default one:
 
 Scala
-:   @@snip [BlockingDispatcherSample.scala]($akka$/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #separate-dispatcher }
+:   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/BlockingDispatcherSample.scala) { #separate-dispatcher }
 
 Java
-:   @@snip [BlockingDispatcherSample.java]($akka$/akka-docs/src/test/java/jdocs/actor/SeparateDispatcherFutureActor.java) { #separate-dispatcher }
+:   @@snip [BlockingDispatcherSample.java](/akka-docs/src/test/java/jdocs/actor/SeparateDispatcherFutureActor.java) { #separate-dispatcher }
 
 The thread pool behavior is shown in the below diagram.
 
 ![dispatcher-behaviour-on-good-code.png](./images/dispatcher-behaviour-on-good-code.png)
 
-Messages sent to `SeparateDispatcherFutureActor` and `PrintActor` are easily handled by the default dispatcher - the
+Messages sent to `SeparateDispatcherFutureActor` and `PrintActor` are handled by the default dispatcher - the
 green lines, which represent the actual execution.
 
 When blocking operations are run on the `my-blocking-dispatcher`,
@@ -382,8 +394,8 @@ on which DBMS is deployed on what hardware.
 
 @@@ note
 
-Configuring thread pools is a task best delegated to Akka, simply configure
-in the `application.conf` and instantiate through an
+Configuring thread pools is a task best delegated to Akka, configure
+it in `application.conf` and instantiate through an
 @ref:[`ActorSystem`](#dispatcher-lookup)
 
 @@@

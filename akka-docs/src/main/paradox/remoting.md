@@ -1,37 +1,16 @@
 # Remoting
 
-For an introduction of remoting capabilities of Akka please see @ref:[Location Transparency](general/remoting.md).
+## Dependency
 
-@@@ note
+To use Akka Remoting, you must add the following dependency in your project:
 
-As explained in that chapter Akka remoting is designed for communication in a
-peer-to-peer fashion and it has limitations for client-server setups. In
-particular Akka Remoting does not work transparently with Network Address Translation,
-Load Balancers, or in Docker containers. For symmetric communication in these situations
-network and/or Akka configuration will have to be changed as described in
-[Akka behind NAT or in a Docker container](#remote-configuration-nat).
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-remote_$scala.binary_version$
+  version=$akka.version$
+}
 
-@@@
-
-## Preparing your ActorSystem for Remoting
-
-The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project:
-
-@@@vars
-sbt
-:   ```
-"com.typesafe.akka" %% "akka-remote" % "$akka.version$"
-```
-
-Maven
-:   ```
-<dependency>
-  <groupId>com.typesafe.akka</groupId>
-  <artifactId>akka-remote_$scala.binary_version$</artifactId>
-  <version>$akka.version$</version>
-</dependency>
-```
-@@@
+## Configuration
 
 To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
 to your `application.conf` file:
@@ -71,6 +50,24 @@ listening for connections and handling messages as not to interfere with other a
 
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
 All settings are described in [Remote Configuration](#remote-configuration).
+
+## Introduction
+
+We recommend @ref:[Akka Cluster](cluster-usage.md) over using remoting directly. As remoting is the
+underlying module that allows for Cluster, it is still useful to understand details about it though.
+
+For an introduction of remoting capabilities of Akka please see @ref:[Location Transparency](general/remoting.md).
+
+@@@ note
+
+As explained in that chapter Akka remoting is designed for communication in a
+peer-to-peer fashion and it is not a good fit for client-server setups. In
+particular Akka Remoting does not work transparently with Network Address Translation,
+Load Balancers, or in Docker containers. For symmetric communication in these situations
+network and/or Akka configuration will have to be changed as described in
+[Akka behind NAT or in a Docker container](#remote-configuration-nat).
+
+@@@
 
 ## Types of Remote Interaction
 
@@ -167,10 +164,10 @@ which in this sample corresponds to `sampleActorSystem@127.0.0.1:2553`.
 Once you have configured the properties above you would do the following in code:
 
 Scala
-:   @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
+:   @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
 
 Java
-:   @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #sample-actor }
+:   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #sample-actor }
 
 The actor class `SampleActor` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
@@ -212,26 +209,26 @@ precedence.
 With these imports:
 
 Scala
-:   @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
+:   @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
 
 Java
-:   @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #import }
+:   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #import }
 
 and a remote address like this:
 
 Scala
-:   @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address }
+:   @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address }
 
 Java
-:   @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #make-address }
+:   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #make-address }
 
 you can advise the system to create a child on that remote node like so:
 
 Scala
-:   @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
+:   @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
 
 Java
-:   @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
+:   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
 
 <a id="remote-deployment-whitelist"></a>
 ### Remote deployment whitelist
@@ -247,7 +244,7 @@ The list of allowed classes has to be configured on the "remote" system, in othe
 others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
 should not allow others to remote deploy onto it. The full settings section may for example look like this:
 
-@@snip [RemoteDeploymentWhitelistSpec.scala]($akka$/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
+@@snip [RemoteDeploymentWhitelistSpec.scala](/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
 
 Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
 
@@ -348,30 +345,23 @@ It is absolutely feasible to combine remoting with @ref:[Routing](routing.md).
 
 A pool of remote deployed routees can be configured as:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-pool }
 
 This configuration setting will clone the actor defined in the `Props` of the `remotePool` 10
 times and deploy it evenly distributed across the two given target nodes.
 
 A group of remote actors can be configured as:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group }
 
 This configuration setting will send messages to the defined remote actor paths.
 It requires that you create the destination actors on the remote nodes with matching paths.
 That is not done by the router.
 
-<a id="remote-sample"></a>
-## Remoting Sample
-
-You can download a ready to run @scala[@extref[remoting sample](ecs:akka-samples-remote-scala)]@java[@extref[remoting sample](ecs:akka-samples-remote-java)]
-together with a tutorial for a more hands-on experience. The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-remote-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-remote-java)].
-
 ### Remote Events
 
 It is possible to listen to events that occur in Akka Remote, and to subscribe/unsubscribe to these events
-you simply register as listener to the below described types in on the `ActorSystem.eventStream`.
+you register as listener to the below described types in on the `ActorSystem.eventStream`.
 
 @@@ note
 
@@ -472,8 +462,6 @@ akka {
         protocol = "TLSv1.2"
 
         enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
-
-        random-number-generator = "AES128CounterSecureRNG"
       }
     }
   }
@@ -599,7 +587,7 @@ There are lots of configuration properties that are related to remoting in Akka.
 Setting properties like the listening IP and port number programmatically is
 best done by using something like the following:
 
-@@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #programmatic }
+@@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #programmatic }
 
 @@@
 
@@ -632,3 +620,8 @@ Keep in mind that local.address will most likely be in one of private network ra
  * *192.168.0.0 - 192.168.255.255* (network class C)
 
 For further details see [RFC 1597](https://tools.ietf.org/html/rfc1597) and [RFC 1918](https://tools.ietf.org/html/rfc1918).
+
+You can look at the
+@java[@extref[Cluster with docker-compse example project](samples:akka-samples-cluster-docker-compose-java)]
+@scala[@extref[Cluster with docker-compose example project](samples:akka-samples-cluster-docker-compose-scala)]
+to see what this looks like in practice.

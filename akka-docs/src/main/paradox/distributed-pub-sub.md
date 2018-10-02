@@ -1,5 +1,17 @@
 # Distributed Publish Subscribe in Cluster
 
+## Dependency
+
+To use Distributed Publish Subscribe you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-cluster-tools_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 How do I send a message to an actor without knowing which node it is running on?
 
 How do I send messages to all actors in the cluster that have registered interest
@@ -64,35 +76,35 @@ can explicitly remove entries with `DistributedPubSubMediator.Unsubscribe`.
 An example of a subscriber actor:
 
 Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #subscriber }
+:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #subscriber }
 
 Java
-:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #subscriber }
+:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #subscriber }
 
 Subscriber actors can be started on several nodes in the cluster, and all will receive
 messages published to the "content" topic.
 
 Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-subscribers }
+:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-subscribers }
 
 Java
-:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #start-subscribers }
+:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #start-subscribers }
 
 A simple actor that publishes to this "content" topic:
 
 Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publisher }
+:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publisher }
 
 Java
-:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #publisher }
+:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #publisher }
 
 It can publish messages to the topic from anywhere in the cluster:
 
 Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publish-message }
+:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publish-message }
 
 Java
-:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #publish-message }
+:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #publish-message }
 
 ### Topic Groups
 
@@ -149,35 +161,35 @@ can explicitly remove entries with `DistributedPubSubMediator.Remove`.
 An example of a destination actor:
 
 Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-destination }
+:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-destination }
 
 Java
-:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-destination }
+:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-destination }
 
 Destination actors can be started on several nodes in the cluster, and all will receive
 messages sent to the path (without address information).
 
 Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-send-destinations }
+:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-send-destinations }
 
 Java
-:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #start-send-destinations }
+:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #start-send-destinations }
 
 A simple actor that sends to the path:
 
 Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #sender }
+:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #sender }
 
 Java
-:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #sender }
+:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #sender }
 
 It can send messages to the path from anywhere in the cluster:
 
 Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala]($akka$/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-message }
+:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-message }
 
 Java
-:  @@snip [DistributedPubSubMediatorTest.java]($akka$/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-message }
+:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-message }
 
 It is also possible to broadcast messages to the actors that have been registered with
 `Put`. Send `DistributedPubSubMediator.SendToAll` message to the local mediator and the wrapped message
@@ -201,7 +213,7 @@ want to use different cluster roles for different mediators.
 
 The `DistributedPubSub` extension can be configured with the following properties:
 
-@@snip [reference.conf]($akka$/akka-cluster-tools/src/main/resources/reference.conf) { #pub-sub-ext-config }
+@@snip [reference.conf](/akka-cluster-tools/src/main/resources/reference.conf) { #pub-sub-ext-config }
 
 It is recommended to load the extension when the actor system is started by defining it in
 `akka.extensions` configuration property. Otherwise it will be activated when first used
@@ -217,32 +229,3 @@ As in @ref:[Message Delivery Reliability](general/message-delivery-reliability.m
 In other words, messages can be lost over the wire.
 
 If you are looking for at-least-once delivery guarantee, we recommend [Kafka Akka Streams integration](http://doc.akka.io/docs/akka-stream-kafka/current/home.html).
-
-## Dependencies
-
-To use Distributed Publish Subscribe you must add the following dependency in your project.
-
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-cluster-tools" % "$akka.version$"
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-cluster-tools_$scala.binary_version$', version: '$akka.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-cluster-tools_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@

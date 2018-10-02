@@ -7,7 +7,6 @@ package internal
 package adapter
 
 import akka.actor.ExtendedActorSystem
-import akka.actor.typed.Behavior.UntypedPropsBehavior
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 import akka.{ ConfigurationException, actor ⇒ a }
@@ -124,36 +123,22 @@ import scala.concurrent.duration._
     }
 
   def spawnAnonymous[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], props: Props): ActorRef[T] = {
-    behavior match {
-      case b: UntypedPropsBehavior[_] ⇒
-        // TODO dispatcher from props
-        ActorRefAdapter(ctx.actorOf(b.untypedProps(props)))
-
-      case _ ⇒
-        try {
-          Behavior.validateAsInitial(behavior)
-          ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props)))
-        } catch {
-          case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") ⇒
-            throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
-        }
+    try {
+      Behavior.validateAsInitial(behavior)
+      ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props)))
+    } catch {
+      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") ⇒
+        throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
     }
   }
 
   def spawn[T](ctx: akka.actor.ActorContext, behavior: Behavior[T], name: String, props: Props): ActorRef[T] = {
-    behavior match {
-      case b: UntypedPropsBehavior[_] ⇒
-        // TODO dispatcher from props
-        ActorRefAdapter(ctx.actorOf(b.untypedProps(props), name))
-
-      case _ ⇒
-        try {
-          Behavior.validateAsInitial(behavior)
-          ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props), name))
-        } catch {
-          case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") ⇒
-            throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
-        }
+    try {
+      Behavior.validateAsInitial(behavior)
+      ActorRefAdapter(ctx.actorOf(PropsAdapter(() ⇒ behavior, props), name))
+    } catch {
+      case ex: ConfigurationException if ex.getMessage.startsWith("configuration requested remote deployment") ⇒
+        throw new ConfigurationException("Remote deployment not allowed for typed actors", ex)
     }
   }
 

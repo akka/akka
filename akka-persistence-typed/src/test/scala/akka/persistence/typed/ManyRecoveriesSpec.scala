@@ -4,18 +4,17 @@
 
 package akka.persistence.typed
 
-import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
 import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
 import akka.persistence.typed.scaladsl.{ Effect, PersistentBehavior, PersistentBehaviors }
 import akka.testkit.TestLatch
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.concurrent.Eventually
+import akka.actor.testkit.typed.scaladsl.TestProbe
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 object ManyRecoveriesSpec {
 
@@ -29,9 +28,9 @@ object ManyRecoveriesSpec {
     latch: Option[TestLatch]): PersistentBehavior[Cmd, Evt, String] =
     PersistentBehaviors.receive[Cmd, Evt, String](
       persistenceId = name,
-      initialState = "",
+      emptyState = "",
       commandHandler = CommandHandler.command {
-        case Cmd(s) ⇒ Effect.persist(Evt(s)).andThen(_ ⇒ probe.ref ! s"$name-$s")
+        case Cmd(s) ⇒ Effect.persist(Evt(s)).thenRun(_ ⇒ probe.ref ! s"$name-$s")
       },
       eventHandler = {
         case (state, _) ⇒ latch.foreach(Await.ready(_, 10.seconds)); state
@@ -49,12 +48,7 @@ object ManyRecoveriesSpec {
     (1 to n).map(mapper).toSet
 }
 
-class ManyRecoveriesSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
-
-  import ManyRecoveriesSpec._
-
-  override def config: Config = ConfigFactory.parseString(
-    s"""
+class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
     akka.actor.default-dispatcher {
       type = Dispatcher
       executor = "thread-pool-executor"
@@ -65,7 +59,9 @@ class ManyRecoveriesSpec extends ActorTestKit with TypedAkkaSpecWithShutdown wit
     akka.persistence.max-concurrent-recoveries = 3
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.actor.warn-about-java-serializer-usage = off
-  """)
+    """) with WordSpecLike {
+
+  import ManyRecoveriesSpec._
 
   "Many persistent actors" must {
     "be able to recover without overloading" in {

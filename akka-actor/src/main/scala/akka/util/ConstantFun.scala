@@ -12,6 +12,7 @@ import akka.japi.{ Pair ⇒ JPair }
  * INTERNAL API
  */
 @InternalApi private[akka] object ConstantFun {
+
   private[this] val JavaIdentityFunction = new JFun[Any, Any] {
     @throws(classOf[Exception]) override def apply(param: Any): Any = param
   }
@@ -27,8 +28,10 @@ import akka.japi.{ Pair ⇒ JPair }
   def scalaIdentityFunction[T]: T ⇒ T = conforms.asInstanceOf[Function[T, T]]
 
   def scalaAnyToNone[A, B]: A ⇒ Option[B] = none
+  def scalaAnyToUnit[A]: A ⇒ Unit = unit
   def scalaAnyTwoToNone[A, B, C]: (A, B) ⇒ Option[C] = two2none
   def scalaAnyTwoToUnit[A, B]: (A, B) ⇒ Unit = two2unit
+  def scalaAnyThreeToUnit[A, B, C]: (A, B, C) ⇒ Unit = three2unit
   def scalaAnyTwoToTrue[A, B]: (A, B) ⇒ Boolean = two2true
   def scalaAnyThreeToFalse[A, B, C]: (A, B, C) ⇒ Boolean = three2false
   def scalaAnyThreeToThird[A, B, C]: (A, B, C) ⇒ C = three2third.asInstanceOf[(A, B, C) ⇒ C]
@@ -45,6 +48,8 @@ import akka.japi.{ Pair ⇒ JPair }
 
   private val conforms = (a: Any) ⇒ a
 
+  private val unit = (_: Any) ⇒ ()
+
   private val none = (_: Any) ⇒ None
 
   private val two2none = (_: Any, _: Any) ⇒ None
@@ -52,6 +57,8 @@ import akka.japi.{ Pair ⇒ JPair }
   private val two2true = (_: Any, _: Any) ⇒ true
 
   private val two2unit = (_: Any, _: Any) ⇒ ()
+
+  private val three2unit = (_: Any, _: Any, _: Any) ⇒ ()
 
   private val three2false = (_: Any, _: Any, _: Any) ⇒ false
 

@@ -13,5 +13,7 @@
 * [cluster-metrics](cluster-metrics.md)
 * [distributed-data](distributed-data.md)
 * [cluster-dc](cluster-dc.md)
+* [multi-jvm-testing](multi-jvm-testing.md)
+* [multi-node-testing](multi-node-testing.md)
 
 @@@

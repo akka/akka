@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.sharding
 
 import scala.collection.immutable
@@ -80,7 +81,6 @@ abstract class ClusterShardingCustomShardAllocationSpecConfig(val mode: String) 
   val second = role("second")
 
   commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"

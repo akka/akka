@@ -193,6 +193,9 @@ object PersistenceTCKDoc {
 
       override def supportsRejectingNonSerializableObjects: CapabilityFlag =
         false // or CapabilityFlag.off
+
+      override def supportsSerialization: CapabilityFlag =
+        true // or CapabilityFlag.on
     }
     //#journal-tck-scala
   }
@@ -204,7 +207,11 @@ object PersistenceTCKDoc {
       config = ConfigFactory.parseString(
         """
         akka.persistence.snapshot-store.plugin = "my.snapshot-store.plugin"
-        """))
+        """)) {
+
+      override def supportsSerialization: CapabilityFlag =
+        true // or CapabilityFlag.on
+    }
     //#snapshot-store-tck-scala
   }
   new AnyRef {
@@ -227,12 +234,12 @@ object PersistenceTCKDoc {
         new File(system.settings.config.getString("akka.persistence.journal.leveldb.dir")),
         new File(config.getString("akka.persistence.snapshot-store.local.dir")))
 
-      override def beforeAll() {
+      override def beforeAll(): Unit = {
         super.beforeAll()
         storageLocations foreach FileUtils.deleteRecursively
       }
 
-      override def afterAll() {
+      override def afterAll(): Unit = {
         storageLocations foreach FileUtils.deleteRecursively
         super.afterAll()
       }

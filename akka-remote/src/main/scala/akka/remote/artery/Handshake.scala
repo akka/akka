@@ -42,6 +42,7 @@ private[remote] object OutboundHandshake {
   private case object HandshakeTimeout
   private case object HandshakeRetryTick
   private case object InjectHandshakeTick
+  private case object LivenessProbeTick
 
 }
 
@@ -49,11 +50,13 @@ private[remote] object OutboundHandshake {
  * INTERNAL API
  */
 private[remote] class OutboundHandshake(
-  system:               ActorSystem,
-  outboundContext:      OutboundContext,
-  outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
-  timeout:              FiniteDuration,
-  retryInterval:        FiniteDuration, injectHandshakeInterval: FiniteDuration)
+  system:                  ActorSystem,
+  outboundContext:         OutboundContext,
+  outboundEnvelopePool:    ObjectPool[ReusableOutboundEnvelope],
+  timeout:                 FiniteDuration,
+  retryInterval:           FiniteDuration,
+  injectHandshakeInterval: FiniteDuration,
+  livenessProbeInterval:   Duration)
   extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
 
   val in: Inlet[OutboundEnvelope] = Inlet("OutboundHandshake.in")
@@ -61,29 +64,42 @@ private[remote] class OutboundHandshake(
   override val shape: FlowShape[OutboundEnvelope, OutboundEnvelope] = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+    new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
       import OutboundHandshake._
 
       private var handshakeState: HandshakeState = Start
-      private var pendingMessage: OutboundEnvelope = null
+      private var pendingMessage: OptionVal[OutboundEnvelope] = OptionVal.None
       private var injectHandshakeTickScheduled = false
+
+      override protected def logSource: Class[_] = classOf[OutboundHandshake]
 
       override def preStart(): Unit = {
         scheduleOnce(HandshakeTimeout, timeout)
+        livenessProbeInterval match {
+          case d: FiniteDuration ⇒ schedulePeriodically(LivenessProbeTick, d)
+          case _                 ⇒ // only used in control stream
+        }
       }
 
       // InHandler
       override def onPush(): Unit = {
         if (handshakeState != Completed)
-          throw new IllegalStateException(s"onPush before handshake completed, was [$handshakeState]")
+          throw new IllegalStateException(s"onPush before handshake completed, was [$handshakeState].")
 
         // inject a HandshakeReq once in a while to trigger a new handshake when destination
         // system has been restarted
         if (injectHandshakeTickScheduled) {
-          push(out, grab(in))
+          // out is always available here, except for if a liveness HandshakeReq was just pushed
+          if (isAvailable(out))
+            push(out, grab(in))
+          else {
+            if (pendingMessage.isDefined)
+              throw new IllegalStateException(s"pendingMessage expected to be empty")
+            pendingMessage = OptionVal.Some(grab(in))
+          }
         } else {
           pushHandshakeReq()
-          pendingMessage = grab(in)
+          pendingMessage = OptionVal.Some(grab(in))
         }
       }
 
@@ -91,11 +107,13 @@ private[remote] class OutboundHandshake(
       override def onPull(): Unit = {
         handshakeState match {
           case Completed ⇒
-            if (pendingMessage eq null)
-              pull(in)
-            else {
-              push(out, pendingMessage)
-              pendingMessage = null
+            pendingMessage match {
+              case OptionVal.None ⇒
+                if (!hasBeenPulled(in))
+                  pull(in)
+              case OptionVal.Some(p) ⇒
+                push(out, p)
+                pendingMessage = OptionVal.None
             }
 
           case Start ⇒
@@ -131,10 +149,29 @@ private[remote] class OutboundHandshake(
       private def pushHandshakeReq(): Unit = {
         injectHandshakeTickScheduled = true
         scheduleOnce(InjectHandshakeTick, injectHandshakeInterval)
-        val env: OutboundEnvelope = outboundEnvelopePool.acquire().init(
-          recipient = OptionVal.None, message = HandshakeReq(outboundContext.localAddress, outboundContext.remoteAddress), sender = OptionVal.None)
         outboundContext.associationState.lastUsedTimestamp.set(System.nanoTime())
-        push(out, env)
+        if (isAvailable(out))
+          push(out, createHandshakeReqEnvelope())
+      }
+
+      private def pushLivenessProbeReq(): Unit = {
+        // The associationState.lastUsedTimestamp will be updated when the HandshakeRsp is received
+        // and that is the confirmation that the other system is alive, and will not be quarantined
+        // by the quarantine-idle-outbound-after even though no real messages have been sent.
+        if (handshakeState == Completed && isAvailable(out) && pendingMessage.isEmpty) {
+          val lastUsedDuration = (System.nanoTime() - outboundContext.associationState.lastUsedTimestamp.get()).nanos
+          if (lastUsedDuration >= livenessProbeInterval) {
+            log.info(
+              "Association to [{}] has been idle for [{}] seconds, sending HandshakeReq to validate liveness",
+              outboundContext.remoteAddress, lastUsedDuration.toSeconds)
+            push(out, createHandshakeReqEnvelope())
+          }
+        }
+      }
+
+      private def createHandshakeReqEnvelope(): OutboundEnvelope = {
+        outboundEnvelopePool.acquire().init(
+          recipient = OptionVal.None, message = HandshakeReq(outboundContext.localAddress, outboundContext.remoteAddress), sender = OptionVal.None)
       }
 
       private def handshakeCompleted(): Unit = {
@@ -148,6 +185,8 @@ private[remote] class OutboundHandshake(
           case InjectHandshakeTick ⇒
             // next onPush message will trigger sending of HandshakeReq
             injectHandshakeTickScheduled = false
+          case LivenessProbeTick ⇒
+            pushLivenessProbeReq()
           case HandshakeRetryTick ⇒
             if (isAvailable(out))
               pushHandshakeReq()
@@ -181,6 +220,11 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
             env.message match {
               case HandshakeReq(from, to) ⇒ onHandshakeReq(from, to)
               case HandshakeRsp(from) ⇒
+                // Touch the lastUsedTimestamp here also because when sending the extra low frequency HandshakeRsp
+                // the timestamp is not supposed to be updated when sending but when receiving reply, which confirms
+                // that the other system is alive.
+                inboundContext.association(from.address).associationState.lastUsedTimestamp.set(System.nanoTime())
+
                 after(inboundContext.completeHandshake(from)) {
                   pull(in)
                 }

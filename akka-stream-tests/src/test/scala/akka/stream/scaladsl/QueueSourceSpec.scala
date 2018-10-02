@@ -10,6 +10,7 @@ import akka.pattern.pipe
 import akka.stream._
 import akka.stream.impl.QueueSource
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ GraphStageMessages, StreamSpec, TestSourceStage, TestSubscriber }
 import akka.testkit.TestProbe
@@ -68,6 +69,17 @@ class QueueSourceSpec extends StreamSpec {
       ex.getMessage should include("have to wait")
       probe.requestNext() should ===(42)
       f.futureValue should ===(QueueOfferResult.Enqueued)
+    }
+
+    "reject elements when completed" in {
+      // Not using the materialized test sink leads to the 42 being enqueued but not emitted due to lack of demand.
+      // This will also not effectively complete the stream, hence there is enough time (no races) to offer 43
+      // and verify it is dropped.
+      val source = Source.queue[Int](42, OverflowStrategy.backpressure).to(TestSink.probe).run()
+      source.offer(42)
+      source.complete()
+      val f = source.offer(43)
+      f.futureValue should ===(QueueOfferResult.Dropped)
     }
 
     "buffer when needed" in {

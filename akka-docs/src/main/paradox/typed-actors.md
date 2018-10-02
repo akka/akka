@@ -47,10 +47,10 @@ Before we create our first Typed Actor we should first go through the tools that
 it's located in `akka.actor.TypedActor`.
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-extension-tools }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-extension-tools }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-extension-tools }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-extension-tools }
 
 @@@ warning
 
@@ -68,61 +68,61 @@ To create a Typed Actor you need to have one or more interfaces, and one impleme
 The following imports are assumed:
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #imports }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #imports }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #imports }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #imports }
 
 Our example interface:
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-iface }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-iface }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-iface }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-iface }
 
 Our example implementation of that interface:
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-impl }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-impl }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-impl }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-impl }
 
 The most trivial way of creating a Typed Actor instance
 of our `Squarer`:
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-create1 }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-create1 }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-create1 }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-create1 }
 
 First type is the type of the proxy, the second type is the type of the implementation.
 If you need to call a specific constructor you do it like this:
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-create2 }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-create2 }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-create2 }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-create2 }
 
 Since you supply a `Props`, you can specify which dispatcher to use, what the default timeout should be used and more.
 Now, our `Squarer` doesn't have any methods, so we'd better add those.
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-iface }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-iface }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-iface }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-iface }
 
 Alright, now we've got some methods we can call, but we need to implement those in `SquarerImpl`.
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-impl }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-impl }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-impl }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-impl }
 
 Excellent, now we have an interface and an implementation of that interface,
 and we know how to create a Typed Actor from that, so let's look at calling these methods.
@@ -166,29 +166,29 @@ we *strongly* recommend that parameters passed are immutable.
 ### One-way message send
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-oneway }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-oneway }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-call-oneway }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-call-oneway }
 
 As simple as that! The method will be executed on another thread; asynchronously.
 
 ### Request-reply message send
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-option }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-option }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-call-option }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-call-option }
 
 This will block for as long as the timeout that was set in the `Props` of the Typed Actor,
 if needed. It will return `None` if a timeout occurs.
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-strict }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-strict }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-call-strict }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-call-strict }
 
 This will block for as long as the timeout that was set in the `Props` of the Typed Actor,
 if needed. It will throw a `java.util.concurrent.TimeoutException` if a timeout occurs.
@@ -206,10 +206,10 @@ interface method.
 ### Request-reply-with-future message send
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-future }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-call-future }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-call-future }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-call-future }
 
 This call is asynchronous, and the Future returned can be used for asynchronous composition.
 
@@ -218,18 +218,18 @@ This call is asynchronous, and the Future returned can be used for asynchronous 
 Since Akka's Typed Actors are backed by Akka Actors they must be stopped when they aren't needed anymore.
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-stop }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-stop }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-stop }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-stop }
 
 This asynchronously stops the Typed Actor associated with the specified proxy ASAP.
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-poisonpill }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-poisonpill }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-poisonpill }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-poisonpill }
 
 This asynchronously stops the Typed Actor associated with the specified proxy
 after it's done with all calls that were made prior to this call.
@@ -240,10 +240,10 @@ Since you can obtain a contextual Typed Actor Extension by passing in an `ActorC
 you can create child Typed Actors by invoking `typedActorOf(..)` on that.
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-hierarchy }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-hierarchy }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-hierarchy }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-hierarchy }
 
 You can also create a child Typed Actor in regular Akka Actors by giving the @scala[`ActorContext`]@java[`AbstractActor.ActorContext`]
 as an input parameter to `TypedActor.get(…)`.
@@ -276,7 +276,7 @@ e.g. when interfacing with untyped actors.
 ## Proxying
 
 You can use the `typedActorOf` that takes a TypedProps and an ActorRef to proxy the given ActorRef as a TypedActor.
-This is usable if you want to communicate remotely with TypedActors on other machines, just pass the `ActorRef` to `typedActorOf`.
+This is usable if you want to communicate remotely with TypedActors on other machines, pass the `ActorRef` to `typedActorOf`.
 
 @@@ note
 
@@ -289,10 +289,10 @@ The ActorRef needs to accept `MethodCall` messages.
 Since `TypedActors` are backed by `Akka Actors`, you can use `typedActorOf` to proxy `ActorRefs` potentially residing on remote nodes.
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-remote }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-remote }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-remote }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-actor-remote }
 
 @@@ div {.group-scala}
 
@@ -300,9 +300,9 @@ Java
 
 Here's an example on how you can use traits to mix in behavior in your Typed Actors.
 
-@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-supercharge }
+@@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-supercharge }
 
-@@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-supercharge-usage }
+@@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-actor-supercharge-usage }
 
 @@@
 
@@ -315,17 +315,17 @@ Routers are not provided directly for typed actors, but it is really easy to lev
 To showcase this let's create typed actors that assign themselves some random `id`, so we know that in fact, the router has sent the message to different actors:
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-router-types }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-router-types }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-router-types }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-router-types }
 
-In order to round robin among a few instances of such actors, you can simply create a plain untyped router,
-and then facade it with a `TypedActor` like shown in the example below. This works because typed actors of course
+In order to round robin among a few instances of such actors, you can create a plain untyped router,
+and then facade it with a `TypedActor` like shown in the example below. This works because typed actors 
 communicate using the same mechanisms as normal actors, and methods calls on them get transformed into message sends of `MethodCall` messages.
 
 Scala
-: @@snip [TypedActorDocSpec.scala]($code$/scala/docs/actor/TypedActorDocSpec.scala) { #typed-router }
+: @@snip [TypedActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/TypedActorDocSpec.scala) { #typed-router }
 
 Java
-: @@snip [TypedActorDocTest.java]($code$/java/jdocs/actor/TypedActorDocTest.java) { #typed-router }
+: @@snip [TypedActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TypedActorDocTest.java) { #typed-router }

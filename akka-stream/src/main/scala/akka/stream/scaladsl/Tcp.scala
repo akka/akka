@@ -173,7 +173,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Note that the ByteString chunk boundaries are not retained across the network,
    * to achieve application level chunks you have to introduce explicit framing in your streams,
-   * for example using the [[Framing]] stages.
+   * for example using the [[Framing]] operators.
    *
    * @param remoteAddress The remote address to connect to
    * @param localAddress  Optional local address for the connection
@@ -218,7 +218,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Note that the ByteString chunk boundaries are not retained across the network,
    * to achieve application level chunks you have to introduce explicit framing in your streams,
-   * for example using the [[Framing]] stages.
+   * for example using the [[Framing]] operators.
    */
   def outgoingConnection(host: String, port: Int): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
     outgoingConnection(InetSocketAddress.createUnresolved(host, port))

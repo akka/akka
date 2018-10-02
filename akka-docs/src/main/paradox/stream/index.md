@@ -1,5 +1,15 @@
 # Streams
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
 @@toc { depth=2 }
 
 @@@ index
@@ -19,9 +29,9 @@
 * [stream-refs](stream-refs.md)
 * [stream-parallelism](stream-parallelism.md)
 * [stream-testkit](stream-testkit.md)
-* [stages-overview](stages-overview.md)
 * [stream-substream](stream-substream.md)
 * [stream-cookbook](stream-cookbook.md)
 * [../general/stream/stream-configuration](../general/stream/stream-configuration.md)
+* [operators](operators/index.md)
 
 @@@

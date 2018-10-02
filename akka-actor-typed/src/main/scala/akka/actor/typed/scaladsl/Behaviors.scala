@@ -16,9 +16,6 @@ import scala.reflect.ClassTag
 @ApiMayChange
 object Behaviors {
 
-  private val _unitFunction = (_: ActorContext[Any], _: Any) ⇒ ()
-  private def unitFunction[T] = _unitFunction.asInstanceOf[((ActorContext[T], Signal) ⇒ Unit)]
-
   /**
    * `setup` is a factory for a behavior. Creation of the behavior instance is deferred until
    * the actor is started, as opposed to [[Behaviors.receive]] that creates the behavior instance
@@ -115,6 +112,8 @@ object Behaviors {
 
   /**
    * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
+   *
+   * Behaviors can also be composed with [[Behavior#orElse]].
    */
   def receivePartial[T](onMessage: PartialFunction[(ActorContext[T], T), Behavior[T]]): Receive[T] =
     Behaviors.receive[T] { (ctx, t) ⇒
@@ -123,6 +122,8 @@ object Behaviors {
 
   /**
    * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
+   *
+   * Behaviors can also be composed with [[Behavior#orElse]].
    */
   def receiveMessagePartial[T](onMessage: PartialFunction[T, Behavior[T]]): Receive[T] =
     Behaviors.receive[T] { (_, t) ⇒
@@ -136,15 +137,14 @@ object Behaviors {
     receive[T]((_, _) ⇒ same).receiveSignal(handler)
 
   /**
-   * This type of Behavior wraps another Behavior while allowing you to perform
-   * some action upon each received message or signal. It is most commonly used
-   * for logging or tracing what a certain Actor does.
+   * Intercept messages and signals for a `behavior` by first passing them to a [[akka.actor.typed.BehaviorInterceptor]]
+   *
+   * When a behavior returns a new behavior as a result of processing a signal or message and that behavior already contains
+   * the same interceptor (defined by the `isSame` method on the `BehaviorInterceptor`) only the innermost interceptor
+   * is kept. This is to protect against stack overflow when recursively defining behaviors.
    */
-  def tap[T](
-    onMessage: (ActorContext[T], T) ⇒ _,
-    onSignal:  (ActorContext[T], Signal) ⇒ _, // FIXME use partial function here also?
-    behavior:  Behavior[T]): Behavior[T] =
-    BehaviorImpl.tap(onMessage, onSignal, behavior)
+  def intercept[O, I](behaviorInterceptor: BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
+    BehaviorImpl.intercept(behaviorInterceptor)(behavior)
 
   /**
    * Behavior decorator that copies all received message to the designated
@@ -153,7 +153,7 @@ object Behaviors {
    * wrapped in a `monitor` call again.
    */
   def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
-    tap((_, msg) ⇒ monitor ! msg, unitFunction, behavior)
+    BehaviorImpl.intercept(new MonitorInterceptor[T](monitor))(behavior)
 
   /**
    * Wrap the given behavior with the given [[SupervisorStrategy]] for
@@ -171,11 +171,11 @@ object Behaviors {
    * val dbConnector: Behavior[DbCommand] = ...
    *
    * val dbRestarts =
-   *    Actor.supervise(dbConnector)
+   *    Behaviors.supervise(dbConnector)
    *      .onFailure(SupervisorStrategy.restart) // handle all NonFatal exceptions
    *
    * val dbSpecificResumes =
-   *    Actor.supervise(dbConnector)
+   *    Behaviors.supervise(dbConnector)
    *      .onFailure[IndexOutOfBoundsException](SupervisorStrategy.resume) // resume for IndexOutOfBoundsException exceptions
    * }}}
    */
@@ -213,7 +213,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](Map.empty, mdcForMessage, behavior)
+    withMdc[T](Map.empty[String, Any], mdcForMessage)(behavior)
 
   /**
    * Static MDC (Mapped Diagnostic Context)
@@ -225,7 +225,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](staticMdc: Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](staticMdc, WithMdcBehavior.noMdcPerMessage, behavior)
+    withMdc[T](staticMdc, (_: T) ⇒ Map.empty[String, Any])(behavior)
 
   /**
    * Combination of static and per message MDC (Mapped Diagnostic Context).
@@ -233,6 +233,8 @@ object Behaviors {
    * Each message will get the static MDC plus the MDC returned for the message. If the same key
    * are in both the static and the per message MDC the per message one overwrites the static one
    * in the resulting log entries.
+   *
+   * The `staticMdc` or `mdcForMessage` may be empty.
    *
    * @param staticMdc A static MDC applied for each message
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
@@ -243,7 +245,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](staticMdc, mdcForMessage, behavior)
+    WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage, behavior)
 
   // TODO
   // final case class Selective[T](timeout: FiniteDuration, selector: PartialFunction[T, Behavior[T]], onTimeout: () ⇒ Behavior[T])

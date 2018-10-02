@@ -181,7 +181,7 @@ example send a message to a specific sibling:
 context.actorSelection("../brother") ! msg
 ```
 
-Absolute paths may of course also be looked up on *context* in the usual way, i.e.
+Absolute paths may also be looked up on *context* in the usual way, i.e.
 
 ```scala
 context.actorSelection("/user/serviceA") ! msg
@@ -220,7 +220,7 @@ release.
 @@@ note
 
 What the above sections described in some detail can be summarized and
-memorized easily as follows:
+memorized as follows:
 
  * `actorOf` only ever creates a new actor, and it creates it as a direct
 child of the context on which this method is invoked (which may be any
@@ -251,7 +251,7 @@ When an actor is terminated, its reference will point to the dead letter mailbox
 DeathWatch will publish its final transition and in general it is not expected
 to come back to life again (since the actor life cycle does not allow this).
 While it is possible to create an actor at a later time with an identical
-path—simply due to it being impossible to enforce the opposite without keeping
+path—due to it being impossible to enforce the opposite without keeping
 the set of all actors ever created available—this is not good practice: 
 messages sent with `actorSelection` to an actor which “died” suddenly start to work
 again, but without any guarantee of ordering between this transition and any

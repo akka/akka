@@ -16,13 +16,10 @@ import akka.util.Timeout;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.FiniteDuration;
-
 
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 import static junit.framework.TestCase.assertTrue;
 
@@ -57,7 +54,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
     public static final ReplenishTokens REPLENISH_TOKENS = new ReplenishTokens();
 
     private final int maxAvailableTokens;
-    private final FiniteDuration tokenRefreshPeriod;
+    private final Duration tokenRefreshPeriod;
     private final int tokenRefreshAmount;
 
     private final List<ActorRef> waitQueue = new ArrayList<>();
@@ -65,13 +62,13 @@ public class RecipeGlobalRateLimit extends RecipeTest {
 
     private int permitTokens;
 
-    public static Props props(int maxAvailableTokens, FiniteDuration tokenRefreshPeriod,
+    public static Props props(int maxAvailableTokens, Duration tokenRefreshPeriod,
         int tokenRefreshAmount) {
       return Props.create(Limiter.class, maxAvailableTokens, tokenRefreshPeriod,
         tokenRefreshAmount);
     }
 
-    private Limiter(int maxAvailableTokens, FiniteDuration tokenRefreshPeriod,
+    private Limiter(int maxAvailableTokens, Duration tokenRefreshPeriod,
         int tokenRefreshAmount) {
       this.maxAvailableTokens = maxAvailableTokens;
       this.tokenRefreshPeriod = tokenRefreshPeriod;
@@ -152,9 +149,8 @@ public class RecipeGlobalRateLimit extends RecipeTest {
         final Flow<T, T, NotUsed> f = Flow.create();
 
         return f.mapAsync(parallelism, element -> {
-          final Timeout triggerTimeout = Timeout.create(maxAllowedWait);
           final CompletionStage<Object> limiterTriggerFuture =
-            PatternsCS.ask(limiter, Limiter.WANT_TO_PASS, triggerTimeout);
+            PatternsCS.ask(limiter, Limiter.WANT_TO_PASS, maxAllowedWait);
           return limiterTriggerFuture.thenApplyAsync(response -> element, system.dispatcher());
         });
       }
@@ -162,7 +158,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
 
       {
         // Use a large period and emulate the timer by hand instead
-        ActorRef limiter = system.actorOf(Limiter.props(2, new FiniteDuration(100, TimeUnit.DAYS), 1), "limiter");
+        ActorRef limiter = system.actorOf(Limiter.props(2, Duration.ofDays(100), 1), "limiter");
 
         final Iterator<String> e1 = new Iterator<String>() {
           @Override
@@ -187,7 +183,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
           }
         };
 
-        final java.time.Duration twoSeconds = dilated(java.time.Duration.ofSeconds(2));
+        final Duration twoSeconds = dilated(Duration.ofSeconds(2));
 
         final Sink<String, TestSubscriber.Probe<String>> sink = TestSink.probe(system);
         final TestSubscriber.Probe<String> probe =
@@ -210,15 +206,15 @@ public class RecipeGlobalRateLimit extends RecipeTest {
 
         probe.expectSubscription().request(1000);
 
-        FiniteDuration fiveHundredMillis = FiniteDuration.create(500, TimeUnit.MILLISECONDS);
+        Duration fiveHundredMillis = Duration.ofMillis(500);
 
         assertTrue(probe.expectNext().startsWith("E"));
         assertTrue(probe.expectNext().startsWith("E"));
-        probe.expectNoMsg(fiveHundredMillis);
+        probe.expectNoMessage(fiveHundredMillis);
 
         limiter.tell(Limiter.REPLENISH_TOKENS, getTestActor());
         assertTrue(probe.expectNext().startsWith("E"));
-        probe.expectNoMsg(fiveHundredMillis);
+        probe.expectNoMessage(fiveHundredMillis);
 
         final Set<String> resultSet = new HashSet<>();
         for (int i = 0; i < 100; i++) {

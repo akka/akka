@@ -6,7 +6,7 @@ ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.UnfoldAsync")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.Unfold")
 
 # abstract method makeLogger(java.lang.Class)akka.event.LoggingAdapter in interface akka.stream.MaterializerLoggingProvider is inherited by class ActorMaterializer in current version.
-ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.MaterializerLoggingProvider.makeLogger")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.stream.ActorMaterializer.makeLogger")
 
 # #21330 takeWhile inclusive flag
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.takeWhile")

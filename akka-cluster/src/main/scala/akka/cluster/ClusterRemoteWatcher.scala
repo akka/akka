@@ -5,9 +5,11 @@
 package akka.cluster
 
 import scala.concurrent.duration.FiniteDuration
+
 import akka.actor._
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
+import akka.cluster.ClusterEvent.MemberJoined
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ClusterEvent.MemberWeaklyUp
@@ -59,6 +61,8 @@ private[cluster] class ClusterRemoteWatcher(
 
   private final case class DelayedQuarantine(m: Member, previousStatus: MemberStatus) extends NoSerializationVerificationNeeded
 
+  private var pendingDelayedQuarantine: Set[UniqueAddress] = Set.empty
+
   var clusterNodes: Set[Address] = Set.empty
 
   override def preStart(): Unit = {
@@ -78,6 +82,7 @@ private[cluster] class ClusterRemoteWatcher(
       clusterNodes = state.members.collect { case m if m.address != selfAddress ⇒ m.address }
       clusterNodes foreach takeOverResponsibility
       unreachable = unreachable diff clusterNodes
+    case MemberJoined(m)                      ⇒ memberJoined(m)
     case MemberUp(m)                          ⇒ memberUp(m)
     case MemberWeaklyUp(m)                    ⇒ memberUp(m)
     case MemberRemoved(m, previousStatus)     ⇒ memberRemoved(m, previousStatus)
@@ -85,8 +90,14 @@ private[cluster] class ClusterRemoteWatcher(
     case DelayedQuarantine(m, previousStatus) ⇒ delayedQuarantine(m, previousStatus)
   }
 
+  private def memberJoined(m: Member): Unit = {
+    if (m.address != selfAddress)
+      quarantineOldIncarnation(m)
+  }
+
   def memberUp(m: Member): Unit =
     if (m.address != selfAddress) {
+      quarantineOldIncarnation(m)
       clusterNodes += m.address
       takeOverResponsibility(m.address)
       unreachable -= m.address
@@ -97,10 +108,14 @@ private[cluster] class ClusterRemoteWatcher(
       clusterNodes -= m.address
 
       if (previousStatus == MemberStatus.Down) {
-        quarantine(m.address, Some(m.uniqueAddress.longUid), s"Cluster member removed, previous status [$previousStatus]")
+        quarantine(m.address, Some(m.uniqueAddress.longUid),
+          s"Cluster member removed, previous status [$previousStatus]", harmless = false)
       } else if (arteryEnabled) {
-        // don't quarantine gracefully removed members (leaving) directly,
+        // Don't quarantine gracefully removed members (leaving) directly,
         // give Cluster Singleton some time to exchange TakeOver/HandOver messages.
+        // If new incarnation of same host:port is seen then the quarantine of previous incarnation
+        // is triggered earlier.
+        pendingDelayedQuarantine += m.uniqueAddress
         import context.dispatcher
         context.system.scheduler.scheduleOnce(cluster.settings.QuarantineRemovedNodeAfter, self, DelayedQuarantine(m, previousStatus))
       }
@@ -108,10 +123,25 @@ private[cluster] class ClusterRemoteWatcher(
       publishAddressTerminated(m.address)
     }
 
-  def delayedQuarantine(m: Member, previousStatus: MemberStatus): Unit =
-    quarantine(m.address, Some(m.uniqueAddress.longUid), s"Cluster member removed, previous status [$previousStatus]")
+  def quarantineOldIncarnation(newIncarnation: Member): Unit = {
+    // If new incarnation of same host:port is seen then quarantine previous incarnation
+    if (pendingDelayedQuarantine.nonEmpty)
+      pendingDelayedQuarantine.find(_.address == newIncarnation.address).foreach { oldIncarnation ⇒
+        pendingDelayedQuarantine -= oldIncarnation
+        quarantine(oldIncarnation.address, Some(oldIncarnation.longUid),
+          s"Cluster member removed, new incarnation joined", harmless = true)
+      }
+  }
 
-  override def watchNode(watchee: InternalActorRef) =
+  def delayedQuarantine(m: Member, previousStatus: MemberStatus): Unit = {
+    if (pendingDelayedQuarantine(m.uniqueAddress)) {
+      pendingDelayedQuarantine -= m.uniqueAddress
+      quarantine(m.address, Some(m.uniqueAddress.longUid), s"Cluster member removed, previous status [$previousStatus]",
+        harmless = true)
+    }
+  }
+
+  override def watchNode(watchee: InternalActorRef): Unit =
     if (!clusterNodes(watchee.path.address)) super.watchNode(watchee)
 
   /**

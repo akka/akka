@@ -12,7 +12,11 @@ import akka.japi.pf.{ FI, PFBuilder }
 import java.util.function.{ Function ⇒ F1 }
 
 import akka.Done
-import akka.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox }
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox }
+import org.scalactic.TypeCheckedTripleEquals
+import org.scalatest.Matchers
+import org.scalatest.WordSpecLike
 
 object BehaviorSpec {
   sealed trait Command {
@@ -63,7 +67,7 @@ object BehaviorSpec {
     override def next = StateA
   }
 
-  trait Common extends TypedAkkaSpec {
+  trait Common extends WordSpecLike with Matchers with TypeCheckedTripleEquals {
     type Aux >: Null <: AnyRef
     def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux)
     def checkAux(signal: Signal, aux: Aux): Unit = ()
@@ -273,8 +277,6 @@ object BehaviorSpec {
   }
 
   trait Become extends Common with Unhandled {
-    private implicit val inbox = TestInbox[State]("state")
-
     "Becoming" must {
       "must be in state A" in {
         mkCtx().check(GetState()(StateA))
@@ -340,7 +342,7 @@ object BehaviorSpec {
 
 import BehaviorSpec._
 
-class FullBehaviorSpec extends TypedAkkaSpec with Messages with BecomeWithLifecycle with Stoppable {
+class FullBehaviorSpec extends ScalaTestWithActorTestKit with Messages with BecomeWithLifecycle with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = mkFull(monitor) → null
 }
 
@@ -376,7 +378,7 @@ class ReceiveBehaviorSpec extends Messages with BecomeWithLifecycle with Stoppab
   }
 }
 
-class ImmutableWithSignalScalaBehaviorSpec extends TypedAkkaSpec with Messages with BecomeWithLifecycle with Stoppable {
+class ImmutableWithSignalScalaBehaviorSpec extends Messages with BecomeWithLifecycle with Stoppable {
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
 
@@ -504,10 +506,23 @@ class DeferredScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec {
     aux.receiveAll() should ===(Done :: Nil)
 }
 
-class TapScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reuse with SignalSiphon {
+class InterceptScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reuse with SignalSiphon {
+  import BehaviorInterceptor._
+
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
-    (SBehaviors.tap((_, msg) ⇒ inbox.ref ! Right(msg), (_, sig) ⇒ inbox.ref ! Left(sig), super.behavior(monitor)._1), inbox)
+    val tap = new BehaviorInterceptor[Command, Command] {
+      override def aroundReceive(ctx: ActorContext[Command], msg: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
+        inbox.ref ! Right(msg)
+        target(ctx, msg)
+      }
+
+      override def aroundSignal(ctx: ActorContext[Command], signal: Signal, target: SignalTarget[Command]): Behavior[Command] = {
+        inbox.ref ! Left(signal)
+        target(ctx, signal)
+      }
+    }
+    (SBehaviors.intercept(tap)(super.behavior(monitor)._1), inbox)
   }
 }
 
@@ -605,12 +620,22 @@ class DeferredJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec {
 }
 
 class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse with SignalSiphon {
+  import BehaviorInterceptor._
+
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
-    (JBehaviors.tap(
-      pc((_, msg) ⇒ inbox.ref ! Right(msg)),
-      ps((_, sig) ⇒ inbox.ref ! Left(sig)),
-      super.behavior(monitor)._1), inbox)
+    val tap = new BehaviorInterceptor[Command, Command] {
+      override def aroundReceive(ctx: ActorContext[Command], msg: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
+        inbox.ref ! Right(msg)
+        target(ctx, msg)
+      }
+
+      override def aroundSignal(ctx: ActorContext[Command], signal: Signal, target: SignalTarget[Command]): Behavior[Command] = {
+        inbox.ref ! Left(signal)
+        target(ctx, signal)
+      }
+    }
+    (JBehaviors.intercept(tap, super.behavior(monitor)._1), inbox)
   }
 }
 

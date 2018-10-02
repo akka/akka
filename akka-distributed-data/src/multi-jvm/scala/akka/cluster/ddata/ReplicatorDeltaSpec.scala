@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster.ddata
 
 import java.util.concurrent.ThreadLocalRandom
@@ -330,6 +331,13 @@ class ReplicatorDeltaSpec extends MultiNodeSpec(ReplicatorDeltaSpec) with STMult
         // Thereafter delta can be propagated and applied again.
         deltaReplicator.tell(Update(KeyHigh, Highest(0), writeAll)(_.incr(100)), p1.ref)
         p1.expectMsgType[UpdateSuccess[_]]
+        // Flush the deltaPropagation buffer, otherwise it will contain
+        // NoDeltaPlaceholder from previous updates and the incr(4) delta will also
+        // be folded into NoDeltaPlaceholder and not propagated as delta. A few DeltaPropagationTick
+        // are needed to send to all and flush buffer.
+        roles.foreach { _ ⇒
+          deltaReplicator ! Replicator.Internal.DeltaPropagationTick
+        }
         deltaReplicator.tell(Update(KeyHigh, Highest(0), WriteLocal)(_.incr(4)), p1.ref)
         p1.expectMsgType[UpdateSuccess[_]]
       }

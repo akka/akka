@@ -118,7 +118,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       // value to the left is used)
       val runnableGraph: RunnableGraph[Source[String, NotUsed]] =
         producer.toMat(PartitionHub.sink(
-          (size, elem) ⇒ math.abs(elem.hashCode) % size,
+          (size, elem) ⇒ math.abs(elem.hashCode % size),
           startAfterNrOfConsumers = 2, bufferSize = 256))(Keep.right)
 
       // By running/materializing the producer, we get back a Source, which
@@ -181,7 +181,7 @@ class HubsDocSpec extends AkkaSpec with CompileOnlySpec {
       val fromProducer: Source[Int, NotUsed] = runnableGraph.run()
 
       fromProducer.runForeach(msg ⇒ println("consumer1: " + msg))
-      fromProducer.throttle(10, 100.millis, 10, ThrottleMode.Shaping)
+      fromProducer.throttle(10, 100.millis)
         .runForeach(msg ⇒ println("consumer2: " + msg))
       //#partition-hub-fastest
     }

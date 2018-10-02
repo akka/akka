@@ -28,7 +28,7 @@ which are unnecessary concepts for newcomers to learn. The new `createReceive` r
 additional imports.
 
 Note that The `Receive` can still be implemented in other ways than using the `ReceiveBuilder`
-since it in the end is just a wrapper around a Scala `PartialFunction`. For example, one could
+since it in the end is a wrapper around a Scala `PartialFunction`. For example, one could
 implement an adapter to [Javaslang Pattern Matching DSL](http://www.javaslang.io/javaslang-docs/#_pattern_matching).
 
 The mechanical source code change for migration to the new `AbstractActor` is to implement the
@@ -293,7 +293,7 @@ as the `GraphStage` itself is a factory of logic instances.
 
 ### SubFlow.zip and SubSource.zip now emit akka.japi.Pair instead of Scala's Pair
 
-The the Java API's `zip` operator on `SubFlow` and `SubSource` has been emiting
+The the Java API's `zip` operator on `SubFlow` and `SubSource` has been emitting
 Scala's `Pair` (`Tuple2`) instead of `akka.japi.Pair`. This is fixed in Akka 2.5 where it emits the proper
 Java DSl type.
 
@@ -424,6 +424,8 @@ and here is a summary of things to consider.
  * [akka.cluster.allow-weakly-up-members](#mig25-weaklyup)
  * [akka.cluster.sharding.state-store-mode](#mig25-sharding-store)
  * [akka.remote.netty.ssl.require-mutual-authentication](#mig25-mutual)
+
+See also the @ref:[rolling update guide](rolling-update.md) for specifics about later patch releases.
 
 #### Limit lookup of routees to nodes tagged with multiple roles
 
@@ -591,7 +593,7 @@ The class is now called `PersistenceIdsQuery`, and the method which used to be `
 
 ### Queries now use `Offset` instead of `Long` for offsets
 
-This change was made to better accomodate the various types of Journals and their understanding what an offset is.
+This change was made to better accommodate the various types of Journals and their understanding what an offset is.
 For example, in some journals an offset is always a time, while in others it is a numeric offset (like a sequence id).
 
 Instead of the previous `Long` offset you can now use the provided `Offset` factories (and types):
@@ -690,7 +692,7 @@ implicit val materializer = ActorMaterializer.create(system)
 
 val throttler: ActorRef =
   Source.actorRef(bufferSize = 1000, OverflowStrategy.dropNew)
-    .throttle(100, 1.second, 10, ThrottleMode.Shaping)
+    .throttle(100, 1.second)
     .to(Sink.actorRef(target, NotUsed))
     .run()
 ```
@@ -699,7 +701,7 @@ Example in Java:
 
 ```
 import java.util.concurrent.TimeUnit;
-import scala.concurrent.duration.FiniteDuration;
+import java.time.Duration;
 import akka.NotUsed;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -716,7 +718,7 @@ final Materializer materializer = ActorMaterializer.create(system);
 
 final ActorRef throttler =
   Source.actorRef(1000, OverflowStrategy.dropNew())
-    .throttle(100,  FiniteDuration.create(1, TimeUnit.SECONDS), 10, ThrottleMode.shaping())
+    .throttle(100,  Duration.ofSeconds(1))
     .to(Sink.actorRef(target, NotUsed.getInstance()))
     .run(materializer);
 ```

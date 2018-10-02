@@ -15,6 +15,7 @@ import akka.stream.impl.io.InputStreamSinkStage
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.scaladsl.{ Keep, Source, StreamConverters }
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSource
 import akka.stream.testkit._
 import akka.testkit.TestProbe
@@ -91,6 +92,17 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       probe.sendComplete()
       inputStream.read() should ===(-1)
+      inputStream.close()
+    }
+
+    "ignore an empty ByteString" in assertAllStagesStopped {
+      val (probe, inputStream) = TestSource.probe[ByteString].toMat(StreamConverters.asInputStream())(Keep.both).run()
+      probe.sendNext(ByteString.empty)
+      val f = Future(inputStream.read())
+
+      the[Exception] thrownBy Await.result(f, timeout) shouldBe a[TimeoutException]
+      probe.sendComplete()
+      Await.result(f, remainingOrDefault) should ===(-1)
       inputStream.close()
     }
 

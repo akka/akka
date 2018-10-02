@@ -1,5 +1,17 @@
 # StreamRefs - Reactive Streams over the network
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 @@@ warning
 
 This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
@@ -50,7 +62,7 @@ Actors would usually be used to establish the stream, by means of some initial m
 "I want to offer you many log elements (the stream ref)", or alternatively in the opposite way "If you need
 to send me much data, here is the stream ref you can use to do so".   
 
-Since the two sides ("local" and "remote") of each reference may be confusing to simply refer to as
+Since the two sides ("local" and "remote") of each reference may be confusing to refer to as
 "remote" and "local" -- since either side can be seen as "local" or "remote" depending how we look at it --
 we propose to use the terminology "origin" and "target", which is defined by where the stream ref was created.
 For `SourceRef`s, the "origin" is the side which has the data that it is going to stream out. For `SinkRef`s
@@ -69,19 +81,19 @@ That sink materializes the `SourceRef` that you can then send to other nodes. Pl
 `Future` so you will have to use the pipeTo
 
 Scala
-:   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-source }
+:   @@snip [FlowStreamRefsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-source }
 
 Java
-:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-source }
+:   @@snip [FlowStreamRefsDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-source }
 
 The origin actor which creates and owns the Source could also perform some validation or additional setup
 when preparing the source. Once it has handed out the `SourceRef` the remote side can run it like this:
 
 Scala
-:   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-source-use }
+:   @@snip [FlowStreamRefsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-source-use }
 
 Java
-:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-source-use }
+:   @@snip [FlowStreamRefsDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-source-use }
 
 The process of preparing and running a `SourceRef` powered distributed stream is shown by the animation below:
 
@@ -89,12 +101,11 @@ The process of preparing and running a `SourceRef` powered distributed stream is
 
 @@@ warning
   A `SourceRef` is *by design* "single-shot". i.e. it may only be materialized once.
-  This is in order to not complicate the mental model what materializing such value would mean.
+  This is in order to not complicate the mental model of what materialization means.
   
-  While stream refs are designed to be single shot, you may use them to mimic multicast scenarios,
-  simply by starting a `Broadcast` stage once, and attaching multiple new streams to it, for each
-  emitting a new stream ref. This way each output of the broadcast is by itself an unique single-shot
-  reference, however they can all be powered using a single `Source` -- located before the `Broadcast` stage.
+  Multicast can be mimicked by starting a `BroadcastHub` operator once then attaching multiple new streams to it, each
+  emitting a new stream ref. This way materialization of the `BroadcastHub`s Source creates a unique single-shot
+  stream ref, however they can all be powered using a single `Source` -- located before the `BroadcastHub` operator.
 @@@
 
 ### Sink Refs - offering to receive streaming data from a remote system
@@ -111,19 +122,19 @@ into various other systems (e.g. any of the Alpakka provided Sinks).
 @@@
 
 Scala
-:   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-sink }
+:   @@snip [FlowStreamRefsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-sink }
 
 Java
-:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-sink }
+:   @@snip [FlowStreamRefsDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-sink }
 
 Using the offered `SinkRef` to send data to the origin of the Sink is also simple, as we can treat the 
 SinkRef just as any other Sink and directly `runWith` or `run` with it.
 
 Scala
-:   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-sink-use }
+:   @@snip [FlowStreamRefsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #offer-sink-use }
 
 Java
-:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-sink-use }
+:   @@snip [FlowStreamRefsDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowStreamRefsDocTest.java) { #offer-sink-use }
 
 The process of preparing and running a `SinkRef` powered distributed stream is shown by the animation below: 
 
@@ -135,9 +146,9 @@ The process of preparing and running a `SinkRef` powered distributed stream is s
   This is in order to not complicate the mental model what materializing such value would mean.
   
   If you have an use case for building a fan-in operation accepting writes from multiple remote nodes,
-  you can build your Sink and prepend it with a `Merge` stage, each time materializing a new `SinkRef`
-  targeting that Merge. This has the added benefit of giving you full control how to merge these streams 
-  (i.e. by using "merge preferred" or any other variation of the fan-in stages).
+  you can build your Sink and prepend it with a `MergeHub` operator, each time materializing a new `SinkRef`
+  targeting that `MergeHub`. This has the added benefit of giving you full control how to merge these streams
+  (i.e. by using "merge preferred" or any other variation of the fan-in operators).
 @@@
 
 ### Delivery guarantees
@@ -145,11 +156,11 @@ The process of preparing and running a `SinkRef` powered distributed stream is s
 Stream refs utilise normal actor messaging for their trainsport, and as such provide the same level of basic delivery guarantees. Stream refs do extend the semantics somewhat by demand re-delivery and sequence fault detection; in other words:
 
 - messages are sent over actor remoting
-  - which relies on TCP (classic remoting, or artery tcp) or Aeron UDP for basic redelivery mechanisms
+    - which relies on TCP (classic remoting, or artery tcp) or Aeron UDP for basic redelivery mechanisms
 - messages are guaranteed to to be in-order
 - messages can be lost, however:
-  - a *dropped demand signal* will be re-delivered automatically (similar to system messages)
-  - a *dropped element* signal* will cause the stream to *fail*
+    - a *dropped demand signal* will be re-delivered automatically (similar to system messages)
+    - a *dropped element* signal* will cause the stream to *fail*
   
 
 ## Bulk Stream References
@@ -179,10 +190,10 @@ globally (`akka.stream.materializer.stream-ref.subscription-timeout`), but also 
 
 
 Scala
-:   @@snip [FlowStreamRefsDocSpec.scala]($code$/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #attr-sub-timeout }
+:   @@snip [FlowStreamRefsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowStreamRefsDocSpec.scala) { #attr-sub-timeout }
 
 Java
-:   @@snip [FlowStreamRefsDocTest.java]($code$/java/jdocs/stream/FlowStreamRefsDocTest.java) { #attr-sub-timeout }
+:   @@snip [FlowStreamRefsDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowStreamRefsDocTest.java) { #attr-sub-timeout }
 
 
 ## General configuration
@@ -190,4 +201,4 @@ Java
 Other settings can be set globally, in your `application.conf`, by overriding any of the following values
 in the `akka.stream.materializer.stream-ref.*` keyspace:
 
-@@snip [reference.conf]($akka$/akka-stream/src/main/resources/reference.conf) { #stream-ref }
+@@snip [reference.conf](/akka-stream/src/main/resources/reference.conf) { #stream-ref }

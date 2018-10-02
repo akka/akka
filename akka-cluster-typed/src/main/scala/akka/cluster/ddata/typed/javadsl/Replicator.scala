@@ -4,27 +4,23 @@
 
 package akka.cluster.ddata.typed.javadsl
 
-import java.util.function.{ Function ⇒ JFunction }
-import akka.cluster.{ ddata ⇒ dd }
-import akka.cluster.ddata.Key
-import akka.cluster.ddata.ReplicatedData
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
-import akka.cluster.ddata.typed.internal.ReplicatorBehavior
-
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration.Duration
+import java.time.Duration
 import java.util.Optional
 import java.util.function.{ Function ⇒ JFunction }
 
-import akka.actor.{ DeadLetterSuppression, NoSerializationVerificationNeeded }
-import akka.actor.typed.{ ActorRef, Behavior }
-import akka.annotation.{ DoNotInherit, InternalApi }
+import scala.util.control.NoStackTrace
+
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
+import akka.actor.DeadLetterSuppression
+import akka.actor.NoSerializationVerificationNeeded
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.cluster.ddata.Key
+import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.typed.internal.ReplicatorBehavior
 import akka.cluster.{ ddata ⇒ dd }
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.util.control.NoStackTrace
+import akka.util.JavaDurationConverters._
 
 /**
  * @see [[akka.cluster.ddata.Replicator]].
@@ -48,61 +44,61 @@ object Replicator {
   @DoNotInherit trait Command extends akka.cluster.ddata.typed.scaladsl.Replicator.Command
 
   sealed trait ReadConsistency {
-    def timeout: FiniteDuration
+    def timeout: Duration
 
     /** INTERNAL API */
     @InternalApi private[akka] def toUntyped: dd.Replicator.ReadConsistency
   }
   case object ReadLocal extends ReadConsistency {
-    override def timeout: FiniteDuration = Duration.Zero
+    override def timeout: Duration = Duration.ZERO
 
     /** INTERNAL API */
     @InternalApi private[akka] override def toUntyped = dd.Replicator.ReadLocal
   }
-  final case class ReadFrom(n: Int, timeout: FiniteDuration) extends ReadConsistency {
+  final case class ReadFrom(n: Int, timeout: Duration) extends ReadConsistency {
     require(n >= 2, "ReadFrom n must be >= 2, use ReadLocal for n=1")
 
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.ReadFrom(n, timeout)
+    @InternalApi private[akka] override def toUntyped = dd.Replicator.ReadFrom(n, timeout.asScala)
   }
-  final case class ReadMajority(timeout: FiniteDuration, minCap: Int = DefaultMajorityMinCap) extends ReadConsistency {
-    def this(timeout: FiniteDuration) = this(timeout, DefaultMajorityMinCap)
+  final case class ReadMajority(timeout: Duration, minCap: Int = DefaultMajorityMinCap) extends ReadConsistency {
+    def this(timeout: Duration) = this(timeout, DefaultMajorityMinCap)
 
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.ReadMajority(timeout, minCap)
+    @InternalApi private[akka] override def toUntyped = dd.Replicator.ReadMajority(timeout.asScala, minCap)
   }
-  final case class ReadAll(timeout: FiniteDuration) extends ReadConsistency {
+  final case class ReadAll(timeout: Duration) extends ReadConsistency {
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.ReadAll(timeout)
+    @InternalApi private[akka] override def toUntyped = dd.Replicator.ReadAll(timeout.asScala)
   }
 
   sealed trait WriteConsistency {
-    def timeout: FiniteDuration
+    def timeout: Duration
 
     /** INTERNAL API */
     @InternalApi private[akka] def toUntyped: dd.Replicator.WriteConsistency
   }
   case object WriteLocal extends WriteConsistency {
-    override def timeout: FiniteDuration = Duration.Zero
+    override def timeout: Duration = Duration.ZERO
 
     /** INTERNAL API */
     @InternalApi private[akka] override def toUntyped = dd.Replicator.WriteLocal
   }
-  final case class WriteTo(n: Int, timeout: FiniteDuration) extends WriteConsistency {
+  final case class WriteTo(n: Int, timeout: Duration) extends WriteConsistency {
     require(n >= 2, "WriteTo n must be >= 2, use WriteLocal for n=1")
 
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.WriteTo(n, timeout)
+    @InternalApi private[akka] override def toUntyped = dd.Replicator.WriteTo(n, timeout.asScala)
   }
-  final case class WriteMajority(timeout: FiniteDuration, minCap: Int = DefaultMajorityMinCap) extends WriteConsistency {
-    def this(timeout: FiniteDuration) = this(timeout, DefaultMajorityMinCap)
+  final case class WriteMajority(timeout: Duration, minCap: Int = DefaultMajorityMinCap) extends WriteConsistency {
+    def this(timeout: Duration) = this(timeout, DefaultMajorityMinCap)
 
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.WriteMajority(timeout, minCap)
+    @InternalApi private[akka] override def toUntyped = dd.Replicator.WriteMajority(timeout.asScala, minCap)
   }
-  final case class WriteAll(timeout: FiniteDuration) extends WriteConsistency {
+  final case class WriteAll(timeout: Duration) extends WriteConsistency {
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.WriteAll(timeout)
+    @InternalApi private[akka] override def toUntyped = dd.Replicator.WriteAll(timeout.asScala)
   }
 
   /**

@@ -5,18 +5,18 @@
 package akka.cluster.ddata.typed.scaladsl
 
 import akka.actor.Scheduler
-import akka.actor.typed.{ ActorRef, Behavior, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.Cluster
 import akka.cluster.ddata.typed.scaladsl.Replicator._
 import akka.cluster.ddata.{ GCounter, GCounterKey, ReplicatedData }
-import akka.testkit.typed.scaladsl._
-import akka.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl._
+import akka.actor.testkit.typed.TestKitSettings
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.Eventually
+import org.scalatest.WordSpecLike
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -25,7 +25,6 @@ object ReplicatorSpec {
 
   val config = ConfigFactory.parseString(
     """
-    akka.loglevel = DEBUG
     akka.actor.provider = "cluster"
     akka.remote.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -117,9 +116,7 @@ object ReplicatorSpec {
 
 }
 
-class ReplicatorSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
-
-  override def config = ReplicatorSpec.config
+class ReplicatorSpec extends ScalaTestWithActorTestKit(ReplicatorSpec.config) with WordSpecLike {
 
   import ReplicatorSpec._
 

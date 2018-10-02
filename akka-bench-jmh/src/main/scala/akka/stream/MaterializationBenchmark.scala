@@ -16,9 +16,9 @@ import akka.Done
 
 object MaterializationBenchmark {
 
-  val flowWithMapBuilder = (numOfCombinators: Int) ⇒ {
+  val flowWithMapBuilder = (numOfOperators: Int) ⇒ {
     var source = Source.single(())
-    for (_ ← 1 to numOfCombinators) {
+    for (_ ← 1 to numOfOperators) {
       source = source.map(identity)
     }
     source.to(Sink.ignore)
@@ -73,11 +73,11 @@ object MaterializationBenchmark {
 
   final val subStreamCount = 10000
 
-  val subStreamBuilder: Int ⇒ RunnableGraph[Future[Unit]] = numOfCombinators ⇒ {
+  val subStreamBuilder: Int ⇒ RunnableGraph[Future[Unit]] = numOfOperators ⇒ {
 
     val subFlow = {
       var flow = Flow[Unit]
-      for (_ ← 1 to numOfCombinators) {
+      for (_ ← 1 to numOfOperators) {
         flow = flow.map(identity)
       }
       flow

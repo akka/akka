@@ -81,8 +81,8 @@ class GraphDSLDocSpec extends AkkaSpec {
       val broadcast = builder.add(Broadcast[Int](2))
       Source.single(1) ~> broadcast.in
 
-      broadcast.out(0) ~> sharedDoubler ~> topHS.in
-      broadcast.out(1) ~> sharedDoubler ~> bottomHS.in
+      broadcast ~> sharedDoubler ~> topHS.in
+      broadcast ~> sharedDoubler ~> bottomHS.in
       ClosedShape
     })
     //#graph-dsl-reusing-a-flow

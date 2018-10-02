@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote
 
 import java.util.concurrent.atomic.AtomicBoolean
@@ -102,8 +103,9 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
   override def initialParticipants = roles.size
 
   def identify(role: RoleName, actorName: String): ActorRef = {
-    system.actorSelection(node(role) / "user" / actorName) ! Identify(actorName)
-    expectMsgType[ActorIdentity].ref.get
+    val p = TestProbe()
+    (system.actorSelection(node(role) / "user" / actorName)).tell(Identify(actorName), p.ref)
+    p.expectMsgType[ActorIdentity](remainingOrDefault).ref.get
   }
 
   "TransportFail" must {

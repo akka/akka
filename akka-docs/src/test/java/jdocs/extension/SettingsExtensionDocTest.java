@@ -10,9 +10,9 @@ import akka.actor.AbstractExtensionId;
 import akka.actor.ExtensionIdProvider;
 import akka.actor.ActorSystem;
 import akka.actor.ExtendedActorSystem;
-import scala.concurrent.duration.Duration;
 import com.typesafe.config.Config;
 import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 //#imports
 
@@ -32,8 +32,7 @@ public class SettingsExtensionDocTest extends AbstractJavaTest {
     public SettingsImpl(Config config) {
       DB_URI = config.getString("myapp.db.uri");
       CIRCUIT_BREAKER_TIMEOUT =
-        Duration.create(config.getDuration("myapp.circuit-breaker.timeout", 
-          TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
+        Duration.ofMillis(config.getDuration("myapp.circuit-breaker.timeout", TimeUnit.MILLISECONDS));
     }
 
   }

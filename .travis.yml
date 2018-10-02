@@ -1,0 +1,37 @@
+language: scala
+
+sudo: false
+
+scala:
+  - "2.12.7"
+  - "2.11.12"
+
+jdk:
+  - oraclejdk8
+
+addons:
+  apt:
+    packages:
+    - graphviz
+
+before_cache:
+  - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt  -name "*.lock"               -print -delete
+
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot
+
+script:
+  # need to override as the default is to test
+  - sbt -J-XX:ReservedCodeCacheSize=256m ++$TRAVIS_SCALA_VERSION update mimaReportBinaryIssues
+  # make 'git branch' work again
+  - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
+  # check policies, if on master also upload
+  - if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" ]]; then if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi ; fi
+
+env:
+  global:
+    # encrypt with: travis encrypt WHITESOURCE_KEY=...
+    - secure: "L/wJ7TbgY+oPULgbv+giFZejnQERfv/8/9Ex/nwRni8qnpxw5Q6BqB86Sch6b79irQiOdb+hr2tq3/m3KzXjC58xppRPfnmXsu3yI9XAln9WPi/sPvqUL8WPJmRfGswAw3L8w2JdD9VBP4iv0dWpRghGD27iqgipVRdN62PU+nU="

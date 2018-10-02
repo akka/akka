@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster
 
 import akka.actor.ActorSystem
@@ -23,7 +24,7 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString(
     """
-      akka.loglevel = DEBUG
+      akka.loglevel = DEBUG # issue #24955
       akka.cluster.debug.verbose-heartbeat-logging = on
       akka.cluster.debug.verbose-gossip-logging = on
       akka.remote.netty.tcp.connection-timeout = 5 s # speedup in case of connection issue

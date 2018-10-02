@@ -1,5 +1,63 @@
 # Remoting (codename Artery)
 
+## Dependency
+
+To use Remoting (codename Artery), you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-remote_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Configuration
+
+To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
+to your `application.conf` file:
+
+```
+akka {
+  actor {
+    provider = remote
+  }
+  remote {
+    artery {
+      enabled = on
+      transport = aeron-udp
+      canonical.hostname = "127.0.0.1"
+      canonical.port = 25520
+    }
+  }
+}
+```
+
+As you can see in the example above there are four things you need to add to get started:
+
+ * Change provider from `local` to `remote`
+ * Enable Artery to use it as the remoting implementation
+ * Add host name - the machine you want to run the actor system on; this host
+name is exactly what is passed to remote systems in order to identify this
+system and consequently used for connecting back to this system if need be,
+hence set it to a reachable IP address or resolvable name in case you want to
+communicate across the network.
+ * Add port number - the port the actor system should listen on, set to 0 to have it chosen automatically
+
+@@@ note
+
+The port number needs to be unique for each actor system on the same machine even if the actor
+systems have different names. This is because each actor system has its own networking subsystem
+listening for connections and handling messages as not to interfere with other actor systems.
+
+@@@
+
+The example above only illustrates the bare minimum of properties you have to add to enable remoting.
+All settings are described in @ref:[Remote Configuration](#remote-configuration-artery).
+
+## Introduction
+
+We recommend @ref:[Akka Cluster](cluster-usage.md) over using remoting directly. As remoting is the
+underlying module that allows for Cluster, it is still useful to understand details about it though.
+
 @@@ note
 
 This page describes the remoting subsystem, codenamed *Artery* that will eventually replace the
@@ -44,70 +102,6 @@ The main incompatible change from the previous implementation that the protocol 
 `ActorRef` is always *akka* instead of the previously used *akka.tcp* or *akka.ssl.tcp*. Configuration properties
 are also different.
 
-## Preparing your ActorSystem for Remoting
-
-The Akka remoting is a separate jar file. Make sure that you have the following dependency in your project:
-
-Scala
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-remote" % "$akka.version$"
-    ```
-    @@@
-
-Java
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-remote_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    ```
-    @@@
-
-
-To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
-to your `application.conf` file:
-
-```
-akka {
-  actor {
-    provider = remote
-  }
-  remote {
-    artery {
-      enabled = on
-      transport = aeron-udp
-      canonical.hostname = "127.0.0.1"
-      canonical.port = 25520
-    }
-  }
-}
-```
-
-As you can see in the example above there are four things you need to add to get started:
-
- * Change provider from `local` to `remote`
- * Enable Artery to use it as the remoting implementation
- * Add host name - the machine you want to run the actor system on; this host
-name is exactly what is passed to remote systems in order to identify this
-system and consequently used for connecting back to this system if need be,
-hence set it to a reachable IP address or resolvable name in case you want to
-communicate across the network.
- * Add port number - the port the actor system should listen on, set to 0 to have it chosen automatically
-
-@@@ note
-
-The port number needs to be unique for each actor system on the same machine even if the actor
-systems have different names. This is because each actor system has its own networking subsystem
-listening for connections and handling messages as not to interfere with other actor systems.
-
-@@@
-
-The example above only illustrates the bare minimum of properties you have to add to enable remoting.
-All settings are described in @ref:[Remote Configuration](#remote-configuration-artery).
-
 ### Selecting transport
 
 There are three alternatives of which underlying transport to use. It is configured by property
@@ -129,7 +123,10 @@ might not be as good as the Aeron transport.
 
 @@@ note
 
-Aeron requires 64bit JVM to work reliably.
+Aeron requires 64bit JVM to work reliably and is only officially supported on Linux, Mac and Windows.
+It may work on other Unixes e.g. Solaris but insufficient testing has taken place for it to be
+officially supported. If you're on a Big Endian processor, such as Sparc, it is recommended to use
+ TCP.
 
 @@@
 
@@ -158,7 +155,7 @@ In order to communicate with an actor, it is necessary to have its `ActorRef`. I
 the creator of the actor (the caller of `actorOf()`) is who gets the `ActorRef` for an actor that it can
 then send to other actors. In other words:
 
- * An Actor can get a remote Actor's reference simply by receiving a message from it (as it's available as @scala[`sender()`]@java[`getSender()`] then),
+ * An Actor can get a remote Actor's reference by receiving a message from it (as it's available as @scala[`sender()`]@java[`getSender()`] then),
 or inside of a remote message (e.g. *PleaseReply(message: String, remoteActorRef: ActorRef)*)
 
 Alternatively, an actor can look up another located at a known path using
@@ -263,10 +260,10 @@ which in this sample corresponds to `sampleActorSystem@127.0.0.1:2553`.
 Once you have configured the properties above you would do the following in code:
 
 Scala
-:  @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
+:  @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
 
 Java
-:  @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #sample-actor }
+:  @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #sample-actor }
 
 The actor class `SampleActor` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
@@ -303,26 +300,26 @@ precedence.
 With these imports:
 
 Scala
-:  @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
+:  @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
 
 Java
-:  @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #import }
+:  @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #import }
 
 and a remote address like this:
 
 Scala
-:  @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address-artery }
+:  @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address-artery }
 
 Java
-:  @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #make-address-artery }
+:  @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #make-address-artery }
 
 you can advise the system to create a child on that remote node like so:
 
 Scala
-:  @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
+:  @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
 
 Java
-:  @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
+:  @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
 
 ### Remote deployment whitelist
 
@@ -337,7 +334,7 @@ The list of allowed classes has to be configured on the "remote" system, in othe
 others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
 should not allow others to remote deploy onto it. The full settings section may for example look like this:
 
-@@snip [RemoteDeploymentWhitelistSpec.scala]($akka$/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
+@@snip [RemoteDeploymentWhitelistSpec.scala](/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
 
 Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
 
@@ -382,8 +379,6 @@ akka.remote.artery {
     protocol = "TLSv1.2"
 
     enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
-
-    random-number-generator = "AES128CounterSecureRNG"
   }
 }
 ```
@@ -430,7 +425,7 @@ You have a few choices how to set up certificates and hostname verification:
     * The single set of keys and the single certificate is distributed to all nodes. The certificate can
       be self-signed as it is distributed both as a certificate for authentication but also as the trusted certificate.
     * If the keys/certificate are lost, someone else can connect to your cluster.
-    * Adding nodes to the cluster is simple as the key material can just be deployed / distributed to the new node.
+    * Adding nodes to the cluster is simple as the key material can be deployed / distributed to the new node.
 * Have a single set of keys and a single certificate for all nodes that contains all of the host names and *enable*
   hostname checking.
     * This means that only the hosts mentioned in the certificate can connect to the cluster.
@@ -667,10 +662,10 @@ remained the same, we recommend reading the @ref:[Serialization](serialization.m
 Implementing an `akka.serialization.ByteBufferSerializer` works the same way as any other serializer,
 
 Scala
-:  @@snip [Serializer.scala]($akka$/akka-actor/src/main/scala/akka/serialization/Serializer.scala) { #ByteBufferSerializer }
+:  @@snip [Serializer.scala](/akka-actor/src/main/scala/akka/serialization/Serializer.scala) { #ByteBufferSerializer }
 
 Java
-:  @@snip [ByteBufferSerializerDocTest.java]($code$/java/jdocs/actor/ByteBufferSerializerDocTest.java) { #ByteBufferSerializer-interface }
+:  @@snip [ByteBufferSerializerDocTest.java](/akka-docs/src/test/java/jdocs/actor/ByteBufferSerializerDocTest.java) { #ByteBufferSerializer-interface }
 
 Implementing a serializer for Artery is therefore as simple as implementing this interface, and binding the serializer
 as usual (which is explained in @ref:[Serialization](serialization.md)).
@@ -682,10 +677,10 @@ The array based methods will be used when `ByteBuffer` is not used, e.g. in Akka
 Note that the array based methods can be implemented by delegation like this:
 
 Scala
-:  @@snip [ByteBufferSerializerDocSpec.scala]($code$/scala/docs/actor/ByteBufferSerializerDocSpec.scala) { #bytebufserializer-with-manifest }
+:  @@snip [ByteBufferSerializerDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ByteBufferSerializerDocSpec.scala) { #bytebufserializer-with-manifest }
 
 Java
-:  @@snip [ByteBufferSerializerDocTest.java]($code$/java/jdocs/actor/ByteBufferSerializerDocTest.java) { #bytebufserializer-with-manifest }
+:  @@snip [ByteBufferSerializerDocTest.java](/akka-docs/src/test/java/jdocs/actor/ByteBufferSerializerDocTest.java) { #bytebufserializer-with-manifest }
 
 <a id="disable-java-serializer"></a>
 ### Disabling the Java Serializer
@@ -698,24 +693,18 @@ It is absolutely feasible to combine remoting with @ref:[Routing](routing.md).
 
 A pool of remote deployed routees can be configured as:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-pool-artery }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-pool-artery }
 
 This configuration setting will clone the actor defined in the `Props` of the `remotePool` 10
 times and deploy it evenly distributed across the two given target nodes.
 
 A group of remote actors can be configured as:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group-artery }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group-artery }
 
 This configuration setting will send messages to the defined remote actor paths.
 It requires that you create the destination actors on the remote nodes with matching paths.
 That is not done by the router.
-
-## Remoting Sample
-
-You can download a ready to run @scala[@extref[remoting sample](ecs:akka-samples-remote-scala)]@java[@extref[remoting sample](ecs:akka-samples-remote-java)]
-together with a tutorial for a more hands-on experience. The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-remote-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-remote-java)].
 
 ## Performance tuning
 
@@ -883,7 +872,7 @@ your configuration file. This a limitation of the current version and will not b
 
 @@@
 
-Emitting event information (logs) from internals is always a tradeoff. The events that are usable for
+Emitting event information (logs) from internals is always a trade off. The events that are usable for
 the Akka developers are usually too low level to be of any use for users and usually need to be fine-grained enough
 to provide enough information to be able to debug issues in the internal implementation. This usually means that
 these logs are hidden behind special flags and emitted at low log levels to not clutter the log output of the user
@@ -904,7 +893,7 @@ crashes unexpectedly.
  * Very low overhead, specialized, binary logging that has no significant overhead and can be safely left enabled
 for production systems.
 
-The location of the file can be controlled via the *akka.remote.artery.advanced.flight-recoder.destination* setting (see
+The location of the file can be controlled via the *akka.remote.artery.advanced.flight-recorder.destination* setting (see
 @ref:[akka-remote (artery)](general/configuration.md#config-akka-remote-artery) for details). By default, a file with the *.afr* extension is produced in the temporary
 directory of the operating system. In cases where the flight recorder casuses issues, it can be disabled by adding the
 setting *akka.remote.artery.advanced.flight-recorder.enabled=off*, although this is not recommended.
@@ -920,7 +909,7 @@ There are lots of configuration properties that are related to remoting in Akka.
 Setting properties like the listening IP and port number programmatically is
 best done by using something like the following:
 
-@@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #programmatic-artery }
+@@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #programmatic-artery }
 
 @@@
 
@@ -945,3 +934,8 @@ akka {
  }
 }
 ```
+
+You can look at the
+@java[@extref[Cluster with docker-compse example project](samples:akka-samples-cluster-docker-compose-java)]
+@scala[@extref[Cluster with docker-compose example project](samples:akka-samples-cluster-docker-compose-scala)]
+to see what this looks like in practice.

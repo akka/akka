@@ -4,21 +4,20 @@
 
 package jdocs.actor;
 
-import java.util.concurrent.TimeUnit;
-
 import akka.testkit.AkkaJUnitActorSystemResource;
 import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import scala.concurrent.duration.Duration;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Inbox;
 import akka.actor.PoisonPill;
 import akka.actor.Terminated;
 import akka.testkit.AkkaSpec;
+
+import java.time.Duration;
 
 public class InboxDocTest extends AbstractJavaTest {
 
@@ -40,7 +39,7 @@ public class InboxDocTest extends AbstractJavaTest {
     probe.send(probe.getLastSender(), "world");
     //#inbox
     try {
-      assert inbox.receive(Duration.create(1, TimeUnit.SECONDS)).equals("world");
+      assert inbox.receive(Duration.ofSeconds(1)).equals("world");
     } catch (java.util.concurrent.TimeoutException e) {
       // timeout
     }
@@ -56,7 +55,7 @@ public class InboxDocTest extends AbstractJavaTest {
     inbox.watch(target);
     target.tell(PoisonPill.getInstance(), ActorRef.noSender());
     try {
-      assert inbox.receive(Duration.create(1, TimeUnit.SECONDS)) instanceof Terminated;
+      assert inbox.receive(Duration.ofSeconds(1)) instanceof Terminated;
     } catch (java.util.concurrent.TimeoutException e) {
       // timeout
     }

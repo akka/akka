@@ -54,15 +54,8 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
     val out = new ByteArrayOutputStream
     writeInt(out, snapshotSerializer.identifier)
 
-    snapshotSerializer match {
-      case ser2: SerializerWithStringManifest ⇒
-        val manifest = ser2.manifest(snapshot)
-        if (manifest != "")
-          out.write(manifest.getBytes(UTF_8))
-      case _ ⇒
-        if (snapshotSerializer.includeManifest)
-          out.write(snapshot.getClass.getName.getBytes(UTF_8))
-    }
+    val ms = Serializers.manifestFor(snapshotSerializer, snapshot)
+    if (ms.nonEmpty) out.write(ms.getBytes(UTF_8))
 
     out.toByteArray
   }
@@ -100,11 +93,12 @@ class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer
       out.toByteArray
     }
 
-    // serialize actor references with full address information (defaultAddress)
-    transportInformation match {
-      case Some(ti) ⇒ Serialization.currentTransportInformation.withValue(ti) { serialize() }
-      case None     ⇒ serialize()
-    }
+    val oldInfo = Serialization.currentTransportInformation.value
+    try {
+      if (oldInfo eq null)
+        Serialization.currentTransportInformation.value = system.provider.serializationInformation
+      serialize()
+    } finally Serialization.currentTransportInformation.value = oldInfo
   }
 
   private def snapshotFromBinary(bytes: Array[Byte]): AnyRef = {

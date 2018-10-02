@@ -18,6 +18,7 @@ import java.io.PrintWriter
 import java.util.concurrent.CountDownLatch
 
 import akka.testkit.TestActor.AutoPilot
+import akka.util.JavaDurationConverters
 
 /**
  * Provides factory methods for various Publishers.
@@ -431,7 +432,7 @@ object TestSubscriber {
     }
 
     /**
-     * Expect subscription to be followed immediatly by an error signal.
+     * Expect subscription to be followed immediately by an error signal.
      *
      * By default `1` demand will be signalled in order to wake up a possibly lazy upstream.
      *
@@ -442,9 +443,9 @@ object TestSubscriber {
     }
 
     /**
-     * Expect subscription to be followed immediatly by an error signal.
+     * Expect subscription to be followed immediately by an error signal.
      *
-     * Depending on the `signalDemand` parameter demand may be signalled immediatly after obtaining the subscription
+     * Depending on the `signalDemand` parameter demand may be signalled immediately after obtaining the subscription
      * in order to wake up a possibly lazy upstream. You can disable this by setting the `signalDemand` parameter to `false`.
      *
      * See also [[#expectSubscriptionAndError()]].
@@ -498,7 +499,7 @@ object TestSubscriber {
      *
      * Expect subscription followed by immediate stream completion.
      *
-     * Depending on the `signalDemand` parameter demand may be signalled immediatly after obtaining the subscription
+     * Depending on the `signalDemand` parameter demand may be signalled immediately after obtaining the subscription
      * in order to wake up a possibly lazy upstream. You can disable this by setting the `signalDemand` parameter to `false`.
      *
      * See also [[#expectSubscriptionAndComplete]].
@@ -596,6 +597,15 @@ object TestSubscriber {
      */
     def expectNoMessage(remaining: FiniteDuration): Self = {
       probe.expectNoMessage(remaining)
+      self
+    }
+
+    /**
+     * Java API: Assert that no message is received for the specified time.
+     */
+    def expectNoMessage(remaining: java.time.Duration): Self = {
+      import JavaDurationConverters._
+      probe.expectNoMessage(remaining.asScala)
       self
     }
 

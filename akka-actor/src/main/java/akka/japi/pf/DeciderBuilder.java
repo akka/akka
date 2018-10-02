@@ -16,7 +16,7 @@ import static akka.actor.SupervisorStrategy.Directive;
  * <pre>
  * &#64;Override
  * private static SupervisorStrategy strategy =
- *   new OneForOneStrategy(10, Duration.create("1 minute"), DeciderBuilder.
+ *   new OneForOneStrategy(10, Duration.ofMinutes(1), DeciderBuilder.
  *     match(ArithmeticException.class, e -&gt; resume()).
  *     match(NullPointerException.class, e -&gt; restart()).
  *     match(IllegalArgumentException.class, e -&gt; stop()).

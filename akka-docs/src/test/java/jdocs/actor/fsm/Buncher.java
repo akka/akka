@@ -11,7 +11,7 @@ import akka.japi.pf.UnitMatch;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import scala.concurrent.duration.Duration;
+import java.time.Duration;
 //#simple-imports
 
 import static jdocs.actor.fsm.Buncher.Data;
@@ -45,7 +45,7 @@ public class Buncher extends AbstractFSM<State, Data> {
       state(Idle, Active, () -> {/* Do something here */}));
     //#transition-elided
 
-    when(Active, Duration.create(1, "second"),
+    when(Active, Duration.ofSeconds(1L),
       matchEvent(Arrays.asList(Flush.class, StateTimeout()), Todo.class,
         (event, todo) -> goTo(Idle).using(todo.copy(new LinkedList<>()))));
 

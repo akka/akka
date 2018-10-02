@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.cluster
 
 import com.typesafe.config.ConfigFactory
@@ -255,7 +256,7 @@ abstract class SurviveNetworkInstabilitySpec
       assertCanTalk((joining ++ others :+ first): _*)
     }
 
-    "down and remove quarantined node" taggedAs LongRunningTest in within(60.seconds) {
+    "mark quarantined node with reachability status Terminated" taggedAs LongRunningTest in within(60.seconds) {
       val others = Vector(first, third, fourth, fifth, sixth, seventh)
 
       runOn(third) {
@@ -294,9 +295,30 @@ abstract class SurviveNetworkInstabilitySpec
       enterBarrier("quarantined")
 
       runOn(others: _*) {
-        // second should be removed because of quarantine
-        awaitAssert(clusterView.members.map(_.address) should not contain (address(second)))
+        // not be downed, see issue #25632
+        Thread.sleep(2000)
+        val secondUniqueAddress = cluster.state.members.find(_.address == address(second)) match {
+          case None ⇒ fail("Unexpected removal of quarantined node")
+          case Some(m) ⇒
+            m.status should ===(MemberStatus.Up) // not Down
+            m.uniqueAddress
+        }
+
+        // second should be marked with reachability status Terminated removed because of quarantine
+        awaitAssert(clusterView.reachability.status(secondUniqueAddress) should ===(Reachability.Terminated))
       }
+      enterBarrier("reachability-terminated")
+
+      runOn(fourth) {
+        cluster.down(address(second))
+      }
+      runOn(others: _*) {
+        // second should be removed because of quarantine
+        awaitAssert(clusterView.members.map(_.address) should not contain address(second))
+        // and also removed from reachability table
+        awaitAssert(clusterView.reachability.allUnreachableOrTerminated should ===(Set.empty))
+      }
+      enterBarrier("removed-after-down")
 
       enterBarrier("after-6")
       assertCanTalk(others: _*)

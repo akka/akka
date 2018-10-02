@@ -22,6 +22,7 @@ object TimerSpec {
   case object Cancel extends Command
   case class SlowThenThrow(latch: TestLatch, e: Throwable) extends Command
     with NoSerializationVerificationNeeded
+  case object AutoReceive extends Command
 
   sealed trait Event
   case class Tock(n: Int) extends Event
@@ -55,6 +56,10 @@ object TimerSpec {
       timers.startPeriodicTimer("T", Tick(bumpCount), interval)
     }
 
+    def autoReceive(): Unit = {
+      timers.startSingleTimer("A", PoisonPill, interval)
+    }
+
     override def receive = {
       case Tick(n) ⇒
         monitor ! Tock(n)
@@ -72,6 +77,7 @@ object TimerSpec {
       case SlowThenThrow(latch, e) ⇒
         Await.ready(latch, 10.seconds)
         throw e
+      case AutoReceive ⇒ autoReceive()
     }
   }
 
@@ -101,6 +107,11 @@ object TimerSpec {
       stay using (bumpCount + 1)
     }
 
+    def autoReceive(): State = {
+      setTimer("A", PoisonPill, interval, repeat)
+      stay
+    }
+
     {
       val i = initial()
       startWith(TheState, i)
@@ -126,6 +137,8 @@ object TimerSpec {
       case Event(SlowThenThrow(latch, e), _) ⇒
         Await.ready(latch, 10.seconds)
         throw e
+      case Event(AutoReceive, _) ⇒
+        autoReceive()
     }
 
     initialize()
@@ -263,6 +276,15 @@ abstract class AbstractTimerSpec extends AkkaSpec {
       ref ! End
       probe.expectMsg(GotPostStop(false))
     }
+
+    "handle AutoReceivedMessages automatically" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(target(probe.ref, 10.millis, repeat = false))
+      watch(ref)
+      ref ! AutoReceive
+      expectTerminated(ref)
+    }
+
   }
 }
 

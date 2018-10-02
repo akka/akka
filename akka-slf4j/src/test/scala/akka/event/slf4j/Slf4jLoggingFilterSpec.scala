@@ -24,7 +24,7 @@ object Slf4jLoggingFilterSpec {
 
   val config = """
     akka {
-      loglevel = DEBUG
+      loglevel = DEBUG # test verifies debug
       loggers = ["akka.event.slf4j.Slf4jLoggingFilterSpec$TestLogger"]
       logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
     }

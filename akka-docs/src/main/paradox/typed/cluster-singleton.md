@@ -1,5 +1,26 @@
 # Cluster Singleton
 
+## Dependency
+
+To use Cluster Singleton, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=com.typesafe.akka
+  artifact=akka-cluster-typed_$scala.binary_version$
+  version=$akka.version$
+}
+
+## Introduction
+
+@@@ warning
+
+This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
+  of being the subject of active research. This means that API or semantics can
+  change without warning or deprecation period and it is not recommended to use
+  this module in production just yet—you have been warned.
+
+@@@
+
 For some use cases it is convenient and sometimes also mandatory to ensure that
 you have exactly one actor of a certain type running somewhere in the cluster.
 
@@ -16,42 +37,27 @@ such as single-point of bottleneck. Single-point of failure is also a relevant c
 but for some cases this feature takes care of that by making sure that another singleton
 instance will eventually be started.
 
-@@@ warning
-
-This module is currently marked as @ref:[may change](../common/may-change.md) in the sense
-  of being the subject of active research. This means that API or semantics can
-  change without warning or deprecation period and it is not recommended to use
-  this module in production just yet—you have been warned.
-
-@@@
-
-## Dependency
-
-To use Akka Cluster Singleton Typed, add the module to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group=com.typesafe.akka
-  artifact=akka-cluster-typed_2.12
-  version=$akka.version$
-}
-
 ## Example
 
 Any `Behavior` can be run as a singleton. E.g. a basic counter:
 
 Scala
-:  @@snip [ShardingCompileOnlySpec.scala]($akka$/akka-cluster-sharding-typed/src/test/scala/doc/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #sharding-extension }
+:  @@snip [SingletonCompileOnlySpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/SingletonCompileOnlySpec.scala) { #counter }
 
 Java
-:  @@snip [ShardingCompileOnlyTest.java]($akka$/akka-cluster-sharding-typed/src/test/java/jdoc/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #sharding-extension }
+:  @@snip [SingletonCompileOnlyTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/SingletonCompileOnlyTest.java) { #counter }
 
 Then on every node in the cluster, or every node with a given role, use the `ClusterSingleton` extension
-to spawn the singleton. Only a single instance will run in the cluster:
+to spawn the singleton. An instance will per data centre of the cluster:
 
 
 Scala
-:  @@snip [ShardingCompileOnlySpec.scala]($akka$/akka-cluster-sharding-typed/src/test/scala/doc/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #singleton }
+:  @@snip [SingletonCompileOnlySpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/SingletonCompileOnlySpec.scala) { #singleton }
 
 Java
-:  @@snip [ShardingCompileOnlyTest.java]($akka$/akka-cluster-sharding-typed/src/test/java/jdoc/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #singleton }
+:  @@snip [SingletonCompileOnlyTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/SingletonCompileOnlyTest.java) { #import #singleton }
+
+## Accessing singleton of another data centre
+
+TODO
 

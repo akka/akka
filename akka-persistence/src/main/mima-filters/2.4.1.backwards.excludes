@@ -2,4 +2,9 @@
 ProblemFilters.exclude[Problem]("akka.persistence.journal.inmem.InmemJournal*")
 ProblemFilters.exclude[Problem]("akka.persistence.journal.inmem.InmemStore*")
 
-ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.PersistenceStash.internalStashOverflowStrategy")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.PersistentActor.internalStashOverflowStrategy")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.Eventsourced.internalStashOverflowStrategy")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.AtLeastOnceDeliveryLike.internalStashOverflowStrategy")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.AtLeastOnceDelivery.internalStashOverflowStrategy")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.persistence.fsm.PersistentFSM.internalStashOverflowStrategy")
+

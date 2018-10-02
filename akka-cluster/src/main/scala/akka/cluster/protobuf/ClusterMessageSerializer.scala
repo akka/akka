@@ -10,9 +10,8 @@ import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster._
 import akka.cluster.protobuf.msg.{ ClusterMessages ⇒ cm }
-import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
+import akka.serialization._
 import akka.protobuf.{ ByteString, MessageLite }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.JavaConverters._
@@ -88,7 +87,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
     case ClusterUserAction.Leave(address)                        ⇒ addressToProtoByteArray(address)
     case ClusterUserAction.Down(address)                         ⇒ addressToProtoByteArray(address)
     case InternalClusterAction.InitJoin(config)                  ⇒ initJoinToProto(config).toByteArray
-    case InternalClusterAction.InitJoinAck(address, configCheck) ⇒ initJoinAckToProto(address, configCheck).toByteArray
+    case InternalClusterAction.InitJoinAck(address, configCheck) ⇒ initJoinAckToByteArray(address, configCheck)
     case InternalClusterAction.InitJoinNack(address)             ⇒ addressToProtoByteArray(address)
     case InternalClusterAction.ExitingConfirmed(node)            ⇒ uniqueAddressToProtoByteArray(node)
     case rp: ClusterRouterPool                                   ⇒ clusterRouterPoolToProtoByteArray(rp)
@@ -174,15 +173,8 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
     val serializer = serialization.findSerializerFor(pool)
     builder.setSerializerId(serializer.identifier)
       .setData(ByteString.copyFrom(serializer.toBinary(pool)))
-    serializer match {
-      case ser: SerializerWithStringManifest ⇒
-        builder.setManifest(ser.manifest(pool))
-      case _ ⇒
-        builder.setManifest(
-          if (serializer.includeManifest) pool.getClass.getName
-          else ""
-        )
-    }
+    val manifest = Serializers.manifestFor(serializer, pool)
+    builder.setManifest(manifest)
     builder.build()
   }
 
@@ -338,6 +330,13 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
       .build()
   }
 
+  private def initJoinAckToByteArray(address: Address, configCheck: ConfigCheck): Array[Byte] = {
+    if (configCheck == ConfigCheckUnsupportedByJoiningNode)
+      addressToProtoByteArray(address) // plain Address in 2.5.9 or earlier
+    else
+      initJoinAckToProto(address, configCheck).toByteArray
+  }
+
   private def initJoinAckToProto(address: Address, configCheck: ConfigCheck): cm.InitJoinAck = {
 
     val configCheckBuilder = cm.ConfigCheck.newBuilder()
@@ -352,7 +351,12 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
         configCheckBuilder
           .setType(cm.ConfigCheck.Type.CompatibleConfig)
           .setClusterConfig(conf.root.render(ConfigRenderOptions.concise))
+
+      case ConfigCheckUnsupportedByJoiningNode ⇒
+        // handled as Address in initJoinAckToByteArray
+        throw new IllegalStateException("Unexpected ConfigCheckUnsupportedByJoiningNode")
     }
+
     cm.InitJoinAck.newBuilder().
       setAddress(addressToProto(address)).
       setConfigCheck(configCheckBuilder.build()).

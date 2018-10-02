@@ -14,7 +14,6 @@ import akka.routing.{ NoRouter, RouterConfig }
 
 import scala.reflect.ClassTag
 import util.{ Failure, Success }
-import java.io.Serializable
 
 /**
  * Serializes Akka's internal DaemonMsgCreate using protobuf
@@ -186,26 +185,23 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
 
     // this trixery is to retain backwards wire compatibility while at the same time
     // allowing for usage of serializers with string manifests
-    var hasManifest = false
+    val hasManifest = serializer.includeManifest
     val manifest = serializer match {
       case ser: SerializerWithStringManifest ⇒
-        hasManifest = true
         ser.manifest(m)
-      case ser ⇒
-        hasManifest = ser.includeManifest
-
+      case _ ⇒
         // we do include class name regardless to retain wire compatibility
         // with older nodes who expect manifest to be the class name
         if (m eq null) {
           "null"
         } else {
           val className = m.getClass.getName
-          if (scala212OrLater && m.isInstanceOf[Serializable] && m.getClass.isSynthetic && className.contains("$Lambda$")) {
+          if (scala212OrLater && m.isInstanceOf[java.io.Serializable] && m.getClass.isSynthetic && className.contains("$Lambda$")) {
             // When the additional-protobuf serializers are not enabled
             // the serialization of the parameters is based on passing class name instead of
             // serializerId and manifest as we usually do. With Scala 2.12 the functions are generated as
             // lambdas and we can't use that load class from that name when deserializing
-            classOf[Serializable].getName
+            classOf[java.io.Serializable].getName
           } else {
             className
           }

@@ -37,8 +37,12 @@ You can use both Akka remoting and Akka Cluster inside of Docker containers. But
 that you will need to take special care with the network configuration when using Docker,
 described here: @ref:[Akka behind NAT or in a Docker container](../remoting.md#remote-configuration-nat)
 
-For an example of how to set up a project using Akka Cluster and Docker take a look at the
-["akka-docker-cluster" sample](https://github.com/muuki88/activator-akka-docker).
+You can look at the
+@java[@extref[Cluster with docker-compse example project](samples:akka-samples-cluster-docker-compose-java)]
+@scala[@extref[Cluster with docker-compose example project](samples:akka-samples-cluster-docker-compose-scala)]
+to see what this looks like in practice.
+
+For the JVM to run well in a Docker container, there are some general (not Akka specific) parameters that might need tuning. You may want to look into using [`-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap`](https://dzone.com/articles/running-a-jvm-in-a-container-without-getting-kille) options for your JVM later than 8u131, which makes it understand c-group memory limits.
 
 
 

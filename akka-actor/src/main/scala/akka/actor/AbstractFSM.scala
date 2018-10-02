@@ -430,7 +430,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    */
   final def setTimer(name: String, msg: Any, timeout: java.time.Duration): Unit = {
     import JavaDurationConverters._
-    setTimer(name, msg, timeout.asScala)
+    setTimer(name, msg, timeout.asScala, false)
   }
 
   /**

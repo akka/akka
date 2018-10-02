@@ -1,5 +1,17 @@
 # Part 2: Creating the First Actor
 
+## Dependency
+
+Add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 With an understanding of actor hierarchy and behavior, the remaining question is how to map the top-level components of our IoT system to actors. It might be tempting to make the actors that
 represent devices and dashboards at the top level. Instead, we recommend creating an explicit component that represents the whole application. In other words, we will have a single top-level actor in our IoT system. The components that create and manage devices and dashboards will be children of this actor. This allows us to refactor the example use case architecture diagram into a tree of actors:
 
@@ -12,10 +24,10 @@ We can define the first actor, the IotSupervisor, with a few simple lines of cod
 1. Paste the following code into the new file to define the IotSupervisor.
 
 Scala
-:   @@snip [IotSupervisor.scala]($code$/scala/tutorial_2/IotSupervisor.scala) { #iot-supervisor }
+:   @@snip [IotSupervisor.scala](/akka-docs/src/test/scala/tutorial_2/IotSupervisor.scala) { #iot-supervisor }
 
 Java
-:   @@snip [IotSupervisor.java]($code$/java/jdocs/tutorial_2/IotSupervisor.java) { #iot-supervisor }
+:   @@snip [IotSupervisor.java](/akka-docs/src/test/java/jdocs/tutorial_2/IotSupervisor.java) { #iot-supervisor }
 
 The code is similar to the actor examples we used in the previous experiments, but notice:
 
@@ -25,10 +37,10 @@ The code is similar to the actor examples we used in the previous experiments, b
 To provide the `main` entry point that creates the actor system, add the following code to the new @scala[`IotApp` object] @java[`IotMain` class].
 
 Scala
-:   @@snip [IotApp.scala]($code$/scala/tutorial_2/IotApp.scala) { #iot-app }
+:   @@snip [IotApp.scala](/akka-docs/src/test/scala/tutorial_2/IotApp.scala) { #iot-app }
 
 Java
-:   @@snip [IotMain.java]($code$/java/jdocs/tutorial_2/IotMain.java) { #iot-app }
+:   @@snip [IotMain.java](/akka-docs/src/test/java/jdocs/tutorial_2/IotMain.java) { #iot-app }
 
 The application does little, other than print out that it is started. But, we have the first actor in place and we are ready to add other actors.
 

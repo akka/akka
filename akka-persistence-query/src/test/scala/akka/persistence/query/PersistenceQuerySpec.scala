@@ -64,7 +64,7 @@ class PersistenceQuerySpec extends WordSpecLike with Matchers with BeforeAndAfte
       withActorSystem() { system ⇒
         intercept[IllegalArgumentException] {
           PersistenceQuery.get(system).readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "-unknown")
-        }.getMessage should include("missing persistence read journal")
+        }.getMessage should include("missing persistence plugin")
       }
     }
 

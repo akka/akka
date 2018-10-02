@@ -258,8 +258,6 @@ class CompressionIntegrationSpec extends ArteryMultiNodeSpec(CompressionIntegrat
   "wrap around" in {
     val extraConfig =
       """
-      akka.loglevel = DEBUG
-
       akka.remote.artery.advanced.compression {
         actor-refs.advertisement-interval = 100 millis
         manifests.advertisement-interval = 10 minutes

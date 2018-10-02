@@ -25,7 +25,7 @@ private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) e
 }
 
 /**
- * INTERNAL API: Actual stage implementation backing [[SourceRef]]s.
+ * INTERNAL API: Actual operator implementation backing [[SourceRef]]s.
  *
  * If initialPartnerRef is set, then the remote side is already set up.
  * If it is none, then we are the side creating the ref.
@@ -64,6 +64,7 @@ private[stream] final class SourceRefStageImpl[Out](
 
       val SubscriptionTimeoutTimerKey = "SubscriptionTimeoutKey"
       val DemandRedeliveryTimerKey = "DemandRedeliveryTimerKey"
+      val TerminationDeadlineTimerKey = "TerminationDeadlineTimerKey"
 
       // demand management ---
       private var completed = false
@@ -89,10 +90,13 @@ private[stream] final class SourceRefStageImpl[Out](
         self = getStageActor(initialReceive)
         log.debug("[{}] Allocated receiver: {}", stageActorName, self.ref)
         if (initialPartnerRef.isDefined) // this will set the partnerRef
-          observeAndValidateSender(initialPartnerRef.get, "<no error case here, definitely valid>")
+          observeAndValidateSender(initialPartnerRef.get, "Illegal initialPartnerRef! This would be a bug in the SourceRef usage or impl.")
 
         promise.success(SinkRefImpl(self.ref))
 
+        //this timer will be cancelled if we receive the handshake from the remote SinkRef
+        // either created in this method and provided as self.ref as initialPartnerRef
+        // or as the response to first CumulativeDemand request sent to remote SinkRef
         scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
       }
 
@@ -135,6 +139,10 @@ private[stream] final class SourceRefStageImpl[Out](
           log.debug("[{}] Scheduled re-delivery of demand until [{}]", stageActorName, localCumulativeDemand)
           getPartnerRef ! StreamRefsProtocol.CumulativeDemand(localCumulativeDemand)
           scheduleDemandRedelivery()
+
+        case TerminationDeadlineTimerKey ⇒
+          failStage(RemoteStreamRefActorTerminatedException(s"Remote partner [$partnerRef] has terminated unexpectedly and no clean completion/failure message was received " +
+            "(possible reasons: network partition or subscription timeout triggered termination of partner). Tearing down."))
       }
 
       lazy val initialReceive: ((ActorRef, Any)) ⇒ Unit = {
@@ -172,19 +180,23 @@ private[stream] final class SourceRefStageImpl[Out](
         case (_, Terminated(ref)) ⇒
           partnerRef match {
             case OptionVal.Some(`ref`) ⇒
-              failStage(RemoteStreamRefActorTerminatedException(s"The remote partner $ref has terminated! " +
-                s"Tearing down this side of the stream as well."))
+              // we need to start a delayed shutdown in case we were network partitioned and the final signal complete/fail
+              // will never reach us; so after the given timeout we need to forcefully terminate this side of the stream ref
+              // the other (sending) side terminates by default once it gets a Terminated signal so no special handling is needed there.
+              scheduleOnce(TerminationDeadlineTimerKey, settings.finalTerminationSignalDeadline)
+
             case _ ⇒
               // this should not have happened! It should be impossible that we watched some other actor
               failStage(RemoteStreamRefActorTerminatedException(s"Received UNEXPECTED Terminated($ref) message! " +
                 s"This actor was NOT our trusted remote partner, which was: $getPartnerRef. Tearing down."))
-
           }
       }
 
       def tryPush(): Unit =
-        if (receiveBuffer.nonEmpty && isAvailable(out)) push(out, receiveBuffer.dequeue())
-        else if (receiveBuffer.isEmpty && completed) completeStage()
+        if (receiveBuffer.nonEmpty && isAvailable(out)) {
+          val element = receiveBuffer.dequeue()
+          push(out, element)
+        } else if (receiveBuffer.isEmpty && completed) completeStage()
 
       private def onReceiveElement(payload: Out): Unit = {
         localRemainingRequested -= 1
@@ -215,7 +227,7 @@ private[stream] final class SourceRefStageImpl[Out](
             } // else, ref is valid and we don't need to do anything with it
         }
 
-      /** @throws InvalidSequenceNumberException when sequence number is is invalid */
+      /** @throws InvalidSequenceNumberException when sequence number is invalid */
       def observeAndValidateSequenceNr(seqNr: Long, msg: String): Unit =
         if (isInvalidSequenceNr(seqNr)) {
           throw InvalidSequenceNumberException(expectingSeqNr, seqNr, msg)
@@ -227,7 +239,6 @@ private[stream] final class SourceRefStageImpl[Out](
 
       setHandler(out, this)
     }
-    //    (logic, MaterializedSinkRef[Out](promise.future))
     (logic, promise.future)
   }
 

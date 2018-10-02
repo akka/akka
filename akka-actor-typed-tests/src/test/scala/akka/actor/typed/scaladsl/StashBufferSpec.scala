@@ -5,13 +5,13 @@
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed.Behavior
-import akka.testkit.typed.internal.EffectfulActorContext
-import akka.testkit.typed.scaladsl.TestInbox
+import akka.actor.testkit.typed.internal.StubbedActorContext
+import akka.actor.testkit.typed.scaladsl.TestInbox
 import org.scalatest.{ Matchers, WordSpec }
 
 class StashBufferSpec extends WordSpec with Matchers {
 
-  val ctx = new EffectfulActorContext[String]("StashBufferSpec")
+  val ctx = new StubbedActorContext[String]("StashBufferSpec")
 
   "A StashBuffer" must {
 
@@ -151,7 +151,7 @@ class StashBufferSpec extends WordSpec with Matchers {
       buffer.size should ===(1)
       buffer.head should ===("m2")
 
-      val b3 = buffer.unstashAll(ctx, b2)
+      buffer.unstashAll(ctx, b2)
       buffer.size should ===(1)
       buffer.head should ===("m2")
     }

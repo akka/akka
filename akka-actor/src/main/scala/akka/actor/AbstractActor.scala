@@ -10,6 +10,10 @@ import akka.japi.pf.ReceiveBuilder
 import scala.runtime.BoxedUnit
 import java.util.Optional
 
+import akka.util.JavaDurationConverters
+
+import scala.concurrent.duration.Duration
+
 /**
  * Java API: compatible with lambda expressions
  */
@@ -115,6 +119,35 @@ object AbstractActor {
      */
     def become(behavior: Receive, discardOld: Boolean): Unit =
       become(behavior.onMessage.asInstanceOf[PartialFunction[Any, Unit]], discardOld)
+
+    /**
+     * Defines the inactivity timeout after which the sending of a [[akka.actor.ReceiveTimeout]] message is triggered.
+     * When specified, the receive function should be able to handle a [[akka.actor.ReceiveTimeout]] message.
+     * 1 millisecond is the minimum supported timeout.
+     *
+     * Please note that the receive timeout might fire and enqueue the `ReceiveTimeout` message right after
+     * another message was enqueued; hence it is '''not guaranteed''' that upon reception of the receive
+     * timeout there must have been an idle period beforehand as configured via this method.
+     *
+     * Once set, the receive timeout stays in effect (i.e. continues firing repeatedly after inactivity
+     * periods). Pass in `Duration.Undefined` to switch off this feature.
+     *
+     * Messages marked with [[NotInfluenceReceiveTimeout]] will not reset the timer. This can be useful when
+     * `ReceiveTimeout` should be fired by external inactivity but not influenced by internal activity,
+     * e.g. scheduled tick messages.
+     *
+     * *Warning*: This method is not thread-safe and must not be accessed from threads other
+     * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+     */
+    def setReceiveTimeout(timeout: java.time.Duration): Unit = {
+      import JavaDurationConverters._
+      setReceiveTimeout(timeout.asScala)
+    }
+
+    /**
+     * Cancel the sending of receive timeout notifications.
+     */
+    def cancelReceiveTimeout(): Unit = setReceiveTimeout(Duration.Undefined)
   }
 }
 

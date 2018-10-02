@@ -10,14 +10,15 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, TimeoutException }
 import scala.util.Success
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 object AskSpec {
   sealed trait Msg
@@ -25,10 +26,8 @@ object AskSpec {
   final case class Stop(replyTo: ActorRef[Unit]) extends Msg
 }
 
-class AskSpec extends ActorTestKit
-  with TypedAkkaSpecWithShutdown with ScalaFutures {
-  override def name = "AskSpec"
-  override def config = ConfigFactory.parseString("akka.loggers = [ akka.testkit.TestEventListener ]")
+class AskSpec extends ScalaTestWithActorTestKit(
+  "akka.loggers = [ akka.testkit.TestEventListener ]") with WordSpecLike {
 
   import AskSpec._
 
@@ -48,7 +47,7 @@ class AskSpec extends ActorTestKit
     "must fail the future if the actor is already terminated" in {
       val ref = spawn(behavior)
       (ref ? Stop).futureValue
-      val probe = TestProbe()
+      val probe = createTestProbe()
       probe.expectTerminated(ref, probe.remainingOrDefault)
       val answer = ref ? Foo("bar")
       val result = answer.failed.futureValue
@@ -88,7 +87,7 @@ class AskSpec extends ActorTestKit
     }
 
     "must transform a replied akka.actor.Status.Failure to a failed future" in {
-      // It's unlikely but possible that this happens, since the recieving actor would
+      // It's unlikely but possible that this happens, since the receiving actor would
       // have to accept a message with an actoref that accepts AnyRef or be doing crazy casting
       // For completeness sake though
       implicit val untypedSystem = akka.actor.ActorSystem("AskSpec-untyped-1")

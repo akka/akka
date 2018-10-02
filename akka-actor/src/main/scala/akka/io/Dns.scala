@@ -13,7 +13,17 @@ import com.typesafe.config.Config
 import scala.collection.{ breakOut, immutable }
 
 abstract class Dns {
+
+  /**
+   * Lookup if a DNS resolved is cached. The exact behavior of caching will depend on
+   * the akka.actor.io.dns.resolver that is configured.
+   */
   def cached(name: String): Option[Dns.Resolved] = None
+
+  /**
+   * If an entry is cached return it immediately. If it is not then
+   * trigger a resolve and return None.
+   */
   def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Dns.Resolved] = {
     val ret = cached(name)
     if (ret.isEmpty)
@@ -51,10 +61,18 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
     }
   }
 
+  /**
+   * Lookup if a DNS resolved is cached. The exact behavior of caching will depend on
+   * the akka.actor.io.dns.resolver that is configured.
+   */
   def cached(name: String)(system: ActorSystem): Option[Resolved] = {
     Dns(system).cache.cached(name)
   }
 
+  /**
+   * If an entry is cached return it immediately. If it is not then
+   * trigger a resolve and return None.
+   */
   def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Resolved] = {
     Dns(system).cache.resolve(name)(system, sender)
   }
@@ -69,7 +87,8 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): DnsExt = super.get(system)
 }
 
-class DnsExt(system: ExtendedActorSystem) extends IO.Extension {
+class DnsExt(val system: ExtendedActorSystem) extends IO.Extension {
+
   val Settings = new Settings(system.settings.config.getConfig("akka.io.dns"))
 
   class Settings private[DnsExt] (_config: Config) {
@@ -80,6 +99,8 @@ class DnsExt(system: ExtendedActorSystem) extends IO.Extension {
     val Resolver: String = getString("resolver")
     val ResolverConfig: Config = getConfig(Resolver)
     val ProviderObjectName: String = ResolverConfig.getString("provider-object")
+
+    override def toString = s"Settings($Dispatcher, $Resolver, $ResolverConfig, $ProviderObjectName)"
   }
 
   val provider: DnsProvider = system.dynamicAccess.getClassFor[DnsProvider](Settings.ProviderObjectName).get.newInstance()

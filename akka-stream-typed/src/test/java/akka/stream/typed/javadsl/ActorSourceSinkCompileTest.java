@@ -24,7 +24,7 @@ public class ActorSourceSinkCompileTest {
 
   {
     final ActorSystem<String> system = null;
-    final ActorMaterializer mat = akka.stream.typed.ActorMaterializer.create(system);
+    final ActorMaterializer mat = ActorMaterializerFactory.create(system);
   }
 
   {

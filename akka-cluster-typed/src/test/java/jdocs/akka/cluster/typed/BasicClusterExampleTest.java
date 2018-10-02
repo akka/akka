@@ -5,13 +5,12 @@
 package jdocs.akka.cluster.typed;
 
 //#cluster-imports
-
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
 import akka.cluster.ClusterEvent;
 import akka.cluster.typed.*;
 //#cluster-imports
-import akka.testkit.typed.javadsl.TestProbe;
+import akka.actor.testkit.typed.javadsl.TestProbe;
 import docs.akka.cluster.typed.BasicClusterManualSpec;
 
 // FIXME these tests are awaiting typed Java testkit to be able to await cluster forming like in BasicClusterExampleSpec

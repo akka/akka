@@ -12,3 +12,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.VirtualProc
 # #23804 Added extrapolate stage
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.extrapolate")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.extrapolate$default$2")
+
+# #24699 throttle overload
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.throttle")

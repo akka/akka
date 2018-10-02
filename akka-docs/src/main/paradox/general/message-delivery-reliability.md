@@ -10,17 +10,17 @@ chapter.
 In order to give some context to the discussion below, consider an application
 which spans multiple network hosts. The basic mechanism for communication is
 the same whether sending to an actor on the local JVM or to a remote actor, but
-of course there will be observable differences in the latency of delivery
+there will be observable differences in the latency of delivery
 (possibly also depending on the bandwidth of the network link and the message
-size) and the reliability. In case of a remote message send there are obviously
+size) and the reliability. In case of a remote message send there are
 more steps involved which means that more can go wrong. Another aspect is that
-local sending will just pass a reference to the message inside the same JVM,
+local sending will pass a reference to the message inside the same JVM,
 without any restrictions on the underlying object which is sent, whereas a
 remote transport will place a limit on the message size.
 
 Writing your actors such that every interaction could possibly be remote is the
 safe, pessimistic bet. It means to only rely on those properties which are
-always guaranteed and which are discussed in detail below.  This has of course
+always guaranteed and which are discussed in detail below.  This has 
 some overhead in the actor’s implementation. If you are willing to sacrifice full
 location transparency—for example in case of a group of closely collaborating
 actors—you can place them always on the same JVM and enjoy stricter guarantees
@@ -47,7 +47,7 @@ When it comes to describing the semantics of a delivery mechanism, there are
 three basic categories:
 
  * **at-most-once** delivery means that for each message handed to the
-mechanism, that message is delivered zero or one times; in more casual terms
+mechanism, that message is delivered once or not at all; in more casual terms
 it means that messages may be lost.
  * **at-least-once** delivery means that for each message handed to the
 mechanism potentially multiple attempts are made at delivering it, such that
@@ -177,8 +177,8 @@ particular:
 >
 > Parent actor `P` might receive the two events either in order `M`, `F` or `F`, `M`
 
-The reason for this is that internal system messages has their own mailboxes therefore the ordering of enqueue calls of
-a user and system message cannot guarantee the ordering of their dequeue times.
+The reason for this is that internal system messages have their own mailboxes therefore the ordering of enqueue calls of
+a user and system messages cannot guarantee the ordering of their dequeue times.
 
 ## The Rules for In-JVM (Local) Message Sends
 
@@ -209,7 +209,7 @@ In addition, local sends can fail in Akka-specific ways:
  * if the receiving actor fails while processing the message or is already
 terminated
 
-While the first is clearly a matter of configuration the second deserves some
+While the first is a matter of configuration the second deserves some
 thought: the sender of a message does not get feedback if there was an
 exception while processing, that notification goes to the supervisor instead.
 This is in general not distinguishable from a lost message for an outside
@@ -262,7 +262,7 @@ for `M2` to "travel" to node-3 via node-2.
 ## Higher-level abstractions
 
 Based on a small and consistent tool set in Akka's core, Akka also provides
-powerful, higher-level abstractions on top it.
+powerful, higher-level abstractions on top of it.
 
 ### Messaging Patterns
 
@@ -293,7 +293,7 @@ replication and scaling of consumers of this event stream (i.e. other
 components may consume the event stream as a means to replicate the component’s
 state on a different continent or to react to changes). If the component’s
 state is lost—due to a machine failure or by being pushed out of a cache—it can
-easily be reconstructed by replaying the event stream (usually employing
+be reconstructed by replaying the event stream (usually employing
 snapshots to speed up the process). @ref:[Event sourcing](../persistence.md#event-sourcing) is supported by
 Akka Persistence.
 
@@ -351,7 +351,7 @@ Every time an actor does not terminate by its own decision, there is a chance
 that some messages which it sends to itself are lost. There is one which
 happens quite easily in complex shutdown scenarios that is usually benign:
 seeing a `akka.dispatch.Terminate` message dropped means that two
-termination requests were given, but of course only one can succeed. In the
+termination requests were given, but only one can succeed. In the
 same vein, you might see `akka.actor.Terminated` messages from children
 while stopping a hierarchy of actors turning up in dead letters if the parent
 is still watching the child when the parent terminates.

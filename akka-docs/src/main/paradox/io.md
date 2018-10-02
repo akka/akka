@@ -1,5 +1,15 @@
 # I/O
 
+## Dependency
+
+To use I/O, you must add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-actor_$scala.binary_version$"
+  version="$akka.version$"
+}
+
 ## Introduction
 
 The `akka.io` package has been developed in collaboration between the Akka
@@ -23,10 +33,10 @@ is accessible @scala[through the `IO` entry point]@java[by querying an `ActorSys
 looks up the TCP manager and returns its `ActorRef`:
 
 Scala
-:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #manager }
+:  @@snip [IODocSpec.scala](/akka-docs/src/test/scala/docs/io/IODocSpec.scala) { #manager }
 
 Java
-:  @@snip [EchoManager.java]($code$/java/jdocs/io/japi/EchoManager.java) { #manager }
+:  @@snip [EchoManager.java](/akka-docs/src/test/java/jdocs/io/japi/EchoManager.java) { #manager }
 
 The manager receives I/O command messages and instantiates worker actors in response. The worker actors present
 themselves to the API user in the reply to the command that was sent. For example after a `Connect` command sent to
@@ -71,7 +81,7 @@ nacked messages it may need to keep a buffer of pending messages.
 
 @@@ warning
 
-An acknowledged write does not mean acknowledged delivery or storage; receiving an ack for a write simply signals that
+An acknowledged write does not mean acknowledged delivery or storage; receiving an ack for a write signals that
 the I/O driver has successfully processed the write. The Ack/Nack protocol described here is a means of flow control
 not error handling. In other words, data may still be lost, even if every write is acknowledged.
 

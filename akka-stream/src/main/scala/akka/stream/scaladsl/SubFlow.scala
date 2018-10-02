@@ -21,6 +21,9 @@ trait SubFlow[+Out, +Mat, +F[+_], C] extends FlowOps[Out, Mat] {
   /**
    * Attach a [[Sink]] to each sub-flow, closing the overall Graph that is being
    * constructed.
+   *
+   * Note that attributes set on the returned graph, including async boundaries are now for the entire graph and not
+   * the `SubFlow`. for example `async` will not have any effect as the returned graph is the entire, closed graph.
    */
   def to[M](sink: Graph[SinkShape[Out], M]): C
 
@@ -47,7 +50,7 @@ trait SubFlow[+Out, +Mat, +F[+_], C] extends FlowOps[Out, Mat] {
    * Flatten the sub-flows back into the super-flow by concatenating them.
    * This is usually a bad idea when combined with `groupBy` since it can
    * easily lead to deadlock—the concatenation does not consume from the second
-   * substream until the first has finished and the `groupBy` stage will get
+   * substream until the first has finished and the `groupBy` operator will get
    * back-pressure from the second stream.
    *
    * This is identical in effect to `mergeSubstreamsWithParallelism(1)`.

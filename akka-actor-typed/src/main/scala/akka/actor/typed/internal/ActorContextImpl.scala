@@ -20,6 +20,7 @@ import scala.util.Try
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 import akka.util.Timeout
+import akka.util.JavaDurationConverters._
 
 /**
  * INTERNAL API
@@ -68,6 +69,12 @@ import akka.util.Timeout
 
   override def getLog: Logger = log
 
+  override def setReceiveTimeout(d: java.time.Duration, msg: T): Unit =
+    setReceiveTimeout(d.asScala, msg)
+
+  override def schedule[U](delay: java.time.Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable =
+    schedule(delay.asScala, target, msg)
+
   override def spawn[U](behavior: akka.actor.typed.Behavior[U], name: String): akka.actor.typed.ActorRef[U] =
     spawn(behavior, name, Props.empty)
 
@@ -75,16 +82,16 @@ import akka.util.Timeout
     spawnAnonymous(behavior, Props.empty)
 
   // Scala API impl
-  override def ask[Req, Res](otherActor: ActorRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
+  override def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
     import akka.actor.typed.scaladsl.AskPattern._
-    (otherActor ? createRequest)(responseTimeout, system.scheduler).onComplete(res ⇒
+    (target ? createRequest)(responseTimeout, system.scheduler).onComplete(res ⇒
       self.asInstanceOf[ActorRef[AnyRef]] ! new AskResponse(res, mapResponse)
     )
   }
 
   // Java API impl
-  def ask[Req, Res](resClass: Class[Res], otherActor: ActorRef[Req], responseTimeout: Timeout, createRequest: function.Function[ActorRef[Res], Req], applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
-    this.ask(otherActor)(createRequest.apply) {
+  def ask[Req, Res](resClass: Class[Res], target: RecipientRef[Req], responseTimeout: Timeout, createRequest: function.Function[ActorRef[Res], Req], applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
+    this.ask(target)(createRequest.apply) {
       case Success(message) ⇒ applyToResponse.apply(message, null)
       case Failure(ex)      ⇒ applyToResponse.apply(null.asInstanceOf[Res], ex)
     }(responseTimeout, ClassTag[Res](resClass))

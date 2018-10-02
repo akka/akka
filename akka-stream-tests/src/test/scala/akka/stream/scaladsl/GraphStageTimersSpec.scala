@@ -15,6 +15,7 @@ import scala.concurrent.duration._
 
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 object GraphStageTimersSpec {
   case object TestSingleTimer

@@ -69,6 +69,8 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
   import ArteryTcpTransport._
   import FlightRecorderEvents._
 
+  override type LifeCycle = NotUsed
+
   // may change when inbound streams are restarted
   @volatile private var inboundKillSwitch: SharedKillSwitch = KillSwitches.shared("inboundKillSwitch")
   // may change when inbound streams are restarted
@@ -77,12 +79,18 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
   private val sslEngineProvider: OptionVal[SSLEngineProvider] =
     if (tlsEnabled) {
-      OptionVal.Some(system.dynamicAccess.createInstanceFor[SSLEngineProvider](
-        settings.SSLEngineProviderClassName,
-        List((classOf[ActorSystem], system))).recover {
-          case e ⇒ throw new ConfigurationException(
-            s"Could not create SSLEngineProvider [${settings.SSLEngineProviderClassName}]", e)
-        }.get)
+      system.settings.setup.get[SSLEngineProviderSetup] match {
+        case Some(p) ⇒
+          OptionVal.Some(p.sslEngineProvider(system))
+        case None ⇒
+          // load from config
+          OptionVal.Some(system.dynamicAccess.createInstanceFor[SSLEngineProvider](
+            settings.SSLEngineProviderClassName,
+            List((classOf[ActorSystem], system))).recover {
+              case e ⇒ throw new ConfigurationException(
+                s"Could not create SSLEngineProvider [${settings.SSLEngineProviderClassName}]", e)
+            }.get)
+      }
     } else OptionVal.None
 
   override protected def startTransport(): Unit = {
@@ -120,7 +128,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
       val flowFactory = () ⇒ {
 
-        val flow =
+        def flow(controlIdleKillSwitch: OptionVal[SharedKillSwitch]) =
           Flow[ByteString]
             .via(Flow.lazyInitAsync(() ⇒ {
               // only open the actual connection if any new messages are sent
@@ -128,6 +136,8 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
                 TcpOutbound_Connected,
                 s"${outboundContext.remoteAddress.host.get}:${outboundContext.remoteAddress.port.get} " +
                   s"/ ${streamName(streamId)}")
+              if (controlIdleKillSwitch.isDefined)
+                outboundContext.asInstanceOf[Association].setControlIdleKillSwitch(controlIdleKillSwitch)
               Future.successful(
                 Flow[ByteString]
                   .prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId)))
@@ -142,29 +152,19 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
           val controlIdleKillSwitch = KillSwitches.shared("outboundControlStreamIdleKillSwitch")
           Flow[ByteString]
             .via(controlIdleKillSwitch.flow)
-            .via(flow)
-            .mapMaterializedValue { _ ⇒
-              outboundContext.asInstanceOf[Association].setControlIdleKillSwitch(OptionVal.Some(controlIdleKillSwitch))
-              NotUsed
-            }
+            .via(flow(OptionVal.Some(controlIdleKillSwitch)))
         } else {
-          flow
+          flow(OptionVal.None)
         }
       }
 
-      if (streamId == ControlStreamId) {
-        // restart of inner connection part important in control flow, since system messages
-        // are buffered and resent from the outer SystemMessageDelivery stage.
-        RestartFlow.withBackoff[ByteString, ByteString](
-          settings.Advanced.OutboundRestartBackoff,
-          settings.Advanced.GiveUpSystemMessageAfter, 0.1)(flowFactory)
-      } else {
-        // Best effort retry a few times
-        RestartFlow.withBackoff[ByteString, ByteString](
-          settings.Advanced.OutboundRestartBackoff,
-          settings.Advanced.OutboundRestartBackoff * 5, 0.1, maxRestarts = 3)(flowFactory)
-      }
-
+      val maxRestarts = if (streamId == ControlStreamId) Int.MaxValue else 3
+      // Restart of inner connection part important in control stream, since system messages
+      // are buffered and resent from the outer SystemMessageDelivery stage. No maxRestarts limit for control
+      // stream. For message stream it's best effort retry a few times.
+      RestartFlow.withBackoff[ByteString, ByteString](
+        settings.Advanced.OutboundRestartBackoff,
+        settings.Advanced.OutboundRestartBackoff * 5, 0.1, maxRestarts)(flowFactory)
     }
 
     Flow[EnvelopeBuffer]
@@ -402,13 +402,13 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
   private def updateStreamMatValues(streamId: Int, completed: Future[Done]): Unit = {
     implicit val ec: ExecutionContext = materializer.executionContext
-    updateStreamMatValues(ControlStreamId, InboundStreamMatValues(
-      None,
+    updateStreamMatValues(ControlStreamId, InboundStreamMatValues[NotUsed](
+      NotUsed,
       completed.recover { case _ ⇒ Done }))
   }
 
   override protected def shutdownTransport(): Future[Done] = {
-    implicit val ec: ExecutionContext = materializer.executionContext
+    import system.dispatcher
     inboundKillSwitch.shutdown()
     unbind().map { _ ⇒
       topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
@@ -417,9 +417,9 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
   }
 
   private def unbind(): Future[Done] = {
-    implicit val ec: ExecutionContext = materializer.executionContext
     serverBinding match {
       case Some(binding) ⇒
+        import system.dispatcher
         for {
           b ← binding
           _ ← b.unbind()

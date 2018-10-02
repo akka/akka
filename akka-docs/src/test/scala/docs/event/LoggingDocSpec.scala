@@ -17,7 +17,7 @@ object LoggingDocSpec {
     override def preStart() = {
       log.debug("Starting")
     }
-    override def preRestart(reason: Throwable, message: Option[Any]) {
+    override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
       log.error(reason, "Restarting due to [{}] when processing [{}]",
         reason.getMessage, message.getOrElse(""))
     }

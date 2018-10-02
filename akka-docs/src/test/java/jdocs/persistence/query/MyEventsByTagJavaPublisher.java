@@ -17,14 +17,13 @@ import akka.actor.Props;
 import akka.persistence.query.EventEnvelope;
 import akka.stream.actor.ActorPublisherMessage.Cancel;
 
-import scala.concurrent.duration.FiniteDuration;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.time.Duration;
 
 import static java.util.stream.Collectors.toList;
 
@@ -47,7 +46,7 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
   public MyEventsByTagJavaPublisher(Connection connection,
                                     String tag,
                                     Long offset,
-                                    FiniteDuration refreshInterval) {
+                                    Duration refreshInterval) {
     this.connection = connection;
     this.tag = tag;
     this.currentOffset = offset;
@@ -72,7 +71,7 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
   }
 
   public static Props props(Connection conn, String tag, Long offset, 
-      FiniteDuration refreshInterval) {
+      Duration refreshInterval) {
     return Props.create(() -> 
       new MyEventsByTagJavaPublisher(conn, tag, offset, refreshInterval));
   }

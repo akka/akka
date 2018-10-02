@@ -5,15 +5,17 @@
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ ActorRef, PostStop, Props, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, PostStop, Props }
 import akka.testkit.EventFilter
-import akka.testkit.typed.scaladsl.{ ActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.WordSpecLike
 
 object ActorContextAskSpec {
   val config = ConfigFactory.parseString(
@@ -30,9 +32,7 @@ object ActorContextAskSpec {
     """)
 }
 
-class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
-
-  override def config = ActorContextAskSpec.config
+class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.config) with WordSpecLike {
 
   implicit val untyped = system.toUntyped // FIXME no typed event filter yet
 
@@ -47,21 +47,20 @@ class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
         Behaviors.same
       }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
 
-      val probe = TestProbe[AnyRef]()
+      val probe = TestProbe[Pong]()
 
-      val snitch = Behaviors.setup[Pong] { (ctx) ⇒
+      val snitch = Behaviors.setup[Pong] { ctx ⇒
 
         // Timeout comes from TypedAkkaSpec
 
         ctx.ask(pingPong)(Ping) {
-          case Success(pong) ⇒ Pong(ctx.self.path.name + "1", Thread.currentThread().getName)
-          case Failure(ex)   ⇒ throw ex
+          case Success(_)  ⇒ Pong(ctx.self.path.name + "1", Thread.currentThread().getName)
+          case Failure(ex) ⇒ throw ex
         }
 
-        Behaviors.receive {
-          case (ctx, pong: Pong) ⇒
-            probe.ref ! pong
-            Behaviors.same
+        Behaviors.receiveMessage { pong ⇒
+          probe.ref ! pong
+          Behaviors.same
         }
       }
 
@@ -88,7 +87,7 @@ class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
         }
       ))
 
-      val snitch = Behaviors.setup[AnyRef] { (ctx) ⇒
+      val snitch = Behaviors.setup[AnyRef] { ctx ⇒
         ctx.ask(pingPong)(Ping) {
           case Success(msg) ⇒ throw new NotImplementedError(msg.toString)
           case Failure(x)   ⇒ x
@@ -116,17 +115,16 @@ class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
 
     "deal with timeouts in ask" in {
       val probe = TestProbe[AnyRef]()
-      val snitch = Behaviors.setup[AnyRef] { (ctx) ⇒
+      val snitch = Behaviors.setup[AnyRef] { ctx ⇒
 
         ctx.ask[String, String](system.deadLetters)(ref ⇒ "boo") {
           case Success(m) ⇒ m
           case Failure(x) ⇒ x
-        }(20.millis, implicitly[ClassTag[String]])
+        }(10.millis, implicitly[ClassTag[String]])
 
-        Behaviors.receive {
-          case (_, msg) ⇒
-            probe.ref ! msg
-            Behaviors.same
+        Behaviors.receiveMessage { msg ⇒
+          probe.ref ! msg
+          Behaviors.same
         }
       }
 
@@ -136,8 +134,33 @@ class ActorContextAskSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
         }
       }
 
-      probe.expectMessageType[TimeoutException]
+      val exc = probe.expectMessageType[TimeoutException]
+      exc.getMessage should include("had already been terminated")
+    }
 
+    "must timeout if recipient doesn't reply in time" in {
+      val target = spawn(Behaviors.ignore[String])
+      val probe = TestProbe[AnyRef]()
+      val snitch = Behaviors.setup[AnyRef] { ctx ⇒
+
+        ctx.ask[String, String](target)(_ ⇒ "bar") {
+          case Success(m) ⇒ m
+          case Failure(x) ⇒ x
+        }(10.millis, implicitly[ClassTag[String]])
+
+        Behaviors.receiveMessage { msg ⇒
+          probe.ref ! msg
+          Behaviors.same
+        }
+      }
+
+      spawn(snitch)
+
+      val exc = probe.expectMessageType[TimeoutException]
+      exc.getMessage should startWith("Ask timed out on")
+      exc.getMessage should include(target.path.toString)
+      exc.getMessage should include("[java.lang.String]") // message class
+      exc.getMessage should include("[10 ms]") // timeout
     }
 
   }

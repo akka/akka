@@ -14,7 +14,7 @@ import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
 import akka.cluster.typed._
 //#cluster-imports
-import akka.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.time.{ Millis, Seconds, Span }
 
@@ -51,9 +51,11 @@ akka {
   ).withFallback(configSystem1)
 }
 
-class BasicClusterConfigSpec extends TypedAkkaSpec {
-
+class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually with Matchers {
   import BasicClusterExampleSpec._
+
+  implicit override val patienceConfig =
+    PatienceConfig(timeout = scaled(Span(10, Seconds)), interval = scaled(Span(100, Millis)))
 
   "Cluster API" must {
     "init cluster" in {

@@ -9,6 +9,8 @@ import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
 import scala.concurrent.duration.FiniteDuration;
+
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import akka.actor.ActorSystem;
 import akka.testkit.AkkaJUnitActorSystemResource;
@@ -307,7 +309,7 @@ public class AdapterTest extends JUnitSuite {
 
     int originalLogLevel = system.eventStream().logLevel();
     try {
-      // supress the logging with stack trace
+      // suppress the logging with stack trace
       system.eventStream().setLogLevel(Integer.MIN_VALUE); // OFF
 
       // only stop supervisorStrategy
@@ -316,7 +318,7 @@ public class AdapterTest extends JUnitSuite {
     } finally {
       system.eventStream().setLogLevel(originalLogLevel);
     }
-    probe.expectNoMsg(FiniteDuration.create(100, TimeUnit.MILLISECONDS)); // no pong
+    probe.expectNoMessage(Duration.ofMillis(100)); // no pong
   }
 
   @Test

@@ -9,6 +9,7 @@ import akka.annotation.InternalApi
 import akka.persistence.fsm.PersistentFSM.FSMState
 import akka.persistence.serialization.Message
 import akka.persistence.{ PersistentActor, RecoveryCompleted, SnapshotOffer }
+import akka.util.JavaDurationConverters
 import com.typesafe.config.Config
 
 import scala.annotation.varargs
@@ -296,11 +297,15 @@ object PersistentFSM {
     private val scheduler = context.system.scheduler
     private implicit val executionContext = context.dispatcher
 
-    def schedule(actor: ActorRef, timeout: FiniteDuration): Unit =
+    def schedule(actor: ActorRef, timeout: FiniteDuration): Unit = {
+      val timerMsg = msg match {
+        case m: AutoReceivedMessage ⇒ m
+        case _                      ⇒ this
+      }
       ref = Some(
-        if (repeat) scheduler.schedule(timeout, timeout, actor, this)
-        else scheduler.scheduleOnce(timeout, actor, this))
-
+        if (repeat) scheduler.schedule(timeout, timeout, actor, timerMsg)
+        else scheduler.scheduleOnce(timeout, actor, timerMsg))
+    }
     def cancel(): Unit =
       if (ref.isDefined) {
         ref.get.cancel()
@@ -355,6 +360,18 @@ object PersistentFSM {
     def forMax(timeout: Duration): State[S, D, E] = timeout match {
       case f: FiniteDuration ⇒ copy(timeout = Some(f))
       case _                 ⇒ copy(timeout = PersistentFSM.SomeMaxFiniteDuration) // we need to differentiate "not set" from disabled
+    }
+
+    /**
+     * Java API: Modify state transition descriptor to include a state timeout for the
+     * next state. This timeout overrides any default timeout set for the next
+     * state.
+     *
+     * Use Duration.Inf to deactivate an existing timeout.
+     */
+    def forMax(timeout: java.time.Duration): State[S, D, E] = {
+      import JavaDurationConverters._
+      forMax(timeout.asScala)
     }
 
     /**

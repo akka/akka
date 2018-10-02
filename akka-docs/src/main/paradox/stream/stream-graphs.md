@@ -1,5 +1,17 @@
 # Working with Graphs
 
+## Dependency
+
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
 In Akka Streams computation graphs are not expressed using a fluent DSL like linear computations are, instead they are
 written in a more graph-resembling DSL which aims to make translating graph drawings (e.g. from notes taken
 from design discussions, or illustrations in protocol specifications) to and from code simpler. In this section we'll
@@ -7,7 +19,7 @@ dive into the multiple ways of constructing and re-using graphs, as well as expl
 
 Graphs are needed whenever you want to perform any kind of fan-in ("multiple inputs") or fan-out ("multiple outputs") operations.
 Considering linear Flows to be like roads, we can picture graph operations as junctions: multiple flows being connected at a single point.
-Some graph operations which are common enough and fit the linear style of Flows, such as `concat` (which concatenates two
+Some operators which are common enough and fit the linear style of Flows, such as `concat` (which concatenates two
 streams, such that the second one is consumed after the first one has completed), may have shorthand methods defined on
 `Flow` or `Source` themselves, however you should keep in mind that those are also implemented as graph junctions.
 
@@ -18,7 +30,7 @@ Graphs are built from simple Flows which serve as the linear connections within 
 which serve as fan-in and fan-out points for Flows. Thanks to the junctions having meaningful types based on their behavior
 and making them explicit elements these elements should be rather straightforward to use.
 
-Akka Streams currently provide these junctions (for a detailed list see @ref[stages overview](stages-overview.md)):
+Akka Streams currently provide these junctions (for a detailed list see the @ref[operator index](operators/index.md)):
 
  * **Fan-out**
 
@@ -32,6 +44,7 @@ Akka Streams currently provide these junctions (for a detailed list see @ref[sta
     * @scala[`Merge[In]`]@java[`Merge<In>`] – *(N inputs , 1 output)* picks randomly from inputs pushing them one by one to its output
     * @scala[`MergePreferred[In]`]@java[`MergePreferred<In>`] – like `Merge` but if elements are available on `preferred` port, it picks from it, otherwise randomly from `others`
     * @scala[`MergePrioritized[In]`]@java[`MergePrioritized<In>`] – like `Merge` but if elements are available on all input ports, it picks from them randomly based on their `priority`
+    * @scala[`MergeLatest[In]`]@java[`MergeLatest<In>`] – *(N inputs, 1 output)* emits `List[In]`, when i-th input stream emits element, then i-th element in emitted list is updated
     * @scala[`ZipWith[A,B,...,Out]`]@java[`ZipWith<A,B,...,Out>`] – *(N inputs, 1 output)* which takes a function of N inputs that given a value for each input emits 1 output element
     * @scala[`Zip[A,B]`]@java[`Zip<A,B>`] – *(2 inputs, 1 output)* is a `ZipWith` specialised to zipping input streams of `A` and `B` into a @scala[`(A,B)`]@java[`Pair(A,B)`] tuple stream
     * @scala[`Concat[A]`]@java[`Concat<A>`] – *(2 inputs, 1 output)* concatenates two streams (first consume one, then the second one)
@@ -48,10 +61,10 @@ or ending a `Flow`. @scala[Junctions must always be created with defined type pa
 will be inferred.]
 
 Scala
-:   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #simple-graph-dsl }
+:   @@snip [GraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphDSLDocSpec.scala) { #simple-graph-dsl }
 
 Java
-:   @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #simple-graph-dsl }
+:   @@snip [GraphDSLTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #simple-graph-dsl }
 
 @@@ note
 
@@ -67,7 +80,7 @@ By looking at the snippets above, it should be apparent that the @scala[`GraphDS
 @scala[It is used (implicitly) by the `~>` operator, also making it a mutable operation as well.]
 The reason for this design choice is to enable simpler creation of complex graphs, which may even contain cycles.
 Once the GraphDSL has been constructed though, the @scala[`GraphDSL`]@java[`RunnableGraph`] instance *is immutable, thread-safe, and freely shareable*.
-The same is true of all graph pieces—sources, sinks, and flows—once they are constructed.
+The same is true of all operators—sources, sinks, and flows—once they are constructed.
 This means that you can safely re-use one given Flow or junction in multiple places in a processing graph.
 
 We have seen examples of such re-use already above: the merge and broadcast junctions were imported
@@ -83,19 +96,19 @@ in which we re-use the same instance of `Flow`, yet it will properly be
 materialized as two connections between the corresponding Sources and Sinks:
 
 Scala
-:   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-reusing-a-flow }
+:   @@snip [GraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-reusing-a-flow }
 
 Java
-:   @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-reusing-a-flow }
+:   @@snip [GraphDSLTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-reusing-a-flow }
 
 In some cases we may have a list of graph elements, for example if they are dynamically created. 
 If these graphs have similar signatures, we can construct a graph collecting all their materialized values as a collection:
 
 Scala
-:   @@snip [GraphOpsIntegrationSpec.scala]($akka$/akka-stream-tests/src/test/scala/akka/stream/scaladsl/GraphOpsIntegrationSpec.scala) { #graph-from-list }
+:   @@snip [GraphOpsIntegrationSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/GraphOpsIntegrationSpec.scala) { #graph-from-list }
 
 Java
-:   @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-from-list }
+:   @@snip [GraphDSLTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-from-list }
 
 
 <a id="partial-graph-dsl"></a>
@@ -119,10 +132,10 @@ the greatest int value of each zipped triple. We'll want to expose 3 input ports
 (unconnected sink).
 
 Scala
-:   @@snip [StreamPartialGraphDSLDocSpec.scala]($code$/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #simple-partial-graph-dsl }  
+:   @@snip [StreamPartialGraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #simple-partial-graph-dsl }  
 
 Java
-:   @@snip [StreamPartialGraphDSLDocTest.java]($code$/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #simple-partial-graph-dsl }
+:   @@snip [StreamPartialGraphDSLDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #simple-partial-graph-dsl }
 
 @@@ note
 
@@ -151,18 +164,18 @@ A partial graph also verifies that all ports are either connected or part of the
 <a id="constructing-sources-sinks-flows-from-partial-graphs"></a>
 ## Constructing Sources, Sinks and Flows from Partial Graphs
 
-Instead of treating a @scala[partial graph]@java[`Graph`] as simply a collection of flows and junctions which may not yet all be
+Instead of treating a @scala[partial graph]@java[`Graph`] as a collection of flows and junctions which may not yet all be
 connected it is sometimes useful to expose such a complex graph as a simpler structure,
 such as a `Source`, `Sink` or `Flow`.
 
-In fact, these concepts can be easily expressed as special cases of a partially connected graph:
+In fact, these concepts can be expressed as special cases of a partially connected graph:
 
  * `Source` is a partial graph with *exactly one* output, that is it returns a `SourceShape`.
  * `Sink` is a partial graph with *exactly one* input, that is it returns a `SinkShape`.
  * `Flow` is a partial graph with *exactly one* input and *exactly one* output, that is it returns a `FlowShape`.
 
-Being able to hide complex graphs inside of simple elements such as Sink / Source / Flow enables you to easily create one
-complex element and from there on treat it as simple compound stage for linear computations.
+Being able to hide complex graphs inside of simple elements such as Sink / Source / Flow enables you to create one
+complex element and from there on treat it as simple compound operator for linear computations.
 
 In order to create a Source from a graph the method `Source.fromGraph` is used, to use it we must have a
 @scala[`Graph[SourceShape, T]`]@java[`Graph` with a `SourceShape`]. This is constructed using
@@ -174,20 +187,20 @@ Refer to the example below, in which we create a Source that zips together two n
 construction in action:
 
 Scala
-:   @@snip [StreamPartialGraphDSLDocSpec.scala]($code$/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #source-from-partial-graph-dsl }    
+:   @@snip [StreamPartialGraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #source-from-partial-graph-dsl }    
 
 Java
-:   @@snip [StreamPartialGraphDSLDocTest.java]($code$/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #source-from-partial-graph-dsl }
+:   @@snip [StreamPartialGraphDSLDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #source-from-partial-graph-dsl }
 
 
 Similarly the same can be done for a @scala[`Sink[T]`]@java[`Sink<T>`], using `SinkShape.of` in which case the provided value
 must be an @scala[`Inlet[T]`]@java[`Inlet<T>`]. For defining a @scala[`Flow[T]`]@java[`Flow<T>`] we need to expose both an @scala[inlet and an outlet]@java[undefined source and sink]:
 
 Scala
-:   @@snip [StreamPartialGraphDSLDocSpec.scala]($code$/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #flow-from-partial-graph-dsl }    
+:   @@snip [StreamPartialGraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #flow-from-partial-graph-dsl }    
 
 Java
-:   @@snip [StreamPartialGraphDSLDocTest.java]($code$/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #flow-from-partial-graph-dsl }
+:   @@snip [StreamPartialGraphDSLDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #flow-from-partial-graph-dsl }
 
 
 ## Combining Sources and Sinks with simplified API
@@ -198,19 +211,19 @@ without the need for using the Graph DSL. The combine method takes care of const
 the necessary graph underneath. In following example we combine two sources into one (fan-in):
 
 Scala
-:   @@snip [StreamPartialGraphDSLDocSpec.scala]($code$/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #source-combine }   
+:   @@snip [StreamPartialGraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #source-combine }   
 
 Java
-:   @@snip [StreamPartialGraphDSLDocTest.java]($code$/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #source-combine }
+:   @@snip [StreamPartialGraphDSLDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #source-combine }
 
 
 The same can be done for a @scala[`Sink[T]`]@java[`Sink`] but in this case it will be fan-out:
 
 Scala
-:   @@snip [StreamPartialGraphDSLDocSpec.scala]($code$/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #sink-combine }  
+:   @@snip [StreamPartialGraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamPartialGraphDSLDocSpec.scala) { #sink-combine }  
 
 Java
-:   @@snip [StreamPartialGraphDSLDocTest.java]($code$/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #sink-combine }
+:   @@snip [StreamPartialGraphDSLDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamPartialGraphDSLDocTest.java) { #sink-combine }
 
 
 ## Building reusable Graph components
@@ -228,7 +241,7 @@ Altogether, our junction will have two input ports of type `I` (for the normal a
 of type `O`. To represent this interface, we need to define a custom `Shape`. The following lines show how to do that.
 
 Scala
-:   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-shape }  
+:   @@snip [GraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-shape }  
 
 
 
@@ -245,11 +258,11 @@ of the same type,
  * `FanInShape1`, `FanInShape2`, ..., `FanOutShape1`, `FanOutShape2`, ... for junctions
 with multiple input (or output) ports of different types.
 
-Since our shape has two input ports and one output port, we can just use the `FanInShape` DSL to define
+Since our shape has two input ports and one output port, we can use the `FanInShape` DSL to define
 our custom shape:
 
 Scala
-:  @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-shape2 }  
+:  @@snip [GraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-shape2 }  
 
 
 
@@ -259,7 +272,7 @@ to a `Balance` junction which will fan-out to a configurable number of workers (
 results together and send them out through our only output port. This is expressed by the following code:
 
 Scala
-:   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-create }    
+:   @@snip [GraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-create }    
 
 
 
@@ -269,7 +282,7 @@ and jobs using plain strings and prints out the results. Actually we used *two* 
 using `add()` twice.
 
 Scala
-:   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-use }
+:   @@snip [GraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-components-use }
 
 
 
@@ -278,26 +291,26 @@ Scala
 ## Bidirectional Flows
 
 A graph topology that is often useful is that of two flows going in opposite
-directions. Take for example a codec stage that serializes outgoing messages
-and deserializes incoming octet streams. Another such stage could add a framing
+directions. Take for example a codec operator that serializes outgoing messages
+and deserializes incoming octet streams. Another such operator could add a framing
 protocol that attaches a length header to outgoing data and parses incoming
-frames back into the original octet stream chunks. These two stages are meant
+frames back into the original octet stream chunks. These two operators are meant
 to be composed, applying one atop the other as part of a protocol stack. For
 this purpose exists the special type `BidiFlow` which is a graph that
 has exactly two open inlets and two open outlets. The corresponding shape is
 called `BidiShape` and is defined like this:
 
-@@snip [Shape.scala]($akka$/akka-stream/src/main/scala/akka/stream/Shape.scala) { #bidi-shape }   
+@@snip [Shape.scala](/akka-stream/src/main/scala/akka/stream/Shape.scala) { #bidi-shape }   
 
 
 A bidirectional flow is defined just like a unidirectional `Flow` as
 demonstrated for the codec mentioned above:
 
 Scala
-:   @@snip [BidiFlowDocSpec.scala]($code$/scala/docs/stream/BidiFlowDocSpec.scala) { #codec }
+:   @@snip [BidiFlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/BidiFlowDocSpec.scala) { #codec }
 
 Java
-:   @@snip [BidiFlowDocTest.java]($code$/java/jdocs/stream/BidiFlowDocTest.java) { #codec }
+:   @@snip [BidiFlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/BidiFlowDocTest.java) { #codec }
 
 
 The first version resembles the partial graph constructor, while for the simple
@@ -306,40 +319,40 @@ as shown on the last line. The implementation of the two functions is not
 difficult either:
 
 Scala
-:   @@snip [BidiFlowDocSpec.scala]($code$/scala/docs/stream/BidiFlowDocSpec.scala) { #codec-impl }  
+:   @@snip [BidiFlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/BidiFlowDocSpec.scala) { #codec-impl }  
 
 Java
-:   @@snip [BidiFlowDocTest.java]($code$/java/jdocs/stream/BidiFlowDocTest.java) { #codec-impl }
+:   @@snip [BidiFlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/BidiFlowDocTest.java) { #codec-impl }
 
 
-In this way you could easily integrate any other serialization library that
+In this way you can integrate any other serialization library that
 turns an object into a sequence of bytes.
 
-The other stage that we talked about is a little more involved since reversing
+The other operator that we talked about is a little more involved since reversing
 a framing protocol means that any received chunk of bytes may correspond to
-zero or more messages. This is best implemented using a `GraphStage`
+zero or more messages. This is best implemented using @ref[`GraphStage`](stream-customize.md)
 (see also @ref[Custom processing with GraphStage](stream-customize.md#graphstage)).
 
 Scala
-:   @@snip [BidiFlowDocSpec.scala]($code$/scala/docs/stream/BidiFlowDocSpec.scala) { #framing }  
+:   @@snip [BidiFlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/BidiFlowDocSpec.scala) { #framing }  
 
 Java
-:   @@snip [BidiFlowDocTest.java]($code$/java/jdocs/stream/BidiFlowDocTest.java) { #framing }
+:   @@snip [BidiFlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/BidiFlowDocTest.java) { #framing }
 
 
 With these implementations we can build a protocol stack and test it:
 
 Scala
-:   @@snip [BidiFlowDocSpec.scala]($code$/scala/docs/stream/BidiFlowDocSpec.scala) { #compose }  
+:   @@snip [BidiFlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/BidiFlowDocSpec.scala) { #compose }  
 
 Java
-:   @@snip [BidiFlowDocTest.java]($code$/java/jdocs/stream/BidiFlowDocTest.java) { #compose }
+:   @@snip [BidiFlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/BidiFlowDocTest.java) { #compose }
 
 
 This example demonstrates how `BidiFlow` subgraphs can be hooked
 together and also turned around with the @scala[`.reversed`]@java[`.reversed()`] method. The test
 simulates both parties of a network communication protocol without actually
-having to open a network connection—the flows can just be connected directly.
+having to open a network connection—the flows can be connected directly.
 
 <a id="graph-matvalue"></a>
 ## Accessing the materialized value inside the Graph
@@ -351,20 +364,20 @@ If the materialized value is needed at more than one place, it is possible to ca
 times to acquire the necessary number of outlets.
 
 Scala
-:   @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-matvalue }
+:   @@snip [GraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-matvalue }
 
 Java
-:   @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-matvalue }
+:   @@snip [GraphDSLTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-matvalue }
 
 
 Be careful not to introduce a cycle where the materialized value actually contributes to the materialized value.
 The following example demonstrates a case where the materialized @scala[`Future`]@java[`CompletionStage`] of a fold is fed back to the fold itself.
 
 Scala
-:  @@snip [GraphDSLDocSpec.scala]($code$/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-matvalue-cycle }
+:  @@snip [GraphDSLDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphDSLDocSpec.scala) { #graph-dsl-matvalue-cycle }
 
 Java
-:  @@snip [GraphDSLTest.java]($akka$/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-matvalue-cycle }
+:  @@snip [GraphDSLTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/GraphDslTest.java) { #graph-dsl-matvalue-cycle }
 
 
 <a id="graph-cycles"></a>
@@ -390,10 +403,10 @@ see there are cases where this is very helpful.
 @@@
 
 Scala
-:   @@snip [GraphCyclesSpec.scala]($code$/scala/docs/stream/GraphCyclesSpec.scala) { #deadlocked }  
+:   @@snip [GraphCyclesSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphCyclesSpec.scala) { #deadlocked }  
 
 Java
-:   @@snip [GraphCyclesDocTest.java]($code$/java/jdocs/stream/GraphCyclesDocTest.java) { #deadlocked }
+:   @@snip [GraphCyclesDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphCyclesDocTest.java) { #deadlocked }
 
 
 Running this we observe that after a few numbers have been printed, no more elements are logged to the console -
@@ -413,10 +426,10 @@ before trying the other lower priority input ports. Since we feed back through t
 that the elements in the cycles can flow.
 
 Scala
-:   @@snip [GraphCyclesSpec.scala]($code$/scala/docs/stream/GraphCyclesSpec.scala) { #unfair }
+:   @@snip [GraphCyclesSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphCyclesSpec.scala) { #unfair }
 
 Java
-:   @@snip [GraphCyclesDocTest.java]($code$/java/jdocs/stream/GraphCyclesDocTest.java) { #unfair }
+:   @@snip [GraphCyclesDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphCyclesDocTest.java) { #unfair }
 
 
 If we run the example we see that the same sequence of numbers are printed
@@ -427,8 +440,8 @@ of initial elements from `source`.
 @@@ note
 
 What we see here is that in certain cases we need to choose between boundedness and liveness. Our first example would
-not deadlock if there would be an infinite buffer in the loop, or vice versa, if the elements in the cycle would
-be balanced (as many elements are removed as many are injected) then there would be no deadlock.
+not deadlock if there were an infinite buffer in the loop, or vice versa, if the elements in the cycle were 
+balanced (as many elements are removed as many are injected) then there would be no deadlock.
 
 @@@
 
@@ -436,10 +449,10 @@ To make our cycle both live (not deadlocking) and fair we can introduce a droppi
 case we chose the `buffer()` operation giving it a dropping strategy `OverflowStrategy.dropHead`.
 
 Scala
-:   @@snip [GraphCyclesSpec.scala]($code$/scala/docs/stream/GraphCyclesSpec.scala) { #dropping }
+:   @@snip [GraphCyclesSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphCyclesSpec.scala) { #dropping }
 
 Java
-:   @@snip [GraphCyclesDocTest.java]($code$/java/jdocs/stream/GraphCyclesDocTest.java) { #dropping }
+:   @@snip [GraphCyclesDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphCyclesDocTest.java) { #dropping }
 
 
 If we run this example we see that
@@ -460,10 +473,10 @@ Since `ZipWith` takes one element from `source` *and* from the feedback arc to i
 we maintain the balance of elements.
 
 Scala
-:   @@snip [GraphCyclesSpec.scala]($code$/scala/docs/stream/GraphCyclesSpec.scala) { #zipping-dead }    
+:   @@snip [GraphCyclesSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphCyclesSpec.scala) { #zipping-dead }    
 
 Java
-:   @@snip [GraphCyclesDocTest.java]($code$/java/jdocs/stream/GraphCyclesDocTest.java) { #zipping-dead }
+:   @@snip [GraphCyclesDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphCyclesDocTest.java) { #zipping-dead }
 
 
 Still, when we try to run the example it turns out that no element is printed at all! After some investigation we
@@ -477,10 +490,10 @@ element into the cycle that is independent from `source`. We do this by using a 
 arc that injects a single element using `Source.single`.
 
 Scala
-:   @@snip [GraphCyclesSpec.scala]($code$/scala/docs/stream/GraphCyclesSpec.scala) { #zipping-live }    
+:   @@snip [GraphCyclesSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphCyclesSpec.scala) { #zipping-live }    
 
 Java
-:   @@snip [GraphCyclesDocTest.java]($code$/java/jdocs/stream/GraphCyclesDocTest.java) { #zipping-live }
+:   @@snip [GraphCyclesDocTest.java](/akka-docs/src/test/java/jdocs/stream/GraphCyclesDocTest.java) { #zipping-live }
 
 
 When we run the above example we see that processing starts and never stops. The important takeaway from this example

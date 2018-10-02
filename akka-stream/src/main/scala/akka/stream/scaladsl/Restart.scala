@@ -5,11 +5,16 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
+import akka.annotation.ApiMayChange
+import akka.event.Logging
 import akka.pattern.BackoffSupervisor
+import akka.stream.Attributes.Attribute
 import akka.stream._
-import akka.stream.stage.{ GraphStage, InHandler, OutHandler, TimerGraphStageLogicWithLogging }
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
+import akka.stream.scaladsl.RestartWithBackoffFlow.Delay
+import akka.stream.stage._
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 /**
  * A RestartSource wraps a [[Source]] that gets restarted when it completes or fails.
@@ -363,17 +368,25 @@ private final class RestartWithBackoffFlow[In, Out](
   val out = Outlet[Out]("RestartWithBackoffFlow.out")
 
   override def shape = FlowShape(in, out)
+
   override def createLogic(inheritedAttributes: Attributes) = new RestartWithBackoffLogic(
     "Flow", shape, minBackoff, maxBackoff, randomFactor, onlyOnFailures, maxRestarts) {
+    val delay = inheritedAttributes.get[Delay](Delay(50.millis)).duration
 
     var activeOutIn: Option[(SubSourceOutlet[In], SubSinkInlet[Out])] = None
 
     override protected def logSource = self.getClass
 
     override protected def startGraph() = {
-      val sourceOut = createSubOutlet(in)
-      val sinkIn = createSubInlet(out)
-      Source.fromGraph(sourceOut.source).via(flowFactory()).runWith(sinkIn.sink)(subFusingMaterializer)
+      val sourceOut: SubSourceOutlet[In] = createSubOutlet(in)
+      val sinkIn: SubSinkInlet[Out] = createSubInlet(out)
+
+      Source.fromGraph(sourceOut.source)
+        // Temp fix while waiting cause of cancellation. See #23909
+        .via(RestartWithBackoffFlow.delayCancellation[In](delay))
+        .via(flowFactory())
+        .runWith(sinkIn.sink)(subFusingMaterializer)
+
       if (isAvailable(out)) {
         sinkIn.pull()
       }
@@ -419,6 +432,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   maxRestarts:    Int) extends TimerGraphStageLogicWithLogging(shape) {
   var restartCount = 0
   var resetDeadline = minBackoff.fromNow
+
   // This is effectively only used for flows, if either the main inlet or outlet of this stage finishes, then we
   // don't want to restart the sub inlet when it finishes, we just finish normally.
   var finishing = false
@@ -426,24 +440,32 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   protected def startGraph(): Unit
   protected def backoff(): Unit
 
+  /**
+   * @param out The permanent outlet
+   * @return A sub sink inlet that's sink is attached to the wrapped operator
+   */
   protected final def createSubInlet[T](out: Outlet[T]): SubSinkInlet[T] = {
     val sinkIn = new SubSinkInlet[T](s"RestartWithBackoff$name.subIn")
 
     sinkIn.setHandler(new InHandler {
       override def onPush() = push(out, sinkIn.grab())
+
       override def onUpstreamFinish() = {
         if (finishing || maxRestartsReached() || onlyOnFailures) {
           complete(out)
         } else {
-          log.debug("Restarting graph due to finished upstream")
           scheduleRestartTimer()
         }
       }
+
+      /*
+       * Upstream in this context is the wrapped stage.
+       */
       override def onUpstreamFailure(ex: Throwable) = {
         if (finishing || maxRestartsReached()) {
           fail(out, ex)
         } else {
-          log.error(ex, "Restarting graph due to failure")
+          log.warning("Restarting graph due to failure. stack_trace: {}", Logging.stackTraceFor(ex))
           scheduleRestartTimer()
         }
       }
@@ -456,10 +478,13 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
         sinkIn.cancel()
       }
     })
-
     sinkIn
   }
 
+  /**
+   * @param in The permanent inlet for this operator
+   * @return Temporary SubSourceOutlet for this "restart"
+   */
   protected final def createSubOutlet[T](in: Inlet[T]): SubSourceOutlet[T] = {
     val sourceOut = new SubSourceOutlet[T](s"RestartWithBackoff$name.subOut")
 
@@ -471,11 +496,17 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
           pull(in)
         }
       }
+
+      /*
+       * Downstream in this context is the wrapped stage.
+       *
+       * Can either be a failure or a cancel in the wrapped state.
+       * onlyOnFailures is thus racy so a delay to cancellation is added in the case of a flow.
+       */
       override def onDownstreamFinish() = {
         if (finishing || maxRestartsReached() || onlyOnFailures) {
           cancel(in)
         } else {
-          log.debug("Graph in finished")
           scheduleRestartTimer()
         }
       }
@@ -498,7 +529,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
     sourceOut
   }
 
-  protected final def maxRestartsReached() = {
+  protected final def maxRestartsReached(): Boolean = {
     // Check if the last start attempt was more than the minimum backoff
     if (resetDeadline.isOverdue()) {
       log.debug("Last restart attempt was more than {} ago, resetting restart count", minBackoff)
@@ -508,7 +539,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   }
 
   // Set a timer to restart after the calculated delay
-  protected final def scheduleRestartTimer() = {
+  protected final def scheduleRestartTimer(): Unit = {
     val restartDelay = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
     log.debug("Restarting graph in {}", restartDelay)
     scheduleOnce("RestartTimer", restartDelay)
@@ -525,4 +556,52 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
 
   // When the stage starts, start the source
   override def preStart() = startGraph()
+}
+
+object RestartWithBackoffFlow {
+
+  /**
+   * Temporary attribute that can override the time a [[RestartWithBackoffFlow]] waits
+   * for a failure before cancelling.
+   *
+   * See https://github.com/akka/akka/issues/24529
+   *
+   * Will be removed if/when cancellation can include a cause.
+   */
+  @ApiMayChange
+  case class Delay(duration: FiniteDuration) extends Attribute
+
+  /**
+   * Returns a flow that is almost identity but delays propagation of cancellation from downstream to upstream.
+   *
+   * Once the down stream is finish calls to onPush are ignored.
+   */
+  private def delayCancellation[T](duration: FiniteDuration): Flow[T, T, NotUsed] =
+    Flow.fromGraph(new DelayCancellationStage(duration))
+
+  private final class DelayCancellationStage[T](delay: FiniteDuration) extends SimpleLinearGraphStage[T] {
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+
+      setHandlers(in, out, this)
+
+      def onPush(): Unit = push(out, grab(in))
+      def onPull(): Unit = pull(in)
+
+      override def onDownstreamFinish(): Unit = {
+        scheduleOnce("CompleteState", delay)
+        setHandler(
+          in,
+          new InHandler {
+            def onPush(): Unit = {}
+          }
+        )
+      }
+
+      override protected def onTimer(timerKey: Any): Unit = {
+        log.debug(s"Stage was canceled after delay of $delay")
+        completeStage()
+      }
+    }
+  }
 }

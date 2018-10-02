@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
 
 import akka.actor.*;
 import akka.dispatch.Mapper;
@@ -19,14 +20,12 @@ import akka.pattern.Patterns;
 import akka.util.Timeout;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import scala.concurrent.duration.Duration;
 
 import static akka.japi.Util.classTag;
 import static akka.actor.SupervisorStrategy.restart;
 import static akka.actor.SupervisorStrategy.stop;
 import static akka.actor.SupervisorStrategy.escalate;
 
-import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
 
 import static jdocs.actor.FaultHandlingDocSample.WorkerApi.*;
@@ -68,7 +67,7 @@ public class FaultHandlingDocSample {
     public void preStart() {
       // If we don't get any progress within 15 seconds then the service
       // is unavailable
-      getContext().setReceiveTimeout(Duration.create("15 seconds"));
+      getContext().setReceiveTimeout(Duration.ofSeconds(15));
     }
 
     @Override
@@ -115,7 +114,7 @@ public class FaultHandlingDocSample {
    * The Worker supervise the CounterService.
    */
   public static class Worker extends AbstractLoggingActor {
-    final Timeout askTimeout = new Timeout(Duration.create(5, "seconds"));
+    final Timeout askTimeout = Timeout.create(Duration.ofSeconds(5));
 
     // The sender of the initial Start message will continuously be notified
     // about progress
@@ -141,7 +140,7 @@ public class FaultHandlingDocSample {
         matchEquals(Start, x -> progressListener == null, x -> {
           progressListener = getSender();
           getContext().getSystem().scheduler().schedule(
-            Duration.Zero(), Duration.create(1, "second"), getSelf(), Do,
+            Duration.ZERO,  Duration.ofSeconds(1L), getSelf(), Do,
             getContext().dispatcher(), null
           );
         }).
@@ -233,7 +232,7 @@ public class FaultHandlingDocSample {
     // Restart the storage child when StorageException is thrown.
     // After 3 restarts within 5 seconds it will be stopped.
     private static final SupervisorStrategy strategy =
-      new OneForOneStrategy(3, Duration.create("5 seconds"), DeciderBuilder.
+      new OneForOneStrategy(3, Duration.ofSeconds(5), DeciderBuilder.
        match(StorageException.class, e -> restart()).
        matchAny(o -> escalate()).build());
 
@@ -293,7 +292,7 @@ public class FaultHandlingDocSample {
           counter.tell(new UseStorage(null), getSelf());
           // Try to re-establish storage after while
           getContext().getSystem().scheduler().scheduleOnce(
-            Duration.create(10, "seconds"), getSelf(), Reconnect,
+            Duration.ofSeconds(10), getSelf(), Reconnect,
             getContext().dispatcher(), null);
         }).
         matchEquals(Reconnect, o -> {

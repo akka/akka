@@ -29,7 +29,7 @@ object DistributedPubSubMediatorRouterSpec {
 }
 
 trait DistributedPubSubMediatorRouterSpec { this: WordSpecLike with TestKit with ImplicitSender ⇒
-  def nonUnwrappingPubSub(mediator: ActorRef, testActor: ActorRef, msg: Any) {
+  def nonUnwrappingPubSub(mediator: ActorRef, testActor: ActorRef, msg: Any): Unit = {
 
     val path = testActor.path.toStringWithoutAddress
 

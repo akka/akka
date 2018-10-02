@@ -9,8 +9,6 @@ import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -50,8 +48,8 @@ public class DependencyInjectionDocTest extends AbstractJavaTest {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
-    Await.ready(system.terminate(), Duration.create("5 seconds"));
+  public static void afterClass() {
+    TestKit.shutdownActorSystem(system);
   }
 
   //this is just to make the test below a tiny fraction nicer

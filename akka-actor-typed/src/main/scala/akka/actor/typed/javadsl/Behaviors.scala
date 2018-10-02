@@ -4,17 +4,19 @@
 
 package akka.actor.typed.javadsl
 
+import java.util.Collections
 import java.util.function.{ Function ⇒ JFunction }
 
-import akka.actor.typed.{ ActorRef, Behavior, ExtensibleBehavior, Signal, SupervisorStrategy }
-import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehavior }
+import akka.actor.typed.{ ActorRef, Behavior, BehaviorInterceptor, ExtensibleBehavior, Signal, SupervisorStrategy }
+import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
+import akka.actor.typed.scaladsl
 import akka.annotation.{ ApiMayChange, DoNotInherit }
-import akka.japi.function.{ Procedure2, Function2 ⇒ JapiFunction2 }
+import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
 import akka.japi.pf.PFBuilder
-import akka.util.ConstantFun
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
+
 /**
  * Factories for [[akka.actor.typed.Behavior]].
  */
@@ -167,19 +169,14 @@ object Behaviors {
   }
 
   /**
-   * This type of Behavior wraps another Behavior while allowing you to perform
-   * some action upon each received message or signal. It is most commonly used
-   * for logging or tracing what a certain Actor does.
+   * Intercept messages and signals for a `behavior` by first passing them to a [[akka.actor.typed.BehaviorInterceptor]]
+   *
+   * When a behavior returns a new behavior as a result of processing a signal or message and that behavior already contains
+   * the same interceptor (defined by the [[akka.actor.typed.BehaviorInterceptor#isSame]] method) only the innermost interceptor
+   * is kept. This is to protect against stack overflow when recursively defining behaviors.
    */
-  def tap[T](
-    onMessage: Procedure2[ActorContext[T], T],
-    onSignal:  Procedure2[ActorContext[T], Signal],
-    behavior:  Behavior[T]): Behavior[T] = {
-    BehaviorImpl.tap(
-      (ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg),
-      (ctx, sig) ⇒ onSignal.apply(ctx.asJava, sig),
-      behavior)
-  }
+  def intercept[O, I](behaviorInterceptor: BehaviorInterceptor[O, I], behavior: Behavior[I]): Behavior[O] =
+    BehaviorImpl.intercept(behaviorInterceptor)(behavior)
 
   /**
    * Behavior decorator that copies all received message to the designated
@@ -187,12 +184,8 @@ object Behaviors {
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
    */
-  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] = {
-    BehaviorImpl.tap(
-      (ctx, msg) ⇒ monitor ! msg,
-      ConstantFun.scalaAnyTwoToUnit,
-      behavior)
-  }
+  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
+    scaladsl.Behaviors.monitor(monitor, behavior)
 
   /**
    * Wrap the given behavior such that it is restarted (i.e. reset to its
@@ -211,11 +204,11 @@ object Behaviors {
    * final Behavior[DbCommand] dbConnector = ...
    *
    * final Behavior[DbCommand] dbRestarts =
-   *    Actor.supervise(dbConnector)
+   *    Behaviors.supervise(dbConnector)
    *      .onFailure(SupervisorStrategy.restart) // handle all NonFatal exceptions
    *
    * final Behavior[DbCommand] dbSpecificResumes =
-   *    Actor.supervise(dbConnector)
+   *    Behaviors.supervise(dbConnector)
    *      .onFailure[IndexOutOfBoundsException](SupervisorStrategy.resume) // resume for IndexOutOfBoundsException exceptions
    * }}}
    */
@@ -248,16 +241,19 @@ object Behaviors {
    *
    * Example:
    * {{{
-   * Behavior&lt;String> s = immutable((ctx, msg) -> {
+   * Behavior<String> s = Behaviors.receive((ctx, msg) -> {
    *     System.out.println(msg);
-   *     return same();
+   *     return Behaviors.same();
    *   });
-   * Behavior&lt;Number> n = widened(s, pf -> pf.
+   * Behavior<Number> n = Behaviors.widened(s, pf -> pf.
    *         match(BigInteger.class, i -> "BigInteger(" + i + ")").
    *         match(BigDecimal.class, d -> "BigDecimal(" + d + ")")
    *         // drop all other kinds of Number
    *     );
    * }}}
+   *
+   * Scheduled messages via [[TimerScheduler]] can currently not be used
+   * together with `widen`, see issue #25318.
    *
    * @param behavior
    *          the behavior that will receive the selected messages
@@ -294,7 +290,7 @@ object Behaviors {
    */
   def withMdc[T](
     mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]], behavior: Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](Map.empty, message ⇒ mdcForMessage.apply(message).asScala.toMap, behavior)
+    withMdc(Collections.emptyMap[String, Any], mdcForMessage, behavior)
 
   /**
    * Static MDC (Mapped Diagnostic Context)
@@ -306,7 +302,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](staticMdc: java.util.Map[String, Any], behavior: Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](staticMdc.asScala.toMap, WithMdcBehavior.noMdcPerMessage, behavior)
+    withMdc(staticMdc, null, behavior)
 
   /**
    * Combination of static and per message MDC (Mapped Diagnostic Context).
@@ -314,6 +310,8 @@ object Behaviors {
    * Each message will get the static MDC plus the MDC returned for the message. If the same key
    * are in both the static and the per message MDC the per message one overwrites the static one
    * in the resulting log entries.
+   *
+   * * The `staticMdc` or `mdcForMessage` may be empty.
    *
    * @param staticMdc A static MDC applied for each message
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
@@ -326,10 +324,23 @@ object Behaviors {
   def withMdc[T](
     staticMdc:     java.util.Map[String, Any],
     mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
-    behavior:      Behavior[T]): Behavior[T] =
-    WithMdcBehavior[T](
-      staticMdc.asScala.toMap,
-      message ⇒ mdcForMessage.apply(message).asScala.toMap,
+    behavior:      Behavior[T]): Behavior[T] = {
+
+    def asScalaMap(m: java.util.Map[String, Any]): Map[String, Any] = {
+      if (m == null || m.isEmpty) Map.empty[String, Any]
+      else m.asScala.toMap
+    }
+
+    val mdcForMessageFun: T ⇒ Map[String, Any] =
+      if (mdcForMessage == null) Map.empty
+      else {
+        message ⇒ asScalaMap(mdcForMessage.apply(message))
+      }
+
+    WithMdcBehaviorInterceptor[T](
+      asScalaMap(staticMdc),
+      mdcForMessageFun,
       behavior)
+  }
 
 }

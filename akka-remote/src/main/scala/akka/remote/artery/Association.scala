@@ -4,6 +4,7 @@
 
 package akka.remote.artery
 
+import akka.util.PrettyDuration._
 import java.util.Queue
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
@@ -130,6 +131,8 @@ private[remote] class Association(
   import Association._
   import FlightRecorderEvents._
 
+  require(remoteAddress.port.nonEmpty)
+
   private val log = Logging(transport.system, getClass.getName)
   private def flightRecorder = transport.topLevelFlightRecorder
 
@@ -180,8 +183,8 @@ private[remote] class Association(
   // keyed by stream queue index
   private[this] val streamMatValues = new AtomicReference(Map.empty[Int, OutboundStreamMatValues])
 
-  private[this] val idleTask = new AtomicReference[Option[Cancellable]](None)
-  private[this] val quarantinedIdleTask = new AtomicReference[Option[Cancellable]](None)
+  private[this] val idleTimer = new AtomicReference[Option[Cancellable]](None)
+  private[this] val stopQuarantinedTimer = new AtomicReference[Option[Cancellable]](None)
 
   private[remote] def changeActorRefCompression(table: CompressionTable[ActorRef]): Future[Done] =
     updateOutboundCompression(c ⇒ c.changeActorRefCompression(table))
@@ -256,8 +259,6 @@ private[remote] class Association(
   def setControlIdleKillSwitch(killSwitch: OptionVal[SharedKillSwitch]): Unit = {
     val current = associationState
     swapState(current, current.withControlIdleKillSwitch(killSwitch))
-    if (killSwitch.isDefined)
-      startIdleTimer()
   }
 
   def completeHandshake(peer: UniqueAddress): Future[Done] = {
@@ -285,7 +286,7 @@ private[remote] class Association(
               if (swapState(current, newState)) {
                 current.uniqueRemoteAddressValue() match {
                   case Some(old) ⇒
-                    cancelQuarantinedIdleTimer()
+                    cancelStopQuarantinedTimer()
                     log.debug(
                       "Incarnation {} of association to [{}] with new UID [{}] (old UID [{}])",
                       newState.incarnation, peer.address, peer.uid, old.uid)
@@ -308,7 +309,7 @@ private[remote] class Association(
         if (associationState.isQuarantined()) {
           log.debug("Send control message [{}] to quarantined [{}]", Logging.messageClassName(message),
             remoteAddress)
-          startQuarantinedIdleTimer()
+          setupStopQuarantinedTimer()
         }
         outboundControlIngress.sendControlMessage(message)
       }
@@ -345,12 +346,13 @@ private[remote] class Association(
 
     val state = associationState
     val quarantined = state.isQuarantined()
+    val messageIsClearSystemMessageDelivery = message.isInstanceOf[ClearSystemMessageDelivery]
 
     // allow ActorSelectionMessage to pass through quarantine, to be able to establish interaction with new system
-    if (message.isInstanceOf[ActorSelectionMessage] || !quarantined || message == ClearSystemMessageDelivery) {
-      if (quarantined && message != ClearSystemMessageDelivery) {
+    if (message.isInstanceOf[ActorSelectionMessage] || !quarantined || messageIsClearSystemMessageDelivery) {
+      if (quarantined && !messageIsClearSystemMessageDelivery) {
         log.debug("Quarantine piercing attempt with message [{}] to [{}]", Logging.messageClassName(message), recipient.getOrElse(""))
-        startQuarantinedIdleTimer()
+        setupStopQuarantinedTimer()
       }
       try {
         val outboundEnvelope = createOutboundEnvelope()
@@ -360,7 +362,7 @@ private[remote] class Association(
               quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
               dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
             }
-          case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | ClearSystemMessageDelivery ⇒
+          case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | _: ClearSystemMessageDelivery ⇒
             // ActorSelectionMessage with PriorityMessage is used by cluster and remote failure detector heartbeating
             if (!controlQueue.offer(outboundEnvelope)) {
               dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
@@ -407,7 +409,7 @@ private[remote] class Association(
                 OrdinaryQueueIndex
               } else {
                 // select lane based on destination, to preserve message order
-                OrdinaryQueueIndex + (math.abs(r.path.uid) % outboundLanes)
+                OrdinaryQueueIndex + (math.abs(r.path.uid % outboundLanes))
               }
             r.cachedSendQueueIndex = idx
             idx
@@ -453,10 +455,10 @@ private[remote] class Association(
   // OutboundContext
   override def quarantine(reason: String): Unit = {
     val uid = associationState.uniqueRemoteAddressValue().map(_.uid)
-    quarantine(reason, uid)
+    quarantine(reason, uid, harmless = false)
   }
 
-  @tailrec final def quarantine(reason: String, uid: Option[Long]): Unit = {
+  @tailrec final def quarantine(reason: String, uid: Option[Long], harmless: Boolean): Unit = {
     uid match {
       case Some(u) ⇒
         val current = associationState
@@ -466,29 +468,40 @@ private[remote] class Association(
               val newState = current.newQuarantined()
               if (swapState(current, newState)) {
                 // quarantine state change was performed
-                log.warning(
-                  "Association to [{}] with UID [{}] is irrecoverably failed. UID is now quarantined and all " +
-                    "messages to this UID will be delivered to dead letters. " +
-                    "Remote actorsystem must be restarted to recover from this situation. {}",
-                  remoteAddress, u, reason)
-                transport.system.eventStream.publish(QuarantinedEvent(remoteAddress, u))
+                if (harmless) {
+                  log.info(
+                    "Association to [{}] having UID [{}] has been stopped. All " +
+                      "messages to this UID will be delivered to dead letters. Reason: {}",
+                    remoteAddress, u, reason)
+                  transport.system.eventStream.publish(GracefulShutdownQuarantinedEvent(UniqueAddress(remoteAddress, u), reason))
+                } else {
+                  log.warning(
+                    "Association to [{}] with UID [{}] is irrecoverably failed. UID is now quarantined and all " +
+                      "messages to this UID will be delivered to dead letters. " +
+                      "Remote ActorSystem must be restarted to recover from this situation. Reason: {}",
+                    remoteAddress, u, reason)
+                  transport.system.eventStream.publish(QuarantinedEvent(remoteAddress, u))
+                }
                 flightRecorder.loFreq(Transport_Quarantined, s"$remoteAddress - $u")
                 clearOutboundCompression()
                 clearInboundCompression(u)
                 // end delivery of system messages to that incarnation after this point
-                send(ClearSystemMessageDelivery, OptionVal.None, OptionVal.None)
-                // try to tell the other system that we have quarantined it
-                sendControl(Quarantined(localAddress, peer))
-                startQuarantinedIdleTimer()
+                send(ClearSystemMessageDelivery(current.incarnation), OptionVal.None, OptionVal.None)
+                if (!harmless) {
+                  // try to tell the other system that we have quarantined it
+                  sendControl(Quarantined(localAddress, peer))
+                }
+                setupStopQuarantinedTimer()
               } else
-                quarantine(reason, uid) // recursive
+                quarantine(reason, uid, harmless) // recursive
             }
           case Some(peer) ⇒
-            log.debug(
+            log.info(
               "Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. {}",
               remoteAddress, u, peer.uid, reason)
+            send(ClearSystemMessageDelivery(current.incarnation - 1), OptionVal.None, OptionVal.None)
           case None ⇒
-            log.debug(
+            log.info(
               "Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. {}",
               remoteAddress, reason)
         }
@@ -517,8 +530,7 @@ private[remote] class Association(
       // cleanup
       _outboundControlIngress = OptionVal.None
       outboundCompressionAccess = Vector.empty
-      cancelIdleTimer()
-      cancelQuarantinedIdleTimer()
+      cancelAllTimers()
       abortQuarantined()
 
       log.info("Unused association to [{}] removed after quarantine", remoteAddress)
@@ -528,21 +540,22 @@ private[remote] class Association(
   def isRemovedAfterQuarantined(): Boolean =
     queues(ControlQueueIndex) == RemovedQueueWrapper
 
-  private def cancelQuarantinedIdleTimer(): Unit = {
-    val current = quarantinedIdleTask.get
+  private def cancelStopQuarantinedTimer(): Unit = {
+    val current = stopQuarantinedTimer.get
     current.foreach(_.cancel())
-    quarantinedIdleTask.compareAndSet(current, None)
+    stopQuarantinedTimer.compareAndSet(current, None)
   }
 
-  private def startQuarantinedIdleTimer(): Unit = {
-    cancelQuarantinedIdleTimer()
-    quarantinedIdleTask.set(Some(transport.system.scheduler.scheduleOnce(advancedSettings.StopQuarantinedAfterIdle) {
+  private def setupStopQuarantinedTimer(): Unit = {
+    cancelStopQuarantinedTimer()
+    stopQuarantinedTimer.set(Some(transport.system.scheduler.scheduleOnce(advancedSettings.StopQuarantinedAfterIdle) {
       if (associationState.isQuarantined())
         abortQuarantined()
     }(transport.system.dispatcher)))
   }
 
   private def abortQuarantined(): Unit = {
+    cancelIdleTimer()
     streamMatValues.get.foreach {
       case (queueIndex, OutboundStreamMatValues(killSwitch, _, _)) ⇒
         killSwitch match {
@@ -556,61 +569,66 @@ private[remote] class Association(
   }
 
   private def cancelIdleTimer(): Unit = {
-    val current = idleTask.get
+    val current = idleTimer.get
     current.foreach(_.cancel())
-    idleTask.compareAndSet(current, None)
+    idleTimer.compareAndSet(current, None)
   }
 
-  private def startIdleTimer(): Unit = {
-    cancelIdleTimer()
-    val StopIdleOutboundAfter = settings.Advanced.StopIdleOutboundAfter
-    val interval = StopIdleOutboundAfter / 2
-    val stopIdleOutboundAfterNanos = StopIdleOutboundAfter.toNanos
-    val initialDelay = settings.Advanced.ConnectionTimeout.max(StopIdleOutboundAfter) + 1.second
-    val task: Cancellable = transport.system.scheduler.schedule(initialDelay, interval) {
-      if (System.nanoTime() - associationState.lastUsedTimestamp.get >= stopIdleOutboundAfterNanos) {
-        streamMatValues.get.foreach {
-          case (queueIndex, OutboundStreamMatValues(streamKillSwitch, _, stopping)) ⇒
-            if (isStreamActive(queueIndex) && stopping.isEmpty) {
-              if (queueIndex != ControlQueueIndex) {
-                streamKillSwitch match {
-                  case OptionVal.Some(k) ⇒
-                    // for non-control streams we can stop the entire stream
-                    log.info("Stopping idle outbound stream [{}] to [{}]", queueIndex, remoteAddress)
-                    flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
-                    setStopReason(queueIndex, OutboundStreamStopIdleSignal)
-                    clearStreamKillSwitch(queueIndex, k)
-                    k.abort(OutboundStreamStopIdleSignal)
-                  case OptionVal.None ⇒ // already aborted
-                }
+  private def setupIdleTimer(): Unit = {
+    if (idleTimer.get.isEmpty) {
+      val StopIdleOutboundAfter = settings.Advanced.StopIdleOutboundAfter
+      val QuarantineIdleOutboundAfter = settings.Advanced.QuarantineIdleOutboundAfter
+      val interval = StopIdleOutboundAfter / 2
+      val initialDelay = settings.Advanced.ConnectionTimeout.max(StopIdleOutboundAfter) + 1.second
+      val task = transport.system.scheduler.schedule(initialDelay, interval) {
+        val lastUsedDurationNanos = System.nanoTime() - associationState.lastUsedTimestamp.get
+        if (lastUsedDurationNanos >= QuarantineIdleOutboundAfter.toNanos && !associationState.isQuarantined()) {
+          // If idle longer than quarantine-idle-outbound-after and the low frequency HandshakeReq
+          // doesn't get through it will be quarantined to cleanup lingering associations to crashed systems.
+          quarantine(s"Idle longer than quarantine-idle-outbound-after [${QuarantineIdleOutboundAfter.pretty}]")
+        } else if (lastUsedDurationNanos >= StopIdleOutboundAfter.toNanos) {
+          streamMatValues.get.foreach {
+            case (queueIndex, OutboundStreamMatValues(streamKillSwitch, _, stopping)) ⇒
+              if (isStreamActive(queueIndex) && stopping.isEmpty) {
+                if (queueIndex != ControlQueueIndex) {
+                  streamKillSwitch match {
+                    case OptionVal.Some(k) ⇒
+                      // for non-control streams we can stop the entire stream
+                      log.info("Stopping idle outbound stream [{}] to [{}]", queueIndex, remoteAddress)
+                      flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
+                      setStopReason(queueIndex, OutboundStreamStopIdleSignal)
+                      clearStreamKillSwitch(queueIndex, k)
+                      k.abort(OutboundStreamStopIdleSignal)
+                    case OptionVal.None ⇒ // already aborted
+                  }
 
-              } else {
-                // only stop the transport parts of the stream because SystemMessageDelivery stage has
-                // state (seqno) and system messages might be sent at the same time
-                associationState.controlIdleKillSwitch match {
-                  case OptionVal.Some(killSwitch) ⇒
-                    log.info("Stopping idle outbound control stream to [{}]", remoteAddress)
-                    flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
-                    setControlIdleKillSwitch(OptionVal.None)
-                    killSwitch.abort(OutboundStreamStopIdleSignal)
-                  case OptionVal.None ⇒
-                    log.debug(
-                      "Couldn't stop idle outbound control stream to [{}] due to missing KillSwitch.",
-                      remoteAddress)
+                } else {
+                  // only stop the transport parts of the stream because SystemMessageDelivery stage has
+                  // state (seqno) and system messages might be sent at the same time
+                  associationState.controlIdleKillSwitch match {
+                    case OptionVal.Some(killSwitch) ⇒
+                      log.info("Stopping idle outbound control stream to [{}]", remoteAddress)
+                      flightRecorder.loFreq(Transport_StopIdleOutbound, s"$remoteAddress - $queueIndex")
+                      setControlIdleKillSwitch(OptionVal.None)
+                      killSwitch.abort(OutboundStreamStopIdleSignal)
+                    case OptionVal.None ⇒ // already stopped
+                  }
                 }
               }
-            }
+          }
         }
+      }(transport.system.dispatcher)
 
-        cancelIdleTimer()
+      if (!idleTimer.compareAndSet(None, Some(task))) {
+        // another thread did same thing and won
+        task.cancel()
       }
-    }(transport.system.dispatcher)
-
-    if (!idleTask.compareAndSet(None, Some(task))) {
-      // another thread did same thing and won
-      task.cancel()
     }
+  }
 
+  private def cancelAllTimers(): Unit = {
+    cancelIdleTimer()
+    cancelStopQuarantinedTimer()
   }
 
   private def sendToDeadLetters[T](pending: Vector[OutboundEnvelope]): Unit = {
@@ -629,7 +647,6 @@ private[remote] class Association(
     if (!controlQueue.isInstanceOf[QueueWrapper])
       throw new IllegalStateException("associate() must only be called once")
     runOutboundStreams()
-    startIdleTimer()
   }
 
   private def runOutboundStreams(): Unit = {
@@ -674,6 +691,7 @@ private[remote] class Association(
     materializing.countDown()
 
     updateStreamMatValues(ControlQueueIndex, streamKillSwitch, completed)
+    setupIdleTimer()
     attachOutboundStreamRestart("Outbound control stream", ControlQueueIndex, controlQueueSize,
       completed, () ⇒ runOutboundControlStream())
   }
@@ -808,13 +826,12 @@ private[remote] class Association(
         _outboundControlIngress = OptionVal.None
       }
       // LazyQueueWrapper will invoke the `restart` function when first message is offered
-      val restartAndStartIdleTimer: () ⇒ Unit = () ⇒ {
+      val wrappedRestartFun: () ⇒ Unit = () ⇒ {
         restart()
-        startIdleTimer()
       }
 
       if (!isRemovedAfterQuarantined())
-        queues(queueIndex) = LazyQueueWrapper(createQueue(queueCapacity, queueIndex), restartAndStartIdleTimer)
+        queues(queueIndex) = LazyQueueWrapper(createQueue(queueCapacity, queueIndex), wrappedRestartFun)
 
       queuesVisibility = true // volatile write for visibility of the queues array
     }
@@ -828,7 +845,7 @@ private[remote] class Association(
     streamCompleted.failed.foreach {
       case ArteryTransport.ShutdownSignal ⇒
         // shutdown as expected
-        cancelIdleTimer()
+        cancelAllTimers()
         // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
         materializing.countDown()
       case cause if transport.isShutdown || isRemovedAfterQuarantined() ⇒
@@ -836,15 +853,15 @@ private[remote] class Association(
         // for the TCP transport the ShutdownSignal is "converted" to StreamTcpException
         if (!cause.isInstanceOf[StreamTcpException])
           log.error(cause, s"{} to [{}] failed after shutdown. {}", streamName, remoteAddress, cause.getMessage)
-        cancelIdleTimer()
+        cancelAllTimers()
         // countDown the latch in case threads are waiting on the latch in outboundControlIngress method
         materializing.countDown()
       case _: AeronTerminated ⇒
         // shutdown already in progress
-        cancelIdleTimer()
+        cancelAllTimers()
       case _: AbruptTerminationException ⇒
         // ActorSystem shutdown
-        cancelIdleTimer()
+        cancelAllTimers()
       case cause ⇒
 
         // it might have been stopped as expected due to idle or quarantine
@@ -882,7 +899,7 @@ private[remote] class Association(
         } else {
           log.error(cause, s"{} to [{}] failed and restarted {} times within {} seconds. Terminating system. ${cause.getMessage}",
             streamName, remoteAddress, advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout.toSeconds)
-          cancelIdleTimer()
+          cancelAllTimers()
           transport.system.terminate()
         }
     }
@@ -996,7 +1013,7 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
           // make sure we don't overwrite same UID with different association
           throw new IllegalArgumentException(s"UID collision old [$previous] new [$a]")
       case _ ⇒
-        // update associationsByUid Map with the uid -> assocation
+        // update associationsByUid Map with the uid -> association
         val newMap = currentMap.updated(peer.uid, a)
         if (associationsByUid.compareAndSet(currentMap, newMap))
           a

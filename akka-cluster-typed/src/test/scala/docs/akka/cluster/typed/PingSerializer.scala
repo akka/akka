@@ -28,7 +28,7 @@ class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringMa
 
   override def toBinary(msg: AnyRef) = msg match {
     case Ping(who) ⇒
-      ActorRefResolver(system.toTyped).toSerializationFormat(who).getBytes(StandardCharsets.UTF_8)
+      actorRefResolver.toSerializationFormat(who).getBytes(StandardCharsets.UTF_8)
     case Pong ⇒
       Array.emptyByteArray
   }

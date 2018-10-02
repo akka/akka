@@ -59,7 +59,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
     val logic = new GraphStageLogic(shape) with OutHandler {
       handler ⇒
       val buffer = ByteBuffer.allocate(chunkSize)
-      val maxReadAhead = inheritedAttributes.getAttribute(classOf[InputBuffer], InputBuffer(16, 16)).max
+      val maxReadAhead = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max
       var channel: FileChannel = _
       var position = startPosition
       var chunkCallback: Try[Int] ⇒ Unit = _
@@ -73,7 +73,7 @@ private[akka] final class FileSource(path: Path, chunkSize: Int, startPosition: 
           // this is a bit weird but required to keep existing semantics
           if (!Files.exists(path)) throw new NoSuchFileException(path.toString)
 
-          require(Files.isRegularFile(path), s"Path '$path' is not a regular file")
+          require(!Files.isDirectory(path), s"Path '$path' is a directory")
           require(Files.isReadable(path), s"Missing read permission for '$path'")
 
           channel = FileChannel.open(path, StandardOpenOption.READ)

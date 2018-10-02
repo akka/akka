@@ -20,7 +20,9 @@ import jdocs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.concurrent.duration.FiniteDuration;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +38,7 @@ import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
 import static jdocs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
 import static junit.framework.TestCase.assertTrue;
 
+@SuppressWarnings("ALL")
 public class IntegrationDocTest extends AbstractJavaTest {
 
   private static final SilenceSystemOut.System System = SilenceSystemOut.get();
@@ -309,6 +312,54 @@ public class IntegrationDocTest extends AbstractJavaTest {
   }
   //#ask-actor
 
+  //#actorRefWithAck-actor
+  enum Ack {
+    INSTANCE;
+  }
+
+  static class StreamInitialized {}
+  static class StreamCompleted {}
+  static class StreamFailure {
+    private final Throwable cause;
+    public StreamFailure(Throwable cause) { this.cause = cause; }
+
+    public Throwable getCause() { return cause; }
+  }
+
+  static class AckingReceiver extends AbstractLoggingActor {
+
+    private final ActorRef probe;
+
+    public AckingReceiver(ActorRef probe) {
+      this.probe = probe;
+    }
+
+    @Override
+    public Receive createReceive() {
+      return receiveBuilder()
+        .match(StreamInitialized.class, init -> {
+          log().info("Stream initialized");
+          probe.tell("Stream initialized", getSelf());
+          sender().tell(Ack.INSTANCE, self());
+        })
+        .match(String.class, element -> {
+          log().info("Received element: {}", element);
+          probe.tell(element, getSelf());
+          sender().tell(Ack.INSTANCE, self());
+        })
+        .match(StreamCompleted.class, completed -> {
+          log().info("Stream completed");
+          probe.tell("Stream completed", getSelf());
+        })
+        .match(StreamFailure.class, failed -> {
+          log().error(failed.getCause(),"Stream failed!");
+          probe.tell("Stream failed!", getSelf());
+        })
+        .build();
+    }
+  }
+  //#actorRefWithAck-actor
+
   @SuppressWarnings("unchecked")
   @Test
   public void askStage() throws Exception {
@@ -325,13 +376,41 @@ public class IntegrationDocTest extends AbstractJavaTest {
     //#ask
   }
 
+  @Test
+  public void actorRefWithAckExample() throws Exception {
+    //#actorRefWithAck
+    Source<String, NotUsed> words =
+      Source.from(Arrays.asList("hello", "hi"));
+
+    final TestKit probe = new TestKit(system);
+
+    ActorRef receiver =
+        system.actorOf(Props.create(AckingReceiver.class, probe.getRef()));
+
+    Sink<String, NotUsed> sink = Sink.<String>actorRefWithAck(receiver,
+        new StreamInitialized(),
+        Ack.INSTANCE,
+        new StreamCompleted(),
+        ex -> new StreamFailure(ex)
+    );
+
+    words
+        .map(el -> el.toLowerCase())
+        .runWith(sink, mat);
+
+    probe.expectMsg("Stream initialized");
+    probe.expectMsg("hello");
+    probe.expectMsg("hi");
+    probe.expectMsg("Stream completed");
+    //#actorRefWithAck
+  }
 
   @Test
   public void callingExternalServiceWithMapAsync() throws Exception {
     new TestKit(system) {
-      final TestProbe probe = new TestProbe(system);
+      final TestKit probe = new TestKit(system);
       final AddressSystem addressSystem = new AddressSystem();
-      final EmailServer emailServer = new EmailServer(probe.ref());
+      final EmailServer emailServer = new EmailServer(probe.getRef());
 
       {
         //#tweet-authors
@@ -634,5 +713,29 @@ public class IntegrationDocTest extends AbstractJavaTest {
     };
   }
 
+  @Test
+  public void illustrateSourceQueue() throws Exception {
+    new TestKit(system) {
+      {
+        //#source-queue
+        int bufferSize = 5;
+        int elementsToProcess = 3;
+
+        SourceQueueWithComplete<Integer> sourceQueue =
+            Source.<Integer>queue(bufferSize, OverflowStrategy.backpressure())
+                .throttle(elementsToProcess, Duration.ofSeconds(3))
+                .map(x -> x * x)
+                .to(Sink.foreach(x -> System.out.println("got: " + x)))
+                .run(mat);
+
+        Source<Integer, NotUsed> source
+            = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+
+        source.map(x -> sourceQueue.offer(x)).runWith(Sink.ignore(), mat);
+
+        //#source-queue
+      }
+    };
+  }
 
 }

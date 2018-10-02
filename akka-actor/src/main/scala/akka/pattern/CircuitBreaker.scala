@@ -10,6 +10,7 @@ import java.util.function.Consumer
 
 import akka.AkkaException
 import akka.actor.Scheduler
+import akka.util.JavaDurationConverters._
 import akka.util.Unsafe
 
 import scala.util.control.NoStackTrace
@@ -57,8 +58,24 @@ object CircuitBreaker {
    * @param callTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to consider a call a failure
    * @param resetTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to attempt to close the circuit
    */
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def create(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration): CircuitBreaker =
     apply(scheduler, maxFailures, callTimeout, resetTimeout)
+
+  /**
+   * Java API: Create a new CircuitBreaker.
+   *
+   * Callbacks run in caller's thread when using withSyncCircuitBreaker, and in same ExecutionContext as the passed
+   * in Future when using withCircuitBreaker. To use another ExecutionContext for the callbacks you can specify the
+   * executor in the constructor.
+   *
+   * @param scheduler Reference to Akka scheduler
+   * @param maxFailures Maximum number of failures before opening the circuit
+   * @param callTimeout [[java.time.Duration]] of time after which to consider a call a failure
+   * @param resetTimeout [[java.time.Duration]] of time after which to attempt to close the circuit
+   */
+  def create(scheduler: Scheduler, maxFailures: Int, callTimeout: java.time.Duration, resetTimeout: java.time.Duration): CircuitBreaker =
+    apply(scheduler, maxFailures, callTimeout.asScala, resetTimeout.asScala)
 
   private val exceptionAsFailure: Try[_] ⇒ Boolean = {
     case _: Success[_] ⇒ false
@@ -113,8 +130,13 @@ class CircuitBreaker(
 
   require(exponentialBackoffFactor >= 1.0, "factor must be >= 1.0")
 
+  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def this(executor: ExecutionContext, scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration) = {
     this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0)(executor)
+  }
+
+  def this(executor: ExecutionContext, scheduler: Scheduler, maxFailures: Int, callTimeout: java.time.Duration, resetTimeout: java.time.Duration) = {
+    this(scheduler, maxFailures, callTimeout.asScala, resetTimeout.asScala, 36500.days, 1.0)(executor)
   }
 
   // add the old constructor to make it binary compatible
@@ -130,6 +152,16 @@ class CircuitBreaker(
    */
   def withExponentialBackoff(maxResetTimeout: FiniteDuration): CircuitBreaker = {
     new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout, maxResetTimeout, 2.0)(executor)
+  }
+
+  /**
+   * The `resetTimeout` will be increased exponentially for each failed attempt to close the circuit.
+   * The default exponential backoff factor is 2.
+   *
+   * @param maxResetTimeout the upper bound of resetTimeout
+   */
+  def withExponentialBackoff(maxResetTimeout: java.time.Duration): CircuitBreaker = {
+    withExponentialBackoff(maxResetTimeout.asScala)
   }
 
   /**
@@ -663,7 +695,7 @@ class CircuitBreaker(
      *
      * @return Promise which executes listener in supplied [[scala.concurrent.ExecutionContext]]
      */
-    protected def notifyTransitionListeners() {
+    protected def notifyTransitionListeners(): Unit = {
       if (hasListeners) {
         val iterator = listeners.iterator
         while (iterator.hasNext) {

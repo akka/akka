@@ -1,12 +1,24 @@
 # Pipelining and Parallelism
 
-Akka Streams processing stages (be it simple operators on Flows and Sources or graph junctions) are "fused" together
-and executed sequentially by default. This avoids the overhead of events crossing asynchronous boundaries but
-limits the flow to execute at most one stage at any given time.
+## Dependency
 
-In many cases it is useful to be able to concurrently execute the stages of a flow, this is done by explicitly marking
-them as asynchronous using the @scala[`async`]@java[`async()`] method. Each processing stage marked as asynchronous will run in a
-dedicated actor internally, while all stages not marked asynchronous will run in one single actor.
+To use Akka Streams, add the module to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+## Introduction
+
+Akka Streams operators (be it simple operators on Flows and Sources or graph junctions) are "fused" together
+and executed sequentially by default. This avoids the overhead of events crossing asynchronous boundaries but
+limits the flow to execute at most one operator at any given time.
+
+In many cases it is useful to be able to concurrently execute the operators of a flow, this is done by explicitly marking
+them as asynchronous using the @scala[`async`]@java[`async()`] method. Each operator marked as asynchronous will run in a
+dedicated actor internally, while all operators not marked asynchronous will run in one single actor.
 
 We will illustrate through the example of pancake cooking how streams can be used for various processing patterns,
 exploiting the available parallelism on modern computers. The setting is the following: both Patrik and Roland
@@ -24,13 +36,13 @@ completion.
 This is how this setup would look like implemented as a stream:
 
 Scala
-:   @@snip [FlowParallelismDocSpec.scala]($code$/scala/docs/stream/FlowParallelismDocSpec.scala) { #pipelining }
+:   @@snip [FlowParallelismDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowParallelismDocSpec.scala) { #pipelining }
 
 Java
-:   @@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #pipelining }
+:   @@snip [FlowParallelismDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowParallelismDocTest.java) { #pipelining }
 
-The two `map` stages in sequence (encapsulated in the "frying pan" flows) will be executed in a pipelined way,
-basically doing the same as Roland with his frying pans:
+The two `map` operators in sequence (encapsulated in the "frying pan" flows) will be executed in a pipelined way,
+the same way that Roland was using his frying pans:
 
  1. A `ScoopOfBatter` enters `fryingPan1`
  2. `fryingPan1` emits a HalfCookedPancake once `fryingPan2` becomes available
@@ -39,14 +51,14 @@ basically doing the same as Roland with his frying pans:
 
 The benefit of pipelining is that it can be applied to any sequence of processing steps that are otherwise not
 parallelisable (for example because the result of a processing step depends on all the information from the previous
-step). One drawback is that if the processing times of the stages are very different then some of the stages will not
-be able to operate at full throughput because they will wait on a previous or subsequent stage most of the time. In the
+step). One drawback is that if the processing times of the operators are very different then some of the operators will not
+be able to operate at full throughput because they will wait on a previous or subsequent operator most of the time. In the
 pancake example frying the second half of the pancake is usually faster than frying the first half, `fryingPan2` will
 not be able to operate at full capacity <a id="^1" href="#1">[1]</a>.
 
 @@@ note
 
-Asynchronous stream processing stages have internal buffers to make communication between them more efficient.
+Asynchronous stream operators have internal buffers to make communication between them more efficient.
 For more details about the behavior of these and how to add additional buffers refer to @ref:[Buffers and working with rate](stream-rate.md).
 
 @@@
@@ -59,18 +71,18 @@ In essence he parallelizes the same process over multiple pans. This is how this
 using streams:
 
 Scala
-:   @@snip [FlowParallelismDocSpec.scala]($code$/scala/docs/stream/FlowParallelismDocSpec.scala) { #parallelism }
+:   @@snip [FlowParallelismDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowParallelismDocSpec.scala) { #parallelism }
 
 Java
-:   @@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #parallelism }
+:   @@snip [FlowParallelismDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowParallelismDocTest.java) { #parallelism }
 
 The benefit of parallelizing is that it is easy to scale. In the pancake example
 it is easy to add a third frying pan with Patrik's method, but Roland cannot add a third frying pan,
 since that would require a third processing step, which is not practically possible in the case of frying pancakes.
 
 One drawback of the example code above that it does not preserve the ordering of pancakes. This might be a problem
-if children like to track their "own" pancakes. In those cases the `Balance` and `Merge` stages should be replaced
-by strict-round robing balancing and merging stages that put in and take out pancakes in a strict order.
+if children like to track their "own" pancakes. In those cases the `Balance` and `Merge` operators should be replaced
+by strict-round robing balancing and merging operators that put in and take out pancakes in a strict order.
 
 A more detailed example of creating a worker pool can be found in the cookbook: @ref:[Balancing jobs to a fixed pool of workers](stream-cookbook.md#cookbook-balance)
 
@@ -80,15 +92,15 @@ The two concurrency patterns that we demonstrated as means to increase throughpu
 In fact, it is rather simple to combine the two approaches and streams provide
 a nice unifying language to express and compose them.
 
-First, let's look at how we can parallelize pipelined processing stages. In the case of pancakes this means that we
+First, let's look at how we can parallelize pipelined operators. In the case of pancakes this means that we
 will employ two chefs, each working using Roland's pipelining method, but we use the two chefs in parallel, just like
 Patrik used the two frying pans. This is how it looks like if expressed as streams:
 
 Scala
-:   @@snip [FlowParallelismDocSpec.scala]($code$/scala/docs/stream/FlowParallelismDocSpec.scala) { #parallel-pipeline }
+:   @@snip [FlowParallelismDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowParallelismDocSpec.scala) { #parallel-pipeline }
 
 Java
-:   @@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #parallel-pipeline }
+:   @@snip [FlowParallelismDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowParallelismDocTest.java) { #parallel-pipeline }
 
 The above pattern works well if there are many independent jobs that do not depend on the results of each other, but
 the jobs themselves need multiple processing steps where each step builds on the result of
@@ -96,7 +108,7 @@ the previous one. In our case individual pancakes do not depend on each other, t
 other hand it is not possible to fry both sides of the same pancake at the same time, so the two sides have to be fried
 in sequence.
 
-It is also possible to organize parallelized stages into pipelines. This would mean employing four chefs:
+It is also possible to organize parallelized operators into pipelines. This would mean employing four chefs:
 
  * the first two chefs prepare half-cooked pancakes from batter, in parallel, then putting those on a large enough
 flat surface.
@@ -106,10 +118,10 @@ plate.
 This is again straightforward to implement with the streams API:
 
 Scala
-:   @@snip [FlowParallelismDocSpec.scala]($code$/scala/docs/stream/FlowParallelismDocSpec.scala) { #pipelined-parallel }
+:   @@snip [FlowParallelismDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowParallelismDocSpec.scala) { #pipelined-parallel }
 
 Java
-:   @@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #pipelined-parallel }
+:   @@snip [FlowParallelismDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowParallelismDocTest.java) { #pipelined-parallel }
 
 This usage pattern is less common but might be usable if a certain step in the pipeline might take wildly different
 times to finish different jobs. The reason is that there are more balance-merge steps in this pattern
