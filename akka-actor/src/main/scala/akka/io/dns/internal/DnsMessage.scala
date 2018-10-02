@@ -8,7 +8,9 @@ import akka.annotation.InternalApi
 import akka.io.dns.ResourceRecord
 import akka.util.{ ByteString, ByteStringBuilder }
 
+import scala.collection.GenTraversableOnce
 import scala.collection.immutable.Seq
+import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API
@@ -128,17 +130,26 @@ private[internal] object Message {
   def parse(msg: ByteString): Message = {
     val it = msg.iterator
     val id = it.getShort
-    val flags = it.getShort
+    val flags = new MessageFlags(it.getShort)
+
     val qdCount = it.getShort
     val anCount = it.getShort
     val nsCount = it.getShort
     val arCount = it.getShort
 
-    val qs = (0 until qdCount) map { i ⇒ Question.parse(it, msg) }
-    val ans = (0 until anCount) map { i ⇒ ResourceRecord.parse(it, msg) }
-    val nss = (0 until nsCount) map { i ⇒ ResourceRecord.parse(it, msg) }
-    val ars = (0 until arCount) map { i ⇒ ResourceRecord.parse(it, msg) }
+    val qs = (0 until qdCount) map { i ⇒ Try(Question.parse(it, msg)) }
+    val ans = (0 until anCount) map { i ⇒ Try(ResourceRecord.parse(it, msg)) }
+    val nss = (0 until nsCount) map { i ⇒ Try(ResourceRecord.parse(it, msg)) }
+    val ars = (0 until arCount) map { i ⇒ Try(ResourceRecord.parse(it, msg)) }
 
-    new Message(id, new MessageFlags(flags), qs, ans, nss, ars)
+    import scala.language.implicitConversions
+    implicit def flattener[T](tried: Try[T]): GenTraversableOnce[T] =
+      if (flags.isTruncated) tried.toOption
+      else tried match {
+        case Success(value)  ⇒ Some(value)
+        case Failure(reason) ⇒ throw reason
+      }
+
+    new Message(id, flags, qs.flatten, ans.flatten, nss.flatten, ars.flatten)
   }
 }
