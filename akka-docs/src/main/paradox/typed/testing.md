@@ -31,17 +31,6 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 
 @@@
 
-## Dependency
-
-To use Akka TestKit Typed, add the module to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group=com.typesafe.akka
-  artifact=akka-actor-testkit-typed_$scala.binary_version$
-  version=$akka.version$
-  scope=test
-}
-
 ## Synchronous behavior testing
 
 The following demonstrates how to test:
