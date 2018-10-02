@@ -5,7 +5,6 @@
 package akka.persistence.typed.scaladsl
 
 import scala.util.Try
-
 import akka.Done
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior.DeferredBehavior
@@ -20,6 +19,33 @@ API experiment with factory for command and event handler
 */
 
 object PersistentBehaviors6 {
+
+  class HandlerFactory[Command, Event, State] {
+    type Effect = akka.persistence.typed.scaladsl.Effect[Event, State]
+
+    type CommandHandler = Command ⇒ Effect
+    type EventHandler = Event ⇒ State
+
+    object CommandHandler {
+      def apply(handler: Command ⇒ Effect): Command ⇒ Effect = handler
+      def unhandled: Command ⇒ Effect = _ ⇒ Effect.unhandled[Event, State]
+      def partial(handler: PartialFunction[Command, Effect]): Command ⇒ Effect =
+        handler.orElse {
+          case _ ⇒ Effect.unhandled[Event, State]
+        }
+    }
+
+    object EventHandler {
+      def apply(handler: Event ⇒ State): Event ⇒ State = handler
+      def unhandled: Event ⇒ State = event ⇒ throw new IllegalStateException(s"unexpected event [${event.getClass}]")
+      def partial(handler: PartialFunction[Event, State]): Event ⇒ State =
+        handler.orElse {
+          case event ⇒
+            throw new IllegalStateException(s"unexpected event [${event.getClass}]")
+        }
+    }
+
+  }
 
   /**
    * Create a `Behavior` for a persistent actor.
