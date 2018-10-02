@@ -104,7 +104,7 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
         startedProbe.expectMsg(10.seconds, "started")
         val startedDuration = (System.nanoTime() - t0).nanos
 
-        within(10.seconds) {
+        within(15.seconds) {
           awaitAssert {
             Cluster(systems(i)).isTerminated should ===(true)
             Cluster(system).state.members.map(_.address) should not contain leaveAddress

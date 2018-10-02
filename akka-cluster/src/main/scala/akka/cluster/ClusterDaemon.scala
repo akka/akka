@@ -1221,6 +1221,18 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     if (pruned ne latestGossip) {
       updateLatestGossip(pruned)
       publishMembershipState()
+
+      // gossip the Exiting change to the two oldest nodes for quick dissemination to potential Singleton nodes
+      // FIXME should also be per role
+      // FIXME only needed if the Exiting are among the oldest or next oldest, but doesn't hurt
+      if (changedMembers.exists(_.status == Exiting)) {
+        val membersSortedByAge = latestGossip.members.toList.sorted(Member.ageOrdering)
+        if (membersSortedByAge.nonEmpty) {
+          gossipTo(membersSortedByAge.head.uniqueAddress)
+          if (membersSortedByAge.tail.nonEmpty)
+            gossipTo(membersSortedByAge.tail.head.uniqueAddress)
+        }
+      }
     }
   }
 
