@@ -149,8 +149,8 @@ class GraphZipLatestWithSpec extends TwoStreamsSetup {
         .fromGraph(GraphDSL.create() { implicit b ⇒
           val zip = b.add(ZipLatestWith(Person.apply _))
 
-          Source.repeat("Caplin") ~> zip.in0
-          Source.repeat("Capybara") ~> zip.in1
+          Source.single("Caplin") ~> zip.in0
+          Source.single("Capybara") ~> zip.in1
           Source.fromPublisher(upstreamProbe).take(1) ~> zip.in2
 
           zip.out ~> Sink.fromSubscriber(downstreamProbe)
