@@ -202,6 +202,24 @@ class GraphZipLatestSpec
       }
     }
 
+    "complete when one source completes and the other continues pushing" in {
+
+      val (probe, bools, ints) = testGraph[Boolean, Int]
+
+      Given("one element pushed on each source")
+      bools.sendNext(true)
+      ints.sendNext(1)
+
+      And("either source completes")
+      bools.sendComplete()
+      ints.sendNext(10)
+      ints.sendNext(10)
+
+      Then("should emit first element then complete")
+      probe.requestNext((true, 1))
+      probe.expectComplete()
+    }
+
     "complete if no pending demand" in {
       forAll(Gen.oneOf(first, second)) { select ⇒
         val (probe, bools, ints) = testGraph[Boolean, Int]
