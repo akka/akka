@@ -4,8 +4,15 @@
 
 package jdocs.stream.operators;
 
+import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 
+//#zip-with-index
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import java.util.Arrays;
+
+//#zip-with-index
 //#log
 import akka.stream.Attributes;
 import akka.stream.javadsl.Source;
@@ -29,6 +36,16 @@ class SourceOrFlow {
     ;
   }
 
+  void zipWithIndexExample() {
+    Materializer materializer = null;
+    //#zip-with-index
+    Source.from(Arrays.asList("apple", "orange", "banana"))
+            .zipWithIndex()
+            .runWith(Sink.foreach(System.out::print), materializer);
+    // this will print ('apple', 0), ('orange', 1), ('banana', 2)
+    //#zip-with-index
+  }
+  
   void conflateExample() {
     //#conflate
     Source.cycle(() -> Arrays.asList(1, 10, 100).iterator())
