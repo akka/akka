@@ -151,6 +151,14 @@ Scala
 Java
 :  @@snip [BuncherTest.java](/akka-docs/src/test/java/jdocs/actor/fsm/BuncherTest.java) { #test-code }
 
+@@@ div { .group-scala }
+
+#### Here is another example that you can edit and run in the browser:
+
+@@fiddle [FSMDocSpec.scala](/akka-docs/src/test/scala/docs/actor/FSMDocSpec.scala) { #fiddle_code template=Akka layout=v75 minheight=400px }
+
+@@@
+
 ## Reference
 
 ### The @scala[FSM Trait and Object]@java[AbstractFSM Class]

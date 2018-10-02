@@ -10,10 +10,13 @@ import akka.testkit.{ AkkaSpec ⇒ MyFavoriteTestFrameWorkPlusAkkaTestKit }
 import akka.util.ByteString
 
 //#test-code
+//#fiddle_code
 import akka.actor.Props
 import scala.collection.immutable
+//#fiddle_code
 
 object FSMDocSpec {
+  //#fiddle_code
   // messages and data types
   //#test-code
   import akka.actor.ActorRef
@@ -37,16 +40,19 @@ object FSMDocSpec {
   final case class Todo(target: ActorRef, queue: immutable.Seq[Any]) extends Data
   //#simple-state
   //#test-code
+  //#fiddle_code
 }
 
 class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
   import FSMDocSpec._
+  //#fiddle_code
 
   //#fsm-code-elided
   //#simple-imports
   import akka.actor.{ ActorRef, FSM }
   import scala.concurrent.duration._
   //#simple-imports
+
   //#simple-fsm
   class Buncher extends FSM[State, Data] {
 
@@ -93,6 +99,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
     initialize()
   }
   //#simple-fsm
+  //#fiddle_code
   object DemoCode {
     trait StateType
     case object SomeState extends StateType
@@ -221,6 +228,40 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
       expectMsg(Batch(immutable.Seq(44)))
       expectMsg(Batch(immutable.Seq(45)))
     }
+
+    //format: OFF
+    "batch correctly again" in {
+//#fiddle_code
+      import akka.actor.{ActorSystem, Actor}
+      val system = ActorSystem()
+      val report = system.actorOf(Props(new Actor {
+        def receive = {
+          case any ⇒
+            println(any)
+//#fiddle_code
+            testActor ! any
+//#fiddle_code
+        }
+      }))
+
+      val buncher = system.actorOf(Props(new Buncher()))
+      buncher ! SetTarget(report)
+      buncher ! Queue(42)
+      buncher ! Queue(43)
+      buncher ! Flush
+//#fiddle_code
+      expectMsg(Batch(immutable.Seq(42, 43)))
+//#fiddle_code
+      buncher ! Queue(44)
+      buncher ! Flush
+      buncher ! Queue(45)
+//#fiddle_code
+      expectMsg(Batch(immutable.Seq(44)))
+      expectMsg(Batch(immutable.Seq(45)))
+//#fiddle_code
+//#fiddle_code
+    }
+    //format: ON
 
     "not batch if uninitialized" in {
       val buncher = system.actorOf(Props(classOf[Buncher], this))
