@@ -957,6 +957,33 @@ final class Zip[A, B] extends ZipWith2[A, B, (A, B)](Tuple2.apply) {
   override def toString = "Zip"
 }
 
+object ZipLatest {
+  /**
+   * Create a new `ZipLatest`.
+   */
+  def apply[A, B](): ZipLatest[A, B] = new ZipLatest()
+}
+
+/**
+ * Combine the elements of 2 streams into a stream of tuples, picking always the latest element of each.
+ *
+ * A `ZipLatest` has a `left` and a `right` input port and one `out` port.
+ *
+ * No element is emitted until at least one element from each Source becomes available.
+ *
+ * '''Emits when''' all of the inputs have at least an element available, and then each time an element becomes
+ * *   available on either of the inputs
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' any upstream completes
+ *
+ * '''Cancels when''' downstream cancels
+ */
+final class ZipLatest[A, B] extends ZipLatestWith2[A, B, (A, B)](Tuple2.apply) {
+  override def toString = "ZipLatest"
+}
+
 /**
  * Combine the elements of multiple streams into a stream of combined elements using a combiner function.
  *
@@ -969,6 +996,25 @@ final class Zip[A, B] extends ZipWith2[A, B, (A, B)](Tuple2.apply) {
  * '''Cancels when''' downstream cancels
  */
 object ZipWith extends ZipWithApply
+
+/**
+ * Combine the elements of multiple streams into a stream of combined elements using a combiner function,
+ * picking always the latest of the elements of each source.
+ *
+ * No element is emitted until at least one element from each Source becomes available. Whenever a new
+ * element appears, the zipping function is invoked with a tuple containing the new element
+ * and the other last seen elements.
+ *
+ *   '''Emits when''' all of the inputs have at least an element available, and then each time an element becomes
+ *   available on either of the inputs
+ *
+ *   '''Backpressures when''' downstream backpressures
+ *
+ *   '''Completes when''' any of the upstreams completes
+ *
+ *   '''Cancels when''' downstream cancels
+ */
+object ZipLatestWith extends ZipLatestWithApply
 
 /**
  * Takes a stream of pair elements and splits each pair to two output streams.

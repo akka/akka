@@ -79,6 +79,7 @@ import akka.stream._
     val wireTap = name("wireTap")
     val balance = name("balance")
     val zip = name("zip")
+    val zipLatest = name("zipLatest")
     val zipN = name("zipN")
     val zipWithN = name("zipWithN")
     val zipWithIndex = name("zipWithIndex")
