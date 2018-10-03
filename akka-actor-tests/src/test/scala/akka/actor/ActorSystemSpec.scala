@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ ConcurrentLinkedQueue, RejectedExecutionException }
 
 import akka.actor.setup.ActorSystemSetup
@@ -15,7 +16,6 @@ import akka.testkit.TestKit
 import akka.util.Helpers.ConfigOps
 import akka.util.{ Switch, Timeout }
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.language.postfixOps
@@ -236,12 +236,28 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     }
 
     "throw RejectedExecutionException when shutdown" in {
-      val system2 = ActorSystem("AwaitTermination", AkkaSpec.testConf)
+      val system2 = ActorSystem("RejectedExecution-1", AkkaSpec.testConf)
       Await.ready(system2.terminate(), 10 seconds)
 
       intercept[RejectedExecutionException] {
         system2.registerOnTermination { println("IF YOU SEE THIS THEN THERE'S A BUG HERE") }
       }.getMessage should ===("ActorSystem already terminated.")
+    }
+
+    "throw RejectedExecutionException or run termination callback when shutting down" in {
+      val system2 = ActorSystem("RejectedExecution-2", AkkaSpec.testConf)
+      // using counter to detect double calls
+      val count = new AtomicInteger
+
+      try {
+        system2.terminate()
+        system2.registerOnTermination { count.incrementAndGet() }
+      } catch {
+        case _: RejectedExecutionException ⇒ count.incrementAndGet()
+      }
+
+      Await.ready(system2.whenTerminated, 10.seconds)
+      count.get() should ===(1)
     }
 
     "reliably create waves of actors" in {

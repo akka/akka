@@ -161,13 +161,20 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
     initPhaseActorSystemTerminate(system, conf, coord)
     initJvmHook(system, conf, coord)
     // Avoid leaking actor system references when system is terminated before JVM is #23384
-    system.registerOnTermination {
+    // Catching RejectedExecutionException in case extension is accessed first time when
+    // system is already terminated, see #25592. The extension is eagerly loaded when ActorSystem
+    // is started but it might be a race between (failing?) startup and shutdown.
+    def cleanupActorSystemJvmHook(): Unit = {
       coord.actorSystemJvmHook match {
         case OptionVal.Some(cancellable) if !runningJvmHook && !cancellable.isCancelled ⇒
           cancellable.cancel()
           coord.actorSystemJvmHook = OptionVal.None
         case _ ⇒
       }
+    }
+    try system.registerOnTermination(cleanupActorSystemJvmHook())
+    catch {
+      case _: RejectedExecutionException ⇒ cleanupActorSystemJvmHook()
     }
     coord
   }
