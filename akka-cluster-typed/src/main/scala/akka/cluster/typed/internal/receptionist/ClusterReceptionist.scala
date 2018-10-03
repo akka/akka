@@ -140,8 +140,11 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       def notifySubscribersFor(key: AbstractServiceKey, state: ServiceRegistry): Unit = {
         // filter tombstoned refs to avoid an extra update
         // to subscribers in the case of lost removals (because of how ORMultiMap works)
-        val refs = state.actorRefsFor(key).filterNot(registry.hasTombstone)
-        val msg = ReceptionistMessages.Listing(key.asServiceKey, refs)
+        val refsForKey = state.actorRefsFor(key)
+        val refsWithoutTombstoned =
+          if (registry.tombstones.isEmpty) refsForKey
+          else refsForKey.filterNot(registry.hasTombstone)
+        val msg = ReceptionistMessages.Listing(key.asServiceKey, refsWithoutTombstoned)
         subscriptions.get(key).foreach(_ ! msg)
       }
 
