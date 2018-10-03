@@ -8,7 +8,7 @@ import collection.JavaConverters._
 import akka.testkit.AkkaSpec
 import com.spotify.docker.client.DefaultDockerClient
 import com.spotify.docker.client.DockerClient.LogsParam
-import com.spotify.docker.client.messages.{ContainerConfig, HostConfig, PortBinding}
+import com.spotify.docker.client.messages.{ ContainerConfig, HostConfig, PortBinding }
 import org.scalatest.concurrent.Eventually
 
 import scala.util.Try
@@ -31,7 +31,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
     try {
       client.pull(image)
     } catch {
-      case NonFatal(_) =>
+      case NonFatal(_) ⇒
         log.warning(s"Failed to pull docker image [$image], is docker running?")
         return
     }

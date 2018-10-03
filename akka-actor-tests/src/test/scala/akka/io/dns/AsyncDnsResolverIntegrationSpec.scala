@@ -34,8 +34,8 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
   val hostPort = AsyncDnsResolverIntegrationSpec.dockerDnsServerPort
 
   "Resolver" must {
-      if (!dockerAvailable())
-        pending
+    if (!dockerAvailable())
+      pending
 
     "resolve single A record" in {
       val name = "a-single.foo.test"
