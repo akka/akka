@@ -35,6 +35,9 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   @volatile
   private var _cachedSelf: OptionVal[Member] = OptionVal.None
 
+  @volatile
+  private var _closed: Boolean = false
+
   /**
    * Current internal cluster stats, updated periodically via event bus.
    */
@@ -87,7 +90,12 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
           e match {
             case e: MemberEvent if e.member.address == selfAddress ⇒
-              _cachedSelf = OptionVal.Some(e.member)
+              _cachedSelf match {
+                case OptionVal.Some(s) if s.status == MemberStatus.Removed && _closed ⇒
+                // ignore as Cluster.close has been called
+                case _ ⇒
+                  _cachedSelf = OptionVal.Some(e.member)
+              }
             case _ ⇒
           }
         case s: CurrentClusterState ⇒ _state = s
@@ -186,6 +194,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
    * Unsubscribe to cluster events.
    */
   def close(): Unit = {
+    _closed = true
     _cachedSelf = OptionVal.Some(self.copy(MemberStatus.Removed))
     if (!eventBusListener.isTerminated)
       eventBusListener ! PoisonPill
