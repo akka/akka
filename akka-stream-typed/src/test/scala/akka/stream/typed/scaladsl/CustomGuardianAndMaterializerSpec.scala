@@ -4,19 +4,13 @@
 
 package akka.stream.typed.scaladsl
 
-import scala.concurrent.Future
-import akka.actor.typed.ActorRef
-import akka.actor.typed.scaladsl.Behaviors
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
 import akka.Done
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.AbruptStageTerminationException
 import akka.stream.scaladsl.{ Sink, Source }
+import org.scalatest.WordSpecLike
 
 import scala.concurrent.Future
 
