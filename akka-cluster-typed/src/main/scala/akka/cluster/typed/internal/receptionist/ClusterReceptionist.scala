@@ -13,11 +13,11 @@ import akka.actor.typed.{ ActorRef, Behavior, Terminated }
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ddata.{ DistributedData, ORMultiMap, ORMultiMapKey, Replicator }
-import akka.cluster.{ Cluster, ClusterEvent, UniqueAddress }
+import akka.cluster.{ Cluster, ClusterEvent, MemberStatus, UniqueAddress }
 import akka.remote.AddressUidExtension
 import akka.util.TypedMultiMap
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import scala.language.existentials
 
 /** INTERNAL API */
@@ -55,8 +55,12 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     val settings = ClusterReceptionistSettings(ctx.system)
     val replicator = DistributedData(untypedSystem).replicator
     val selfSystemUid = AddressUidExtension(untypedSystem).longAddressUid
+    lazy val keepTombstonesFor = cluster.settings.PruneGossipTombstonesAfter match {
+      case f: FiniteDuration ⇒ f
+      case _                 ⇒ throw new IllegalStateException("Cannot actually happen")
+    }
     implicit val cluster = Cluster(untypedSystem)
-    def newTombstoneDeadline() = Deadline(cluster.settings.PruneGossipTombstonesAfter)
+    def newTombstoneDeadline() = Deadline(keepTombstonesFor)
     def selfUniqueAddress: UniqueAddress = cluster.selfUniqueAddress
   }
 
@@ -91,7 +95,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
         // default tomstone keepalive is 24h (based on prune-gossip-tombstones-after) and keeping the actorrefs
         // around isn't very costly so don't prune often
-        timers.startPeriodicTimer("prune-tombstones", PruneTombstonesTick, 1.hour)
+        timers.startPeriodicTimer("prune-tombstones", PruneTombstonesTick, setup.keepTombstonesFor / 24)
 
         behavior(
           setup,
@@ -134,7 +138,19 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         })
 
       def notifySubscribersFor(key: AbstractServiceKey, state: ServiceRegistry): Unit = {
-        val msg = ReceptionistMessages.Listing(key.asServiceKey, state.actorRefsFor(key))
+        def nodeIsDowned(entry: ClusterReceptionist.Entry): Boolean = {
+          cluster.state.members.exists(member ⇒
+            member.uniqueAddress == entry.uniqueAddress(setup.selfUniqueAddress) &&
+              member.status == MemberStatus.Down
+          )
+        }
+
+        // filter tombstoned refs and removed nodes to avoid an extra update
+        // to subscribers in the case of lost removals (because of how ORMultiMap works)
+        val refs = state.entriesFor(key).collect {
+          case entry if !registry.hasTombstone(entry.ref) && !nodeIsDowned(entry) ⇒ entry.ref.asInstanceOf[ActorRef[key.Protocol]]
+        }
+        val msg = ReceptionistMessages.Listing(key.asServiceKey, refs)
         subscriptions.get(key).foreach(_ ! msg)
       }
 
@@ -142,6 +158,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         // ok to update from several nodes but more efficient to try to do it from one node
         if (cluster.state.leader.contains(cluster.selfAddress) && addresses.nonEmpty) {
           def isOnRemovedNode(entry: Entry): Boolean = addresses(entry.uniqueAddress(setup.selfUniqueAddress))
+
           val removals = {
             registry.allServices.foldLeft(Map.empty[AbstractServiceKey, Set[Entry]]) {
               case (acc, (key, entries)) ⇒
@@ -170,20 +187,10 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
                 }
             }
 
-            // tombstone removals so they are not re-added by merging with other concurrent
-            // registrations for the same key
-            val removedActors = removals.flatMap { case (_, actors) ⇒ actors }
-            val deadline = setup.newTombstoneDeadline()
-            val registryWithTombstones =
-              removedActors.foldLeft(registry)((registry, entry) ⇒
-                registry.addTombstone(entry.ref, deadline)
-              )
-            next(registryWithTombstones)
-          } else {
-            Behaviors.same
           }
 
-        } else Behaviors.same
+        }
+        Behaviors.same
       }
 
       def onCommand(cmd: Command): Behavior[Command] = cmd match {
@@ -247,7 +254,6 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               )
             }
             changedKeys.foreach { changedKey ⇒
-              // FIXME we should also not notify the subscribers about tombstoned refs reappearing
               notifySubscribersFor(changedKey, newState)
 
               // because of how ORMultiMap/ORset works, we could have a case where an actor we removed

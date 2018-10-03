@@ -24,7 +24,7 @@ import scala.concurrent.duration.Deadline
       val key = ORMultiMapKey[ServiceKey[_], Entry](s"ReceptionistKey_$n")
       key -> new ServiceRegistry(EmptyORMultiMap)
     }.toMap
-    new ShardedServiceRegistry(emptyRegistries, Set.empty)
+    new ShardedServiceRegistry(emptyRegistries, Map.empty)
   }
 
 }
@@ -40,7 +40,7 @@ import scala.concurrent.duration.Deadline
  */
 @InternalApi private[akka] final case class ShardedServiceRegistry(
   serviceRegistries: Map[DDataKey, ServiceRegistry],
-  tombstones:        Set[(ActorRef[_], Deadline)]) {
+  tombstones:        Map[ActorRef[_], Deadline]) {
 
   private val keys = serviceRegistries.keySet.toArray
 
@@ -88,9 +88,7 @@ import scala.concurrent.duration.Deadline
     copy(tombstones = tombstones + (actorRef -> deadline))
 
   def hasTombstone(actorRef: ActorRef[_]): Boolean =
-    tombstones.exists {
-      case (ref, _) ⇒ ref == actorRef
-    }
+    tombstones.contains(actorRef)
 
   def pruneTombstones(): ShardedServiceRegistry = {
     copy(tombstones = tombstones.filter {
