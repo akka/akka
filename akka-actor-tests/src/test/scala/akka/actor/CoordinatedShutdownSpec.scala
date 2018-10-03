@@ -410,6 +410,22 @@ class CoordinatedShutdownSpec extends AkkaSpec(ConfigFactory.parseString(
         cancellable.cancel()
       }
     }
+
+    "access extension after system termination" in new JvmHookTest {
+      lazy val systemName = s"CoordinatedShutdownSpec-terminated-${System.currentTimeMillis()}"
+      lazy val systemConfig = ConfigFactory.parseString(
+        """
+          akka.coordinated-shutdown.run-by-jvm-shutdown-hook = on
+          akka.coordinated-shutdown.terminate-actor-system = on
+        """)
+
+      def withSystemRunning(newSystem: ActorSystem): Unit = {
+        TestKit.shutdownActorSystem(newSystem)
+        CoordinatedShutdown(newSystem)
+
+      }
+    }
+
   }
 
   abstract class JvmHookTest {
