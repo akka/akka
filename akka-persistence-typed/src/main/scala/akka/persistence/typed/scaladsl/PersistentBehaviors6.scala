@@ -27,26 +27,111 @@ object PersistentBehaviors6 {
     type EventHandler = Event ⇒ State
 
     object CommandHandler {
+
       def apply(handler: Command ⇒ Effect): Command ⇒ Effect = handler
-      def unhandled: Command ⇒ Effect = _ ⇒ Effect.unhandled[Event, State]
-      def partial(handler: PartialFunction[Command, Effect]): Command ⇒ Effect =
-        handler.orElse {
-          case _ ⇒ Effect.unhandled[Event, State]
+
+      def apply(handler: (State, Command) ⇒ Effect): (State, Command) ⇒ Effect = handler
+
+      def unhandled: Command ⇒ Effect = _ ⇒ Effect.unhandled
+
+      def partial(handler: PartialFunction[Command, Effect]): Command ⇒ Effect = {
+        handler.orElse[Command, Effect] {
+          case _ ⇒ Effect.unhandled
         }
+      }
+
+      def partial(handler: PartialFunction[(State, Command), Effect]): (State, Command) ⇒ Effect = {
+        val totalHandler = handler.orElse[(State, Command), Effect] {
+          case _ ⇒ Effect.unhandled
+        }
+        (state, command) ⇒ totalHandler((state, command))
+      }
     }
 
     object EventHandler {
+
       def apply(handler: Event ⇒ State): Event ⇒ State = handler
+
+      def apply(handler: (State, Event) ⇒ State): (State, Event) ⇒ State = handler
+
       def unhandled: Event ⇒ State = event ⇒ throw new IllegalStateException(s"unexpected event [${event.getClass}]")
+
       def partial(handler: PartialFunction[Event, State]): Event ⇒ State =
         handler.orElse {
           case event ⇒
             throw new IllegalStateException(s"unexpected event [${event.getClass}]")
         }
+
+      def partial(handler: PartialFunction[(State, Event), State]): (State, Event) ⇒ State = {
+        val totalHandler = handler.orElse[(State, Event), State] {
+          case event ⇒
+            throw new IllegalStateException(s"unexpected event [${event.getClass}]")
+        }
+
+        (state, event) ⇒ totalHandler((state, event))
+      }
     }
 
   }
 
+  /**
+   * This HandlerFactory is designed to be used with PersistentBehaviors define
+   * with a Option state, ie: Option[MyModel] instead of just MyModel.
+   *
+   */
+  class HandlerFactoryOption[Command, Event, State] {
+
+    type Effect = akka.persistence.typed.scaladsl.Effect[Event, Option[State]]
+
+    type CommandHandler = Command ⇒ Effect
+    type EventHandler = Event ⇒ Option[State]
+
+    object CommandHandler {
+
+      def apply(handler: Command ⇒ Effect): Command ⇒ Effect = handler
+
+      def unhandled: Command ⇒ Effect = _ ⇒ Effect.unhandled
+
+      def partial(handler: PartialFunction[Command, Effect]): Command ⇒ Effect =
+        handler.orElse {
+          case _ ⇒ Effect.unhandled
+        }
+
+      def partial(handler: PartialFunction[(State, Command), Effect]): (State, Command) ⇒ Effect = {
+        val totalHandler = handler.orElse[(State, Command), Effect] {
+          case _ ⇒ Effect.unhandled
+        }
+        (state, command) ⇒ totalHandler((state, command))
+      }
+    }
+
+    object EventHandler {
+
+      def apply(handler: Event ⇒ State): Event ⇒ Option[State] =
+        evt ⇒ Option(handler.apply(evt))
+
+      def unhandled: Event ⇒ Option[State] =
+        event ⇒ throw new IllegalStateException(s"unexpected event [${event.getClass}]")
+
+      def partial(handler: PartialFunction[Event, State]): Event ⇒ Option[State] = {
+        val totalHandler = handler.orElse[Event, State] {
+          case event ⇒
+            throw new IllegalStateException(s"unexpected event [${event.getClass}]")
+        }
+        totalHandler.lift
+      }
+
+      def partial(handler: PartialFunction[(State, Event), State]): (State, Event) ⇒ Option[State] = {
+        val totalHandler = handler.orElse[(State, Event), State] {
+          case (_, event) ⇒
+            throw new IllegalStateException(s"unexpected event [${event.getClass}]")
+        }
+        (state, event) ⇒ Option(totalHandler((state, event)))
+      }
+
+    }
+
+  }
   /**
    * Create a `Behavior` for a persistent actor.
    */
