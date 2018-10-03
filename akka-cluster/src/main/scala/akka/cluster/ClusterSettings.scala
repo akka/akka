@@ -108,7 +108,6 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   /**
    * Is in fact always a `FiniteDuration` but needs to stay `Duration` for binary compatibility
    */
-  // FIXME change in 2.6
   val PruneGossipTombstonesAfter: Duration = {
     val key = "prune-gossip-tombstones-after"
     cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s")
