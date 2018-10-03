@@ -1,14 +1,14 @@
 /**
-  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
-  */
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
 
 package docs.akka.persistence.typed
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.typed.scaladsl.{Effect, PersistentBehaviors6}
-import docs.akka.persistence.typed.AccountExample6.AccountEntity.{Account, AccountCommand, AccountEvent}
+import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors6 }
+import docs.akka.persistence.typed.AccountExample6.AccountEntity.{ Account, AccountCommand, AccountEvent }
 
 /*
 API experiment with factory for command and event handler
@@ -22,7 +22,7 @@ This is completely optional, it's a user choice.
 object AccountExample6 {
 
   object AccountEntity {
-    
+
     sealed trait AccountCommand
     case object CreateAccount extends AccountCommand
     case class Deposit(amount: Double) extends AccountCommand
@@ -35,14 +35,12 @@ object AccountExample6 {
     case class Withdrawn(amount: Double) extends AccountEvent
     case object AccountClosed extends AccountEvent
 
-
     type Effect = akka.persistence.typed.scaladsl.Effect[AccountEvent, Account]
 
     sealed trait Account {
       def applyCommand(cmd: AccountCommand): Effect
       def applyEvent(event: AccountEvent): Account
     }
-
 
     case object EmptyAccount extends Account {
 
@@ -85,7 +83,6 @@ object AccountExample6 {
             Effect.unhandled
         }
 
-
       override def applyEvent(event: AccountEvent): Account = event match {
         case Deposited(amount) ⇒ copy(balance = balance + amount)
         case Withdrawn(amount) ⇒ copy(balance = balance - amount)
@@ -98,20 +95,19 @@ object AccountExample6 {
     case object ClosedAccount extends Account {
 
       override def applyCommand(cmd: AccountCommand): Effect =
-        _ ⇒ Effect.unhandled
+        Effect.unhandled
 
       override def applyEvent(event: AccountEvent): Account =
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
 
     }
 
-
     def behavior(accountNumber: String): Behavior[AccountEntity.AccountCommand] = {
-      PersistentBehaviors6.receive(
+      PersistentBehaviors6.receive[AccountCommand, AccountEvent, Account](
         accountNumber,
         EmptyAccount,
-        (state:Account, cmd) => state.applyCommand(cmd),
-        (state:Account, event) ⇒ state.applyEvent(event)
+        (state, cmd) ⇒ state.applyCommand(cmd),
+        (state, event) ⇒ state.applyEvent(event)
       )
     }
   }
