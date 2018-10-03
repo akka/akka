@@ -39,8 +39,8 @@ object ClusterReceptionistSpec {
           "akka.cluster.typed.internal.receptionist.ClusterReceptionistSpec$$Perish$$" = test
         }
       }
-      akka.remote.artery.enabled = true
-      akka.remote.artery.transport = tcp
+      akka.remote.netty.tcp.port = 0
+      akka.remote.netty.tcp.host = 127.0.0.1
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
       akka.cluster {
@@ -165,7 +165,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
       } finally {
         testKit1.shutdownTestKit()
-        if (!system1.whenTerminated.isCompleted) testKit2.shutdownTestKit()
+        testKit2.shutdownTestKit()
       }
     }
 
@@ -207,7 +207,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
       } finally {
         testKit1.shutdownTestKit()
-        if (!system1.whenTerminated.isCompleted) testKit2.shutdownTestKit()
+        testKit2.shutdownTestKit()
       }
     }
 
@@ -292,7 +292,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         }
       } finally {
         testKit1.shutdownTestKit()
-        if (!system1.whenTerminated.isCompleted) testKit2.shutdownTestKit()
+        testKit2.shutdownTestKit()
       }
     }
 
@@ -368,7 +368,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
       } finally {
         testKit1.shutdownTestKit()
-        if (!system1.whenTerminated.isCompleted) testKit2.shutdownTestKit()
+        testKit2.shutdownTestKit()
       }
     }
 

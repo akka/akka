@@ -59,8 +59,9 @@ object RemoteContextAskSpec {
           "akka.cluster.typed.RemoteContextAskSpec$$Pong$$" = test
         }
       }
+      remote.netty.tcp.port = 0
+      remote.netty.tcp.host = 0
       remote.artery {
-        enabled = on
         canonical {
           hostname = 127.0.0.1
           port = 0
