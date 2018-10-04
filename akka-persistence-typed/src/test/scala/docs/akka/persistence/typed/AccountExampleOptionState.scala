@@ -23,16 +23,14 @@ class AccountExampleOptionState {
     case class Withdrawn(amount: Double) extends AccountEvent
     case object AccountClosed extends AccountEvent
 
-    type Effect = akka.persistence.typed.scaladsl.Effect[AccountEvent, Option[Account]]
-
     sealed trait Account {
-      def applyCommand(cmd: AccountCommand): Effect
+      def applyCommand(cmd: AccountCommand): Effect[AccountEvent, Option[Account]]
       def applyEvent(event: AccountEvent): Account
     }
 
     case class OpenedAccount(balance: Double) extends Account {
 
-      override def applyCommand(cmd: AccountCommand): Effect =
+      override def applyCommand(cmd: AccountCommand): Effect[AccountEvent, Option[Account]] =
         cmd match {
           case Deposit(amount) ⇒ Effect.persist(Deposited(amount))
 
@@ -66,12 +64,12 @@ class AccountExampleOptionState {
     }
 
     case object ClosedAccount extends Account {
-      override def applyCommand(cmd: AccountCommand): Effect = Effect.unhandled
+      override def applyCommand(cmd: AccountCommand): Effect[AccountEvent, Option[Account]] = Effect.unhandled
       override def applyEvent(event: AccountEvent): Account =
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
     }
 
-    def onFirstCommand(cmd: AccountCommand): Effect =
+    def onFirstCommand(cmd: AccountCommand): Effect[AccountEvent, Option[Account]] =
       cmd match {
         case CreateAccount ⇒ Effect.persist(AccountCreated)
         case _             ⇒ Effect.unhandled
