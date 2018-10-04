@@ -4,13 +4,14 @@
 
 package jdocs.akka.persistence.typed;
 
+import akka.actor.typed.BackoffSupervisorStrategy;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.*;
 
-public class AccountExample2 extends PersistentBehavior<AccountExample2.AccountCommand, AccountExample2.AccountEvent, AccountExample2.Account> {
+public class AccountExample2 extends EventApplyingPersistentBehavior<AccountExample2.AccountCommand, AccountExample2.AccountEvent, AccountExample2.Account> {
 
   interface AccountCommand {}
   public static class CreateAccount implements AccountCommand {}
@@ -30,9 +31,7 @@ public class AccountExample2 extends PersistentBehavior<AccountExample2.AccountC
   }
   public static class CloseAccount implements AccountCommand {}
 
-  interface AccountEvent {
-    Account applyTo(Account state);
-  }
+  interface AccountEvent extends Event<Account> {}
   public static class AccountCreated implements AccountEvent {
     @Override
     public Account applyTo(Account state) {
@@ -199,10 +198,28 @@ public class AccountExample2 extends PersistentBehavior<AccountExample2.AccountC
       return Effect().unhandled();
   }
 
-  @Override
-  public EventHandler<Account, AccountEvent> eventHandler() {
-    return (state, event) -> event.applyTo(state); // double-dispatch via event
+}
+
+// We could provide these in the library as conveniences for following this pattern
+// TODO: better names?
+interface Event<State> {
+  State applyTo(State currentState);
+}
+
+abstract class EventApplyingPersistentBehavior<Command, E extends Event<State>, State>
+    extends PersistentBehavior<Command, E, State> {
+
+  public EventApplyingPersistentBehavior(PersistenceId persistenceId) {
+    super(persistenceId);
   }
 
+  public EventApplyingPersistentBehavior(PersistenceId persistenceId, BackoffSupervisorStrategy backoffSupervisorStrategy) {
+    super(persistenceId, backoffSupervisorStrategy);
+  }
+
+  @Override
+  public final EventHandler<State, E> eventHandler() {
+    return (state, event) -> event.applyTo(state); // double-dispatch via event
+  }
 
 }
