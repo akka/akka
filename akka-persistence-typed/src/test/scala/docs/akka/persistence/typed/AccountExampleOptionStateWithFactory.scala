@@ -1,15 +1,20 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.akka.persistence.typed
 
 import akka.actor.typed.Behavior
-import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
-import akka.persistence.typed.scaladsl.PersistentBehaviors6.{HandlerFactory, HandlerFactoryOption}
-import akka.persistence.typed.scaladsl.{Effect, PersistentBehaviors6}
-import docs.akka.persistence.typed.AccountExampleOptionStateWithFactory.AccountEntity.{Account, AccountCommand, AccountEvent}
+import akka.persistence.typed.scaladsl.PersistentBehaviors6.HandlerFactoryOption
+import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors6 }
+import docs.akka.persistence.typed.AccountExampleOptionStateWithFactory.AccountEntity.{ Account, AccountCommand, AccountEvent }
 
 object AccountExampleOptionStateWithFactory {
 
-  object AccountEntity extends HandlerFactoryOption[AccountCommand,  AccountEvent, Account]{
+  object AccountEntity {
 
+    val handlers = new HandlerFactoryOption[AccountCommand, AccountEvent, Account]
+    import handlers._
     sealed trait AccountCommand
     case object CreateAccount extends AccountCommand
     case class Deposit(amount: Double) extends AccountCommand
@@ -21,8 +26,6 @@ object AccountExampleOptionStateWithFactory {
     case class Deposited(amount: Double) extends AccountEvent
     case class Withdrawn(amount: Double) extends AccountEvent
     case object AccountClosed extends AccountEvent
-
-
 
     sealed trait Account {
       def applyCommand: CommandHandler
@@ -51,7 +54,6 @@ object AccountExampleOptionStateWithFactory {
           Effect.persist(AccountClosed)
       }
 
-
       override val applyEvent = EventHandler.partial {
         case Deposited(amount) ⇒ copy(balance = balance + amount)
         case Withdrawn(amount) ⇒ copy(balance = balance - amount)
@@ -65,12 +67,11 @@ object AccountExampleOptionStateWithFactory {
       override val applyEvent = EventHandler.unhandled
     }
 
-
-    val onFirstCommand = CommandHandler.partial {
+    val onFirstCommand: CommandHandler = CommandHandler.partial {
       case CreateAccount ⇒ Effect.persist(AccountCreated)
     }
 
-    val onFirstEvent = EventHandler.partial {
+    val onFirstEvent: EventHandler = EventHandler.partial {
       case AccountCreated ⇒ OpenedAccount(0.0)
     }
 
@@ -78,13 +79,13 @@ object AccountExampleOptionStateWithFactory {
       PersistentBehaviors6.receive[AccountCommand, AccountEvent, Option[Account]](
         accountNumber,
         None,
-        (state, cmd) => state match {
-          case None => onFirstCommand(cmd)
-          case Some(acc) => acc.applyCommand(cmd)
+        (state, cmd) ⇒ state match {
+          case None      ⇒ onFirstCommand(cmd)
+          case Some(acc) ⇒ acc.applyCommand(cmd)
         },
-        (state, event) => state match {
-          case None => onFirstEvent(event)
-          case Some(acc) => acc.applyEvent(event)
+        (state, event) ⇒ state match {
+          case None      ⇒ onFirstEvent(event)
+          case Some(acc) ⇒ acc.applyEvent(event)
         }
       )
     }

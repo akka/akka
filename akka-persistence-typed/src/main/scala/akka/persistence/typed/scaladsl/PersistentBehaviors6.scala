@@ -21,27 +21,26 @@ API experiment with factory for command and event handler
 object PersistentBehaviors6 {
 
   class HandlerFactory[Command, Event, State] {
-    type Effect = akka.persistence.typed.scaladsl.Effect[Event, State]
 
-    type CommandHandler = Command ⇒ Effect
+    type CommandHandler = Command ⇒ Effect[Event, State]
     type EventHandler = Event ⇒ State
 
     object CommandHandler {
 
-      def apply(handler: Command ⇒ Effect): Command ⇒ Effect = handler
+      def apply(handler: Command ⇒ Effect[Event, State]): Command ⇒ Effect[Event, State] = handler
 
-      def apply(handler: (State, Command) ⇒ Effect): (State, Command) ⇒ Effect = handler
+      def apply(handler: (State, Command) ⇒ Effect[Event, State]): (State, Command) ⇒ Effect[Event, State] = handler
 
-      def unhandled: Command ⇒ Effect = _ ⇒ Effect.unhandled
+      def unhandled: Command ⇒ Effect[Event, State] = _ ⇒ Effect.unhandled
 
-      def partial(handler: PartialFunction[Command, Effect]): Command ⇒ Effect = {
-        handler.orElse[Command, Effect] {
+      def partial(handler: PartialFunction[Command, Effect[Event, State]]): Command ⇒ Effect[Event, State] = {
+        handler.orElse[Command, Effect[Event, State]] {
           case _ ⇒ Effect.unhandled
         }
       }
 
-      def partial(handler: PartialFunction[(State, Command), Effect]): (State, Command) ⇒ Effect = {
-        val totalHandler = handler.orElse[(State, Command), Effect] {
+      def partial(handler: PartialFunction[(State, Command), Effect[Event, State]]): (State, Command) ⇒ Effect[Event, State] = {
+        val totalHandler = handler.orElse[(State, Command), Effect[Event, State]] {
           case _ ⇒ Effect.unhandled
         }
         (state, command) ⇒ totalHandler((state, command))
@@ -81,24 +80,22 @@ object PersistentBehaviors6 {
    */
   class HandlerFactoryOption[Command, Event, State] {
 
-    type Effect = akka.persistence.typed.scaladsl.Effect[Event, Option[State]]
-
-    type CommandHandler = Command ⇒ Effect
+    type CommandHandler = Command ⇒ Effect[Event, Option[State]]
     type EventHandler = Event ⇒ Option[State]
 
     object CommandHandler {
 
-      def apply(handler: Command ⇒ Effect): Command ⇒ Effect = handler
+      def apply(handler: Command ⇒ Effect[Event, Option[State]]): Command ⇒ Effect[Event, Option[State]] = handler
 
-      def unhandled: Command ⇒ Effect = _ ⇒ Effect.unhandled
+      def unhandled: Command ⇒ Effect[Event, Option[State]] = _ ⇒ Effect.unhandled
 
-      def partial(handler: PartialFunction[Command, Effect]): Command ⇒ Effect =
+      def partial(handler: PartialFunction[Command, Effect[Event, Option[State]]]): Command ⇒ Effect[Event, Option[State]] =
         handler.orElse {
           case _ ⇒ Effect.unhandled
         }
 
-      def partial(handler: PartialFunction[(State, Command), Effect]): (State, Command) ⇒ Effect = {
-        val totalHandler = handler.orElse[(State, Command), Effect] {
+      def partial(handler: PartialFunction[(State, Command), Effect[Event, Option[State]]]): (State, Command) ⇒ Effect[Event, Option[State]] = {
+        val totalHandler = handler.orElse[(State, Command), Effect[Event, Option[State]]] {
           case _ ⇒ Effect.unhandled
         }
         (state, command) ⇒ totalHandler((state, command))
@@ -128,7 +125,6 @@ object PersistentBehaviors6 {
         }
         (state, event) ⇒ Option(totalHandler((state, event)))
       }
-
     }
 
   }
@@ -139,7 +135,7 @@ object PersistentBehaviors6 {
     persistenceId:  String,
     emptyState:     State,
     commandHandler: (State, Command) ⇒ Effect[Event, State],
-    eventHandler:   (State, Event) ⇒ State): PersistentBehavior4[Command, Event, State] = ???
+    eventHandler:   (State, Event) ⇒ State): PersistentBehavior6[Command, Event, State] = ???
 
 }
 
