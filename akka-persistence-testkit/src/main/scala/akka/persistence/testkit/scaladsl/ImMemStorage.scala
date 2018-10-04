@@ -6,43 +6,52 @@ package akka.persistence.testkit.scaladsl
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-import java.util.function.{ BiFunction, Consumer }
 
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
-import akka.persistence.testkit.scaladsl.InMemStorageEmulator.JournalOperation
+import akka.persistence.testkit.scaladsl.MessageStorage.JournalOperation
 import akka.persistence.testkit.scaladsl.ProcessingPolicy._
-import akka.persistence.testkit.scaladsl.SnapshotStorageEmulator._
+import akka.persistence.testkit.scaladsl.SnapshotStorage.SnapshotOperation
 import akka.persistence.{ PersistentRepr, SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
+import akka.serialization.SerializationExtension
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 
-trait InMemStorage[K, T] {
+trait InternalReprSupport[T, R] {
+
+  def toInternal(repr: R): T
+
+  def toRepr(internal: T): R
+
+}
+
+trait InMemStorage[K, R, T] extends InternalReprSupport[T, R] {
 
   private val parallelism = Runtime.getRuntime.availableProcessors()
 
   private final val eventsMap: ConcurrentHashMap[K, Vector[T]] = new ConcurrentHashMap()
 
-  def forEachKey(f: K ⇒ Unit) = eventsMap.forEachKey(parallelism, f)
+  def forEachKey(f: K ⇒ Unit): Unit = eventsMap.forEachKey(parallelism, f)
 
-  def findMany(key: K, fromInclusive: Int, maxNum: Int): Option[Vector[T]] =
+  def findMany(key: K, fromInclusive: Int, maxNum: Int): Option[Vector[R]] =
     read(key)
       .flatMap(value ⇒ if (value.size > fromInclusive) Some(value.drop(fromInclusive).take(maxNum)) else None)
 
-  def findOneByIndex(key: K, index: Int): Option[T] =
+  def findOneByIndex(key: K, index: Int): Option[R] =
     Option(eventsMap.get(key))
       .flatMap(value ⇒ if (value.size > index) Some(value(index)) else None)
+      .map(toRepr)
 
   def addAny(key: K, elem: Any): Unit =
     addAny(key, immutable.Seq(elem))
 
-  def mapAny(key: K, elems: immutable.Seq[Any]): immutable.Seq[T]
+  def mapAny(key: K, elems: immutable.Seq[Any]): immutable.Seq[R]
 
   def addAny(key: K, elems: immutable.Seq[Any]): Unit =
     add(key, mapAny(key, elems))
 
-  def add(key: K, p: T): Unit =
+  def add(key: K, p: R): Unit =
     add(key, List(p))
 
   /**
@@ -52,61 +61,61 @@ trait InMemStorage[K, T] {
    * @param key
    * @param elems elements to insert
    */
-  def add(key: K, elems: ⇒ immutable.Seq[T]): Unit =
+  def add(key: K, elems: ⇒ immutable.Seq[R]): Unit =
     eventsMap.compute(key, (_: K, value: Vector[T]) ⇒ value match {
-      case null     ⇒ elems.toVector
-      case existing ⇒ existing ++ elems
+      case null     ⇒ elems.map(toInternal).toVector
+      case existing ⇒ existing ++ elems.map(toInternal)
     })
 
-  def delete(key: K, needsToBeDeleted: T ⇒ Boolean) =
+  def delete(key: K, needsToBeDeleted: R ⇒ Boolean): Vector[R] =
     eventsMap.computeIfPresent(key, (_: K, value: Vector[T]) ⇒ {
-      value.filterNot(needsToBeDeleted)
-    })
+      value.map(toRepr).filterNot(needsToBeDeleted).map(toInternal)
+    }).map(toRepr)
 
-  def updateExisting(key: K, updater: Vector[T] ⇒ Vector[T]) =
+  def updateExisting(key: K, updater: Vector[R] ⇒ Vector[R]): Vector[R] =
     eventsMap.computeIfPresent(key, (_: K, value: Vector[T]) ⇒ {
-      updater(value)
-    })
+      updater(value.map(toRepr)).map(toInternal)
+    }).map(toRepr)
 
-  def read(key: K): Option[Vector[T]] =
-    Option(eventsMap.get(key))
+  def read(key: K): Option[Vector[R]] =
+    Option(eventsMap.get(key)).map(_.map(toRepr))
 
-  def clearAll() =
+  def clearAll(): Unit =
     eventsMap.clear()
 
-  def removeKey(key: K) =
-    eventsMap.remove(key)
+  def removeKey(key: K): Vector[R] =
+    eventsMap.remove(key).map(toRepr)
 
-  def removeKey(key: K, value: Vector[T]): Boolean =
+  def removeKey(key: K, value: Vector[R]): Boolean =
     eventsMap.remove(key, value)
 
   import java.util.{ function ⇒ jf }
 
   import scala.language.implicitConversions
 
-  protected implicit def scalaFun1ToJava[I, R](f: I ⇒ R): jf.Function[I, R] = new jf.Function[I, R] {
-    override def apply(t: I): R = f(t)
+  protected implicit def scalaFun1ToJava[I, Re](f: I ⇒ Re): jf.Function[I, Re] = new jf.Function[I, Re] {
+    override def apply(t: I): Re = f(t)
   }
 
-  protected implicit def scalaFunToConsumer[I](f: I ⇒ Unit): jf.Consumer[I] = new Consumer[I] {
+  protected implicit def scalaFunToConsumer[I](f: I ⇒ Unit): jf.Consumer[I] = new jf.Consumer[I] {
     override def accept(t: I): Unit = f(t)
   }
 
-  protected implicit def scalaFun2ToJava[I, M, R](f: (I, M) ⇒ R): jf.BiFunction[I, M, R] = new BiFunction[I, M, R] {
-    override def apply(t: I, u: M): R = f(t, u)
+  protected implicit def scalaFun2ToJava[I, M, Re](f: (I, M) ⇒ Re): jf.BiFunction[I, M, Re] = new jf.BiFunction[I, M, Re] {
+    override def apply(t: I, u: M): Re = f(t, u)
   }
 
 }
 
-trait HighestSeqNumSupportStorage[K, V] extends InMemStorage[K, V] {
+trait HighestSeqNumSupportStorage[K, R, V] extends InMemStorage[K, R, V] {
 
   private final val seqNumbers = new ConcurrentHashMap[K, Long]()
 
   import scala.math._
 
-  def reprToSeqNum(repr: V): Long
+  def reprToSeqNum(repr: R): Long
 
-  def read(key: K, fromInclusive: Long, toInclusive: Long, maxNumber: Long): immutable.Seq[V] =
+  def read(key: K, fromInclusive: Long, toInclusive: Long, maxNumber: Long): immutable.Seq[R] =
     read(key).getOrElse(Vector.empty)
       .dropWhile(reprToSeqNum(_) < fromInclusive)
       //we dont need to read highestSeqNumber because it will in any case stop at it if toInclusive > highestSeqNumber
@@ -151,7 +160,7 @@ trait HighestSeqNumSupportStorage[K, V] extends InMemStorage[K, V] {
     super.clearAll()
   }
 
-  def clearAllPreservingSeqNumbers() =
+  def clearAllPreservingSeqNumbers(): Unit =
     forEachKey(removePreservingSeqNumber)
 
 }
@@ -172,10 +181,10 @@ trait PolicyOps[U] {
 
 }
 
-trait TestKitStorage[V, P] extends HighestSeqNumSupportStorage[String, V] with PolicyOps[P]
+trait TestKitStorage[R, P, I] extends HighestSeqNumSupportStorage[String, R, I] with PolicyOps[P] with Extension
 
-trait InMemStorageEmulator extends TestKitStorage[PersistentRepr, JournalOperation] {
-  import InMemStorageEmulator._
+trait MessageStorage[I] extends TestKitStorage[PersistentRepr, JournalOperation, I] {
+  import MessageStorage._
 
   override def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {
     val sn = reloadHighestSequenceNum(key) + 1
@@ -246,7 +255,7 @@ trait InMemStorageEmulator extends TestKitStorage[PersistentRepr, JournalOperati
 
 }
 
-object InMemStorageEmulator {
+object MessageStorage {
 
   trait JournalOperation
 
@@ -262,8 +271,30 @@ object InMemStorageEmulator {
 
 }
 
-trait SnapshotStorageEmulator extends TestKitStorage[(SnapshotMetadata, Any), SnapshotOperation] {
-  import SnapshotStorageEmulator._
+class SimpleMessageStorageImpl extends MessageStorage[PersistentRepr] {
+
+  override def toInternal(repr: PersistentRepr): PersistentRepr = repr
+
+  override def toRepr(internal: PersistentRepr): PersistentRepr = internal
+
+}
+
+class SerializedMessageStorageImpl(system: ActorSystem) extends MessageStorage[(Int, Array[Byte])] {
+
+  private lazy val serialization = SerializationExtension(system)
+
+  override def toInternal(repr: PersistentRepr): (Int, Array[Byte]) = {
+    val s = serialization.findSerializerFor(repr)
+    (s.identifier, s.toBinary(repr))
+  }
+
+  override def toRepr(internal: (Int, Array[Byte])): PersistentRepr =
+    serialization.deserialize(internal._2, internal._1, Some(classOf[PersistentRepr])).get
+
+}
+
+trait SnapshotStorage[I] extends TestKitStorage[(SnapshotMetadata, Any), SnapshotOperation, I] {
+  import SnapshotStorage._
 
   override def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[(SnapshotMetadata, Any)] = {
     val sn = reloadHighestSequenceNum(key)
@@ -311,7 +342,7 @@ trait SnapshotStorageEmulator extends TestKitStorage[(SnapshotMetadata, Any), Sn
 
 }
 
-object SnapshotStorageEmulator {
+object SnapshotStorage {
 
   trait SnapshotOperation
 
@@ -329,24 +360,52 @@ object SnapshotStorageEmulator {
 
 }
 
-class SnapshotStorageEmulatorExtension extends SnapshotStorageEmulator with Extension
+class SimpleSnapshotStorageImpl extends SnapshotStorage[(SnapshotMetadata, Any)] {
 
-object SnapshotStorageEmulatorExtension extends ExtensionId[SnapshotStorageEmulatorExtension] with ExtensionIdProvider {
+  override def toRepr(internal: (SnapshotMetadata, Any)): (SnapshotMetadata, Any) = identity(internal)
 
-  override def get(system: ActorSystem): SnapshotStorageEmulatorExtension = super.get(system)
+  override def toInternal(repr: (SnapshotMetadata, Any)): (SnapshotMetadata, Any) = identity(repr)
 
-  override def createExtension(system: ExtendedActorSystem): SnapshotStorageEmulatorExtension = new SnapshotStorageEmulatorExtension
+}
+
+class SerializedSnapshotStorageImpl(system: ActorSystem) extends SnapshotStorage[(SnapshotMetadata, Class[_], Int, Array[Byte])] {
+
+  private lazy val serialization = SerializationExtension(system)
+
+  override def toRepr(internal: (SnapshotMetadata, Class[_], Int, Array[Byte])): (SnapshotMetadata, Any) =
+    (internal._1, serialization.deserialize(internal._4, internal._3, Some(internal._2)).get)
+
+  override def toInternal(repr: (SnapshotMetadata, Any)): (SnapshotMetadata, Class[_], Int, Array[Byte]) = {
+    val s = serialization.findSerializerFor(repr._2.asInstanceOf[AnyRef])
+    (repr._1, repr._2.getClass, s.identifier, s.toBinary(repr._2.asInstanceOf[AnyRef]))
+  }
+
+}
+
+object SnapshotStorageEmulatorExtension extends ExtensionId[SnapshotStorage[_]] with ExtensionIdProvider {
+
+  override def get(system: ActorSystem): SnapshotStorage[_] = super.get(system)
+
+  override def createExtension(system: ExtendedActorSystem): SnapshotStorage[_] =
+    if (PersistenceTestKit.Settings(system).serializeMessages) {
+      new SerializedSnapshotStorageImpl(system)
+    } else {
+      new SimpleSnapshotStorageImpl
+    }
 
   override def lookup(): ExtensionId[_ <: Extension] = SnapshotStorageEmulatorExtension
 }
 
-class InMemEmulatorExtension extends InMemStorageEmulator with Extension
+object InMemStorageExtension extends ExtensionId[MessageStorage[_]] with ExtensionIdProvider {
 
-object InMemStorageExtension extends ExtensionId[InMemEmulatorExtension] with ExtensionIdProvider {
+  override def get(system: ActorSystem): MessageStorage[_] = super.get(system)
 
-  override def get(system: ActorSystem): InMemEmulatorExtension = super.get(system)
-
-  override def createExtension(system: ExtendedActorSystem) = new InMemEmulatorExtension
+  override def createExtension(system: ExtendedActorSystem) =
+    if (PersistenceTestKit.Settings(system).serializeMessages) {
+      new SerializedMessageStorageImpl(system)
+    } else {
+      new SimpleMessageStorageImpl
+    }
 
   override def lookup() = InMemStorageExtension
 

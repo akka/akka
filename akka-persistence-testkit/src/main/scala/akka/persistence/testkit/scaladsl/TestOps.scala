@@ -167,7 +167,7 @@ trait ClearOps { this: HasStorage[_, _] ⇒
 
 trait HasStorage[V, P] {
 
-  protected def storage: TestKitStorage[V, P]
+  protected def storage: TestKitStorage[V, P, _]
 
   //todo needs to be thread safe (atomic read-increment-write) for parallel tests?
   @volatile

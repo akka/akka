@@ -9,7 +9,7 @@ import java.io.NotSerializableException
 import akka.persistence.CapabilityFlag
 import akka.persistence.journal.JournalSpec
 import akka.persistence.snapshot.SnapshotStoreSpec
-import akka.persistence.testkit.scaladsl.InMemStorageEmulator.{ JournalOperation, JournalPolicies, Write }
+import akka.persistence.testkit.scaladsl.MessageStorage.{ JournalOperation, JournalPolicies, Write }
 import akka.persistence.testkit.scaladsl.ProcessingPolicy.{ ProcessingSuccess, Reject }
 
 class PersistenceTestkitJournalCompatSpec extends JournalSpec(config = PersistenceTestKitPlugin.PersitenceTestkitJournalConfig) {
