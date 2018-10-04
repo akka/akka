@@ -199,7 +199,7 @@ object SnapshotTestKit {
 
     import akka.util.Helpers._
 
-    val serializeMessages: Boolean = config.getBoolean("serialize-messages")
+    val serialize: Boolean = config.getBoolean("serialize")
     val assertTimeout: FiniteDuration = config.getMillisDuration("assert-timeout")
     val pollInterval: FiniteDuration = config.getMillisDuration("assert-poll-interval")
 
@@ -303,7 +303,7 @@ object PersistenceTestKit {
 
     import akka.util.Helpers._
 
-    val serializeMessages: Boolean = config.getBoolean("serialize-messages")
+    val serialize: Boolean = config.getBoolean("serialize")
     val assertTimeout: FiniteDuration = config.getMillisDuration("assert-timeout")
     val pollInterval: FiniteDuration = config.getMillisDuration("assert-poll-interval")
 

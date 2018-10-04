@@ -387,7 +387,7 @@ object SnapshotStorageEmulatorExtension extends ExtensionId[SnapshotStorage[_]] 
   override def get(system: ActorSystem): SnapshotStorage[_] = super.get(system)
 
   override def createExtension(system: ExtendedActorSystem): SnapshotStorage[_] =
-    if (PersistenceTestKit.Settings(system).serializeMessages) {
+    if (SnapshotTestKit.Settings(system).serialize) {
       new SerializedSnapshotStorageImpl(system)
     } else {
       new SimpleSnapshotStorageImpl
@@ -401,7 +401,7 @@ object InMemStorageExtension extends ExtensionId[MessageStorage[_]] with Extensi
   override def get(system: ActorSystem): MessageStorage[_] = super.get(system)
 
   override def createExtension(system: ExtendedActorSystem) =
-    if (PersistenceTestKit.Settings(system).serializeMessages) {
+    if (PersistenceTestKit.Settings(system).serialize) {
       new SerializedMessageStorageImpl(system)
     } else {
       new SimpleMessageStorageImpl
