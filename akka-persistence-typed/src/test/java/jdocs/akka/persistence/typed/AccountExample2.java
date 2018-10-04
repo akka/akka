@@ -8,10 +8,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
-import akka.persistence.typed.javadsl.CommandHandler;
-import akka.persistence.typed.javadsl.CommandHandlerBuilder;
-import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.PersistentBehavior;
+import akka.persistence.typed.javadsl.*;
 
 public class AccountExample2 extends PersistentBehavior<AccountExample2.AccountCommand, AccountExample2.AccountEvent, AccountExample2.Account> {
 
@@ -34,12 +31,12 @@ public class AccountExample2 extends PersistentBehavior<AccountExample2.AccountC
   public static class CloseAccount implements AccountCommand {}
 
   interface AccountEvent {
-    public Account applyEvent(Account state);
+    Account applyTo(Account state);
   }
   public static class AccountCreated implements AccountEvent {
     @Override
-    public Account applyEvent(Account state) {
-      return state.applyEvent(this);
+    public Account applyTo(Account state) {
+      return state.created(this);
     }
   }
   public static class Deposited implements AccountEvent {
@@ -50,8 +47,8 @@ public class AccountExample2 extends PersistentBehavior<AccountExample2.AccountC
     }
 
     @Override
-    public Account applyEvent(Account state) {
-      return state.applyEvent(this);
+    public Account applyTo(Account state) {
+      return state.deposited(this);
     }
   }
   public static class Withdrawn implements AccountEvent {
@@ -62,44 +59,41 @@ public class AccountExample2 extends PersistentBehavior<AccountExample2.AccountC
     }
 
     @Override
-    public Account applyEvent(Account state) {
-      return state.applyEvent(this);
+    public Account applyTo(Account state) {
+      return state.withdrawn(this);
     }
   }
   public static class AccountClosed implements AccountEvent {
     @Override
-    public Account applyEvent(Account state) {
-      return state.applyEvent(this);
+    public Account applyTo(Account state) {
+      return state.closed(this);
     }
   }
 
   interface Account {
-    public Account applyEvent(AccountCreated event);
-    public Account applyEvent(Deposited event);
-    public Account applyEvent(Withdrawn event);
-    public Account applyEvent(AccountClosed event);
+    default Account created(AccountCreated event) {
+      throw new IllegalStateException();
+    }
+
+    default Account deposited(Deposited event) {
+      throw new IllegalStateException();
+    }
+
+    default Account withdrawn(Withdrawn event) {
+      throw new IllegalStateException();
+    }
+
+    default Account closed(AccountClosed event) {
+      throw new IllegalStateException();
+    }
   }
 
-  public static class EmptyAccount implements Account {
+  public enum EmptyAccount implements Account {
+    INSTANCE;
 
     @Override
-    public Account applyEvent(AccountCreated event) {
+    public Account created(AccountCreated event) {
       return new OpenedAccount(0.0);
-    }
-
-    @Override
-    public Account applyEvent(Deposited event) {
-      throw new IllegalStateException();
-    }
-
-    @Override
-    public Account applyEvent(Withdrawn event) {
-      throw new IllegalStateException();
-    }
-
-    @Override
-    public Account applyEvent(AccountClosed event) {
-      throw new IllegalStateException();
     }
   }
 
@@ -111,46 +105,31 @@ public class AccountExample2 extends PersistentBehavior<AccountExample2.AccountC
     }
 
     @Override
-    public Account applyEvent(AccountCreated event) {
-      throw new IllegalStateException();
-    }
-
-    @Override
-    public Account applyEvent(Deposited event) {
+    public Account deposited(Deposited event) {
       return new OpenedAccount(balance + event.amount);
     }
 
     @Override
-    public Account applyEvent(Withdrawn event) {
+    public Account withdrawn(Withdrawn event) {
       return new OpenedAccount(balance - event.amount);
     }
 
     @Override
-    public Account applyEvent(AccountClosed event) {
-      return new ClosedAccount();
+    public Account closed(AccountClosed event) {
+      return ClosedAccount.INSTANCE;
+    }
+
+    private boolean canWithdraw(double amount) {
+      return (balance - amount) >= 0.0;
+    }
+
+    private boolean isCloseable() {
+      return balance == 0.0;
     }
   }
 
-  public static class ClosedAccount implements Account {
-    @Override
-    public Account applyEvent(AccountCreated event) {
-      throw new IllegalStateException();
-    }
-
-    @Override
-    public Account applyEvent(Deposited event) {
-      throw new IllegalStateException();
-    }
-
-    @Override
-    public Account applyEvent(Withdrawn event) {
-      throw new IllegalStateException();
-    }
-
-    @Override
-    public Account applyEvent(AccountClosed event) {
-      throw new IllegalStateException();
-    }
+  public enum ClosedAccount implements Account {
+    INSTANCE
   }
 
   public static Behavior<AccountCommand> behavior(String accountNumber) {
@@ -163,36 +142,19 @@ public class AccountExample2 extends PersistentBehavior<AccountExample2.AccountC
 
   @Override
   public Account emptyState() {
-    return new EmptyAccount();
+    return EmptyAccount.INSTANCE;
   }
 
   private CommandHandlerBuilder<AccountCommand, AccountEvent, EmptyAccount, Account> initialHandler() {
     return commandHandlerBuilder(EmptyAccount.class)
-      .matchCommand(CreateAccount.class, (__, cmd) -> Effect().persist(new AccountCreated()));
+      .matchCommand(CreateAccount.class, this::create);
   }
 
   private CommandHandlerBuilder<AccountCommand, AccountEvent, OpenedAccount, Account> openedAccountHandler() {
     return commandHandlerBuilder(OpenedAccount.class)
-      .matchCommand(Deposit.class, (__, cmd) -> Effect().persist(new Deposited(cmd.amount)))
-      .matchCommand(Withdraw.class, (acc, cmd) -> {
-        if ((acc.balance - cmd.amount) < 0.0) {
-          return Effect().unhandled(); // TODO replies are missing in this example
-        } else {
-          return Effect().persist(new Withdrawn(cmd.amount))
-            .andThen(acc2 -> { // FIXME in scaladsl it's named thenRun, change javadsl also?
-              // we know this cast is safe, but somewhat ugly
-              OpenedAccount openAccount = (OpenedAccount) acc2;
-              // do some side-effect using balance
-              System.out.println(openAccount.balance);
-            });
-        }
-      })
-      .matchCommand(CloseAccount.class, (acc, cmd) -> {
-        if (acc.balance == 0.0)
-          return Effect().persist(new AccountClosed());
-        else
-          return Effect().unhandled();
-        });
+        .matchCommand(Deposit.class, this::deposit)
+        .matchCommand(Withdraw.class, this::withdraw)
+        .matchCommand(CloseAccount.class, this::closeAccount);
   }
 
   private CommandHandlerBuilder<AccountCommand, AccountEvent, ClosedAccount, Account> closedHandler() {
@@ -203,14 +165,43 @@ public class AccountExample2 extends PersistentBehavior<AccountExample2.AccountC
   @Override
   public CommandHandler<AccountCommand, AccountEvent, Account> commandHandler() {
     return initialHandler()
-      .orElse(openedAccountHandler())
-      .orElse(closedHandler())
-      .build();
+        .orElse(openedAccountHandler())
+        .orElse(closedHandler())
+        .build();
+  }
+
+  private Effect<AccountEvent, Account> create(EmptyAccount account, CreateAccount command) {
+    return Effect().persist(new AccountCreated());
+  }
+
+  private Effect<AccountEvent, Account> deposit(OpenedAccount account, Deposit command) {
+    return Effect().persist(new Deposited(command.amount));
+  }
+
+  private Effect<AccountEvent, Account> withdraw(OpenedAccount account, Withdraw command) {
+    if (!account.canWithdraw(command.amount)) {
+      return Effect().unhandled(); // TODO replies are missing in this example
+    } else {
+      return Effect().persist(new Withdrawn(command.amount))
+        .andThen(acc2 -> { // FIXME in scaladsl it's named thenRun, change javadsl also?
+          // we know this cast is safe, but somewhat ugly
+          OpenedAccount openAccount = (OpenedAccount) acc2;
+          // do some side-effect using balance
+          System.out.println(openAccount.balance);
+        });
+    }
+  }
+
+  private Effect<AccountEvent, Account> closeAccount(OpenedAccount account, CloseAccount command) {
+    if (account.isCloseable())
+      return Effect().persist(new AccountClosed());
+    else
+      return Effect().unhandled();
   }
 
   @Override
   public EventHandler<Account, AccountEvent> eventHandler() {
-    return (state, event) -> event.applyEvent(state); // double-dispatch via event
+    return (state, event) -> event.applyTo(state); // double-dispatch via event
   }
 
 
