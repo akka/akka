@@ -295,7 +295,7 @@ class GraphUnzipWithSpec extends StreamSpec {
       probe5.expectNext("2")
       probe10.expectNext(5)
       probe15.expectNext("7")
-      probe21.expectNext("9")
+      probe21.expectNext("10")
 
       probe0.expectComplete()
       probe5.expectComplete()
