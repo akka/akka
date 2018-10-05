@@ -4,8 +4,7 @@
 
 package akka.persistence.typed.javadsl
 
-import java.util.function.BiFunction
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ BiFunction, Supplier, Function ⇒ JFunction }
 
 import akka.annotation.InternalApi
 import akka.util.OptionVal
@@ -70,6 +69,25 @@ final class EventHandlerBuilder[State >: Null, Event]() {
       eventPredicate = e ⇒ eventClass.isAssignableFrom(e.getClass),
       biFunction.asInstanceOf[BiFunction[State, Event, State]]) :: cases
     this
+  }
+
+  def matchEvent[E <: Event, S <: State](eventClass: Class[E], supplier: Supplier[State]): EventHandlerBuilder[State, Event] = {
+
+    val supplierBiFunction = new BiFunction[State, E, State] {
+      def apply(t: State, u: E): State = supplier.get()
+    }
+
+    matchEvent(eventClass, supplierBiFunction)
+  }
+
+  def matchEvent[E <: Event, S <: State](eventClass: Class[E], stateClass: Class[S],
+                                         supplier: Supplier[S]): EventHandlerBuilder[State, Event] = {
+
+    val supplierBiFunction = new BiFunction[S, E, State] {
+      def apply(t: S, u: E): S = supplier.get()
+    }
+
+    matchEvent(eventClass, stateClass, supplierBiFunction)
   }
 
   /**

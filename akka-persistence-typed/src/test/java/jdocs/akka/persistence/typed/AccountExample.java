@@ -8,10 +8,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
-import akka.persistence.typed.javadsl.CommandHandler;
-import akka.persistence.typed.javadsl.CommandHandlerBuilder;
-import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.EventSourcedBehavior;
+import akka.persistence.typed.javadsl.*;
 
 public class AccountExample
     extends EventSourcedBehavior<
@@ -88,45 +85,41 @@ public class AccountExample
     return new EmptyAccount();
   }
 
-  private CommandHandlerBuilder<AccountCommand, AccountEvent, EmptyAccount, Account>
-      initialHandler() {
-    return commandHandlerBuilder(EmptyAccount.class)
-        .matchCommand(CreateAccount.class, (__, cmd) -> Effect().persist(new AccountCreated()));
+  private CommandHandlerBuilderByState<AccountCommand, AccountEvent, EmptyAccount, Account> initialHandler() {
+    return commandHandlerBuilder()
+            .forStateType(EmptyAccount.class)
+              .matchCommand(CreateAccount.class, (__, cmd) -> Effect().persist(new AccountCreated()));
   }
 
-  private CommandHandlerBuilder<AccountCommand, AccountEvent, OpenedAccount, Account>
-      openedAccountHandler() {
-    return commandHandlerBuilder(OpenedAccount.class)
-        .matchCommand(Deposit.class, (__, cmd) -> Effect().persist(new Deposited(cmd.amount)))
-        .matchCommand(
-            Withdraw.class,
-            (acc, cmd) -> {
-              if ((acc.balance - cmd.amount) < 0.0) {
-                return Effect().unhandled(); // TODO replies are missing in this example
-              } else {
-                return Effect()
-                    .persist(new Withdrawn(cmd.amount))
-                    .thenRun(
-                        acc2 -> { // FIXME in scaladsl it's named thenRun, change javadsl also?
-                          // we know this cast is safe, but somewhat ugly
-                          OpenedAccount openAccount = (OpenedAccount) acc2;
-                          // do some side-effect using balance
-                          System.out.println(openAccount.balance);
-                        });
-              }
-            })
-        .matchCommand(
-            CloseAccount.class,
-            (acc, cmd) -> {
-              if (acc.balance == 0.0) return Effect().persist(new AccountClosed());
-              else return Effect().unhandled();
-            });
+  private CommandHandlerBuilderByState<AccountCommand, AccountEvent, OpenedAccount, Account> openedAccountHandler() {
+    return commandHandlerBuilder()
+            .forStateType(OpenedAccount.class)
+              .matchCommand(Deposit.class, (__, cmd) -> Effect().persist(new Deposited(cmd.amount)))
+              .matchCommand(Withdraw.class, (acc, cmd) -> {
+                if ((acc.balance - cmd.amount) < 0.0) {
+                  return Effect().unhandled(); // TODO replies are missing in this example
+                } else {
+                  return Effect().persist(new Withdrawn(cmd.amount))
+                    .thenRun(acc2 -> { // FIXME in scaladsl it's named thenRun, change javadsl also?
+                      // we know this cast is safe, but somewhat ugly
+                      OpenedAccount openAccount = (OpenedAccount) acc2;
+                      // do some side-effect using balance
+                      System.out.println(openAccount.balance);
+                    });
+                }
+              })
+              .matchCommand(CloseAccount.class, (acc, cmd) -> {
+                if (acc.balance == 0.0)
+                  return Effect().persist(new AccountClosed());
+                else
+                  return Effect().unhandled();
+                });
   }
 
-  private CommandHandlerBuilder<AccountCommand, AccountEvent, ClosedAccount, Account>
-      closedHandler() {
-    return commandHandlerBuilder(ClosedAccount.class)
-        .matchCommand(AccountCommand.class, (__, ___) -> Effect().unhandled());
+  private CommandHandlerBuilderByState<AccountCommand, AccountEvent, ClosedAccount, Account> closedHandler() {
+    return commandHandlerBuilder()
+            .forStateType(ClosedAccount.class)
+                .matchCommand(AccountCommand.class, (__, ___) -> Effect().unhandled());
   }
 
   @Override

@@ -65,20 +65,9 @@ abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka]
    */
   protected def eventHandler(): EventHandler[State, Event]
 
-  /**
-   * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
-   * @return A new, mutable, command handler builder
-   */
-  protected final def commandHandlerBuilder[S <: State](stateClass: Class[S]): CommandHandlerBuilder[Command, Event, S, State] =
-    CommandHandlerBuilder.builder[Command, Event, S, State](stateClass)
-
-  /**
-   * @param statePredicate The handlers defined by this builder are used when the `statePredicate` is `true`,
-   *                       *                       useful for example when state type is an Optional
-   * @return A new, mutable, command handler builder
-   */
-  protected final def commandHandlerBuilder(statePredicate: Predicate[State]): CommandHandlerBuilder[Command, Event, State, State] =
-    CommandHandlerBuilder.builder[Command, Event, State](statePredicate)
+  protected final def commandHandlerBuilder(): CommandHandlerBuilder[Command, Event, State] = {
+    new CommandHandlerBuilder[Command, Event, State]()
+  }
 
   /**
    * @return A new, mutable, event handler builder
