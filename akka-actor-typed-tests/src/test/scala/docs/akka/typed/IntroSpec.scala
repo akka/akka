@@ -9,10 +9,10 @@ package docs.akka.typed
 import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Terminated }
-import org.scalatest.WordSpecLike
 //#imports
 //#fiddle_code
 
+import org.scalatest.WordSpecLike
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import java.net.URLEncoder
