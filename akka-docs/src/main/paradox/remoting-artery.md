@@ -936,6 +936,6 @@ akka {
 ```
 
 You can look at the
-@java[@extref[Cluster with docker-compse example project](samples:akka-samples-cluster-docker-compose-java)]
-@scala[@extref[Cluster with docker-compose example project](samples:akka-samples-cluster-docker-compose-scala)]
+@java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
+@scala[@extref[Cluster with docker-compose example project](samples:akka-sample-cluster-docker-compose-scala)]
 to see what this looks like in practice.

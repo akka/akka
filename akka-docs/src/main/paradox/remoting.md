@@ -622,6 +622,6 @@ Keep in mind that local.address will most likely be in one of private network ra
 For further details see [RFC 1597](https://tools.ietf.org/html/rfc1597) and [RFC 1918](https://tools.ietf.org/html/rfc1918).
 
 You can look at the
-@java[@extref[Cluster with docker-compse example project](samples:akka-samples-cluster-docker-compose-java)]
-@scala[@extref[Cluster with docker-compose example project](samples:akka-samples-cluster-docker-compose-scala)]
+@java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
+@scala[@extref[Cluster with docker-compose example project](samples:akka-sample-cluster-docker-compose-scala)]
 to see what this looks like in practice.
