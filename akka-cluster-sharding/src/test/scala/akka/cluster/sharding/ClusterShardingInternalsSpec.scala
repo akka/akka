@@ -15,7 +15,12 @@ import org.scalatest.mockito.MockitoSugar
 
 import scala.concurrent.duration._
 
-class ClusterShardingInternalsSpec extends AkkaSpec("""akka.actor.provider = "cluster"""") with MockitoSugar {
+class ClusterShardingInternalsSpec extends AkkaSpec(
+  """
+    |akka.actor.provider = cluster
+    |akka.remote.netty.tcp.port = 0
+    |akka.remote.artery.canonical.port = 0
+    |""".stripMargin) with MockitoSugar {
 
   val clusterSharding = spy(new ClusterSharding(system.asInstanceOf[ExtendedActorSystem]))
 
@@ -60,16 +65,16 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""akka.actor.provider = "cl
       val shardName = "test"
       val emptyHandlerActor = system.actorOf(Props(new EmptyHandlerActor))
       val handOffStopper = system.actorOf(
-        Props(new HandOffStopper(shardName, probe.ref, Set(emptyHandlerActor), HandOffStopMessage, 5.seconds))
+        Props(new HandOffStopper(shardName, probe.ref, Set(emptyHandlerActor), HandOffStopMessage, 10.millis))
       )
 
       watch(emptyHandlerActor)
-      expectTerminated(emptyHandlerActor, 30.seconds)
+      expectTerminated(emptyHandlerActor, 1.seconds)
 
-      probe.expectMsg(30.seconds, ShardStopped(shardName))
+      probe.expectMsg(1.seconds, ShardStopped(shardName))
 
       watch(handOffStopper)
-      expectTerminated(handOffStopper, 30.seconds)
+      expectTerminated(handOffStopper, 1.seconds)
     }
   }
 }
