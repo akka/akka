@@ -4,15 +4,14 @@
 
 package jdocs.akka.cluster.typed;
 
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.ActorSystem;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.Props;
+import akka.actor.typed.*;
 import akka.actor.typed.javadsl.Behaviors;
 
 //#import
 import akka.cluster.typed.ClusterSingleton;
 import akka.cluster.typed.ClusterSingletonSettings;
+
+import java.time.Duration;
 
 //#import
 
@@ -49,21 +48,41 @@ public class SingletonCompileOnlyTest {
   public static void example() {
 
     ActorSystem system = ActorSystem.create(
-      Behaviors.empty(), "SingletonExample"
+            Behaviors.empty(), "SingletonExample"
     );
 
     //#singleton
     ClusterSingleton singleton = ClusterSingleton.get(system);
     // Start if needed and provide a proxy to a named singleton
     ActorRef<CounterCommand> proxy = singleton.spawn(
-      counter("TheCounter", 0),
+            counter("TheCounter", 0),
+            "GlobalCounter",
+            Props.empty(),
+            ClusterSingletonSettings.create(system),
+            new GoodByeCounter()
+    );
+
+    proxy.tell(new Increment());
+    //#singleton
+
+  }
+
+  public static void backoff() {
+
+    ActorSystem system = ActorSystem.create(
+      Behaviors.empty(), "SingletonExample"
+    );
+
+    //#backoff
+    ClusterSingleton singleton = ClusterSingleton.get(system);
+    ActorRef<CounterCommand> proxy = singleton.spawn(
+      Behaviors.supervise(counter("TheCounter", 0))
+              .onFailure(SupervisorStrategy.restartWithBackoff(Duration.ofSeconds(1), Duration.ofSeconds(10), 0.2)),
       "GlobalCounter",
       Props.empty(),
       ClusterSingletonSettings.create(system),
       new GoodByeCounter()
     );
-
-    proxy.tell(new Increment());
-    //#singleton
+    //#backoff
   }
 }

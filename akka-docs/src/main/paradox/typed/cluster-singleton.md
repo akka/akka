@@ -57,6 +57,23 @@ Scala
 Java
 :  @@snip [SingletonCompileOnlyTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/SingletonCompileOnlyTest.java) { #import #singleton }
 
+## Supervision
+
+The default @ref[supervision strategy](./fault-tolerance.md) when an exception is thrown is for an actor to be stopped. 
+The above example overrides this to `restart` to ensure it is always running. Another option would be to restart with 
+a backoff: 
+
+
+Scala
+:  @@snip [SingletonCompileOnlySpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/SingletonCompileOnlySpec.scala) { #backoff}
+
+Java
+:  @@snip [SingletonCompileOnlyTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/SingletonCompileOnlyTest.java) { #backoff}
+
+Be aware that this means there will be times when the singleton won't be running as restart is delayed.
+See @ref[Fault Tolerance](./fault-tolerance.md) for a full list of supervision options.
+
+
 ## Accessing singleton of another data centre
 
 TODO

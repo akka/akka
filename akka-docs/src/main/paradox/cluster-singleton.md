@@ -160,7 +160,15 @@ with different settings if needed.
 
 ## Supervision
 
-Sometimes it is useful to add supervision for the Cluster Singleton itself. To accomplish this you need to add a parent supervisor actor which will be used to create the 'real' singleton instance. Below is an example implementation (credit to [this StackOverflow answer](https://stackoverflow.com/a/36716708/779513))
+There are two actors that could potentially be supervised. For the `consumer` singleton created above these would be: 
+
+* Cluster singleton manager e.g. `/user/consumer` which runs on every node in the cluster
+* The user actor e.g. `/user/consumer/singleton` which the manager starts on the oldest node
+
+The Cluster singleton manager actor should not have its supervision strategy changed as it should always be running.
+However it is sometimes useful to add supervision for the user actor. 
+To accomplish this add a parent supervisor actor which will be used to create the 'real' singleton instance. 
+Below is an example implementation (credit to [this StackOverflow answer](https://stackoverflow.com/a/36716708/779513))
 
 Scala
 :  @@snip [ClusterSingletonSupervision.scala](/akka-docs/src/test/scala/docs/cluster/singleton/ClusterSingletonSupervision.scala) { #singleton-supervisor-actor }
