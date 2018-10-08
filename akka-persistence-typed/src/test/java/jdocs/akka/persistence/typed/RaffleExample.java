@@ -9,6 +9,7 @@ import akka.actor.typed.Behavior;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.CommandHandlerBuilder;
+import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.PersistentBehavior;
 
@@ -21,80 +22,83 @@ import java.util.Random;
  * Based on
  * https://github.com/fun-cqrs/fun-cqrs/blob/develop/samples/raffle/src/main/scala/raffle/domain/model/Raffle.scala
  *
- * but in a Java OO style
+ * but in Java with a mutable domain object (state) that is independent of Akka
  */
 public class RaffleExample {
 
-  static class RaffleId {}
+  public static class RaffleId {}
 
   interface Event {}
-  static final class RaffleStarted implements Event { }
-  static final class ParticipantAdded implements Event {
+  public static final class RaffleStarted implements Event { }
+  public static final class ParticipantAdded implements Event {
     public final String name;
     public ParticipantAdded(String name) {
       this.name = name;
     }
   }
-  static final class ParticipantRemoved implements Event {
+  public static final class ParticipantRemoved implements Event {
     public final String name;
     public ParticipantRemoved(String name) {
       this.name = name;
     }
   }
-  static final class RaffleCompleted implements Event {}
+  public static final class RaffleCompleted implements Event {}
 
   interface Command {}
-  static final class StartRaffle implements Command { }
+  public static final class StartRaffle implements Command { }
 
-  static final class AddParticipant implements Command {
+  public static final class AddParticipant implements Command {
     public final String name;
     public AddParticipant(String name) {
       this.name = name;
     }
   }
 
-  static final class RemoveParticipant implements Command {
+  public static final class RemoveParticipant implements Command {
     public final String name;
     public RemoveParticipant(String name) {
       this.name = name;
     }
   }
-  static final class CompleteRaffle implements Command { }
+  public static final class CompleteRaffle implements Command { }
 
-  enum RaffleState {
+  // TODO replies are not implemented in this example yet
+
+  private enum RaffleState {
     NOT_STARTED,
     RUNNING,
     COMPLETED
   }
 
   // mutable domain model impl, completely free from Akka stuff
+  // requires https://github.com/akka/akka/issues/25740
   static class Raffle {
     private RaffleState state = RaffleState.NOT_STARTED;
     private boolean finished = false;
     private List<String> participants = new ArrayList<>();
     private Optional<String> winner = Optional.empty();
 
-    public RaffleState getState() {
+    RaffleState getState() {
       return state;
     }
 
-    public boolean containsParticipant(String name) {
+    boolean containsParticipant(String name) {
       return participants.contains(name);
     }
 
-    public void start() {
+    void start() {
       state = RaffleState.RUNNING;
     }
 
-    public void addParticipant(String name) {
+    void addParticipant(String name) {
       participants.add(name);
     }
 
-    public void removeParticipant(String name) {
+    void removeParticipant(String name) {
       participants.remove(name);
     }
 
-    public void complete() {
+    void complete() {
       state = RaffleState.COMPLETED;
       int winnderIndex = new Random().nextInt(participants.size() - 1);
       winner = Optional.of(participants.get(winnderIndex));
@@ -119,22 +123,9 @@ public class RaffleExample {
 
         CommandHandlerBuilder<Command, Event, Raffle, Raffle> runningHandler =
             commandHandlerBuilder(raffle -> raffle.getState() == RaffleState.RUNNING)
-                .matchCommand(AddParticipant.class, ((raffle, addParticipant) -> {
-                  if (!raffle.containsParticipant(addParticipant.name))
-                    return Effect().persist(new ParticipantAdded(addParticipant.name));
-                  else
-                    return Effect().none();
-                })).matchCommand(RemoveParticipant.class, ((raffle, removeParticipant) -> {
-              if (raffle.containsParticipant(removeParticipant.name))
-                return Effect().persist(new ParticipantRemoved(removeParticipant.name));
-              else
-                return Effect().none();
-            })).matchCommand(CompleteRaffle.class, ((raffle, complete) -> {
-              return Effect().persist(new RaffleCompleted())
-                  .andThen((completedRaffle) -> {
-                    System.out.println("The winner is: " + completedRaffle.winner.get());
-                  });
-            }));
+                .matchCommand(AddParticipant.class, (this::addParticipant))
+                .matchCommand(RemoveParticipant.class, (this::removeParticipant))
+                .matchCommand(CompleteRaffle.class, ((raffle, cmd) -> completeRaffle()));
 
         CommandHandlerBuilder<Command, Event, Raffle, Raffle> completedHandler =
             commandHandlerBuilder(raffle -> raffle.getState() == RaffleState.COMPLETED);
@@ -142,22 +133,44 @@ public class RaffleExample {
         return notStartedHandler.orElse(runningHandler).orElse(completedHandler).build();
       }
 
+      private Effect<Event, Raffle> addParticipant(Raffle raffle, AddParticipant cmd) {
+        if (!raffle.containsParticipant(cmd.name))
+          return Effect().persist(new ParticipantAdded(cmd.name));
+        else
+          return Effect().none();
+      }
+
+      private Effect<Event, Raffle> removeParticipant(Raffle raffle, RemoveParticipant cmd) {
+        if (raffle.containsParticipant(cmd.name))
+          return Effect().persist(new ParticipantRemoved(cmd.name));
+        else
+          return Effect().none();
+      }
+
+      private Effect<Event, Raffle> completeRaffle() {
+        return Effect().persist(new RaffleCompleted())
+            .andThen((completedRaffle) -> {
+              System.out.println("The winner is: " + completedRaffle.winner.get());
+            });
+      }
+
+
       @Override
       public EventHandler<Raffle, Event> eventHandler() {
         return eventHandlerBuilder()
-            .matchEvent(RaffleStarted.class, (raffle, event) -> {
+            .matchEvent(RaffleStarted.class, (raffle, evt) -> {
               raffle.start();
               return raffle;
             })
-            .matchEvent(ParticipantAdded.class, (raffle, add) -> {
-              raffle.addParticipant(add.name);
+            .matchEvent(ParticipantAdded.class, (raffle, evt) -> {
+              raffle.addParticipant(evt.name);
               return raffle;
             })
-            .matchEvent(ParticipantRemoved.class, (raffle, remove) -> {
-              raffle.removeParticipant(remove.name);
+            .matchEvent(ParticipantRemoved.class, (raffle, evt) -> {
+              raffle.removeParticipant(evt.name);
               return raffle;
             })
-            .matchEvent(RaffleCompleted.class, (raffle, event) -> {
+            .matchEvent(RaffleCompleted.class, (raffle, evt) -> {
               raffle.complete();
               return raffle;
             })
