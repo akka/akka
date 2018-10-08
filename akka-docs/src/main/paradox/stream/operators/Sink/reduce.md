@@ -27,3 +27,10 @@ Materializes into a @scala[`Future`] @java[`CompletionStage`] that will be compl
 
 @@@
 
+## Example
+
+Scala
+:   @@snip [SinkReduceSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/SinkSpec.scala) { #reduce-operator-example }
+
+Java
+:   @@snip [SinkDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SinkDocExamples.java) { #reduce-operator-example }

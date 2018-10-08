@@ -324,6 +324,18 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
   }
 
+  "The reduce sink" must {
+    "sum up 1 to 10 correctly" in {
+      //#reduce-operator-example
+      val source = Source(1 to 10)
+      val result = source.runWith(Sink.reduce[Int]((a, b) ⇒ a + b))
+      result.map(println)(system.dispatcher)
+      // 55
+      //#reduce-operator-example
+      assert(result.futureValue == (1 to 10 sum))
+    }
+  }
+
   "Sink pre-materialization" must {
     "materialize the sink and wrap its exposed publisher in a Source" in {
       val publisherSink: Sink[String, Publisher[String]] = Sink.asPublisher[String](false)
