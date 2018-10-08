@@ -4,17 +4,22 @@
 
 package akka.persistence.typed.scaladsl
 
+import scala.util.Try
+
 import akka.Done
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior.DeferredBehavior
-import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
-import akka.persistence.typed.internal._
 
-import scala.util.Try
+/*
+API experiment with factory for command and event handler
+- no enclosing class
+- nothing special at all, using defs for different command handlers
+- see AccountExample5 and AccountExample5b
+*/
 
-object PersistentBehaviors {
+object PersistentBehaviors5 {
 
   /**
    * Type alias for the command handler function that defines how to act on commands.
@@ -24,6 +29,15 @@ object PersistentBehaviors {
    * be useful to use the alias for shorter type signature.
    */
   type CommandHandler[Command, Event, State] = (State, Command) ⇒ Effect[Event, State]
+
+  /**
+   * Type alias for the command handler function for a subclass of the `State` that defines how to act on commands.
+   *
+   * The type alias is not used in API signatures because it's easier to see (in IDE) what is needed
+   * when full function type is used. When defining the handler as a separate function value it can
+   * be useful to use the alias for shorter type signature.
+   */
+  type SubStateCommandHandler[Command, Event, State, S <: State] = (S, Command) ⇒ Effect[Event, State]
 
   /**
    * Type alias for the event handler function for updating the state based on events having been persisted.
@@ -41,45 +55,21 @@ object PersistentBehaviors {
     persistenceId:  String,
     emptyState:     State,
     commandHandler: (State, Command) ⇒ Effect[Event, State],
-    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
-    PersistentBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
-
-  /**
-   * The `CommandHandler` defines how to act on commands. A `CommandHandler` is
-   * a function:
-   *
-   * {{{
-   *   (State, Command) ⇒ Effect[Event, State]
-   * }}}
-   *
-   * The [[CommandHandler#command]] is useful for simple commands that don't need the state
-   * and context.
-   */
-  object CommandHandler {
-
-    /**
-     * Convenience for simple commands that don't need the state and context.
-     *
-     * @see [[Effect]] for possible effects of a command.
-     */
-    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): (State, Command) ⇒ Effect[Event, State] =
-      (_, cmd) ⇒ commandHandler(cmd)
-
-  }
+    eventHandler:   (State, Event) ⇒ State): PersistentBehavior4[Command, Event, State] = ???
 
 }
 
-trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command] {
+trait PersistentBehavior5[Command, Event, State] extends DeferredBehavior[Command] {
   /**
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(callback: State ⇒ Unit): PersistentBehavior[Command, Event, State]
+  def onRecoveryCompleted(callback: State ⇒ Unit): PersistentBehavior4[Command, Event, State]
 
   /**
    * The `callback` function is called to notify when a snapshot is complete.
    */
-  def onSnapshot(callback: (SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
+  def onSnapshot(callback: (SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior4[Command, Event, State]
 
   /**
    * Initiates a snapshot if the given function returns true.
@@ -88,23 +78,23 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    *
    * `predicate` receives the State, Event and the sequenceNr used for the Event
    */
-  def snapshotWhen(predicate: (State, Event, Long) ⇒ Boolean): PersistentBehavior[Command, Event, State]
+  def snapshotWhen(predicate: (State, Event, Long) ⇒ Boolean): PersistentBehavior4[Command, Event, State]
   /**
    * Snapshot every N events
    *
    * `numberOfEvents` should be greater than 0
    */
-  def snapshotEvery(numberOfEvents: Long): PersistentBehavior[Command, Event, State]
+  def snapshotEvery(numberOfEvents: Long): PersistentBehavior4[Command, Event, State]
 
   /**
    * Change the journal plugin id that this actor should use.
    */
-  def withJournalPluginId(id: String): PersistentBehavior[Command, Event, State]
+  def withJournalPluginId(id: String): PersistentBehavior4[Command, Event, State]
 
   /**
    * Change the snapshot store plugin id that this actor should use.
    */
-  def withSnapshotPluginId(id: String): PersistentBehavior[Command, Event, State]
+  def withSnapshotPluginId(id: String): PersistentBehavior4[Command, Event, State]
 
   /**
    * Changes the snapshot selection criteria used by this behavior.
@@ -114,18 +104,18 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
    * performed by replaying all events -- which may take a long time.
    */
-  def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): PersistentBehavior[Command, Event, State]
+  def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): PersistentBehavior4[Command, Event, State]
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query
    */
-  def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State]
+  def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior4[Command, Event, State]
 
   /**
    * Transform the event in another type before giving to the journal. Can be used to wrap events
    * in types Journals understand but is of a different type than `Event`.
    */
-  def eventAdapter(adapter: EventAdapter[Event, _]): PersistentBehavior[Command, Event, State]
+  def eventAdapter(adapter: EventAdapter[Event, _]): PersistentBehavior4[Command, Event, State]
 
   /**
    * Back off strategy for persist failures.
@@ -135,6 +125,6 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    *
    * If not specified the actor will be stopped on failure.
    */
-  def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): PersistentBehavior[Command, Event, State]
+  def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): PersistentBehavior4[Command, Event, State]
 }
 
