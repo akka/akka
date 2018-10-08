@@ -33,12 +33,12 @@ out-of-date value.
 
 ## Using the Replicator
 
-The @scala[`akka.typed.cluster.ddata.scaladsl.Replicator`]@java[`akka.typed.cluster.ddata.javadsl.Replicator`] 
+The @scala[@unidoc[akka.cluster.ddata.typed.scaladsl.Replicator]]@java[@unidoc[akka.cluster.ddata.typed.javadsl.Replicator]] 
 actor provides the API for interacting with the data and is accessed through the extension 
-@scala[`akka.typed.cluster.ddata.scaladsl.DistributedData`]@java[`akka.typed.cluster.ddata.javadsl.DistributedData`].
+@scala[@unidoc[akka.cluster.ddata.typed.scaladsl.DistributedData]]@java[@unidoc[akka.cluster.ddata.typed.javadsl.DistributedData]].
 
-The messages for the replicator, such as `Replicator.Update` are defined in @scala[`akka.typed.cluster.ddata.scaladsl.Replicator`]
-@java[`akka.typed.cluster.ddata.scaladsl.Replicator`] but the actual CRDTs are the 
+The messages for the replicator, such as `Replicator.Update` are defined in @scala[`akka.cluster.ddata.typed.scaladsl.Replicator`]
+@java[`akka.cluster.ddata.typed.scaladsl.Replicator`] but the actual CRDTs are the 
 same as in untyped, for example `akka.cluster.ddata.GCounter`. This will require an @scala[implicit] untyped `Cluster`
 for now, we hope to improve this in the future ([issue #25746](https://github.com/akka/akka/issues/25746)).
 
@@ -76,7 +76,8 @@ the extra interaction with the replicator using the `GetCachedValue` command.
 We also support asking the replicator, using the `GetValue`, demonstrating how many of the replicator commands take
 a pass-along value that will be put in the response message so that we do not need to keep a local state tracking
 what actors are waiting for responses, but can extract the `replyTo` actor from the replicator when it responds 
-with a `GetSuccess`.
+with a `GetSuccess`. See the @ref[the untyped Distributed Data documentation](../distributed-data.md#using-the-replicator)
+for more details about what interactions with the replicator there are.
 
 
 ### Replicated data types
@@ -87,7 +88,8 @@ For more details, read @ref[the untyped Distributed Data documentation](../distr
 
 ### Running separate instances of the replicator
 
-For some use cases (FIXME which?) it makes sense to start separate replicators, this needs to be done on all nodes, or 
+For some use cases, for example when limiting the replicator to certain roles, or using different subsets on different roles,
+it makes sense to start separate replicators, this needs to be done on all nodes, or 
 the group of nodes tagged with a specific role. To do this with the Typed Distributed Data you will first
 have to start an untyped `Replicator` and pass it to the `Replicator.behavior` method that takes an untyped
 actor ref. All such `Replicator`s must run on the same path in the untyped actor hierarchy.
