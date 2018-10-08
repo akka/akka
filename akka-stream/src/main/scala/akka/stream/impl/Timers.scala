@@ -114,6 +114,32 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
   }
 
+  final class CompleteAfterIdle[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
+    override def initialAttributes = DefaultAttributes.idle
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+        private var nextDeadline: Long = System.nanoTime + timeout.toNanos
+
+        setHandlers(in, out, this)
+
+        override def onPush(): Unit = {
+          nextDeadline = System.nanoTime + timeout.toNanos
+          push(out, grab(in))
+        }
+
+        override def onPull(): Unit = pull(in)
+
+        final override protected def onTimer(key: Any): Unit =
+          if (nextDeadline - System.nanoTime < 0) completeStage()
+
+        override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, timeoutCheckInterval(timeout))
+      }
+
+    override def toString = "IdleTimeout"
+
+  }
+
   final class BackpressureTimeout[T](val timeout: FiniteDuration) extends SimpleLinearGraphStage[T] {
     override def initialAttributes = DefaultAttributes.backpressureTimeout
 

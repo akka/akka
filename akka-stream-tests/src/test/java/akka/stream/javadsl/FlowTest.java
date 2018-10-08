@@ -18,9 +18,11 @@ import akka.stream.javadsl.GraphDSL.Builder;
 import akka.stream.stage.*;
 import akka.testkit.AkkaSpec;
 import akka.stream.testkit.TestPublisher;
+import akka.stream.testkit.TestSubscriber;
 import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
+import scala.concurrent.duration.FiniteDuration;
 import org.reactivestreams.Publisher;
 import akka.testkit.AkkaJUnitActorSystemResource;
 
@@ -1050,6 +1052,26 @@ public class FlowTest extends StreamTest {
     } catch (TimeoutException e) {
       // expected
     }
+  }
+
+  @Test
+  public void mustBeAbleToUseCompleteAfterIdleTimeout() {
+    TestPublisher.Probe<Integer> upstreamProbe = TestPublisher.probe(0, system);
+    TestSubscriber.Probe<Integer> downstreamProbe = TestSubscriber.probe(system);
+
+    Source.fromPublisher(upstreamProbe)
+            .via(Flow.of(Integer.class).completeAfterIdleTimeout(Duration.ofSeconds(1)))
+            .runWith(Sink.fromSubscriber(downstreamProbe), materializer);
+
+    // Two seconds in overall, but won't timeout until time between elements is large enough
+    // (i.e. this works differently from completionTimeout)
+    for (int i = 0; i < 4; i++) {
+      upstreamProbe.sendNext(1);
+      downstreamProbe.requestNext(1);
+      downstreamProbe.expectNoMsg(FiniteDuration.apply(500, TimeUnit.MILLISECONDS)); // No timeout yet
+    }
+
+    downstreamProbe.expectComplete();
   }
 
   @Test

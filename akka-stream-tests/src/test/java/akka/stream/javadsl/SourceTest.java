@@ -21,6 +21,7 @@ import akka.util.ConstantFun;
 import akka.stream.stage.*;
 import akka.testkit.AkkaSpec;
 import akka.stream.testkit.TestPublisher;
+import akka.stream.testkit.TestSubscriber;
 import akka.testkit.javadsl.TestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -539,10 +540,10 @@ public class SourceTest extends StreamTest {
     assertEquals(result.size(), 10000);
     for (Integer i: result) assertEquals(i, (Integer) 42);
   }
-  
+
   @Test
   public void mustBeAbleToUseQueue() throws Exception {
-    final Pair<SourceQueueWithComplete<String>, CompletionStage<List<String>>> x = 
+    final Pair<SourceQueueWithComplete<String>, CompletionStage<List<String>>> x =
         Flow.of(String.class).runWith(
             Source.queue(2, OverflowStrategy.fail()),
             Sink.seq(), materializer);
@@ -881,6 +882,26 @@ public class SourceTest extends StreamTest {
     } catch (TimeoutException e) {
       // expected
     }
+  }
+
+  @Test
+  public void mustBeAbleToUseCompleteAfterIdleTimeout() {
+    TestPublisher.Probe<Integer> upstreamProbe = TestPublisher.probe(0, system);
+    TestSubscriber.Probe<Integer> downstreamProbe = TestSubscriber.probe(system);
+
+    Source.fromPublisher(upstreamProbe)
+            .completeAfterIdleTimeout(Duration.ofSeconds(1))
+            .runWith(Sink.fromSubscriber(downstreamProbe), materializer);
+
+    // Two seconds in overall, but won't timeout until time between elements is large enough
+    // (i.e. this works differently from completionTimeout)
+    for (int i = 0; i < 4; i++) {
+      upstreamProbe.sendNext(1);
+      downstreamProbe.requestNext(1);
+      downstreamProbe.expectNoMsg(FiniteDuration.apply(500, TimeUnit.MILLISECONDS)); // No timeout yet
+    }
+
+    downstreamProbe.expectComplete();
   }
 
   @Test

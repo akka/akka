@@ -2069,6 +2069,20 @@ trait FlowOps[+Out, +Mat] {
   def idleTimeout(timeout: FiniteDuration): Repr[Out] = via(new Timers.Idle[Out](timeout))
 
   /**
+    * Terminate processing (and cancel the upstream publisher) if the time between two processed
+    * elements exceeds the provided timeout.
+    *
+    * '''Emits when''' upstream emits an element
+    *
+    * '''Backpressures when''' downstream backpressures
+    *
+    * '''Completes when''' upstream completes
+    *
+    * '''Cancels when''' downstream cancels or timeout elapses between two emitted elements
+    */
+  def completeAfterIdleTimeout(timeout: FiniteDuration): Repr[Out] = via(new Timers.CompleteAfterIdle[Out](timeout))
+
+  /**
    * If the time between the emission of an element and the following downstream demand exceeds the provided timeout,
    * the stream is failed with a [[scala.concurrent.TimeoutException]]. The timeout is checked periodically,
    * so the resolution of the check is one period (equals to timeout value).
