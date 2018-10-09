@@ -12,6 +12,7 @@ import akka.annotation.InternalApi
 import com.typesafe.config.Config
 import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManagerSettings
+import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {
 
@@ -192,6 +193,8 @@ object ClusterShardingSettings {
  *   be used for the internal persistence of ClusterSharding. If not defined the default
  *   snapshot plugin is used. Note that this is not related to persistence used by the entity
  *   actors.
+ * @param passivateIdleEntityAfter Passivate entities that have not seen a message in this interval.
+ *                                 Use 0 to disable automatic passivation.
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  */
 final class ClusterShardingSettings(
@@ -235,6 +238,9 @@ final class ClusterShardingSettings(
 
   def withPassivateIdleAfter(duration: Duration): ClusterShardingSettings =
     copy(passivateIdleAfter = duration)
+
+  def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
+    copy(passivateIdleAfter = duration.asScala)
 
   /**
    * The `role` of the `ClusterSingletonManagerSettings` is not used. The `role` of the
