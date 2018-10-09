@@ -41,7 +41,7 @@ object ClusterSingletonLeavingSpeedSpec {
 }
 
 class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
-  akka.loglevel = INFO
+  akka.loglevel = DEBUG
   akka.actor.provider = akka.cluster.ClusterActorRefProvider
   akka.cluster.auto-down-unreachable-after = 2s
   akka.remote {
@@ -57,7 +57,10 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
   """) {
 
   // FIXME change number of systems to 3 if we keep this test, can be adjusted to higher when investigating
-  private val systems = Vector.fill[ActorSystem](40)(ActorSystem(system.name, system.settings.config))
+  private val systems = (1 to 10).map { n ⇒
+    val roleConfig = ConfigFactory.parseString(s"""akka.cluster.roles=[role-${n % 3}]""")
+    ActorSystem(system.name, roleConfig.withFallback(system.settings.config))
+  }
   private val probes = systems.map(TestProbe()(_))
 
   override def expectedTestDuration: FiniteDuration = 10.minutes
