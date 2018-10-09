@@ -8,7 +8,7 @@ import java.util.UUID
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, SupervisorStrategy }
-import akka.persistence.typed.scaladsl.PersistentBehaviors.CommandHandler
+import akka.persistence.typed.scaladsl.PersistentBehavior.CommandHandler
 import akka.actor.testkit.typed.TE
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
@@ -61,7 +61,7 @@ object PerformanceSpec {
   def behavior(name: String, probe: TestProbe[Command])(other: (Command, Parameters) ⇒ Effect[String, String]) = {
     Behaviors.supervise({
       val parameters = Parameters()
-      PersistentBehaviors.receive[Command, String, String](
+      PersistentBehavior[Command, String, String](
         persistenceId = name,
         "",
         commandHandler = CommandHandler.command {

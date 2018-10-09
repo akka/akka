@@ -124,7 +124,7 @@ object PersistentBehaviorSpec {
     loggingActor:  ActorRef[String],
     probe:         ActorRef[(State, Event)],
     snapshotProbe: ActorRef[Try[Done]]): PersistentBehavior[Command, Event, State] = {
-    PersistentBehaviors.receive[Command, Event, State](
+    PersistentBehavior[Command, Event, State](
       persistenceId,
       emptyState = State(0, Vector.empty),
       commandHandler = (state, cmd) ⇒ cmd match {

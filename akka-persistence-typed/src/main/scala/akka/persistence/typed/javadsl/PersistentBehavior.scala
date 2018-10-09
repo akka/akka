@@ -147,7 +147,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private (val pe
       else tags.asScala.toSet
     }
 
-    val behavior = scaladsl.PersistentBehaviors.receive[Command, Event, State](
+    val behavior = scaladsl.PersistentBehavior[Command, Event, State](
       persistenceId,
       emptyState,
       (state, cmd) ⇒ commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
