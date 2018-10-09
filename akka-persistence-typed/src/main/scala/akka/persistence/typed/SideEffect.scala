@@ -25,6 +25,9 @@ final private[akka] case class Callback[State](effect: State ⇒ Unit) extends S
 @InternalApi
 private[akka] case object Stop extends SideEffect[Nothing]
 
+@InternalApi
+final private[akka] case class AutoConfirmationSideEffect[State](cmd: AutoConfirmation) extends SideEffect[State]
+
 object SideEffect {
   /**
    * Create a ChainedEffect that can be run after Effects
