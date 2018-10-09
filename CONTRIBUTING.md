@@ -383,6 +383,37 @@ tested it becomes an officially supported Akka feature.
 
 [List of Akka features marked as may change](http://doc.akka.io/docs/akka/current/common/may-change.html)
 
+## Java APIs
+
+Each feature in Akka must have an API for convenient usage from both Scala and Java, as we develop the Java APIs in
+a subset of Scala that is easy to use from Java there are ... 
+
+When new APIs are added or existing ones are significantly changed such changes should have test coverage written in 
+actual Java code.
+
+New APIs are mostly separated into a `scaladsl` and a `javadsl` subtree of packages to discern what APIs are for which 
+language. In a few cases common types are shared between the two languages, but the general rule should be the separate
+packages style. Some of the existing APIs do not follow this pattern for historical reasons and it would be too big a 
+change (especially given our binary compatibility guarantees) to introduce it (the untyped `akka.actor.ActorSystem` for 
+example).
+
+#### Scala Java introperability checklist
+
+ * Where Java and Scala APIs are mixed, the Scaladoc for classes and methods should start with a `Scala API:` or `Java API:` 
+   to make it easy to discover which API it belongs to.
+ * Companion object factories, `apply`, are called `create` in the Java APIs.
+ * companion objects are only reachable from Java if the type they are companion to is not a trait
+ * standard library types should not be in the Java method signatures. Common ones:
+   * Scala `Duration` and `FiniteDuration` must be `java.time.duration`
+   * Scala function types, eg. `A => B` must be `java.util.Function` and friends
+   * `Future` must be `CompletionStage`
+   * `Option` must be `Optional`
+   * Scala collections must be corresponding Java collections
+   * `PartialFunction` is often replaced by builder style APIs to provide the same convenience
+ * Default parameter values does not work for Java, you have to manually provide overloads that introduce default values
+ * Lower type bounds `trait[T] { def method[U >: Something]: U }` does not work with Java and must be avoided
+
+
 ## Contributing new Akka Streams operators
 
 Documentation of Akka Streams operators is automatically enforced.
