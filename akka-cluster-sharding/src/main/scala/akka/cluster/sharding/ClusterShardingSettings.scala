@@ -59,6 +59,7 @@ object ClusterShardingSettings {
       journalPluginId = config.getString("journal-plugin-id"),
       snapshotPluginId = config.getString("snapshot-plugin-id"),
       stateStoreMode = config.getString("state-store-mode"),
+      passivateIdleEntityAfter = config.getDuration("passivate-idle-entity-after", MILLISECONDS).millis,
       tuningParameters,
       coordinatorSingletonSettings)
   }
@@ -199,6 +200,7 @@ final class ClusterShardingSettings(
   val journalPluginId:              String,
   val snapshotPluginId:             String,
   val stateStoreMode:               String,
+  val passivateIdleEntityAfter:     Duration,
   val tuningParameters:             ClusterShardingSettings.TuningParameters,
   val coordinatorSingletonSettings: ClusterSingletonManagerSettings) extends NoSerializationVerificationNeeded {
 
@@ -231,6 +233,9 @@ final class ClusterShardingSettings(
   def withStateStoreMode(stateStoreMode: String): ClusterShardingSettings =
     copy(stateStoreMode = stateStoreMode)
 
+  def withPassivateIdleAfter(duration: Duration): ClusterShardingSettings =
+    copy(passivateIdleAfter = duration)
+
   /**
    * The `role` of the `ClusterSingletonManagerSettings` is not used. The `role` of the
    * coordinator singleton will be the same as the `role` of `ClusterShardingSettings`.
@@ -244,14 +249,17 @@ final class ClusterShardingSettings(
     journalPluginId:              String                                   = journalPluginId,
     snapshotPluginId:             String                                   = snapshotPluginId,
     stateStoreMode:               String                                   = stateStoreMode,
+    passivateIdleAfter:           Duration                                 = passivateIdleEntityAfter,
     tuningParameters:             ClusterShardingSettings.TuningParameters = tuningParameters,
     coordinatorSingletonSettings: ClusterSingletonManagerSettings          = coordinatorSingletonSettings): ClusterShardingSettings =
+
     new ClusterShardingSettings(
       role,
       rememberEntities,
       journalPluginId,
       snapshotPluginId,
       stateStoreMode,
+      passivateIdleAfter,
       tuningParameters,
       coordinatorSingletonSettings)
 }

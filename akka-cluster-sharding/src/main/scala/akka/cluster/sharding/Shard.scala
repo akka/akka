@@ -14,7 +14,7 @@ import akka.actor.Props
 import akka.actor.Terminated
 import akka.cluster.sharding.Shard.ShardCommand
 import akka.actor.Actor
-import akka.util.MessageBufferMap
+import akka.util.{ MessageBufferMap, PrettyDuration }
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -25,6 +25,8 @@ import akka.cluster.ddata.Replicator._
 import akka.actor.Stash
 import akka.persistence._
 import akka.actor.NoSerializationVerificationNeeded
+
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API
@@ -115,6 +117,9 @@ private[akka] object Shard {
       Props(new Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage))
         .withDeploy(Deploy.local)
   }
+
+  private case object PassivateIdleTick
+
 }
 
 /**
@@ -144,10 +149,20 @@ private[akka] class Shard(
   var state = State.Empty
   var idByRef = Map.empty[ActorRef, EntityId]
   var refById = Map.empty[EntityId, ActorRef]
+  var lastMessageTimestamp = Map.empty[EntityId, Long]
   var passivating = Set.empty[ActorRef]
   val messageBuffers = new MessageBufferMap[EntityId]
 
   var handOffStopper: Option[ActorRef] = None
+
+  import context.dispatcher
+  val passivateIdleTask = if (settings.passivateIdleEntityAfter.toNanos > 0) {
+    val idleInterval = 1.second // FIXME
+    log.info("Idle entities will be passivated after {}", PrettyDuration.format(settings.passivateIdleEntityAfter))
+    Some(context.system.scheduler.schedule(idleInterval, idleInterval, self, PassivateIdleTick))
+  } else {
+    None
+  }
 
   initialized()
 
@@ -166,6 +181,7 @@ private[akka] class Shard(
     case msg: ShardRegion.StartEntityAck         ⇒ receiveStartEntityAck(msg)
     case msg: ShardRegionCommand                 ⇒ receiveShardRegionCommand(msg)
     case msg: ShardQuery                         ⇒ receiveShardQuery(msg)
+    case PassivateIdleTick                       ⇒ passivateIdleEntities()
     case msg if extractEntityId.isDefinedAt(msg) ⇒ deliverMessage(msg, sender())
   }
 
@@ -240,6 +256,9 @@ private[akka] class Shard(
     val id = idByRef(ref)
     idByRef -= ref
     refById -= id
+    if (passivateIdleTask.isDefined && lastMessageTimestamp.contains(id)) {
+      lastMessageTimestamp -= id
+    }
     if (messageBuffers.getOrEmpty(id).nonEmpty) {
       log.debug("Starting entity [{}] again, there are buffered messages for it", id)
       sendMsgBuffer(EntityStarted(id))
@@ -262,6 +281,16 @@ private[akka] class Shard(
         log.debug("Passivation already in progress for {}. Not sending stopMessage back to entity.", entity)
       }
       case None ⇒ log.debug("Unknown entity {}. Not sending stopMessage back to entity.", entity)
+    }
+  }
+
+  def passivateIdleEntities(): Unit = {
+    log.debug("Passivating idle entities")
+    val deadline = System.nanoTime() - settings.passivateIdleEntityAfter.toNanos
+    lastMessageTimestamp.foreach {
+      case (entityId, lastMessageTimestamp) ⇒
+        if (lastMessageTimestamp < deadline && refById.contains(entityId)) // test failed but, how could it not be in refs though?
+          passivate(refById(entityId), handOffStopMessage) // FIXME double check that this is the right message
     }
   }
 
@@ -295,20 +324,25 @@ private[akka] class Shard(
     if (id == null || id == "") {
       log.warning("Id must not be empty, dropping message [{}]", msg.getClass.getName)
       context.system.deadLetters ! msg
-    } else if (payload.isInstanceOf[ShardRegion.StartEntity]) {
-      // in case it was wrapped, used in Typed
-      receiveStartEntity(payload.asInstanceOf[ShardRegion.StartEntity])
     } else {
-      messageBuffers.contains(id) match {
-        case false ⇒ deliverTo(id, msg, payload, snd)
+      if (passivateIdleTask.isDefined) {
+        lastMessageTimestamp += (id -> System.nanoTime())
+      }
+      if (payload.isInstanceOf[ShardRegion.StartEntity]) {
+        // in case it was wrapped, used in Typed
+        receiveStartEntity(payload.asInstanceOf[ShardRegion.StartEntity])
+      } else {
+        messageBuffers.contains(id) match {
+          case false ⇒ deliverTo(id, msg, payload, snd)
 
-        case true if messageBuffers.totalSize >= bufferSize ⇒
-          log.debug("Buffer is full, dropping message for entity [{}]", id)
-          context.system.deadLetters ! msg
+          case true if messageBuffers.totalSize >= bufferSize ⇒
+            log.debug("Buffer is full, dropping message for entity [{}]", id)
+            context.system.deadLetters ! msg
 
-        case true ⇒
-          log.debug("Message for entity [{}] buffered", id)
-          messageBuffers.append(id, msg, snd)
+          case true ⇒
+            log.debug("Message for entity [{}] buffered", id)
+            messageBuffers.append(id, msg, snd)
+        }
       }
     }
   }
@@ -329,9 +363,16 @@ private[akka] class Shard(
       val a = context.watch(context.actorOf(entityProps(id), name))
       idByRef = idByRef.updated(a, id)
       refById = refById.updated(id, a)
+      if (passivateIdleTask.isDefined) {
+        lastMessageTimestamp += (id -> System.nanoTime())
+      }
       state = state.copy(state.entities + id)
       a
     }
+  }
+
+  override def postStop(): Unit = {
+    passivateIdleTask.foreach(_.cancel())
   }
 }
 
@@ -425,6 +466,9 @@ private[akka] trait RememberingShard { selfType: Shard ⇒
     val id = idByRef(ref)
     idByRef -= ref
     refById -= id
+    if (passivateIdleTask.isDefined && lastMessageTimestamp.contains(id)) {
+      lastMessageTimestamp -= id
+    }
     if (messageBuffers.getOrEmpty(id).nonEmpty) {
       //Note; because we're not persisting the EntityStopped, we don't need
       // to persist the EntityStarted either.
