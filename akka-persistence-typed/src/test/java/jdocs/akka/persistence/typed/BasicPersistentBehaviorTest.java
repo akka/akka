@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 
-public class BasicPersistentBehaviorsTest {
+public class BasicPersistentBehaviorTest {
 
   //#structure
   public interface Command {}

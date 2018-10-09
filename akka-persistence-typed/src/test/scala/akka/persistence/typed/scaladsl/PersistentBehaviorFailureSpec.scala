@@ -66,7 +66,7 @@ class PersistentBehaviorFailureSpec extends ScalaTestWithActorTestKit(Persistent
 
   implicit val testSettings = TestKitSettings(system)
 
-  def failingPersistentActor(pid: String, probe: ActorRef[String]): Behavior[String] = PersistentBehaviors.receive[String, String, String](
+  def failingPersistentActor(pid: String, probe: ActorRef[String]): Behavior[String] = PersistentBehavior[String, String, String](
     pid, "",
     (_, cmd) ⇒ {
       probe.tell("persisting")

@@ -30,10 +30,10 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 Let's start with a simple example. The minimum required for a `PersistentBehavior` is:
 
 Scala
-:  @@snip [BasicPersistentBehaviorsCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #structure }
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #structure }
 
 Java
-:  @@snip [BasicPersistentBehaviorsTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #structure }
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #structure }
 
 The first important thing to notice is the `Behavior` of a persistent actor is typed to the type of the `Command`
 because this is the type of message a persistent actor should receive. In Akka Typed this is now enforced by the type system.
@@ -212,7 +212,7 @@ Scala
 Java
 :  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #event-handler }
 
-And finally the behavior is created @scala[from the `PersistentBehaviors.receive`]:
+And finally the behavior is created @scala[from the `PersistentBehavior.apply`]:
 
 Scala
 :  @@snip [InDepthPersistentBehaviorSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #behavior }
@@ -238,10 +238,10 @@ Most of them time this will be done with the `thenRun` method on the `Effect` ab
 factor out common `SideEffect`s. For example:
 
 Scala
-:  @@snip [BasicPersistentBehaviorsCompileOnly.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #commonChainedEffects }
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #commonChainedEffects }
 
 Java
-:  @@snip [BasicPersistentBehaviorsCompileOnly.scala](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #commonChainedEffects }
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #commonChainedEffects }
 
 ### Side effects ordering and guarantees
 
@@ -261,10 +261,10 @@ It is strongly discouraged to perform side effects in `applyEvent`,
 so side effects should be performed once recovery has completed @scala[in the `onRecoveryCompleted` callback.] @java[by overriding `onRecoveryCompleted`]
 
 Scala
-:  @@snip [BasicPersistentBehaviorsCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #recovery }
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery }
 
 Java
-:  @@snip [BasicPersistentBehaviorsTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #recovery }
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #recovery }
 
 The `onRecoveryCompleted` takes @scala[an `ActorContext` and] the current `State`,
 and doesn't return anything.
@@ -274,10 +274,10 @@ and doesn't return anything.
 Persistence typed allows you to use event tags without using @ref[`EventAdapter`](../persistence.md#event-adapters):
 
 Scala
-:  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #tagging }
+:  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #tagging }
 
 Java
-:  @@snip [BasicPersistentBehaviorsTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #tagging }
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #tagging }
 
 ## Event adapters
 
@@ -307,10 +307,10 @@ other behaviors such as `Behaviors.setup` in order to access the `ActorContext` 
 to access the actor logging upon taking snapshots for debug purpose.
 
 Scala
-:  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #wrapPersistentBehavior }
+:  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #wrapPersistentBehavior }
 
 Java
-:  @@snip [BasicPersistentBehaviorsTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #wrapPersistentBehavior }
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #wrapPersistentBehavior }
 
 
 ## Journal failures
@@ -321,10 +321,10 @@ any `BackoffSupervisorStrategy`. It is not possible to use the normal supervisio
 
 
 Scala
-:  @@snip [BasicPersistentBehaviorsSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorsCompileOnly.scala) { #supervision }
+:  @@snip [BasicPersistentBehaviorSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #supervision }
 
 Java
-:  @@snip [BasicPersistentBehaviorsTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorsTest.java) { #supervision }
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #supervision }
 
 ## Journal rejections
 

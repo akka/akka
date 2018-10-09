@@ -6,7 +6,7 @@ package akka.cluster.typed
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.{ ActorRef, Behavior, Props }
-import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
+import akka.persistence.typed.scaladsl.{ Effect, PersistentBehavior }
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -36,7 +36,7 @@ object ClusterSingletonPersistenceSpec {
   private final case object StopPlz extends Command
 
   val persistentActor: Behavior[Command] =
-    PersistentBehaviors.receive[Command, String, String](
+    PersistentBehavior[Command, String, String](
       persistenceId = "TheSingleton",
       emptyState = "",
       commandHandler = (state, cmd) ⇒ cmd match {

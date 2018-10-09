@@ -11,7 +11,7 @@ import akka.actor.typed.Props
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
-import akka.persistence.typed.scaladsl.{ Effect, PersistentBehaviors }
+import akka.persistence.typed.scaladsl.{ Effect, PersistentBehavior }
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ WordSpec, WordSpecLike }
@@ -44,7 +44,7 @@ object ClusterShardingPersistenceSpec {
   final case object StopPlz extends Command
 
   def persistentActor(entityId: String): Behavior[Command] =
-    PersistentBehaviors.receive[Command, String, String](
+    PersistentBehavior[Command, String, String](
       entityId,
       emptyState = "",
       commandHandler = (state, cmd) ⇒ cmd match {
