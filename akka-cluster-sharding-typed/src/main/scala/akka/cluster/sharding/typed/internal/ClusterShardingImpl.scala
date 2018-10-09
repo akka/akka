@@ -76,32 +76,37 @@ import akka.util.Timeout
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object EntityRefImpl {
+@InternalApi private[akka] object EntityTypeKeyImpl {
   /**
-   * Used for concatenating EntityTypeKey with entityId to construct unique persistenceId.
-   * This must be same as in Lagom, for compatibility.
+   * Default separator character used for concatenating EntityTypeKey with entityId to construct unique persistenceId.
+   * This must be same as in Lagom's `scaladsl.PersistentEntity`, for compatibility. No separator is used
+   * in Lagom's `javadsl.PersistentEntity` so for compatibility with that the `""` separator must be defined
+   * `withEntityIdSeparator`.
    */
-  val EntityIdSeparator = '|'
+  val EntityIdSeparator = "|"
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case class EntityTypeKeyImpl[T](name: String, messageClassName: String)
+@InternalApi private[akka] final case class EntityTypeKeyImpl[T](name: String, messageClassName: String,
+                                                                 entityIdSeparator: String = EntityTypeKeyImpl.EntityIdSeparator)
   extends javadsl.EntityTypeKey[T] with scaladsl.EntityTypeKey[T] {
-  import EntityRefImpl.EntityIdSeparator
 
-  if (name.contains(EntityIdSeparator))
-    throw new IllegalArgumentException(s"EntityTypeKey.name [$name] contains [$EntityIdSeparator] which is " +
+  if (!entityIdSeparator.isEmpty && name.contains(entityIdSeparator))
+    throw new IllegalArgumentException(s"EntityTypeKey.name [$name] contains [$entityIdSeparator] which is " +
       "a reserved character")
 
   override def persistenceIdFrom(entityId: String): PersistenceId = {
-    if (entityId.contains(EntityIdSeparator))
-      throw new IllegalArgumentException(s"entityId [$entityId] contains [$EntityIdSeparator] which is " +
+    if (!entityIdSeparator.isEmpty && entityId.contains(entityIdSeparator))
+      throw new IllegalArgumentException(s"entityId [$entityId] contains [$entityIdSeparator] which is " +
         "a reserved character")
 
-    PersistenceId(name + EntityIdSeparator + entityId)
+    PersistenceId(name + entityIdSeparator + entityId)
   }
+
+  override def withEntityIdSeparator(separator: String): EntityTypeKeyImpl[T] =
+    EntityTypeKeyImpl[T](name, messageClassName, separator)
 
   override def toString: String = s"EntityTypeKey[$messageClassName]($name)"
 }

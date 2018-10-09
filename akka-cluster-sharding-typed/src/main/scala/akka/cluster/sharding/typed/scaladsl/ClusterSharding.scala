@@ -309,13 +309,31 @@ object StartEntity {
  * Not for user extension.
  */
 @DoNotInherit trait EntityTypeKey[T] {
+
+  /**
+   * Name of the entity type.
+   */
   def name: String
 
   /**
-   * Constructs a [[PersistenceId]] from this EntityTypeKey` and the given `entityId` by
+   * Constructs a [[PersistenceId]] from this `EntityTypeKey` and the given `entityId` by
    * concatenating them with `|` separator.
+   *
+   * The `|` separator is also used in Lagom's `scaladsl.PersistentEntity` but no separator is used
+   * in Lagom's `javadsl.PersistentEntity`. For compatibility with Lagom's `javadsl.PersistentEntity`
+   * you should use `""` as the separator in [[EntityTypeKey.withEntityIdSeparator]].
    */
   def persistenceIdFrom(entityId: String): PersistenceId
+
+  /**
+   * Specify a custom separator for compatibility with old naming conventions. The separator is used between the
+   * `EntityTypeKey` and the `entityId` when constructing a `persistenceId` with [[EntityTypeKey.persistenceIdFrom]].
+   *
+   * The default `|` separator is also used in Lagom's `scaladsl.PersistentEntity` but no separator is used
+   * in Lagom's `javadsl.PersistentEntity`. For compatibility with Lagom's `javadsl.PersistentEntity`
+   * you should use `""` as the separator here.
+   */
+  def withEntityIdSeparator(separator: String): EntityTypeKey[T]
 }
 
 object EntityTypeKey {
