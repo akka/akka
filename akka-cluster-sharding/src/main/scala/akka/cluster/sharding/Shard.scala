@@ -12,9 +12,8 @@ import akka.actor.ActorSystem
 import akka.actor.Deploy
 import akka.actor.Props
 import akka.actor.Terminated
-import akka.cluster.sharding.Shard.ShardCommand
 import akka.actor.Actor
-import akka.util.{ MessageBufferMap, PrettyDuration }
+import akka.util.MessageBufferMap
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -158,7 +157,6 @@ private[akka] class Shard(
   import context.dispatcher
   val passivateIdleTask = if (settings.passivateIdleEntityAfter.toNanos > 0) {
     val idleInterval = settings.passivateIdleEntityAfter / 2
-    log.info("Idle entities will be passivated after [{}]", PrettyDuration.format(settings.passivateIdleEntityAfter))
     Some(context.system.scheduler.schedule(idleInterval, idleInterval, self, PassivateIdleTick))
   } else {
     None
