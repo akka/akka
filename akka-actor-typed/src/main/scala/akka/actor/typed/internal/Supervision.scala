@@ -200,6 +200,9 @@ private class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
           try {
             Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[ActorContext[T]]))
           } catch {
+            case NonFatal(ex: Thr) if b.maxRestarts > 0 && restartCount >= b.maxRestarts ⇒
+              log(ctx, ex)
+              Behaviors.stopped
             case NonFatal(ex: Thr) ⇒
               log(ctx, ex)
               val restartDelay = BackoffSupervisor.calculateDelay(restartCount, b.minBackoff, b.maxBackoff, b.randomFactor)

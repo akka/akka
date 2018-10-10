@@ -571,6 +571,36 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       probe.expectMessage(State(0, Map.empty))
     }
 
+    "fail if reaching maximum number of restarts with backoff" in {
+      val probe = TestProbe[Event]("evt")
+      val startedProbe = TestProbe[Event]("started")
+      val minBackoff = 200.millis
+      val strategy = SupervisorStrategy
+        .restartWithBackoff(minBackoff, 10.seconds, 0.0)
+        .withMaxRestarts(2)
+        .withResetBackoffAfter(10.seconds)
+
+      val alreadyStarted = new AtomicBoolean(false)
+      val behv = Behaviors.supervise(Behaviors.setup[Command] { _ ⇒
+        if (alreadyStarted.get()) throw TE("failure to restart")
+        alreadyStarted.set(true)
+        startedProbe.ref ! Started
+
+        Behaviors.receiveMessage {
+          case Throw(boom) ⇒ throw boom
+        }
+      }).onFailure[Exception](strategy)
+      val ref = spawn(behv)
+
+      EventFilter[Exc1](occurrences = 1).intercept {
+        EventFilter[TE](occurrences = 2).intercept {
+          startedProbe.expectMessage(Started)
+          ref ! Throw(new Exc1)
+          probe.expectTerminated(ref, 3.seconds)
+        }
+      }
+    }
+
     "reset exponential backoff count after reset timeout" in {
       val probe = TestProbe[Event]("evt")
       val minBackoff = 1.seconds
