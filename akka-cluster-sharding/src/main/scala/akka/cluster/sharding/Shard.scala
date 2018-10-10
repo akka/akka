@@ -157,8 +157,8 @@ private[akka] class Shard(
 
   import context.dispatcher
   val passivateIdleTask = if (settings.passivateIdleEntityAfter.toNanos > 0) {
-    val idleInterval = 1.second // FIXME
-    log.info("Idle entities will be passivated after {}", PrettyDuration.format(settings.passivateIdleEntityAfter))
+    val idleInterval = settings.passivateIdleEntityAfter / 2
+    log.info("Idle entities will be passivated after [{}]", PrettyDuration.format(settings.passivateIdleEntityAfter))
     Some(context.system.scheduler.schedule(idleInterval, idleInterval, self, PassivateIdleTick))
   } else {
     None
@@ -256,7 +256,7 @@ private[akka] class Shard(
     val id = idByRef(ref)
     idByRef -= ref
     refById -= id
-    if (passivateIdleTask.isDefined && lastMessageTimestamp.contains(id)) {
+    if (passivateIdleTask.isDefined) {
       lastMessageTimestamp -= id
     }
     if (messageBuffers.getOrEmpty(id).nonEmpty) {
@@ -289,8 +289,9 @@ private[akka] class Shard(
     val deadline = System.nanoTime() - settings.passivateIdleEntityAfter.toNanos
     lastMessageTimestamp.foreach {
       case (entityId, lastMessageTimestamp) ⇒
-        if (lastMessageTimestamp < deadline && refById.contains(entityId)) // test failed but, how could it not be in refs though?
-          passivate(refById(entityId), handOffStopMessage) // FIXME double check that this is the right message
+        // may be in lastMessageTimestamp but not be in refById because: ??? FIXME figure out
+        if (lastMessageTimestamp < deadline && refById.contains(entityId))
+          passivate(refById(entityId), handOffStopMessage)
     }
   }
 
@@ -326,7 +327,7 @@ private[akka] class Shard(
       context.system.deadLetters ! msg
     } else {
       if (passivateIdleTask.isDefined) {
-        lastMessageTimestamp += (id -> System.nanoTime())
+        lastMessageTimestamp = lastMessageTimestamp.updated(id, System.nanoTime())
       }
       if (payload.isInstanceOf[ShardRegion.StartEntity]) {
         // in case it was wrapped, used in Typed
@@ -466,7 +467,7 @@ private[akka] trait RememberingShard { selfType: Shard ⇒
     val id = idByRef(ref)
     idByRef -= ref
     refById -= id
-    if (passivateIdleTask.isDefined && lastMessageTimestamp.contains(id)) {
+    if (passivateIdleTask.isDefined) {
       lastMessageTimestamp -= id
     }
     if (messageBuffers.getOrEmpty(id).nonEmpty) {

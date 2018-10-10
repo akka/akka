@@ -203,7 +203,7 @@ final class ClusterShardingSettings(
   val journalPluginId:              String,
   val snapshotPluginId:             String,
   val stateStoreMode:               String,
-  val passivateIdleEntityAfter:     Duration,
+  val passivateIdleEntityAfter:     FiniteDuration,
   val tuningParameters:             ClusterShardingSettings.TuningParameters,
   val coordinatorSingletonSettings: ClusterSingletonManagerSettings) extends NoSerializationVerificationNeeded {
 
@@ -236,7 +236,7 @@ final class ClusterShardingSettings(
   def withStateStoreMode(stateStoreMode: String): ClusterShardingSettings =
     copy(stateStoreMode = stateStoreMode)
 
-  def withPassivateIdleAfter(duration: Duration): ClusterShardingSettings =
+  def withPassivateIdleAfter(duration: FiniteDuration): ClusterShardingSettings =
     copy(passivateIdleAfter = duration)
 
   def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
@@ -255,7 +255,7 @@ final class ClusterShardingSettings(
     journalPluginId:              String                                   = journalPluginId,
     snapshotPluginId:             String                                   = snapshotPluginId,
     stateStoreMode:               String                                   = stateStoreMode,
-    passivateIdleAfter:           Duration                                 = passivateIdleEntityAfter,
+    passivateIdleAfter:           FiniteDuration                           = passivateIdleEntityAfter,
     tuningParameters:             ClusterShardingSettings.TuningParameters = tuningParameters,
     coordinatorSingletonSettings: ClusterSingletonManagerSettings          = coordinatorSingletonSettings): ClusterShardingSettings =
 
