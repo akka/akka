@@ -33,7 +33,7 @@ Scala
 Java
 :   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #source-queue }
 
-## Reactive Streams Semantics
+## Reactive Streams semantics
 
 @@@div { .callout }
 
