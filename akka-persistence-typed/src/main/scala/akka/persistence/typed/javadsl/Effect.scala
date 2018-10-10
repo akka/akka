@@ -9,21 +9,62 @@ import akka.japi.function
 import akka.persistence.typed.internal._
 import akka.persistence.typed.{ SideEffect, Stop }
 import scala.collection.JavaConverters._
-
 import akka.persistence.typed.ExpectingReply
 
-object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
+/**
+ * Factories for effects - how a persistent actor reacts on a command
+ */
+object Effects {
 
-@DoNotInherit sealed class EffectFactories[Command, Event, State] {
   /**
    * Persist a single event
+   *
+   * Side effects can be chained with `andThen`
+   */
+  def persist[Event, State](event: Event): Effect[Event, State] = Persist(event)
+
+  /**
+   * Persist multiple events
+   *
+   * Side effects can be chained with `andThen`
+   */
+  final def persist[Event, State](events: java.util.List[Event]): Effect[Event, State] = PersistAll(events.asScala.toVector)
+
+  /**
+   * Do not persist anything
+   *
+   * Side effects can be chained with `andThen`
+   */
+  def none[Event, State]: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
+
+  /**
+   * This command is not handled, but it is not an error that it isn't.
+   *
+   * Side effects can be chained with `andThen`
+   */
+  def unhandled[Event, State]: Effect[Event, State] = Unhandled.asInstanceOf[Effect[Event, State]]
+
+  /**
+   * Stop this persistent actor
+   * Side effects can be chained with `andThen`
+   */
+  def stop[Event, State]: Effect[Event, State] = none.thenStop()
+}
+
+object EffectFactory extends EffectFactories[Nothing, Nothing]
+
+@DoNotInherit sealed class EffectFactories[Event, State] {
+  /**
+   * Persist a single event.
+   *
+   * Side effects can be chained with `andThen`.
    */
   final def persist(event: Event): Effect[Event, State] = Persist(event)
 
   /**
-   * Persist all of a the given events. Each event will be applied through `applyEffect` separately but not until
-   * all events has been persisted. If an `afterCallBack` is added through [[Effect#andThen]] that will invoked
-   * after all the events has been persisted.
+   * Persist multiple events
+   *
+   * Side effects can be chained with `andThen`.
    */
   final def persist(events: java.util.List[Event]): Effect[Event, State] = PersistAll(events.asScala.toVector)
 
@@ -33,7 +74,7 @@ object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
   def none: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
 
   /**
-   * Stop this persistent actor
+   * Stop this persistent actor.
    */
   def stop: Effect[Event, State] = none.thenStop()
 
