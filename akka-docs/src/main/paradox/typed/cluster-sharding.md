@@ -116,3 +116,10 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #counter-messages #counter-passivate #counter-passivate-start }
 
+
+## Automatic Passivation
+
+The entities can be configured to be automatically passivated if they haven't received
+a message for a while using the `akka.cluster.sharding.passivate-idle-entity-after` setting,
+or by explicitly setting `ClusterShardingSettings.passivateIdleEntityAfter` to a suitable
+time to keep the actor alive. By default automatic passivation is disabled.
