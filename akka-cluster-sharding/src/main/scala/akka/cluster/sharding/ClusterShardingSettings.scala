@@ -177,6 +177,7 @@ object ClusterShardingSettings {
         100.milliseconds,
         5)
     }
+
   }
 }
 
@@ -206,6 +207,18 @@ final class ClusterShardingSettings(
   val passivateIdleEntityAfter:     FiniteDuration,
   val tuningParameters:             ClusterShardingSettings.TuningParameters,
   val coordinatorSingletonSettings: ClusterSingletonManagerSettings) extends NoSerializationVerificationNeeded {
+
+  // included for binary compatibility reasons
+  @deprecated("Use the ClusterShardingSettings factory methods or the constructor including passivateIdleEntityAfter instead", "2.5.18")
+  def this(
+    role:                         Option[String],
+    rememberEntities:             Boolean,
+    journalPluginId:              String,
+    snapshotPluginId:             String,
+    stateStoreMode:               String,
+    tuningParameters:             ClusterShardingSettings.TuningParameters,
+    coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
+    this(role, rememberEntities, journalPluginId, snapshotPluginId, stateStoreMode, Duration.Zero, tuningParameters, coordinatorSingletonSettings)
 
   import ClusterShardingSettings.{ StateStoreModePersistence, StateStoreModeDData }
   require(
