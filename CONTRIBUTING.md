@@ -385,21 +385,23 @@ tested it becomes an officially supported Akka feature.
 
 ## Java APIs in Akka
 
-Akka, aims to keep 100% feature parity between the various language DSLs. Implementing even the API for Java in 
+Akka, aims to keep 100% feature parity between the Java and Scala. Implementing even the API for Java in 
 Scala has proven the most viable way to do it, as long as you keep the following in mind:
 
 1. Keep entry points separated in `javadsl` and `scaladsl` unless changing existing APIs which for historical 
-   and binary compatibility reasons does not have this subdivision.
+   and binary compatibility reasons do not have this subdivision.
    
-1. Have methods in the `javadsl` package delegate to the methods in the Scala API. The Akka Stream Scala instances 
-   for example have a `.asJava` method to convert to the `akka.stream.javadsl` counterparts.
+1. Have methods in the `javadsl` package delegate to the methods in the Scala API, or the common internal implementation. 
+   The Akka Stream Scala instances for example have a `.asJava` method to convert to the `akka.stream.javadsl` counterparts.
    
 1. When using Scala `object` instances, offer a `getInstance()` method and add a sealed abstract class 
-   (to support Scala 2.11) to get the return type.
+   (to support Scala 2.11) to get the return type. See `akka.Done` for an example.
    
-1. When the Scala API contains an `apply` method, use `create` for Java users.
+1. When the Scala API contains an `apply` method, use `create` or `of` for Java users.
 
-1. Do not nest Scala `object`s more than two levels (as access from Java becomes weird)
+1. Do not nest Scala `object`s more than two levels. 
+   
+1. Do not define traits nested in other classes or in objects deeper than one level.
 
 1. Be careful to convert values within data structures (eg. for `scala.Long` vs. `java.lang.Long`, use `scala.Long.box(value)`)
 
@@ -423,12 +425,13 @@ Scala has proven the most viable way to do it, as long as you keep the following
 1. Provide `getX` style accessors for values in the Java APIs
 
 1. Place classes not part of the public APIs in a shared `internal` package. This package can contain implementations of 
-   both Java and Scala APIs.
+   both Java and Scala APIs. Make such classes `private[akka]` and also, since that becomes `public` from Java's point of
+   view, annotate with `@InternalApi` and add a scaladoc saying `INTERNAL API`
    
 1. Companion objects (in Scala 2.11) cannot be accessed from Java if their companion is a trait, use an `abstract class` instead 
    
 1. Traits that are part of the Java API should only be used to define pure interfaces, as soon as there are implementations of methods, prefer 
-   `abstract class`. Do not define traits nested in other classes or objects.
+   `abstract class`.
    
    
 
@@ -445,23 +448,6 @@ Scala has proven the most viable way to do it, as long as you keep the following
 | `() => R` (`scala.Function0[R]`) | `java.util.function.Supplier<R>` |
 | `T => R` (`scala.Function1[T, R]`) | `java.util.function.Function<T, R>` |
 
-
-
-#### Scala Java introperability checklist
-
- * Where Java and Scala APIs are mixed, the Scaladoc for classes and methods should start with a `Scala API:` or `Java API:` 
-   to make it easy to discover which API it belongs to.
- * Companion object factories, `apply`, are called `create` in the Java APIs.
- * companion objects are only reachable from Java if the type they are companion to is not a trait
- * standard library types should not be in the Java method signatures. Common ones:
-   * Scala `Duration` and `FiniteDuration` must be `java.time.duration`
-   * Scala function types, eg. `A => B` must be `java.util.Function` and friends
-   * `Future` must be `CompletionStage`
-   * `Option` must be `Optional`
-   * Scala collections must be corresponding Java collections
-   * `PartialFunction` is often replaced by builder style APIs to provide the same convenience
- * Default parameter values does not work for Java, you have to manually provide overloads that introduce default values
- * 
 
 
 ## Contributing new Akka Streams operators
