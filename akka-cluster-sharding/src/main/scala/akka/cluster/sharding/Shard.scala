@@ -117,7 +117,7 @@ private[akka] object Shard {
         .withDeploy(Deploy.local)
   }
 
-  private case object PassivateIdleTick
+  private case object PassivateIdleTick extends NoSerializationVerificationNeeded
 
 }
 
@@ -155,7 +155,7 @@ private[akka] class Shard(
   var handOffStopper: Option[ActorRef] = None
 
   import context.dispatcher
-  val passivateIdleTask = if (settings.passivateIdleEntityAfter.toNanos > 0) {
+  val passivateIdleTask = if (settings.passivateIdleEntityAfter > Duration.Zero) {
     val idleInterval = settings.passivateIdleEntityAfter / 2
     Some(context.system.scheduler.schedule(idleInterval, idleInterval, self, PassivateIdleTick))
   } else {
@@ -190,6 +190,9 @@ private[akka] class Shard(
 
   def receiveStartEntity(start: ShardRegion.StartEntity): Unit = {
     log.debug("Got a request from [{}] to start entity [{}] in shard [{}]", sender(), start.entityId, shardId)
+    if (passivateIdleTask.isDefined) {
+      lastMessageTimestamp = lastMessageTimestamp.updated(start.entityId, System.nanoTime())
+    }
     getEntity(start.entityId)
     sender() ! ShardRegion.StartEntityAck(start.entityId, shardId)
   }
@@ -283,13 +286,13 @@ private[akka] class Shard(
   }
 
   def passivateIdleEntities(): Unit = {
-    log.debug("Passivating idle entities")
     val deadline = System.nanoTime() - settings.passivateIdleEntityAfter.toNanos
-    lastMessageTimestamp.foreach {
-      case (entityId, lastMessageTimestamp) ⇒
-        // may be in lastMessageTimestamp but not be in refById because: ??? FIXME figure out
-        if (lastMessageTimestamp < deadline && refById.contains(entityId))
-          passivate(refById(entityId), handOffStopMessage)
+    val refsToPassivate = lastMessageTimestamp.collect {
+      case (entityId, lastMessageTimestamp) if lastMessageTimestamp < deadline ⇒ refById(entityId)
+    }
+    if (refsToPassivate.nonEmpty) {
+      log.debug("Passivating [{}] idle entities", refsToPassivate.size)
+      refsToPassivate.foreach(passivate(_, handOffStopMessage))
     }
   }
 
@@ -324,9 +327,6 @@ private[akka] class Shard(
       log.warning("Id must not be empty, dropping message [{}]", msg.getClass.getName)
       context.system.deadLetters ! msg
     } else {
-      if (passivateIdleTask.isDefined) {
-        lastMessageTimestamp = lastMessageTimestamp.updated(id, System.nanoTime())
-      }
       if (payload.isInstanceOf[ShardRegion.StartEntity]) {
         // in case it was wrapped, used in Typed
         receiveStartEntity(payload.asInstanceOf[ShardRegion.StartEntity])
@@ -347,6 +347,9 @@ private[akka] class Shard(
   }
 
   def deliverTo(id: EntityId, msg: Any, payload: Msg, snd: ActorRef): Unit = {
+    if (passivateIdleTask.isDefined) {
+      lastMessageTimestamp = lastMessageTimestamp.updated(id, System.nanoTime())
+    }
     val name = URLEncoder.encode(id, "utf-8")
     context.child(name) match {
       case Some(actor) ⇒ actor.tell(payload, snd)

@@ -54,13 +54,17 @@ object ClusterShardingSettings {
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
+    val passivateIdleAfter =
+      if (config.getString("passivate-idle-entity-after") == "off") Duration.Zero
+      else config.getDuration("passivate-idle-entity-after", MILLISECONDS).millis
+
     new ClusterShardingSettings(
       role = roleOption(config.getString("role")),
       rememberEntities = config.getBoolean("remember-entities"),
       journalPluginId = config.getString("journal-plugin-id"),
       snapshotPluginId = config.getString("snapshot-plugin-id"),
       stateStoreMode = config.getString("state-store-mode"),
-      passivateIdleEntityAfter = config.getDuration("passivate-idle-entity-after", MILLISECONDS).millis,
+      passivateIdleEntityAfter = passivateIdleAfter,
       tuningParameters,
       coordinatorSingletonSettings)
   }
@@ -195,7 +199,9 @@ object ClusterShardingSettings {
  *   snapshot plugin is used. Note that this is not related to persistence used by the entity
  *   actors.
  * @param passivateIdleEntityAfter Passivate entities that have not seen a message in this interval.
- *                                 Use 0 to disable automatic passivation.
+ *   Note that only messages sent through sharding is counted, so direct messages
+ *   to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity.
+ *   Use 0 to disable automatic passivation.
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  */
 final class ClusterShardingSettings(
