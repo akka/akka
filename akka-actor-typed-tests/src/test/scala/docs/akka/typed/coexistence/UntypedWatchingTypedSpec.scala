@@ -54,7 +54,7 @@ object UntypedWatchingTypedSpec {
   object Typed {
     sealed trait Command
     final case class Ping(replyTo: ActorRef[Pong.type]) extends Command
-    case object Pong
+    final case object Pong
 
     val behavior: Behavior[Command] =
       Behaviors.receive { (ctx, msg) ⇒
