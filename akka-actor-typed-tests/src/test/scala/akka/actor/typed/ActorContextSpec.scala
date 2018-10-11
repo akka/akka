@@ -12,6 +12,7 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
 
 object ActorSpecMessages {
@@ -62,7 +63,14 @@ object ActorSpecMessages {
 
 }
 
-abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
+  """
+    akka.loggers = [akka.testkit.TestEventListener]
+  """) with WordSpecLike {
+
+  // FIXME eventfilter support in typed testkit
+  import scaladsl.adapter._
+  implicit val untypedSystem = system.toUntyped
 
   import ActorSpecMessages._
 
@@ -103,8 +111,11 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       val actor = spawn(behavior)
       actor ! Ping
       probe.expectMessage(Pong)
-      actor ! Miss
-      probe.expectMessage(Missed)
+      // unhandled gives warning from EventFilter
+      EventFilter.warning(occurrences = 1).intercept {
+        actor ! Miss
+        probe.expectMessage(Missed)
+      }
       actor ! Renew(probe.ref)
       probe.expectMessage(Renewed)
       actor ! Ping
@@ -125,7 +136,9 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
 
       val behavior = Behaviors.supervise(internal).onFailure(SupervisorStrategy.restart)
       val actor = spawn(behavior)
-      actor ! Fail
+      EventFilter[TestException](occurrences = 1).intercept {
+        actor ! Fail
+      }
       probe.expectMessage(GotSignal(PreRestart))
     }
 
@@ -180,7 +193,9 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
 
       val parentRef = spawn(parent)
       val childRef = probe.expectMessageType[ChildMade].ref
-      childRef ! Fail
+      EventFilter[TestException](occurrences = 1).intercept {
+        childRef ! Fail
+      }
       probe.expectMessage(GotChildSignal(PreRestart))
       childRef ! Ping
       probe.expectMessage(Pong)
@@ -229,7 +244,9 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       val actor = spawn(behavior)
       actor ! Ping
       probe.expectMessage(1)
-      actor ! Fail
+      EventFilter[TestException](occurrences = 1).intercept {
+        actor ! Fail
+      }
       actor ! Ping
       probe.expectMessage(1)
     }
@@ -251,7 +268,9 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       val actor = spawn(behavior)
       actor ! Ping
       probe.expectMessage(1)
-      actor ! Fail
+      EventFilter[TestException](occurrences = 1).intercept {
+        actor ! Fail
+      }
       actor ! Ping
       probe.expectMessage(2)
     }
@@ -286,7 +305,9 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       probe.expectMessage(Pong)
       watcher ! Ping
       probe.expectMessage(Pong)
-      actorToWatch ! Fail
+      EventFilter[TestException](occurrences = 1).intercept {
+        actorToWatch ! Fail
+      }
       probe.expectMessage(GotSignal(PostStop))
       probe.expectTerminated(actorToWatch, timeout.duration)
     }
@@ -320,7 +341,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
         case (_, Stop) ⇒
           Behaviors.stopped
       }.decorate
-      val actor: ActorRef[Command] = spawn(
+      spawn(
         Behaviors.setup[Command](ctx ⇒ {
           val childRef = ctx.spawn(child, "A")
           ctx.watch(childRef)
@@ -443,10 +464,12 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       val childRef = probe.expectMessageType[ChildMade].ref
       actor ! Inert
       probe.expectMessage(InertEvent)
-      childRef ! Stop
-      probe.expectMessage(GotChildSignal(PostStop))
-      probe.expectMessage(GotSignal(PostStop))
-      probe.expectTerminated(actor, timeout.duration)
+      EventFilter[DeathPactException](occurrences = 1).intercept {
+        childRef ! Stop
+        probe.expectMessage(GotChildSignal(PostStop))
+        probe.expectMessage(GotSignal(PostStop))
+        probe.expectTerminated(actor, timeout.duration)
+      }
     }
 
     "return the right context info" in {
