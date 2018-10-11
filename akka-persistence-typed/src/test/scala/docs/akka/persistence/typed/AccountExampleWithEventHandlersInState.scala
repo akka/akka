@@ -37,8 +37,8 @@ object AccountExampleWithEventHandlersInState {
       extends AccountCommand[OperationResult]
 
     // Reply
-    trait AccountCommandReply
-    trait OperationResult extends AccountCommandReply
+    sealed trait AccountCommandReply
+    sealed trait OperationResult extends AccountCommandReply
     case object Confirmed extends OperationResult
     final case class Rejected(reason: String) extends OperationResult
     final case class CurrentBalance(balance: BigDecimal) extends AccountCommandReply
