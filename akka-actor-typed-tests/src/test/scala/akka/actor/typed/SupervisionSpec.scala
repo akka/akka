@@ -79,9 +79,6 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
 
   import SupervisionSpec._
 
-  def mkTestkit(behv: Behavior[Command]): BehaviorTestKit[Command] =
-    BehaviorTestKit(behv)
-
   "A restarter (stubbed)" must {
     "receive message" in {
       val inbox = TestInbox[Event]("evt")
@@ -235,7 +232,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers {
         inbox.ref ! Started
         targetBehavior(inbox.ref)
       }).onFailure[Exc1](SupervisorStrategy.restart)
-      mkTestkit(behv)
+      BehaviorTestKit(behv)
       // it's supposed to be created immediately (not waiting for first message)
       inbox.receiveMessage() should ===(Started)
     }
@@ -711,7 +708,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
         .onFailure[Exception](SupervisorStrategy.restart)
 
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
-        val ref = spawn(behv)
+        spawn(behv)
         probe.expectMessage(Started) // first one before failure
       }
     }

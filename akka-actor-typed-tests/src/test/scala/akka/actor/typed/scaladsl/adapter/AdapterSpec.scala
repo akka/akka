@@ -145,7 +145,10 @@ object AdapterSpec {
 
 }
 
-class AdapterSpec extends AkkaSpec {
+class AdapterSpec extends AkkaSpec(
+  """
+    akka.loggers = [akka.testkit.TestEventListener]
+  """) {
   import AdapterSpec._
 
   "ActorSystem adaption" must {
@@ -256,29 +259,40 @@ class AdapterSpec extends AkkaSpec {
       val ign = system.spawnAnonymous(Behaviors.ignore[Ping])
       val untypedRef = system.actorOf(untyped2(ign, probe.ref))
 
-      untypedRef ! "supervise-stop"
-      probe.expectMsg("thrown-stop")
-      // ping => ok should not get through here
-      probe.expectMsg("terminated")
+      EventFilter[AdapterSpec.ThrowIt1.type](occurrences = 1).intercept {
+        EventFilter.warning(pattern = """.*received dead letter.*""", occurrences = 1).intercept {
+          untypedRef ! "supervise-stop"
+          probe.expectMsg("thrown-stop")
+          // ping => ok should not get through here
+          probe.expectMsg("terminated")
+        }
+      }
 
       untypedRef ! "supervise-resume"
       probe.expectMsg("thrown-resume")
       probe.expectMsg("ok")
 
-      untypedRef ! "supervise-restart"
-      probe.expectMsg("thrown-restart")
-      probe.expectMsg("ok")
+      EventFilter[AdapterSpec.ThrowIt3.type](occurrences = 1).intercept {
+        untypedRef ! "supervise-restart"
+        probe.expectMsg("thrown-restart")
+        probe.expectMsg("ok")
+      }
     }
 
     "supervise untyped child from typed parent" in {
+      // FIXME there's a warning with null logged from the untyped empty child here, where does that come from?
       val probe = TestProbe()
       val ignore = system.actorOf(untyped.Props.empty)
       val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
 
       // only stop supervisorStrategy
-      typedRef ! "supervise-stop"
-      probe.expectMsg("terminated")
-      probe.expectNoMsg(100.millis) // no pong
+      EventFilter[AdapterSpec.ThrowIt3.type](occurrences = 1).intercept {
+        EventFilter.warning(pattern = """.*received dead letter.*""", occurrences = 1).intercept {
+          typedRef ! "supervise-stop"
+          probe.expectMsg("terminated")
+          probe.expectNoMessage(100.millis) // no pong
+        }
+      }
     }
 
     "stop typed child from untyped parent" in {

@@ -7,7 +7,10 @@ package jdocs.akka.typed;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.internal.adapter.ActorSystemAdapter;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.testkit.javadsl.EventFilter;
+import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -27,10 +30,10 @@ public class FaultToleranceDocTest extends JUnitSuite {
   public void bubblingSample() {
     // #bubbling-example
     final Behavior<Message> failingChildBehavior = Behaviors.receive(Message.class)
-      .onMessage(Fail.class, (ctx, message) -> {
-        throw new RuntimeException(message.text);
-      })
-      .build();
+        .onMessage(Fail.class, (ctx, message) -> {
+          throw new RuntimeException(message.text);
+        })
+        .build();
 
     Behavior<Message> middleManagementBehavior = Behaviors.setup((ctx) -> {
       ctx.getLog().info("Middle management starting up");
@@ -43,11 +46,11 @@ public class FaultToleranceDocTest extends JUnitSuite {
       // when the child fails or stops gracefully this actor will
       // fail with a DeathWatchException
       return Behaviors.receive(Message.class)
-        .onMessage(Message.class, (innerCtx, msg) -> {
-          // just pass messages on to the child
-          child.tell(msg);
-          return Behaviors.same();
-        }).build();
+          .onMessage(Message.class, (innerCtx, msg) -> {
+            // just pass messages on to the child
+            child.tell(msg);
+            return Behaviors.same();
+          }).build();
     });
 
     Behavior<Message> bossBehavior = Behaviors.setup((ctx) -> {
@@ -59,17 +62,33 @@ public class FaultToleranceDocTest extends JUnitSuite {
       // when middle management fails with a DeathWatchException
       // this actor will also fail
       return Behaviors.receive(Message.class)
-        .onMessage(Message.class, (innerCtx, msg) -> {
-          // just pass messages on to the child
-          middleManagement.tell(msg);
-          return Behaviors.same();
-        }).build();
+          .onMessage(Message.class, (innerCtx, msg) -> {
+            // just pass messages on to the child
+            middleManagement.tell(msg);
+            return Behaviors.same();
+          }).build();
     });
 
+    {
+    // #bubbling-example
     final ActorSystem<Message> system =
-      ActorSystem.create(bossBehavior, "boss");
+        ActorSystem.create(bossBehavior, "boss");
+    // #bubbling-example
+    }
+    final ActorSystem<Message> system =
+        ActorSystem.create(bossBehavior, "boss", ConfigFactory.parseString(
+            "akka.loggers = [ akka.testkit.TestEventListener ]\n" +
+            "akka.loglevel=warning"));
 
+    // #bubbling-example
+    // actual exception and thent the deathpacts
+    new EventFilter(Exception.class, ActorSystemAdapter.toUntyped(system)).occurrences(4).intercept(() -> {
+    // #bubbling-example
     system.tell(new Fail("boom"));
+    // #bubbling-example
+      return null;
+    });
+    // #bubbling-example
     // this will now bubble up all the way to the boss and as that is the user guardian it means
     // the entire actor system will stop
 
