@@ -7,12 +7,32 @@ package jdocs.stream.operators;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 
+import akka.NotUsed;
+import akka.japi.function.Function2;
+
+//#zip
+//#zip-with
 //#zip-with-index
-import akka.stream.javadsl.Sink;
+//#or-else
+//#prepend
+//#concat
+//#interleave
+//#merge
+//#merge-sorted
 import akka.stream.javadsl.Source;
+import akka.stream.javadsl.Sink;
 import java.util.Arrays;
 
+//#merge-sorted
+//#merge
+//#interleave
+//#concat
+//#prepend
+//#or-else
 //#zip-with-index
+//#zip-with
+//#zip
+
 //#log
 import akka.stream.Attributes;
 import akka.stream.javadsl.Source;
@@ -20,9 +40,11 @@ import akka.stream.javadsl.Source;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Comparator;
 
 
 class SourceOrFlow {
+  private static Materializer materializer = null;
 
   void logExample() {
     Flow.of(String.class)
@@ -46,6 +68,101 @@ class SourceOrFlow {
     //#zip-with-index
   }
   
+  void zipExample() {
+    //#zip
+    Source<String, NotUsed> sourceFruits = Source.from(Arrays.asList("apple", "orange", "banana"));
+    Source<String, NotUsed> sourceFirstLetters = Source.from(Arrays.asList("A", "O", "B"));
+    sourceFruits.zip(sourceFirstLetters).runWith(Sink.foreach(System.out::print), materializer);
+    // this will print ('apple', 'A'), ('orange', 'O'), ('banana', 'B')
+
+    //#zip
+  }
+
+  void zipWithExample() {
+    //#zip-with
+    Source<String, NotUsed> sourceCount = Source.from(Arrays.asList("one", "two", "three"));
+    Source<String, NotUsed> sourceFruits = Source.from(Arrays.asList("apple", "orange", "banana"));
+    sourceCount.zipWith(
+            sourceFruits,
+            (Function2<String, String, String>) (countStr, fruitName) -> countStr + " " + fruitName
+    ).runWith(Sink.foreach(System.out::print), materializer);
+    // this will print 'one apple', 'two orange', 'three banana'
+
+    //#zip-with
+  }
+
+  void prependExample() {
+      //#prepend
+      Source<String, NotUsed> ladies = Source.from(Arrays.asList("Emma", "Emily"));
+      Source<String, NotUsed> gentlemen = Source.from(Arrays.asList("Liam", "William"));
+      ladies.prepend(gentlemen).runWith(Sink.foreach(System.out::print), materializer);
+      // this will print "Emma", "Emily", "Liam", "William"
+
+      //#prepend
+  }
+
+
+  void concatExample() {
+      //#concat
+      Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
+      Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
+      sourceA.concat(sourceB).runWith(Sink.foreach(System.out::print), materializer);
+      //prints 1, 2, 3, 4, 10, 20, 30, 40
+
+      //#concat
+  }
+
+
+  void interleaveExample() {
+      //#interleave
+      Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
+      Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
+      sourceA.interleave(sourceB, 2).runWith(Sink.foreach(System.out::print), materializer);
+      //prints 1, 2, 10, 20, 3, 4, 30, 40
+
+      //#interleave
+  }
+
+
+  void mergeExample() {
+      //#merge
+      Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
+      Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
+      sourceA.merge(sourceB).runWith(Sink.foreach(System.out::print), materializer);
+      //prints 1, 2, 3, 4, 10, 20, 30, 40 in random order
+
+      //#merge
+  }
+
+
+  void mergeSortedExample() {
+      //#merge-sorted
+      Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 3, 5, 7));
+      Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(2, 4, 6, 8));
+      sourceA.mergeSorted(sourceB, Comparator.<Integer>naturalOrder()).runWith(Sink.foreach(System.out::print), materializer);
+      //prints 1, 2, 3, 4, 5, 6, 7, 8
+
+      Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(20, 1, 1, 1));
+      sourceA.mergeSorted(sourceC, Comparator.<Integer>naturalOrder()).runWith(Sink.foreach(System.out::print), materializer);
+      //prints 1, 3, 5, 7, 20, 1, 1, 1
+      //#merge-sorted
+  }
+
+  void orElseExample() {
+    //#or-else
+      Source<String, NotUsed> source1 = Source.from(Arrays.asList("First source"));
+      Source<String, NotUsed> source2 = Source.from(Arrays.asList("Second source"));
+      Source<String, NotUsed> source3 = Source.from(Arrays.asList());
+
+      source1.orElse(source2).runWith(Sink.foreach(System.out::print), materializer);
+      // this will print "First source"
+
+      source3.orElse(source2).runWith(Sink.foreach(System.out::print), materializer);
+      // this will print "Second source"
+
+    //#or-else
+  }
+
   void conflateExample() {
     //#conflate
     Source.cycle(() -> Arrays.asList(1, 10, 100).iterator())

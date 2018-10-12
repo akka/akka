@@ -29,3 +29,10 @@ If materialized values needs to be collected `prependMat` is available.
 
 @@@
 
+
+## Example
+Scala
+:   @@snip [FlowOrElseSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowPrependSpec.scala) { #prepend }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #prepend }

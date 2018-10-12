@@ -4,6 +4,12 @@
 
 package akka.stream.scaladsl
 
+//#zip
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.Sink
+
+//#zip
+
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.{ BaseTwoStreamsSetup, TestSubscriber }
@@ -69,6 +75,16 @@ class FlowZipSpec extends BaseTwoStreamsSetup {
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
       subscriber2.expectSubscriptionAndError(TestException)
+    }
+
+    "work in fruits example" in {
+      //#zip
+      val sourceFruits = Source(List("apple", "orange", "banana"))
+      val sourceFirstLetters = Source(List("A", "O", "B"))
+      sourceFruits.zip(sourceFirstLetters).runWith(Sink.foreach(println))
+      // this will print ('apple', 'A'), ('orange', 'O'), ('banana', 'B')
+      //#zip
+
     }
   }
 }

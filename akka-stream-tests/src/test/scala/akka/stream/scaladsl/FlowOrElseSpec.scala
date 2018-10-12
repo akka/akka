@@ -4,6 +4,11 @@
 
 package akka.stream.scaladsl
 
+//#or-else
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.Sink
+
+//#or-else
 import scala.concurrent.duration._
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
@@ -134,6 +139,20 @@ class FlowOrElseSpec extends AkkaSpec {
       inProbe2.sendError(TE("in2 failed"))
       inProbe1.expectCancellation()
       outProbe.expectError()
+    }
+
+    "work in the example" in {
+      //#or-else
+      val source1 = Source(List("First source"))
+      val source2 = Source(List("Second source"))
+      val source3 = Source(List())
+
+      source1.orElse(source2).runWith(Sink.foreach(println))
+      // this will print "First source"
+
+      source3.orElse(source2).runWith(Sink.foreach(println))
+      // this will print "Second source"
+      //#or-else
     }
 
     trait OrElseProbedFlow {

@@ -27,3 +27,9 @@ Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*
 
 @@@
 
+## Example
+Scala
+:   @@snip [FlowZipSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowZipSpec.scala) { #zip }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #zip }

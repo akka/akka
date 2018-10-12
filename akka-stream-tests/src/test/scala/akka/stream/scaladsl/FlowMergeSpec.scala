@@ -125,5 +125,36 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       down.expectNext()
 
     }
+
+    "works in number example for merge sorted" in {
+      //#merge-sorted
+      import akka.stream.scaladsl.Source
+      import akka.stream.scaladsl.Sink
+
+      val sourceA = Source(List(1, 3, 5, 7))
+      val sourceB = Source(List(2, 4, 6, 8))
+
+      sourceA.mergeSorted(sourceB).runWith(Sink.foreach(println))
+      //prints 1, 2, 3, 4, 5, 6, 7, 8
+
+      val sourceC = Source(List(20, 1, 1, 1))
+
+      sourceA.mergeSorted(sourceC).runWith(Sink.foreach(println))
+      //prints 1, 3, 5, 7, 20, 1, 1, 1
+      //#merge-sorted
+    }
+
+    "works in number example for merge" in {
+      //#merge
+      import akka.stream.scaladsl.Source
+      import akka.stream.scaladsl.Sink
+
+      val sourceA = Source(List(1, 2, 3, 4))
+      val sourceB = Source(List(10, 20, 30, 40))
+
+      sourceA.merge(sourceB).runWith(Sink.foreach(println))
+      //prints 1, 2, 3, 4, 10, 20, 30, 40 in random order
+      //#merge
+    }
   }
 }
