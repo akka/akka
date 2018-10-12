@@ -1245,7 +1245,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
-   * returns false for the first time, including the first failed element iff inclusive is true
+   * returns false for the first time. When inclusive is `true`, include the element
+   * for which the predicate returned `false`.
    * Due to input buffering some elements may have been requested from upstream publishers
    * that will then not be processed downstream of this step.
    *
@@ -1268,7 +1269,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
-   * returns false for the first time, including the first failed element iff inclusive is true
+   * returns false for the first time. When inclusive is `true`, include the element
+   * for which the predicate returned `false`.
    * Due to input buffering some elements may have been requested from upstream publishers
    * that will then not be processed downstream of this step.
    *
