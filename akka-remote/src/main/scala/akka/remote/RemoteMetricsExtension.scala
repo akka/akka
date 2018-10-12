@@ -5,7 +5,7 @@
 package akka.remote
 
 import java.util.concurrent.ConcurrentHashMap
-
+import scala.annotation.tailrec
 import akka.actor.ActorSelectionMessage
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
@@ -13,11 +13,7 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.event.Logging
-import akka.remote.RemoteMetricsOn.LogFrameSizeExceedingConfigKey
 import akka.routing.RouterEnvelope
-import com.typesafe.config.ConfigException
-
-import scala.annotation.tailrec
 
 /**
  * INTERNAL API
@@ -30,7 +26,7 @@ private[akka] object RemoteMetricsExtension extends ExtensionId[RemoteMetrics] w
   override def lookup = RemoteMetricsExtension
 
   override def createExtension(system: ExtendedActorSystem): RemoteMetrics =
-    if (system.settings.config.getString("akka.remote.log-frame-size-exceeding").toLowerCase == "off")
+    if (RARP(system).provider.remoteSettings.LogFrameSizeExceeding.isEmpty)
       new RemoteMetricsOff
     else
       new RemoteMetricsOn(system)
@@ -58,35 +54,15 @@ private[akka] class RemoteMetricsOff extends RemoteMetrics {
 /**
  * INTERNAL API
  */
-private object RemoteMetricsOn {
-  val LogFrameSizeExceedingConfigKey = "akka.remote.log-frame-size-exceeding"
-}
-
-/**
- * INTERNAL API
- */
 private[akka] class RemoteMetricsOn(system: ExtendedActorSystem) extends RemoteMetrics {
 
+  private val logFrameSizeExceeding: Int = RARP(system).provider.remoteSettings.LogFrameSizeExceeding
+    .getOrElse(Int.MaxValue)
   private val log = Logging(system, this.getClass)
-
-  private val logFrameSizeExceeding: Int = {
-    if (system.settings.config.getString(LogFrameSizeExceedingConfigKey) == "off") {
-      Int.MaxValue
-    } else {
-      try {
-        system.settings.config.getBytes(LogFrameSizeExceedingConfigKey).toInt
-      } catch {
-        case e: ConfigException ⇒
-          log.warning(e.getMessage + ". For reference, check https://github.com/lightbend/config/blob/master/HOCON.md")
-          Int.MaxValue
-      }
-    }
-  }
-
   private val maxPayloadBytes: ConcurrentHashMap[Class[_], Integer] = new ConcurrentHashMap
 
   override def logPayloadBytes(msg: Any, payloadBytes: Int): Unit =
-    if (logFrameSizeExceeding != Int.MaxValue && payloadBytes >= logFrameSizeExceeding) {
+    if (payloadBytes >= logFrameSizeExceeding) {
       val clazz = msg match {
         case x: ActorSelectionMessage ⇒ x.msg.getClass
         case x: RouterEnvelope        ⇒ x.message.getClass
