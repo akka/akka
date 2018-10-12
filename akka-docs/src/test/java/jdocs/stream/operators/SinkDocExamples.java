@@ -59,4 +59,15 @@ public class SinkDocExamples {
       */
       //#takeLast-operator-example
     }
+
+    static void lastExample() throws InterruptedException, ExecutionException, TimeoutException {
+        //#last-operator-example
+        Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+        CompletionStage<Integer> result = source.runWith(Sink.last(), materializer);
+        int lastItem = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+        System.out.println(lastItem);
+        // 10
+        //#last-operator-example
+    }
+
 }

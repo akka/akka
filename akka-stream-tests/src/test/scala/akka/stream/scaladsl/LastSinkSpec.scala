@@ -17,12 +17,18 @@ class LastSinkSpec extends StreamSpec with ScriptedTest {
 
   val settings = ActorMaterializerSettings(system)
 
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   "A Flow with Sink.last" must {
 
-    "yield the last value" in assertAllStagesStopped {
-      Await.result(Source(1 to 42).map(identity).runWith(Sink.last), 1.second) should be(42)
+    "yield the last value" in  {
+      //#last-operator-example
+      val source = Source(1 to 10)
+      val result = source.runWith(Sink.last)
+      result.map(println)
+      // 10
+      //#last-operator-example
+      result.futureValue shouldEqual 10
     }
 
     "yield the first error" in assertAllStagesStopped {
