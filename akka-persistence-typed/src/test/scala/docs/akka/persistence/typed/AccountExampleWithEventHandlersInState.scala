@@ -65,12 +65,13 @@ object AccountExampleWithEventHandlersInState {
     case class OpenedAccount(balance: BigDecimal) extends Account {
       require(balance >= Zero, "Account balance can't be negative")
 
-      override def applyEvent(event: AccountEvent): Account = event match {
-        case Deposited(amount) ⇒ copy(balance = balance + amount)
-        case Withdrawn(amount) ⇒ copy(balance = balance - amount)
-        case AccountClosed     ⇒ ClosedAccount
-        case _                 ⇒ throw new IllegalStateException(s"unexpected event [$event] in state [OpenedAccount]")
-      }
+      override def applyEvent(event: AccountEvent): Account =
+        event match {
+          case Deposited(amount) ⇒ copy(balance = balance + amount)
+          case Withdrawn(amount) ⇒ copy(balance = balance - amount)
+          case AccountClosed     ⇒ ClosedAccount
+          case _                 ⇒ throw new IllegalStateException(s"unexpected event [$event] in state [OpenedAccount]")
+        }
 
       def canWithdraw(amount: BigDecimal): Boolean = {
         balance - amount >= Zero
@@ -100,7 +101,7 @@ object AccountExampleWithEventHandlersInState {
         state match {
           case EmptyAccount ⇒ cmd match {
             case c: CreateAccount ⇒ createAccount(c)
-            case _                ⇒ Effect.unhandled.thenNoReply(cmd)
+            case _                ⇒ Effect.unhandled.thenNoReply() // CreateAccount before handling any other commands
           }
 
           case acc @ OpenedAccount(_) ⇒ cmd match {
@@ -108,11 +109,20 @@ object AccountExampleWithEventHandlersInState {
             case c: Withdraw      ⇒ withdraw(acc, c)
             case c: GetBalance    ⇒ getBalance(acc, c)
             case c: CloseAccount  ⇒ closeAccount(acc, c)
-            case _: CreateAccount ⇒ Effect.unhandled.thenNoReply(cmd)
+            case c: CreateAccount ⇒ Effect.reply(c)(Rejected("Account is already created"))
           }
 
           case ClosedAccount ⇒
-            Effect.unhandled.thenNoReply(cmd)
+            cmd match {
+              case c @ (_: Deposit | _: Withdraw) ⇒
+                Effect.reply(c)(Rejected("Account is closed"))
+              case c: GetBalance ⇒
+                Effect.reply(c)(CurrentBalance(Zero))
+              case c: CloseAccount ⇒
+                Effect.reply(c)(Rejected("Account is already closed"))
+              case c: CreateAccount ⇒
+                Effect.reply(c)(Rejected("Account is already created"))
+            }
         }
     }
 

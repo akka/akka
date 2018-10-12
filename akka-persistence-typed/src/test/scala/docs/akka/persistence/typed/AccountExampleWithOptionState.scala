@@ -86,16 +86,18 @@ object AccountExampleWithOptionState {
             else
               Effect.reply(c)(Rejected("Can't close account with non-zero balance"))
 
-          case _: CreateAccount ⇒ Effect.unhandled.thenNoReply(cmd)
+          case c: CreateAccount ⇒
+            Effect.reply(c)(Rejected("Account is already created"))
 
         }
 
-      override def applyEvent(event: AccountEvent): Account = event match {
-        case Deposited(amount) ⇒ copy(balance = balance + amount)
-        case Withdrawn(amount) ⇒ copy(balance = balance - amount)
-        case AccountClosed     ⇒ ClosedAccount
-        case _                 ⇒ throw new IllegalStateException(s"unexpected event [$event] in state [OpenedAccount]")
-      }
+      override def applyEvent(event: AccountEvent): Account =
+        event match {
+          case Deposited(amount) ⇒ copy(balance = balance + amount)
+          case Withdrawn(amount) ⇒ copy(balance = balance - amount)
+          case AccountClosed     ⇒ ClosedAccount
+          case _                 ⇒ throw new IllegalStateException(s"unexpected event [$event] in state [OpenedAccount]")
+        }
 
       def canWithdraw(amount: BigDecimal): Boolean = {
         balance - amount >= Zero
@@ -104,7 +106,16 @@ object AccountExampleWithOptionState {
     }
     case object ClosedAccount extends Account {
       override def applyCommand(cmd: AccountCommand[_]): ReplyEffect =
-        Effect.unhandled.thenNoReply(cmd)
+        cmd match {
+          case c @ (_: Deposit | _: Withdraw) ⇒
+            Effect.reply(c)(Rejected("Account is closed"))
+          case c: GetBalance ⇒
+            Effect.reply(c)(CurrentBalance(Zero))
+          case c: CloseAccount ⇒
+            Effect.reply(c)(Rejected("Account is already closed"))
+          case c: CreateAccount ⇒
+            Effect.reply(c)(Rejected("Account is already created"))
+        }
 
       override def applyEvent(event: AccountEvent): Account =
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
@@ -131,7 +142,8 @@ object AccountExampleWithOptionState {
           Effect.persist(AccountCreated)
             .thenReply(c)(_ ⇒ Confirmed)
         case _ ⇒
-          Effect.unhandled.thenNoReply(cmd)
+          // CreateAccount before handling any other commands
+          Effect.unhandled.thenNoReply()
       }
     }
 
