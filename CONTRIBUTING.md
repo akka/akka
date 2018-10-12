@@ -417,8 +417,9 @@ Scala has proven the most viable way to do it, as long as you keep the following
 
 1. Make use of `scala-java8-compat` conversions, see [GitHub](https://github.com/scala/scala-java8-compat) 
    (eg. `scala.compat.java8.FutureConverters` to translate Futures to `CompletionStage`s).
+   Note that we cannot upgrade to a newer version scala-java8-compat because of binary compatibility issues. 
 
-1. Make sure there is Java tests or sample code touching all parts of the API
+1. Make sure there are Java tests or sample code touching all parts of the API
 
 1. Do not use lower type bounds: `trait[T] { def method[U >: Something]: U }` as they do not work with Java
 
@@ -443,7 +444,7 @@ Scala has proven the most viable way to do it, as long as you keep the following
 | `scala.collection.immutable.Seq[T]` | `java.util.List<T>` |
 | `scala.concurrent.Future[T]` | `java.util.concurrent.CompletionStage<T>` |
 | `scala.concurrent.Promise[T]` | `java.util.concurrent.CompletableFuture<T>` |
-| `scala.concurrent.duration.FiniteDuration` | `java.time.Duration` |
+| `scala.concurrent.duration.FiniteDuration` | `java.time.Duration` (use `akka.util.JavaDurationConverters`) |
 | `T => Unit` | `java.util.function.Consumer<T>` |
 | `() => R` (`scala.Function0[R]`) | `java.util.function.Supplier<R>` |
 | `T => R` (`scala.Function1[T, R]`) | `java.util.function.Function<T, R>` |
