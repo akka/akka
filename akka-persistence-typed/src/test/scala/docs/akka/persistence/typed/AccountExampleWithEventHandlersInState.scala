@@ -22,6 +22,7 @@ import akka.persistence.typed.scaladsl.ReplyEffect
  */
 object AccountExampleWithEventHandlersInState {
 
+  //#account-entity
   object AccountEntity {
     // Command
     sealed trait AccountCommand[Reply] extends ExpectingReply[Reply]
@@ -163,6 +164,7 @@ object AccountExampleWithEventHandlersInState {
     }
 
   }
+  //#account-entity
 
 }
 

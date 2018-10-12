@@ -54,19 +54,19 @@ public class InDepthPersistentBehaviorTest {
   //#state
   interface BlogState {}
 
-  public static class BlankState implements BlogState {}
+  public static enum BlankState implements BlogState {
+    INSTANCE
+  }
 
   public static class DraftState implements BlogState {
     final PostContent postContent;
-    final boolean published;
 
-    DraftState(PostContent postContent, boolean published) {
+    DraftState(PostContent postContent) {
       this.postContent = postContent;
-      this.published = published;
     }
 
     public DraftState withContent(PostContent newContent) {
-      return new DraftState(newContent, this.published);
+      return new DraftState(newContent);
     }
 
     public String postId() {
@@ -225,7 +225,7 @@ public class InDepthPersistentBehaviorTest {
     public EventHandler<BlogState, BlogEvent> eventHandler() {
       return eventHandlerBuilder()
           .matchEvent(PostAdded.class, (state, event) ->
-              new DraftState(event.content, false))
+              new DraftState(event.content))
           .matchEvent(BodyChanged.class, DraftState.class, (state, chg) ->
               state.withContent(new PostContent(state.postId(), state.postContent.title, chg.newBody)))
           .matchEvent(BodyChanged.class, PublishedState.class, (state, chg) ->
@@ -245,7 +245,7 @@ public class InDepthPersistentBehaviorTest {
 
     @Override
     public BlogState emptyState() {
-      return new BlankState();
+      return BlankState.INSTANCE;
     }
 
     // commandHandler, eventHandler as in above snippets
