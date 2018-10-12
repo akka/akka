@@ -937,6 +937,10 @@ class JsonFramingSpec extends AkkaSpec {
   }
 
   "running tests used for benchmarking" should {
+    /* This code is repackaged (copied) from the benchmarking code, in order to clarify the (formerly implicit)
+    specific behavior the benchmarking code was relying on.
+     */
+
     "work fine with a single object" in {
       val json =
         ByteString(
