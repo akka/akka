@@ -6,6 +6,7 @@ package jdocs.stream.operators;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
+import akka.japi.Pair;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
@@ -36,20 +37,20 @@ public class SinkDocExamples {
 
     static void takeLastExample() throws InterruptedException, ExecutionException, TimeoutException {
         //#takeLast-operator-example
-        // tuple of (Name, GPA)
-        List<Tuple2> sortedStudents = Arrays.asList(new Tuple2("Benita", 2.1), new Tuple2("Adrian", 3.1),
-                new Tuple2("Alexis", 4), new Tuple2("Kendra", 4.2), new Tuple2("Jerrie", 4.3), new Tuple2("Alison", 4.7));
+        // pair of (Name, GPA)
+        List<Pair> sortedStudents = Arrays.asList(new Pair<>("Benita", 2.1), new Pair<>("Adrian", 3.1),
+                new Pair<>("Alexis", 4), new Pair<>("Kendra", 4.2), new Pair<>("Jerrie", 4.3), new Pair<>("Alison", 4.7));
 
-        Source<Tuple2, NotUsed> studentSource = Source.from(sortedStudents);
+        Source<Pair, NotUsed> studentSource = Source.from(sortedStudents);
 
-        CompletionStage<List<Tuple2>> topThree = studentSource.runWith(Sink.takeLast(3), materializer);
+        CompletionStage<List<Pair>> topThree = studentSource.runWith(Sink.takeLast(3), materializer);
 
-        List<Tuple2> result = topThree.toCompletableFuture().get(3, TimeUnit.SECONDS);
+        List<Pair> result = topThree.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
         System.out.println("#### Top students ####");
         for (int i = result.size() - 1; i >= 0; i--) {
-            Tuple2<String, Double> s = result.get(i);
-            System.out.println("Name: " + s._1 + ", " + "GPA: " + s._2);
+            Pair<String, Double> s = result.get(i);
+            System.out.println("Name: " + s.first() + ", " + "GPA: " + s.second());
         }
         /*
         #### Top students ####
@@ -57,7 +58,7 @@ public class SinkDocExamples {
         Name: Jerrie, GPA: 4.3
         Name: Kendra, GPA: 4.2
       */
-      //#takeLast-operator-example
+        //#takeLast-operator-example
     }
 
     static void lastExample() throws InterruptedException, ExecutionException, TimeoutException {
@@ -70,4 +71,13 @@ public class SinkDocExamples {
         //#last-operator-example
     }
 
+    static void lastOptionExample() throws InterruptedException, ExecutionException, TimeoutException {
+        //#lastOption-operator-example
+        Source<Integer, NotUsed> source = Source.empty();
+        CompletionStage<Optional<Integer>> result = source.runWith(Sink.lastOption(), materializer);
+        Optional<Integer> optItem = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
+        System.out.println(optItem);
+        // Optional.empty
+        //#lastOption-operator-example
+    }
 }
