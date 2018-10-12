@@ -4,16 +4,15 @@
 
 package akka.cluster.ddata.typed.javadsl;
 
-import akka.cluster.ddata.typed.javadsl.Replicator;
-import akka.cluster.ddata.typed.javadsl.ReplicatorSettings;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import java.util.Optional;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
-import akka.actor.ActorSystem;
+// #sample
+import java.util.Optional;
+import akka.actor.typed.ActorSystem;
 import akka.cluster.Cluster;
 import akka.cluster.ddata.GCounter;
 import akka.cluster.ddata.GCounterKey;
@@ -29,12 +28,15 @@ import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.MutableBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 
+// #sample
+
 public class ReplicatorTest extends JUnitSuite {
 
-  interface ClientCommand {
-  }
+  // #sample
+  interface ClientCommand { }
 
-  static final class Increment implements ClientCommand {
+  enum Increment implements ClientCommand {
+    INSTANCE
   }
 
   static final class GetValue implements ClientCommand {
@@ -53,36 +55,35 @@ public class ReplicatorTest extends JUnitSuite {
     }
   }
 
-  interface InternalMsg extends ClientCommand {
-  }
+  private interface InternalMsg extends ClientCommand { }
 
-  static final class InternalUpdateResponse<A extends ReplicatedData> implements InternalMsg {
-    final Replicator.UpdateResponse<A> rsp;
+  private static final class InternalUpdateResponse implements InternalMsg {
+    final Replicator.UpdateResponse<GCounter> rsp;
 
-    InternalUpdateResponse(Replicator.UpdateResponse<A> rsp) {
+    InternalUpdateResponse(Replicator.UpdateResponse<GCounter> rsp) {
       this.rsp = rsp;
     }
   }
 
-  static final class InternalGetResponse<A extends ReplicatedData> implements InternalMsg {
-    final Replicator.GetResponse<A> rsp;
+  private static final class InternalGetResponse implements InternalMsg {
+    final Replicator.GetResponse<GCounter> rsp;
 
-    InternalGetResponse(Replicator.GetResponse<A> rsp) {
+    InternalGetResponse(Replicator.GetResponse<GCounter> rsp) {
       this.rsp = rsp;
     }
   }
 
-  static final class InternalChanged<A extends ReplicatedData> implements InternalMsg {
-    final Replicator.Changed<A> chg;
+  private static final class InternalChanged implements InternalMsg {
+    final Replicator.Changed<GCounter> chg;
 
-    InternalChanged(Replicator.Changed<A> chg) {
+    InternalChanged(Replicator.Changed<GCounter> chg) {
       this.chg = chg;
     }
   }
 
   static final Key<GCounter> Key = GCounterKey.create("counter");
 
-  static class Client extends MutableBehavior<ClientCommand> {
+  static class Counter extends MutableBehavior<ClientCommand> {
     private final ActorRef<Replicator.Command> replicator;
     private final Cluster node;
     final ActorRef<Replicator.UpdateResponse<GCounter>> updateResponseAdapter;
@@ -91,10 +92,12 @@ public class ReplicatorTest extends JUnitSuite {
 
     private int cachedValue = 0;
 
-    Client(ActorRef<Command> replicator, Cluster node, ActorContext<ClientCommand> ctx) {
+    Counter(ActorRef<Command> replicator, Cluster node, ActorContext<ClientCommand> ctx) {
       this.replicator = replicator;
       this.node = node;
 
+      // adapters turning the messages from the replicator
+      // into our own protocol
       updateResponseAdapter = ctx.messageAdapter(
           (Class<Replicator.UpdateResponse<GCounter>>) (Object) Replicator.UpdateResponse.class,
           msg -> new InternalUpdateResponse(msg));
@@ -110,49 +113,79 @@ public class ReplicatorTest extends JUnitSuite {
       replicator.tell(new Replicator.Subscribe<>(Key, changedAdapter));
     }
 
-    public static Behavior<ClientCommand> create(ActorRef<Command> replicator, Cluster node) {
-      return Behaviors.setup(ctx -> new Client(replicator, node, ctx));
+    public static Behavior<ClientCommand> create() {
+      return Behaviors.setup((ctx) -> {
+        // The distributed data types still need the implicit untyped Cluster.
+        // We will look into another solution for that.
+        Cluster node = Cluster.get(Adapter.toUntyped(ctx.getSystem()));
+        ActorRef<Replicator.Command> replicator = DistributedData.get(ctx.getSystem()).replicator();
+
+        return new Counter(replicator, node, ctx);
+      });
     }
+
+    // #sample
+    // omitted from sample, needed for tests, factory above is for the docs sample
+    public static Behavior<ClientCommand> create(ActorRef<Command> replicator, Cluster node) {
+      return Behaviors.setup(ctx -> new Counter(replicator, node, ctx));
+    }
+    // #sample
 
     @Override
     public Behaviors.Receive<ClientCommand> createReceive() {
       return receiveBuilder()
-        .onMessage(Increment.class, cmd -> {
-          replicator.tell(
-            new Replicator.Update<>(Key, GCounter.empty(), Replicator.writeLocal(), updateResponseAdapter,
-              curr -> curr.increment(node, 1)));
-          return this;
-        })
-        .onMessage(InternalUpdateResponse.class, msg -> {
-          return this;
-        })
-        .onMessage(GetValue.class, cmd -> {
-          replicator.tell(
-            new Replicator.Get<>(Key, Replicator.readLocal(), getResponseAdapter, Optional.of(cmd.replyTo)));
-          return this;
-        })
-        .onMessage(GetCachedValue.class, cmd -> {
-          cmd.replyTo.tell(cachedValue);
-          return this;
-        })
-        .onMessage(InternalGetResponse.class, msg -> {
-          if (msg.rsp instanceof Replicator.GetSuccess) {
-            int value = ((Replicator.GetSuccess<?>) msg.rsp).get(Key).getValue().intValue();
-            ActorRef<Integer> replyTo = (ActorRef<Integer>) msg.rsp.request().get();
-            replyTo.tell(value);
-          } else {
-            // not dealing with failures
-          }
-          return this;
-        })
-        .onMessage(InternalChanged.class, msg -> {
-          GCounter counter = (GCounter) msg.chg.get(Key);
-          cachedValue = counter.getValue().intValue();
-          return this;
-        })
+        .onMessage(Increment.class, this::onIncrement)
+        .onMessage(InternalUpdateResponse.class, msg -> Behaviors.same())
+        .onMessage(GetValue.class, this::onGetValue)
+        .onMessage(GetCachedValue.class, this::onGetCachedValue)
+        .onMessage(InternalGetResponse.class, this::onInternalGetResponse)
+        .onMessage(InternalChanged.class, this::onInternalChanged)
         .build();
     }
+
+    private Behavior<ClientCommand> onIncrement(Increment cmd) {
+      replicator.tell(
+        new Replicator.Update<>(
+          Key,
+          GCounter.empty(),
+          Replicator.writeLocal(),
+          updateResponseAdapter,
+          curr -> curr.increment(node, 1)));
+      return Behaviors.same();
+    }
+
+    private Behavior<ClientCommand> onGetValue(GetValue cmd) {
+      replicator.tell(
+        new Replicator.Get<>(Key, Replicator.readLocal(), getResponseAdapter, Optional.of(cmd.replyTo)));
+      return Behaviors.same();
+    }
+
+    private Behavior<ClientCommand> onGetCachedValue(GetCachedValue cmd) {
+      cmd.replyTo.tell(cachedValue);
+      return Behaviors.same();
+    }
+
+    private Behavior<ClientCommand> onInternalGetResponse(InternalGetResponse msg) {
+      if (msg.rsp instanceof Replicator.GetSuccess) {
+        int value = ((Replicator.GetSuccess<?>) msg.rsp).get(Key).getValue().intValue();
+        ActorRef<Integer> replyTo = (ActorRef<Integer>) msg.rsp.request().get();
+        replyTo.tell(value);
+        return Behaviors.same();
+      } else {
+        // not dealing with failures
+        return Behaviors.unhandled();
+      }
+    }
+
+    private Behavior<ClientCommand> onInternalChanged(InternalChanged msg) {
+      GCounter counter = msg.chg.get(Key);
+      cachedValue = counter.getValue().intValue();
+      return this;
+    }
+
 }
+
+// #sample
 
 
   static Config config = ConfigFactory.parseString(
@@ -165,12 +198,11 @@ public class ReplicatorTest extends JUnitSuite {
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("ReplicatorTest",
     config);
 
-  private final ActorSystem system = actorSystemResource.getSystem();
+  private final akka.actor.ActorSystem system = actorSystemResource.getSystem();
 
-  akka.actor.typed.ActorSystem<?> typedSystem() {
+  ActorSystem<?> typedSystem() {
     return Adapter.toTyped(system);
   }
-
 
 
   @Test
@@ -180,9 +212,9 @@ public class ReplicatorTest extends JUnitSuite {
     ActorRef<Replicator.Command> replicator =
         Adapter.spawnAnonymous(system, Replicator.behavior(settings));
     ActorRef<ClientCommand> client =
-        Adapter.spawnAnonymous(system, Client.create(replicator, Cluster.get(system)));
+        Adapter.spawnAnonymous(system, Counter.create(replicator, Cluster.get(system)));
 
-    client.tell(new Increment());
+    client.tell(Increment.INSTANCE);
     client.tell(new GetValue(Adapter.toTyped(probe.getRef())));
     probe.expectMsg(1);
   }
@@ -194,17 +226,17 @@ public class ReplicatorTest extends JUnitSuite {
     ActorRef<Replicator.Command> replicator =
         Adapter.spawnAnonymous(system, Replicator.behavior(settings));
     ActorRef<ClientCommand> client =
-        Adapter.spawnAnonymous(system, Client.create(replicator, Cluster.get(system)));
+        Adapter.spawnAnonymous(system, Counter.create(replicator, Cluster.get(system)));
 
-    client.tell(new Increment());
-    client.tell(new Increment());
+    client.tell(Increment.INSTANCE);
+    client.tell(Increment.INSTANCE);
     probe.awaitAssert(() -> {
       client.tell(new GetCachedValue(Adapter.toTyped(probe.getRef())));
       probe.expectMsg(2);
       return null;
     });
 
-    client.tell(new Increment());
+    client.tell(Increment.INSTANCE);
     probe.awaitAssert(() -> {
       client.tell(new GetCachedValue(Adapter.toTyped(probe.getRef())));
       probe.expectMsg(3);
