@@ -55,7 +55,7 @@ object ClusterShardingSettings {
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
     val passivateIdleAfter =
-      if (config.getString("passivate-idle-entity-after") == "off") Duration.Zero
+      if (config.getString("passivate-idle-entity-after").toLowerCase == "off") Duration.Zero
       else config.getDuration("passivate-idle-entity-after", MILLISECONDS).millis
 
     new ClusterShardingSettings(
