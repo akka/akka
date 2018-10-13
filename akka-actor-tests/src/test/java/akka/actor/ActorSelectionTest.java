@@ -1,7 +1,4 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- */
-
+/** Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com> */
 package akka.actor;
 
 import akka.testkit.AkkaJUnitActorSystemResource;
@@ -19,8 +16,8 @@ import static org.junit.Assert.assertEquals;
 public class ActorSelectionTest extends JUnitSuite {
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("ActorSelectionTest",
-    AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("ActorSelectionTest", AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
 

@@ -18,9 +18,9 @@ import java.util.Optional;
 
 public class InDepthPersistentBehaviorTest {
 
-  //#event
-  interface BlogEvent {
-  }
+  // #event
+  interface BlogEvent {}
+
   public static class PostAdded implements BlogEvent {
     private final String postId;
     private final PostContent content;
@@ -48,9 +48,9 @@ public class InDepthPersistentBehaviorTest {
       this.postId = postId;
     }
   }
-  //#event
+  // #event
 
-  //#state
+  // #state
   interface BlogState {}
 
   public static class BlankState implements BlogState {}
@@ -88,11 +88,11 @@ public class InDepthPersistentBehaviorTest {
       return postContent.postId;
     }
   }
-  //#state
+  // #state
 
-  //#commands
-  public interface BlogCommand {
-  }
+  // #commands
+  public interface BlogCommand {}
+
   public static class AddPost implements BlogCommand {
     final PostContent content;
     final ActorRef<AddPostDone> replyTo;
@@ -102,6 +102,7 @@ public class InDepthPersistentBehaviorTest {
       this.replyTo = replyTo;
     }
   }
+
   public static class AddPostDone implements BlogCommand {
     final String postId;
 
@@ -109,6 +110,7 @@ public class InDepthPersistentBehaviorTest {
       this.postId = postId;
     }
   }
+
   public static class GetPost implements BlogCommand {
     final ActorRef<PostContent> replyTo;
 
@@ -116,6 +118,7 @@ public class InDepthPersistentBehaviorTest {
       this.replyTo = replyTo;
     }
   }
+
   public static class ChangeBody implements BlogCommand {
     final String newBody;
     final ActorRef<Done> replyTo;
@@ -125,6 +128,7 @@ public class InDepthPersistentBehaviorTest {
       this.replyTo = replyTo;
     }
   }
+
   public static class Publish implements BlogCommand {
     final ActorRef<Done> replyTo;
 
@@ -132,8 +136,9 @@ public class InDepthPersistentBehaviorTest {
       this.replyTo = replyTo;
     }
   }
-  public static class PassivatePost implements BlogCommand {
-  }
+
+  public static class PassivatePost implements BlogCommand {}
+
   public static class PostContent implements BlogCommand {
     final String postId;
     final String title;
@@ -145,11 +150,11 @@ public class InDepthPersistentBehaviorTest {
       this.body = body;
     }
   }
-  //#commands
+  // #commands
 
-  //#behavior
+  // #behavior
   public static class BlogBehavior extends PersistentBehavior<BlogCommand, BlogEvent, BlogState> {
-    //#behavior
+    // #behavior
 
     private final ActorContext<BlogCommand> ctx;
 
@@ -158,88 +163,113 @@ public class InDepthPersistentBehaviorTest {
       this.ctx = ctx;
     }
 
-    //#initial-command-handler
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, BlankState, BlogState> initialCommandHandler() {
+    // #initial-command-handler
+    private CommandHandlerBuilder<BlogCommand, BlogEvent, BlankState, BlogState>
+        initialCommandHandler() {
       return commandHandlerBuilder(BlankState.class)
-          .matchCommand(AddPost.class, (state, cmd) -> {
-            PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
-            return Effect().persist(event)
-                .andThen(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
-          });
+          .matchCommand(
+              AddPost.class,
+              (state, cmd) -> {
+                PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
+                return Effect()
+                    .persist(event)
+                    .andThen(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
+              });
     }
-    //#initial-command-handler
+    // #initial-command-handler
 
-    //#post-added-command-handler
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, DraftState, BlogState> draftCommandHandler() {
+    // #post-added-command-handler
+    private CommandHandlerBuilder<BlogCommand, BlogEvent, DraftState, BlogState>
+        draftCommandHandler() {
       return commandHandlerBuilder(DraftState.class)
-          .matchCommand(ChangeBody.class, (state, cmd) -> {
-            BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
-            return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
-          })
-          .matchCommand(Publish.class, (state, cmd) -> Effect()
-              .persist(new Published(state.postId())).andThen(() -> {
-                System.out.println("Blog post published: " + state.postId());
-                cmd.replyTo.tell(Done.getInstance());
-              }))
-          .matchCommand(GetPost.class, (state, cmd) -> {
-            cmd.replyTo.tell(state.postContent);
-            return Effect().none();
-          });
+          .matchCommand(
+              ChangeBody.class,
+              (state, cmd) -> {
+                BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
+                return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
+              })
+          .matchCommand(
+              Publish.class,
+              (state, cmd) ->
+                  Effect()
+                      .persist(new Published(state.postId()))
+                      .andThen(
+                          () -> {
+                            System.out.println("Blog post published: " + state.postId());
+                            cmd.replyTo.tell(Done.getInstance());
+                          }))
+          .matchCommand(
+              GetPost.class,
+              (state, cmd) -> {
+                cmd.replyTo.tell(state.postContent);
+                return Effect().none();
+              });
     }
 
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, PublishedState, BlogState> publishedCommandHandler() {
+    private CommandHandlerBuilder<BlogCommand, BlogEvent, PublishedState, BlogState>
+        publishedCommandHandler() {
       return commandHandlerBuilder(PublishedState.class)
-          .matchCommand(ChangeBody.class, (state, cmd) -> {
-            BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
-            return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
-          })
-          .matchCommand(GetPost.class, (state, cmd) -> {
-            cmd.replyTo.tell(state.postContent);
-            return Effect().none();
-          });
+          .matchCommand(
+              ChangeBody.class,
+              (state, cmd) -> {
+                BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
+                return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
+              })
+          .matchCommand(
+              GetPost.class,
+              (state, cmd) -> {
+                cmd.replyTo.tell(state.postContent);
+                return Effect().none();
+              });
     }
 
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState> commonCommandHandler() {
+    private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState>
+        commonCommandHandler() {
       return commandHandlerBuilder(BlogState.class)
           .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled())
           .matchCommand(PassivatePost.class, (state, cmd) -> Effect().stop());
     }
-    //#post-added-command-handler
+    // #post-added-command-handler
 
-
-    //#command-handler
+    // #command-handler
     @Override
     public CommandHandler<BlogCommand, BlogEvent, BlogState> commandHandler() {
-      return
-          initialCommandHandler()
-              .orElse(draftCommandHandler())
-              .orElse(publishedCommandHandler())
-              .orElse(commonCommandHandler())
-              .build();
+      return initialCommandHandler()
+          .orElse(draftCommandHandler())
+          .orElse(publishedCommandHandler())
+          .orElse(commonCommandHandler())
+          .build();
     }
-    //#command-handler
+    // #command-handler
 
-    //#event-handler
+    // #event-handler
     @Override
     public EventHandler<BlogState, BlogEvent> eventHandler() {
       return eventHandlerBuilder()
-          .matchEvent(PostAdded.class, (state, event) ->
-              new DraftState(event.content, false))
-          .matchEvent(BodyChanged.class, DraftState.class, (state, chg) ->
-              state.withContent(new PostContent(state.postId(), state.postContent.title, chg.newBody)))
-          .matchEvent(BodyChanged.class, PublishedState.class, (state, chg) ->
-              state.withContent(new PostContent(state.postId(), state.postContent.title, chg.newBody)))
-          .matchEvent(Published.class, DraftState.class, (state, event) ->
-              new PublishedState(state.postContent))
+          .matchEvent(PostAdded.class, (state, event) -> new DraftState(event.content, false))
+          .matchEvent(
+              BodyChanged.class,
+              DraftState.class,
+              (state, chg) ->
+                  state.withContent(
+                      new PostContent(state.postId(), state.postContent.title, chg.newBody)))
+          .matchEvent(
+              BodyChanged.class,
+              PublishedState.class,
+              (state, chg) ->
+                  state.withContent(
+                      new PostContent(state.postId(), state.postContent.title, chg.newBody)))
+          .matchEvent(
+              Published.class,
+              DraftState.class,
+              (state, event) -> new PublishedState(state.postContent))
           .build();
     }
-    //#event-handler
+    // #event-handler
 
-    //#behavior
+    // #behavior
     public static Behavior<BlogCommand> behavior(String entityId) {
-      return Behaviors.setup(ctx ->
-          new BlogBehavior("Blog-" + entityId, ctx)
-      );
+      return Behaviors.setup(ctx -> new BlogBehavior("Blog-" + entityId, ctx));
     }
 
     @Override
@@ -249,5 +279,5 @@ public class InDepthPersistentBehaviorTest {
 
     // commandHandler, eventHandler as in above snippets
   }
-  //#behavior
+  // #behavior
 }

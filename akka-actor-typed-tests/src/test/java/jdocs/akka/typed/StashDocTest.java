@@ -1,12 +1,10 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- */
+/** Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com> */
 
 package jdocs.akka.typed;
 
-//#import
+// #import
 import akka.actor.typed.javadsl.StashBuffer;
-//#import
+// #import
 
 import akka.Done;
 import akka.actor.typed.ActorRef;
@@ -22,20 +20,20 @@ import java.util.concurrent.CompletionStage;
 
 public class StashDocTest extends JUnitSuite {
 
-  //#db
+  // #db
 
   interface DB {
     CompletionStage<Done> save(String id, String value);
+
     CompletionStage<String> load(String id);
   }
-  //#db
+  // #db
 
-  //#stashing
+  // #stashing
 
   public static class DataAccess {
 
-    static interface Command {
-    }
+    static interface Command {}
 
     public static class Save implements Command {
       public final String payload;
@@ -66,8 +64,7 @@ public class StashDocTest extends JUnitSuite {
     static class SaveSuccess implements Command {
       public static final SaveSuccess instance = new SaveSuccess();
 
-      private SaveSuccess() {
-      }
+      private SaveSuccess() {}
     }
 
     static class DBError implements Command {
@@ -77,7 +74,6 @@ public class StashDocTest extends JUnitSuite {
         this.cause = cause;
       }
     }
-
 
     private final StashBuffer<Command> buffer = StashBuffer.create(100);
     private final String id;
@@ -89,71 +85,85 @@ public class StashDocTest extends JUnitSuite {
     }
 
     Behavior<Command> behavior() {
-      return Behaviors.setup(ctx -> {
-        db.load(id)
-            .whenComplete((value, cause) -> {
-            if (cause == null)
-              ctx.getSelf().tell(new InitialState(value));
-            else
-              ctx.getSelf().tell(new DBError(asRuntimeException(cause)));
-        });
+      return Behaviors.setup(
+          ctx -> {
+            db.load(id)
+                .whenComplete(
+                    (value, cause) -> {
+                      if (cause == null) ctx.getSelf().tell(new InitialState(value));
+                      else ctx.getSelf().tell(new DBError(asRuntimeException(cause)));
+                    });
 
-        return init();
-      });
+            return init();
+          });
     }
 
     private Behavior<Command> init() {
       return Behaviors.receive(Command.class)
-          .onMessage(InitialState.class, (ctx, msg) -> {
-            // now we are ready to handle stashed messages if any
-            return buffer.unstashAll(ctx, active(msg.value));
-          })
-          .onMessage(DBError.class, (ctx, msg) -> {
-            throw msg.cause;
-          })
-          .onMessage(Command.class, (ctx, msg) -> {
-            // stash all other messages for later processing
-            buffer.stash(msg);
-            return Behaviors.same();
-          })
+          .onMessage(
+              InitialState.class,
+              (ctx, msg) -> {
+                // now we are ready to handle stashed messages if any
+                return buffer.unstashAll(ctx, active(msg.value));
+              })
+          .onMessage(
+              DBError.class,
+              (ctx, msg) -> {
+                throw msg.cause;
+              })
+          .onMessage(
+              Command.class,
+              (ctx, msg) -> {
+                // stash all other messages for later processing
+                buffer.stash(msg);
+                return Behaviors.same();
+              })
           .build();
     }
 
     private Behavior<Command> active(String state) {
       return Behaviors.receive(Command.class)
-          .onMessage(Get.class, (ctx, msg) -> {
-            msg.replyTo.tell(state);
-            return Behaviors.same();
-          })
-          .onMessage(Save.class, (ctx, msg) -> {
-            db.save(id, msg.payload)
-              .whenComplete((value, cause) -> {
-                if (cause == null)
-                  ctx.getSelf().tell(SaveSuccess.instance);
-                else
-                  ctx.getSelf().tell(new DBError(asRuntimeException(cause)));
-              });
-            return saving(msg.payload, msg.replyTo);
-          })
+          .onMessage(
+              Get.class,
+              (ctx, msg) -> {
+                msg.replyTo.tell(state);
+                return Behaviors.same();
+              })
+          .onMessage(
+              Save.class,
+              (ctx, msg) -> {
+                db.save(id, msg.payload)
+                    .whenComplete(
+                        (value, cause) -> {
+                          if (cause == null) ctx.getSelf().tell(SaveSuccess.instance);
+                          else ctx.getSelf().tell(new DBError(asRuntimeException(cause)));
+                        });
+                return saving(msg.payload, msg.replyTo);
+              })
           .build();
     }
 
     private Behavior<Command> saving(String state, ActorRef<Done> replyTo) {
       return Behaviors.receive(Command.class)
-          .onMessageEquals(SaveSuccess.instance, ctx -> {
-            replyTo.tell(Done.getInstance());
-            return buffer.unstashAll(ctx, active(state));
-          })
-          .onMessage(DBError.class, (ctx, msg) -> {
-            throw msg.cause;
-          })
-          .onMessage(Command.class, (ctx, msg) -> {
-            buffer.stash(msg);
-            return Behaviors.same();
-          })
+          .onMessageEquals(
+              SaveSuccess.instance,
+              ctx -> {
+                replyTo.tell(Done.getInstance());
+                return buffer.unstashAll(ctx, active(state));
+              })
+          .onMessage(
+              DBError.class,
+              (ctx, msg) -> {
+                throw msg.cause;
+              })
+          .onMessage(
+              Command.class,
+              (ctx, msg) -> {
+                buffer.stash(msg);
+                return Behaviors.same();
+              })
           .build();
     }
-
 
     private static RuntimeException asRuntimeException(Throwable t) {
       // can't throw Throwable in lambdas
@@ -163,21 +173,22 @@ public class StashDocTest extends JUnitSuite {
         return new RuntimeException(t);
       }
     }
-
   }
 
-  //#stashing
+  // #stashing
 
   @Test
   public void stashingExample() throws Exception {
-    final DB db = new DB() {
-      public CompletionStage<Done> save(String id, String value) {
-        return CompletableFuture.completedFuture(Done.getInstance());
-      }
-      public CompletionStage<String> load(String id) {
-        return CompletableFuture.completedFuture("TheValue");
-      }
-    };
+    final DB db =
+        new DB() {
+          public CompletionStage<Done> save(String id, String value) {
+            return CompletableFuture.completedFuture(Done.getInstance());
+          }
+
+          public CompletionStage<String> load(String id) {
+            return CompletableFuture.completedFuture("TheValue");
+          }
+        };
     final DataAccess dataAccess = new DataAccess("17", db);
     BehaviorTestKit<DataAccess.Command> testKit = BehaviorTestKit.create(dataAccess.behavior());
     TestInbox<String> getInbox = TestInbox.create("getInbox");
@@ -197,8 +208,4 @@ public class StashDocTest extends JUnitSuite {
     testKit.run(new DataAccess.Get(getInbox.getRef()));
     getInbox.expectMessage("UpdatedValue");
   }
-
 }
-
-
-

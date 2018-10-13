@@ -9,61 +9,46 @@ package akka.remote;
 
 public final class ProtobufProtocol {
   private ProtobufProtocol() {}
-  public static void registerAllExtensions(
-      akka.protobuf.ExtensionRegistry registry) {
-  }
-  public interface MyMessageOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+
+  public static void registerAllExtensions(akka.protobuf.ExtensionRegistry registry) {}
+
+  public interface MyMessageOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required uint64 id = 1;
-    /**
-     * <code>required uint64 id = 1;</code>
-     */
+    /** <code>required uint64 id = 1;</code> */
     boolean hasId();
-    /**
-     * <code>required uint64 id = 1;</code>
-     */
+    /** <code>required uint64 id = 1;</code> */
     long getId();
 
     // required string name = 2;
-    /**
-     * <code>required string name = 2;</code>
-     */
+    /** <code>required string name = 2;</code> */
     boolean hasName();
-    /**
-     * <code>required string name = 2;</code>
-     */
+    /** <code>required string name = 2;</code> */
     java.lang.String getName();
-    /**
-     * <code>required string name = 2;</code>
-     */
-    akka.protobuf.ByteString
-        getNameBytes();
+    /** <code>required string name = 2;</code> */
+    akka.protobuf.ByteString getNameBytes();
 
     // required bool status = 3;
-    /**
-     * <code>required bool status = 3;</code>
-     */
+    /** <code>required bool status = 3;</code> */
     boolean hasStatus();
-    /**
-     * <code>required bool status = 3;</code>
-     */
+    /** <code>required bool status = 3;</code> */
     boolean getStatus();
   }
-  /**
-   * Protobuf type {@code MyMessage}
-   */
-  public static final class MyMessage extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code MyMessage} */
+  public static final class MyMessage extends akka.protobuf.GeneratedMessage
       implements MyMessageOrBuilder {
     // Use MyMessage.newBuilder() to construct.
     private MyMessage(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private MyMessage(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private MyMessage(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final MyMessage defaultInstance;
+
     public static MyMessage getDefaultInstance() {
       return defaultInstance;
     }
@@ -73,14 +58,14 @@ public final class ProtobufProtocol {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private MyMessage(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -94,61 +79,66 @@ public final class ProtobufProtocol {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 8: {
-              bitField0_ |= 0x00000001;
-              id_ = input.readUInt64();
-              break;
-            }
-            case 18: {
-              bitField0_ |= 0x00000002;
-              name_ = input.readBytes();
-              break;
-            }
-            case 24: {
-              bitField0_ |= 0x00000004;
-              status_ = input.readBool();
-              break;
-            }
+            case 8:
+              {
+                bitField0_ |= 0x00000001;
+                id_ = input.readUInt64();
+                break;
+              }
+            case 18:
+              {
+                bitField0_ |= 0x00000002;
+                name_ = input.readBytes();
+                break;
+              }
+            case 24:
+              {
+                bitField0_ |= 0x00000004;
+                status_ = input.readBool();
+                break;
+              }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.ProtobufProtocol.internal_static_MyMessage_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.ProtobufProtocol.internal_static_MyMessage_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.ProtobufProtocol.MyMessage.class, akka.remote.ProtobufProtocol.MyMessage.Builder.class);
+              akka.remote.ProtobufProtocol.MyMessage.class,
+              akka.remote.ProtobufProtocol.MyMessage.Builder.class);
     }
 
     public static akka.protobuf.Parser<MyMessage> PARSER =
         new akka.protobuf.AbstractParser<MyMessage>() {
-      public MyMessage parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new MyMessage(input, extensionRegistry);
-      }
-    };
+          public MyMessage parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new MyMessage(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<MyMessage> getParserForType() {
@@ -159,15 +149,11 @@ public final class ProtobufProtocol {
     // required uint64 id = 1;
     public static final int ID_FIELD_NUMBER = 1;
     private long id_;
-    /**
-     * <code>required uint64 id = 1;</code>
-     */
+    /** <code>required uint64 id = 1;</code> */
     public boolean hasId() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required uint64 id = 1;</code>
-     */
+    /** <code>required uint64 id = 1;</code> */
     public long getId() {
       return id_;
     }
@@ -175,22 +161,17 @@ public final class ProtobufProtocol {
     // required string name = 2;
     public static final int NAME_FIELD_NUMBER = 2;
     private java.lang.Object name_;
-    /**
-     * <code>required string name = 2;</code>
-     */
+    /** <code>required string name = 2;</code> */
     public boolean hasName() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>required string name = 2;</code>
-     */
+    /** <code>required string name = 2;</code> */
     public java.lang.String getName() {
       java.lang.Object ref = name_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           name_ = s;
@@ -198,16 +179,11 @@ public final class ProtobufProtocol {
         return s;
       }
     }
-    /**
-     * <code>required string name = 2;</code>
-     */
-    public akka.protobuf.ByteString
-        getNameBytes() {
+    /** <code>required string name = 2;</code> */
+    public akka.protobuf.ByteString getNameBytes() {
       java.lang.Object ref = name_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         name_ = b;
         return b;
       } else {
@@ -218,15 +194,11 @@ public final class ProtobufProtocol {
     // required bool status = 3;
     public static final int STATUS_FIELD_NUMBER = 3;
     private boolean status_;
-    /**
-     * <code>required bool status = 3;</code>
-     */
+    /** <code>required bool status = 3;</code> */
     public boolean hasStatus() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    /**
-     * <code>required bool status = 3;</code>
-     */
+    /** <code>required bool status = 3;</code> */
     public boolean getStatus() {
       return status_;
     }
@@ -236,7 +208,9 @@ public final class ProtobufProtocol {
       name_ = "";
       status_ = false;
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -257,8 +231,7 @@ public final class ProtobufProtocol {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeUInt64(1, id_);
@@ -273,22 +246,20 @@ public final class ProtobufProtocol {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeUInt64Size(1, id_);
+        size += akka.protobuf.CodedOutputStream.computeUInt64Size(1, id_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(2, getNameBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(2, getNameBytes());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBoolSize(3, status_);
+        size += akka.protobuf.CodedOutputStream.computeBoolSize(3, status_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -296,94 +267,100 @@ public final class ProtobufProtocol {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.ProtobufProtocol.MyMessage parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.ProtobufProtocol.MyMessage parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.ProtobufProtocol.MyMessage parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.ProtobufProtocol.MyMessage parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.ProtobufProtocol.MyMessage parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.ProtobufProtocol.MyMessage parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.ProtobufProtocol.MyMessage prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code MyMessage}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.ProtobufProtocol.MyMessageOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    /** Protobuf type {@code MyMessage} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.ProtobufProtocol.MyMessageOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.ProtobufProtocol.internal_static_MyMessage_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.ProtobufProtocol.internal_static_MyMessage_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.ProtobufProtocol.MyMessage.class, akka.remote.ProtobufProtocol.MyMessage.Builder.class);
+                akka.remote.ProtobufProtocol.MyMessage.class,
+                akka.remote.ProtobufProtocol.MyMessage.Builder.class);
       }
 
       // Construct using akka.remote.ProtobufProtocol.MyMessage.newBuilder()
@@ -391,15 +368,15 @@ public final class ProtobufProtocol {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {}
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -419,8 +396,7 @@ public final class ProtobufProtocol {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.ProtobufProtocol.internal_static_MyMessage_descriptor;
       }
 
@@ -437,7 +413,8 @@ public final class ProtobufProtocol {
       }
 
       public akka.remote.ProtobufProtocol.MyMessage buildPartial() {
-        akka.remote.ProtobufProtocol.MyMessage result = new akka.remote.ProtobufProtocol.MyMessage(this);
+        akka.remote.ProtobufProtocol.MyMessage result =
+            new akka.remote.ProtobufProtocol.MyMessage(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -459,7 +436,7 @@ public final class ProtobufProtocol {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.ProtobufProtocol.MyMessage) {
-          return mergeFrom((akka.remote.ProtobufProtocol.MyMessage)other);
+          return mergeFrom((akka.remote.ProtobufProtocol.MyMessage) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -485,15 +462,15 @@ public final class ProtobufProtocol {
 
       public final boolean isInitialized() {
         if (!hasId()) {
-          
+
           return false;
         }
         if (!hasName()) {
-          
+
           return false;
         }
         if (!hasStatus()) {
-          
+
           return false;
         }
         return true;
@@ -516,34 +493,27 @@ public final class ProtobufProtocol {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required uint64 id = 1;
-      private long id_ ;
-      /**
-       * <code>required uint64 id = 1;</code>
-       */
+      private long id_;
+      /** <code>required uint64 id = 1;</code> */
       public boolean hasId() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required uint64 id = 1;</code>
-       */
+      /** <code>required uint64 id = 1;</code> */
       public long getId() {
         return id_;
       }
-      /**
-       * <code>required uint64 id = 1;</code>
-       */
+      /** <code>required uint64 id = 1;</code> */
       public Builder setId(long value) {
         bitField0_ |= 0x00000001;
         id_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required uint64 id = 1;</code>
-       */
+      /** <code>required uint64 id = 1;</code> */
       public Builder clearId() {
         bitField0_ = (bitField0_ & ~0x00000001);
         id_ = 0L;
@@ -553,104 +523,79 @@ public final class ProtobufProtocol {
 
       // required string name = 2;
       private java.lang.Object name_ = "";
-      /**
-       * <code>required string name = 2;</code>
-       */
+      /** <code>required string name = 2;</code> */
       public boolean hasName() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>required string name = 2;</code>
-       */
+      /** <code>required string name = 2;</code> */
       public java.lang.String getName() {
         java.lang.Object ref = name_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           name_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>required string name = 2;</code>
-       */
-      public akka.protobuf.ByteString
-          getNameBytes() {
+      /** <code>required string name = 2;</code> */
+      public akka.protobuf.ByteString getNameBytes() {
         java.lang.Object ref = name_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           name_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>required string name = 2;</code>
-       */
-      public Builder setName(
-          java.lang.String value) {
+      /** <code>required string name = 2;</code> */
+      public Builder setName(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
         name_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required string name = 2;</code>
-       */
+      /** <code>required string name = 2;</code> */
       public Builder clearName() {
         bitField0_ = (bitField0_ & ~0x00000002);
         name_ = getDefaultInstance().getName();
         onChanged();
         return this;
       }
-      /**
-       * <code>required string name = 2;</code>
-       */
-      public Builder setNameBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>required string name = 2;</code> */
+      public Builder setNameBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
         name_ = value;
         onChanged();
         return this;
       }
 
       // required bool status = 3;
-      private boolean status_ ;
-      /**
-       * <code>required bool status = 3;</code>
-       */
+      private boolean status_;
+      /** <code>required bool status = 3;</code> */
       public boolean hasStatus() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      /**
-       * <code>required bool status = 3;</code>
-       */
+      /** <code>required bool status = 3;</code> */
       public boolean getStatus() {
         return status_;
       }
-      /**
-       * <code>required bool status = 3;</code>
-       */
+      /** <code>required bool status = 3;</code> */
       public Builder setStatus(boolean value) {
         bitField0_ |= 0x00000004;
         status_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required bool status = 3;</code>
-       */
+      /** <code>required bool status = 3;</code> */
       public Builder clearStatus() {
         bitField0_ = (bitField0_ & ~0x00000004);
         status_ = false;
@@ -669,42 +614,39 @@ public final class ProtobufProtocol {
     // @@protoc_insertion_point(class_scope:MyMessage)
   }
 
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_MyMessage_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_MyMessage_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_MyMessage_fieldAccessorTable;
 
-  public static akka.protobuf.Descriptors.FileDescriptor
-      getDescriptor() {
+  public static akka.protobuf.Descriptors.FileDescriptor getDescriptor() {
     return descriptor;
   }
-  private static akka.protobuf.Descriptors.FileDescriptor
-      descriptor;
+
+  private static akka.protobuf.Descriptors.FileDescriptor descriptor;
+
   static {
     java.lang.String[] descriptorData = {
-      "\n\026ProtobufProtocol.proto\"5\n\tMyMessage\022\n\n" +
-      "\002id\030\001 \002(\004\022\014\n\004name\030\002 \002(\t\022\016\n\006status\030\003 \002(\010B" +
-      "\r\n\013akka.remote"
+      "\n\026ProtobufProtocol.proto\"5\n\tMyMessage\022\n\n"
+          + "\002id\030\001 \002(\004\022\014\n\004name\030\002 \002(\t\022\016\n\006status\030\003 \002(\010B"
+          + "\r\n\013akka.remote"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public akka.protobuf.ExtensionRegistry assignDescriptors(
-            akka.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_MyMessage_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_MyMessage_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_MyMessage_descriptor,
-              new java.lang.String[] { "Id", "Name", "Status", });
-          return null;
-        }
-      };
-    akka.protobuf.Descriptors.FileDescriptor
-      .internalBuildGeneratedFileFrom(descriptorData,
-        new akka.protobuf.Descriptors.FileDescriptor[] {
-        }, assigner);
+        new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+          public akka.protobuf.ExtensionRegistry assignDescriptors(
+              akka.protobuf.Descriptors.FileDescriptor root) {
+            descriptor = root;
+            internal_static_MyMessage_descriptor = getDescriptor().getMessageTypes().get(0);
+            internal_static_MyMessage_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_MyMessage_descriptor,
+                    new java.lang.String[] {
+                      "Id", "Name", "Status",
+                    });
+            return null;
+          }
+        };
+    akka.protobuf.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(
+        descriptorData, new akka.protobuf.Descriptors.FileDescriptor[] {}, assigner);
   }
 
   // @@protoc_insertion_point(outer_class_scope)

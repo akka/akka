@@ -9,30 +9,22 @@ package akka.remote;
 
 public final class WireFormats {
   private WireFormats() {}
-  public static void registerAllExtensions(
-      akka.protobuf.ExtensionRegistry registry) {
-  }
+
+  public static void registerAllExtensions(akka.protobuf.ExtensionRegistry registry) {}
   /**
    * Protobuf enum {@code CommandType}
    *
    * <pre>
-   **
+   * *
    * Defines the type of the AkkaControlMessage command type
    * </pre>
    */
-  public enum CommandType
-      implements akka.protobuf.ProtocolMessageEnum {
-    /**
-     * <code>ASSOCIATE = 1;</code>
-     */
+  public enum CommandType implements akka.protobuf.ProtocolMessageEnum {
+    /** <code>ASSOCIATE = 1;</code> */
     ASSOCIATE(0, 1),
-    /**
-     * <code>DISASSOCIATE = 2;</code>
-     */
+    /** <code>DISASSOCIATE = 2;</code> */
     DISASSOCIATE(1, 2),
-    /**
-     * <code>HEARTBEAT = 3;</code>
-     */
+    /** <code>HEARTBEAT = 3;</code> */
     HEARTBEAT(2, 3),
     /**
      * <code>DISASSOCIATE_SHUTTING_DOWN = 4;</code>
@@ -52,17 +44,11 @@ public final class WireFormats {
     DISASSOCIATE_QUARANTINED(4, 5),
     ;
 
-    /**
-     * <code>ASSOCIATE = 1;</code>
-     */
+    /** <code>ASSOCIATE = 1;</code> */
     public static final int ASSOCIATE_VALUE = 1;
-    /**
-     * <code>DISASSOCIATE = 2;</code>
-     */
+    /** <code>DISASSOCIATE = 2;</code> */
     public static final int DISASSOCIATE_VALUE = 2;
-    /**
-     * <code>HEARTBEAT = 3;</code>
-     */
+    /** <code>HEARTBEAT = 3;</code> */
     public static final int HEARTBEAT_VALUE = 3;
     /**
      * <code>DISASSOCIATE_SHUTTING_DOWN = 4;</code>
@@ -81,52 +67,55 @@ public final class WireFormats {
      */
     public static final int DISASSOCIATE_QUARANTINED_VALUE = 5;
 
-
-    public final int getNumber() { return value; }
+    public final int getNumber() {
+      return value;
+    }
 
     public static CommandType valueOf(int value) {
       switch (value) {
-        case 1: return ASSOCIATE;
-        case 2: return DISASSOCIATE;
-        case 3: return HEARTBEAT;
-        case 4: return DISASSOCIATE_SHUTTING_DOWN;
-        case 5: return DISASSOCIATE_QUARANTINED;
-        default: return null;
+        case 1:
+          return ASSOCIATE;
+        case 2:
+          return DISASSOCIATE;
+        case 3:
+          return HEARTBEAT;
+        case 4:
+          return DISASSOCIATE_SHUTTING_DOWN;
+        case 5:
+          return DISASSOCIATE_QUARANTINED;
+        default:
+          return null;
       }
     }
 
-    public static akka.protobuf.Internal.EnumLiteMap<CommandType>
-        internalGetValueMap() {
+    public static akka.protobuf.Internal.EnumLiteMap<CommandType> internalGetValueMap() {
       return internalValueMap;
     }
-    private static akka.protobuf.Internal.EnumLiteMap<CommandType>
-        internalValueMap =
-          new akka.protobuf.Internal.EnumLiteMap<CommandType>() {
-            public CommandType findValueByNumber(int number) {
-              return CommandType.valueOf(number);
-            }
-          };
 
-    public final akka.protobuf.Descriptors.EnumValueDescriptor
-        getValueDescriptor() {
+    private static akka.protobuf.Internal.EnumLiteMap<CommandType> internalValueMap =
+        new akka.protobuf.Internal.EnumLiteMap<CommandType>() {
+          public CommandType findValueByNumber(int number) {
+            return CommandType.valueOf(number);
+          }
+        };
+
+    public final akka.protobuf.Descriptors.EnumValueDescriptor getValueDescriptor() {
       return getDescriptor().getValues().get(index);
     }
-    public final akka.protobuf.Descriptors.EnumDescriptor
-        getDescriptorForType() {
+
+    public final akka.protobuf.Descriptors.EnumDescriptor getDescriptorForType() {
       return getDescriptor();
     }
-    public static final akka.protobuf.Descriptors.EnumDescriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.EnumDescriptor getDescriptor() {
       return akka.remote.WireFormats.getDescriptor().getEnumTypes().get(0);
     }
 
     private static final CommandType[] VALUES = values();
 
-    public static CommandType valueOf(
-        akka.protobuf.Descriptors.EnumValueDescriptor desc) {
+    public static CommandType valueOf(akka.protobuf.Descriptors.EnumValueDescriptor desc) {
       if (desc.getType() != getDescriptor()) {
-        throw new java.lang.IllegalArgumentException(
-          "EnumValueDescriptor is not for this type.");
+        throw new java.lang.IllegalArgumentException("EnumValueDescriptor is not for this type.");
       }
       return VALUES[desc.getIndex()];
     }
@@ -146,119 +135,95 @@ public final class WireFormats {
    * Protobuf enum {@code TimeUnit}
    *
    * <pre>
-   **
+   * *
    * java.util.concurrent.TimeUnit enum
    * </pre>
    */
-  public enum TimeUnit
-      implements akka.protobuf.ProtocolMessageEnum {
-    /**
-     * <code>NANOSECONDS = 1;</code>
-     */
+  public enum TimeUnit implements akka.protobuf.ProtocolMessageEnum {
+    /** <code>NANOSECONDS = 1;</code> */
     NANOSECONDS(0, 1),
-    /**
-     * <code>MICROSECONDS = 2;</code>
-     */
+    /** <code>MICROSECONDS = 2;</code> */
     MICROSECONDS(1, 2),
-    /**
-     * <code>MILLISECONDS = 3;</code>
-     */
+    /** <code>MILLISECONDS = 3;</code> */
     MILLISECONDS(2, 3),
-    /**
-     * <code>SECONDS = 4;</code>
-     */
+    /** <code>SECONDS = 4;</code> */
     SECONDS(3, 4),
-    /**
-     * <code>MINUTES = 5;</code>
-     */
+    /** <code>MINUTES = 5;</code> */
     MINUTES(4, 5),
-    /**
-     * <code>HOURS = 6;</code>
-     */
+    /** <code>HOURS = 6;</code> */
     HOURS(5, 6),
-    /**
-     * <code>DAYS = 7;</code>
-     */
+    /** <code>DAYS = 7;</code> */
     DAYS(6, 7),
     ;
 
-    /**
-     * <code>NANOSECONDS = 1;</code>
-     */
+    /** <code>NANOSECONDS = 1;</code> */
     public static final int NANOSECONDS_VALUE = 1;
-    /**
-     * <code>MICROSECONDS = 2;</code>
-     */
+    /** <code>MICROSECONDS = 2;</code> */
     public static final int MICROSECONDS_VALUE = 2;
-    /**
-     * <code>MILLISECONDS = 3;</code>
-     */
+    /** <code>MILLISECONDS = 3;</code> */
     public static final int MILLISECONDS_VALUE = 3;
-    /**
-     * <code>SECONDS = 4;</code>
-     */
+    /** <code>SECONDS = 4;</code> */
     public static final int SECONDS_VALUE = 4;
-    /**
-     * <code>MINUTES = 5;</code>
-     */
+    /** <code>MINUTES = 5;</code> */
     public static final int MINUTES_VALUE = 5;
-    /**
-     * <code>HOURS = 6;</code>
-     */
+    /** <code>HOURS = 6;</code> */
     public static final int HOURS_VALUE = 6;
-    /**
-     * <code>DAYS = 7;</code>
-     */
+    /** <code>DAYS = 7;</code> */
     public static final int DAYS_VALUE = 7;
 
-
-    public final int getNumber() { return value; }
+    public final int getNumber() {
+      return value;
+    }
 
     public static TimeUnit valueOf(int value) {
       switch (value) {
-        case 1: return NANOSECONDS;
-        case 2: return MICROSECONDS;
-        case 3: return MILLISECONDS;
-        case 4: return SECONDS;
-        case 5: return MINUTES;
-        case 6: return HOURS;
-        case 7: return DAYS;
-        default: return null;
+        case 1:
+          return NANOSECONDS;
+        case 2:
+          return MICROSECONDS;
+        case 3:
+          return MILLISECONDS;
+        case 4:
+          return SECONDS;
+        case 5:
+          return MINUTES;
+        case 6:
+          return HOURS;
+        case 7:
+          return DAYS;
+        default:
+          return null;
       }
     }
 
-    public static akka.protobuf.Internal.EnumLiteMap<TimeUnit>
-        internalGetValueMap() {
+    public static akka.protobuf.Internal.EnumLiteMap<TimeUnit> internalGetValueMap() {
       return internalValueMap;
     }
-    private static akka.protobuf.Internal.EnumLiteMap<TimeUnit>
-        internalValueMap =
-          new akka.protobuf.Internal.EnumLiteMap<TimeUnit>() {
-            public TimeUnit findValueByNumber(int number) {
-              return TimeUnit.valueOf(number);
-            }
-          };
 
-    public final akka.protobuf.Descriptors.EnumValueDescriptor
-        getValueDescriptor() {
+    private static akka.protobuf.Internal.EnumLiteMap<TimeUnit> internalValueMap =
+        new akka.protobuf.Internal.EnumLiteMap<TimeUnit>() {
+          public TimeUnit findValueByNumber(int number) {
+            return TimeUnit.valueOf(number);
+          }
+        };
+
+    public final akka.protobuf.Descriptors.EnumValueDescriptor getValueDescriptor() {
       return getDescriptor().getValues().get(index);
     }
-    public final akka.protobuf.Descriptors.EnumDescriptor
-        getDescriptorForType() {
+
+    public final akka.protobuf.Descriptors.EnumDescriptor getDescriptorForType() {
       return getDescriptor();
     }
-    public static final akka.protobuf.Descriptors.EnumDescriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.EnumDescriptor getDescriptor() {
       return akka.remote.WireFormats.getDescriptor().getEnumTypes().get(1);
     }
 
     private static final TimeUnit[] VALUES = values();
 
-    public static TimeUnit valueOf(
-        akka.protobuf.Descriptors.EnumValueDescriptor desc) {
+    public static TimeUnit valueOf(akka.protobuf.Descriptors.EnumValueDescriptor desc) {
       if (desc.getType() != getDescriptor()) {
-        throw new java.lang.IllegalArgumentException(
-          "EnumValueDescriptor is not for this type.");
+        throw new java.lang.IllegalArgumentException("EnumValueDescriptor is not for this type.");
       }
       return VALUES[desc.getIndex()];
     }
@@ -274,51 +239,39 @@ public final class WireFormats {
     // @@protoc_insertion_point(enum_scope:TimeUnit)
   }
 
-  public interface AckAndEnvelopeContainerOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface AckAndEnvelopeContainerOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // optional .AcknowledgementInfo ack = 1;
-    /**
-     * <code>optional .AcknowledgementInfo ack = 1;</code>
-     */
+    /** <code>optional .AcknowledgementInfo ack = 1;</code> */
     boolean hasAck();
-    /**
-     * <code>optional .AcknowledgementInfo ack = 1;</code>
-     */
+    /** <code>optional .AcknowledgementInfo ack = 1;</code> */
     akka.remote.WireFormats.AcknowledgementInfo getAck();
-    /**
-     * <code>optional .AcknowledgementInfo ack = 1;</code>
-     */
+    /** <code>optional .AcknowledgementInfo ack = 1;</code> */
     akka.remote.WireFormats.AcknowledgementInfoOrBuilder getAckOrBuilder();
 
     // optional .RemoteEnvelope envelope = 2;
-    /**
-     * <code>optional .RemoteEnvelope envelope = 2;</code>
-     */
+    /** <code>optional .RemoteEnvelope envelope = 2;</code> */
     boolean hasEnvelope();
-    /**
-     * <code>optional .RemoteEnvelope envelope = 2;</code>
-     */
+    /** <code>optional .RemoteEnvelope envelope = 2;</code> */
     akka.remote.WireFormats.RemoteEnvelope getEnvelope();
-    /**
-     * <code>optional .RemoteEnvelope envelope = 2;</code>
-     */
+    /** <code>optional .RemoteEnvelope envelope = 2;</code> */
     akka.remote.WireFormats.RemoteEnvelopeOrBuilder getEnvelopeOrBuilder();
   }
-  /**
-   * Protobuf type {@code AckAndEnvelopeContainer}
-   */
-  public static final class AckAndEnvelopeContainer extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code AckAndEnvelopeContainer} */
+  public static final class AckAndEnvelopeContainer extends akka.protobuf.GeneratedMessage
       implements AckAndEnvelopeContainerOrBuilder {
     // Use AckAndEnvelopeContainer.newBuilder() to construct.
     private AckAndEnvelopeContainer(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private AckAndEnvelopeContainer(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private AckAndEnvelopeContainer(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final AckAndEnvelopeContainer defaultInstance;
+
     public static AckAndEnvelopeContainer getDefaultInstance() {
       return defaultInstance;
     }
@@ -328,14 +281,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private AckAndEnvelopeContainer(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -349,72 +302,80 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              akka.remote.WireFormats.AcknowledgementInfo.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                subBuilder = ack_.toBuilder();
+            case 10:
+              {
+                akka.remote.WireFormats.AcknowledgementInfo.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                  subBuilder = ack_.toBuilder();
+                }
+                ack_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.AcknowledgementInfo.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(ack_);
+                  ack_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000001;
+                break;
               }
-              ack_ = input.readMessage(akka.remote.WireFormats.AcknowledgementInfo.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(ack_);
-                ack_ = subBuilder.buildPartial();
+            case 18:
+              {
+                akka.remote.WireFormats.RemoteEnvelope.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                  subBuilder = envelope_.toBuilder();
+                }
+                envelope_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.RemoteEnvelope.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(envelope_);
+                  envelope_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000002;
+                break;
               }
-              bitField0_ |= 0x00000001;
-              break;
-            }
-            case 18: {
-              akka.remote.WireFormats.RemoteEnvelope.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
-                subBuilder = envelope_.toBuilder();
-              }
-              envelope_ = input.readMessage(akka.remote.WireFormats.RemoteEnvelope.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(envelope_);
-                envelope_ = subBuilder.buildPartial();
-              }
-              bitField0_ |= 0x00000002;
-              break;
-            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_AckAndEnvelopeContainer_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_AckAndEnvelopeContainer_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.AckAndEnvelopeContainer.class, akka.remote.WireFormats.AckAndEnvelopeContainer.Builder.class);
+              akka.remote.WireFormats.AckAndEnvelopeContainer.class,
+              akka.remote.WireFormats.AckAndEnvelopeContainer.Builder.class);
     }
 
     public static akka.protobuf.Parser<AckAndEnvelopeContainer> PARSER =
         new akka.protobuf.AbstractParser<AckAndEnvelopeContainer>() {
-      public AckAndEnvelopeContainer parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new AckAndEnvelopeContainer(input, extensionRegistry);
-      }
-    };
+          public AckAndEnvelopeContainer parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new AckAndEnvelopeContainer(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<AckAndEnvelopeContainer> getParserForType() {
@@ -425,21 +386,15 @@ public final class WireFormats {
     // optional .AcknowledgementInfo ack = 1;
     public static final int ACK_FIELD_NUMBER = 1;
     private akka.remote.WireFormats.AcknowledgementInfo ack_;
-    /**
-     * <code>optional .AcknowledgementInfo ack = 1;</code>
-     */
+    /** <code>optional .AcknowledgementInfo ack = 1;</code> */
     public boolean hasAck() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>optional .AcknowledgementInfo ack = 1;</code>
-     */
+    /** <code>optional .AcknowledgementInfo ack = 1;</code> */
     public akka.remote.WireFormats.AcknowledgementInfo getAck() {
       return ack_;
     }
-    /**
-     * <code>optional .AcknowledgementInfo ack = 1;</code>
-     */
+    /** <code>optional .AcknowledgementInfo ack = 1;</code> */
     public akka.remote.WireFormats.AcknowledgementInfoOrBuilder getAckOrBuilder() {
       return ack_;
     }
@@ -447,21 +402,15 @@ public final class WireFormats {
     // optional .RemoteEnvelope envelope = 2;
     public static final int ENVELOPE_FIELD_NUMBER = 2;
     private akka.remote.WireFormats.RemoteEnvelope envelope_;
-    /**
-     * <code>optional .RemoteEnvelope envelope = 2;</code>
-     */
+    /** <code>optional .RemoteEnvelope envelope = 2;</code> */
     public boolean hasEnvelope() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>optional .RemoteEnvelope envelope = 2;</code>
-     */
+    /** <code>optional .RemoteEnvelope envelope = 2;</code> */
     public akka.remote.WireFormats.RemoteEnvelope getEnvelope() {
       return envelope_;
     }
-    /**
-     * <code>optional .RemoteEnvelope envelope = 2;</code>
-     */
+    /** <code>optional .RemoteEnvelope envelope = 2;</code> */
     public akka.remote.WireFormats.RemoteEnvelopeOrBuilder getEnvelopeOrBuilder() {
       return envelope_;
     }
@@ -470,7 +419,9 @@ public final class WireFormats {
       ack_ = akka.remote.WireFormats.AcknowledgementInfo.getDefaultInstance();
       envelope_ = akka.remote.WireFormats.RemoteEnvelope.getDefaultInstance();
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -491,8 +442,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeMessage(1, ack_);
@@ -504,18 +454,17 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, ack_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(1, ack_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, envelope_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(2, envelope_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -523,94 +472,100 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
     public static akka.remote.WireFormats.AckAndEnvelopeContainer parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data) throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.AckAndEnvelopeContainer parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AckAndEnvelopeContainer parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.AckAndEnvelopeContainer parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static akka.remote.WireFormats.AckAndEnvelopeContainer parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.AckAndEnvelopeContainer parseFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.AckAndEnvelopeContainer parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.AckAndEnvelopeContainer parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.AckAndEnvelopeContainer parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.AckAndEnvelopeContainer parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AckAndEnvelopeContainer parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.AckAndEnvelopeContainer parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.AckAndEnvelopeContainer prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code AckAndEnvelopeContainer}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.AckAndEnvelopeContainerOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    /** Protobuf type {@code AckAndEnvelopeContainer} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.AckAndEnvelopeContainerOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_AckAndEnvelopeContainer_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_AckAndEnvelopeContainer_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.AckAndEnvelopeContainer.class, akka.remote.WireFormats.AckAndEnvelopeContainer.Builder.class);
+                akka.remote.WireFormats.AckAndEnvelopeContainer.class,
+                akka.remote.WireFormats.AckAndEnvelopeContainer.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.AckAndEnvelopeContainer.newBuilder()
@@ -618,17 +573,18 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getAckFieldBuilder();
           getEnvelopeFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -654,8 +610,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_AckAndEnvelopeContainer_descriptor;
       }
 
@@ -672,7 +627,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.AckAndEnvelopeContainer buildPartial() {
-        akka.remote.WireFormats.AckAndEnvelopeContainer result = new akka.remote.WireFormats.AckAndEnvelopeContainer(this);
+        akka.remote.WireFormats.AckAndEnvelopeContainer result =
+            new akka.remote.WireFormats.AckAndEnvelopeContainer(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -698,7 +654,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.AckAndEnvelopeContainer) {
-          return mergeFrom((akka.remote.WireFormats.AckAndEnvelopeContainer)other);
+          return mergeFrom((akka.remote.WireFormats.AckAndEnvelopeContainer) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -706,7 +662,8 @@ public final class WireFormats {
       }
 
       public Builder mergeFrom(akka.remote.WireFormats.AckAndEnvelopeContainer other) {
-        if (other == akka.remote.WireFormats.AckAndEnvelopeContainer.getDefaultInstance()) return this;
+        if (other == akka.remote.WireFormats.AckAndEnvelopeContainer.getDefaultInstance())
+          return this;
         if (other.hasAck()) {
           mergeAck(other.getAck());
         }
@@ -720,13 +677,13 @@ public final class WireFormats {
       public final boolean isInitialized() {
         if (hasAck()) {
           if (!getAck().isInitialized()) {
-            
+
             return false;
           }
         }
         if (hasEnvelope()) {
           if (!getEnvelope().isInitialized()) {
-            
+
             return false;
           }
         }
@@ -741,7 +698,8 @@ public final class WireFormats {
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
         } catch (akka.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (akka.remote.WireFormats.AckAndEnvelopeContainer) e.getUnfinishedMessage();
+          parsedMessage =
+              (akka.remote.WireFormats.AckAndEnvelopeContainer) e.getUnfinishedMessage();
           throw e;
         } finally {
           if (parsedMessage != null) {
@@ -750,21 +708,22 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // optional .AcknowledgementInfo ack = 1;
-      private akka.remote.WireFormats.AcknowledgementInfo ack_ = akka.remote.WireFormats.AcknowledgementInfo.getDefaultInstance();
+      private akka.remote.WireFormats.AcknowledgementInfo ack_ =
+          akka.remote.WireFormats.AcknowledgementInfo.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.AcknowledgementInfo, akka.remote.WireFormats.AcknowledgementInfo.Builder, akka.remote.WireFormats.AcknowledgementInfoOrBuilder> ackBuilder_;
-      /**
-       * <code>optional .AcknowledgementInfo ack = 1;</code>
-       */
+              akka.remote.WireFormats.AcknowledgementInfo,
+              akka.remote.WireFormats.AcknowledgementInfo.Builder,
+              akka.remote.WireFormats.AcknowledgementInfoOrBuilder>
+          ackBuilder_;
+      /** <code>optional .AcknowledgementInfo ack = 1;</code> */
       public boolean hasAck() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>optional .AcknowledgementInfo ack = 1;</code>
-       */
+      /** <code>optional .AcknowledgementInfo ack = 1;</code> */
       public akka.remote.WireFormats.AcknowledgementInfo getAck() {
         if (ackBuilder_ == null) {
           return ack_;
@@ -772,9 +731,7 @@ public final class WireFormats {
           return ackBuilder_.getMessage();
         }
       }
-      /**
-       * <code>optional .AcknowledgementInfo ack = 1;</code>
-       */
+      /** <code>optional .AcknowledgementInfo ack = 1;</code> */
       public Builder setAck(akka.remote.WireFormats.AcknowledgementInfo value) {
         if (ackBuilder_ == null) {
           if (value == null) {
@@ -788,11 +745,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>optional .AcknowledgementInfo ack = 1;</code>
-       */
-      public Builder setAck(
-          akka.remote.WireFormats.AcknowledgementInfo.Builder builderForValue) {
+      /** <code>optional .AcknowledgementInfo ack = 1;</code> */
+      public Builder setAck(akka.remote.WireFormats.AcknowledgementInfo.Builder builderForValue) {
         if (ackBuilder_ == null) {
           ack_ = builderForValue.build();
           onChanged();
@@ -802,15 +756,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>optional .AcknowledgementInfo ack = 1;</code>
-       */
+      /** <code>optional .AcknowledgementInfo ack = 1;</code> */
       public Builder mergeAck(akka.remote.WireFormats.AcknowledgementInfo value) {
         if (ackBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
-              ack_ != akka.remote.WireFormats.AcknowledgementInfo.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000001) == 0x00000001)
+              && ack_ != akka.remote.WireFormats.AcknowledgementInfo.getDefaultInstance()) {
             ack_ =
-              akka.remote.WireFormats.AcknowledgementInfo.newBuilder(ack_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.AcknowledgementInfo.newBuilder(ack_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             ack_ = value;
           }
@@ -821,9 +775,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>optional .AcknowledgementInfo ack = 1;</code>
-       */
+      /** <code>optional .AcknowledgementInfo ack = 1;</code> */
       public Builder clearAck() {
         if (ackBuilder_ == null) {
           ack_ = akka.remote.WireFormats.AcknowledgementInfo.getDefaultInstance();
@@ -834,17 +786,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
-      /**
-       * <code>optional .AcknowledgementInfo ack = 1;</code>
-       */
+      /** <code>optional .AcknowledgementInfo ack = 1;</code> */
       public akka.remote.WireFormats.AcknowledgementInfo.Builder getAckBuilder() {
         bitField0_ |= 0x00000001;
         onChanged();
         return getAckFieldBuilder().getBuilder();
       }
-      /**
-       * <code>optional .AcknowledgementInfo ack = 1;</code>
-       */
+      /** <code>optional .AcknowledgementInfo ack = 1;</code> */
       public akka.remote.WireFormats.AcknowledgementInfoOrBuilder getAckOrBuilder() {
         if (ackBuilder_ != null) {
           return ackBuilder_.getMessageOrBuilder();
@@ -852,36 +800,37 @@ public final class WireFormats {
           return ack_;
         }
       }
-      /**
-       * <code>optional .AcknowledgementInfo ack = 1;</code>
-       */
+      /** <code>optional .AcknowledgementInfo ack = 1;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.AcknowledgementInfo, akka.remote.WireFormats.AcknowledgementInfo.Builder, akka.remote.WireFormats.AcknowledgementInfoOrBuilder> 
+              akka.remote.WireFormats.AcknowledgementInfo,
+              akka.remote.WireFormats.AcknowledgementInfo.Builder,
+              akka.remote.WireFormats.AcknowledgementInfoOrBuilder>
           getAckFieldBuilder() {
         if (ackBuilder_ == null) {
-          ackBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.AcknowledgementInfo, akka.remote.WireFormats.AcknowledgementInfo.Builder, akka.remote.WireFormats.AcknowledgementInfoOrBuilder>(
-                  ack_,
-                  getParentForChildren(),
-                  isClean());
+          ackBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.AcknowledgementInfo,
+                  akka.remote.WireFormats.AcknowledgementInfo.Builder,
+                  akka.remote.WireFormats.AcknowledgementInfoOrBuilder>(
+                  ack_, getParentForChildren(), isClean());
           ack_ = null;
         }
         return ackBuilder_;
       }
 
       // optional .RemoteEnvelope envelope = 2;
-      private akka.remote.WireFormats.RemoteEnvelope envelope_ = akka.remote.WireFormats.RemoteEnvelope.getDefaultInstance();
+      private akka.remote.WireFormats.RemoteEnvelope envelope_ =
+          akka.remote.WireFormats.RemoteEnvelope.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.RemoteEnvelope, akka.remote.WireFormats.RemoteEnvelope.Builder, akka.remote.WireFormats.RemoteEnvelopeOrBuilder> envelopeBuilder_;
-      /**
-       * <code>optional .RemoteEnvelope envelope = 2;</code>
-       */
+              akka.remote.WireFormats.RemoteEnvelope,
+              akka.remote.WireFormats.RemoteEnvelope.Builder,
+              akka.remote.WireFormats.RemoteEnvelopeOrBuilder>
+          envelopeBuilder_;
+      /** <code>optional .RemoteEnvelope envelope = 2;</code> */
       public boolean hasEnvelope() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>optional .RemoteEnvelope envelope = 2;</code>
-       */
+      /** <code>optional .RemoteEnvelope envelope = 2;</code> */
       public akka.remote.WireFormats.RemoteEnvelope getEnvelope() {
         if (envelopeBuilder_ == null) {
           return envelope_;
@@ -889,9 +838,7 @@ public final class WireFormats {
           return envelopeBuilder_.getMessage();
         }
       }
-      /**
-       * <code>optional .RemoteEnvelope envelope = 2;</code>
-       */
+      /** <code>optional .RemoteEnvelope envelope = 2;</code> */
       public Builder setEnvelope(akka.remote.WireFormats.RemoteEnvelope value) {
         if (envelopeBuilder_ == null) {
           if (value == null) {
@@ -905,11 +852,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>optional .RemoteEnvelope envelope = 2;</code>
-       */
-      public Builder setEnvelope(
-          akka.remote.WireFormats.RemoteEnvelope.Builder builderForValue) {
+      /** <code>optional .RemoteEnvelope envelope = 2;</code> */
+      public Builder setEnvelope(akka.remote.WireFormats.RemoteEnvelope.Builder builderForValue) {
         if (envelopeBuilder_ == null) {
           envelope_ = builderForValue.build();
           onChanged();
@@ -919,15 +863,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>optional .RemoteEnvelope envelope = 2;</code>
-       */
+      /** <code>optional .RemoteEnvelope envelope = 2;</code> */
       public Builder mergeEnvelope(akka.remote.WireFormats.RemoteEnvelope value) {
         if (envelopeBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
-              envelope_ != akka.remote.WireFormats.RemoteEnvelope.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000002) == 0x00000002)
+              && envelope_ != akka.remote.WireFormats.RemoteEnvelope.getDefaultInstance()) {
             envelope_ =
-              akka.remote.WireFormats.RemoteEnvelope.newBuilder(envelope_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.RemoteEnvelope.newBuilder(envelope_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             envelope_ = value;
           }
@@ -938,9 +882,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>optional .RemoteEnvelope envelope = 2;</code>
-       */
+      /** <code>optional .RemoteEnvelope envelope = 2;</code> */
       public Builder clearEnvelope() {
         if (envelopeBuilder_ == null) {
           envelope_ = akka.remote.WireFormats.RemoteEnvelope.getDefaultInstance();
@@ -951,17 +893,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
-      /**
-       * <code>optional .RemoteEnvelope envelope = 2;</code>
-       */
+      /** <code>optional .RemoteEnvelope envelope = 2;</code> */
       public akka.remote.WireFormats.RemoteEnvelope.Builder getEnvelopeBuilder() {
         bitField0_ |= 0x00000002;
         onChanged();
         return getEnvelopeFieldBuilder().getBuilder();
       }
-      /**
-       * <code>optional .RemoteEnvelope envelope = 2;</code>
-       */
+      /** <code>optional .RemoteEnvelope envelope = 2;</code> */
       public akka.remote.WireFormats.RemoteEnvelopeOrBuilder getEnvelopeOrBuilder() {
         if (envelopeBuilder_ != null) {
           return envelopeBuilder_.getMessageOrBuilder();
@@ -969,18 +907,19 @@ public final class WireFormats {
           return envelope_;
         }
       }
-      /**
-       * <code>optional .RemoteEnvelope envelope = 2;</code>
-       */
+      /** <code>optional .RemoteEnvelope envelope = 2;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.RemoteEnvelope, akka.remote.WireFormats.RemoteEnvelope.Builder, akka.remote.WireFormats.RemoteEnvelopeOrBuilder> 
+              akka.remote.WireFormats.RemoteEnvelope,
+              akka.remote.WireFormats.RemoteEnvelope.Builder,
+              akka.remote.WireFormats.RemoteEnvelopeOrBuilder>
           getEnvelopeFieldBuilder() {
         if (envelopeBuilder_ == null) {
-          envelopeBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.RemoteEnvelope, akka.remote.WireFormats.RemoteEnvelope.Builder, akka.remote.WireFormats.RemoteEnvelopeOrBuilder>(
-                  envelope_,
-                  getParentForChildren(),
-                  isClean());
+          envelopeBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.RemoteEnvelope,
+                  akka.remote.WireFormats.RemoteEnvelope.Builder,
+                  akka.remote.WireFormats.RemoteEnvelopeOrBuilder>(
+                  envelope_, getParentForChildren(), isClean());
           envelope_ = null;
         }
         return envelopeBuilder_;
@@ -997,80 +936,60 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:AckAndEnvelopeContainer)
   }
 
-  public interface RemoteEnvelopeOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface RemoteEnvelopeOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required .ActorRefData recipient = 1;
-    /**
-     * <code>required .ActorRefData recipient = 1;</code>
-     */
+    /** <code>required .ActorRefData recipient = 1;</code> */
     boolean hasRecipient();
-    /**
-     * <code>required .ActorRefData recipient = 1;</code>
-     */
+    /** <code>required .ActorRefData recipient = 1;</code> */
     akka.remote.WireFormats.ActorRefData getRecipient();
-    /**
-     * <code>required .ActorRefData recipient = 1;</code>
-     */
+    /** <code>required .ActorRefData recipient = 1;</code> */
     akka.remote.WireFormats.ActorRefDataOrBuilder getRecipientOrBuilder();
 
     // required .SerializedMessage message = 2;
-    /**
-     * <code>required .SerializedMessage message = 2;</code>
-     */
+    /** <code>required .SerializedMessage message = 2;</code> */
     boolean hasMessage();
-    /**
-     * <code>required .SerializedMessage message = 2;</code>
-     */
+    /** <code>required .SerializedMessage message = 2;</code> */
     akka.remote.WireFormats.SerializedMessage getMessage();
-    /**
-     * <code>required .SerializedMessage message = 2;</code>
-     */
+    /** <code>required .SerializedMessage message = 2;</code> */
     akka.remote.WireFormats.SerializedMessageOrBuilder getMessageOrBuilder();
 
     // optional .ActorRefData sender = 4;
-    /**
-     * <code>optional .ActorRefData sender = 4;</code>
-     */
+    /** <code>optional .ActorRefData sender = 4;</code> */
     boolean hasSender();
-    /**
-     * <code>optional .ActorRefData sender = 4;</code>
-     */
+    /** <code>optional .ActorRefData sender = 4;</code> */
     akka.remote.WireFormats.ActorRefData getSender();
-    /**
-     * <code>optional .ActorRefData sender = 4;</code>
-     */
+    /** <code>optional .ActorRefData sender = 4;</code> */
     akka.remote.WireFormats.ActorRefDataOrBuilder getSenderOrBuilder();
 
     // optional fixed64 seq = 5;
-    /**
-     * <code>optional fixed64 seq = 5;</code>
-     */
+    /** <code>optional fixed64 seq = 5;</code> */
     boolean hasSeq();
-    /**
-     * <code>optional fixed64 seq = 5;</code>
-     */
+    /** <code>optional fixed64 seq = 5;</code> */
     long getSeq();
   }
   /**
    * Protobuf type {@code RemoteEnvelope}
    *
    * <pre>
-   **
+   * *
    * Defines a remote message.
    * </pre>
    */
-  public static final class RemoteEnvelope extends
-      akka.protobuf.GeneratedMessage
+  public static final class RemoteEnvelope extends akka.protobuf.GeneratedMessage
       implements RemoteEnvelopeOrBuilder {
     // Use RemoteEnvelope.newBuilder() to construct.
     private RemoteEnvelope(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private RemoteEnvelope(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private RemoteEnvelope(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final RemoteEnvelope defaultInstance;
+
     public static RemoteEnvelope getDefaultInstance() {
       return defaultInstance;
     }
@@ -1080,14 +999,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private RemoteEnvelope(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -1101,90 +1020,102 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              akka.remote.WireFormats.ActorRefData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                subBuilder = recipient_.toBuilder();
+            case 10:
+              {
+                akka.remote.WireFormats.ActorRefData.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                  subBuilder = recipient_.toBuilder();
+                }
+                recipient_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.ActorRefData.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(recipient_);
+                  recipient_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000001;
+                break;
               }
-              recipient_ = input.readMessage(akka.remote.WireFormats.ActorRefData.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(recipient_);
-                recipient_ = subBuilder.buildPartial();
+            case 18:
+              {
+                akka.remote.WireFormats.SerializedMessage.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                  subBuilder = message_.toBuilder();
+                }
+                message_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.SerializedMessage.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(message_);
+                  message_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000002;
+                break;
               }
-              bitField0_ |= 0x00000001;
-              break;
-            }
-            case 18: {
-              akka.remote.WireFormats.SerializedMessage.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
-                subBuilder = message_.toBuilder();
+            case 34:
+              {
+                akka.remote.WireFormats.ActorRefData.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000004) == 0x00000004)) {
+                  subBuilder = sender_.toBuilder();
+                }
+                sender_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.ActorRefData.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(sender_);
+                  sender_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000004;
+                break;
               }
-              message_ = input.readMessage(akka.remote.WireFormats.SerializedMessage.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(message_);
-                message_ = subBuilder.buildPartial();
+            case 41:
+              {
+                bitField0_ |= 0x00000008;
+                seq_ = input.readFixed64();
+                break;
               }
-              bitField0_ |= 0x00000002;
-              break;
-            }
-            case 34: {
-              akka.remote.WireFormats.ActorRefData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000004) == 0x00000004)) {
-                subBuilder = sender_.toBuilder();
-              }
-              sender_ = input.readMessage(akka.remote.WireFormats.ActorRefData.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(sender_);
-                sender_ = subBuilder.buildPartial();
-              }
-              bitField0_ |= 0x00000004;
-              break;
-            }
-            case 41: {
-              bitField0_ |= 0x00000008;
-              seq_ = input.readFixed64();
-              break;
-            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_RemoteEnvelope_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_RemoteEnvelope_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.RemoteEnvelope.class, akka.remote.WireFormats.RemoteEnvelope.Builder.class);
+              akka.remote.WireFormats.RemoteEnvelope.class,
+              akka.remote.WireFormats.RemoteEnvelope.Builder.class);
     }
 
     public static akka.protobuf.Parser<RemoteEnvelope> PARSER =
         new akka.protobuf.AbstractParser<RemoteEnvelope>() {
-      public RemoteEnvelope parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new RemoteEnvelope(input, extensionRegistry);
-      }
-    };
+          public RemoteEnvelope parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new RemoteEnvelope(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<RemoteEnvelope> getParserForType() {
@@ -1195,21 +1126,15 @@ public final class WireFormats {
     // required .ActorRefData recipient = 1;
     public static final int RECIPIENT_FIELD_NUMBER = 1;
     private akka.remote.WireFormats.ActorRefData recipient_;
-    /**
-     * <code>required .ActorRefData recipient = 1;</code>
-     */
+    /** <code>required .ActorRefData recipient = 1;</code> */
     public boolean hasRecipient() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required .ActorRefData recipient = 1;</code>
-     */
+    /** <code>required .ActorRefData recipient = 1;</code> */
     public akka.remote.WireFormats.ActorRefData getRecipient() {
       return recipient_;
     }
-    /**
-     * <code>required .ActorRefData recipient = 1;</code>
-     */
+    /** <code>required .ActorRefData recipient = 1;</code> */
     public akka.remote.WireFormats.ActorRefDataOrBuilder getRecipientOrBuilder() {
       return recipient_;
     }
@@ -1217,21 +1142,15 @@ public final class WireFormats {
     // required .SerializedMessage message = 2;
     public static final int MESSAGE_FIELD_NUMBER = 2;
     private akka.remote.WireFormats.SerializedMessage message_;
-    /**
-     * <code>required .SerializedMessage message = 2;</code>
-     */
+    /** <code>required .SerializedMessage message = 2;</code> */
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>required .SerializedMessage message = 2;</code>
-     */
+    /** <code>required .SerializedMessage message = 2;</code> */
     public akka.remote.WireFormats.SerializedMessage getMessage() {
       return message_;
     }
-    /**
-     * <code>required .SerializedMessage message = 2;</code>
-     */
+    /** <code>required .SerializedMessage message = 2;</code> */
     public akka.remote.WireFormats.SerializedMessageOrBuilder getMessageOrBuilder() {
       return message_;
     }
@@ -1239,21 +1158,15 @@ public final class WireFormats {
     // optional .ActorRefData sender = 4;
     public static final int SENDER_FIELD_NUMBER = 4;
     private akka.remote.WireFormats.ActorRefData sender_;
-    /**
-     * <code>optional .ActorRefData sender = 4;</code>
-     */
+    /** <code>optional .ActorRefData sender = 4;</code> */
     public boolean hasSender() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    /**
-     * <code>optional .ActorRefData sender = 4;</code>
-     */
+    /** <code>optional .ActorRefData sender = 4;</code> */
     public akka.remote.WireFormats.ActorRefData getSender() {
       return sender_;
     }
-    /**
-     * <code>optional .ActorRefData sender = 4;</code>
-     */
+    /** <code>optional .ActorRefData sender = 4;</code> */
     public akka.remote.WireFormats.ActorRefDataOrBuilder getSenderOrBuilder() {
       return sender_;
     }
@@ -1261,15 +1174,11 @@ public final class WireFormats {
     // optional fixed64 seq = 5;
     public static final int SEQ_FIELD_NUMBER = 5;
     private long seq_;
-    /**
-     * <code>optional fixed64 seq = 5;</code>
-     */
+    /** <code>optional fixed64 seq = 5;</code> */
     public boolean hasSeq() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
-    /**
-     * <code>optional fixed64 seq = 5;</code>
-     */
+    /** <code>optional fixed64 seq = 5;</code> */
     public long getSeq() {
       return seq_;
     }
@@ -1280,7 +1189,9 @@ public final class WireFormats {
       sender_ = akka.remote.WireFormats.ActorRefData.getDefaultInstance();
       seq_ = 0L;
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -1311,8 +1222,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeMessage(1, recipient_);
@@ -1330,26 +1240,23 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, recipient_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(1, recipient_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, message_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(2, message_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(4, sender_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(4, sender_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeFixed64Size(5, seq_);
+        size += akka.protobuf.CodedOutputStream.computeFixed64Size(5, seq_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1357,75 +1264,85 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.RemoteEnvelope parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.RemoteEnvelope parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.RemoteEnvelope parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.RemoteEnvelope parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.RemoteEnvelope parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.RemoteEnvelope parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.RemoteEnvelope parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.RemoteEnvelope parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.RemoteEnvelope parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.RemoteEnvelope parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.RemoteEnvelope parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.RemoteEnvelope parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.RemoteEnvelope prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -1433,23 +1350,21 @@ public final class WireFormats {
      * Protobuf type {@code RemoteEnvelope}
      *
      * <pre>
-     **
+     * *
      * Defines a remote message.
      * </pre>
      */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.RemoteEnvelopeOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.RemoteEnvelopeOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_RemoteEnvelope_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_RemoteEnvelope_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.RemoteEnvelope.class, akka.remote.WireFormats.RemoteEnvelope.Builder.class);
+                akka.remote.WireFormats.RemoteEnvelope.class,
+                akka.remote.WireFormats.RemoteEnvelope.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.RemoteEnvelope.newBuilder()
@@ -1457,11 +1372,11 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getRecipientFieldBuilder();
@@ -1469,6 +1384,7 @@ public final class WireFormats {
           getSenderFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -1502,8 +1418,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_RemoteEnvelope_descriptor;
       }
 
@@ -1520,7 +1435,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.RemoteEnvelope buildPartial() {
-        akka.remote.WireFormats.RemoteEnvelope result = new akka.remote.WireFormats.RemoteEnvelope(this);
+        akka.remote.WireFormats.RemoteEnvelope result =
+            new akka.remote.WireFormats.RemoteEnvelope(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -1558,7 +1474,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.RemoteEnvelope) {
-          return mergeFrom((akka.remote.WireFormats.RemoteEnvelope)other);
+          return mergeFrom((akka.remote.WireFormats.RemoteEnvelope) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -1585,24 +1501,24 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasRecipient()) {
-          
+
           return false;
         }
         if (!hasMessage()) {
-          
+
           return false;
         }
         if (!getRecipient().isInitialized()) {
-          
+
           return false;
         }
         if (!getMessage().isInitialized()) {
-          
+
           return false;
         }
         if (hasSender()) {
           if (!getSender().isInitialized()) {
-            
+
             return false;
           }
         }
@@ -1626,21 +1542,22 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required .ActorRefData recipient = 1;
-      private akka.remote.WireFormats.ActorRefData recipient_ = akka.remote.WireFormats.ActorRefData.getDefaultInstance();
+      private akka.remote.WireFormats.ActorRefData recipient_ =
+          akka.remote.WireFormats.ActorRefData.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.ActorRefData, akka.remote.WireFormats.ActorRefData.Builder, akka.remote.WireFormats.ActorRefDataOrBuilder> recipientBuilder_;
-      /**
-       * <code>required .ActorRefData recipient = 1;</code>
-       */
+              akka.remote.WireFormats.ActorRefData,
+              akka.remote.WireFormats.ActorRefData.Builder,
+              akka.remote.WireFormats.ActorRefDataOrBuilder>
+          recipientBuilder_;
+      /** <code>required .ActorRefData recipient = 1;</code> */
       public boolean hasRecipient() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required .ActorRefData recipient = 1;</code>
-       */
+      /** <code>required .ActorRefData recipient = 1;</code> */
       public akka.remote.WireFormats.ActorRefData getRecipient() {
         if (recipientBuilder_ == null) {
           return recipient_;
@@ -1648,9 +1565,7 @@ public final class WireFormats {
           return recipientBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .ActorRefData recipient = 1;</code>
-       */
+      /** <code>required .ActorRefData recipient = 1;</code> */
       public Builder setRecipient(akka.remote.WireFormats.ActorRefData value) {
         if (recipientBuilder_ == null) {
           if (value == null) {
@@ -1664,11 +1579,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .ActorRefData recipient = 1;</code>
-       */
-      public Builder setRecipient(
-          akka.remote.WireFormats.ActorRefData.Builder builderForValue) {
+      /** <code>required .ActorRefData recipient = 1;</code> */
+      public Builder setRecipient(akka.remote.WireFormats.ActorRefData.Builder builderForValue) {
         if (recipientBuilder_ == null) {
           recipient_ = builderForValue.build();
           onChanged();
@@ -1678,15 +1590,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .ActorRefData recipient = 1;</code>
-       */
+      /** <code>required .ActorRefData recipient = 1;</code> */
       public Builder mergeRecipient(akka.remote.WireFormats.ActorRefData value) {
         if (recipientBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
-              recipient_ != akka.remote.WireFormats.ActorRefData.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000001) == 0x00000001)
+              && recipient_ != akka.remote.WireFormats.ActorRefData.getDefaultInstance()) {
             recipient_ =
-              akka.remote.WireFormats.ActorRefData.newBuilder(recipient_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.ActorRefData.newBuilder(recipient_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             recipient_ = value;
           }
@@ -1697,9 +1609,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .ActorRefData recipient = 1;</code>
-       */
+      /** <code>required .ActorRefData recipient = 1;</code> */
       public Builder clearRecipient() {
         if (recipientBuilder_ == null) {
           recipient_ = akka.remote.WireFormats.ActorRefData.getDefaultInstance();
@@ -1710,17 +1620,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
-      /**
-       * <code>required .ActorRefData recipient = 1;</code>
-       */
+      /** <code>required .ActorRefData recipient = 1;</code> */
       public akka.remote.WireFormats.ActorRefData.Builder getRecipientBuilder() {
         bitField0_ |= 0x00000001;
         onChanged();
         return getRecipientFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .ActorRefData recipient = 1;</code>
-       */
+      /** <code>required .ActorRefData recipient = 1;</code> */
       public akka.remote.WireFormats.ActorRefDataOrBuilder getRecipientOrBuilder() {
         if (recipientBuilder_ != null) {
           return recipientBuilder_.getMessageOrBuilder();
@@ -1728,36 +1634,37 @@ public final class WireFormats {
           return recipient_;
         }
       }
-      /**
-       * <code>required .ActorRefData recipient = 1;</code>
-       */
+      /** <code>required .ActorRefData recipient = 1;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.ActorRefData, akka.remote.WireFormats.ActorRefData.Builder, akka.remote.WireFormats.ActorRefDataOrBuilder> 
+              akka.remote.WireFormats.ActorRefData,
+              akka.remote.WireFormats.ActorRefData.Builder,
+              akka.remote.WireFormats.ActorRefDataOrBuilder>
           getRecipientFieldBuilder() {
         if (recipientBuilder_ == null) {
-          recipientBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.ActorRefData, akka.remote.WireFormats.ActorRefData.Builder, akka.remote.WireFormats.ActorRefDataOrBuilder>(
-                  recipient_,
-                  getParentForChildren(),
-                  isClean());
+          recipientBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.ActorRefData,
+                  akka.remote.WireFormats.ActorRefData.Builder,
+                  akka.remote.WireFormats.ActorRefDataOrBuilder>(
+                  recipient_, getParentForChildren(), isClean());
           recipient_ = null;
         }
         return recipientBuilder_;
       }
 
       // required .SerializedMessage message = 2;
-      private akka.remote.WireFormats.SerializedMessage message_ = akka.remote.WireFormats.SerializedMessage.getDefaultInstance();
+      private akka.remote.WireFormats.SerializedMessage message_ =
+          akka.remote.WireFormats.SerializedMessage.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.SerializedMessage, akka.remote.WireFormats.SerializedMessage.Builder, akka.remote.WireFormats.SerializedMessageOrBuilder> messageBuilder_;
-      /**
-       * <code>required .SerializedMessage message = 2;</code>
-       */
+              akka.remote.WireFormats.SerializedMessage,
+              akka.remote.WireFormats.SerializedMessage.Builder,
+              akka.remote.WireFormats.SerializedMessageOrBuilder>
+          messageBuilder_;
+      /** <code>required .SerializedMessage message = 2;</code> */
       public boolean hasMessage() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>required .SerializedMessage message = 2;</code>
-       */
+      /** <code>required .SerializedMessage message = 2;</code> */
       public akka.remote.WireFormats.SerializedMessage getMessage() {
         if (messageBuilder_ == null) {
           return message_;
@@ -1765,9 +1672,7 @@ public final class WireFormats {
           return messageBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .SerializedMessage message = 2;</code>
-       */
+      /** <code>required .SerializedMessage message = 2;</code> */
       public Builder setMessage(akka.remote.WireFormats.SerializedMessage value) {
         if (messageBuilder_ == null) {
           if (value == null) {
@@ -1781,11 +1686,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>required .SerializedMessage message = 2;</code>
-       */
-      public Builder setMessage(
-          akka.remote.WireFormats.SerializedMessage.Builder builderForValue) {
+      /** <code>required .SerializedMessage message = 2;</code> */
+      public Builder setMessage(akka.remote.WireFormats.SerializedMessage.Builder builderForValue) {
         if (messageBuilder_ == null) {
           message_ = builderForValue.build();
           onChanged();
@@ -1795,15 +1697,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>required .SerializedMessage message = 2;</code>
-       */
+      /** <code>required .SerializedMessage message = 2;</code> */
       public Builder mergeMessage(akka.remote.WireFormats.SerializedMessage value) {
         if (messageBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
-              message_ != akka.remote.WireFormats.SerializedMessage.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000002) == 0x00000002)
+              && message_ != akka.remote.WireFormats.SerializedMessage.getDefaultInstance()) {
             message_ =
-              akka.remote.WireFormats.SerializedMessage.newBuilder(message_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.SerializedMessage.newBuilder(message_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             message_ = value;
           }
@@ -1814,9 +1716,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>required .SerializedMessage message = 2;</code>
-       */
+      /** <code>required .SerializedMessage message = 2;</code> */
       public Builder clearMessage() {
         if (messageBuilder_ == null) {
           message_ = akka.remote.WireFormats.SerializedMessage.getDefaultInstance();
@@ -1827,17 +1727,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
-      /**
-       * <code>required .SerializedMessage message = 2;</code>
-       */
+      /** <code>required .SerializedMessage message = 2;</code> */
       public akka.remote.WireFormats.SerializedMessage.Builder getMessageBuilder() {
         bitField0_ |= 0x00000002;
         onChanged();
         return getMessageFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .SerializedMessage message = 2;</code>
-       */
+      /** <code>required .SerializedMessage message = 2;</code> */
       public akka.remote.WireFormats.SerializedMessageOrBuilder getMessageOrBuilder() {
         if (messageBuilder_ != null) {
           return messageBuilder_.getMessageOrBuilder();
@@ -1845,36 +1741,37 @@ public final class WireFormats {
           return message_;
         }
       }
-      /**
-       * <code>required .SerializedMessage message = 2;</code>
-       */
+      /** <code>required .SerializedMessage message = 2;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.SerializedMessage, akka.remote.WireFormats.SerializedMessage.Builder, akka.remote.WireFormats.SerializedMessageOrBuilder> 
+              akka.remote.WireFormats.SerializedMessage,
+              akka.remote.WireFormats.SerializedMessage.Builder,
+              akka.remote.WireFormats.SerializedMessageOrBuilder>
           getMessageFieldBuilder() {
         if (messageBuilder_ == null) {
-          messageBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.SerializedMessage, akka.remote.WireFormats.SerializedMessage.Builder, akka.remote.WireFormats.SerializedMessageOrBuilder>(
-                  message_,
-                  getParentForChildren(),
-                  isClean());
+          messageBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.SerializedMessage,
+                  akka.remote.WireFormats.SerializedMessage.Builder,
+                  akka.remote.WireFormats.SerializedMessageOrBuilder>(
+                  message_, getParentForChildren(), isClean());
           message_ = null;
         }
         return messageBuilder_;
       }
 
       // optional .ActorRefData sender = 4;
-      private akka.remote.WireFormats.ActorRefData sender_ = akka.remote.WireFormats.ActorRefData.getDefaultInstance();
+      private akka.remote.WireFormats.ActorRefData sender_ =
+          akka.remote.WireFormats.ActorRefData.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.ActorRefData, akka.remote.WireFormats.ActorRefData.Builder, akka.remote.WireFormats.ActorRefDataOrBuilder> senderBuilder_;
-      /**
-       * <code>optional .ActorRefData sender = 4;</code>
-       */
+              akka.remote.WireFormats.ActorRefData,
+              akka.remote.WireFormats.ActorRefData.Builder,
+              akka.remote.WireFormats.ActorRefDataOrBuilder>
+          senderBuilder_;
+      /** <code>optional .ActorRefData sender = 4;</code> */
       public boolean hasSender() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      /**
-       * <code>optional .ActorRefData sender = 4;</code>
-       */
+      /** <code>optional .ActorRefData sender = 4;</code> */
       public akka.remote.WireFormats.ActorRefData getSender() {
         if (senderBuilder_ == null) {
           return sender_;
@@ -1882,9 +1779,7 @@ public final class WireFormats {
           return senderBuilder_.getMessage();
         }
       }
-      /**
-       * <code>optional .ActorRefData sender = 4;</code>
-       */
+      /** <code>optional .ActorRefData sender = 4;</code> */
       public Builder setSender(akka.remote.WireFormats.ActorRefData value) {
         if (senderBuilder_ == null) {
           if (value == null) {
@@ -1898,11 +1793,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000004;
         return this;
       }
-      /**
-       * <code>optional .ActorRefData sender = 4;</code>
-       */
-      public Builder setSender(
-          akka.remote.WireFormats.ActorRefData.Builder builderForValue) {
+      /** <code>optional .ActorRefData sender = 4;</code> */
+      public Builder setSender(akka.remote.WireFormats.ActorRefData.Builder builderForValue) {
         if (senderBuilder_ == null) {
           sender_ = builderForValue.build();
           onChanged();
@@ -1912,15 +1804,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000004;
         return this;
       }
-      /**
-       * <code>optional .ActorRefData sender = 4;</code>
-       */
+      /** <code>optional .ActorRefData sender = 4;</code> */
       public Builder mergeSender(akka.remote.WireFormats.ActorRefData value) {
         if (senderBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) == 0x00000004) &&
-              sender_ != akka.remote.WireFormats.ActorRefData.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000004) == 0x00000004)
+              && sender_ != akka.remote.WireFormats.ActorRefData.getDefaultInstance()) {
             sender_ =
-              akka.remote.WireFormats.ActorRefData.newBuilder(sender_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.ActorRefData.newBuilder(sender_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             sender_ = value;
           }
@@ -1931,9 +1823,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000004;
         return this;
       }
-      /**
-       * <code>optional .ActorRefData sender = 4;</code>
-       */
+      /** <code>optional .ActorRefData sender = 4;</code> */
       public Builder clearSender() {
         if (senderBuilder_ == null) {
           sender_ = akka.remote.WireFormats.ActorRefData.getDefaultInstance();
@@ -1944,17 +1834,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
-      /**
-       * <code>optional .ActorRefData sender = 4;</code>
-       */
+      /** <code>optional .ActorRefData sender = 4;</code> */
       public akka.remote.WireFormats.ActorRefData.Builder getSenderBuilder() {
         bitField0_ |= 0x00000004;
         onChanged();
         return getSenderFieldBuilder().getBuilder();
       }
-      /**
-       * <code>optional .ActorRefData sender = 4;</code>
-       */
+      /** <code>optional .ActorRefData sender = 4;</code> */
       public akka.remote.WireFormats.ActorRefDataOrBuilder getSenderOrBuilder() {
         if (senderBuilder_ != null) {
           return senderBuilder_.getMessageOrBuilder();
@@ -1962,49 +1848,42 @@ public final class WireFormats {
           return sender_;
         }
       }
-      /**
-       * <code>optional .ActorRefData sender = 4;</code>
-       */
+      /** <code>optional .ActorRefData sender = 4;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.ActorRefData, akka.remote.WireFormats.ActorRefData.Builder, akka.remote.WireFormats.ActorRefDataOrBuilder> 
+              akka.remote.WireFormats.ActorRefData,
+              akka.remote.WireFormats.ActorRefData.Builder,
+              akka.remote.WireFormats.ActorRefDataOrBuilder>
           getSenderFieldBuilder() {
         if (senderBuilder_ == null) {
-          senderBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.ActorRefData, akka.remote.WireFormats.ActorRefData.Builder, akka.remote.WireFormats.ActorRefDataOrBuilder>(
-                  sender_,
-                  getParentForChildren(),
-                  isClean());
+          senderBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.ActorRefData,
+                  akka.remote.WireFormats.ActorRefData.Builder,
+                  akka.remote.WireFormats.ActorRefDataOrBuilder>(
+                  sender_, getParentForChildren(), isClean());
           sender_ = null;
         }
         return senderBuilder_;
       }
 
       // optional fixed64 seq = 5;
-      private long seq_ ;
-      /**
-       * <code>optional fixed64 seq = 5;</code>
-       */
+      private long seq_;
+      /** <code>optional fixed64 seq = 5;</code> */
       public boolean hasSeq() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
-      /**
-       * <code>optional fixed64 seq = 5;</code>
-       */
+      /** <code>optional fixed64 seq = 5;</code> */
       public long getSeq() {
         return seq_;
       }
-      /**
-       * <code>optional fixed64 seq = 5;</code>
-       */
+      /** <code>optional fixed64 seq = 5;</code> */
       public Builder setSeq(long value) {
         bitField0_ |= 0x00000008;
         seq_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional fixed64 seq = 5;</code>
-       */
+      /** <code>optional fixed64 seq = 5;</code> */
       public Builder clearSeq() {
         bitField0_ = (bitField0_ & ~0x00000008);
         seq_ = 0L;
@@ -2023,47 +1902,37 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:RemoteEnvelope)
   }
 
-  public interface AcknowledgementInfoOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface AcknowledgementInfoOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required fixed64 cumulativeAck = 1;
-    /**
-     * <code>required fixed64 cumulativeAck = 1;</code>
-     */
+    /** <code>required fixed64 cumulativeAck = 1;</code> */
     boolean hasCumulativeAck();
-    /**
-     * <code>required fixed64 cumulativeAck = 1;</code>
-     */
+    /** <code>required fixed64 cumulativeAck = 1;</code> */
     long getCumulativeAck();
 
     // repeated fixed64 nacks = 2;
-    /**
-     * <code>repeated fixed64 nacks = 2;</code>
-     */
+    /** <code>repeated fixed64 nacks = 2;</code> */
     java.util.List<java.lang.Long> getNacksList();
-    /**
-     * <code>repeated fixed64 nacks = 2;</code>
-     */
+    /** <code>repeated fixed64 nacks = 2;</code> */
     int getNacksCount();
-    /**
-     * <code>repeated fixed64 nacks = 2;</code>
-     */
+    /** <code>repeated fixed64 nacks = 2;</code> */
     long getNacks(int index);
   }
-  /**
-   * Protobuf type {@code AcknowledgementInfo}
-   */
-  public static final class AcknowledgementInfo extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code AcknowledgementInfo} */
+  public static final class AcknowledgementInfo extends akka.protobuf.GeneratedMessage
       implements AcknowledgementInfoOrBuilder {
     // Use AcknowledgementInfo.newBuilder() to construct.
     private AcknowledgementInfo(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private AcknowledgementInfo(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private AcknowledgementInfo(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final AcknowledgementInfo defaultInstance;
+
     public static AcknowledgementInfo getDefaultInstance() {
       return defaultInstance;
     }
@@ -2073,14 +1942,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private AcknowledgementInfo(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -2094,46 +1963,52 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 9: {
-              bitField0_ |= 0x00000001;
-              cumulativeAck_ = input.readFixed64();
-              break;
-            }
-            case 17: {
-              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
-                nacks_ = new java.util.ArrayList<java.lang.Long>();
-                mutable_bitField0_ |= 0x00000002;
+            case 9:
+              {
+                bitField0_ |= 0x00000001;
+                cumulativeAck_ = input.readFixed64();
+                break;
               }
-              nacks_.add(input.readFixed64());
-              break;
-            }
-            case 18: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002) && input.getBytesUntilLimit() > 0) {
-                nacks_ = new java.util.ArrayList<java.lang.Long>();
-                mutable_bitField0_ |= 0x00000002;
-              }
-              while (input.getBytesUntilLimit() > 0) {
+            case 17:
+              {
+                if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+                  nacks_ = new java.util.ArrayList<java.lang.Long>();
+                  mutable_bitField0_ |= 0x00000002;
+                }
                 nacks_.add(input.readFixed64());
+                break;
               }
-              input.popLimit(limit);
-              break;
-            }
+            case 18:
+              {
+                int length = input.readRawVarint32();
+                int limit = input.pushLimit(length);
+                if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)
+                    && input.getBytesUntilLimit() > 0) {
+                  nacks_ = new java.util.ArrayList<java.lang.Long>();
+                  mutable_bitField0_ |= 0x00000002;
+                }
+                while (input.getBytesUntilLimit() > 0) {
+                  nacks_.add(input.readFixed64());
+                }
+                input.popLimit(limit);
+                break;
+              }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
           nacks_ = java.util.Collections.unmodifiableList(nacks_);
@@ -2142,27 +2017,27 @@ public final class WireFormats {
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_AcknowledgementInfo_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_AcknowledgementInfo_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.AcknowledgementInfo.class, akka.remote.WireFormats.AcknowledgementInfo.Builder.class);
+              akka.remote.WireFormats.AcknowledgementInfo.class,
+              akka.remote.WireFormats.AcknowledgementInfo.Builder.class);
     }
 
     public static akka.protobuf.Parser<AcknowledgementInfo> PARSER =
         new akka.protobuf.AbstractParser<AcknowledgementInfo>() {
-      public AcknowledgementInfo parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new AcknowledgementInfo(input, extensionRegistry);
-      }
-    };
+          public AcknowledgementInfo parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new AcknowledgementInfo(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<AcknowledgementInfo> getParserForType() {
@@ -2173,15 +2048,11 @@ public final class WireFormats {
     // required fixed64 cumulativeAck = 1;
     public static final int CUMULATIVEACK_FIELD_NUMBER = 1;
     private long cumulativeAck_;
-    /**
-     * <code>required fixed64 cumulativeAck = 1;</code>
-     */
+    /** <code>required fixed64 cumulativeAck = 1;</code> */
     public boolean hasCumulativeAck() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required fixed64 cumulativeAck = 1;</code>
-     */
+    /** <code>required fixed64 cumulativeAck = 1;</code> */
     public long getCumulativeAck() {
       return cumulativeAck_;
     }
@@ -2189,22 +2060,15 @@ public final class WireFormats {
     // repeated fixed64 nacks = 2;
     public static final int NACKS_FIELD_NUMBER = 2;
     private java.util.List<java.lang.Long> nacks_;
-    /**
-     * <code>repeated fixed64 nacks = 2;</code>
-     */
-    public java.util.List<java.lang.Long>
-        getNacksList() {
+    /** <code>repeated fixed64 nacks = 2;</code> */
+    public java.util.List<java.lang.Long> getNacksList() {
       return nacks_;
     }
-    /**
-     * <code>repeated fixed64 nacks = 2;</code>
-     */
+    /** <code>repeated fixed64 nacks = 2;</code> */
     public int getNacksCount() {
       return nacks_.size();
     }
-    /**
-     * <code>repeated fixed64 nacks = 2;</code>
-     */
+    /** <code>repeated fixed64 nacks = 2;</code> */
     public long getNacks(int index) {
       return nacks_.get(index);
     }
@@ -2213,7 +2077,9 @@ public final class WireFormats {
       cumulativeAck_ = 0L;
       nacks_ = java.util.Collections.emptyList();
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -2226,8 +2092,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeFixed64(1, cumulativeAck_);
@@ -2239,14 +2104,14 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeFixed64Size(1, cumulativeAck_);
+        size += akka.protobuf.CodedOutputStream.computeFixed64Size(1, cumulativeAck_);
       }
       {
         int dataSize = 0;
@@ -2260,94 +2125,100 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
     public static akka.remote.WireFormats.AcknowledgementInfo parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data) throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.AcknowledgementInfo parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AcknowledgementInfo parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.AcknowledgementInfo parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AcknowledgementInfo parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.AcknowledgementInfo parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.AcknowledgementInfo parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.AcknowledgementInfo parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.AcknowledgementInfo parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AcknowledgementInfo parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.AcknowledgementInfo parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.AcknowledgementInfo prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code AcknowledgementInfo}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.AcknowledgementInfoOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    /** Protobuf type {@code AcknowledgementInfo} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.AcknowledgementInfoOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_AcknowledgementInfo_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_AcknowledgementInfo_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.AcknowledgementInfo.class, akka.remote.WireFormats.AcknowledgementInfo.Builder.class);
+                akka.remote.WireFormats.AcknowledgementInfo.class,
+                akka.remote.WireFormats.AcknowledgementInfo.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.AcknowledgementInfo.newBuilder()
@@ -2355,15 +2226,15 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {}
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -2381,8 +2252,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_AcknowledgementInfo_descriptor;
       }
 
@@ -2399,7 +2269,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.AcknowledgementInfo buildPartial() {
-        akka.remote.WireFormats.AcknowledgementInfo result = new akka.remote.WireFormats.AcknowledgementInfo(this);
+        akka.remote.WireFormats.AcknowledgementInfo result =
+            new akka.remote.WireFormats.AcknowledgementInfo(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -2418,7 +2289,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.AcknowledgementInfo) {
-          return mergeFrom((akka.remote.WireFormats.AcknowledgementInfo)other);
+          return mergeFrom((akka.remote.WireFormats.AcknowledgementInfo) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -2446,7 +2317,7 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasCumulativeAck()) {
-          
+
           return false;
         }
         return true;
@@ -2469,34 +2340,27 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required fixed64 cumulativeAck = 1;
-      private long cumulativeAck_ ;
-      /**
-       * <code>required fixed64 cumulativeAck = 1;</code>
-       */
+      private long cumulativeAck_;
+      /** <code>required fixed64 cumulativeAck = 1;</code> */
       public boolean hasCumulativeAck() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required fixed64 cumulativeAck = 1;</code>
-       */
+      /** <code>required fixed64 cumulativeAck = 1;</code> */
       public long getCumulativeAck() {
         return cumulativeAck_;
       }
-      /**
-       * <code>required fixed64 cumulativeAck = 1;</code>
-       */
+      /** <code>required fixed64 cumulativeAck = 1;</code> */
       public Builder setCumulativeAck(long value) {
         bitField0_ |= 0x00000001;
         cumulativeAck_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required fixed64 cumulativeAck = 1;</code>
-       */
+      /** <code>required fixed64 cumulativeAck = 1;</code> */
       public Builder clearCumulativeAck() {
         bitField0_ = (bitField0_ & ~0x00000001);
         cumulativeAck_ = 0L;
@@ -2506,63 +2370,47 @@ public final class WireFormats {
 
       // repeated fixed64 nacks = 2;
       private java.util.List<java.lang.Long> nacks_ = java.util.Collections.emptyList();
+
       private void ensureNacksIsMutable() {
         if (!((bitField0_ & 0x00000002) == 0x00000002)) {
           nacks_ = new java.util.ArrayList<java.lang.Long>(nacks_);
           bitField0_ |= 0x00000002;
-         }
+        }
       }
-      /**
-       * <code>repeated fixed64 nacks = 2;</code>
-       */
-      public java.util.List<java.lang.Long>
-          getNacksList() {
+      /** <code>repeated fixed64 nacks = 2;</code> */
+      public java.util.List<java.lang.Long> getNacksList() {
         return java.util.Collections.unmodifiableList(nacks_);
       }
-      /**
-       * <code>repeated fixed64 nacks = 2;</code>
-       */
+      /** <code>repeated fixed64 nacks = 2;</code> */
       public int getNacksCount() {
         return nacks_.size();
       }
-      /**
-       * <code>repeated fixed64 nacks = 2;</code>
-       */
+      /** <code>repeated fixed64 nacks = 2;</code> */
       public long getNacks(int index) {
         return nacks_.get(index);
       }
-      /**
-       * <code>repeated fixed64 nacks = 2;</code>
-       */
-      public Builder setNacks(
-          int index, long value) {
+      /** <code>repeated fixed64 nacks = 2;</code> */
+      public Builder setNacks(int index, long value) {
         ensureNacksIsMutable();
         nacks_.set(index, value);
         onChanged();
         return this;
       }
-      /**
-       * <code>repeated fixed64 nacks = 2;</code>
-       */
+      /** <code>repeated fixed64 nacks = 2;</code> */
       public Builder addNacks(long value) {
         ensureNacksIsMutable();
         nacks_.add(value);
         onChanged();
         return this;
       }
-      /**
-       * <code>repeated fixed64 nacks = 2;</code>
-       */
-      public Builder addAllNacks(
-          java.lang.Iterable<? extends java.lang.Long> values) {
+      /** <code>repeated fixed64 nacks = 2;</code> */
+      public Builder addAllNacks(java.lang.Iterable<? extends java.lang.Long> values) {
         ensureNacksIsMutable();
         super.addAll(values, nacks_);
         onChanged();
         return this;
       }
-      /**
-       * <code>repeated fixed64 nacks = 2;</code>
-       */
+      /** <code>repeated fixed64 nacks = 2;</code> */
       public Builder clearNacks() {
         nacks_ = java.util.Collections.emptyList();
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -2581,44 +2429,39 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:AcknowledgementInfo)
   }
 
-  public interface ActorRefDataOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface ActorRefDataOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required string path = 1;
-    /**
-     * <code>required string path = 1;</code>
-     */
+    /** <code>required string path = 1;</code> */
     boolean hasPath();
-    /**
-     * <code>required string path = 1;</code>
-     */
+    /** <code>required string path = 1;</code> */
     java.lang.String getPath();
-    /**
-     * <code>required string path = 1;</code>
-     */
-    akka.protobuf.ByteString
-        getPathBytes();
+    /** <code>required string path = 1;</code> */
+    akka.protobuf.ByteString getPathBytes();
   }
   /**
    * Protobuf type {@code ActorRefData}
    *
    * <pre>
-   **
+   * *
    * Defines a remote ActorRef that "remembers" and uses its original Actor instance
    * on the original node.
    * </pre>
    */
-  public static final class ActorRefData extends
-      akka.protobuf.GeneratedMessage
+  public static final class ActorRefData extends akka.protobuf.GeneratedMessage
       implements ActorRefDataOrBuilder {
     // Use ActorRefData.newBuilder() to construct.
     private ActorRefData(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private ActorRefData(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private ActorRefData(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final ActorRefData defaultInstance;
+
     public static ActorRefData getDefaultInstance() {
       return defaultInstance;
     }
@@ -2628,14 +2471,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private ActorRefData(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -2649,51 +2492,54 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              bitField0_ |= 0x00000001;
-              path_ = input.readBytes();
-              break;
-            }
+            case 10:
+              {
+                bitField0_ |= 0x00000001;
+                path_ = input.readBytes();
+                break;
+              }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_ActorRefData_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_ActorRefData_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.ActorRefData.class, akka.remote.WireFormats.ActorRefData.Builder.class);
+              akka.remote.WireFormats.ActorRefData.class,
+              akka.remote.WireFormats.ActorRefData.Builder.class);
     }
 
     public static akka.protobuf.Parser<ActorRefData> PARSER =
         new akka.protobuf.AbstractParser<ActorRefData>() {
-      public ActorRefData parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new ActorRefData(input, extensionRegistry);
-      }
-    };
+          public ActorRefData parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new ActorRefData(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<ActorRefData> getParserForType() {
@@ -2704,22 +2550,17 @@ public final class WireFormats {
     // required string path = 1;
     public static final int PATH_FIELD_NUMBER = 1;
     private java.lang.Object path_;
-    /**
-     * <code>required string path = 1;</code>
-     */
+    /** <code>required string path = 1;</code> */
     public boolean hasPath() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required string path = 1;</code>
-     */
+    /** <code>required string path = 1;</code> */
     public java.lang.String getPath() {
       java.lang.Object ref = path_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           path_ = s;
@@ -2727,16 +2568,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>required string path = 1;</code>
-     */
-    public akka.protobuf.ByteString
-        getPathBytes() {
+    /** <code>required string path = 1;</code> */
+    public akka.protobuf.ByteString getPathBytes() {
       java.lang.Object ref = path_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         path_ = b;
         return b;
       } else {
@@ -2747,7 +2583,9 @@ public final class WireFormats {
     private void initFields() {
       path_ = "";
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -2760,8 +2598,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, getPathBytes());
@@ -2770,14 +2607,14 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getPathBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(1, getPathBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -2785,75 +2622,85 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.ActorRefData parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.ActorRefData parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.ActorRefData parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.ActorRefData parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.ActorRefData parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.ActorRefData parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.ActorRefData parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.ActorRefData parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.ActorRefData parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.ActorRefData parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.ActorRefData parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.ActorRefData prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -2861,24 +2708,22 @@ public final class WireFormats {
      * Protobuf type {@code ActorRefData}
      *
      * <pre>
-     **
+     * *
      * Defines a remote ActorRef that "remembers" and uses its original Actor instance
      * on the original node.
      * </pre>
      */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.ActorRefDataOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.ActorRefDataOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_ActorRefData_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_ActorRefData_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.ActorRefData.class, akka.remote.WireFormats.ActorRefData.Builder.class);
+                akka.remote.WireFormats.ActorRefData.class,
+                akka.remote.WireFormats.ActorRefData.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.ActorRefData.newBuilder()
@@ -2886,15 +2731,15 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {}
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -2910,8 +2755,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_ActorRefData_descriptor;
       }
 
@@ -2928,7 +2772,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.ActorRefData buildPartial() {
-        akka.remote.WireFormats.ActorRefData result = new akka.remote.WireFormats.ActorRefData(this);
+        akka.remote.WireFormats.ActorRefData result =
+            new akka.remote.WireFormats.ActorRefData(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -2942,7 +2787,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.ActorRefData) {
-          return mergeFrom((akka.remote.WireFormats.ActorRefData)other);
+          return mergeFrom((akka.remote.WireFormats.ActorRefData) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -2962,7 +2807,7 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasPath()) {
-          
+
           return false;
         }
         return true;
@@ -2985,77 +2830,61 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required string path = 1;
       private java.lang.Object path_ = "";
-      /**
-       * <code>required string path = 1;</code>
-       */
+      /** <code>required string path = 1;</code> */
       public boolean hasPath() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required string path = 1;</code>
-       */
+      /** <code>required string path = 1;</code> */
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           path_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>required string path = 1;</code>
-       */
-      public akka.protobuf.ByteString
-          getPathBytes() {
+      /** <code>required string path = 1;</code> */
+      public akka.protobuf.ByteString getPathBytes() {
         java.lang.Object ref = path_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           path_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>required string path = 1;</code>
-       */
-      public Builder setPath(
-          java.lang.String value) {
+      /** <code>required string path = 1;</code> */
+      public Builder setPath(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
         path_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required string path = 1;</code>
-       */
+      /** <code>required string path = 1;</code> */
       public Builder clearPath() {
         bitField0_ = (bitField0_ & ~0x00000001);
         path_ = getDefaultInstance().getPath();
         onChanged();
         return this;
       }
-      /**
-       * <code>required string path = 1;</code>
-       */
-      public Builder setPathBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>required string path = 1;</code> */
+      public Builder setPathBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
         path_ = value;
         onChanged();
         return this;
@@ -3072,58 +2901,48 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:ActorRefData)
   }
 
-  public interface SerializedMessageOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface SerializedMessageOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required bytes message = 1;
-    /**
-     * <code>required bytes message = 1;</code>
-     */
+    /** <code>required bytes message = 1;</code> */
     boolean hasMessage();
-    /**
-     * <code>required bytes message = 1;</code>
-     */
+    /** <code>required bytes message = 1;</code> */
     akka.protobuf.ByteString getMessage();
 
     // required int32 serializerId = 2;
-    /**
-     * <code>required int32 serializerId = 2;</code>
-     */
+    /** <code>required int32 serializerId = 2;</code> */
     boolean hasSerializerId();
-    /**
-     * <code>required int32 serializerId = 2;</code>
-     */
+    /** <code>required int32 serializerId = 2;</code> */
     int getSerializerId();
 
     // optional bytes messageManifest = 3;
-    /**
-     * <code>optional bytes messageManifest = 3;</code>
-     */
+    /** <code>optional bytes messageManifest = 3;</code> */
     boolean hasMessageManifest();
-    /**
-     * <code>optional bytes messageManifest = 3;</code>
-     */
+    /** <code>optional bytes messageManifest = 3;</code> */
     akka.protobuf.ByteString getMessageManifest();
   }
   /**
    * Protobuf type {@code SerializedMessage}
    *
    * <pre>
-   **
+   * *
    * Defines a message.
    * </pre>
    */
-  public static final class SerializedMessage extends
-      akka.protobuf.GeneratedMessage
+  public static final class SerializedMessage extends akka.protobuf.GeneratedMessage
       implements SerializedMessageOrBuilder {
     // Use SerializedMessage.newBuilder() to construct.
     private SerializedMessage(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private SerializedMessage(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private SerializedMessage(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final SerializedMessage defaultInstance;
+
     public static SerializedMessage getDefaultInstance() {
       return defaultInstance;
     }
@@ -3133,14 +2952,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private SerializedMessage(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -3154,61 +2973,66 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              bitField0_ |= 0x00000001;
-              message_ = input.readBytes();
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              serializerId_ = input.readInt32();
-              break;
-            }
-            case 26: {
-              bitField0_ |= 0x00000004;
-              messageManifest_ = input.readBytes();
-              break;
-            }
+            case 10:
+              {
+                bitField0_ |= 0x00000001;
+                message_ = input.readBytes();
+                break;
+              }
+            case 16:
+              {
+                bitField0_ |= 0x00000002;
+                serializerId_ = input.readInt32();
+                break;
+              }
+            case 26:
+              {
+                bitField0_ |= 0x00000004;
+                messageManifest_ = input.readBytes();
+                break;
+              }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_SerializedMessage_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_SerializedMessage_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.SerializedMessage.class, akka.remote.WireFormats.SerializedMessage.Builder.class);
+              akka.remote.WireFormats.SerializedMessage.class,
+              akka.remote.WireFormats.SerializedMessage.Builder.class);
     }
 
     public static akka.protobuf.Parser<SerializedMessage> PARSER =
         new akka.protobuf.AbstractParser<SerializedMessage>() {
-      public SerializedMessage parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new SerializedMessage(input, extensionRegistry);
-      }
-    };
+          public SerializedMessage parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new SerializedMessage(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<SerializedMessage> getParserForType() {
@@ -3219,15 +3043,11 @@ public final class WireFormats {
     // required bytes message = 1;
     public static final int MESSAGE_FIELD_NUMBER = 1;
     private akka.protobuf.ByteString message_;
-    /**
-     * <code>required bytes message = 1;</code>
-     */
+    /** <code>required bytes message = 1;</code> */
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required bytes message = 1;</code>
-     */
+    /** <code>required bytes message = 1;</code> */
     public akka.protobuf.ByteString getMessage() {
       return message_;
     }
@@ -3235,15 +3055,11 @@ public final class WireFormats {
     // required int32 serializerId = 2;
     public static final int SERIALIZERID_FIELD_NUMBER = 2;
     private int serializerId_;
-    /**
-     * <code>required int32 serializerId = 2;</code>
-     */
+    /** <code>required int32 serializerId = 2;</code> */
     public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>required int32 serializerId = 2;</code>
-     */
+    /** <code>required int32 serializerId = 2;</code> */
     public int getSerializerId() {
       return serializerId_;
     }
@@ -3251,15 +3067,11 @@ public final class WireFormats {
     // optional bytes messageManifest = 3;
     public static final int MESSAGEMANIFEST_FIELD_NUMBER = 3;
     private akka.protobuf.ByteString messageManifest_;
-    /**
-     * <code>optional bytes messageManifest = 3;</code>
-     */
+    /** <code>optional bytes messageManifest = 3;</code> */
     public boolean hasMessageManifest() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    /**
-     * <code>optional bytes messageManifest = 3;</code>
-     */
+    /** <code>optional bytes messageManifest = 3;</code> */
     public akka.protobuf.ByteString getMessageManifest() {
       return messageManifest_;
     }
@@ -3269,7 +3081,9 @@ public final class WireFormats {
       serializerId_ = 0;
       messageManifest_ = akka.protobuf.ByteString.EMPTY;
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -3286,8 +3100,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, message_);
@@ -3302,22 +3115,20 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, message_);
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(1, message_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeInt32Size(2, serializerId_);
+        size += akka.protobuf.CodedOutputStream.computeInt32Size(2, serializerId_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(3, messageManifest_);
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(3, messageManifest_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -3325,75 +3136,85 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.SerializedMessage parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.SerializedMessage parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.SerializedMessage parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.SerializedMessage parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.SerializedMessage parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.SerializedMessage parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.SerializedMessage parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.SerializedMessage parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.SerializedMessage parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.SerializedMessage parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.SerializedMessage parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.SerializedMessage parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.SerializedMessage prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3401,23 +3222,21 @@ public final class WireFormats {
      * Protobuf type {@code SerializedMessage}
      *
      * <pre>
-     **
+     * *
      * Defines a message.
      * </pre>
      */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.SerializedMessageOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.SerializedMessageOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_SerializedMessage_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_SerializedMessage_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.SerializedMessage.class, akka.remote.WireFormats.SerializedMessage.Builder.class);
+                akka.remote.WireFormats.SerializedMessage.class,
+                akka.remote.WireFormats.SerializedMessage.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.SerializedMessage.newBuilder()
@@ -3425,15 +3244,15 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {}
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -3453,8 +3272,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_SerializedMessage_descriptor;
       }
 
@@ -3471,7 +3289,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.SerializedMessage buildPartial() {
-        akka.remote.WireFormats.SerializedMessage result = new akka.remote.WireFormats.SerializedMessage(this);
+        akka.remote.WireFormats.SerializedMessage result =
+            new akka.remote.WireFormats.SerializedMessage(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -3493,7 +3312,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.SerializedMessage) {
-          return mergeFrom((akka.remote.WireFormats.SerializedMessage)other);
+          return mergeFrom((akka.remote.WireFormats.SerializedMessage) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -3517,11 +3336,11 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasMessage()) {
-          
+
           return false;
         }
         if (!hasSerializerId()) {
-          
+
           return false;
         }
         return true;
@@ -3544,37 +3363,30 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required bytes message = 1;
       private akka.protobuf.ByteString message_ = akka.protobuf.ByteString.EMPTY;
-      /**
-       * <code>required bytes message = 1;</code>
-       */
+      /** <code>required bytes message = 1;</code> */
       public boolean hasMessage() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required bytes message = 1;</code>
-       */
+      /** <code>required bytes message = 1;</code> */
       public akka.protobuf.ByteString getMessage() {
         return message_;
       }
-      /**
-       * <code>required bytes message = 1;</code>
-       */
+      /** <code>required bytes message = 1;</code> */
       public Builder setMessage(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
         message_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required bytes message = 1;</code>
-       */
+      /** <code>required bytes message = 1;</code> */
       public Builder clearMessage() {
         bitField0_ = (bitField0_ & ~0x00000001);
         message_ = getDefaultInstance().getMessage();
@@ -3583,31 +3395,23 @@ public final class WireFormats {
       }
 
       // required int32 serializerId = 2;
-      private int serializerId_ ;
-      /**
-       * <code>required int32 serializerId = 2;</code>
-       */
+      private int serializerId_;
+      /** <code>required int32 serializerId = 2;</code> */
       public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>required int32 serializerId = 2;</code>
-       */
+      /** <code>required int32 serializerId = 2;</code> */
       public int getSerializerId() {
         return serializerId_;
       }
-      /**
-       * <code>required int32 serializerId = 2;</code>
-       */
+      /** <code>required int32 serializerId = 2;</code> */
       public Builder setSerializerId(int value) {
         bitField0_ |= 0x00000002;
         serializerId_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required int32 serializerId = 2;</code>
-       */
+      /** <code>required int32 serializerId = 2;</code> */
       public Builder clearSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000002);
         serializerId_ = 0;
@@ -3617,33 +3421,25 @@ public final class WireFormats {
 
       // optional bytes messageManifest = 3;
       private akka.protobuf.ByteString messageManifest_ = akka.protobuf.ByteString.EMPTY;
-      /**
-       * <code>optional bytes messageManifest = 3;</code>
-       */
+      /** <code>optional bytes messageManifest = 3;</code> */
       public boolean hasMessageManifest() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      /**
-       * <code>optional bytes messageManifest = 3;</code>
-       */
+      /** <code>optional bytes messageManifest = 3;</code> */
       public akka.protobuf.ByteString getMessageManifest() {
         return messageManifest_;
       }
-      /**
-       * <code>optional bytes messageManifest = 3;</code>
-       */
+      /** <code>optional bytes messageManifest = 3;</code> */
       public Builder setMessageManifest(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000004;
         messageManifest_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional bytes messageManifest = 3;</code>
-       */
+      /** <code>optional bytes messageManifest = 3;</code> */
       public Builder clearMessageManifest() {
         bitField0_ = (bitField0_ & ~0x00000004);
         messageManifest_ = getDefaultInstance().getMessageManifest();
@@ -3662,85 +3458,62 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:SerializedMessage)
   }
 
-  public interface DaemonMsgCreateDataOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface DaemonMsgCreateDataOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required .PropsData props = 1;
-    /**
-     * <code>required .PropsData props = 1;</code>
-     */
+    /** <code>required .PropsData props = 1;</code> */
     boolean hasProps();
-    /**
-     * <code>required .PropsData props = 1;</code>
-     */
+    /** <code>required .PropsData props = 1;</code> */
     akka.remote.WireFormats.PropsData getProps();
-    /**
-     * <code>required .PropsData props = 1;</code>
-     */
+    /** <code>required .PropsData props = 1;</code> */
     akka.remote.WireFormats.PropsDataOrBuilder getPropsOrBuilder();
 
     // required .DeployData deploy = 2;
-    /**
-     * <code>required .DeployData deploy = 2;</code>
-     */
+    /** <code>required .DeployData deploy = 2;</code> */
     boolean hasDeploy();
-    /**
-     * <code>required .DeployData deploy = 2;</code>
-     */
+    /** <code>required .DeployData deploy = 2;</code> */
     akka.remote.WireFormats.DeployData getDeploy();
-    /**
-     * <code>required .DeployData deploy = 2;</code>
-     */
+    /** <code>required .DeployData deploy = 2;</code> */
     akka.remote.WireFormats.DeployDataOrBuilder getDeployOrBuilder();
 
     // required string path = 3;
-    /**
-     * <code>required string path = 3;</code>
-     */
+    /** <code>required string path = 3;</code> */
     boolean hasPath();
-    /**
-     * <code>required string path = 3;</code>
-     */
+    /** <code>required string path = 3;</code> */
     java.lang.String getPath();
-    /**
-     * <code>required string path = 3;</code>
-     */
-    akka.protobuf.ByteString
-        getPathBytes();
+    /** <code>required string path = 3;</code> */
+    akka.protobuf.ByteString getPathBytes();
 
     // required .ActorRefData supervisor = 4;
-    /**
-     * <code>required .ActorRefData supervisor = 4;</code>
-     */
+    /** <code>required .ActorRefData supervisor = 4;</code> */
     boolean hasSupervisor();
-    /**
-     * <code>required .ActorRefData supervisor = 4;</code>
-     */
+    /** <code>required .ActorRefData supervisor = 4;</code> */
     akka.remote.WireFormats.ActorRefData getSupervisor();
-    /**
-     * <code>required .ActorRefData supervisor = 4;</code>
-     */
+    /** <code>required .ActorRefData supervisor = 4;</code> */
     akka.remote.WireFormats.ActorRefDataOrBuilder getSupervisorOrBuilder();
   }
   /**
    * Protobuf type {@code DaemonMsgCreateData}
    *
    * <pre>
-   **
+   * *
    * Defines akka.remote.DaemonMsgCreate
    * </pre>
    */
-  public static final class DaemonMsgCreateData extends
-      akka.protobuf.GeneratedMessage
+  public static final class DaemonMsgCreateData extends akka.protobuf.GeneratedMessage
       implements DaemonMsgCreateDataOrBuilder {
     // Use DaemonMsgCreateData.newBuilder() to construct.
     private DaemonMsgCreateData(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private DaemonMsgCreateData(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private DaemonMsgCreateData(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final DaemonMsgCreateData defaultInstance;
+
     public static DaemonMsgCreateData getDefaultInstance() {
       return defaultInstance;
     }
@@ -3750,14 +3523,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private DaemonMsgCreateData(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -3771,90 +3544,100 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              akka.remote.WireFormats.PropsData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                subBuilder = props_.toBuilder();
+            case 10:
+              {
+                akka.remote.WireFormats.PropsData.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                  subBuilder = props_.toBuilder();
+                }
+                props_ =
+                    input.readMessage(akka.remote.WireFormats.PropsData.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(props_);
+                  props_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000001;
+                break;
               }
-              props_ = input.readMessage(akka.remote.WireFormats.PropsData.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(props_);
-                props_ = subBuilder.buildPartial();
+            case 18:
+              {
+                akka.remote.WireFormats.DeployData.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                  subBuilder = deploy_.toBuilder();
+                }
+                deploy_ =
+                    input.readMessage(akka.remote.WireFormats.DeployData.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(deploy_);
+                  deploy_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000002;
+                break;
               }
-              bitField0_ |= 0x00000001;
-              break;
-            }
-            case 18: {
-              akka.remote.WireFormats.DeployData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
-                subBuilder = deploy_.toBuilder();
+            case 26:
+              {
+                bitField0_ |= 0x00000004;
+                path_ = input.readBytes();
+                break;
               }
-              deploy_ = input.readMessage(akka.remote.WireFormats.DeployData.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(deploy_);
-                deploy_ = subBuilder.buildPartial();
+            case 34:
+              {
+                akka.remote.WireFormats.ActorRefData.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000008) == 0x00000008)) {
+                  subBuilder = supervisor_.toBuilder();
+                }
+                supervisor_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.ActorRefData.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(supervisor_);
+                  supervisor_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000008;
+                break;
               }
-              bitField0_ |= 0x00000002;
-              break;
-            }
-            case 26: {
-              bitField0_ |= 0x00000004;
-              path_ = input.readBytes();
-              break;
-            }
-            case 34: {
-              akka.remote.WireFormats.ActorRefData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000008) == 0x00000008)) {
-                subBuilder = supervisor_.toBuilder();
-              }
-              supervisor_ = input.readMessage(akka.remote.WireFormats.ActorRefData.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(supervisor_);
-                supervisor_ = subBuilder.buildPartial();
-              }
-              bitField0_ |= 0x00000008;
-              break;
-            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_DaemonMsgCreateData_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_DaemonMsgCreateData_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.DaemonMsgCreateData.class, akka.remote.WireFormats.DaemonMsgCreateData.Builder.class);
+              akka.remote.WireFormats.DaemonMsgCreateData.class,
+              akka.remote.WireFormats.DaemonMsgCreateData.Builder.class);
     }
 
     public static akka.protobuf.Parser<DaemonMsgCreateData> PARSER =
         new akka.protobuf.AbstractParser<DaemonMsgCreateData>() {
-      public DaemonMsgCreateData parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new DaemonMsgCreateData(input, extensionRegistry);
-      }
-    };
+          public DaemonMsgCreateData parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new DaemonMsgCreateData(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<DaemonMsgCreateData> getParserForType() {
@@ -3865,21 +3648,15 @@ public final class WireFormats {
     // required .PropsData props = 1;
     public static final int PROPS_FIELD_NUMBER = 1;
     private akka.remote.WireFormats.PropsData props_;
-    /**
-     * <code>required .PropsData props = 1;</code>
-     */
+    /** <code>required .PropsData props = 1;</code> */
     public boolean hasProps() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required .PropsData props = 1;</code>
-     */
+    /** <code>required .PropsData props = 1;</code> */
     public akka.remote.WireFormats.PropsData getProps() {
       return props_;
     }
-    /**
-     * <code>required .PropsData props = 1;</code>
-     */
+    /** <code>required .PropsData props = 1;</code> */
     public akka.remote.WireFormats.PropsDataOrBuilder getPropsOrBuilder() {
       return props_;
     }
@@ -3887,21 +3664,15 @@ public final class WireFormats {
     // required .DeployData deploy = 2;
     public static final int DEPLOY_FIELD_NUMBER = 2;
     private akka.remote.WireFormats.DeployData deploy_;
-    /**
-     * <code>required .DeployData deploy = 2;</code>
-     */
+    /** <code>required .DeployData deploy = 2;</code> */
     public boolean hasDeploy() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>required .DeployData deploy = 2;</code>
-     */
+    /** <code>required .DeployData deploy = 2;</code> */
     public akka.remote.WireFormats.DeployData getDeploy() {
       return deploy_;
     }
-    /**
-     * <code>required .DeployData deploy = 2;</code>
-     */
+    /** <code>required .DeployData deploy = 2;</code> */
     public akka.remote.WireFormats.DeployDataOrBuilder getDeployOrBuilder() {
       return deploy_;
     }
@@ -3909,22 +3680,17 @@ public final class WireFormats {
     // required string path = 3;
     public static final int PATH_FIELD_NUMBER = 3;
     private java.lang.Object path_;
-    /**
-     * <code>required string path = 3;</code>
-     */
+    /** <code>required string path = 3;</code> */
     public boolean hasPath() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    /**
-     * <code>required string path = 3;</code>
-     */
+    /** <code>required string path = 3;</code> */
     public java.lang.String getPath() {
       java.lang.Object ref = path_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           path_ = s;
@@ -3932,16 +3698,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>required string path = 3;</code>
-     */
-    public akka.protobuf.ByteString
-        getPathBytes() {
+    /** <code>required string path = 3;</code> */
+    public akka.protobuf.ByteString getPathBytes() {
       java.lang.Object ref = path_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         path_ = b;
         return b;
       } else {
@@ -3952,21 +3713,15 @@ public final class WireFormats {
     // required .ActorRefData supervisor = 4;
     public static final int SUPERVISOR_FIELD_NUMBER = 4;
     private akka.remote.WireFormats.ActorRefData supervisor_;
-    /**
-     * <code>required .ActorRefData supervisor = 4;</code>
-     */
+    /** <code>required .ActorRefData supervisor = 4;</code> */
     public boolean hasSupervisor() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
-    /**
-     * <code>required .ActorRefData supervisor = 4;</code>
-     */
+    /** <code>required .ActorRefData supervisor = 4;</code> */
     public akka.remote.WireFormats.ActorRefData getSupervisor() {
       return supervisor_;
     }
-    /**
-     * <code>required .ActorRefData supervisor = 4;</code>
-     */
+    /** <code>required .ActorRefData supervisor = 4;</code> */
     public akka.remote.WireFormats.ActorRefDataOrBuilder getSupervisorOrBuilder() {
       return supervisor_;
     }
@@ -3977,7 +3732,9 @@ public final class WireFormats {
       path_ = "";
       supervisor_ = akka.remote.WireFormats.ActorRefData.getDefaultInstance();
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -4014,8 +3771,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeMessage(1, props_);
@@ -4033,26 +3789,23 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, props_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(1, props_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, deploy_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(2, deploy_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(3, getPathBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(3, getPathBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(4, supervisor_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(4, supervisor_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -4060,75 +3813,85 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
     public static akka.remote.WireFormats.DaemonMsgCreateData parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data) throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.DaemonMsgCreateData parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.DaemonMsgCreateData parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.DaemonMsgCreateData parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.DaemonMsgCreateData parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.DaemonMsgCreateData parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.DaemonMsgCreateData parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.DaemonMsgCreateData parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.DaemonMsgCreateData parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.DaemonMsgCreateData parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.DaemonMsgCreateData parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.DaemonMsgCreateData prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -4136,23 +3899,21 @@ public final class WireFormats {
      * Protobuf type {@code DaemonMsgCreateData}
      *
      * <pre>
-     **
+     * *
      * Defines akka.remote.DaemonMsgCreate
      * </pre>
      */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.DaemonMsgCreateDataOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.DaemonMsgCreateDataOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_DaemonMsgCreateData_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_DaemonMsgCreateData_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.DaemonMsgCreateData.class, akka.remote.WireFormats.DaemonMsgCreateData.Builder.class);
+                akka.remote.WireFormats.DaemonMsgCreateData.class,
+                akka.remote.WireFormats.DaemonMsgCreateData.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.DaemonMsgCreateData.newBuilder()
@@ -4160,11 +3921,11 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getPropsFieldBuilder();
@@ -4172,6 +3933,7 @@ public final class WireFormats {
           getSupervisorFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -4205,8 +3967,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_DaemonMsgCreateData_descriptor;
       }
 
@@ -4223,7 +3984,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.DaemonMsgCreateData buildPartial() {
-        akka.remote.WireFormats.DaemonMsgCreateData result = new akka.remote.WireFormats.DaemonMsgCreateData(this);
+        akka.remote.WireFormats.DaemonMsgCreateData result =
+            new akka.remote.WireFormats.DaemonMsgCreateData(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -4261,7 +4023,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.DaemonMsgCreateData) {
-          return mergeFrom((akka.remote.WireFormats.DaemonMsgCreateData)other);
+          return mergeFrom((akka.remote.WireFormats.DaemonMsgCreateData) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -4290,31 +4052,31 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasProps()) {
-          
+
           return false;
         }
         if (!hasDeploy()) {
-          
+
           return false;
         }
         if (!hasPath()) {
-          
+
           return false;
         }
         if (!hasSupervisor()) {
-          
+
           return false;
         }
         if (!getProps().isInitialized()) {
-          
+
           return false;
         }
         if (!getDeploy().isInitialized()) {
-          
+
           return false;
         }
         if (!getSupervisor().isInitialized()) {
-          
+
           return false;
         }
         return true;
@@ -4337,21 +4099,22 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required .PropsData props = 1;
-      private akka.remote.WireFormats.PropsData props_ = akka.remote.WireFormats.PropsData.getDefaultInstance();
+      private akka.remote.WireFormats.PropsData props_ =
+          akka.remote.WireFormats.PropsData.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.PropsData, akka.remote.WireFormats.PropsData.Builder, akka.remote.WireFormats.PropsDataOrBuilder> propsBuilder_;
-      /**
-       * <code>required .PropsData props = 1;</code>
-       */
+              akka.remote.WireFormats.PropsData,
+              akka.remote.WireFormats.PropsData.Builder,
+              akka.remote.WireFormats.PropsDataOrBuilder>
+          propsBuilder_;
+      /** <code>required .PropsData props = 1;</code> */
       public boolean hasProps() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required .PropsData props = 1;</code>
-       */
+      /** <code>required .PropsData props = 1;</code> */
       public akka.remote.WireFormats.PropsData getProps() {
         if (propsBuilder_ == null) {
           return props_;
@@ -4359,9 +4122,7 @@ public final class WireFormats {
           return propsBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .PropsData props = 1;</code>
-       */
+      /** <code>required .PropsData props = 1;</code> */
       public Builder setProps(akka.remote.WireFormats.PropsData value) {
         if (propsBuilder_ == null) {
           if (value == null) {
@@ -4375,11 +4136,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .PropsData props = 1;</code>
-       */
-      public Builder setProps(
-          akka.remote.WireFormats.PropsData.Builder builderForValue) {
+      /** <code>required .PropsData props = 1;</code> */
+      public Builder setProps(akka.remote.WireFormats.PropsData.Builder builderForValue) {
         if (propsBuilder_ == null) {
           props_ = builderForValue.build();
           onChanged();
@@ -4389,15 +4147,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .PropsData props = 1;</code>
-       */
+      /** <code>required .PropsData props = 1;</code> */
       public Builder mergeProps(akka.remote.WireFormats.PropsData value) {
         if (propsBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
-              props_ != akka.remote.WireFormats.PropsData.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000001) == 0x00000001)
+              && props_ != akka.remote.WireFormats.PropsData.getDefaultInstance()) {
             props_ =
-              akka.remote.WireFormats.PropsData.newBuilder(props_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.PropsData.newBuilder(props_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             props_ = value;
           }
@@ -4408,9 +4166,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .PropsData props = 1;</code>
-       */
+      /** <code>required .PropsData props = 1;</code> */
       public Builder clearProps() {
         if (propsBuilder_ == null) {
           props_ = akka.remote.WireFormats.PropsData.getDefaultInstance();
@@ -4421,17 +4177,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
-      /**
-       * <code>required .PropsData props = 1;</code>
-       */
+      /** <code>required .PropsData props = 1;</code> */
       public akka.remote.WireFormats.PropsData.Builder getPropsBuilder() {
         bitField0_ |= 0x00000001;
         onChanged();
         return getPropsFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .PropsData props = 1;</code>
-       */
+      /** <code>required .PropsData props = 1;</code> */
       public akka.remote.WireFormats.PropsDataOrBuilder getPropsOrBuilder() {
         if (propsBuilder_ != null) {
           return propsBuilder_.getMessageOrBuilder();
@@ -4439,36 +4191,37 @@ public final class WireFormats {
           return props_;
         }
       }
-      /**
-       * <code>required .PropsData props = 1;</code>
-       */
+      /** <code>required .PropsData props = 1;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.PropsData, akka.remote.WireFormats.PropsData.Builder, akka.remote.WireFormats.PropsDataOrBuilder> 
+              akka.remote.WireFormats.PropsData,
+              akka.remote.WireFormats.PropsData.Builder,
+              akka.remote.WireFormats.PropsDataOrBuilder>
           getPropsFieldBuilder() {
         if (propsBuilder_ == null) {
-          propsBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.PropsData, akka.remote.WireFormats.PropsData.Builder, akka.remote.WireFormats.PropsDataOrBuilder>(
-                  props_,
-                  getParentForChildren(),
-                  isClean());
+          propsBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.PropsData,
+                  akka.remote.WireFormats.PropsData.Builder,
+                  akka.remote.WireFormats.PropsDataOrBuilder>(
+                  props_, getParentForChildren(), isClean());
           props_ = null;
         }
         return propsBuilder_;
       }
 
       // required .DeployData deploy = 2;
-      private akka.remote.WireFormats.DeployData deploy_ = akka.remote.WireFormats.DeployData.getDefaultInstance();
+      private akka.remote.WireFormats.DeployData deploy_ =
+          akka.remote.WireFormats.DeployData.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.DeployData, akka.remote.WireFormats.DeployData.Builder, akka.remote.WireFormats.DeployDataOrBuilder> deployBuilder_;
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+              akka.remote.WireFormats.DeployData,
+              akka.remote.WireFormats.DeployData.Builder,
+              akka.remote.WireFormats.DeployDataOrBuilder>
+          deployBuilder_;
+      /** <code>required .DeployData deploy = 2;</code> */
       public boolean hasDeploy() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       public akka.remote.WireFormats.DeployData getDeploy() {
         if (deployBuilder_ == null) {
           return deploy_;
@@ -4476,9 +4229,7 @@ public final class WireFormats {
           return deployBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       public Builder setDeploy(akka.remote.WireFormats.DeployData value) {
         if (deployBuilder_ == null) {
           if (value == null) {
@@ -4492,11 +4243,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
-      public Builder setDeploy(
-          akka.remote.WireFormats.DeployData.Builder builderForValue) {
+      /** <code>required .DeployData deploy = 2;</code> */
+      public Builder setDeploy(akka.remote.WireFormats.DeployData.Builder builderForValue) {
         if (deployBuilder_ == null) {
           deploy_ = builderForValue.build();
           onChanged();
@@ -4506,15 +4254,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       public Builder mergeDeploy(akka.remote.WireFormats.DeployData value) {
         if (deployBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
-              deploy_ != akka.remote.WireFormats.DeployData.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000002) == 0x00000002)
+              && deploy_ != akka.remote.WireFormats.DeployData.getDefaultInstance()) {
             deploy_ =
-              akka.remote.WireFormats.DeployData.newBuilder(deploy_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.DeployData.newBuilder(deploy_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             deploy_ = value;
           }
@@ -4525,9 +4273,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       public Builder clearDeploy() {
         if (deployBuilder_ == null) {
           deploy_ = akka.remote.WireFormats.DeployData.getDefaultInstance();
@@ -4538,17 +4284,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       public akka.remote.WireFormats.DeployData.Builder getDeployBuilder() {
         bitField0_ |= 0x00000002;
         onChanged();
         return getDeployFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       public akka.remote.WireFormats.DeployDataOrBuilder getDeployOrBuilder() {
         if (deployBuilder_ != null) {
           return deployBuilder_.getMessageOrBuilder();
@@ -4556,18 +4298,19 @@ public final class WireFormats {
           return deploy_;
         }
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.DeployData, akka.remote.WireFormats.DeployData.Builder, akka.remote.WireFormats.DeployDataOrBuilder> 
+              akka.remote.WireFormats.DeployData,
+              akka.remote.WireFormats.DeployData.Builder,
+              akka.remote.WireFormats.DeployDataOrBuilder>
           getDeployFieldBuilder() {
         if (deployBuilder_ == null) {
-          deployBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.DeployData, akka.remote.WireFormats.DeployData.Builder, akka.remote.WireFormats.DeployDataOrBuilder>(
-                  deploy_,
-                  getParentForChildren(),
-                  isClean());
+          deployBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.DeployData,
+                  akka.remote.WireFormats.DeployData.Builder,
+                  akka.remote.WireFormats.DeployDataOrBuilder>(
+                  deploy_, getParentForChildren(), isClean());
           deploy_ = null;
         }
         return deployBuilder_;
@@ -4575,91 +4318,74 @@ public final class WireFormats {
 
       // required string path = 3;
       private java.lang.Object path_ = "";
-      /**
-       * <code>required string path = 3;</code>
-       */
+      /** <code>required string path = 3;</code> */
       public boolean hasPath() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      /**
-       * <code>required string path = 3;</code>
-       */
+      /** <code>required string path = 3;</code> */
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           path_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>required string path = 3;</code>
-       */
-      public akka.protobuf.ByteString
-          getPathBytes() {
+      /** <code>required string path = 3;</code> */
+      public akka.protobuf.ByteString getPathBytes() {
         java.lang.Object ref = path_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           path_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>required string path = 3;</code>
-       */
-      public Builder setPath(
-          java.lang.String value) {
+      /** <code>required string path = 3;</code> */
+      public Builder setPath(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000004;
         path_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required string path = 3;</code>
-       */
+      /** <code>required string path = 3;</code> */
       public Builder clearPath() {
         bitField0_ = (bitField0_ & ~0x00000004);
         path_ = getDefaultInstance().getPath();
         onChanged();
         return this;
       }
-      /**
-       * <code>required string path = 3;</code>
-       */
-      public Builder setPathBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>required string path = 3;</code> */
+      public Builder setPathBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000004;
         path_ = value;
         onChanged();
         return this;
       }
 
       // required .ActorRefData supervisor = 4;
-      private akka.remote.WireFormats.ActorRefData supervisor_ = akka.remote.WireFormats.ActorRefData.getDefaultInstance();
+      private akka.remote.WireFormats.ActorRefData supervisor_ =
+          akka.remote.WireFormats.ActorRefData.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.ActorRefData, akka.remote.WireFormats.ActorRefData.Builder, akka.remote.WireFormats.ActorRefDataOrBuilder> supervisorBuilder_;
-      /**
-       * <code>required .ActorRefData supervisor = 4;</code>
-       */
+              akka.remote.WireFormats.ActorRefData,
+              akka.remote.WireFormats.ActorRefData.Builder,
+              akka.remote.WireFormats.ActorRefDataOrBuilder>
+          supervisorBuilder_;
+      /** <code>required .ActorRefData supervisor = 4;</code> */
       public boolean hasSupervisor() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
-      /**
-       * <code>required .ActorRefData supervisor = 4;</code>
-       */
+      /** <code>required .ActorRefData supervisor = 4;</code> */
       public akka.remote.WireFormats.ActorRefData getSupervisor() {
         if (supervisorBuilder_ == null) {
           return supervisor_;
@@ -4667,9 +4393,7 @@ public final class WireFormats {
           return supervisorBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .ActorRefData supervisor = 4;</code>
-       */
+      /** <code>required .ActorRefData supervisor = 4;</code> */
       public Builder setSupervisor(akka.remote.WireFormats.ActorRefData value) {
         if (supervisorBuilder_ == null) {
           if (value == null) {
@@ -4683,11 +4407,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000008;
         return this;
       }
-      /**
-       * <code>required .ActorRefData supervisor = 4;</code>
-       */
-      public Builder setSupervisor(
-          akka.remote.WireFormats.ActorRefData.Builder builderForValue) {
+      /** <code>required .ActorRefData supervisor = 4;</code> */
+      public Builder setSupervisor(akka.remote.WireFormats.ActorRefData.Builder builderForValue) {
         if (supervisorBuilder_ == null) {
           supervisor_ = builderForValue.build();
           onChanged();
@@ -4697,15 +4418,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000008;
         return this;
       }
-      /**
-       * <code>required .ActorRefData supervisor = 4;</code>
-       */
+      /** <code>required .ActorRefData supervisor = 4;</code> */
       public Builder mergeSupervisor(akka.remote.WireFormats.ActorRefData value) {
         if (supervisorBuilder_ == null) {
-          if (((bitField0_ & 0x00000008) == 0x00000008) &&
-              supervisor_ != akka.remote.WireFormats.ActorRefData.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000008) == 0x00000008)
+              && supervisor_ != akka.remote.WireFormats.ActorRefData.getDefaultInstance()) {
             supervisor_ =
-              akka.remote.WireFormats.ActorRefData.newBuilder(supervisor_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.ActorRefData.newBuilder(supervisor_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             supervisor_ = value;
           }
@@ -4716,9 +4437,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000008;
         return this;
       }
-      /**
-       * <code>required .ActorRefData supervisor = 4;</code>
-       */
+      /** <code>required .ActorRefData supervisor = 4;</code> */
       public Builder clearSupervisor() {
         if (supervisorBuilder_ == null) {
           supervisor_ = akka.remote.WireFormats.ActorRefData.getDefaultInstance();
@@ -4729,17 +4448,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
-      /**
-       * <code>required .ActorRefData supervisor = 4;</code>
-       */
+      /** <code>required .ActorRefData supervisor = 4;</code> */
       public akka.remote.WireFormats.ActorRefData.Builder getSupervisorBuilder() {
         bitField0_ |= 0x00000008;
         onChanged();
         return getSupervisorFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .ActorRefData supervisor = 4;</code>
-       */
+      /** <code>required .ActorRefData supervisor = 4;</code> */
       public akka.remote.WireFormats.ActorRefDataOrBuilder getSupervisorOrBuilder() {
         if (supervisorBuilder_ != null) {
           return supervisorBuilder_.getMessageOrBuilder();
@@ -4747,18 +4462,19 @@ public final class WireFormats {
           return supervisor_;
         }
       }
-      /**
-       * <code>required .ActorRefData supervisor = 4;</code>
-       */
+      /** <code>required .ActorRefData supervisor = 4;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.ActorRefData, akka.remote.WireFormats.ActorRefData.Builder, akka.remote.WireFormats.ActorRefDataOrBuilder> 
+              akka.remote.WireFormats.ActorRefData,
+              akka.remote.WireFormats.ActorRefData.Builder,
+              akka.remote.WireFormats.ActorRefDataOrBuilder>
           getSupervisorFieldBuilder() {
         if (supervisorBuilder_ == null) {
-          supervisorBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.ActorRefData, akka.remote.WireFormats.ActorRefData.Builder, akka.remote.WireFormats.ActorRefDataOrBuilder>(
-                  supervisor_,
-                  getParentForChildren(),
-                  isClean());
+          supervisorBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.ActorRefData,
+                  akka.remote.WireFormats.ActorRefData.Builder,
+                  akka.remote.WireFormats.ActorRefDataOrBuilder>(
+                  supervisor_, getParentForChildren(), isClean());
           supervisor_ = null;
         }
         return supervisorBuilder_;
@@ -4775,50 +4491,30 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:DaemonMsgCreateData)
   }
 
-  public interface PropsDataOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface PropsDataOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required .DeployData deploy = 2;
-    /**
-     * <code>required .DeployData deploy = 2;</code>
-     */
+    /** <code>required .DeployData deploy = 2;</code> */
     boolean hasDeploy();
-    /**
-     * <code>required .DeployData deploy = 2;</code>
-     */
+    /** <code>required .DeployData deploy = 2;</code> */
     akka.remote.WireFormats.DeployData getDeploy();
-    /**
-     * <code>required .DeployData deploy = 2;</code>
-     */
+    /** <code>required .DeployData deploy = 2;</code> */
     akka.remote.WireFormats.DeployDataOrBuilder getDeployOrBuilder();
 
     // required string clazz = 3;
-    /**
-     * <code>required string clazz = 3;</code>
-     */
+    /** <code>required string clazz = 3;</code> */
     boolean hasClazz();
-    /**
-     * <code>required string clazz = 3;</code>
-     */
+    /** <code>required string clazz = 3;</code> */
     java.lang.String getClazz();
-    /**
-     * <code>required string clazz = 3;</code>
-     */
-    akka.protobuf.ByteString
-        getClazzBytes();
+    /** <code>required string clazz = 3;</code> */
+    akka.protobuf.ByteString getClazzBytes();
 
     // repeated bytes args = 4;
-    /**
-     * <code>repeated bytes args = 4;</code>
-     */
+    /** <code>repeated bytes args = 4;</code> */
     java.util.List<akka.protobuf.ByteString> getArgsList();
-    /**
-     * <code>repeated bytes args = 4;</code>
-     */
+    /** <code>repeated bytes args = 4;</code> */
     int getArgsCount();
-    /**
-     * <code>repeated bytes args = 4;</code>
-     */
+    /** <code>repeated bytes args = 4;</code> */
     akka.protobuf.ByteString getArgs(int index);
 
     // repeated string manifests = 5;
@@ -4831,8 +4527,7 @@ public final class WireFormats {
      * newer wire protocol: contains string manifest for each arg
      * </pre>
      */
-    java.util.List<java.lang.String>
-    getManifestsList();
+    java.util.List<java.lang.String> getManifestsList();
     /**
      * <code>repeated string manifests = 5;</code>
      *
@@ -4862,8 +4557,7 @@ public final class WireFormats {
      * newer wire protocol: contains string manifest for each arg
      * </pre>
      */
-    akka.protobuf.ByteString
-        getManifestsBytes(int index);
+    akka.protobuf.ByteString getManifestsBytes(int index);
 
     // repeated int32 serializerIds = 6;
     /**
@@ -4924,21 +4618,24 @@ public final class WireFormats {
    * Protobuf type {@code PropsData}
    *
    * <pre>
-   **
+   * *
    * Serialization of akka.actor.Props
    * </pre>
    */
-  public static final class PropsData extends
-      akka.protobuf.GeneratedMessage
+  public static final class PropsData extends akka.protobuf.GeneratedMessage
       implements PropsDataOrBuilder {
     // Use PropsData.newBuilder() to construct.
     private PropsData(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private PropsData(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private PropsData(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final PropsData defaultInstance;
+
     public static PropsData getDefaultInstance() {
       return defaultInstance;
     }
@@ -4948,14 +4645,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private PropsData(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -4969,96 +4666,109 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 18: {
-              akka.remote.WireFormats.DeployData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                subBuilder = deploy_.toBuilder();
+            case 18:
+              {
+                akka.remote.WireFormats.DeployData.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                  subBuilder = deploy_.toBuilder();
+                }
+                deploy_ =
+                    input.readMessage(akka.remote.WireFormats.DeployData.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(deploy_);
+                  deploy_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000001;
+                break;
               }
-              deploy_ = input.readMessage(akka.remote.WireFormats.DeployData.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(deploy_);
-                deploy_ = subBuilder.buildPartial();
+            case 26:
+              {
+                bitField0_ |= 0x00000002;
+                clazz_ = input.readBytes();
+                break;
               }
-              bitField0_ |= 0x00000001;
-              break;
-            }
-            case 26: {
-              bitField0_ |= 0x00000002;
-              clazz_ = input.readBytes();
-              break;
-            }
-            case 34: {
-              if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
-                args_ = new java.util.ArrayList<akka.protobuf.ByteString>();
-                mutable_bitField0_ |= 0x00000004;
+            case 34:
+              {
+                if (!((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
+                  args_ = new java.util.ArrayList<akka.protobuf.ByteString>();
+                  mutable_bitField0_ |= 0x00000004;
+                }
+                args_.add(input.readBytes());
+                break;
               }
-              args_.add(input.readBytes());
-              break;
-            }
-            case 42: {
-              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-                manifests_ = new akka.protobuf.LazyStringArrayList();
-                mutable_bitField0_ |= 0x00000008;
+            case 42:
+              {
+                if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
+                  manifests_ = new akka.protobuf.LazyStringArrayList();
+                  mutable_bitField0_ |= 0x00000008;
+                }
+                manifests_.add(input.readBytes());
+                break;
               }
-              manifests_.add(input.readBytes());
-              break;
-            }
-            case 48: {
-              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
-                serializerIds_ = new java.util.ArrayList<java.lang.Integer>();
-                mutable_bitField0_ |= 0x00000010;
-              }
-              serializerIds_.add(input.readInt32());
-              break;
-            }
-            case 50: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010) && input.getBytesUntilLimit() > 0) {
-                serializerIds_ = new java.util.ArrayList<java.lang.Integer>();
-                mutable_bitField0_ |= 0x00000010;
-              }
-              while (input.getBytesUntilLimit() > 0) {
+            case 48:
+              {
+                if (!((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
+                  serializerIds_ = new java.util.ArrayList<java.lang.Integer>();
+                  mutable_bitField0_ |= 0x00000010;
+                }
                 serializerIds_.add(input.readInt32());
+                break;
               }
-              input.popLimit(limit);
-              break;
-            }
-            case 56: {
-              if (!((mutable_bitField0_ & 0x00000020) == 0x00000020)) {
-                hasManifest_ = new java.util.ArrayList<java.lang.Boolean>();
-                mutable_bitField0_ |= 0x00000020;
+            case 50:
+              {
+                int length = input.readRawVarint32();
+                int limit = input.pushLimit(length);
+                if (!((mutable_bitField0_ & 0x00000010) == 0x00000010)
+                    && input.getBytesUntilLimit() > 0) {
+                  serializerIds_ = new java.util.ArrayList<java.lang.Integer>();
+                  mutable_bitField0_ |= 0x00000010;
+                }
+                while (input.getBytesUntilLimit() > 0) {
+                  serializerIds_.add(input.readInt32());
+                }
+                input.popLimit(limit);
+                break;
               }
-              hasManifest_.add(input.readBool());
-              break;
-            }
-            case 58: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000020) == 0x00000020) && input.getBytesUntilLimit() > 0) {
-                hasManifest_ = new java.util.ArrayList<java.lang.Boolean>();
-                mutable_bitField0_ |= 0x00000020;
-              }
-              while (input.getBytesUntilLimit() > 0) {
+            case 56:
+              {
+                if (!((mutable_bitField0_ & 0x00000020) == 0x00000020)) {
+                  hasManifest_ = new java.util.ArrayList<java.lang.Boolean>();
+                  mutable_bitField0_ |= 0x00000020;
+                }
                 hasManifest_.add(input.readBool());
+                break;
               }
-              input.popLimit(limit);
-              break;
-            }
+            case 58:
+              {
+                int length = input.readRawVarint32();
+                int limit = input.pushLimit(length);
+                if (!((mutable_bitField0_ & 0x00000020) == 0x00000020)
+                    && input.getBytesUntilLimit() > 0) {
+                  hasManifest_ = new java.util.ArrayList<java.lang.Boolean>();
+                  mutable_bitField0_ |= 0x00000020;
+                }
+                while (input.getBytesUntilLimit() > 0) {
+                  hasManifest_.add(input.readBool());
+                }
+                input.popLimit(limit);
+                break;
+              }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
           args_ = java.util.Collections.unmodifiableList(args_);
@@ -5076,27 +4786,27 @@ public final class WireFormats {
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_PropsData_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_PropsData_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.PropsData.class, akka.remote.WireFormats.PropsData.Builder.class);
+              akka.remote.WireFormats.PropsData.class,
+              akka.remote.WireFormats.PropsData.Builder.class);
     }
 
     public static akka.protobuf.Parser<PropsData> PARSER =
         new akka.protobuf.AbstractParser<PropsData>() {
-      public PropsData parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new PropsData(input, extensionRegistry);
-      }
-    };
+          public PropsData parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new PropsData(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<PropsData> getParserForType() {
@@ -5107,21 +4817,15 @@ public final class WireFormats {
     // required .DeployData deploy = 2;
     public static final int DEPLOY_FIELD_NUMBER = 2;
     private akka.remote.WireFormats.DeployData deploy_;
-    /**
-     * <code>required .DeployData deploy = 2;</code>
-     */
+    /** <code>required .DeployData deploy = 2;</code> */
     public boolean hasDeploy() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required .DeployData deploy = 2;</code>
-     */
+    /** <code>required .DeployData deploy = 2;</code> */
     public akka.remote.WireFormats.DeployData getDeploy() {
       return deploy_;
     }
-    /**
-     * <code>required .DeployData deploy = 2;</code>
-     */
+    /** <code>required .DeployData deploy = 2;</code> */
     public akka.remote.WireFormats.DeployDataOrBuilder getDeployOrBuilder() {
       return deploy_;
     }
@@ -5129,22 +4833,17 @@ public final class WireFormats {
     // required string clazz = 3;
     public static final int CLAZZ_FIELD_NUMBER = 3;
     private java.lang.Object clazz_;
-    /**
-     * <code>required string clazz = 3;</code>
-     */
+    /** <code>required string clazz = 3;</code> */
     public boolean hasClazz() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>required string clazz = 3;</code>
-     */
+    /** <code>required string clazz = 3;</code> */
     public java.lang.String getClazz() {
       java.lang.Object ref = clazz_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           clazz_ = s;
@@ -5152,16 +4851,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>required string clazz = 3;</code>
-     */
-    public akka.protobuf.ByteString
-        getClazzBytes() {
+    /** <code>required string clazz = 3;</code> */
+    public akka.protobuf.ByteString getClazzBytes() {
       java.lang.Object ref = clazz_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         clazz_ = b;
         return b;
       } else {
@@ -5172,22 +4866,15 @@ public final class WireFormats {
     // repeated bytes args = 4;
     public static final int ARGS_FIELD_NUMBER = 4;
     private java.util.List<akka.protobuf.ByteString> args_;
-    /**
-     * <code>repeated bytes args = 4;</code>
-     */
-    public java.util.List<akka.protobuf.ByteString>
-        getArgsList() {
+    /** <code>repeated bytes args = 4;</code> */
+    public java.util.List<akka.protobuf.ByteString> getArgsList() {
       return args_;
     }
-    /**
-     * <code>repeated bytes args = 4;</code>
-     */
+    /** <code>repeated bytes args = 4;</code> */
     public int getArgsCount() {
       return args_.size();
     }
-    /**
-     * <code>repeated bytes args = 4;</code>
-     */
+    /** <code>repeated bytes args = 4;</code> */
     public akka.protobuf.ByteString getArgs(int index) {
       return args_.get(index);
     }
@@ -5204,8 +4891,7 @@ public final class WireFormats {
      * newer wire protocol: contains string manifest for each arg
      * </pre>
      */
-    public java.util.List<java.lang.String>
-        getManifestsList() {
+    public java.util.List<java.lang.String> getManifestsList() {
       return manifests_;
     }
     /**
@@ -5241,8 +4927,7 @@ public final class WireFormats {
      * newer wire protocol: contains string manifest for each arg
      * </pre>
      */
-    public akka.protobuf.ByteString
-        getManifestsBytes(int index) {
+    public akka.protobuf.ByteString getManifestsBytes(int index) {
       return manifests_.getByteString(index);
     }
 
@@ -5256,8 +4941,7 @@ public final class WireFormats {
      * newer wire protocol: serializer id for each arg
      * </pre>
      */
-    public java.util.List<java.lang.Integer>
-        getSerializerIdsList() {
+    public java.util.List<java.lang.Integer> getSerializerIdsList() {
       return serializerIds_;
     }
     /**
@@ -5292,8 +4976,7 @@ public final class WireFormats {
      * serialized with manifest or not
      * </pre>
      */
-    public java.util.List<java.lang.Boolean>
-        getHasManifestList() {
+    public java.util.List<java.lang.Boolean> getHasManifestList() {
       return hasManifest_;
     }
     /**
@@ -5327,7 +5010,9 @@ public final class WireFormats {
       serializerIds_ = java.util.Collections.emptyList();
       hasManifest_ = java.util.Collections.emptyList();
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -5348,8 +5033,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeMessage(2, deploy_);
@@ -5373,24 +5057,22 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, deploy_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(2, deploy_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(3, getClazzBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(3, getClazzBytes());
       }
       {
         int dataSize = 0;
         for (int i = 0; i < args_.size(); i++) {
-          dataSize += akka.protobuf.CodedOutputStream
-            .computeBytesSizeNoTag(args_.get(i));
+          dataSize += akka.protobuf.CodedOutputStream.computeBytesSizeNoTag(args_.get(i));
         }
         size += dataSize;
         size += 1 * getArgsList().size();
@@ -5398,8 +5080,8 @@ public final class WireFormats {
       {
         int dataSize = 0;
         for (int i = 0; i < manifests_.size(); i++) {
-          dataSize += akka.protobuf.CodedOutputStream
-            .computeBytesSizeNoTag(manifests_.getByteString(i));
+          dataSize +=
+              akka.protobuf.CodedOutputStream.computeBytesSizeNoTag(manifests_.getByteString(i));
         }
         size += dataSize;
         size += 1 * getManifestsList().size();
@@ -5407,8 +5089,7 @@ public final class WireFormats {
       {
         int dataSize = 0;
         for (int i = 0; i < serializerIds_.size(); i++) {
-          dataSize += akka.protobuf.CodedOutputStream
-            .computeInt32SizeNoTag(serializerIds_.get(i));
+          dataSize += akka.protobuf.CodedOutputStream.computeInt32SizeNoTag(serializerIds_.get(i));
         }
         size += dataSize;
         size += 1 * getSerializerIdsList().size();
@@ -5425,75 +5106,85 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.PropsData parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.PropsData parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.PropsData parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.PropsData parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.PropsData parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.PropsData parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.PropsData parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.PropsData parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.PropsData parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.PropsData parseFrom(
-        akka.protobuf.CodedInputStream input)
+
+    public static akka.remote.WireFormats.PropsData parseFrom(akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.PropsData parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.PropsData prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -5501,23 +5192,21 @@ public final class WireFormats {
      * Protobuf type {@code PropsData}
      *
      * <pre>
-     **
+     * *
      * Serialization of akka.actor.Props
      * </pre>
      */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.PropsDataOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.PropsDataOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_PropsData_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_PropsData_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.PropsData.class, akka.remote.WireFormats.PropsData.Builder.class);
+                akka.remote.WireFormats.PropsData.class,
+                akka.remote.WireFormats.PropsData.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.PropsData.newBuilder()
@@ -5525,16 +5214,17 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getDeployFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -5564,8 +5254,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_PropsData_descriptor;
       }
 
@@ -5603,8 +5292,7 @@ public final class WireFormats {
         }
         result.args_ = args_;
         if (((bitField0_ & 0x00000008) == 0x00000008)) {
-          manifests_ = new akka.protobuf.UnmodifiableLazyStringList(
-              manifests_);
+          manifests_ = new akka.protobuf.UnmodifiableLazyStringList(manifests_);
           bitField0_ = (bitField0_ & ~0x00000008);
         }
         result.manifests_ = manifests_;
@@ -5625,7 +5313,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.PropsData) {
-          return mergeFrom((akka.remote.WireFormats.PropsData)other);
+          return mergeFrom((akka.remote.WireFormats.PropsData) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -5688,15 +5376,15 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasDeploy()) {
-          
+
           return false;
         }
         if (!hasClazz()) {
-          
+
           return false;
         }
         if (!getDeploy().isInitialized()) {
-          
+
           return false;
         }
         return true;
@@ -5719,21 +5407,22 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required .DeployData deploy = 2;
-      private akka.remote.WireFormats.DeployData deploy_ = akka.remote.WireFormats.DeployData.getDefaultInstance();
+      private akka.remote.WireFormats.DeployData deploy_ =
+          akka.remote.WireFormats.DeployData.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.DeployData, akka.remote.WireFormats.DeployData.Builder, akka.remote.WireFormats.DeployDataOrBuilder> deployBuilder_;
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+              akka.remote.WireFormats.DeployData,
+              akka.remote.WireFormats.DeployData.Builder,
+              akka.remote.WireFormats.DeployDataOrBuilder>
+          deployBuilder_;
+      /** <code>required .DeployData deploy = 2;</code> */
       public boolean hasDeploy() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       public akka.remote.WireFormats.DeployData getDeploy() {
         if (deployBuilder_ == null) {
           return deploy_;
@@ -5741,9 +5430,7 @@ public final class WireFormats {
           return deployBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       public Builder setDeploy(akka.remote.WireFormats.DeployData value) {
         if (deployBuilder_ == null) {
           if (value == null) {
@@ -5757,11 +5444,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
-      public Builder setDeploy(
-          akka.remote.WireFormats.DeployData.Builder builderForValue) {
+      /** <code>required .DeployData deploy = 2;</code> */
+      public Builder setDeploy(akka.remote.WireFormats.DeployData.Builder builderForValue) {
         if (deployBuilder_ == null) {
           deploy_ = builderForValue.build();
           onChanged();
@@ -5771,15 +5455,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       public Builder mergeDeploy(akka.remote.WireFormats.DeployData value) {
         if (deployBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
-              deploy_ != akka.remote.WireFormats.DeployData.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000001) == 0x00000001)
+              && deploy_ != akka.remote.WireFormats.DeployData.getDefaultInstance()) {
             deploy_ =
-              akka.remote.WireFormats.DeployData.newBuilder(deploy_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.DeployData.newBuilder(deploy_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             deploy_ = value;
           }
@@ -5790,9 +5474,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       public Builder clearDeploy() {
         if (deployBuilder_ == null) {
           deploy_ = akka.remote.WireFormats.DeployData.getDefaultInstance();
@@ -5803,17 +5485,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       public akka.remote.WireFormats.DeployData.Builder getDeployBuilder() {
         bitField0_ |= 0x00000001;
         onChanged();
         return getDeployFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       public akka.remote.WireFormats.DeployDataOrBuilder getDeployOrBuilder() {
         if (deployBuilder_ != null) {
           return deployBuilder_.getMessageOrBuilder();
@@ -5821,18 +5499,19 @@ public final class WireFormats {
           return deploy_;
         }
       }
-      /**
-       * <code>required .DeployData deploy = 2;</code>
-       */
+      /** <code>required .DeployData deploy = 2;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.DeployData, akka.remote.WireFormats.DeployData.Builder, akka.remote.WireFormats.DeployDataOrBuilder> 
+              akka.remote.WireFormats.DeployData,
+              akka.remote.WireFormats.DeployData.Builder,
+              akka.remote.WireFormats.DeployDataOrBuilder>
           getDeployFieldBuilder() {
         if (deployBuilder_ == null) {
-          deployBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.DeployData, akka.remote.WireFormats.DeployData.Builder, akka.remote.WireFormats.DeployDataOrBuilder>(
-                  deploy_,
-                  getParentForChildren(),
-                  isClean());
+          deployBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.DeployData,
+                  akka.remote.WireFormats.DeployData.Builder,
+                  akka.remote.WireFormats.DeployDataOrBuilder>(
+                  deploy_, getParentForChildren(), isClean());
           deploy_ = null;
         }
         return deployBuilder_;
@@ -5840,73 +5519,56 @@ public final class WireFormats {
 
       // required string clazz = 3;
       private java.lang.Object clazz_ = "";
-      /**
-       * <code>required string clazz = 3;</code>
-       */
+      /** <code>required string clazz = 3;</code> */
       public boolean hasClazz() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>required string clazz = 3;</code>
-       */
+      /** <code>required string clazz = 3;</code> */
       public java.lang.String getClazz() {
         java.lang.Object ref = clazz_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           clazz_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>required string clazz = 3;</code>
-       */
-      public akka.protobuf.ByteString
-          getClazzBytes() {
+      /** <code>required string clazz = 3;</code> */
+      public akka.protobuf.ByteString getClazzBytes() {
         java.lang.Object ref = clazz_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           clazz_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>required string clazz = 3;</code>
-       */
-      public Builder setClazz(
-          java.lang.String value) {
+      /** <code>required string clazz = 3;</code> */
+      public Builder setClazz(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
         clazz_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required string clazz = 3;</code>
-       */
+      /** <code>required string clazz = 3;</code> */
       public Builder clearClazz() {
         bitField0_ = (bitField0_ & ~0x00000002);
         clazz_ = getDefaultInstance().getClazz();
         onChanged();
         return this;
       }
-      /**
-       * <code>required string clazz = 3;</code>
-       */
-      public Builder setClazzBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>required string clazz = 3;</code> */
+      public Builder setClazzBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
         clazz_ = value;
         onChanged();
         return this;
@@ -5914,69 +5576,53 @@ public final class WireFormats {
 
       // repeated bytes args = 4;
       private java.util.List<akka.protobuf.ByteString> args_ = java.util.Collections.emptyList();
+
       private void ensureArgsIsMutable() {
         if (!((bitField0_ & 0x00000004) == 0x00000004)) {
           args_ = new java.util.ArrayList<akka.protobuf.ByteString>(args_);
           bitField0_ |= 0x00000004;
-         }
+        }
       }
-      /**
-       * <code>repeated bytes args = 4;</code>
-       */
-      public java.util.List<akka.protobuf.ByteString>
-          getArgsList() {
+      /** <code>repeated bytes args = 4;</code> */
+      public java.util.List<akka.protobuf.ByteString> getArgsList() {
         return java.util.Collections.unmodifiableList(args_);
       }
-      /**
-       * <code>repeated bytes args = 4;</code>
-       */
+      /** <code>repeated bytes args = 4;</code> */
       public int getArgsCount() {
         return args_.size();
       }
-      /**
-       * <code>repeated bytes args = 4;</code>
-       */
+      /** <code>repeated bytes args = 4;</code> */
       public akka.protobuf.ByteString getArgs(int index) {
         return args_.get(index);
       }
-      /**
-       * <code>repeated bytes args = 4;</code>
-       */
-      public Builder setArgs(
-          int index, akka.protobuf.ByteString value) {
+      /** <code>repeated bytes args = 4;</code> */
+      public Builder setArgs(int index, akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureArgsIsMutable();
+          throw new NullPointerException();
+        }
+        ensureArgsIsMutable();
         args_.set(index, value);
         onChanged();
         return this;
       }
-      /**
-       * <code>repeated bytes args = 4;</code>
-       */
+      /** <code>repeated bytes args = 4;</code> */
       public Builder addArgs(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureArgsIsMutable();
+          throw new NullPointerException();
+        }
+        ensureArgsIsMutable();
         args_.add(value);
         onChanged();
         return this;
       }
-      /**
-       * <code>repeated bytes args = 4;</code>
-       */
-      public Builder addAllArgs(
-          java.lang.Iterable<? extends akka.protobuf.ByteString> values) {
+      /** <code>repeated bytes args = 4;</code> */
+      public Builder addAllArgs(java.lang.Iterable<? extends akka.protobuf.ByteString> values) {
         ensureArgsIsMutable();
         super.addAll(values, args_);
         onChanged();
         return this;
       }
-      /**
-       * <code>repeated bytes args = 4;</code>
-       */
+      /** <code>repeated bytes args = 4;</code> */
       public Builder clearArgs() {
         args_ = java.util.Collections.emptyList();
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -5986,11 +5632,12 @@ public final class WireFormats {
 
       // repeated string manifests = 5;
       private akka.protobuf.LazyStringList manifests_ = akka.protobuf.LazyStringArrayList.EMPTY;
+
       private void ensureManifestsIsMutable() {
         if (!((bitField0_ & 0x00000008) == 0x00000008)) {
           manifests_ = new akka.protobuf.LazyStringArrayList(manifests_);
           bitField0_ |= 0x00000008;
-         }
+        }
       }
       /**
        * <code>repeated string manifests = 5;</code>
@@ -6001,8 +5648,7 @@ public final class WireFormats {
        * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public java.util.List<java.lang.String>
-          getManifestsList() {
+      public java.util.List<java.lang.String> getManifestsList() {
         return java.util.Collections.unmodifiableList(manifests_);
       }
       /**
@@ -6038,8 +5684,7 @@ public final class WireFormats {
        * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public akka.protobuf.ByteString
-          getManifestsBytes(int index) {
+      public akka.protobuf.ByteString getManifestsBytes(int index) {
         return manifests_.getByteString(index);
       }
       /**
@@ -6051,12 +5696,11 @@ public final class WireFormats {
        * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public Builder setManifests(
-          int index, java.lang.String value) {
+      public Builder setManifests(int index, java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureManifestsIsMutable();
+          throw new NullPointerException();
+        }
+        ensureManifestsIsMutable();
         manifests_.set(index, value);
         onChanged();
         return this;
@@ -6070,12 +5714,11 @@ public final class WireFormats {
        * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public Builder addManifests(
-          java.lang.String value) {
+      public Builder addManifests(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureManifestsIsMutable();
+          throw new NullPointerException();
+        }
+        ensureManifestsIsMutable();
         manifests_.add(value);
         onChanged();
         return this;
@@ -6089,8 +5732,7 @@ public final class WireFormats {
        * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public Builder addAllManifests(
-          java.lang.Iterable<java.lang.String> values) {
+      public Builder addAllManifests(java.lang.Iterable<java.lang.String> values) {
         ensureManifestsIsMutable();
         super.addAll(values, manifests_);
         onChanged();
@@ -6120,12 +5762,11 @@ public final class WireFormats {
        * newer wire protocol: contains string manifest for each arg
        * </pre>
        */
-      public Builder addManifestsBytes(
-          akka.protobuf.ByteString value) {
+      public Builder addManifestsBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  ensureManifestsIsMutable();
+          throw new NullPointerException();
+        }
+        ensureManifestsIsMutable();
         manifests_.add(value);
         onChanged();
         return this;
@@ -6133,11 +5774,12 @@ public final class WireFormats {
 
       // repeated int32 serializerIds = 6;
       private java.util.List<java.lang.Integer> serializerIds_ = java.util.Collections.emptyList();
+
       private void ensureSerializerIdsIsMutable() {
         if (!((bitField0_ & 0x00000010) == 0x00000010)) {
           serializerIds_ = new java.util.ArrayList<java.lang.Integer>(serializerIds_);
           bitField0_ |= 0x00000010;
-         }
+        }
       }
       /**
        * <code>repeated int32 serializerIds = 6;</code>
@@ -6146,8 +5788,7 @@ public final class WireFormats {
        * newer wire protocol: serializer id for each arg
        * </pre>
        */
-      public java.util.List<java.lang.Integer>
-          getSerializerIdsList() {
+      public java.util.List<java.lang.Integer> getSerializerIdsList() {
         return java.util.Collections.unmodifiableList(serializerIds_);
       }
       /**
@@ -6177,8 +5818,7 @@ public final class WireFormats {
        * newer wire protocol: serializer id for each arg
        * </pre>
        */
-      public Builder setSerializerIds(
-          int index, int value) {
+      public Builder setSerializerIds(int index, int value) {
         ensureSerializerIdsIsMutable();
         serializerIds_.set(index, value);
         onChanged();
@@ -6204,8 +5844,7 @@ public final class WireFormats {
        * newer wire protocol: serializer id for each arg
        * </pre>
        */
-      public Builder addAllSerializerIds(
-          java.lang.Iterable<? extends java.lang.Integer> values) {
+      public Builder addAllSerializerIds(java.lang.Iterable<? extends java.lang.Integer> values) {
         ensureSerializerIdsIsMutable();
         super.addAll(values, serializerIds_);
         onChanged();
@@ -6227,11 +5866,12 @@ public final class WireFormats {
 
       // repeated bool hasManifest = 7;
       private java.util.List<java.lang.Boolean> hasManifest_ = java.util.Collections.emptyList();
+
       private void ensureHasManifestIsMutable() {
         if (!((bitField0_ & 0x00000020) == 0x00000020)) {
           hasManifest_ = new java.util.ArrayList<java.lang.Boolean>(hasManifest_);
           bitField0_ |= 0x00000020;
-         }
+        }
       }
       /**
        * <code>repeated bool hasManifest = 7;</code>
@@ -6241,8 +5881,7 @@ public final class WireFormats {
        * serialized with manifest or not
        * </pre>
        */
-      public java.util.List<java.lang.Boolean>
-          getHasManifestList() {
+      public java.util.List<java.lang.Boolean> getHasManifestList() {
         return java.util.Collections.unmodifiableList(hasManifest_);
       }
       /**
@@ -6275,8 +5914,7 @@ public final class WireFormats {
        * serialized with manifest or not
        * </pre>
        */
-      public Builder setHasManifest(
-          int index, boolean value) {
+      public Builder setHasManifest(int index, boolean value) {
         ensureHasManifestIsMutable();
         hasManifest_.set(index, value);
         onChanged();
@@ -6304,8 +5942,7 @@ public final class WireFormats {
        * serialized with manifest or not
        * </pre>
        */
-      public Builder addAllHasManifest(
-          java.lang.Iterable<? extends java.lang.Boolean> values) {
+      public Builder addAllHasManifest(java.lang.Iterable<? extends java.lang.Boolean> values) {
         ensureHasManifestIsMutable();
         super.addAll(values, hasManifest_);
         onChanged();
@@ -6337,68 +5974,41 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:PropsData)
   }
 
-  public interface DeployDataOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface DeployDataOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required string path = 1;
-    /**
-     * <code>required string path = 1;</code>
-     */
+    /** <code>required string path = 1;</code> */
     boolean hasPath();
-    /**
-     * <code>required string path = 1;</code>
-     */
+    /** <code>required string path = 1;</code> */
     java.lang.String getPath();
-    /**
-     * <code>required string path = 1;</code>
-     */
-    akka.protobuf.ByteString
-        getPathBytes();
+    /** <code>required string path = 1;</code> */
+    akka.protobuf.ByteString getPathBytes();
 
     // optional bytes config = 2;
-    /**
-     * <code>optional bytes config = 2;</code>
-     */
+    /** <code>optional bytes config = 2;</code> */
     boolean hasConfig();
-    /**
-     * <code>optional bytes config = 2;</code>
-     */
+    /** <code>optional bytes config = 2;</code> */
     akka.protobuf.ByteString getConfig();
 
     // optional bytes routerConfig = 3;
-    /**
-     * <code>optional bytes routerConfig = 3;</code>
-     */
+    /** <code>optional bytes routerConfig = 3;</code> */
     boolean hasRouterConfig();
-    /**
-     * <code>optional bytes routerConfig = 3;</code>
-     */
+    /** <code>optional bytes routerConfig = 3;</code> */
     akka.protobuf.ByteString getRouterConfig();
 
     // optional bytes scope = 4;
-    /**
-     * <code>optional bytes scope = 4;</code>
-     */
+    /** <code>optional bytes scope = 4;</code> */
     boolean hasScope();
-    /**
-     * <code>optional bytes scope = 4;</code>
-     */
+    /** <code>optional bytes scope = 4;</code> */
     akka.protobuf.ByteString getScope();
 
     // optional string dispatcher = 5;
-    /**
-     * <code>optional string dispatcher = 5;</code>
-     */
+    /** <code>optional string dispatcher = 5;</code> */
     boolean hasDispatcher();
-    /**
-     * <code>optional string dispatcher = 5;</code>
-     */
+    /** <code>optional string dispatcher = 5;</code> */
     java.lang.String getDispatcher();
-    /**
-     * <code>optional string dispatcher = 5;</code>
-     */
-    akka.protobuf.ByteString
-        getDispatcherBytes();
+    /** <code>optional string dispatcher = 5;</code> */
+    akka.protobuf.ByteString getDispatcherBytes();
 
     // optional int32 scopeSerializerId = 6;
     /**
@@ -6421,89 +6031,63 @@ public final class WireFormats {
     int getScopeSerializerId();
 
     // optional string scopeManifest = 7;
-    /**
-     * <code>optional string scopeManifest = 7;</code>
-     */
+    /** <code>optional string scopeManifest = 7;</code> */
     boolean hasScopeManifest();
-    /**
-     * <code>optional string scopeManifest = 7;</code>
-     */
+    /** <code>optional string scopeManifest = 7;</code> */
     java.lang.String getScopeManifest();
-    /**
-     * <code>optional string scopeManifest = 7;</code>
-     */
-    akka.protobuf.ByteString
-        getScopeManifestBytes();
+    /** <code>optional string scopeManifest = 7;</code> */
+    akka.protobuf.ByteString getScopeManifestBytes();
 
     // optional int32 configSerializerId = 8;
-    /**
-     * <code>optional int32 configSerializerId = 8;</code>
-     */
+    /** <code>optional int32 configSerializerId = 8;</code> */
     boolean hasConfigSerializerId();
-    /**
-     * <code>optional int32 configSerializerId = 8;</code>
-     */
+    /** <code>optional int32 configSerializerId = 8;</code> */
     int getConfigSerializerId();
 
     // optional string configManifest = 9;
-    /**
-     * <code>optional string configManifest = 9;</code>
-     */
+    /** <code>optional string configManifest = 9;</code> */
     boolean hasConfigManifest();
-    /**
-     * <code>optional string configManifest = 9;</code>
-     */
+    /** <code>optional string configManifest = 9;</code> */
     java.lang.String getConfigManifest();
-    /**
-     * <code>optional string configManifest = 9;</code>
-     */
-    akka.protobuf.ByteString
-        getConfigManifestBytes();
+    /** <code>optional string configManifest = 9;</code> */
+    akka.protobuf.ByteString getConfigManifestBytes();
 
     // optional int32 routerConfigSerializerId = 10;
-    /**
-     * <code>optional int32 routerConfigSerializerId = 10;</code>
-     */
+    /** <code>optional int32 routerConfigSerializerId = 10;</code> */
     boolean hasRouterConfigSerializerId();
-    /**
-     * <code>optional int32 routerConfigSerializerId = 10;</code>
-     */
+    /** <code>optional int32 routerConfigSerializerId = 10;</code> */
     int getRouterConfigSerializerId();
 
     // optional string routerConfigManifest = 11;
-    /**
-     * <code>optional string routerConfigManifest = 11;</code>
-     */
+    /** <code>optional string routerConfigManifest = 11;</code> */
     boolean hasRouterConfigManifest();
-    /**
-     * <code>optional string routerConfigManifest = 11;</code>
-     */
+    /** <code>optional string routerConfigManifest = 11;</code> */
     java.lang.String getRouterConfigManifest();
-    /**
-     * <code>optional string routerConfigManifest = 11;</code>
-     */
-    akka.protobuf.ByteString
-        getRouterConfigManifestBytes();
+    /** <code>optional string routerConfigManifest = 11;</code> */
+    akka.protobuf.ByteString getRouterConfigManifestBytes();
   }
   /**
    * Protobuf type {@code DeployData}
    *
    * <pre>
-   **
+   * *
    * Serialization of akka.actor.Deploy
    * </pre>
    */
-  public static final class DeployData extends
-      akka.protobuf.GeneratedMessage
+  public static final class DeployData extends akka.protobuf.GeneratedMessage
       implements DeployDataOrBuilder {
     // Use DeployData.newBuilder() to construct.
     private DeployData(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private DeployData(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private DeployData(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final DeployData defaultInstance;
+
     public static DeployData getDefaultInstance() {
       return defaultInstance;
     }
@@ -6513,14 +6097,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private DeployData(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -6534,101 +6118,114 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              bitField0_ |= 0x00000001;
-              path_ = input.readBytes();
-              break;
-            }
-            case 18: {
-              bitField0_ |= 0x00000002;
-              config_ = input.readBytes();
-              break;
-            }
-            case 26: {
-              bitField0_ |= 0x00000004;
-              routerConfig_ = input.readBytes();
-              break;
-            }
-            case 34: {
-              bitField0_ |= 0x00000008;
-              scope_ = input.readBytes();
-              break;
-            }
-            case 42: {
-              bitField0_ |= 0x00000010;
-              dispatcher_ = input.readBytes();
-              break;
-            }
-            case 48: {
-              bitField0_ |= 0x00000020;
-              scopeSerializerId_ = input.readInt32();
-              break;
-            }
-            case 58: {
-              bitField0_ |= 0x00000040;
-              scopeManifest_ = input.readBytes();
-              break;
-            }
-            case 64: {
-              bitField0_ |= 0x00000080;
-              configSerializerId_ = input.readInt32();
-              break;
-            }
-            case 74: {
-              bitField0_ |= 0x00000100;
-              configManifest_ = input.readBytes();
-              break;
-            }
-            case 80: {
-              bitField0_ |= 0x00000200;
-              routerConfigSerializerId_ = input.readInt32();
-              break;
-            }
-            case 90: {
-              bitField0_ |= 0x00000400;
-              routerConfigManifest_ = input.readBytes();
-              break;
-            }
+            case 10:
+              {
+                bitField0_ |= 0x00000001;
+                path_ = input.readBytes();
+                break;
+              }
+            case 18:
+              {
+                bitField0_ |= 0x00000002;
+                config_ = input.readBytes();
+                break;
+              }
+            case 26:
+              {
+                bitField0_ |= 0x00000004;
+                routerConfig_ = input.readBytes();
+                break;
+              }
+            case 34:
+              {
+                bitField0_ |= 0x00000008;
+                scope_ = input.readBytes();
+                break;
+              }
+            case 42:
+              {
+                bitField0_ |= 0x00000010;
+                dispatcher_ = input.readBytes();
+                break;
+              }
+            case 48:
+              {
+                bitField0_ |= 0x00000020;
+                scopeSerializerId_ = input.readInt32();
+                break;
+              }
+            case 58:
+              {
+                bitField0_ |= 0x00000040;
+                scopeManifest_ = input.readBytes();
+                break;
+              }
+            case 64:
+              {
+                bitField0_ |= 0x00000080;
+                configSerializerId_ = input.readInt32();
+                break;
+              }
+            case 74:
+              {
+                bitField0_ |= 0x00000100;
+                configManifest_ = input.readBytes();
+                break;
+              }
+            case 80:
+              {
+                bitField0_ |= 0x00000200;
+                routerConfigSerializerId_ = input.readInt32();
+                break;
+              }
+            case 90:
+              {
+                bitField0_ |= 0x00000400;
+                routerConfigManifest_ = input.readBytes();
+                break;
+              }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_DeployData_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_DeployData_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.DeployData.class, akka.remote.WireFormats.DeployData.Builder.class);
+              akka.remote.WireFormats.DeployData.class,
+              akka.remote.WireFormats.DeployData.Builder.class);
     }
 
     public static akka.protobuf.Parser<DeployData> PARSER =
         new akka.protobuf.AbstractParser<DeployData>() {
-      public DeployData parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new DeployData(input, extensionRegistry);
-      }
-    };
+          public DeployData parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new DeployData(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<DeployData> getParserForType() {
@@ -6639,22 +6236,17 @@ public final class WireFormats {
     // required string path = 1;
     public static final int PATH_FIELD_NUMBER = 1;
     private java.lang.Object path_;
-    /**
-     * <code>required string path = 1;</code>
-     */
+    /** <code>required string path = 1;</code> */
     public boolean hasPath() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required string path = 1;</code>
-     */
+    /** <code>required string path = 1;</code> */
     public java.lang.String getPath() {
       java.lang.Object ref = path_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           path_ = s;
@@ -6662,16 +6254,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>required string path = 1;</code>
-     */
-    public akka.protobuf.ByteString
-        getPathBytes() {
+    /** <code>required string path = 1;</code> */
+    public akka.protobuf.ByteString getPathBytes() {
       java.lang.Object ref = path_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         path_ = b;
         return b;
       } else {
@@ -6682,15 +6269,11 @@ public final class WireFormats {
     // optional bytes config = 2;
     public static final int CONFIG_FIELD_NUMBER = 2;
     private akka.protobuf.ByteString config_;
-    /**
-     * <code>optional bytes config = 2;</code>
-     */
+    /** <code>optional bytes config = 2;</code> */
     public boolean hasConfig() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>optional bytes config = 2;</code>
-     */
+    /** <code>optional bytes config = 2;</code> */
     public akka.protobuf.ByteString getConfig() {
       return config_;
     }
@@ -6698,15 +6281,11 @@ public final class WireFormats {
     // optional bytes routerConfig = 3;
     public static final int ROUTERCONFIG_FIELD_NUMBER = 3;
     private akka.protobuf.ByteString routerConfig_;
-    /**
-     * <code>optional bytes routerConfig = 3;</code>
-     */
+    /** <code>optional bytes routerConfig = 3;</code> */
     public boolean hasRouterConfig() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    /**
-     * <code>optional bytes routerConfig = 3;</code>
-     */
+    /** <code>optional bytes routerConfig = 3;</code> */
     public akka.protobuf.ByteString getRouterConfig() {
       return routerConfig_;
     }
@@ -6714,15 +6293,11 @@ public final class WireFormats {
     // optional bytes scope = 4;
     public static final int SCOPE_FIELD_NUMBER = 4;
     private akka.protobuf.ByteString scope_;
-    /**
-     * <code>optional bytes scope = 4;</code>
-     */
+    /** <code>optional bytes scope = 4;</code> */
     public boolean hasScope() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
-    /**
-     * <code>optional bytes scope = 4;</code>
-     */
+    /** <code>optional bytes scope = 4;</code> */
     public akka.protobuf.ByteString getScope() {
       return scope_;
     }
@@ -6730,22 +6305,17 @@ public final class WireFormats {
     // optional string dispatcher = 5;
     public static final int DISPATCHER_FIELD_NUMBER = 5;
     private java.lang.Object dispatcher_;
-    /**
-     * <code>optional string dispatcher = 5;</code>
-     */
+    /** <code>optional string dispatcher = 5;</code> */
     public boolean hasDispatcher() {
       return ((bitField0_ & 0x00000010) == 0x00000010);
     }
-    /**
-     * <code>optional string dispatcher = 5;</code>
-     */
+    /** <code>optional string dispatcher = 5;</code> */
     public java.lang.String getDispatcher() {
       java.lang.Object ref = dispatcher_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           dispatcher_ = s;
@@ -6753,16 +6323,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>optional string dispatcher = 5;</code>
-     */
-    public akka.protobuf.ByteString
-        getDispatcherBytes() {
+    /** <code>optional string dispatcher = 5;</code> */
+    public akka.protobuf.ByteString getDispatcherBytes() {
       java.lang.Object ref = dispatcher_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         dispatcher_ = b;
         return b;
       } else {
@@ -6799,22 +6364,17 @@ public final class WireFormats {
     // optional string scopeManifest = 7;
     public static final int SCOPEMANIFEST_FIELD_NUMBER = 7;
     private java.lang.Object scopeManifest_;
-    /**
-     * <code>optional string scopeManifest = 7;</code>
-     */
+    /** <code>optional string scopeManifest = 7;</code> */
     public boolean hasScopeManifest() {
       return ((bitField0_ & 0x00000040) == 0x00000040);
     }
-    /**
-     * <code>optional string scopeManifest = 7;</code>
-     */
+    /** <code>optional string scopeManifest = 7;</code> */
     public java.lang.String getScopeManifest() {
       java.lang.Object ref = scopeManifest_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           scopeManifest_ = s;
@@ -6822,16 +6382,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>optional string scopeManifest = 7;</code>
-     */
-    public akka.protobuf.ByteString
-        getScopeManifestBytes() {
+    /** <code>optional string scopeManifest = 7;</code> */
+    public akka.protobuf.ByteString getScopeManifestBytes() {
       java.lang.Object ref = scopeManifest_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         scopeManifest_ = b;
         return b;
       } else {
@@ -6842,15 +6397,11 @@ public final class WireFormats {
     // optional int32 configSerializerId = 8;
     public static final int CONFIGSERIALIZERID_FIELD_NUMBER = 8;
     private int configSerializerId_;
-    /**
-     * <code>optional int32 configSerializerId = 8;</code>
-     */
+    /** <code>optional int32 configSerializerId = 8;</code> */
     public boolean hasConfigSerializerId() {
       return ((bitField0_ & 0x00000080) == 0x00000080);
     }
-    /**
-     * <code>optional int32 configSerializerId = 8;</code>
-     */
+    /** <code>optional int32 configSerializerId = 8;</code> */
     public int getConfigSerializerId() {
       return configSerializerId_;
     }
@@ -6858,22 +6409,17 @@ public final class WireFormats {
     // optional string configManifest = 9;
     public static final int CONFIGMANIFEST_FIELD_NUMBER = 9;
     private java.lang.Object configManifest_;
-    /**
-     * <code>optional string configManifest = 9;</code>
-     */
+    /** <code>optional string configManifest = 9;</code> */
     public boolean hasConfigManifest() {
       return ((bitField0_ & 0x00000100) == 0x00000100);
     }
-    /**
-     * <code>optional string configManifest = 9;</code>
-     */
+    /** <code>optional string configManifest = 9;</code> */
     public java.lang.String getConfigManifest() {
       java.lang.Object ref = configManifest_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           configManifest_ = s;
@@ -6881,16 +6427,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>optional string configManifest = 9;</code>
-     */
-    public akka.protobuf.ByteString
-        getConfigManifestBytes() {
+    /** <code>optional string configManifest = 9;</code> */
+    public akka.protobuf.ByteString getConfigManifestBytes() {
       java.lang.Object ref = configManifest_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         configManifest_ = b;
         return b;
       } else {
@@ -6901,15 +6442,11 @@ public final class WireFormats {
     // optional int32 routerConfigSerializerId = 10;
     public static final int ROUTERCONFIGSERIALIZERID_FIELD_NUMBER = 10;
     private int routerConfigSerializerId_;
-    /**
-     * <code>optional int32 routerConfigSerializerId = 10;</code>
-     */
+    /** <code>optional int32 routerConfigSerializerId = 10;</code> */
     public boolean hasRouterConfigSerializerId() {
       return ((bitField0_ & 0x00000200) == 0x00000200);
     }
-    /**
-     * <code>optional int32 routerConfigSerializerId = 10;</code>
-     */
+    /** <code>optional int32 routerConfigSerializerId = 10;</code> */
     public int getRouterConfigSerializerId() {
       return routerConfigSerializerId_;
     }
@@ -6917,22 +6454,17 @@ public final class WireFormats {
     // optional string routerConfigManifest = 11;
     public static final int ROUTERCONFIGMANIFEST_FIELD_NUMBER = 11;
     private java.lang.Object routerConfigManifest_;
-    /**
-     * <code>optional string routerConfigManifest = 11;</code>
-     */
+    /** <code>optional string routerConfigManifest = 11;</code> */
     public boolean hasRouterConfigManifest() {
       return ((bitField0_ & 0x00000400) == 0x00000400);
     }
-    /**
-     * <code>optional string routerConfigManifest = 11;</code>
-     */
+    /** <code>optional string routerConfigManifest = 11;</code> */
     public java.lang.String getRouterConfigManifest() {
       java.lang.Object ref = routerConfigManifest_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           routerConfigManifest_ = s;
@@ -6940,16 +6472,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>optional string routerConfigManifest = 11;</code>
-     */
-    public akka.protobuf.ByteString
-        getRouterConfigManifestBytes() {
+    /** <code>optional string routerConfigManifest = 11;</code> */
+    public akka.protobuf.ByteString getRouterConfigManifestBytes() {
       java.lang.Object ref = routerConfigManifest_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         routerConfigManifest_ = b;
         return b;
       } else {
@@ -6970,7 +6497,9 @@ public final class WireFormats {
       routerConfigSerializerId_ = 0;
       routerConfigManifest_ = "";
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -6983,8 +6512,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, getPathBytes());
@@ -7023,54 +6551,45 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getPathBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(1, getPathBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(2, config_);
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(2, config_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(3, routerConfig_);
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(3, routerConfig_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(4, scope_);
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(4, scope_);
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(5, getDispatcherBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(5, getDispatcherBytes());
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeInt32Size(6, scopeSerializerId_);
+        size += akka.protobuf.CodedOutputStream.computeInt32Size(6, scopeSerializerId_);
       }
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(7, getScopeManifestBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(7, getScopeManifestBytes());
       }
       if (((bitField0_ & 0x00000080) == 0x00000080)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeInt32Size(8, configSerializerId_);
+        size += akka.protobuf.CodedOutputStream.computeInt32Size(8, configSerializerId_);
       }
       if (((bitField0_ & 0x00000100) == 0x00000100)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(9, getConfigManifestBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(9, getConfigManifestBytes());
       }
       if (((bitField0_ & 0x00000200) == 0x00000200)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeInt32Size(10, routerConfigSerializerId_);
+        size += akka.protobuf.CodedOutputStream.computeInt32Size(10, routerConfigSerializerId_);
       }
       if (((bitField0_ & 0x00000400) == 0x00000400)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(11, getRouterConfigManifestBytes());
+        size +=
+            akka.protobuf.CodedOutputStream.computeBytesSize(11, getRouterConfigManifestBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -7078,75 +6597,85 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.DeployData parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.DeployData parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.DeployData parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.DeployData parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.DeployData parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.DeployData parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.DeployData parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.DeployData parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.DeployData parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.DeployData parseFrom(
-        akka.protobuf.CodedInputStream input)
+
+    public static akka.remote.WireFormats.DeployData parseFrom(akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.DeployData parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.DeployData prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -7154,23 +6683,21 @@ public final class WireFormats {
      * Protobuf type {@code DeployData}
      *
      * <pre>
-     **
+     * *
      * Serialization of akka.actor.Deploy
      * </pre>
      */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.DeployDataOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.DeployDataOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_DeployData_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_DeployData_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.DeployData.class, akka.remote.WireFormats.DeployData.Builder.class);
+                akka.remote.WireFormats.DeployData.class,
+                akka.remote.WireFormats.DeployData.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.DeployData.newBuilder()
@@ -7178,15 +6705,15 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {}
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -7222,8 +6749,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_DeployData_descriptor;
       }
 
@@ -7294,7 +6820,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.DeployData) {
-          return mergeFrom((akka.remote.WireFormats.DeployData)other);
+          return mergeFrom((akka.remote.WireFormats.DeployData) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -7352,7 +6878,7 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasPath()) {
-          
+
           return false;
         }
         return true;
@@ -7375,77 +6901,61 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required string path = 1;
       private java.lang.Object path_ = "";
-      /**
-       * <code>required string path = 1;</code>
-       */
+      /** <code>required string path = 1;</code> */
       public boolean hasPath() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required string path = 1;</code>
-       */
+      /** <code>required string path = 1;</code> */
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           path_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>required string path = 1;</code>
-       */
-      public akka.protobuf.ByteString
-          getPathBytes() {
+      /** <code>required string path = 1;</code> */
+      public akka.protobuf.ByteString getPathBytes() {
         java.lang.Object ref = path_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           path_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>required string path = 1;</code>
-       */
-      public Builder setPath(
-          java.lang.String value) {
+      /** <code>required string path = 1;</code> */
+      public Builder setPath(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
         path_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required string path = 1;</code>
-       */
+      /** <code>required string path = 1;</code> */
       public Builder clearPath() {
         bitField0_ = (bitField0_ & ~0x00000001);
         path_ = getDefaultInstance().getPath();
         onChanged();
         return this;
       }
-      /**
-       * <code>required string path = 1;</code>
-       */
-      public Builder setPathBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>required string path = 1;</code> */
+      public Builder setPathBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
         path_ = value;
         onChanged();
         return this;
@@ -7453,33 +6963,25 @@ public final class WireFormats {
 
       // optional bytes config = 2;
       private akka.protobuf.ByteString config_ = akka.protobuf.ByteString.EMPTY;
-      /**
-       * <code>optional bytes config = 2;</code>
-       */
+      /** <code>optional bytes config = 2;</code> */
       public boolean hasConfig() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>optional bytes config = 2;</code>
-       */
+      /** <code>optional bytes config = 2;</code> */
       public akka.protobuf.ByteString getConfig() {
         return config_;
       }
-      /**
-       * <code>optional bytes config = 2;</code>
-       */
+      /** <code>optional bytes config = 2;</code> */
       public Builder setConfig(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
         config_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional bytes config = 2;</code>
-       */
+      /** <code>optional bytes config = 2;</code> */
       public Builder clearConfig() {
         bitField0_ = (bitField0_ & ~0x00000002);
         config_ = getDefaultInstance().getConfig();
@@ -7489,33 +6991,25 @@ public final class WireFormats {
 
       // optional bytes routerConfig = 3;
       private akka.protobuf.ByteString routerConfig_ = akka.protobuf.ByteString.EMPTY;
-      /**
-       * <code>optional bytes routerConfig = 3;</code>
-       */
+      /** <code>optional bytes routerConfig = 3;</code> */
       public boolean hasRouterConfig() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      /**
-       * <code>optional bytes routerConfig = 3;</code>
-       */
+      /** <code>optional bytes routerConfig = 3;</code> */
       public akka.protobuf.ByteString getRouterConfig() {
         return routerConfig_;
       }
-      /**
-       * <code>optional bytes routerConfig = 3;</code>
-       */
+      /** <code>optional bytes routerConfig = 3;</code> */
       public Builder setRouterConfig(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000004;
         routerConfig_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional bytes routerConfig = 3;</code>
-       */
+      /** <code>optional bytes routerConfig = 3;</code> */
       public Builder clearRouterConfig() {
         bitField0_ = (bitField0_ & ~0x00000004);
         routerConfig_ = getDefaultInstance().getRouterConfig();
@@ -7525,33 +7019,25 @@ public final class WireFormats {
 
       // optional bytes scope = 4;
       private akka.protobuf.ByteString scope_ = akka.protobuf.ByteString.EMPTY;
-      /**
-       * <code>optional bytes scope = 4;</code>
-       */
+      /** <code>optional bytes scope = 4;</code> */
       public boolean hasScope() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
-      /**
-       * <code>optional bytes scope = 4;</code>
-       */
+      /** <code>optional bytes scope = 4;</code> */
       public akka.protobuf.ByteString getScope() {
         return scope_;
       }
-      /**
-       * <code>optional bytes scope = 4;</code>
-       */
+      /** <code>optional bytes scope = 4;</code> */
       public Builder setScope(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000008;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000008;
         scope_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional bytes scope = 4;</code>
-       */
+      /** <code>optional bytes scope = 4;</code> */
       public Builder clearScope() {
         bitField0_ = (bitField0_ & ~0x00000008);
         scope_ = getDefaultInstance().getScope();
@@ -7561,80 +7047,63 @@ public final class WireFormats {
 
       // optional string dispatcher = 5;
       private java.lang.Object dispatcher_ = "";
-      /**
-       * <code>optional string dispatcher = 5;</code>
-       */
+      /** <code>optional string dispatcher = 5;</code> */
       public boolean hasDispatcher() {
         return ((bitField0_ & 0x00000010) == 0x00000010);
       }
-      /**
-       * <code>optional string dispatcher = 5;</code>
-       */
+      /** <code>optional string dispatcher = 5;</code> */
       public java.lang.String getDispatcher() {
         java.lang.Object ref = dispatcher_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           dispatcher_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>optional string dispatcher = 5;</code>
-       */
-      public akka.protobuf.ByteString
-          getDispatcherBytes() {
+      /** <code>optional string dispatcher = 5;</code> */
+      public akka.protobuf.ByteString getDispatcherBytes() {
         java.lang.Object ref = dispatcher_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           dispatcher_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>optional string dispatcher = 5;</code>
-       */
-      public Builder setDispatcher(
-          java.lang.String value) {
+      /** <code>optional string dispatcher = 5;</code> */
+      public Builder setDispatcher(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000010;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000010;
         dispatcher_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string dispatcher = 5;</code>
-       */
+      /** <code>optional string dispatcher = 5;</code> */
       public Builder clearDispatcher() {
         bitField0_ = (bitField0_ & ~0x00000010);
         dispatcher_ = getDefaultInstance().getDispatcher();
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string dispatcher = 5;</code>
-       */
-      public Builder setDispatcherBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>optional string dispatcher = 5;</code> */
+      public Builder setDispatcherBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000010;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000010;
         dispatcher_ = value;
         onChanged();
         return this;
       }
 
       // optional int32 scopeSerializerId = 6;
-      private int scopeSerializerId_ ;
+      private int scopeSerializerId_;
       /**
        * <code>optional int32 scopeSerializerId = 6;</code>
        *
@@ -7688,104 +7157,79 @@ public final class WireFormats {
 
       // optional string scopeManifest = 7;
       private java.lang.Object scopeManifest_ = "";
-      /**
-       * <code>optional string scopeManifest = 7;</code>
-       */
+      /** <code>optional string scopeManifest = 7;</code> */
       public boolean hasScopeManifest() {
         return ((bitField0_ & 0x00000040) == 0x00000040);
       }
-      /**
-       * <code>optional string scopeManifest = 7;</code>
-       */
+      /** <code>optional string scopeManifest = 7;</code> */
       public java.lang.String getScopeManifest() {
         java.lang.Object ref = scopeManifest_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           scopeManifest_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>optional string scopeManifest = 7;</code>
-       */
-      public akka.protobuf.ByteString
-          getScopeManifestBytes() {
+      /** <code>optional string scopeManifest = 7;</code> */
+      public akka.protobuf.ByteString getScopeManifestBytes() {
         java.lang.Object ref = scopeManifest_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           scopeManifest_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>optional string scopeManifest = 7;</code>
-       */
-      public Builder setScopeManifest(
-          java.lang.String value) {
+      /** <code>optional string scopeManifest = 7;</code> */
+      public Builder setScopeManifest(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000040;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000040;
         scopeManifest_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string scopeManifest = 7;</code>
-       */
+      /** <code>optional string scopeManifest = 7;</code> */
       public Builder clearScopeManifest() {
         bitField0_ = (bitField0_ & ~0x00000040);
         scopeManifest_ = getDefaultInstance().getScopeManifest();
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string scopeManifest = 7;</code>
-       */
-      public Builder setScopeManifestBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>optional string scopeManifest = 7;</code> */
+      public Builder setScopeManifestBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000040;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000040;
         scopeManifest_ = value;
         onChanged();
         return this;
       }
 
       // optional int32 configSerializerId = 8;
-      private int configSerializerId_ ;
-      /**
-       * <code>optional int32 configSerializerId = 8;</code>
-       */
+      private int configSerializerId_;
+      /** <code>optional int32 configSerializerId = 8;</code> */
       public boolean hasConfigSerializerId() {
         return ((bitField0_ & 0x00000080) == 0x00000080);
       }
-      /**
-       * <code>optional int32 configSerializerId = 8;</code>
-       */
+      /** <code>optional int32 configSerializerId = 8;</code> */
       public int getConfigSerializerId() {
         return configSerializerId_;
       }
-      /**
-       * <code>optional int32 configSerializerId = 8;</code>
-       */
+      /** <code>optional int32 configSerializerId = 8;</code> */
       public Builder setConfigSerializerId(int value) {
         bitField0_ |= 0x00000080;
         configSerializerId_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional int32 configSerializerId = 8;</code>
-       */
+      /** <code>optional int32 configSerializerId = 8;</code> */
       public Builder clearConfigSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000080);
         configSerializerId_ = 0;
@@ -7795,104 +7239,79 @@ public final class WireFormats {
 
       // optional string configManifest = 9;
       private java.lang.Object configManifest_ = "";
-      /**
-       * <code>optional string configManifest = 9;</code>
-       */
+      /** <code>optional string configManifest = 9;</code> */
       public boolean hasConfigManifest() {
         return ((bitField0_ & 0x00000100) == 0x00000100);
       }
-      /**
-       * <code>optional string configManifest = 9;</code>
-       */
+      /** <code>optional string configManifest = 9;</code> */
       public java.lang.String getConfigManifest() {
         java.lang.Object ref = configManifest_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           configManifest_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>optional string configManifest = 9;</code>
-       */
-      public akka.protobuf.ByteString
-          getConfigManifestBytes() {
+      /** <code>optional string configManifest = 9;</code> */
+      public akka.protobuf.ByteString getConfigManifestBytes() {
         java.lang.Object ref = configManifest_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           configManifest_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>optional string configManifest = 9;</code>
-       */
-      public Builder setConfigManifest(
-          java.lang.String value) {
+      /** <code>optional string configManifest = 9;</code> */
+      public Builder setConfigManifest(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000100;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000100;
         configManifest_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string configManifest = 9;</code>
-       */
+      /** <code>optional string configManifest = 9;</code> */
       public Builder clearConfigManifest() {
         bitField0_ = (bitField0_ & ~0x00000100);
         configManifest_ = getDefaultInstance().getConfigManifest();
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string configManifest = 9;</code>
-       */
-      public Builder setConfigManifestBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>optional string configManifest = 9;</code> */
+      public Builder setConfigManifestBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000100;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000100;
         configManifest_ = value;
         onChanged();
         return this;
       }
 
       // optional int32 routerConfigSerializerId = 10;
-      private int routerConfigSerializerId_ ;
-      /**
-       * <code>optional int32 routerConfigSerializerId = 10;</code>
-       */
+      private int routerConfigSerializerId_;
+      /** <code>optional int32 routerConfigSerializerId = 10;</code> */
       public boolean hasRouterConfigSerializerId() {
         return ((bitField0_ & 0x00000200) == 0x00000200);
       }
-      /**
-       * <code>optional int32 routerConfigSerializerId = 10;</code>
-       */
+      /** <code>optional int32 routerConfigSerializerId = 10;</code> */
       public int getRouterConfigSerializerId() {
         return routerConfigSerializerId_;
       }
-      /**
-       * <code>optional int32 routerConfigSerializerId = 10;</code>
-       */
+      /** <code>optional int32 routerConfigSerializerId = 10;</code> */
       public Builder setRouterConfigSerializerId(int value) {
         bitField0_ |= 0x00000200;
         routerConfigSerializerId_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional int32 routerConfigSerializerId = 10;</code>
-       */
+      /** <code>optional int32 routerConfigSerializerId = 10;</code> */
       public Builder clearRouterConfigSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000200);
         routerConfigSerializerId_ = 0;
@@ -7902,73 +7321,56 @@ public final class WireFormats {
 
       // optional string routerConfigManifest = 11;
       private java.lang.Object routerConfigManifest_ = "";
-      /**
-       * <code>optional string routerConfigManifest = 11;</code>
-       */
+      /** <code>optional string routerConfigManifest = 11;</code> */
       public boolean hasRouterConfigManifest() {
         return ((bitField0_ & 0x00000400) == 0x00000400);
       }
-      /**
-       * <code>optional string routerConfigManifest = 11;</code>
-       */
+      /** <code>optional string routerConfigManifest = 11;</code> */
       public java.lang.String getRouterConfigManifest() {
         java.lang.Object ref = routerConfigManifest_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           routerConfigManifest_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>optional string routerConfigManifest = 11;</code>
-       */
-      public akka.protobuf.ByteString
-          getRouterConfigManifestBytes() {
+      /** <code>optional string routerConfigManifest = 11;</code> */
+      public akka.protobuf.ByteString getRouterConfigManifestBytes() {
         java.lang.Object ref = routerConfigManifest_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           routerConfigManifest_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>optional string routerConfigManifest = 11;</code>
-       */
-      public Builder setRouterConfigManifest(
-          java.lang.String value) {
+      /** <code>optional string routerConfigManifest = 11;</code> */
+      public Builder setRouterConfigManifest(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000400;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000400;
         routerConfigManifest_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string routerConfigManifest = 11;</code>
-       */
+      /** <code>optional string routerConfigManifest = 11;</code> */
       public Builder clearRouterConfigManifest() {
         bitField0_ = (bitField0_ & ~0x00000400);
         routerConfigManifest_ = getDefaultInstance().getRouterConfigManifest();
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string routerConfigManifest = 11;</code>
-       */
-      public Builder setRouterConfigManifestBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>optional string routerConfigManifest = 11;</code> */
+      public Builder setRouterConfigManifestBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000400;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000400;
         routerConfigManifest_ = value;
         onChanged();
         return this;
@@ -7985,86 +7387,63 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:DeployData)
   }
 
-  public interface AddressDataOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface AddressDataOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required string system = 1;
-    /**
-     * <code>required string system = 1;</code>
-     */
+    /** <code>required string system = 1;</code> */
     boolean hasSystem();
-    /**
-     * <code>required string system = 1;</code>
-     */
+    /** <code>required string system = 1;</code> */
     java.lang.String getSystem();
-    /**
-     * <code>required string system = 1;</code>
-     */
-    akka.protobuf.ByteString
-        getSystemBytes();
+    /** <code>required string system = 1;</code> */
+    akka.protobuf.ByteString getSystemBytes();
 
     // required string hostname = 2;
-    /**
-     * <code>required string hostname = 2;</code>
-     */
+    /** <code>required string hostname = 2;</code> */
     boolean hasHostname();
-    /**
-     * <code>required string hostname = 2;</code>
-     */
+    /** <code>required string hostname = 2;</code> */
     java.lang.String getHostname();
-    /**
-     * <code>required string hostname = 2;</code>
-     */
-    akka.protobuf.ByteString
-        getHostnameBytes();
+    /** <code>required string hostname = 2;</code> */
+    akka.protobuf.ByteString getHostnameBytes();
 
     // required uint32 port = 3;
-    /**
-     * <code>required uint32 port = 3;</code>
-     */
+    /** <code>required uint32 port = 3;</code> */
     boolean hasPort();
-    /**
-     * <code>required uint32 port = 3;</code>
-     */
+    /** <code>required uint32 port = 3;</code> */
     int getPort();
 
     // optional string protocol = 4;
-    /**
-     * <code>optional string protocol = 4;</code>
-     */
+    /** <code>optional string protocol = 4;</code> */
     boolean hasProtocol();
-    /**
-     * <code>optional string protocol = 4;</code>
-     */
+    /** <code>optional string protocol = 4;</code> */
     java.lang.String getProtocol();
-    /**
-     * <code>optional string protocol = 4;</code>
-     */
-    akka.protobuf.ByteString
-        getProtocolBytes();
+    /** <code>optional string protocol = 4;</code> */
+    akka.protobuf.ByteString getProtocolBytes();
   }
   /**
    * Protobuf type {@code AddressData}
    *
    * <pre>
-   **
+   * *
    * Defines a remote address, for classic remoting.
    *
    * Note that while the same message definition exists in cluster, as well as an updated one exists for Artery.
    * This encoding will ONLY be used when an `akka.actor.Address` is attempted to be serialized *directly*.
    * </pre>
    */
-  public static final class AddressData extends
-      akka.protobuf.GeneratedMessage
+  public static final class AddressData extends akka.protobuf.GeneratedMessage
       implements AddressDataOrBuilder {
     // Use AddressData.newBuilder() to construct.
     private AddressData(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private AddressData(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private AddressData(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final AddressData defaultInstance;
+
     public static AddressData getDefaultInstance() {
       return defaultInstance;
     }
@@ -8074,14 +7453,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private AddressData(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -8095,66 +7474,72 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              bitField0_ |= 0x00000001;
-              system_ = input.readBytes();
-              break;
-            }
-            case 18: {
-              bitField0_ |= 0x00000002;
-              hostname_ = input.readBytes();
-              break;
-            }
-            case 24: {
-              bitField0_ |= 0x00000004;
-              port_ = input.readUInt32();
-              break;
-            }
-            case 34: {
-              bitField0_ |= 0x00000008;
-              protocol_ = input.readBytes();
-              break;
-            }
+            case 10:
+              {
+                bitField0_ |= 0x00000001;
+                system_ = input.readBytes();
+                break;
+              }
+            case 18:
+              {
+                bitField0_ |= 0x00000002;
+                hostname_ = input.readBytes();
+                break;
+              }
+            case 24:
+              {
+                bitField0_ |= 0x00000004;
+                port_ = input.readUInt32();
+                break;
+              }
+            case 34:
+              {
+                bitField0_ |= 0x00000008;
+                protocol_ = input.readBytes();
+                break;
+              }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_AddressData_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_AddressData_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.AddressData.class, akka.remote.WireFormats.AddressData.Builder.class);
+              akka.remote.WireFormats.AddressData.class,
+              akka.remote.WireFormats.AddressData.Builder.class);
     }
 
     public static akka.protobuf.Parser<AddressData> PARSER =
         new akka.protobuf.AbstractParser<AddressData>() {
-      public AddressData parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new AddressData(input, extensionRegistry);
-      }
-    };
+          public AddressData parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new AddressData(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<AddressData> getParserForType() {
@@ -8165,22 +7550,17 @@ public final class WireFormats {
     // required string system = 1;
     public static final int SYSTEM_FIELD_NUMBER = 1;
     private java.lang.Object system_;
-    /**
-     * <code>required string system = 1;</code>
-     */
+    /** <code>required string system = 1;</code> */
     public boolean hasSystem() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required string system = 1;</code>
-     */
+    /** <code>required string system = 1;</code> */
     public java.lang.String getSystem() {
       java.lang.Object ref = system_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           system_ = s;
@@ -8188,16 +7568,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>required string system = 1;</code>
-     */
-    public akka.protobuf.ByteString
-        getSystemBytes() {
+    /** <code>required string system = 1;</code> */
+    public akka.protobuf.ByteString getSystemBytes() {
       java.lang.Object ref = system_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         system_ = b;
         return b;
       } else {
@@ -8208,22 +7583,17 @@ public final class WireFormats {
     // required string hostname = 2;
     public static final int HOSTNAME_FIELD_NUMBER = 2;
     private java.lang.Object hostname_;
-    /**
-     * <code>required string hostname = 2;</code>
-     */
+    /** <code>required string hostname = 2;</code> */
     public boolean hasHostname() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>required string hostname = 2;</code>
-     */
+    /** <code>required string hostname = 2;</code> */
     public java.lang.String getHostname() {
       java.lang.Object ref = hostname_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           hostname_ = s;
@@ -8231,16 +7601,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>required string hostname = 2;</code>
-     */
-    public akka.protobuf.ByteString
-        getHostnameBytes() {
+    /** <code>required string hostname = 2;</code> */
+    public akka.protobuf.ByteString getHostnameBytes() {
       java.lang.Object ref = hostname_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         hostname_ = b;
         return b;
       } else {
@@ -8251,15 +7616,11 @@ public final class WireFormats {
     // required uint32 port = 3;
     public static final int PORT_FIELD_NUMBER = 3;
     private int port_;
-    /**
-     * <code>required uint32 port = 3;</code>
-     */
+    /** <code>required uint32 port = 3;</code> */
     public boolean hasPort() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    /**
-     * <code>required uint32 port = 3;</code>
-     */
+    /** <code>required uint32 port = 3;</code> */
     public int getPort() {
       return port_;
     }
@@ -8267,22 +7628,17 @@ public final class WireFormats {
     // optional string protocol = 4;
     public static final int PROTOCOL_FIELD_NUMBER = 4;
     private java.lang.Object protocol_;
-    /**
-     * <code>optional string protocol = 4;</code>
-     */
+    /** <code>optional string protocol = 4;</code> */
     public boolean hasProtocol() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
-    /**
-     * <code>optional string protocol = 4;</code>
-     */
+    /** <code>optional string protocol = 4;</code> */
     public java.lang.String getProtocol() {
       java.lang.Object ref = protocol_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           protocol_ = s;
@@ -8290,16 +7646,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>optional string protocol = 4;</code>
-     */
-    public akka.protobuf.ByteString
-        getProtocolBytes() {
+    /** <code>optional string protocol = 4;</code> */
+    public akka.protobuf.ByteString getProtocolBytes() {
       java.lang.Object ref = protocol_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         protocol_ = b;
         return b;
       } else {
@@ -8313,7 +7664,9 @@ public final class WireFormats {
       port_ = 0;
       protocol_ = "";
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -8334,8 +7687,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, getSystemBytes());
@@ -8353,26 +7705,23 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getSystemBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(1, getSystemBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(2, getHostnameBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(2, getHostnameBytes());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeUInt32Size(3, port_);
+        size += akka.protobuf.CodedOutputStream.computeUInt32Size(3, port_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(4, getProtocolBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(4, getProtocolBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -8380,75 +7729,85 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.AddressData parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.AddressData parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.AddressData parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AddressData parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.AddressData parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AddressData parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.AddressData parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AddressData parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.AddressData parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AddressData parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.AddressData parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.AddressData prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -8456,26 +7815,24 @@ public final class WireFormats {
      * Protobuf type {@code AddressData}
      *
      * <pre>
-     **
+     * *
      * Defines a remote address, for classic remoting.
      *
      * Note that while the same message definition exists in cluster, as well as an updated one exists for Artery.
      * This encoding will ONLY be used when an `akka.actor.Address` is attempted to be serialized *directly*.
      * </pre>
      */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.AddressDataOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.AddressDataOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_AddressData_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_AddressData_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.AddressData.class, akka.remote.WireFormats.AddressData.Builder.class);
+                akka.remote.WireFormats.AddressData.class,
+                akka.remote.WireFormats.AddressData.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.AddressData.newBuilder()
@@ -8483,15 +7840,15 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {}
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -8513,8 +7870,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_AddressData_descriptor;
       }
 
@@ -8557,7 +7913,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.AddressData) {
-          return mergeFrom((akka.remote.WireFormats.AddressData)other);
+          return mergeFrom((akka.remote.WireFormats.AddressData) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -8590,15 +7946,15 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasSystem()) {
-          
+
           return false;
         }
         if (!hasHostname()) {
-          
+
           return false;
         }
         if (!hasPort()) {
-          
+
           return false;
         }
         return true;
@@ -8621,77 +7977,61 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required string system = 1;
       private java.lang.Object system_ = "";
-      /**
-       * <code>required string system = 1;</code>
-       */
+      /** <code>required string system = 1;</code> */
       public boolean hasSystem() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required string system = 1;</code>
-       */
+      /** <code>required string system = 1;</code> */
       public java.lang.String getSystem() {
         java.lang.Object ref = system_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           system_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>required string system = 1;</code>
-       */
-      public akka.protobuf.ByteString
-          getSystemBytes() {
+      /** <code>required string system = 1;</code> */
+      public akka.protobuf.ByteString getSystemBytes() {
         java.lang.Object ref = system_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           system_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>required string system = 1;</code>
-       */
-      public Builder setSystem(
-          java.lang.String value) {
+      /** <code>required string system = 1;</code> */
+      public Builder setSystem(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
         system_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required string system = 1;</code>
-       */
+      /** <code>required string system = 1;</code> */
       public Builder clearSystem() {
         bitField0_ = (bitField0_ & ~0x00000001);
         system_ = getDefaultInstance().getSystem();
         onChanged();
         return this;
       }
-      /**
-       * <code>required string system = 1;</code>
-       */
-      public Builder setSystemBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>required string system = 1;</code> */
+      public Builder setSystemBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
         system_ = value;
         onChanged();
         return this;
@@ -8699,104 +8039,79 @@ public final class WireFormats {
 
       // required string hostname = 2;
       private java.lang.Object hostname_ = "";
-      /**
-       * <code>required string hostname = 2;</code>
-       */
+      /** <code>required string hostname = 2;</code> */
       public boolean hasHostname() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>required string hostname = 2;</code>
-       */
+      /** <code>required string hostname = 2;</code> */
       public java.lang.String getHostname() {
         java.lang.Object ref = hostname_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           hostname_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>required string hostname = 2;</code>
-       */
-      public akka.protobuf.ByteString
-          getHostnameBytes() {
+      /** <code>required string hostname = 2;</code> */
+      public akka.protobuf.ByteString getHostnameBytes() {
         java.lang.Object ref = hostname_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           hostname_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>required string hostname = 2;</code>
-       */
-      public Builder setHostname(
-          java.lang.String value) {
+      /** <code>required string hostname = 2;</code> */
+      public Builder setHostname(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
         hostname_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required string hostname = 2;</code>
-       */
+      /** <code>required string hostname = 2;</code> */
       public Builder clearHostname() {
         bitField0_ = (bitField0_ & ~0x00000002);
         hostname_ = getDefaultInstance().getHostname();
         onChanged();
         return this;
       }
-      /**
-       * <code>required string hostname = 2;</code>
-       */
-      public Builder setHostnameBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>required string hostname = 2;</code> */
+      public Builder setHostnameBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
         hostname_ = value;
         onChanged();
         return this;
       }
 
       // required uint32 port = 3;
-      private int port_ ;
-      /**
-       * <code>required uint32 port = 3;</code>
-       */
+      private int port_;
+      /** <code>required uint32 port = 3;</code> */
       public boolean hasPort() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      /**
-       * <code>required uint32 port = 3;</code>
-       */
+      /** <code>required uint32 port = 3;</code> */
       public int getPort() {
         return port_;
       }
-      /**
-       * <code>required uint32 port = 3;</code>
-       */
+      /** <code>required uint32 port = 3;</code> */
       public Builder setPort(int value) {
         bitField0_ |= 0x00000004;
         port_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required uint32 port = 3;</code>
-       */
+      /** <code>required uint32 port = 3;</code> */
       public Builder clearPort() {
         bitField0_ = (bitField0_ & ~0x00000004);
         port_ = 0;
@@ -8806,73 +8121,56 @@ public final class WireFormats {
 
       // optional string protocol = 4;
       private java.lang.Object protocol_ = "";
-      /**
-       * <code>optional string protocol = 4;</code>
-       */
+      /** <code>optional string protocol = 4;</code> */
       public boolean hasProtocol() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
-      /**
-       * <code>optional string protocol = 4;</code>
-       */
+      /** <code>optional string protocol = 4;</code> */
       public java.lang.String getProtocol() {
         java.lang.Object ref = protocol_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           protocol_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>optional string protocol = 4;</code>
-       */
-      public akka.protobuf.ByteString
-          getProtocolBytes() {
+      /** <code>optional string protocol = 4;</code> */
+      public akka.protobuf.ByteString getProtocolBytes() {
         java.lang.Object ref = protocol_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           protocol_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>optional string protocol = 4;</code>
-       */
-      public Builder setProtocol(
-          java.lang.String value) {
+      /** <code>optional string protocol = 4;</code> */
+      public Builder setProtocol(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000008;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000008;
         protocol_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string protocol = 4;</code>
-       */
+      /** <code>optional string protocol = 4;</code> */
       public Builder clearProtocol() {
         bitField0_ = (bitField0_ & ~0x00000008);
         protocol_ = getDefaultInstance().getProtocol();
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string protocol = 4;</code>
-       */
-      public Builder setProtocolBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>optional string protocol = 4;</code> */
+      public Builder setProtocolBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000008;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000008;
         protocol_ = value;
         onChanged();
         return this;
@@ -8889,53 +8187,45 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:AddressData)
   }
 
-  public interface AkkaProtocolMessageOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface AkkaProtocolMessageOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // optional bytes payload = 1;
-    /**
-     * <code>optional bytes payload = 1;</code>
-     */
+    /** <code>optional bytes payload = 1;</code> */
     boolean hasPayload();
-    /**
-     * <code>optional bytes payload = 1;</code>
-     */
+    /** <code>optional bytes payload = 1;</code> */
     akka.protobuf.ByteString getPayload();
 
     // optional .AkkaControlMessage instruction = 2;
-    /**
-     * <code>optional .AkkaControlMessage instruction = 2;</code>
-     */
+    /** <code>optional .AkkaControlMessage instruction = 2;</code> */
     boolean hasInstruction();
-    /**
-     * <code>optional .AkkaControlMessage instruction = 2;</code>
-     */
+    /** <code>optional .AkkaControlMessage instruction = 2;</code> */
     akka.remote.WireFormats.AkkaControlMessage getInstruction();
-    /**
-     * <code>optional .AkkaControlMessage instruction = 2;</code>
-     */
+    /** <code>optional .AkkaControlMessage instruction = 2;</code> */
     akka.remote.WireFormats.AkkaControlMessageOrBuilder getInstructionOrBuilder();
   }
   /**
    * Protobuf type {@code AkkaProtocolMessage}
    *
    * <pre>
-   **
+   * *
    * Message format of Akka Protocol.
    * Message contains either a payload or an instruction.
    * </pre>
    */
-  public static final class AkkaProtocolMessage extends
-      akka.protobuf.GeneratedMessage
+  public static final class AkkaProtocolMessage extends akka.protobuf.GeneratedMessage
       implements AkkaProtocolMessageOrBuilder {
     // Use AkkaProtocolMessage.newBuilder() to construct.
     private AkkaProtocolMessage(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private AkkaProtocolMessage(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private AkkaProtocolMessage(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final AkkaProtocolMessage defaultInstance;
+
     public static AkkaProtocolMessage getDefaultInstance() {
       return defaultInstance;
     }
@@ -8945,14 +8235,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private AkkaProtocolMessage(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -8966,64 +8256,70 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              bitField0_ |= 0x00000001;
-              payload_ = input.readBytes();
-              break;
-            }
-            case 18: {
-              akka.remote.WireFormats.AkkaControlMessage.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
-                subBuilder = instruction_.toBuilder();
+            case 10:
+              {
+                bitField0_ |= 0x00000001;
+                payload_ = input.readBytes();
+                break;
               }
-              instruction_ = input.readMessage(akka.remote.WireFormats.AkkaControlMessage.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(instruction_);
-                instruction_ = subBuilder.buildPartial();
+            case 18:
+              {
+                akka.remote.WireFormats.AkkaControlMessage.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                  subBuilder = instruction_.toBuilder();
+                }
+                instruction_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.AkkaControlMessage.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(instruction_);
+                  instruction_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000002;
+                break;
               }
-              bitField0_ |= 0x00000002;
-              break;
-            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_AkkaProtocolMessage_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_AkkaProtocolMessage_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.AkkaProtocolMessage.class, akka.remote.WireFormats.AkkaProtocolMessage.Builder.class);
+              akka.remote.WireFormats.AkkaProtocolMessage.class,
+              akka.remote.WireFormats.AkkaProtocolMessage.Builder.class);
     }
 
     public static akka.protobuf.Parser<AkkaProtocolMessage> PARSER =
         new akka.protobuf.AbstractParser<AkkaProtocolMessage>() {
-      public AkkaProtocolMessage parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new AkkaProtocolMessage(input, extensionRegistry);
-      }
-    };
+          public AkkaProtocolMessage parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new AkkaProtocolMessage(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<AkkaProtocolMessage> getParserForType() {
@@ -9034,15 +8330,11 @@ public final class WireFormats {
     // optional bytes payload = 1;
     public static final int PAYLOAD_FIELD_NUMBER = 1;
     private akka.protobuf.ByteString payload_;
-    /**
-     * <code>optional bytes payload = 1;</code>
-     */
+    /** <code>optional bytes payload = 1;</code> */
     public boolean hasPayload() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>optional bytes payload = 1;</code>
-     */
+    /** <code>optional bytes payload = 1;</code> */
     public akka.protobuf.ByteString getPayload() {
       return payload_;
     }
@@ -9050,21 +8342,15 @@ public final class WireFormats {
     // optional .AkkaControlMessage instruction = 2;
     public static final int INSTRUCTION_FIELD_NUMBER = 2;
     private akka.remote.WireFormats.AkkaControlMessage instruction_;
-    /**
-     * <code>optional .AkkaControlMessage instruction = 2;</code>
-     */
+    /** <code>optional .AkkaControlMessage instruction = 2;</code> */
     public boolean hasInstruction() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>optional .AkkaControlMessage instruction = 2;</code>
-     */
+    /** <code>optional .AkkaControlMessage instruction = 2;</code> */
     public akka.remote.WireFormats.AkkaControlMessage getInstruction() {
       return instruction_;
     }
-    /**
-     * <code>optional .AkkaControlMessage instruction = 2;</code>
-     */
+    /** <code>optional .AkkaControlMessage instruction = 2;</code> */
     public akka.remote.WireFormats.AkkaControlMessageOrBuilder getInstructionOrBuilder() {
       return instruction_;
     }
@@ -9073,7 +8359,9 @@ public final class WireFormats {
       payload_ = akka.protobuf.ByteString.EMPTY;
       instruction_ = akka.remote.WireFormats.AkkaControlMessage.getDefaultInstance();
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -9088,8 +8376,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, payload_);
@@ -9101,18 +8388,17 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, payload_);
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(1, payload_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, instruction_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(2, instruction_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -9120,75 +8406,85 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
     public static akka.remote.WireFormats.AkkaProtocolMessage parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data) throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.AkkaProtocolMessage parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AkkaProtocolMessage parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.AkkaProtocolMessage parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AkkaProtocolMessage parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.AkkaProtocolMessage parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.AkkaProtocolMessage parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.AkkaProtocolMessage parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.AkkaProtocolMessage parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AkkaProtocolMessage parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.AkkaProtocolMessage parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.AkkaProtocolMessage prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -9196,24 +8492,22 @@ public final class WireFormats {
      * Protobuf type {@code AkkaProtocolMessage}
      *
      * <pre>
-     **
+     * *
      * Message format of Akka Protocol.
      * Message contains either a payload or an instruction.
      * </pre>
      */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.AkkaProtocolMessageOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.AkkaProtocolMessageOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_AkkaProtocolMessage_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_AkkaProtocolMessage_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.AkkaProtocolMessage.class, akka.remote.WireFormats.AkkaProtocolMessage.Builder.class);
+                akka.remote.WireFormats.AkkaProtocolMessage.class,
+                akka.remote.WireFormats.AkkaProtocolMessage.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.AkkaProtocolMessage.newBuilder()
@@ -9221,16 +8515,17 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getInstructionFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -9252,8 +8547,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_AkkaProtocolMessage_descriptor;
       }
 
@@ -9270,7 +8564,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.AkkaProtocolMessage buildPartial() {
-        akka.remote.WireFormats.AkkaProtocolMessage result = new akka.remote.WireFormats.AkkaProtocolMessage(this);
+        akka.remote.WireFormats.AkkaProtocolMessage result =
+            new akka.remote.WireFormats.AkkaProtocolMessage(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -9292,7 +8587,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.AkkaProtocolMessage) {
-          return mergeFrom((akka.remote.WireFormats.AkkaProtocolMessage)other);
+          return mergeFrom((akka.remote.WireFormats.AkkaProtocolMessage) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -9314,7 +8609,7 @@ public final class WireFormats {
       public final boolean isInitialized() {
         if (hasInstruction()) {
           if (!getInstruction().isInitialized()) {
-            
+
             return false;
           }
         }
@@ -9338,37 +8633,30 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // optional bytes payload = 1;
       private akka.protobuf.ByteString payload_ = akka.protobuf.ByteString.EMPTY;
-      /**
-       * <code>optional bytes payload = 1;</code>
-       */
+      /** <code>optional bytes payload = 1;</code> */
       public boolean hasPayload() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>optional bytes payload = 1;</code>
-       */
+      /** <code>optional bytes payload = 1;</code> */
       public akka.protobuf.ByteString getPayload() {
         return payload_;
       }
-      /**
-       * <code>optional bytes payload = 1;</code>
-       */
+      /** <code>optional bytes payload = 1;</code> */
       public Builder setPayload(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
         payload_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional bytes payload = 1;</code>
-       */
+      /** <code>optional bytes payload = 1;</code> */
       public Builder clearPayload() {
         bitField0_ = (bitField0_ & ~0x00000001);
         payload_ = getDefaultInstance().getPayload();
@@ -9377,18 +8665,18 @@ public final class WireFormats {
       }
 
       // optional .AkkaControlMessage instruction = 2;
-      private akka.remote.WireFormats.AkkaControlMessage instruction_ = akka.remote.WireFormats.AkkaControlMessage.getDefaultInstance();
+      private akka.remote.WireFormats.AkkaControlMessage instruction_ =
+          akka.remote.WireFormats.AkkaControlMessage.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.AkkaControlMessage, akka.remote.WireFormats.AkkaControlMessage.Builder, akka.remote.WireFormats.AkkaControlMessageOrBuilder> instructionBuilder_;
-      /**
-       * <code>optional .AkkaControlMessage instruction = 2;</code>
-       */
+              akka.remote.WireFormats.AkkaControlMessage,
+              akka.remote.WireFormats.AkkaControlMessage.Builder,
+              akka.remote.WireFormats.AkkaControlMessageOrBuilder>
+          instructionBuilder_;
+      /** <code>optional .AkkaControlMessage instruction = 2;</code> */
       public boolean hasInstruction() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>optional .AkkaControlMessage instruction = 2;</code>
-       */
+      /** <code>optional .AkkaControlMessage instruction = 2;</code> */
       public akka.remote.WireFormats.AkkaControlMessage getInstruction() {
         if (instructionBuilder_ == null) {
           return instruction_;
@@ -9396,9 +8684,7 @@ public final class WireFormats {
           return instructionBuilder_.getMessage();
         }
       }
-      /**
-       * <code>optional .AkkaControlMessage instruction = 2;</code>
-       */
+      /** <code>optional .AkkaControlMessage instruction = 2;</code> */
       public Builder setInstruction(akka.remote.WireFormats.AkkaControlMessage value) {
         if (instructionBuilder_ == null) {
           if (value == null) {
@@ -9412,9 +8698,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>optional .AkkaControlMessage instruction = 2;</code>
-       */
+      /** <code>optional .AkkaControlMessage instruction = 2;</code> */
       public Builder setInstruction(
           akka.remote.WireFormats.AkkaControlMessage.Builder builderForValue) {
         if (instructionBuilder_ == null) {
@@ -9426,15 +8710,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>optional .AkkaControlMessage instruction = 2;</code>
-       */
+      /** <code>optional .AkkaControlMessage instruction = 2;</code> */
       public Builder mergeInstruction(akka.remote.WireFormats.AkkaControlMessage value) {
         if (instructionBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
-              instruction_ != akka.remote.WireFormats.AkkaControlMessage.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000002) == 0x00000002)
+              && instruction_ != akka.remote.WireFormats.AkkaControlMessage.getDefaultInstance()) {
             instruction_ =
-              akka.remote.WireFormats.AkkaControlMessage.newBuilder(instruction_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.AkkaControlMessage.newBuilder(instruction_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             instruction_ = value;
           }
@@ -9445,9 +8729,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>optional .AkkaControlMessage instruction = 2;</code>
-       */
+      /** <code>optional .AkkaControlMessage instruction = 2;</code> */
       public Builder clearInstruction() {
         if (instructionBuilder_ == null) {
           instruction_ = akka.remote.WireFormats.AkkaControlMessage.getDefaultInstance();
@@ -9458,17 +8740,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
-      /**
-       * <code>optional .AkkaControlMessage instruction = 2;</code>
-       */
+      /** <code>optional .AkkaControlMessage instruction = 2;</code> */
       public akka.remote.WireFormats.AkkaControlMessage.Builder getInstructionBuilder() {
         bitField0_ |= 0x00000002;
         onChanged();
         return getInstructionFieldBuilder().getBuilder();
       }
-      /**
-       * <code>optional .AkkaControlMessage instruction = 2;</code>
-       */
+      /** <code>optional .AkkaControlMessage instruction = 2;</code> */
       public akka.remote.WireFormats.AkkaControlMessageOrBuilder getInstructionOrBuilder() {
         if (instructionBuilder_ != null) {
           return instructionBuilder_.getMessageOrBuilder();
@@ -9476,18 +8754,19 @@ public final class WireFormats {
           return instruction_;
         }
       }
-      /**
-       * <code>optional .AkkaControlMessage instruction = 2;</code>
-       */
+      /** <code>optional .AkkaControlMessage instruction = 2;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.AkkaControlMessage, akka.remote.WireFormats.AkkaControlMessage.Builder, akka.remote.WireFormats.AkkaControlMessageOrBuilder> 
+              akka.remote.WireFormats.AkkaControlMessage,
+              akka.remote.WireFormats.AkkaControlMessage.Builder,
+              akka.remote.WireFormats.AkkaControlMessageOrBuilder>
           getInstructionFieldBuilder() {
         if (instructionBuilder_ == null) {
-          instructionBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.AkkaControlMessage, akka.remote.WireFormats.AkkaControlMessage.Builder, akka.remote.WireFormats.AkkaControlMessageOrBuilder>(
-                  instruction_,
-                  getParentForChildren(),
-                  isClean());
+          instructionBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.AkkaControlMessage,
+                  akka.remote.WireFormats.AkkaControlMessage.Builder,
+                  akka.remote.WireFormats.AkkaControlMessageOrBuilder>(
+                  instruction_, getParentForChildren(), isClean());
           instruction_ = null;
         }
         return instructionBuilder_;
@@ -9504,52 +8783,44 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:AkkaProtocolMessage)
   }
 
-  public interface AkkaControlMessageOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface AkkaControlMessageOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required .CommandType commandType = 1;
-    /**
-     * <code>required .CommandType commandType = 1;</code>
-     */
+    /** <code>required .CommandType commandType = 1;</code> */
     boolean hasCommandType();
-    /**
-     * <code>required .CommandType commandType = 1;</code>
-     */
+    /** <code>required .CommandType commandType = 1;</code> */
     akka.remote.WireFormats.CommandType getCommandType();
 
     // optional .AkkaHandshakeInfo handshakeInfo = 2;
-    /**
-     * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-     */
+    /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
     boolean hasHandshakeInfo();
-    /**
-     * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-     */
+    /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
     akka.remote.WireFormats.AkkaHandshakeInfo getHandshakeInfo();
-    /**
-     * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-     */
+    /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
     akka.remote.WireFormats.AkkaHandshakeInfoOrBuilder getHandshakeInfoOrBuilder();
   }
   /**
    * Protobuf type {@code AkkaControlMessage}
    *
    * <pre>
-   **
+   * *
    * Defines some control messages for the remoting
    * </pre>
    */
-  public static final class AkkaControlMessage extends
-      akka.protobuf.GeneratedMessage
+  public static final class AkkaControlMessage extends akka.protobuf.GeneratedMessage
       implements AkkaControlMessageOrBuilder {
     // Use AkkaControlMessage.newBuilder() to construct.
     private AkkaControlMessage(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private AkkaControlMessage(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private AkkaControlMessage(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final AkkaControlMessage defaultInstance;
+
     public static AkkaControlMessage getDefaultInstance() {
       return defaultInstance;
     }
@@ -9559,14 +8830,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private AkkaControlMessage(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -9580,70 +8851,77 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 8: {
-              int rawValue = input.readEnum();
-              akka.remote.WireFormats.CommandType value = akka.remote.WireFormats.CommandType.valueOf(rawValue);
-              if (value == null) {
-                unknownFields.mergeVarintField(1, rawValue);
-              } else {
-                bitField0_ |= 0x00000001;
-                commandType_ = value;
+            case 8:
+              {
+                int rawValue = input.readEnum();
+                akka.remote.WireFormats.CommandType value =
+                    akka.remote.WireFormats.CommandType.valueOf(rawValue);
+                if (value == null) {
+                  unknownFields.mergeVarintField(1, rawValue);
+                } else {
+                  bitField0_ |= 0x00000001;
+                  commandType_ = value;
+                }
+                break;
               }
-              break;
-            }
-            case 18: {
-              akka.remote.WireFormats.AkkaHandshakeInfo.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
-                subBuilder = handshakeInfo_.toBuilder();
+            case 18:
+              {
+                akka.remote.WireFormats.AkkaHandshakeInfo.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                  subBuilder = handshakeInfo_.toBuilder();
+                }
+                handshakeInfo_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.AkkaHandshakeInfo.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(handshakeInfo_);
+                  handshakeInfo_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000002;
+                break;
               }
-              handshakeInfo_ = input.readMessage(akka.remote.WireFormats.AkkaHandshakeInfo.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(handshakeInfo_);
-                handshakeInfo_ = subBuilder.buildPartial();
-              }
-              bitField0_ |= 0x00000002;
-              break;
-            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_AkkaControlMessage_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_AkkaControlMessage_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.AkkaControlMessage.class, akka.remote.WireFormats.AkkaControlMessage.Builder.class);
+              akka.remote.WireFormats.AkkaControlMessage.class,
+              akka.remote.WireFormats.AkkaControlMessage.Builder.class);
     }
 
     public static akka.protobuf.Parser<AkkaControlMessage> PARSER =
         new akka.protobuf.AbstractParser<AkkaControlMessage>() {
-      public AkkaControlMessage parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new AkkaControlMessage(input, extensionRegistry);
-      }
-    };
+          public AkkaControlMessage parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new AkkaControlMessage(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<AkkaControlMessage> getParserForType() {
@@ -9654,15 +8932,11 @@ public final class WireFormats {
     // required .CommandType commandType = 1;
     public static final int COMMANDTYPE_FIELD_NUMBER = 1;
     private akka.remote.WireFormats.CommandType commandType_;
-    /**
-     * <code>required .CommandType commandType = 1;</code>
-     */
+    /** <code>required .CommandType commandType = 1;</code> */
     public boolean hasCommandType() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required .CommandType commandType = 1;</code>
-     */
+    /** <code>required .CommandType commandType = 1;</code> */
     public akka.remote.WireFormats.CommandType getCommandType() {
       return commandType_;
     }
@@ -9670,21 +8944,15 @@ public final class WireFormats {
     // optional .AkkaHandshakeInfo handshakeInfo = 2;
     public static final int HANDSHAKEINFO_FIELD_NUMBER = 2;
     private akka.remote.WireFormats.AkkaHandshakeInfo handshakeInfo_;
-    /**
-     * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-     */
+    /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
     public boolean hasHandshakeInfo() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-     */
+    /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
     public akka.remote.WireFormats.AkkaHandshakeInfo getHandshakeInfo() {
       return handshakeInfo_;
     }
-    /**
-     * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-     */
+    /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
     public akka.remote.WireFormats.AkkaHandshakeInfoOrBuilder getHandshakeInfoOrBuilder() {
       return handshakeInfo_;
     }
@@ -9693,7 +8961,9 @@ public final class WireFormats {
       commandType_ = akka.remote.WireFormats.CommandType.ASSOCIATE;
       handshakeInfo_ = akka.remote.WireFormats.AkkaHandshakeInfo.getDefaultInstance();
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -9712,8 +8982,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeEnum(1, commandType_.getNumber());
@@ -9725,18 +8994,17 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeEnumSize(1, commandType_.getNumber());
+        size += akka.protobuf.CodedOutputStream.computeEnumSize(1, commandType_.getNumber());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, handshakeInfo_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(2, handshakeInfo_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -9744,75 +9012,85 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
     public static akka.remote.WireFormats.AkkaControlMessage parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data) throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.AkkaControlMessage parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AkkaControlMessage parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.AkkaControlMessage parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AkkaControlMessage parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.AkkaControlMessage parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.AkkaControlMessage parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.AkkaControlMessage parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.AkkaControlMessage parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AkkaControlMessage parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.AkkaControlMessage parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.AkkaControlMessage prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -9820,23 +9098,21 @@ public final class WireFormats {
      * Protobuf type {@code AkkaControlMessage}
      *
      * <pre>
-     **
+     * *
      * Defines some control messages for the remoting
      * </pre>
      */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.AkkaControlMessageOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.AkkaControlMessageOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_AkkaControlMessage_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_AkkaControlMessage_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.AkkaControlMessage.class, akka.remote.WireFormats.AkkaControlMessage.Builder.class);
+                akka.remote.WireFormats.AkkaControlMessage.class,
+                akka.remote.WireFormats.AkkaControlMessage.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.AkkaControlMessage.newBuilder()
@@ -9844,16 +9120,17 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getHandshakeInfoFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -9875,8 +9152,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_AkkaControlMessage_descriptor;
       }
 
@@ -9893,7 +9169,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.AkkaControlMessage buildPartial() {
-        akka.remote.WireFormats.AkkaControlMessage result = new akka.remote.WireFormats.AkkaControlMessage(this);
+        akka.remote.WireFormats.AkkaControlMessage result =
+            new akka.remote.WireFormats.AkkaControlMessage(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -9915,7 +9192,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.AkkaControlMessage) {
-          return mergeFrom((akka.remote.WireFormats.AkkaControlMessage)other);
+          return mergeFrom((akka.remote.WireFormats.AkkaControlMessage) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -9936,12 +9213,12 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasCommandType()) {
-          
+
           return false;
         }
         if (hasHandshakeInfo()) {
           if (!getHandshakeInfo().isInitialized()) {
-            
+
             return false;
           }
         }
@@ -9965,25 +9242,21 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required .CommandType commandType = 1;
-      private akka.remote.WireFormats.CommandType commandType_ = akka.remote.WireFormats.CommandType.ASSOCIATE;
-      /**
-       * <code>required .CommandType commandType = 1;</code>
-       */
+      private akka.remote.WireFormats.CommandType commandType_ =
+          akka.remote.WireFormats.CommandType.ASSOCIATE;
+      /** <code>required .CommandType commandType = 1;</code> */
       public boolean hasCommandType() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required .CommandType commandType = 1;</code>
-       */
+      /** <code>required .CommandType commandType = 1;</code> */
       public akka.remote.WireFormats.CommandType getCommandType() {
         return commandType_;
       }
-      /**
-       * <code>required .CommandType commandType = 1;</code>
-       */
+      /** <code>required .CommandType commandType = 1;</code> */
       public Builder setCommandType(akka.remote.WireFormats.CommandType value) {
         if (value == null) {
           throw new NullPointerException();
@@ -9993,9 +9266,7 @@ public final class WireFormats {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .CommandType commandType = 1;</code>
-       */
+      /** <code>required .CommandType commandType = 1;</code> */
       public Builder clearCommandType() {
         bitField0_ = (bitField0_ & ~0x00000001);
         commandType_ = akka.remote.WireFormats.CommandType.ASSOCIATE;
@@ -10004,18 +9275,18 @@ public final class WireFormats {
       }
 
       // optional .AkkaHandshakeInfo handshakeInfo = 2;
-      private akka.remote.WireFormats.AkkaHandshakeInfo handshakeInfo_ = akka.remote.WireFormats.AkkaHandshakeInfo.getDefaultInstance();
+      private akka.remote.WireFormats.AkkaHandshakeInfo handshakeInfo_ =
+          akka.remote.WireFormats.AkkaHandshakeInfo.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.AkkaHandshakeInfo, akka.remote.WireFormats.AkkaHandshakeInfo.Builder, akka.remote.WireFormats.AkkaHandshakeInfoOrBuilder> handshakeInfoBuilder_;
-      /**
-       * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-       */
+              akka.remote.WireFormats.AkkaHandshakeInfo,
+              akka.remote.WireFormats.AkkaHandshakeInfo.Builder,
+              akka.remote.WireFormats.AkkaHandshakeInfoOrBuilder>
+          handshakeInfoBuilder_;
+      /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
       public boolean hasHandshakeInfo() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-       */
+      /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
       public akka.remote.WireFormats.AkkaHandshakeInfo getHandshakeInfo() {
         if (handshakeInfoBuilder_ == null) {
           return handshakeInfo_;
@@ -10023,9 +9294,7 @@ public final class WireFormats {
           return handshakeInfoBuilder_.getMessage();
         }
       }
-      /**
-       * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-       */
+      /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
       public Builder setHandshakeInfo(akka.remote.WireFormats.AkkaHandshakeInfo value) {
         if (handshakeInfoBuilder_ == null) {
           if (value == null) {
@@ -10039,9 +9308,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-       */
+      /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
       public Builder setHandshakeInfo(
           akka.remote.WireFormats.AkkaHandshakeInfo.Builder builderForValue) {
         if (handshakeInfoBuilder_ == null) {
@@ -10053,15 +9320,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-       */
+      /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
       public Builder mergeHandshakeInfo(akka.remote.WireFormats.AkkaHandshakeInfo value) {
         if (handshakeInfoBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
-              handshakeInfo_ != akka.remote.WireFormats.AkkaHandshakeInfo.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000002) == 0x00000002)
+              && handshakeInfo_ != akka.remote.WireFormats.AkkaHandshakeInfo.getDefaultInstance()) {
             handshakeInfo_ =
-              akka.remote.WireFormats.AkkaHandshakeInfo.newBuilder(handshakeInfo_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.AkkaHandshakeInfo.newBuilder(handshakeInfo_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             handshakeInfo_ = value;
           }
@@ -10072,9 +9339,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-       */
+      /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
       public Builder clearHandshakeInfo() {
         if (handshakeInfoBuilder_ == null) {
           handshakeInfo_ = akka.remote.WireFormats.AkkaHandshakeInfo.getDefaultInstance();
@@ -10085,17 +9350,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
-      /**
-       * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-       */
+      /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
       public akka.remote.WireFormats.AkkaHandshakeInfo.Builder getHandshakeInfoBuilder() {
         bitField0_ |= 0x00000002;
         onChanged();
         return getHandshakeInfoFieldBuilder().getBuilder();
       }
-      /**
-       * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-       */
+      /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
       public akka.remote.WireFormats.AkkaHandshakeInfoOrBuilder getHandshakeInfoOrBuilder() {
         if (handshakeInfoBuilder_ != null) {
           return handshakeInfoBuilder_.getMessageOrBuilder();
@@ -10103,18 +9364,19 @@ public final class WireFormats {
           return handshakeInfo_;
         }
       }
-      /**
-       * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
-       */
+      /** <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.AkkaHandshakeInfo, akka.remote.WireFormats.AkkaHandshakeInfo.Builder, akka.remote.WireFormats.AkkaHandshakeInfoOrBuilder> 
+              akka.remote.WireFormats.AkkaHandshakeInfo,
+              akka.remote.WireFormats.AkkaHandshakeInfo.Builder,
+              akka.remote.WireFormats.AkkaHandshakeInfoOrBuilder>
           getHandshakeInfoFieldBuilder() {
         if (handshakeInfoBuilder_ == null) {
-          handshakeInfoBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.AkkaHandshakeInfo, akka.remote.WireFormats.AkkaHandshakeInfo.Builder, akka.remote.WireFormats.AkkaHandshakeInfoOrBuilder>(
-                  handshakeInfo_,
-                  getParentForChildren(),
-                  isClean());
+          handshakeInfoBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.AkkaHandshakeInfo,
+                  akka.remote.WireFormats.AkkaHandshakeInfo.Builder,
+                  akka.remote.WireFormats.AkkaHandshakeInfoOrBuilder>(
+                  handshakeInfo_, getParentForChildren(), isClean());
           handshakeInfo_ = null;
         }
         return handshakeInfoBuilder_;
@@ -10131,62 +9393,45 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:AkkaControlMessage)
   }
 
-  public interface AkkaHandshakeInfoOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface AkkaHandshakeInfoOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required .AddressData origin = 1;
-    /**
-     * <code>required .AddressData origin = 1;</code>
-     */
+    /** <code>required .AddressData origin = 1;</code> */
     boolean hasOrigin();
-    /**
-     * <code>required .AddressData origin = 1;</code>
-     */
+    /** <code>required .AddressData origin = 1;</code> */
     akka.remote.WireFormats.AddressData getOrigin();
-    /**
-     * <code>required .AddressData origin = 1;</code>
-     */
+    /** <code>required .AddressData origin = 1;</code> */
     akka.remote.WireFormats.AddressDataOrBuilder getOriginOrBuilder();
 
     // required fixed64 uid = 2;
-    /**
-     * <code>required fixed64 uid = 2;</code>
-     */
+    /** <code>required fixed64 uid = 2;</code> */
     boolean hasUid();
-    /**
-     * <code>required fixed64 uid = 2;</code>
-     */
+    /** <code>required fixed64 uid = 2;</code> */
     long getUid();
 
     // optional string cookie = 3;
-    /**
-     * <code>optional string cookie = 3;</code>
-     */
+    /** <code>optional string cookie = 3;</code> */
     boolean hasCookie();
-    /**
-     * <code>optional string cookie = 3;</code>
-     */
+    /** <code>optional string cookie = 3;</code> */
     java.lang.String getCookie();
-    /**
-     * <code>optional string cookie = 3;</code>
-     */
-    akka.protobuf.ByteString
-        getCookieBytes();
+    /** <code>optional string cookie = 3;</code> */
+    akka.protobuf.ByteString getCookieBytes();
   }
-  /**
-   * Protobuf type {@code AkkaHandshakeInfo}
-   */
-  public static final class AkkaHandshakeInfo extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code AkkaHandshakeInfo} */
+  public static final class AkkaHandshakeInfo extends akka.protobuf.GeneratedMessage
       implements AkkaHandshakeInfoOrBuilder {
     // Use AkkaHandshakeInfo.newBuilder() to construct.
     private AkkaHandshakeInfo(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private AkkaHandshakeInfo(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private AkkaHandshakeInfo(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final AkkaHandshakeInfo defaultInstance;
+
     public static AkkaHandshakeInfo getDefaultInstance() {
       return defaultInstance;
     }
@@ -10196,14 +9441,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private AkkaHandshakeInfo(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -10217,69 +9462,76 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              akka.remote.WireFormats.AddressData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                subBuilder = origin_.toBuilder();
+            case 10:
+              {
+                akka.remote.WireFormats.AddressData.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                  subBuilder = origin_.toBuilder();
+                }
+                origin_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.AddressData.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(origin_);
+                  origin_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000001;
+                break;
               }
-              origin_ = input.readMessage(akka.remote.WireFormats.AddressData.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(origin_);
-                origin_ = subBuilder.buildPartial();
+            case 17:
+              {
+                bitField0_ |= 0x00000002;
+                uid_ = input.readFixed64();
+                break;
               }
-              bitField0_ |= 0x00000001;
-              break;
-            }
-            case 17: {
-              bitField0_ |= 0x00000002;
-              uid_ = input.readFixed64();
-              break;
-            }
-            case 26: {
-              bitField0_ |= 0x00000004;
-              cookie_ = input.readBytes();
-              break;
-            }
+            case 26:
+              {
+                bitField0_ |= 0x00000004;
+                cookie_ = input.readBytes();
+                break;
+              }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_AkkaHandshakeInfo_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_AkkaHandshakeInfo_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.AkkaHandshakeInfo.class, akka.remote.WireFormats.AkkaHandshakeInfo.Builder.class);
+              akka.remote.WireFormats.AkkaHandshakeInfo.class,
+              akka.remote.WireFormats.AkkaHandshakeInfo.Builder.class);
     }
 
     public static akka.protobuf.Parser<AkkaHandshakeInfo> PARSER =
         new akka.protobuf.AbstractParser<AkkaHandshakeInfo>() {
-      public AkkaHandshakeInfo parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new AkkaHandshakeInfo(input, extensionRegistry);
-      }
-    };
+          public AkkaHandshakeInfo parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new AkkaHandshakeInfo(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<AkkaHandshakeInfo> getParserForType() {
@@ -10290,21 +9542,15 @@ public final class WireFormats {
     // required .AddressData origin = 1;
     public static final int ORIGIN_FIELD_NUMBER = 1;
     private akka.remote.WireFormats.AddressData origin_;
-    /**
-     * <code>required .AddressData origin = 1;</code>
-     */
+    /** <code>required .AddressData origin = 1;</code> */
     public boolean hasOrigin() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required .AddressData origin = 1;</code>
-     */
+    /** <code>required .AddressData origin = 1;</code> */
     public akka.remote.WireFormats.AddressData getOrigin() {
       return origin_;
     }
-    /**
-     * <code>required .AddressData origin = 1;</code>
-     */
+    /** <code>required .AddressData origin = 1;</code> */
     public akka.remote.WireFormats.AddressDataOrBuilder getOriginOrBuilder() {
       return origin_;
     }
@@ -10312,15 +9558,11 @@ public final class WireFormats {
     // required fixed64 uid = 2;
     public static final int UID_FIELD_NUMBER = 2;
     private long uid_;
-    /**
-     * <code>required fixed64 uid = 2;</code>
-     */
+    /** <code>required fixed64 uid = 2;</code> */
     public boolean hasUid() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>required fixed64 uid = 2;</code>
-     */
+    /** <code>required fixed64 uid = 2;</code> */
     public long getUid() {
       return uid_;
     }
@@ -10328,22 +9570,17 @@ public final class WireFormats {
     // optional string cookie = 3;
     public static final int COOKIE_FIELD_NUMBER = 3;
     private java.lang.Object cookie_;
-    /**
-     * <code>optional string cookie = 3;</code>
-     */
+    /** <code>optional string cookie = 3;</code> */
     public boolean hasCookie() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    /**
-     * <code>optional string cookie = 3;</code>
-     */
+    /** <code>optional string cookie = 3;</code> */
     public java.lang.String getCookie() {
       java.lang.Object ref = cookie_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           cookie_ = s;
@@ -10351,16 +9588,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>optional string cookie = 3;</code>
-     */
-    public akka.protobuf.ByteString
-        getCookieBytes() {
+    /** <code>optional string cookie = 3;</code> */
+    public akka.protobuf.ByteString getCookieBytes() {
       java.lang.Object ref = cookie_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         cookie_ = b;
         return b;
       } else {
@@ -10373,7 +9605,9 @@ public final class WireFormats {
       uid_ = 0L;
       cookie_ = "";
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -10394,8 +9628,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeMessage(1, origin_);
@@ -10410,22 +9643,20 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, origin_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(1, origin_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeFixed64Size(2, uid_);
+        size += akka.protobuf.CodedOutputStream.computeFixed64Size(2, uid_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(3, getCookieBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(3, getCookieBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -10433,94 +9664,100 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.AkkaHandshakeInfo parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.AkkaHandshakeInfo parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.AkkaHandshakeInfo parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AkkaHandshakeInfo parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.AkkaHandshakeInfo parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AkkaHandshakeInfo parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.AkkaHandshakeInfo parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.AkkaHandshakeInfo parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.AkkaHandshakeInfo parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.AkkaHandshakeInfo parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.AkkaHandshakeInfo parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.AkkaHandshakeInfo parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.AkkaHandshakeInfo prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code AkkaHandshakeInfo}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.AkkaHandshakeInfoOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    /** Protobuf type {@code AkkaHandshakeInfo} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.AkkaHandshakeInfoOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_AkkaHandshakeInfo_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_AkkaHandshakeInfo_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.AkkaHandshakeInfo.class, akka.remote.WireFormats.AkkaHandshakeInfo.Builder.class);
+                akka.remote.WireFormats.AkkaHandshakeInfo.class,
+                akka.remote.WireFormats.AkkaHandshakeInfo.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.AkkaHandshakeInfo.newBuilder()
@@ -10528,16 +9765,17 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getOriginFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -10561,8 +9799,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_AkkaHandshakeInfo_descriptor;
       }
 
@@ -10579,7 +9816,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.AkkaHandshakeInfo buildPartial() {
-        akka.remote.WireFormats.AkkaHandshakeInfo result = new akka.remote.WireFormats.AkkaHandshakeInfo(this);
+        akka.remote.WireFormats.AkkaHandshakeInfo result =
+            new akka.remote.WireFormats.AkkaHandshakeInfo(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -10605,7 +9843,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.AkkaHandshakeInfo) {
-          return mergeFrom((akka.remote.WireFormats.AkkaHandshakeInfo)other);
+          return mergeFrom((akka.remote.WireFormats.AkkaHandshakeInfo) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -10631,15 +9869,15 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasOrigin()) {
-          
+
           return false;
         }
         if (!hasUid()) {
-          
+
           return false;
         }
         if (!getOrigin().isInitialized()) {
-          
+
           return false;
         }
         return true;
@@ -10662,21 +9900,22 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required .AddressData origin = 1;
-      private akka.remote.WireFormats.AddressData origin_ = akka.remote.WireFormats.AddressData.getDefaultInstance();
+      private akka.remote.WireFormats.AddressData origin_ =
+          akka.remote.WireFormats.AddressData.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder> originBuilder_;
-      /**
-       * <code>required .AddressData origin = 1;</code>
-       */
+              akka.remote.WireFormats.AddressData,
+              akka.remote.WireFormats.AddressData.Builder,
+              akka.remote.WireFormats.AddressDataOrBuilder>
+          originBuilder_;
+      /** <code>required .AddressData origin = 1;</code> */
       public boolean hasOrigin() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required .AddressData origin = 1;</code>
-       */
+      /** <code>required .AddressData origin = 1;</code> */
       public akka.remote.WireFormats.AddressData getOrigin() {
         if (originBuilder_ == null) {
           return origin_;
@@ -10684,9 +9923,7 @@ public final class WireFormats {
           return originBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .AddressData origin = 1;</code>
-       */
+      /** <code>required .AddressData origin = 1;</code> */
       public Builder setOrigin(akka.remote.WireFormats.AddressData value) {
         if (originBuilder_ == null) {
           if (value == null) {
@@ -10700,11 +9937,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .AddressData origin = 1;</code>
-       */
-      public Builder setOrigin(
-          akka.remote.WireFormats.AddressData.Builder builderForValue) {
+      /** <code>required .AddressData origin = 1;</code> */
+      public Builder setOrigin(akka.remote.WireFormats.AddressData.Builder builderForValue) {
         if (originBuilder_ == null) {
           origin_ = builderForValue.build();
           onChanged();
@@ -10714,15 +9948,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .AddressData origin = 1;</code>
-       */
+      /** <code>required .AddressData origin = 1;</code> */
       public Builder mergeOrigin(akka.remote.WireFormats.AddressData value) {
         if (originBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
-              origin_ != akka.remote.WireFormats.AddressData.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000001) == 0x00000001)
+              && origin_ != akka.remote.WireFormats.AddressData.getDefaultInstance()) {
             origin_ =
-              akka.remote.WireFormats.AddressData.newBuilder(origin_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.AddressData.newBuilder(origin_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             origin_ = value;
           }
@@ -10733,9 +9967,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .AddressData origin = 1;</code>
-       */
+      /** <code>required .AddressData origin = 1;</code> */
       public Builder clearOrigin() {
         if (originBuilder_ == null) {
           origin_ = akka.remote.WireFormats.AddressData.getDefaultInstance();
@@ -10746,17 +9978,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
-      /**
-       * <code>required .AddressData origin = 1;</code>
-       */
+      /** <code>required .AddressData origin = 1;</code> */
       public akka.remote.WireFormats.AddressData.Builder getOriginBuilder() {
         bitField0_ |= 0x00000001;
         onChanged();
         return getOriginFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .AddressData origin = 1;</code>
-       */
+      /** <code>required .AddressData origin = 1;</code> */
       public akka.remote.WireFormats.AddressDataOrBuilder getOriginOrBuilder() {
         if (originBuilder_ != null) {
           return originBuilder_.getMessageOrBuilder();
@@ -10764,49 +9992,42 @@ public final class WireFormats {
           return origin_;
         }
       }
-      /**
-       * <code>required .AddressData origin = 1;</code>
-       */
+      /** <code>required .AddressData origin = 1;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder> 
+              akka.remote.WireFormats.AddressData,
+              akka.remote.WireFormats.AddressData.Builder,
+              akka.remote.WireFormats.AddressDataOrBuilder>
           getOriginFieldBuilder() {
         if (originBuilder_ == null) {
-          originBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder>(
-                  origin_,
-                  getParentForChildren(),
-                  isClean());
+          originBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.AddressData,
+                  akka.remote.WireFormats.AddressData.Builder,
+                  akka.remote.WireFormats.AddressDataOrBuilder>(
+                  origin_, getParentForChildren(), isClean());
           origin_ = null;
         }
         return originBuilder_;
       }
 
       // required fixed64 uid = 2;
-      private long uid_ ;
-      /**
-       * <code>required fixed64 uid = 2;</code>
-       */
+      private long uid_;
+      /** <code>required fixed64 uid = 2;</code> */
       public boolean hasUid() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>required fixed64 uid = 2;</code>
-       */
+      /** <code>required fixed64 uid = 2;</code> */
       public long getUid() {
         return uid_;
       }
-      /**
-       * <code>required fixed64 uid = 2;</code>
-       */
+      /** <code>required fixed64 uid = 2;</code> */
       public Builder setUid(long value) {
         bitField0_ |= 0x00000002;
         uid_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required fixed64 uid = 2;</code>
-       */
+      /** <code>required fixed64 uid = 2;</code> */
       public Builder clearUid() {
         bitField0_ = (bitField0_ & ~0x00000002);
         uid_ = 0L;
@@ -10816,73 +10037,56 @@ public final class WireFormats {
 
       // optional string cookie = 3;
       private java.lang.Object cookie_ = "";
-      /**
-       * <code>optional string cookie = 3;</code>
-       */
+      /** <code>optional string cookie = 3;</code> */
       public boolean hasCookie() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      /**
-       * <code>optional string cookie = 3;</code>
-       */
+      /** <code>optional string cookie = 3;</code> */
       public java.lang.String getCookie() {
         java.lang.Object ref = cookie_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           cookie_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>optional string cookie = 3;</code>
-       */
-      public akka.protobuf.ByteString
-          getCookieBytes() {
+      /** <code>optional string cookie = 3;</code> */
+      public akka.protobuf.ByteString getCookieBytes() {
         java.lang.Object ref = cookie_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           cookie_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>optional string cookie = 3;</code>
-       */
-      public Builder setCookie(
-          java.lang.String value) {
+      /** <code>optional string cookie = 3;</code> */
+      public Builder setCookie(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000004;
         cookie_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string cookie = 3;</code>
-       */
+      /** <code>optional string cookie = 3;</code> */
       public Builder clearCookie() {
         bitField0_ = (bitField0_ & ~0x00000004);
         cookie_ = getDefaultInstance().getCookie();
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string cookie = 3;</code>
-       */
-      public Builder setCookieBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>optional string cookie = 3;</code> */
+      public Builder setCookieBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000004;
         cookie_ = value;
         onChanged();
         return this;
@@ -10899,43 +10103,35 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:AkkaHandshakeInfo)
   }
 
-  public interface FiniteDurationOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface FiniteDurationOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required int64 value = 1;
-    /**
-     * <code>required int64 value = 1;</code>
-     */
+    /** <code>required int64 value = 1;</code> */
     boolean hasValue();
-    /**
-     * <code>required int64 value = 1;</code>
-     */
+    /** <code>required int64 value = 1;</code> */
     long getValue();
 
     // required .TimeUnit unit = 2;
-    /**
-     * <code>required .TimeUnit unit = 2;</code>
-     */
+    /** <code>required .TimeUnit unit = 2;</code> */
     boolean hasUnit();
-    /**
-     * <code>required .TimeUnit unit = 2;</code>
-     */
+    /** <code>required .TimeUnit unit = 2;</code> */
     akka.remote.WireFormats.TimeUnit getUnit();
   }
-  /**
-   * Protobuf type {@code FiniteDuration}
-   */
-  public static final class FiniteDuration extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code FiniteDuration} */
+  public static final class FiniteDuration extends akka.protobuf.GeneratedMessage
       implements FiniteDurationOrBuilder {
     // Use FiniteDuration.newBuilder() to construct.
     private FiniteDuration(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private FiniteDuration(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private FiniteDuration(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final FiniteDuration defaultInstance;
+
     public static FiniteDuration getDefaultInstance() {
       return defaultInstance;
     }
@@ -10945,14 +10141,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private FiniteDuration(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -10966,62 +10162,67 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 8: {
-              bitField0_ |= 0x00000001;
-              value_ = input.readInt64();
-              break;
-            }
-            case 16: {
-              int rawValue = input.readEnum();
-              akka.remote.WireFormats.TimeUnit value = akka.remote.WireFormats.TimeUnit.valueOf(rawValue);
-              if (value == null) {
-                unknownFields.mergeVarintField(2, rawValue);
-              } else {
-                bitField0_ |= 0x00000002;
-                unit_ = value;
+            case 8:
+              {
+                bitField0_ |= 0x00000001;
+                value_ = input.readInt64();
+                break;
               }
-              break;
-            }
+            case 16:
+              {
+                int rawValue = input.readEnum();
+                akka.remote.WireFormats.TimeUnit value =
+                    akka.remote.WireFormats.TimeUnit.valueOf(rawValue);
+                if (value == null) {
+                  unknownFields.mergeVarintField(2, rawValue);
+                } else {
+                  bitField0_ |= 0x00000002;
+                  unit_ = value;
+                }
+                break;
+              }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_FiniteDuration_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_FiniteDuration_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.FiniteDuration.class, akka.remote.WireFormats.FiniteDuration.Builder.class);
+              akka.remote.WireFormats.FiniteDuration.class,
+              akka.remote.WireFormats.FiniteDuration.Builder.class);
     }
 
     public static akka.protobuf.Parser<FiniteDuration> PARSER =
         new akka.protobuf.AbstractParser<FiniteDuration>() {
-      public FiniteDuration parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new FiniteDuration(input, extensionRegistry);
-      }
-    };
+          public FiniteDuration parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new FiniteDuration(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<FiniteDuration> getParserForType() {
@@ -11032,15 +10233,11 @@ public final class WireFormats {
     // required int64 value = 1;
     public static final int VALUE_FIELD_NUMBER = 1;
     private long value_;
-    /**
-     * <code>required int64 value = 1;</code>
-     */
+    /** <code>required int64 value = 1;</code> */
     public boolean hasValue() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required int64 value = 1;</code>
-     */
+    /** <code>required int64 value = 1;</code> */
     public long getValue() {
       return value_;
     }
@@ -11048,15 +10245,11 @@ public final class WireFormats {
     // required .TimeUnit unit = 2;
     public static final int UNIT_FIELD_NUMBER = 2;
     private akka.remote.WireFormats.TimeUnit unit_;
-    /**
-     * <code>required .TimeUnit unit = 2;</code>
-     */
+    /** <code>required .TimeUnit unit = 2;</code> */
     public boolean hasUnit() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>required .TimeUnit unit = 2;</code>
-     */
+    /** <code>required .TimeUnit unit = 2;</code> */
     public akka.remote.WireFormats.TimeUnit getUnit() {
       return unit_;
     }
@@ -11065,7 +10258,9 @@ public final class WireFormats {
       value_ = 0L;
       unit_ = akka.remote.WireFormats.TimeUnit.NANOSECONDS;
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -11082,8 +10277,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeInt64(1, value_);
@@ -11095,18 +10289,17 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeInt64Size(1, value_);
+        size += akka.protobuf.CodedOutputStream.computeInt64Size(1, value_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeEnumSize(2, unit_.getNumber());
+        size += akka.protobuf.CodedOutputStream.computeEnumSize(2, unit_.getNumber());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -11114,94 +10307,100 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.FiniteDuration parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.FiniteDuration parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.FiniteDuration parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.FiniteDuration parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.FiniteDuration parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.FiniteDuration parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.FiniteDuration parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.FiniteDuration parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.FiniteDuration parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.FiniteDuration parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.FiniteDuration parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.FiniteDuration parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.FiniteDuration prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code FiniteDuration}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.FiniteDurationOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    /** Protobuf type {@code FiniteDuration} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.FiniteDurationOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_FiniteDuration_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_FiniteDuration_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.FiniteDuration.class, akka.remote.WireFormats.FiniteDuration.Builder.class);
+                akka.remote.WireFormats.FiniteDuration.class,
+                akka.remote.WireFormats.FiniteDuration.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.FiniteDuration.newBuilder()
@@ -11209,15 +10408,15 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {}
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -11235,8 +10434,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_FiniteDuration_descriptor;
       }
 
@@ -11253,7 +10451,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.FiniteDuration buildPartial() {
-        akka.remote.WireFormats.FiniteDuration result = new akka.remote.WireFormats.FiniteDuration(this);
+        akka.remote.WireFormats.FiniteDuration result =
+            new akka.remote.WireFormats.FiniteDuration(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -11271,7 +10470,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.FiniteDuration) {
-          return mergeFrom((akka.remote.WireFormats.FiniteDuration)other);
+          return mergeFrom((akka.remote.WireFormats.FiniteDuration) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -11292,11 +10491,11 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasValue()) {
-          
+
           return false;
         }
         if (!hasUnit()) {
-          
+
           return false;
         }
         return true;
@@ -11319,34 +10518,27 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required int64 value = 1;
-      private long value_ ;
-      /**
-       * <code>required int64 value = 1;</code>
-       */
+      private long value_;
+      /** <code>required int64 value = 1;</code> */
       public boolean hasValue() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required int64 value = 1;</code>
-       */
+      /** <code>required int64 value = 1;</code> */
       public long getValue() {
         return value_;
       }
-      /**
-       * <code>required int64 value = 1;</code>
-       */
+      /** <code>required int64 value = 1;</code> */
       public Builder setValue(long value) {
         bitField0_ |= 0x00000001;
         value_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required int64 value = 1;</code>
-       */
+      /** <code>required int64 value = 1;</code> */
       public Builder clearValue() {
         bitField0_ = (bitField0_ & ~0x00000001);
         value_ = 0L;
@@ -11356,21 +10548,15 @@ public final class WireFormats {
 
       // required .TimeUnit unit = 2;
       private akka.remote.WireFormats.TimeUnit unit_ = akka.remote.WireFormats.TimeUnit.NANOSECONDS;
-      /**
-       * <code>required .TimeUnit unit = 2;</code>
-       */
+      /** <code>required .TimeUnit unit = 2;</code> */
       public boolean hasUnit() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>required .TimeUnit unit = 2;</code>
-       */
+      /** <code>required .TimeUnit unit = 2;</code> */
       public akka.remote.WireFormats.TimeUnit getUnit() {
         return unit_;
       }
-      /**
-       * <code>required .TimeUnit unit = 2;</code>
-       */
+      /** <code>required .TimeUnit unit = 2;</code> */
       public Builder setUnit(akka.remote.WireFormats.TimeUnit value) {
         if (value == null) {
           throw new NullPointerException();
@@ -11380,9 +10566,7 @@ public final class WireFormats {
         onChanged();
         return this;
       }
-      /**
-       * <code>required .TimeUnit unit = 2;</code>
-       */
+      /** <code>required .TimeUnit unit = 2;</code> */
       public Builder clearUnit() {
         bitField0_ = (bitField0_ & ~0x00000002);
         unit_ = akka.remote.WireFormats.TimeUnit.NANOSECONDS;
@@ -11401,37 +10585,31 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:FiniteDuration)
   }
 
-  public interface RemoteScopeOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface RemoteScopeOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required .AddressData node = 1;
-    /**
-     * <code>required .AddressData node = 1;</code>
-     */
+    /** <code>required .AddressData node = 1;</code> */
     boolean hasNode();
-    /**
-     * <code>required .AddressData node = 1;</code>
-     */
+    /** <code>required .AddressData node = 1;</code> */
     akka.remote.WireFormats.AddressData getNode();
-    /**
-     * <code>required .AddressData node = 1;</code>
-     */
+    /** <code>required .AddressData node = 1;</code> */
     akka.remote.WireFormats.AddressDataOrBuilder getNodeOrBuilder();
   }
-  /**
-   * Protobuf type {@code RemoteScope}
-   */
-  public static final class RemoteScope extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code RemoteScope} */
+  public static final class RemoteScope extends akka.protobuf.GeneratedMessage
       implements RemoteScopeOrBuilder {
     // Use RemoteScope.newBuilder() to construct.
     private RemoteScope(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private RemoteScope(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private RemoteScope(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final RemoteScope defaultInstance;
+
     public static RemoteScope getDefaultInstance() {
       return defaultInstance;
     }
@@ -11441,14 +10619,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private RemoteScope(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -11462,59 +10640,64 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              akka.remote.WireFormats.AddressData.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                subBuilder = node_.toBuilder();
+            case 10:
+              {
+                akka.remote.WireFormats.AddressData.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                  subBuilder = node_.toBuilder();
+                }
+                node_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.AddressData.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(node_);
+                  node_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000001;
+                break;
               }
-              node_ = input.readMessage(akka.remote.WireFormats.AddressData.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(node_);
-                node_ = subBuilder.buildPartial();
-              }
-              bitField0_ |= 0x00000001;
-              break;
-            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_RemoteScope_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_RemoteScope_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.RemoteScope.class, akka.remote.WireFormats.RemoteScope.Builder.class);
+              akka.remote.WireFormats.RemoteScope.class,
+              akka.remote.WireFormats.RemoteScope.Builder.class);
     }
 
     public static akka.protobuf.Parser<RemoteScope> PARSER =
         new akka.protobuf.AbstractParser<RemoteScope>() {
-      public RemoteScope parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new RemoteScope(input, extensionRegistry);
-      }
-    };
+          public RemoteScope parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new RemoteScope(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<RemoteScope> getParserForType() {
@@ -11525,21 +10708,15 @@ public final class WireFormats {
     // required .AddressData node = 1;
     public static final int NODE_FIELD_NUMBER = 1;
     private akka.remote.WireFormats.AddressData node_;
-    /**
-     * <code>required .AddressData node = 1;</code>
-     */
+    /** <code>required .AddressData node = 1;</code> */
     public boolean hasNode() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required .AddressData node = 1;</code>
-     */
+    /** <code>required .AddressData node = 1;</code> */
     public akka.remote.WireFormats.AddressData getNode() {
       return node_;
     }
-    /**
-     * <code>required .AddressData node = 1;</code>
-     */
+    /** <code>required .AddressData node = 1;</code> */
     public akka.remote.WireFormats.AddressDataOrBuilder getNodeOrBuilder() {
       return node_;
     }
@@ -11547,7 +10724,9 @@ public final class WireFormats {
     private void initFields() {
       node_ = akka.remote.WireFormats.AddressData.getDefaultInstance();
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -11564,8 +10743,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeMessage(1, node_);
@@ -11574,14 +10752,14 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, node_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(1, node_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -11589,94 +10767,100 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.RemoteScope parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.RemoteScope parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.RemoteScope parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.RemoteScope parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.RemoteScope parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.RemoteScope parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.RemoteScope parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.RemoteScope parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.RemoteScope parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.RemoteScope parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.RemoteScope parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.RemoteScope prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code RemoteScope}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.RemoteScopeOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    /** Protobuf type {@code RemoteScope} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.RemoteScopeOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_RemoteScope_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_RemoteScope_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.RemoteScope.class, akka.remote.WireFormats.RemoteScope.Builder.class);
+                akka.remote.WireFormats.RemoteScope.class,
+                akka.remote.WireFormats.RemoteScope.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.RemoteScope.newBuilder()
@@ -11684,16 +10868,17 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getNodeFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -11713,8 +10898,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_RemoteScope_descriptor;
       }
 
@@ -11749,7 +10933,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.RemoteScope) {
-          return mergeFrom((akka.remote.WireFormats.RemoteScope)other);
+          return mergeFrom((akka.remote.WireFormats.RemoteScope) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -11767,11 +10951,11 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasNode()) {
-          
+
           return false;
         }
         if (!getNode().isInitialized()) {
-          
+
           return false;
         }
         return true;
@@ -11794,21 +10978,22 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required .AddressData node = 1;
-      private akka.remote.WireFormats.AddressData node_ = akka.remote.WireFormats.AddressData.getDefaultInstance();
+      private akka.remote.WireFormats.AddressData node_ =
+          akka.remote.WireFormats.AddressData.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder> nodeBuilder_;
-      /**
-       * <code>required .AddressData node = 1;</code>
-       */
+              akka.remote.WireFormats.AddressData,
+              akka.remote.WireFormats.AddressData.Builder,
+              akka.remote.WireFormats.AddressDataOrBuilder>
+          nodeBuilder_;
+      /** <code>required .AddressData node = 1;</code> */
       public boolean hasNode() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required .AddressData node = 1;</code>
-       */
+      /** <code>required .AddressData node = 1;</code> */
       public akka.remote.WireFormats.AddressData getNode() {
         if (nodeBuilder_ == null) {
           return node_;
@@ -11816,9 +11001,7 @@ public final class WireFormats {
           return nodeBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .AddressData node = 1;</code>
-       */
+      /** <code>required .AddressData node = 1;</code> */
       public Builder setNode(akka.remote.WireFormats.AddressData value) {
         if (nodeBuilder_ == null) {
           if (value == null) {
@@ -11832,11 +11015,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .AddressData node = 1;</code>
-       */
-      public Builder setNode(
-          akka.remote.WireFormats.AddressData.Builder builderForValue) {
+      /** <code>required .AddressData node = 1;</code> */
+      public Builder setNode(akka.remote.WireFormats.AddressData.Builder builderForValue) {
         if (nodeBuilder_ == null) {
           node_ = builderForValue.build();
           onChanged();
@@ -11846,15 +11026,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .AddressData node = 1;</code>
-       */
+      /** <code>required .AddressData node = 1;</code> */
       public Builder mergeNode(akka.remote.WireFormats.AddressData value) {
         if (nodeBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
-              node_ != akka.remote.WireFormats.AddressData.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000001) == 0x00000001)
+              && node_ != akka.remote.WireFormats.AddressData.getDefaultInstance()) {
             node_ =
-              akka.remote.WireFormats.AddressData.newBuilder(node_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.AddressData.newBuilder(node_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             node_ = value;
           }
@@ -11865,9 +11045,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .AddressData node = 1;</code>
-       */
+      /** <code>required .AddressData node = 1;</code> */
       public Builder clearNode() {
         if (nodeBuilder_ == null) {
           node_ = akka.remote.WireFormats.AddressData.getDefaultInstance();
@@ -11878,17 +11056,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
-      /**
-       * <code>required .AddressData node = 1;</code>
-       */
+      /** <code>required .AddressData node = 1;</code> */
       public akka.remote.WireFormats.AddressData.Builder getNodeBuilder() {
         bitField0_ |= 0x00000001;
         onChanged();
         return getNodeFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .AddressData node = 1;</code>
-       */
+      /** <code>required .AddressData node = 1;</code> */
       public akka.remote.WireFormats.AddressDataOrBuilder getNodeOrBuilder() {
         if (nodeBuilder_ != null) {
           return nodeBuilder_.getMessageOrBuilder();
@@ -11896,18 +11070,19 @@ public final class WireFormats {
           return node_;
         }
       }
-      /**
-       * <code>required .AddressData node = 1;</code>
-       */
+      /** <code>required .AddressData node = 1;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder> 
+              akka.remote.WireFormats.AddressData,
+              akka.remote.WireFormats.AddressData.Builder,
+              akka.remote.WireFormats.AddressDataOrBuilder>
           getNodeFieldBuilder() {
         if (nodeBuilder_ == null) {
-          nodeBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder>(
-                  node_,
-                  getParentForChildren(),
-                  isClean());
+          nodeBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.AddressData,
+                  akka.remote.WireFormats.AddressData.Builder,
+                  akka.remote.WireFormats.AddressDataOrBuilder>(
+                  node_, getParentForChildren(), isClean());
           node_ = null;
         }
         return nodeBuilder_;
@@ -11924,93 +11099,65 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:RemoteScope)
   }
 
-  public interface DefaultResizerOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface DefaultResizerOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required uint32 lowerBound = 1;
-    /**
-     * <code>required uint32 lowerBound = 1;</code>
-     */
+    /** <code>required uint32 lowerBound = 1;</code> */
     boolean hasLowerBound();
-    /**
-     * <code>required uint32 lowerBound = 1;</code>
-     */
+    /** <code>required uint32 lowerBound = 1;</code> */
     int getLowerBound();
 
     // required uint32 upperBound = 2;
-    /**
-     * <code>required uint32 upperBound = 2;</code>
-     */
+    /** <code>required uint32 upperBound = 2;</code> */
     boolean hasUpperBound();
-    /**
-     * <code>required uint32 upperBound = 2;</code>
-     */
+    /** <code>required uint32 upperBound = 2;</code> */
     int getUpperBound();
 
     // required uint32 pressureThreshold = 3;
-    /**
-     * <code>required uint32 pressureThreshold = 3;</code>
-     */
+    /** <code>required uint32 pressureThreshold = 3;</code> */
     boolean hasPressureThreshold();
-    /**
-     * <code>required uint32 pressureThreshold = 3;</code>
-     */
+    /** <code>required uint32 pressureThreshold = 3;</code> */
     int getPressureThreshold();
 
     // required double rampupRate = 4;
-    /**
-     * <code>required double rampupRate = 4;</code>
-     */
+    /** <code>required double rampupRate = 4;</code> */
     boolean hasRampupRate();
-    /**
-     * <code>required double rampupRate = 4;</code>
-     */
+    /** <code>required double rampupRate = 4;</code> */
     double getRampupRate();
 
     // required double backoffThreshold = 5;
-    /**
-     * <code>required double backoffThreshold = 5;</code>
-     */
+    /** <code>required double backoffThreshold = 5;</code> */
     boolean hasBackoffThreshold();
-    /**
-     * <code>required double backoffThreshold = 5;</code>
-     */
+    /** <code>required double backoffThreshold = 5;</code> */
     double getBackoffThreshold();
 
     // required double backoffRate = 6;
-    /**
-     * <code>required double backoffRate = 6;</code>
-     */
+    /** <code>required double backoffRate = 6;</code> */
     boolean hasBackoffRate();
-    /**
-     * <code>required double backoffRate = 6;</code>
-     */
+    /** <code>required double backoffRate = 6;</code> */
     double getBackoffRate();
 
     // required uint32 messagesPerResize = 7;
-    /**
-     * <code>required uint32 messagesPerResize = 7;</code>
-     */
+    /** <code>required uint32 messagesPerResize = 7;</code> */
     boolean hasMessagesPerResize();
-    /**
-     * <code>required uint32 messagesPerResize = 7;</code>
-     */
+    /** <code>required uint32 messagesPerResize = 7;</code> */
     int getMessagesPerResize();
   }
-  /**
-   * Protobuf type {@code DefaultResizer}
-   */
-  public static final class DefaultResizer extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code DefaultResizer} */
+  public static final class DefaultResizer extends akka.protobuf.GeneratedMessage
       implements DefaultResizerOrBuilder {
     // Use DefaultResizer.newBuilder() to construct.
     private DefaultResizer(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private DefaultResizer(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private DefaultResizer(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final DefaultResizer defaultInstance;
+
     public static DefaultResizer getDefaultInstance() {
       return defaultInstance;
     }
@@ -12020,14 +11167,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private DefaultResizer(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -12041,81 +11188,90 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 8: {
-              bitField0_ |= 0x00000001;
-              lowerBound_ = input.readUInt32();
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              upperBound_ = input.readUInt32();
-              break;
-            }
-            case 24: {
-              bitField0_ |= 0x00000004;
-              pressureThreshold_ = input.readUInt32();
-              break;
-            }
-            case 33: {
-              bitField0_ |= 0x00000008;
-              rampupRate_ = input.readDouble();
-              break;
-            }
-            case 41: {
-              bitField0_ |= 0x00000010;
-              backoffThreshold_ = input.readDouble();
-              break;
-            }
-            case 49: {
-              bitField0_ |= 0x00000020;
-              backoffRate_ = input.readDouble();
-              break;
-            }
-            case 56: {
-              bitField0_ |= 0x00000040;
-              messagesPerResize_ = input.readUInt32();
-              break;
-            }
+            case 8:
+              {
+                bitField0_ |= 0x00000001;
+                lowerBound_ = input.readUInt32();
+                break;
+              }
+            case 16:
+              {
+                bitField0_ |= 0x00000002;
+                upperBound_ = input.readUInt32();
+                break;
+              }
+            case 24:
+              {
+                bitField0_ |= 0x00000004;
+                pressureThreshold_ = input.readUInt32();
+                break;
+              }
+            case 33:
+              {
+                bitField0_ |= 0x00000008;
+                rampupRate_ = input.readDouble();
+                break;
+              }
+            case 41:
+              {
+                bitField0_ |= 0x00000010;
+                backoffThreshold_ = input.readDouble();
+                break;
+              }
+            case 49:
+              {
+                bitField0_ |= 0x00000020;
+                backoffRate_ = input.readDouble();
+                break;
+              }
+            case 56:
+              {
+                bitField0_ |= 0x00000040;
+                messagesPerResize_ = input.readUInt32();
+                break;
+              }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_DefaultResizer_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_DefaultResizer_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.DefaultResizer.class, akka.remote.WireFormats.DefaultResizer.Builder.class);
+              akka.remote.WireFormats.DefaultResizer.class,
+              akka.remote.WireFormats.DefaultResizer.Builder.class);
     }
 
     public static akka.protobuf.Parser<DefaultResizer> PARSER =
         new akka.protobuf.AbstractParser<DefaultResizer>() {
-      public DefaultResizer parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new DefaultResizer(input, extensionRegistry);
-      }
-    };
+          public DefaultResizer parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new DefaultResizer(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<DefaultResizer> getParserForType() {
@@ -12126,15 +11282,11 @@ public final class WireFormats {
     // required uint32 lowerBound = 1;
     public static final int LOWERBOUND_FIELD_NUMBER = 1;
     private int lowerBound_;
-    /**
-     * <code>required uint32 lowerBound = 1;</code>
-     */
+    /** <code>required uint32 lowerBound = 1;</code> */
     public boolean hasLowerBound() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required uint32 lowerBound = 1;</code>
-     */
+    /** <code>required uint32 lowerBound = 1;</code> */
     public int getLowerBound() {
       return lowerBound_;
     }
@@ -12142,15 +11294,11 @@ public final class WireFormats {
     // required uint32 upperBound = 2;
     public static final int UPPERBOUND_FIELD_NUMBER = 2;
     private int upperBound_;
-    /**
-     * <code>required uint32 upperBound = 2;</code>
-     */
+    /** <code>required uint32 upperBound = 2;</code> */
     public boolean hasUpperBound() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>required uint32 upperBound = 2;</code>
-     */
+    /** <code>required uint32 upperBound = 2;</code> */
     public int getUpperBound() {
       return upperBound_;
     }
@@ -12158,15 +11306,11 @@ public final class WireFormats {
     // required uint32 pressureThreshold = 3;
     public static final int PRESSURETHRESHOLD_FIELD_NUMBER = 3;
     private int pressureThreshold_;
-    /**
-     * <code>required uint32 pressureThreshold = 3;</code>
-     */
+    /** <code>required uint32 pressureThreshold = 3;</code> */
     public boolean hasPressureThreshold() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    /**
-     * <code>required uint32 pressureThreshold = 3;</code>
-     */
+    /** <code>required uint32 pressureThreshold = 3;</code> */
     public int getPressureThreshold() {
       return pressureThreshold_;
     }
@@ -12174,15 +11318,11 @@ public final class WireFormats {
     // required double rampupRate = 4;
     public static final int RAMPUPRATE_FIELD_NUMBER = 4;
     private double rampupRate_;
-    /**
-     * <code>required double rampupRate = 4;</code>
-     */
+    /** <code>required double rampupRate = 4;</code> */
     public boolean hasRampupRate() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
-    /**
-     * <code>required double rampupRate = 4;</code>
-     */
+    /** <code>required double rampupRate = 4;</code> */
     public double getRampupRate() {
       return rampupRate_;
     }
@@ -12190,15 +11330,11 @@ public final class WireFormats {
     // required double backoffThreshold = 5;
     public static final int BACKOFFTHRESHOLD_FIELD_NUMBER = 5;
     private double backoffThreshold_;
-    /**
-     * <code>required double backoffThreshold = 5;</code>
-     */
+    /** <code>required double backoffThreshold = 5;</code> */
     public boolean hasBackoffThreshold() {
       return ((bitField0_ & 0x00000010) == 0x00000010);
     }
-    /**
-     * <code>required double backoffThreshold = 5;</code>
-     */
+    /** <code>required double backoffThreshold = 5;</code> */
     public double getBackoffThreshold() {
       return backoffThreshold_;
     }
@@ -12206,15 +11342,11 @@ public final class WireFormats {
     // required double backoffRate = 6;
     public static final int BACKOFFRATE_FIELD_NUMBER = 6;
     private double backoffRate_;
-    /**
-     * <code>required double backoffRate = 6;</code>
-     */
+    /** <code>required double backoffRate = 6;</code> */
     public boolean hasBackoffRate() {
       return ((bitField0_ & 0x00000020) == 0x00000020);
     }
-    /**
-     * <code>required double backoffRate = 6;</code>
-     */
+    /** <code>required double backoffRate = 6;</code> */
     public double getBackoffRate() {
       return backoffRate_;
     }
@@ -12222,15 +11354,11 @@ public final class WireFormats {
     // required uint32 messagesPerResize = 7;
     public static final int MESSAGESPERRESIZE_FIELD_NUMBER = 7;
     private int messagesPerResize_;
-    /**
-     * <code>required uint32 messagesPerResize = 7;</code>
-     */
+    /** <code>required uint32 messagesPerResize = 7;</code> */
     public boolean hasMessagesPerResize() {
       return ((bitField0_ & 0x00000040) == 0x00000040);
     }
-    /**
-     * <code>required uint32 messagesPerResize = 7;</code>
-     */
+    /** <code>required uint32 messagesPerResize = 7;</code> */
     public int getMessagesPerResize() {
       return messagesPerResize_;
     }
@@ -12244,7 +11372,9 @@ public final class WireFormats {
       backoffRate_ = 0D;
       messagesPerResize_ = 0;
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -12281,8 +11411,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeUInt32(1, lowerBound_);
@@ -12309,38 +11438,32 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeUInt32Size(1, lowerBound_);
+        size += akka.protobuf.CodedOutputStream.computeUInt32Size(1, lowerBound_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeUInt32Size(2, upperBound_);
+        size += akka.protobuf.CodedOutputStream.computeUInt32Size(2, upperBound_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeUInt32Size(3, pressureThreshold_);
+        size += akka.protobuf.CodedOutputStream.computeUInt32Size(3, pressureThreshold_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeDoubleSize(4, rampupRate_);
+        size += akka.protobuf.CodedOutputStream.computeDoubleSize(4, rampupRate_);
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeDoubleSize(5, backoffThreshold_);
+        size += akka.protobuf.CodedOutputStream.computeDoubleSize(5, backoffThreshold_);
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeDoubleSize(6, backoffRate_);
+        size += akka.protobuf.CodedOutputStream.computeDoubleSize(6, backoffRate_);
       }
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeUInt32Size(7, messagesPerResize_);
+        size += akka.protobuf.CodedOutputStream.computeUInt32Size(7, messagesPerResize_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -12348,94 +11471,100 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.DefaultResizer parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.DefaultResizer parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.DefaultResizer parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.DefaultResizer parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.DefaultResizer parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.DefaultResizer parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.DefaultResizer parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.DefaultResizer parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.DefaultResizer parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.DefaultResizer parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.DefaultResizer parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.DefaultResizer parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.DefaultResizer prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code DefaultResizer}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.DefaultResizerOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    /** Protobuf type {@code DefaultResizer} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.DefaultResizerOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_DefaultResizer_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_DefaultResizer_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.DefaultResizer.class, akka.remote.WireFormats.DefaultResizer.Builder.class);
+                akka.remote.WireFormats.DefaultResizer.class,
+                akka.remote.WireFormats.DefaultResizer.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.DefaultResizer.newBuilder()
@@ -12443,15 +11572,15 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {}
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -12479,8 +11608,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_DefaultResizer_descriptor;
       }
 
@@ -12497,7 +11625,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.DefaultResizer buildPartial() {
-        akka.remote.WireFormats.DefaultResizer result = new akka.remote.WireFormats.DefaultResizer(this);
+        akka.remote.WireFormats.DefaultResizer result =
+            new akka.remote.WireFormats.DefaultResizer(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -12535,7 +11664,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.DefaultResizer) {
-          return mergeFrom((akka.remote.WireFormats.DefaultResizer)other);
+          return mergeFrom((akka.remote.WireFormats.DefaultResizer) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -12571,31 +11700,31 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasLowerBound()) {
-          
+
           return false;
         }
         if (!hasUpperBound()) {
-          
+
           return false;
         }
         if (!hasPressureThreshold()) {
-          
+
           return false;
         }
         if (!hasRampupRate()) {
-          
+
           return false;
         }
         if (!hasBackoffThreshold()) {
-          
+
           return false;
         }
         if (!hasBackoffRate()) {
-          
+
           return false;
         }
         if (!hasMessagesPerResize()) {
-          
+
           return false;
         }
         return true;
@@ -12618,34 +11747,27 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required uint32 lowerBound = 1;
-      private int lowerBound_ ;
-      /**
-       * <code>required uint32 lowerBound = 1;</code>
-       */
+      private int lowerBound_;
+      /** <code>required uint32 lowerBound = 1;</code> */
       public boolean hasLowerBound() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required uint32 lowerBound = 1;</code>
-       */
+      /** <code>required uint32 lowerBound = 1;</code> */
       public int getLowerBound() {
         return lowerBound_;
       }
-      /**
-       * <code>required uint32 lowerBound = 1;</code>
-       */
+      /** <code>required uint32 lowerBound = 1;</code> */
       public Builder setLowerBound(int value) {
         bitField0_ |= 0x00000001;
         lowerBound_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required uint32 lowerBound = 1;</code>
-       */
+      /** <code>required uint32 lowerBound = 1;</code> */
       public Builder clearLowerBound() {
         bitField0_ = (bitField0_ & ~0x00000001);
         lowerBound_ = 0;
@@ -12654,31 +11776,23 @@ public final class WireFormats {
       }
 
       // required uint32 upperBound = 2;
-      private int upperBound_ ;
-      /**
-       * <code>required uint32 upperBound = 2;</code>
-       */
+      private int upperBound_;
+      /** <code>required uint32 upperBound = 2;</code> */
       public boolean hasUpperBound() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>required uint32 upperBound = 2;</code>
-       */
+      /** <code>required uint32 upperBound = 2;</code> */
       public int getUpperBound() {
         return upperBound_;
       }
-      /**
-       * <code>required uint32 upperBound = 2;</code>
-       */
+      /** <code>required uint32 upperBound = 2;</code> */
       public Builder setUpperBound(int value) {
         bitField0_ |= 0x00000002;
         upperBound_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required uint32 upperBound = 2;</code>
-       */
+      /** <code>required uint32 upperBound = 2;</code> */
       public Builder clearUpperBound() {
         bitField0_ = (bitField0_ & ~0x00000002);
         upperBound_ = 0;
@@ -12687,31 +11801,23 @@ public final class WireFormats {
       }
 
       // required uint32 pressureThreshold = 3;
-      private int pressureThreshold_ ;
-      /**
-       * <code>required uint32 pressureThreshold = 3;</code>
-       */
+      private int pressureThreshold_;
+      /** <code>required uint32 pressureThreshold = 3;</code> */
       public boolean hasPressureThreshold() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      /**
-       * <code>required uint32 pressureThreshold = 3;</code>
-       */
+      /** <code>required uint32 pressureThreshold = 3;</code> */
       public int getPressureThreshold() {
         return pressureThreshold_;
       }
-      /**
-       * <code>required uint32 pressureThreshold = 3;</code>
-       */
+      /** <code>required uint32 pressureThreshold = 3;</code> */
       public Builder setPressureThreshold(int value) {
         bitField0_ |= 0x00000004;
         pressureThreshold_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required uint32 pressureThreshold = 3;</code>
-       */
+      /** <code>required uint32 pressureThreshold = 3;</code> */
       public Builder clearPressureThreshold() {
         bitField0_ = (bitField0_ & ~0x00000004);
         pressureThreshold_ = 0;
@@ -12720,31 +11826,23 @@ public final class WireFormats {
       }
 
       // required double rampupRate = 4;
-      private double rampupRate_ ;
-      /**
-       * <code>required double rampupRate = 4;</code>
-       */
+      private double rampupRate_;
+      /** <code>required double rampupRate = 4;</code> */
       public boolean hasRampupRate() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
-      /**
-       * <code>required double rampupRate = 4;</code>
-       */
+      /** <code>required double rampupRate = 4;</code> */
       public double getRampupRate() {
         return rampupRate_;
       }
-      /**
-       * <code>required double rampupRate = 4;</code>
-       */
+      /** <code>required double rampupRate = 4;</code> */
       public Builder setRampupRate(double value) {
         bitField0_ |= 0x00000008;
         rampupRate_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required double rampupRate = 4;</code>
-       */
+      /** <code>required double rampupRate = 4;</code> */
       public Builder clearRampupRate() {
         bitField0_ = (bitField0_ & ~0x00000008);
         rampupRate_ = 0D;
@@ -12753,31 +11851,23 @@ public final class WireFormats {
       }
 
       // required double backoffThreshold = 5;
-      private double backoffThreshold_ ;
-      /**
-       * <code>required double backoffThreshold = 5;</code>
-       */
+      private double backoffThreshold_;
+      /** <code>required double backoffThreshold = 5;</code> */
       public boolean hasBackoffThreshold() {
         return ((bitField0_ & 0x00000010) == 0x00000010);
       }
-      /**
-       * <code>required double backoffThreshold = 5;</code>
-       */
+      /** <code>required double backoffThreshold = 5;</code> */
       public double getBackoffThreshold() {
         return backoffThreshold_;
       }
-      /**
-       * <code>required double backoffThreshold = 5;</code>
-       */
+      /** <code>required double backoffThreshold = 5;</code> */
       public Builder setBackoffThreshold(double value) {
         bitField0_ |= 0x00000010;
         backoffThreshold_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required double backoffThreshold = 5;</code>
-       */
+      /** <code>required double backoffThreshold = 5;</code> */
       public Builder clearBackoffThreshold() {
         bitField0_ = (bitField0_ & ~0x00000010);
         backoffThreshold_ = 0D;
@@ -12786,31 +11876,23 @@ public final class WireFormats {
       }
 
       // required double backoffRate = 6;
-      private double backoffRate_ ;
-      /**
-       * <code>required double backoffRate = 6;</code>
-       */
+      private double backoffRate_;
+      /** <code>required double backoffRate = 6;</code> */
       public boolean hasBackoffRate() {
         return ((bitField0_ & 0x00000020) == 0x00000020);
       }
-      /**
-       * <code>required double backoffRate = 6;</code>
-       */
+      /** <code>required double backoffRate = 6;</code> */
       public double getBackoffRate() {
         return backoffRate_;
       }
-      /**
-       * <code>required double backoffRate = 6;</code>
-       */
+      /** <code>required double backoffRate = 6;</code> */
       public Builder setBackoffRate(double value) {
         bitField0_ |= 0x00000020;
         backoffRate_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required double backoffRate = 6;</code>
-       */
+      /** <code>required double backoffRate = 6;</code> */
       public Builder clearBackoffRate() {
         bitField0_ = (bitField0_ & ~0x00000020);
         backoffRate_ = 0D;
@@ -12819,31 +11901,23 @@ public final class WireFormats {
       }
 
       // required uint32 messagesPerResize = 7;
-      private int messagesPerResize_ ;
-      /**
-       * <code>required uint32 messagesPerResize = 7;</code>
-       */
+      private int messagesPerResize_;
+      /** <code>required uint32 messagesPerResize = 7;</code> */
       public boolean hasMessagesPerResize() {
         return ((bitField0_ & 0x00000040) == 0x00000040);
       }
-      /**
-       * <code>required uint32 messagesPerResize = 7;</code>
-       */
+      /** <code>required uint32 messagesPerResize = 7;</code> */
       public int getMessagesPerResize() {
         return messagesPerResize_;
       }
-      /**
-       * <code>required uint32 messagesPerResize = 7;</code>
-       */
+      /** <code>required uint32 messagesPerResize = 7;</code> */
       public Builder setMessagesPerResize(int value) {
         bitField0_ |= 0x00000040;
         messagesPerResize_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required uint32 messagesPerResize = 7;</code>
-       */
+      /** <code>required uint32 messagesPerResize = 7;</code> */
       public Builder clearMessagesPerResize() {
         bitField0_ = (bitField0_ & ~0x00000040);
         messagesPerResize_ = 0;
@@ -12862,52 +11936,39 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:DefaultResizer)
   }
 
-  public interface FromConfigOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface FromConfigOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // optional .Payload resizer = 1;
-    /**
-     * <code>optional .Payload resizer = 1;</code>
-     */
+    /** <code>optional .Payload resizer = 1;</code> */
     boolean hasResizer();
-    /**
-     * <code>optional .Payload resizer = 1;</code>
-     */
+    /** <code>optional .Payload resizer = 1;</code> */
     akka.remote.ContainerFormats.Payload getResizer();
-    /**
-     * <code>optional .Payload resizer = 1;</code>
-     */
+    /** <code>optional .Payload resizer = 1;</code> */
     akka.remote.ContainerFormats.PayloadOrBuilder getResizerOrBuilder();
 
     // optional string routerDispatcher = 2;
-    /**
-     * <code>optional string routerDispatcher = 2;</code>
-     */
+    /** <code>optional string routerDispatcher = 2;</code> */
     boolean hasRouterDispatcher();
-    /**
-     * <code>optional string routerDispatcher = 2;</code>
-     */
+    /** <code>optional string routerDispatcher = 2;</code> */
     java.lang.String getRouterDispatcher();
-    /**
-     * <code>optional string routerDispatcher = 2;</code>
-     */
-    akka.protobuf.ByteString
-        getRouterDispatcherBytes();
+    /** <code>optional string routerDispatcher = 2;</code> */
+    akka.protobuf.ByteString getRouterDispatcherBytes();
   }
-  /**
-   * Protobuf type {@code FromConfig}
-   */
-  public static final class FromConfig extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code FromConfig} */
+  public static final class FromConfig extends akka.protobuf.GeneratedMessage
       implements FromConfigOrBuilder {
     // Use FromConfig.newBuilder() to construct.
     private FromConfig(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private FromConfig(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private FromConfig(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final FromConfig defaultInstance;
+
     public static FromConfig getDefaultInstance() {
       return defaultInstance;
     }
@@ -12917,14 +11978,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private FromConfig(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -12938,64 +11999,70 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                subBuilder = resizer_.toBuilder();
+            case 10:
+              {
+                akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                  subBuilder = resizer_.toBuilder();
+                }
+                resizer_ =
+                    input.readMessage(
+                        akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(resizer_);
+                  resizer_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000001;
+                break;
               }
-              resizer_ = input.readMessage(akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(resizer_);
-                resizer_ = subBuilder.buildPartial();
+            case 18:
+              {
+                bitField0_ |= 0x00000002;
+                routerDispatcher_ = input.readBytes();
+                break;
               }
-              bitField0_ |= 0x00000001;
-              break;
-            }
-            case 18: {
-              bitField0_ |= 0x00000002;
-              routerDispatcher_ = input.readBytes();
-              break;
-            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_FromConfig_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_FromConfig_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.FromConfig.class, akka.remote.WireFormats.FromConfig.Builder.class);
+              akka.remote.WireFormats.FromConfig.class,
+              akka.remote.WireFormats.FromConfig.Builder.class);
     }
 
     public static akka.protobuf.Parser<FromConfig> PARSER =
         new akka.protobuf.AbstractParser<FromConfig>() {
-      public FromConfig parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new FromConfig(input, extensionRegistry);
-      }
-    };
+          public FromConfig parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new FromConfig(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<FromConfig> getParserForType() {
@@ -13006,21 +12073,15 @@ public final class WireFormats {
     // optional .Payload resizer = 1;
     public static final int RESIZER_FIELD_NUMBER = 1;
     private akka.remote.ContainerFormats.Payload resizer_;
-    /**
-     * <code>optional .Payload resizer = 1;</code>
-     */
+    /** <code>optional .Payload resizer = 1;</code> */
     public boolean hasResizer() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>optional .Payload resizer = 1;</code>
-     */
+    /** <code>optional .Payload resizer = 1;</code> */
     public akka.remote.ContainerFormats.Payload getResizer() {
       return resizer_;
     }
-    /**
-     * <code>optional .Payload resizer = 1;</code>
-     */
+    /** <code>optional .Payload resizer = 1;</code> */
     public akka.remote.ContainerFormats.PayloadOrBuilder getResizerOrBuilder() {
       return resizer_;
     }
@@ -13028,22 +12089,17 @@ public final class WireFormats {
     // optional string routerDispatcher = 2;
     public static final int ROUTERDISPATCHER_FIELD_NUMBER = 2;
     private java.lang.Object routerDispatcher_;
-    /**
-     * <code>optional string routerDispatcher = 2;</code>
-     */
+    /** <code>optional string routerDispatcher = 2;</code> */
     public boolean hasRouterDispatcher() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>optional string routerDispatcher = 2;</code>
-     */
+    /** <code>optional string routerDispatcher = 2;</code> */
     public java.lang.String getRouterDispatcher() {
       java.lang.Object ref = routerDispatcher_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           routerDispatcher_ = s;
@@ -13051,16 +12107,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>optional string routerDispatcher = 2;</code>
-     */
-    public akka.protobuf.ByteString
-        getRouterDispatcherBytes() {
+    /** <code>optional string routerDispatcher = 2;</code> */
+    public akka.protobuf.ByteString getRouterDispatcherBytes() {
       java.lang.Object ref = routerDispatcher_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         routerDispatcher_ = b;
         return b;
       } else {
@@ -13072,7 +12123,9 @@ public final class WireFormats {
       resizer_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
       routerDispatcher_ = "";
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -13087,8 +12140,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeMessage(1, resizer_);
@@ -13100,18 +12152,17 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, resizer_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(1, resizer_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(2, getRouterDispatcherBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(2, getRouterDispatcherBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -13119,94 +12170,100 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.FromConfig parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.FromConfig parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.FromConfig parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.FromConfig parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.FromConfig parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.FromConfig parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.FromConfig parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.FromConfig parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.FromConfig parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.FromConfig parseFrom(
-        akka.protobuf.CodedInputStream input)
+
+    public static akka.remote.WireFormats.FromConfig parseFrom(akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.FromConfig parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.FromConfig prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code FromConfig}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.FromConfigOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    /** Protobuf type {@code FromConfig} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.FromConfigOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_FromConfig_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_FromConfig_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.FromConfig.class, akka.remote.WireFormats.FromConfig.Builder.class);
+                akka.remote.WireFormats.FromConfig.class,
+                akka.remote.WireFormats.FromConfig.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.FromConfig.newBuilder()
@@ -13214,16 +12271,17 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getResizerFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -13245,8 +12303,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_FromConfig_descriptor;
       }
 
@@ -13285,7 +12342,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.FromConfig) {
-          return mergeFrom((akka.remote.WireFormats.FromConfig)other);
+          return mergeFrom((akka.remote.WireFormats.FromConfig) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -13309,7 +12366,7 @@ public final class WireFormats {
       public final boolean isInitialized() {
         if (hasResizer()) {
           if (!getResizer().isInitialized()) {
-            
+
             return false;
           }
         }
@@ -13333,21 +12390,22 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // optional .Payload resizer = 1;
-      private akka.remote.ContainerFormats.Payload resizer_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
+      private akka.remote.ContainerFormats.Payload resizer_ =
+          akka.remote.ContainerFormats.Payload.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> resizerBuilder_;
-      /**
-       * <code>optional .Payload resizer = 1;</code>
-       */
+              akka.remote.ContainerFormats.Payload,
+              akka.remote.ContainerFormats.Payload.Builder,
+              akka.remote.ContainerFormats.PayloadOrBuilder>
+          resizerBuilder_;
+      /** <code>optional .Payload resizer = 1;</code> */
       public boolean hasResizer() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>optional .Payload resizer = 1;</code>
-       */
+      /** <code>optional .Payload resizer = 1;</code> */
       public akka.remote.ContainerFormats.Payload getResizer() {
         if (resizerBuilder_ == null) {
           return resizer_;
@@ -13355,9 +12413,7 @@ public final class WireFormats {
           return resizerBuilder_.getMessage();
         }
       }
-      /**
-       * <code>optional .Payload resizer = 1;</code>
-       */
+      /** <code>optional .Payload resizer = 1;</code> */
       public Builder setResizer(akka.remote.ContainerFormats.Payload value) {
         if (resizerBuilder_ == null) {
           if (value == null) {
@@ -13371,11 +12427,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>optional .Payload resizer = 1;</code>
-       */
-      public Builder setResizer(
-          akka.remote.ContainerFormats.Payload.Builder builderForValue) {
+      /** <code>optional .Payload resizer = 1;</code> */
+      public Builder setResizer(akka.remote.ContainerFormats.Payload.Builder builderForValue) {
         if (resizerBuilder_ == null) {
           resizer_ = builderForValue.build();
           onChanged();
@@ -13385,15 +12438,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>optional .Payload resizer = 1;</code>
-       */
+      /** <code>optional .Payload resizer = 1;</code> */
       public Builder mergeResizer(akka.remote.ContainerFormats.Payload value) {
         if (resizerBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
-              resizer_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000001) == 0x00000001)
+              && resizer_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
             resizer_ =
-              akka.remote.ContainerFormats.Payload.newBuilder(resizer_).mergeFrom(value).buildPartial();
+                akka.remote.ContainerFormats.Payload.newBuilder(resizer_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             resizer_ = value;
           }
@@ -13404,9 +12457,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>optional .Payload resizer = 1;</code>
-       */
+      /** <code>optional .Payload resizer = 1;</code> */
       public Builder clearResizer() {
         if (resizerBuilder_ == null) {
           resizer_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
@@ -13417,17 +12468,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
-      /**
-       * <code>optional .Payload resizer = 1;</code>
-       */
+      /** <code>optional .Payload resizer = 1;</code> */
       public akka.remote.ContainerFormats.Payload.Builder getResizerBuilder() {
         bitField0_ |= 0x00000001;
         onChanged();
         return getResizerFieldBuilder().getBuilder();
       }
-      /**
-       * <code>optional .Payload resizer = 1;</code>
-       */
+      /** <code>optional .Payload resizer = 1;</code> */
       public akka.remote.ContainerFormats.PayloadOrBuilder getResizerOrBuilder() {
         if (resizerBuilder_ != null) {
           return resizerBuilder_.getMessageOrBuilder();
@@ -13435,18 +12482,19 @@ public final class WireFormats {
           return resizer_;
         }
       }
-      /**
-       * <code>optional .Payload resizer = 1;</code>
-       */
+      /** <code>optional .Payload resizer = 1;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> 
+              akka.remote.ContainerFormats.Payload,
+              akka.remote.ContainerFormats.Payload.Builder,
+              akka.remote.ContainerFormats.PayloadOrBuilder>
           getResizerFieldBuilder() {
         if (resizerBuilder_ == null) {
-          resizerBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder>(
-                  resizer_,
-                  getParentForChildren(),
-                  isClean());
+          resizerBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.ContainerFormats.Payload,
+                  akka.remote.ContainerFormats.Payload.Builder,
+                  akka.remote.ContainerFormats.PayloadOrBuilder>(
+                  resizer_, getParentForChildren(), isClean());
           resizer_ = null;
         }
         return resizerBuilder_;
@@ -13454,73 +12502,56 @@ public final class WireFormats {
 
       // optional string routerDispatcher = 2;
       private java.lang.Object routerDispatcher_ = "";
-      /**
-       * <code>optional string routerDispatcher = 2;</code>
-       */
+      /** <code>optional string routerDispatcher = 2;</code> */
       public boolean hasRouterDispatcher() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>optional string routerDispatcher = 2;</code>
-       */
+      /** <code>optional string routerDispatcher = 2;</code> */
       public java.lang.String getRouterDispatcher() {
         java.lang.Object ref = routerDispatcher_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           routerDispatcher_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>optional string routerDispatcher = 2;</code>
-       */
-      public akka.protobuf.ByteString
-          getRouterDispatcherBytes() {
+      /** <code>optional string routerDispatcher = 2;</code> */
+      public akka.protobuf.ByteString getRouterDispatcherBytes() {
         java.lang.Object ref = routerDispatcher_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           routerDispatcher_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>optional string routerDispatcher = 2;</code>
-       */
-      public Builder setRouterDispatcher(
-          java.lang.String value) {
+      /** <code>optional string routerDispatcher = 2;</code> */
+      public Builder setRouterDispatcher(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
         routerDispatcher_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string routerDispatcher = 2;</code>
-       */
+      /** <code>optional string routerDispatcher = 2;</code> */
       public Builder clearRouterDispatcher() {
         bitField0_ = (bitField0_ & ~0x00000002);
         routerDispatcher_ = getDefaultInstance().getRouterDispatcher();
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string routerDispatcher = 2;</code>
-       */
-      public Builder setRouterDispatcherBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>optional string routerDispatcher = 2;</code> */
+      public Builder setRouterDispatcherBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
         routerDispatcher_ = value;
         onChanged();
         return this;
@@ -13537,72 +12568,51 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:FromConfig)
   }
 
-  public interface GenericRoutingPoolOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface GenericRoutingPoolOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required uint32 nrOfInstances = 1;
-    /**
-     * <code>required uint32 nrOfInstances = 1;</code>
-     */
+    /** <code>required uint32 nrOfInstances = 1;</code> */
     boolean hasNrOfInstances();
-    /**
-     * <code>required uint32 nrOfInstances = 1;</code>
-     */
+    /** <code>required uint32 nrOfInstances = 1;</code> */
     int getNrOfInstances();
 
     // optional string routerDispatcher = 2;
-    /**
-     * <code>optional string routerDispatcher = 2;</code>
-     */
+    /** <code>optional string routerDispatcher = 2;</code> */
     boolean hasRouterDispatcher();
-    /**
-     * <code>optional string routerDispatcher = 2;</code>
-     */
+    /** <code>optional string routerDispatcher = 2;</code> */
     java.lang.String getRouterDispatcher();
-    /**
-     * <code>optional string routerDispatcher = 2;</code>
-     */
-    akka.protobuf.ByteString
-        getRouterDispatcherBytes();
+    /** <code>optional string routerDispatcher = 2;</code> */
+    akka.protobuf.ByteString getRouterDispatcherBytes();
 
     // required bool usePoolDispatcher = 3;
-    /**
-     * <code>required bool usePoolDispatcher = 3;</code>
-     */
+    /** <code>required bool usePoolDispatcher = 3;</code> */
     boolean hasUsePoolDispatcher();
-    /**
-     * <code>required bool usePoolDispatcher = 3;</code>
-     */
+    /** <code>required bool usePoolDispatcher = 3;</code> */
     boolean getUsePoolDispatcher();
 
     // optional .Payload resizer = 4;
-    /**
-     * <code>optional .Payload resizer = 4;</code>
-     */
+    /** <code>optional .Payload resizer = 4;</code> */
     boolean hasResizer();
-    /**
-     * <code>optional .Payload resizer = 4;</code>
-     */
+    /** <code>optional .Payload resizer = 4;</code> */
     akka.remote.ContainerFormats.Payload getResizer();
-    /**
-     * <code>optional .Payload resizer = 4;</code>
-     */
+    /** <code>optional .Payload resizer = 4;</code> */
     akka.remote.ContainerFormats.PayloadOrBuilder getResizerOrBuilder();
   }
-  /**
-   * Protobuf type {@code GenericRoutingPool}
-   */
-  public static final class GenericRoutingPool extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code GenericRoutingPool} */
+  public static final class GenericRoutingPool extends akka.protobuf.GeneratedMessage
       implements GenericRoutingPoolOrBuilder {
     // Use GenericRoutingPool.newBuilder() to construct.
     private GenericRoutingPool(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private GenericRoutingPool(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private GenericRoutingPool(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final GenericRoutingPool defaultInstance;
+
     public static GenericRoutingPool getDefaultInstance() {
       return defaultInstance;
     }
@@ -13612,14 +12622,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private GenericRoutingPool(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -13633,74 +12643,82 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 8: {
-              bitField0_ |= 0x00000001;
-              nrOfInstances_ = input.readUInt32();
-              break;
-            }
-            case 18: {
-              bitField0_ |= 0x00000002;
-              routerDispatcher_ = input.readBytes();
-              break;
-            }
-            case 24: {
-              bitField0_ |= 0x00000004;
-              usePoolDispatcher_ = input.readBool();
-              break;
-            }
-            case 34: {
-              akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000008) == 0x00000008)) {
-                subBuilder = resizer_.toBuilder();
+            case 8:
+              {
+                bitField0_ |= 0x00000001;
+                nrOfInstances_ = input.readUInt32();
+                break;
               }
-              resizer_ = input.readMessage(akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(resizer_);
-                resizer_ = subBuilder.buildPartial();
+            case 18:
+              {
+                bitField0_ |= 0x00000002;
+                routerDispatcher_ = input.readBytes();
+                break;
               }
-              bitField0_ |= 0x00000008;
-              break;
-            }
+            case 24:
+              {
+                bitField0_ |= 0x00000004;
+                usePoolDispatcher_ = input.readBool();
+                break;
+              }
+            case 34:
+              {
+                akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000008) == 0x00000008)) {
+                  subBuilder = resizer_.toBuilder();
+                }
+                resizer_ =
+                    input.readMessage(
+                        akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(resizer_);
+                  resizer_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000008;
+                break;
+              }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_GenericRoutingPool_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_GenericRoutingPool_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.GenericRoutingPool.class, akka.remote.WireFormats.GenericRoutingPool.Builder.class);
+              akka.remote.WireFormats.GenericRoutingPool.class,
+              akka.remote.WireFormats.GenericRoutingPool.Builder.class);
     }
 
     public static akka.protobuf.Parser<GenericRoutingPool> PARSER =
         new akka.protobuf.AbstractParser<GenericRoutingPool>() {
-      public GenericRoutingPool parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new GenericRoutingPool(input, extensionRegistry);
-      }
-    };
+          public GenericRoutingPool parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new GenericRoutingPool(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<GenericRoutingPool> getParserForType() {
@@ -13711,15 +12729,11 @@ public final class WireFormats {
     // required uint32 nrOfInstances = 1;
     public static final int NROFINSTANCES_FIELD_NUMBER = 1;
     private int nrOfInstances_;
-    /**
-     * <code>required uint32 nrOfInstances = 1;</code>
-     */
+    /** <code>required uint32 nrOfInstances = 1;</code> */
     public boolean hasNrOfInstances() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required uint32 nrOfInstances = 1;</code>
-     */
+    /** <code>required uint32 nrOfInstances = 1;</code> */
     public int getNrOfInstances() {
       return nrOfInstances_;
     }
@@ -13727,22 +12741,17 @@ public final class WireFormats {
     // optional string routerDispatcher = 2;
     public static final int ROUTERDISPATCHER_FIELD_NUMBER = 2;
     private java.lang.Object routerDispatcher_;
-    /**
-     * <code>optional string routerDispatcher = 2;</code>
-     */
+    /** <code>optional string routerDispatcher = 2;</code> */
     public boolean hasRouterDispatcher() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>optional string routerDispatcher = 2;</code>
-     */
+    /** <code>optional string routerDispatcher = 2;</code> */
     public java.lang.String getRouterDispatcher() {
       java.lang.Object ref = routerDispatcher_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           routerDispatcher_ = s;
@@ -13750,16 +12759,11 @@ public final class WireFormats {
         return s;
       }
     }
-    /**
-     * <code>optional string routerDispatcher = 2;</code>
-     */
-    public akka.protobuf.ByteString
-        getRouterDispatcherBytes() {
+    /** <code>optional string routerDispatcher = 2;</code> */
+    public akka.protobuf.ByteString getRouterDispatcherBytes() {
       java.lang.Object ref = routerDispatcher_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         routerDispatcher_ = b;
         return b;
       } else {
@@ -13770,15 +12774,11 @@ public final class WireFormats {
     // required bool usePoolDispatcher = 3;
     public static final int USEPOOLDISPATCHER_FIELD_NUMBER = 3;
     private boolean usePoolDispatcher_;
-    /**
-     * <code>required bool usePoolDispatcher = 3;</code>
-     */
+    /** <code>required bool usePoolDispatcher = 3;</code> */
     public boolean hasUsePoolDispatcher() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    /**
-     * <code>required bool usePoolDispatcher = 3;</code>
-     */
+    /** <code>required bool usePoolDispatcher = 3;</code> */
     public boolean getUsePoolDispatcher() {
       return usePoolDispatcher_;
     }
@@ -13786,21 +12786,15 @@ public final class WireFormats {
     // optional .Payload resizer = 4;
     public static final int RESIZER_FIELD_NUMBER = 4;
     private akka.remote.ContainerFormats.Payload resizer_;
-    /**
-     * <code>optional .Payload resizer = 4;</code>
-     */
+    /** <code>optional .Payload resizer = 4;</code> */
     public boolean hasResizer() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
-    /**
-     * <code>optional .Payload resizer = 4;</code>
-     */
+    /** <code>optional .Payload resizer = 4;</code> */
     public akka.remote.ContainerFormats.Payload getResizer() {
       return resizer_;
     }
-    /**
-     * <code>optional .Payload resizer = 4;</code>
-     */
+    /** <code>optional .Payload resizer = 4;</code> */
     public akka.remote.ContainerFormats.PayloadOrBuilder getResizerOrBuilder() {
       return resizer_;
     }
@@ -13811,7 +12805,9 @@ public final class WireFormats {
       usePoolDispatcher_ = false;
       resizer_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -13834,8 +12830,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeUInt32(1, nrOfInstances_);
@@ -13853,26 +12848,23 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeUInt32Size(1, nrOfInstances_);
+        size += akka.protobuf.CodedOutputStream.computeUInt32Size(1, nrOfInstances_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(2, getRouterDispatcherBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(2, getRouterDispatcherBytes());
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBoolSize(3, usePoolDispatcher_);
+        size += akka.protobuf.CodedOutputStream.computeBoolSize(3, usePoolDispatcher_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(4, resizer_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(4, resizer_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -13880,94 +12872,100 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
     public static akka.remote.WireFormats.GenericRoutingPool parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data) throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.GenericRoutingPool parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.GenericRoutingPool parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.GenericRoutingPool parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.GenericRoutingPool parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.GenericRoutingPool parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.GenericRoutingPool parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.GenericRoutingPool parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.GenericRoutingPool parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.GenericRoutingPool parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.GenericRoutingPool parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.GenericRoutingPool prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code GenericRoutingPool}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.GenericRoutingPoolOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    /** Protobuf type {@code GenericRoutingPool} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.GenericRoutingPoolOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_GenericRoutingPool_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_GenericRoutingPool_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.GenericRoutingPool.class, akka.remote.WireFormats.GenericRoutingPool.Builder.class);
+                akka.remote.WireFormats.GenericRoutingPool.class,
+                akka.remote.WireFormats.GenericRoutingPool.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.GenericRoutingPool.newBuilder()
@@ -13975,16 +12973,17 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getResizerFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -14010,8 +13009,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_GenericRoutingPool_descriptor;
       }
 
@@ -14028,7 +13026,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.GenericRoutingPool buildPartial() {
-        akka.remote.WireFormats.GenericRoutingPool result = new akka.remote.WireFormats.GenericRoutingPool(this);
+        akka.remote.WireFormats.GenericRoutingPool result =
+            new akka.remote.WireFormats.GenericRoutingPool(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -14058,7 +13057,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.GenericRoutingPool) {
-          return mergeFrom((akka.remote.WireFormats.GenericRoutingPool)other);
+          return mergeFrom((akka.remote.WireFormats.GenericRoutingPool) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -14087,16 +13086,16 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasNrOfInstances()) {
-          
+
           return false;
         }
         if (!hasUsePoolDispatcher()) {
-          
+
           return false;
         }
         if (hasResizer()) {
           if (!getResizer().isInitialized()) {
-            
+
             return false;
           }
         }
@@ -14120,34 +13119,27 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required uint32 nrOfInstances = 1;
-      private int nrOfInstances_ ;
-      /**
-       * <code>required uint32 nrOfInstances = 1;</code>
-       */
+      private int nrOfInstances_;
+      /** <code>required uint32 nrOfInstances = 1;</code> */
       public boolean hasNrOfInstances() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required uint32 nrOfInstances = 1;</code>
-       */
+      /** <code>required uint32 nrOfInstances = 1;</code> */
       public int getNrOfInstances() {
         return nrOfInstances_;
       }
-      /**
-       * <code>required uint32 nrOfInstances = 1;</code>
-       */
+      /** <code>required uint32 nrOfInstances = 1;</code> */
       public Builder setNrOfInstances(int value) {
         bitField0_ |= 0x00000001;
         nrOfInstances_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required uint32 nrOfInstances = 1;</code>
-       */
+      /** <code>required uint32 nrOfInstances = 1;</code> */
       public Builder clearNrOfInstances() {
         bitField0_ = (bitField0_ & ~0x00000001);
         nrOfInstances_ = 0;
@@ -14157,104 +13149,79 @@ public final class WireFormats {
 
       // optional string routerDispatcher = 2;
       private java.lang.Object routerDispatcher_ = "";
-      /**
-       * <code>optional string routerDispatcher = 2;</code>
-       */
+      /** <code>optional string routerDispatcher = 2;</code> */
       public boolean hasRouterDispatcher() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>optional string routerDispatcher = 2;</code>
-       */
+      /** <code>optional string routerDispatcher = 2;</code> */
       public java.lang.String getRouterDispatcher() {
         java.lang.Object ref = routerDispatcher_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           routerDispatcher_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>optional string routerDispatcher = 2;</code>
-       */
-      public akka.protobuf.ByteString
-          getRouterDispatcherBytes() {
+      /** <code>optional string routerDispatcher = 2;</code> */
+      public akka.protobuf.ByteString getRouterDispatcherBytes() {
         java.lang.Object ref = routerDispatcher_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           routerDispatcher_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>optional string routerDispatcher = 2;</code>
-       */
-      public Builder setRouterDispatcher(
-          java.lang.String value) {
+      /** <code>optional string routerDispatcher = 2;</code> */
+      public Builder setRouterDispatcher(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
         routerDispatcher_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string routerDispatcher = 2;</code>
-       */
+      /** <code>optional string routerDispatcher = 2;</code> */
       public Builder clearRouterDispatcher() {
         bitField0_ = (bitField0_ & ~0x00000002);
         routerDispatcher_ = getDefaultInstance().getRouterDispatcher();
         onChanged();
         return this;
       }
-      /**
-       * <code>optional string routerDispatcher = 2;</code>
-       */
-      public Builder setRouterDispatcherBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>optional string routerDispatcher = 2;</code> */
+      public Builder setRouterDispatcherBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000002;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
         routerDispatcher_ = value;
         onChanged();
         return this;
       }
 
       // required bool usePoolDispatcher = 3;
-      private boolean usePoolDispatcher_ ;
-      /**
-       * <code>required bool usePoolDispatcher = 3;</code>
-       */
+      private boolean usePoolDispatcher_;
+      /** <code>required bool usePoolDispatcher = 3;</code> */
       public boolean hasUsePoolDispatcher() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      /**
-       * <code>required bool usePoolDispatcher = 3;</code>
-       */
+      /** <code>required bool usePoolDispatcher = 3;</code> */
       public boolean getUsePoolDispatcher() {
         return usePoolDispatcher_;
       }
-      /**
-       * <code>required bool usePoolDispatcher = 3;</code>
-       */
+      /** <code>required bool usePoolDispatcher = 3;</code> */
       public Builder setUsePoolDispatcher(boolean value) {
         bitField0_ |= 0x00000004;
         usePoolDispatcher_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required bool usePoolDispatcher = 3;</code>
-       */
+      /** <code>required bool usePoolDispatcher = 3;</code> */
       public Builder clearUsePoolDispatcher() {
         bitField0_ = (bitField0_ & ~0x00000004);
         usePoolDispatcher_ = false;
@@ -14263,18 +13230,18 @@ public final class WireFormats {
       }
 
       // optional .Payload resizer = 4;
-      private akka.remote.ContainerFormats.Payload resizer_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
+      private akka.remote.ContainerFormats.Payload resizer_ =
+          akka.remote.ContainerFormats.Payload.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> resizerBuilder_;
-      /**
-       * <code>optional .Payload resizer = 4;</code>
-       */
+              akka.remote.ContainerFormats.Payload,
+              akka.remote.ContainerFormats.Payload.Builder,
+              akka.remote.ContainerFormats.PayloadOrBuilder>
+          resizerBuilder_;
+      /** <code>optional .Payload resizer = 4;</code> */
       public boolean hasResizer() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
-      /**
-       * <code>optional .Payload resizer = 4;</code>
-       */
+      /** <code>optional .Payload resizer = 4;</code> */
       public akka.remote.ContainerFormats.Payload getResizer() {
         if (resizerBuilder_ == null) {
           return resizer_;
@@ -14282,9 +13249,7 @@ public final class WireFormats {
           return resizerBuilder_.getMessage();
         }
       }
-      /**
-       * <code>optional .Payload resizer = 4;</code>
-       */
+      /** <code>optional .Payload resizer = 4;</code> */
       public Builder setResizer(akka.remote.ContainerFormats.Payload value) {
         if (resizerBuilder_ == null) {
           if (value == null) {
@@ -14298,11 +13263,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000008;
         return this;
       }
-      /**
-       * <code>optional .Payload resizer = 4;</code>
-       */
-      public Builder setResizer(
-          akka.remote.ContainerFormats.Payload.Builder builderForValue) {
+      /** <code>optional .Payload resizer = 4;</code> */
+      public Builder setResizer(akka.remote.ContainerFormats.Payload.Builder builderForValue) {
         if (resizerBuilder_ == null) {
           resizer_ = builderForValue.build();
           onChanged();
@@ -14312,15 +13274,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000008;
         return this;
       }
-      /**
-       * <code>optional .Payload resizer = 4;</code>
-       */
+      /** <code>optional .Payload resizer = 4;</code> */
       public Builder mergeResizer(akka.remote.ContainerFormats.Payload value) {
         if (resizerBuilder_ == null) {
-          if (((bitField0_ & 0x00000008) == 0x00000008) &&
-              resizer_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000008) == 0x00000008)
+              && resizer_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
             resizer_ =
-              akka.remote.ContainerFormats.Payload.newBuilder(resizer_).mergeFrom(value).buildPartial();
+                akka.remote.ContainerFormats.Payload.newBuilder(resizer_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             resizer_ = value;
           }
@@ -14331,9 +13293,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000008;
         return this;
       }
-      /**
-       * <code>optional .Payload resizer = 4;</code>
-       */
+      /** <code>optional .Payload resizer = 4;</code> */
       public Builder clearResizer() {
         if (resizerBuilder_ == null) {
           resizer_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
@@ -14344,17 +13304,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
-      /**
-       * <code>optional .Payload resizer = 4;</code>
-       */
+      /** <code>optional .Payload resizer = 4;</code> */
       public akka.remote.ContainerFormats.Payload.Builder getResizerBuilder() {
         bitField0_ |= 0x00000008;
         onChanged();
         return getResizerFieldBuilder().getBuilder();
       }
-      /**
-       * <code>optional .Payload resizer = 4;</code>
-       */
+      /** <code>optional .Payload resizer = 4;</code> */
       public akka.remote.ContainerFormats.PayloadOrBuilder getResizerOrBuilder() {
         if (resizerBuilder_ != null) {
           return resizerBuilder_.getMessageOrBuilder();
@@ -14362,18 +13318,19 @@ public final class WireFormats {
           return resizer_;
         }
       }
-      /**
-       * <code>optional .Payload resizer = 4;</code>
-       */
+      /** <code>optional .Payload resizer = 4;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> 
+              akka.remote.ContainerFormats.Payload,
+              akka.remote.ContainerFormats.Payload.Builder,
+              akka.remote.ContainerFormats.PayloadOrBuilder>
           getResizerFieldBuilder() {
         if (resizerBuilder_ == null) {
-          resizerBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder>(
-                  resizer_,
-                  getParentForChildren(),
-                  isClean());
+          resizerBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.ContainerFormats.Payload,
+                  akka.remote.ContainerFormats.Payload.Builder,
+                  akka.remote.ContainerFormats.PayloadOrBuilder>(
+                  resizer_, getParentForChildren(), isClean());
           resizer_ = null;
         }
         return resizerBuilder_;
@@ -14390,51 +13347,39 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:GenericRoutingPool)
   }
 
-  public interface ScatterGatherPoolOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface ScatterGatherPoolOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required .GenericRoutingPool generic = 1;
-    /**
-     * <code>required .GenericRoutingPool generic = 1;</code>
-     */
+    /** <code>required .GenericRoutingPool generic = 1;</code> */
     boolean hasGeneric();
-    /**
-     * <code>required .GenericRoutingPool generic = 1;</code>
-     */
+    /** <code>required .GenericRoutingPool generic = 1;</code> */
     akka.remote.WireFormats.GenericRoutingPool getGeneric();
-    /**
-     * <code>required .GenericRoutingPool generic = 1;</code>
-     */
+    /** <code>required .GenericRoutingPool generic = 1;</code> */
     akka.remote.WireFormats.GenericRoutingPoolOrBuilder getGenericOrBuilder();
 
     // required .FiniteDuration within = 2;
-    /**
-     * <code>required .FiniteDuration within = 2;</code>
-     */
+    /** <code>required .FiniteDuration within = 2;</code> */
     boolean hasWithin();
-    /**
-     * <code>required .FiniteDuration within = 2;</code>
-     */
+    /** <code>required .FiniteDuration within = 2;</code> */
     akka.remote.WireFormats.FiniteDuration getWithin();
-    /**
-     * <code>required .FiniteDuration within = 2;</code>
-     */
+    /** <code>required .FiniteDuration within = 2;</code> */
     akka.remote.WireFormats.FiniteDurationOrBuilder getWithinOrBuilder();
   }
-  /**
-   * Protobuf type {@code ScatterGatherPool}
-   */
-  public static final class ScatterGatherPool extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code ScatterGatherPool} */
+  public static final class ScatterGatherPool extends akka.protobuf.GeneratedMessage
       implements ScatterGatherPoolOrBuilder {
     // Use ScatterGatherPool.newBuilder() to construct.
     private ScatterGatherPool(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private ScatterGatherPool(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private ScatterGatherPool(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final ScatterGatherPool defaultInstance;
+
     public static ScatterGatherPool getDefaultInstance() {
       return defaultInstance;
     }
@@ -14444,14 +13389,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private ScatterGatherPool(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -14465,72 +13410,80 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              akka.remote.WireFormats.GenericRoutingPool.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                subBuilder = generic_.toBuilder();
+            case 10:
+              {
+                akka.remote.WireFormats.GenericRoutingPool.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                  subBuilder = generic_.toBuilder();
+                }
+                generic_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.GenericRoutingPool.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(generic_);
+                  generic_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000001;
+                break;
               }
-              generic_ = input.readMessage(akka.remote.WireFormats.GenericRoutingPool.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(generic_);
-                generic_ = subBuilder.buildPartial();
+            case 18:
+              {
+                akka.remote.WireFormats.FiniteDuration.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                  subBuilder = within_.toBuilder();
+                }
+                within_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.FiniteDuration.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(within_);
+                  within_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000002;
+                break;
               }
-              bitField0_ |= 0x00000001;
-              break;
-            }
-            case 18: {
-              akka.remote.WireFormats.FiniteDuration.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
-                subBuilder = within_.toBuilder();
-              }
-              within_ = input.readMessage(akka.remote.WireFormats.FiniteDuration.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(within_);
-                within_ = subBuilder.buildPartial();
-              }
-              bitField0_ |= 0x00000002;
-              break;
-            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_ScatterGatherPool_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_ScatterGatherPool_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.ScatterGatherPool.class, akka.remote.WireFormats.ScatterGatherPool.Builder.class);
+              akka.remote.WireFormats.ScatterGatherPool.class,
+              akka.remote.WireFormats.ScatterGatherPool.Builder.class);
     }
 
     public static akka.protobuf.Parser<ScatterGatherPool> PARSER =
         new akka.protobuf.AbstractParser<ScatterGatherPool>() {
-      public ScatterGatherPool parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new ScatterGatherPool(input, extensionRegistry);
-      }
-    };
+          public ScatterGatherPool parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new ScatterGatherPool(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<ScatterGatherPool> getParserForType() {
@@ -14541,21 +13494,15 @@ public final class WireFormats {
     // required .GenericRoutingPool generic = 1;
     public static final int GENERIC_FIELD_NUMBER = 1;
     private akka.remote.WireFormats.GenericRoutingPool generic_;
-    /**
-     * <code>required .GenericRoutingPool generic = 1;</code>
-     */
+    /** <code>required .GenericRoutingPool generic = 1;</code> */
     public boolean hasGeneric() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required .GenericRoutingPool generic = 1;</code>
-     */
+    /** <code>required .GenericRoutingPool generic = 1;</code> */
     public akka.remote.WireFormats.GenericRoutingPool getGeneric() {
       return generic_;
     }
-    /**
-     * <code>required .GenericRoutingPool generic = 1;</code>
-     */
+    /** <code>required .GenericRoutingPool generic = 1;</code> */
     public akka.remote.WireFormats.GenericRoutingPoolOrBuilder getGenericOrBuilder() {
       return generic_;
     }
@@ -14563,21 +13510,15 @@ public final class WireFormats {
     // required .FiniteDuration within = 2;
     public static final int WITHIN_FIELD_NUMBER = 2;
     private akka.remote.WireFormats.FiniteDuration within_;
-    /**
-     * <code>required .FiniteDuration within = 2;</code>
-     */
+    /** <code>required .FiniteDuration within = 2;</code> */
     public boolean hasWithin() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>required .FiniteDuration within = 2;</code>
-     */
+    /** <code>required .FiniteDuration within = 2;</code> */
     public akka.remote.WireFormats.FiniteDuration getWithin() {
       return within_;
     }
-    /**
-     * <code>required .FiniteDuration within = 2;</code>
-     */
+    /** <code>required .FiniteDuration within = 2;</code> */
     public akka.remote.WireFormats.FiniteDurationOrBuilder getWithinOrBuilder() {
       return within_;
     }
@@ -14586,7 +13527,9 @@ public final class WireFormats {
       generic_ = akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance();
       within_ = akka.remote.WireFormats.FiniteDuration.getDefaultInstance();
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -14611,8 +13554,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeMessage(1, generic_);
@@ -14624,18 +13566,17 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, generic_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(1, generic_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, within_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(2, within_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -14643,94 +13584,100 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.ScatterGatherPool parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.ScatterGatherPool parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.ScatterGatherPool parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.ScatterGatherPool parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.ScatterGatherPool parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.ScatterGatherPool parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.ScatterGatherPool parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.ScatterGatherPool parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.ScatterGatherPool parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.ScatterGatherPool parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.ScatterGatherPool parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.ScatterGatherPool parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.ScatterGatherPool prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code ScatterGatherPool}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.ScatterGatherPoolOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    /** Protobuf type {@code ScatterGatherPool} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.ScatterGatherPoolOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_ScatterGatherPool_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_ScatterGatherPool_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.ScatterGatherPool.class, akka.remote.WireFormats.ScatterGatherPool.Builder.class);
+                akka.remote.WireFormats.ScatterGatherPool.class,
+                akka.remote.WireFormats.ScatterGatherPool.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.ScatterGatherPool.newBuilder()
@@ -14738,17 +13685,18 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getGenericFieldBuilder();
           getWithinFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -14774,8 +13722,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_ScatterGatherPool_descriptor;
       }
 
@@ -14792,7 +13739,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.ScatterGatherPool buildPartial() {
-        akka.remote.WireFormats.ScatterGatherPool result = new akka.remote.WireFormats.ScatterGatherPool(this);
+        akka.remote.WireFormats.ScatterGatherPool result =
+            new akka.remote.WireFormats.ScatterGatherPool(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -14818,7 +13766,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.ScatterGatherPool) {
-          return mergeFrom((akka.remote.WireFormats.ScatterGatherPool)other);
+          return mergeFrom((akka.remote.WireFormats.ScatterGatherPool) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -14839,19 +13787,19 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasGeneric()) {
-          
+
           return false;
         }
         if (!hasWithin()) {
-          
+
           return false;
         }
         if (!getGeneric().isInitialized()) {
-          
+
           return false;
         }
         if (!getWithin().isInitialized()) {
-          
+
           return false;
         }
         return true;
@@ -14874,21 +13822,22 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required .GenericRoutingPool generic = 1;
-      private akka.remote.WireFormats.GenericRoutingPool generic_ = akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance();
+      private akka.remote.WireFormats.GenericRoutingPool generic_ =
+          akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.GenericRoutingPool, akka.remote.WireFormats.GenericRoutingPool.Builder, akka.remote.WireFormats.GenericRoutingPoolOrBuilder> genericBuilder_;
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+              akka.remote.WireFormats.GenericRoutingPool,
+              akka.remote.WireFormats.GenericRoutingPool.Builder,
+              akka.remote.WireFormats.GenericRoutingPoolOrBuilder>
+          genericBuilder_;
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public boolean hasGeneric() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public akka.remote.WireFormats.GenericRoutingPool getGeneric() {
         if (genericBuilder_ == null) {
           return generic_;
@@ -14896,9 +13845,7 @@ public final class WireFormats {
           return genericBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public Builder setGeneric(akka.remote.WireFormats.GenericRoutingPool value) {
         if (genericBuilder_ == null) {
           if (value == null) {
@@ -14912,9 +13859,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public Builder setGeneric(
           akka.remote.WireFormats.GenericRoutingPool.Builder builderForValue) {
         if (genericBuilder_ == null) {
@@ -14926,15 +13871,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public Builder mergeGeneric(akka.remote.WireFormats.GenericRoutingPool value) {
         if (genericBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
-              generic_ != akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000001) == 0x00000001)
+              && generic_ != akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance()) {
             generic_ =
-              akka.remote.WireFormats.GenericRoutingPool.newBuilder(generic_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.GenericRoutingPool.newBuilder(generic_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             generic_ = value;
           }
@@ -14945,9 +13890,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public Builder clearGeneric() {
         if (genericBuilder_ == null) {
           generic_ = akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance();
@@ -14958,17 +13901,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public akka.remote.WireFormats.GenericRoutingPool.Builder getGenericBuilder() {
         bitField0_ |= 0x00000001;
         onChanged();
         return getGenericFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public akka.remote.WireFormats.GenericRoutingPoolOrBuilder getGenericOrBuilder() {
         if (genericBuilder_ != null) {
           return genericBuilder_.getMessageOrBuilder();
@@ -14976,36 +13915,37 @@ public final class WireFormats {
           return generic_;
         }
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.GenericRoutingPool, akka.remote.WireFormats.GenericRoutingPool.Builder, akka.remote.WireFormats.GenericRoutingPoolOrBuilder> 
+              akka.remote.WireFormats.GenericRoutingPool,
+              akka.remote.WireFormats.GenericRoutingPool.Builder,
+              akka.remote.WireFormats.GenericRoutingPoolOrBuilder>
           getGenericFieldBuilder() {
         if (genericBuilder_ == null) {
-          genericBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.GenericRoutingPool, akka.remote.WireFormats.GenericRoutingPool.Builder, akka.remote.WireFormats.GenericRoutingPoolOrBuilder>(
-                  generic_,
-                  getParentForChildren(),
-                  isClean());
+          genericBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.GenericRoutingPool,
+                  akka.remote.WireFormats.GenericRoutingPool.Builder,
+                  akka.remote.WireFormats.GenericRoutingPoolOrBuilder>(
+                  generic_, getParentForChildren(), isClean());
           generic_ = null;
         }
         return genericBuilder_;
       }
 
       // required .FiniteDuration within = 2;
-      private akka.remote.WireFormats.FiniteDuration within_ = akka.remote.WireFormats.FiniteDuration.getDefaultInstance();
+      private akka.remote.WireFormats.FiniteDuration within_ =
+          akka.remote.WireFormats.FiniteDuration.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.FiniteDuration, akka.remote.WireFormats.FiniteDuration.Builder, akka.remote.WireFormats.FiniteDurationOrBuilder> withinBuilder_;
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+              akka.remote.WireFormats.FiniteDuration,
+              akka.remote.WireFormats.FiniteDuration.Builder,
+              akka.remote.WireFormats.FiniteDurationOrBuilder>
+          withinBuilder_;
+      /** <code>required .FiniteDuration within = 2;</code> */
       public boolean hasWithin() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       public akka.remote.WireFormats.FiniteDuration getWithin() {
         if (withinBuilder_ == null) {
           return within_;
@@ -15013,9 +13953,7 @@ public final class WireFormats {
           return withinBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       public Builder setWithin(akka.remote.WireFormats.FiniteDuration value) {
         if (withinBuilder_ == null) {
           if (value == null) {
@@ -15029,11 +13967,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
-      public Builder setWithin(
-          akka.remote.WireFormats.FiniteDuration.Builder builderForValue) {
+      /** <code>required .FiniteDuration within = 2;</code> */
+      public Builder setWithin(akka.remote.WireFormats.FiniteDuration.Builder builderForValue) {
         if (withinBuilder_ == null) {
           within_ = builderForValue.build();
           onChanged();
@@ -15043,15 +13978,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       public Builder mergeWithin(akka.remote.WireFormats.FiniteDuration value) {
         if (withinBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
-              within_ != akka.remote.WireFormats.FiniteDuration.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000002) == 0x00000002)
+              && within_ != akka.remote.WireFormats.FiniteDuration.getDefaultInstance()) {
             within_ =
-              akka.remote.WireFormats.FiniteDuration.newBuilder(within_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.FiniteDuration.newBuilder(within_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             within_ = value;
           }
@@ -15062,9 +13997,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       public Builder clearWithin() {
         if (withinBuilder_ == null) {
           within_ = akka.remote.WireFormats.FiniteDuration.getDefaultInstance();
@@ -15075,17 +14008,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       public akka.remote.WireFormats.FiniteDuration.Builder getWithinBuilder() {
         bitField0_ |= 0x00000002;
         onChanged();
         return getWithinFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       public akka.remote.WireFormats.FiniteDurationOrBuilder getWithinOrBuilder() {
         if (withinBuilder_ != null) {
           return withinBuilder_.getMessageOrBuilder();
@@ -15093,18 +14022,19 @@ public final class WireFormats {
           return within_;
         }
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.FiniteDuration, akka.remote.WireFormats.FiniteDuration.Builder, akka.remote.WireFormats.FiniteDurationOrBuilder> 
+              akka.remote.WireFormats.FiniteDuration,
+              akka.remote.WireFormats.FiniteDuration.Builder,
+              akka.remote.WireFormats.FiniteDurationOrBuilder>
           getWithinFieldBuilder() {
         if (withinBuilder_ == null) {
-          withinBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.FiniteDuration, akka.remote.WireFormats.FiniteDuration.Builder, akka.remote.WireFormats.FiniteDurationOrBuilder>(
-                  within_,
-                  getParentForChildren(),
-                  isClean());
+          withinBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.FiniteDuration,
+                  akka.remote.WireFormats.FiniteDuration.Builder,
+                  akka.remote.WireFormats.FiniteDurationOrBuilder>(
+                  within_, getParentForChildren(), isClean());
           within_ = null;
         }
         return withinBuilder_;
@@ -15121,65 +14051,47 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:ScatterGatherPool)
   }
 
-  public interface TailChoppingPoolOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface TailChoppingPoolOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required .GenericRoutingPool generic = 1;
-    /**
-     * <code>required .GenericRoutingPool generic = 1;</code>
-     */
+    /** <code>required .GenericRoutingPool generic = 1;</code> */
     boolean hasGeneric();
-    /**
-     * <code>required .GenericRoutingPool generic = 1;</code>
-     */
+    /** <code>required .GenericRoutingPool generic = 1;</code> */
     akka.remote.WireFormats.GenericRoutingPool getGeneric();
-    /**
-     * <code>required .GenericRoutingPool generic = 1;</code>
-     */
+    /** <code>required .GenericRoutingPool generic = 1;</code> */
     akka.remote.WireFormats.GenericRoutingPoolOrBuilder getGenericOrBuilder();
 
     // required .FiniteDuration within = 2;
-    /**
-     * <code>required .FiniteDuration within = 2;</code>
-     */
+    /** <code>required .FiniteDuration within = 2;</code> */
     boolean hasWithin();
-    /**
-     * <code>required .FiniteDuration within = 2;</code>
-     */
+    /** <code>required .FiniteDuration within = 2;</code> */
     akka.remote.WireFormats.FiniteDuration getWithin();
-    /**
-     * <code>required .FiniteDuration within = 2;</code>
-     */
+    /** <code>required .FiniteDuration within = 2;</code> */
     akka.remote.WireFormats.FiniteDurationOrBuilder getWithinOrBuilder();
 
     // required .FiniteDuration interval = 3;
-    /**
-     * <code>required .FiniteDuration interval = 3;</code>
-     */
+    /** <code>required .FiniteDuration interval = 3;</code> */
     boolean hasInterval();
-    /**
-     * <code>required .FiniteDuration interval = 3;</code>
-     */
+    /** <code>required .FiniteDuration interval = 3;</code> */
     akka.remote.WireFormats.FiniteDuration getInterval();
-    /**
-     * <code>required .FiniteDuration interval = 3;</code>
-     */
+    /** <code>required .FiniteDuration interval = 3;</code> */
     akka.remote.WireFormats.FiniteDurationOrBuilder getIntervalOrBuilder();
   }
-  /**
-   * Protobuf type {@code TailChoppingPool}
-   */
-  public static final class TailChoppingPool extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code TailChoppingPool} */
+  public static final class TailChoppingPool extends akka.protobuf.GeneratedMessage
       implements TailChoppingPoolOrBuilder {
     // Use TailChoppingPool.newBuilder() to construct.
     private TailChoppingPool(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private TailChoppingPool(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private TailChoppingPool(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final TailChoppingPool defaultInstance;
+
     public static TailChoppingPool getDefaultInstance() {
       return defaultInstance;
     }
@@ -15189,14 +14101,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private TailChoppingPool(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -15210,85 +14122,96 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              akka.remote.WireFormats.GenericRoutingPool.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                subBuilder = generic_.toBuilder();
+            case 10:
+              {
+                akka.remote.WireFormats.GenericRoutingPool.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                  subBuilder = generic_.toBuilder();
+                }
+                generic_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.GenericRoutingPool.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(generic_);
+                  generic_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000001;
+                break;
               }
-              generic_ = input.readMessage(akka.remote.WireFormats.GenericRoutingPool.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(generic_);
-                generic_ = subBuilder.buildPartial();
+            case 18:
+              {
+                akka.remote.WireFormats.FiniteDuration.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                  subBuilder = within_.toBuilder();
+                }
+                within_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.FiniteDuration.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(within_);
+                  within_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000002;
+                break;
               }
-              bitField0_ |= 0x00000001;
-              break;
-            }
-            case 18: {
-              akka.remote.WireFormats.FiniteDuration.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000002) == 0x00000002)) {
-                subBuilder = within_.toBuilder();
+            case 26:
+              {
+                akka.remote.WireFormats.FiniteDuration.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000004) == 0x00000004)) {
+                  subBuilder = interval_.toBuilder();
+                }
+                interval_ =
+                    input.readMessage(
+                        akka.remote.WireFormats.FiniteDuration.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(interval_);
+                  interval_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000004;
+                break;
               }
-              within_ = input.readMessage(akka.remote.WireFormats.FiniteDuration.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(within_);
-                within_ = subBuilder.buildPartial();
-              }
-              bitField0_ |= 0x00000002;
-              break;
-            }
-            case 26: {
-              akka.remote.WireFormats.FiniteDuration.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000004) == 0x00000004)) {
-                subBuilder = interval_.toBuilder();
-              }
-              interval_ = input.readMessage(akka.remote.WireFormats.FiniteDuration.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(interval_);
-                interval_ = subBuilder.buildPartial();
-              }
-              bitField0_ |= 0x00000004;
-              break;
-            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_TailChoppingPool_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_TailChoppingPool_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.TailChoppingPool.class, akka.remote.WireFormats.TailChoppingPool.Builder.class);
+              akka.remote.WireFormats.TailChoppingPool.class,
+              akka.remote.WireFormats.TailChoppingPool.Builder.class);
     }
 
     public static akka.protobuf.Parser<TailChoppingPool> PARSER =
         new akka.protobuf.AbstractParser<TailChoppingPool>() {
-      public TailChoppingPool parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new TailChoppingPool(input, extensionRegistry);
-      }
-    };
+          public TailChoppingPool parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new TailChoppingPool(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<TailChoppingPool> getParserForType() {
@@ -15299,21 +14222,15 @@ public final class WireFormats {
     // required .GenericRoutingPool generic = 1;
     public static final int GENERIC_FIELD_NUMBER = 1;
     private akka.remote.WireFormats.GenericRoutingPool generic_;
-    /**
-     * <code>required .GenericRoutingPool generic = 1;</code>
-     */
+    /** <code>required .GenericRoutingPool generic = 1;</code> */
     public boolean hasGeneric() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required .GenericRoutingPool generic = 1;</code>
-     */
+    /** <code>required .GenericRoutingPool generic = 1;</code> */
     public akka.remote.WireFormats.GenericRoutingPool getGeneric() {
       return generic_;
     }
-    /**
-     * <code>required .GenericRoutingPool generic = 1;</code>
-     */
+    /** <code>required .GenericRoutingPool generic = 1;</code> */
     public akka.remote.WireFormats.GenericRoutingPoolOrBuilder getGenericOrBuilder() {
       return generic_;
     }
@@ -15321,21 +14238,15 @@ public final class WireFormats {
     // required .FiniteDuration within = 2;
     public static final int WITHIN_FIELD_NUMBER = 2;
     private akka.remote.WireFormats.FiniteDuration within_;
-    /**
-     * <code>required .FiniteDuration within = 2;</code>
-     */
+    /** <code>required .FiniteDuration within = 2;</code> */
     public boolean hasWithin() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>required .FiniteDuration within = 2;</code>
-     */
+    /** <code>required .FiniteDuration within = 2;</code> */
     public akka.remote.WireFormats.FiniteDuration getWithin() {
       return within_;
     }
-    /**
-     * <code>required .FiniteDuration within = 2;</code>
-     */
+    /** <code>required .FiniteDuration within = 2;</code> */
     public akka.remote.WireFormats.FiniteDurationOrBuilder getWithinOrBuilder() {
       return within_;
     }
@@ -15343,21 +14254,15 @@ public final class WireFormats {
     // required .FiniteDuration interval = 3;
     public static final int INTERVAL_FIELD_NUMBER = 3;
     private akka.remote.WireFormats.FiniteDuration interval_;
-    /**
-     * <code>required .FiniteDuration interval = 3;</code>
-     */
+    /** <code>required .FiniteDuration interval = 3;</code> */
     public boolean hasInterval() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    /**
-     * <code>required .FiniteDuration interval = 3;</code>
-     */
+    /** <code>required .FiniteDuration interval = 3;</code> */
     public akka.remote.WireFormats.FiniteDuration getInterval() {
       return interval_;
     }
-    /**
-     * <code>required .FiniteDuration interval = 3;</code>
-     */
+    /** <code>required .FiniteDuration interval = 3;</code> */
     public akka.remote.WireFormats.FiniteDurationOrBuilder getIntervalOrBuilder() {
       return interval_;
     }
@@ -15367,7 +14272,9 @@ public final class WireFormats {
       within_ = akka.remote.WireFormats.FiniteDuration.getDefaultInstance();
       interval_ = akka.remote.WireFormats.FiniteDuration.getDefaultInstance();
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -15400,8 +14307,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeMessage(1, generic_);
@@ -15416,22 +14322,20 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, generic_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(1, generic_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, within_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(2, within_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(3, interval_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(3, interval_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -15439,94 +14343,100 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
-    public static akka.remote.WireFormats.TailChoppingPool parseFrom(
-        akka.protobuf.ByteString data)
+    public static akka.remote.WireFormats.TailChoppingPool parseFrom(akka.protobuf.ByteString data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.TailChoppingPool parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.TailChoppingPool parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.TailChoppingPool parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.TailChoppingPool parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.TailChoppingPool parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.TailChoppingPool parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.TailChoppingPool parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.TailChoppingPool parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.TailChoppingPool parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.TailChoppingPool parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.TailChoppingPool prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code TailChoppingPool}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.TailChoppingPoolOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    /** Protobuf type {@code TailChoppingPool} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.TailChoppingPoolOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_TailChoppingPool_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_TailChoppingPool_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.TailChoppingPool.class, akka.remote.WireFormats.TailChoppingPool.Builder.class);
+                akka.remote.WireFormats.TailChoppingPool.class,
+                akka.remote.WireFormats.TailChoppingPool.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.TailChoppingPool.newBuilder()
@@ -15534,11 +14444,11 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getGenericFieldBuilder();
@@ -15546,6 +14456,7 @@ public final class WireFormats {
           getIntervalFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -15577,8 +14488,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_TailChoppingPool_descriptor;
       }
 
@@ -15595,7 +14505,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.TailChoppingPool buildPartial() {
-        akka.remote.WireFormats.TailChoppingPool result = new akka.remote.WireFormats.TailChoppingPool(this);
+        akka.remote.WireFormats.TailChoppingPool result =
+            new akka.remote.WireFormats.TailChoppingPool(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -15629,7 +14540,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.TailChoppingPool) {
-          return mergeFrom((akka.remote.WireFormats.TailChoppingPool)other);
+          return mergeFrom((akka.remote.WireFormats.TailChoppingPool) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -15653,27 +14564,27 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasGeneric()) {
-          
+
           return false;
         }
         if (!hasWithin()) {
-          
+
           return false;
         }
         if (!hasInterval()) {
-          
+
           return false;
         }
         if (!getGeneric().isInitialized()) {
-          
+
           return false;
         }
         if (!getWithin().isInitialized()) {
-          
+
           return false;
         }
         if (!getInterval().isInitialized()) {
-          
+
           return false;
         }
         return true;
@@ -15696,21 +14607,22 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required .GenericRoutingPool generic = 1;
-      private akka.remote.WireFormats.GenericRoutingPool generic_ = akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance();
+      private akka.remote.WireFormats.GenericRoutingPool generic_ =
+          akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.GenericRoutingPool, akka.remote.WireFormats.GenericRoutingPool.Builder, akka.remote.WireFormats.GenericRoutingPoolOrBuilder> genericBuilder_;
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+              akka.remote.WireFormats.GenericRoutingPool,
+              akka.remote.WireFormats.GenericRoutingPool.Builder,
+              akka.remote.WireFormats.GenericRoutingPoolOrBuilder>
+          genericBuilder_;
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public boolean hasGeneric() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public akka.remote.WireFormats.GenericRoutingPool getGeneric() {
         if (genericBuilder_ == null) {
           return generic_;
@@ -15718,9 +14630,7 @@ public final class WireFormats {
           return genericBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public Builder setGeneric(akka.remote.WireFormats.GenericRoutingPool value) {
         if (genericBuilder_ == null) {
           if (value == null) {
@@ -15734,9 +14644,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public Builder setGeneric(
           akka.remote.WireFormats.GenericRoutingPool.Builder builderForValue) {
         if (genericBuilder_ == null) {
@@ -15748,15 +14656,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public Builder mergeGeneric(akka.remote.WireFormats.GenericRoutingPool value) {
         if (genericBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
-              generic_ != akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000001) == 0x00000001)
+              && generic_ != akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance()) {
             generic_ =
-              akka.remote.WireFormats.GenericRoutingPool.newBuilder(generic_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.GenericRoutingPool.newBuilder(generic_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             generic_ = value;
           }
@@ -15767,9 +14675,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public Builder clearGeneric() {
         if (genericBuilder_ == null) {
           generic_ = akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance();
@@ -15780,17 +14686,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public akka.remote.WireFormats.GenericRoutingPool.Builder getGenericBuilder() {
         bitField0_ |= 0x00000001;
         onChanged();
         return getGenericFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       public akka.remote.WireFormats.GenericRoutingPoolOrBuilder getGenericOrBuilder() {
         if (genericBuilder_ != null) {
           return genericBuilder_.getMessageOrBuilder();
@@ -15798,36 +14700,37 @@ public final class WireFormats {
           return generic_;
         }
       }
-      /**
-       * <code>required .GenericRoutingPool generic = 1;</code>
-       */
+      /** <code>required .GenericRoutingPool generic = 1;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.GenericRoutingPool, akka.remote.WireFormats.GenericRoutingPool.Builder, akka.remote.WireFormats.GenericRoutingPoolOrBuilder> 
+              akka.remote.WireFormats.GenericRoutingPool,
+              akka.remote.WireFormats.GenericRoutingPool.Builder,
+              akka.remote.WireFormats.GenericRoutingPoolOrBuilder>
           getGenericFieldBuilder() {
         if (genericBuilder_ == null) {
-          genericBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.GenericRoutingPool, akka.remote.WireFormats.GenericRoutingPool.Builder, akka.remote.WireFormats.GenericRoutingPoolOrBuilder>(
-                  generic_,
-                  getParentForChildren(),
-                  isClean());
+          genericBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.GenericRoutingPool,
+                  akka.remote.WireFormats.GenericRoutingPool.Builder,
+                  akka.remote.WireFormats.GenericRoutingPoolOrBuilder>(
+                  generic_, getParentForChildren(), isClean());
           generic_ = null;
         }
         return genericBuilder_;
       }
 
       // required .FiniteDuration within = 2;
-      private akka.remote.WireFormats.FiniteDuration within_ = akka.remote.WireFormats.FiniteDuration.getDefaultInstance();
+      private akka.remote.WireFormats.FiniteDuration within_ =
+          akka.remote.WireFormats.FiniteDuration.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.FiniteDuration, akka.remote.WireFormats.FiniteDuration.Builder, akka.remote.WireFormats.FiniteDurationOrBuilder> withinBuilder_;
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+              akka.remote.WireFormats.FiniteDuration,
+              akka.remote.WireFormats.FiniteDuration.Builder,
+              akka.remote.WireFormats.FiniteDurationOrBuilder>
+          withinBuilder_;
+      /** <code>required .FiniteDuration within = 2;</code> */
       public boolean hasWithin() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       public akka.remote.WireFormats.FiniteDuration getWithin() {
         if (withinBuilder_ == null) {
           return within_;
@@ -15835,9 +14738,7 @@ public final class WireFormats {
           return withinBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       public Builder setWithin(akka.remote.WireFormats.FiniteDuration value) {
         if (withinBuilder_ == null) {
           if (value == null) {
@@ -15851,11 +14752,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
-      public Builder setWithin(
-          akka.remote.WireFormats.FiniteDuration.Builder builderForValue) {
+      /** <code>required .FiniteDuration within = 2;</code> */
+      public Builder setWithin(akka.remote.WireFormats.FiniteDuration.Builder builderForValue) {
         if (withinBuilder_ == null) {
           within_ = builderForValue.build();
           onChanged();
@@ -15865,15 +14763,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       public Builder mergeWithin(akka.remote.WireFormats.FiniteDuration value) {
         if (withinBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
-              within_ != akka.remote.WireFormats.FiniteDuration.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000002) == 0x00000002)
+              && within_ != akka.remote.WireFormats.FiniteDuration.getDefaultInstance()) {
             within_ =
-              akka.remote.WireFormats.FiniteDuration.newBuilder(within_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.FiniteDuration.newBuilder(within_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             within_ = value;
           }
@@ -15884,9 +14782,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000002;
         return this;
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       public Builder clearWithin() {
         if (withinBuilder_ == null) {
           within_ = akka.remote.WireFormats.FiniteDuration.getDefaultInstance();
@@ -15897,17 +14793,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       public akka.remote.WireFormats.FiniteDuration.Builder getWithinBuilder() {
         bitField0_ |= 0x00000002;
         onChanged();
         return getWithinFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       public akka.remote.WireFormats.FiniteDurationOrBuilder getWithinOrBuilder() {
         if (withinBuilder_ != null) {
           return withinBuilder_.getMessageOrBuilder();
@@ -15915,36 +14807,37 @@ public final class WireFormats {
           return within_;
         }
       }
-      /**
-       * <code>required .FiniteDuration within = 2;</code>
-       */
+      /** <code>required .FiniteDuration within = 2;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.FiniteDuration, akka.remote.WireFormats.FiniteDuration.Builder, akka.remote.WireFormats.FiniteDurationOrBuilder> 
+              akka.remote.WireFormats.FiniteDuration,
+              akka.remote.WireFormats.FiniteDuration.Builder,
+              akka.remote.WireFormats.FiniteDurationOrBuilder>
           getWithinFieldBuilder() {
         if (withinBuilder_ == null) {
-          withinBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.FiniteDuration, akka.remote.WireFormats.FiniteDuration.Builder, akka.remote.WireFormats.FiniteDurationOrBuilder>(
-                  within_,
-                  getParentForChildren(),
-                  isClean());
+          withinBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.FiniteDuration,
+                  akka.remote.WireFormats.FiniteDuration.Builder,
+                  akka.remote.WireFormats.FiniteDurationOrBuilder>(
+                  within_, getParentForChildren(), isClean());
           within_ = null;
         }
         return withinBuilder_;
       }
 
       // required .FiniteDuration interval = 3;
-      private akka.remote.WireFormats.FiniteDuration interval_ = akka.remote.WireFormats.FiniteDuration.getDefaultInstance();
+      private akka.remote.WireFormats.FiniteDuration interval_ =
+          akka.remote.WireFormats.FiniteDuration.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.FiniteDuration, akka.remote.WireFormats.FiniteDuration.Builder, akka.remote.WireFormats.FiniteDurationOrBuilder> intervalBuilder_;
-      /**
-       * <code>required .FiniteDuration interval = 3;</code>
-       */
+              akka.remote.WireFormats.FiniteDuration,
+              akka.remote.WireFormats.FiniteDuration.Builder,
+              akka.remote.WireFormats.FiniteDurationOrBuilder>
+          intervalBuilder_;
+      /** <code>required .FiniteDuration interval = 3;</code> */
       public boolean hasInterval() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      /**
-       * <code>required .FiniteDuration interval = 3;</code>
-       */
+      /** <code>required .FiniteDuration interval = 3;</code> */
       public akka.remote.WireFormats.FiniteDuration getInterval() {
         if (intervalBuilder_ == null) {
           return interval_;
@@ -15952,9 +14845,7 @@ public final class WireFormats {
           return intervalBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .FiniteDuration interval = 3;</code>
-       */
+      /** <code>required .FiniteDuration interval = 3;</code> */
       public Builder setInterval(akka.remote.WireFormats.FiniteDuration value) {
         if (intervalBuilder_ == null) {
           if (value == null) {
@@ -15968,11 +14859,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000004;
         return this;
       }
-      /**
-       * <code>required .FiniteDuration interval = 3;</code>
-       */
-      public Builder setInterval(
-          akka.remote.WireFormats.FiniteDuration.Builder builderForValue) {
+      /** <code>required .FiniteDuration interval = 3;</code> */
+      public Builder setInterval(akka.remote.WireFormats.FiniteDuration.Builder builderForValue) {
         if (intervalBuilder_ == null) {
           interval_ = builderForValue.build();
           onChanged();
@@ -15982,15 +14870,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000004;
         return this;
       }
-      /**
-       * <code>required .FiniteDuration interval = 3;</code>
-       */
+      /** <code>required .FiniteDuration interval = 3;</code> */
       public Builder mergeInterval(akka.remote.WireFormats.FiniteDuration value) {
         if (intervalBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) == 0x00000004) &&
-              interval_ != akka.remote.WireFormats.FiniteDuration.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000004) == 0x00000004)
+              && interval_ != akka.remote.WireFormats.FiniteDuration.getDefaultInstance()) {
             interval_ =
-              akka.remote.WireFormats.FiniteDuration.newBuilder(interval_).mergeFrom(value).buildPartial();
+                akka.remote.WireFormats.FiniteDuration.newBuilder(interval_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             interval_ = value;
           }
@@ -16001,9 +14889,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000004;
         return this;
       }
-      /**
-       * <code>required .FiniteDuration interval = 3;</code>
-       */
+      /** <code>required .FiniteDuration interval = 3;</code> */
       public Builder clearInterval() {
         if (intervalBuilder_ == null) {
           interval_ = akka.remote.WireFormats.FiniteDuration.getDefaultInstance();
@@ -16014,17 +14900,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
-      /**
-       * <code>required .FiniteDuration interval = 3;</code>
-       */
+      /** <code>required .FiniteDuration interval = 3;</code> */
       public akka.remote.WireFormats.FiniteDuration.Builder getIntervalBuilder() {
         bitField0_ |= 0x00000004;
         onChanged();
         return getIntervalFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .FiniteDuration interval = 3;</code>
-       */
+      /** <code>required .FiniteDuration interval = 3;</code> */
       public akka.remote.WireFormats.FiniteDurationOrBuilder getIntervalOrBuilder() {
         if (intervalBuilder_ != null) {
           return intervalBuilder_.getMessageOrBuilder();
@@ -16032,18 +14914,19 @@ public final class WireFormats {
           return interval_;
         }
       }
-      /**
-       * <code>required .FiniteDuration interval = 3;</code>
-       */
+      /** <code>required .FiniteDuration interval = 3;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.WireFormats.FiniteDuration, akka.remote.WireFormats.FiniteDuration.Builder, akka.remote.WireFormats.FiniteDurationOrBuilder> 
+              akka.remote.WireFormats.FiniteDuration,
+              akka.remote.WireFormats.FiniteDuration.Builder,
+              akka.remote.WireFormats.FiniteDurationOrBuilder>
           getIntervalFieldBuilder() {
         if (intervalBuilder_ == null) {
-          intervalBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.WireFormats.FiniteDuration, akka.remote.WireFormats.FiniteDuration.Builder, akka.remote.WireFormats.FiniteDurationOrBuilder>(
-                  interval_,
-                  getParentForChildren(),
-                  isClean());
+          intervalBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.WireFormats.FiniteDuration,
+                  akka.remote.WireFormats.FiniteDuration.Builder,
+                  akka.remote.WireFormats.FiniteDurationOrBuilder>(
+                  interval_, getParentForChildren(), isClean());
           interval_ = null;
         }
         return intervalBuilder_;
@@ -16060,62 +14943,43 @@ public final class WireFormats {
     // @@protoc_insertion_point(class_scope:TailChoppingPool)
   }
 
-  public interface RemoteRouterConfigOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+  public interface RemoteRouterConfigOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required .Payload local = 1;
-    /**
-     * <code>required .Payload local = 1;</code>
-     */
+    /** <code>required .Payload local = 1;</code> */
     boolean hasLocal();
-    /**
-     * <code>required .Payload local = 1;</code>
-     */
+    /** <code>required .Payload local = 1;</code> */
     akka.remote.ContainerFormats.Payload getLocal();
-    /**
-     * <code>required .Payload local = 1;</code>
-     */
+    /** <code>required .Payload local = 1;</code> */
     akka.remote.ContainerFormats.PayloadOrBuilder getLocalOrBuilder();
 
     // repeated .AddressData nodes = 2;
-    /**
-     * <code>repeated .AddressData nodes = 2;</code>
-     */
-    java.util.List<akka.remote.WireFormats.AddressData> 
-        getNodesList();
-    /**
-     * <code>repeated .AddressData nodes = 2;</code>
-     */
+    /** <code>repeated .AddressData nodes = 2;</code> */
+    java.util.List<akka.remote.WireFormats.AddressData> getNodesList();
+    /** <code>repeated .AddressData nodes = 2;</code> */
     akka.remote.WireFormats.AddressData getNodes(int index);
-    /**
-     * <code>repeated .AddressData nodes = 2;</code>
-     */
+    /** <code>repeated .AddressData nodes = 2;</code> */
     int getNodesCount();
-    /**
-     * <code>repeated .AddressData nodes = 2;</code>
-     */
-    java.util.List<? extends akka.remote.WireFormats.AddressDataOrBuilder> 
-        getNodesOrBuilderList();
-    /**
-     * <code>repeated .AddressData nodes = 2;</code>
-     */
-    akka.remote.WireFormats.AddressDataOrBuilder getNodesOrBuilder(
-        int index);
+    /** <code>repeated .AddressData nodes = 2;</code> */
+    java.util.List<? extends akka.remote.WireFormats.AddressDataOrBuilder> getNodesOrBuilderList();
+    /** <code>repeated .AddressData nodes = 2;</code> */
+    akka.remote.WireFormats.AddressDataOrBuilder getNodesOrBuilder(int index);
   }
-  /**
-   * Protobuf type {@code RemoteRouterConfig}
-   */
-  public static final class RemoteRouterConfig extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code RemoteRouterConfig} */
+  public static final class RemoteRouterConfig extends akka.protobuf.GeneratedMessage
       implements RemoteRouterConfigOrBuilder {
     // Use RemoteRouterConfig.newBuilder() to construct.
     private RemoteRouterConfig(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private RemoteRouterConfig(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private RemoteRouterConfig(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final RemoteRouterConfig defaultInstance;
+
     public static RemoteRouterConfig getDefaultInstance() {
       return defaultInstance;
     }
@@ -16125,14 +14989,14 @@ public final class WireFormats {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private RemoteRouterConfig(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -16146,41 +15010,49 @@ public final class WireFormats {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
-              if (((bitField0_ & 0x00000001) == 0x00000001)) {
-                subBuilder = local_.toBuilder();
+            case 10:
+              {
+                akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000001) == 0x00000001)) {
+                  subBuilder = local_.toBuilder();
+                }
+                local_ =
+                    input.readMessage(
+                        akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(local_);
+                  local_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000001;
+                break;
               }
-              local_ = input.readMessage(akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(local_);
-                local_ = subBuilder.buildPartial();
+            case 18:
+              {
+                if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
+                  nodes_ = new java.util.ArrayList<akka.remote.WireFormats.AddressData>();
+                  mutable_bitField0_ |= 0x00000002;
+                }
+                nodes_.add(
+                    input.readMessage(
+                        akka.remote.WireFormats.AddressData.PARSER, extensionRegistry));
+                break;
               }
-              bitField0_ |= 0x00000001;
-              break;
-            }
-            case 18: {
-              if (!((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
-                nodes_ = new java.util.ArrayList<akka.remote.WireFormats.AddressData>();
-                mutable_bitField0_ |= 0x00000002;
-              }
-              nodes_.add(input.readMessage(akka.remote.WireFormats.AddressData.PARSER, extensionRegistry));
-              break;
-            }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
           nodes_ = java.util.Collections.unmodifiableList(nodes_);
@@ -16189,27 +15061,27 @@ public final class WireFormats {
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
       return akka.remote.WireFormats.internal_static_RemoteRouterConfig_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
       return akka.remote.WireFormats.internal_static_RemoteRouterConfig_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              akka.remote.WireFormats.RemoteRouterConfig.class, akka.remote.WireFormats.RemoteRouterConfig.Builder.class);
+              akka.remote.WireFormats.RemoteRouterConfig.class,
+              akka.remote.WireFormats.RemoteRouterConfig.Builder.class);
     }
 
     public static akka.protobuf.Parser<RemoteRouterConfig> PARSER =
         new akka.protobuf.AbstractParser<RemoteRouterConfig>() {
-      public RemoteRouterConfig parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new RemoteRouterConfig(input, extensionRegistry);
-      }
-    };
+          public RemoteRouterConfig parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new RemoteRouterConfig(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<RemoteRouterConfig> getParserForType() {
@@ -16220,21 +15092,15 @@ public final class WireFormats {
     // required .Payload local = 1;
     public static final int LOCAL_FIELD_NUMBER = 1;
     private akka.remote.ContainerFormats.Payload local_;
-    /**
-     * <code>required .Payload local = 1;</code>
-     */
+    /** <code>required .Payload local = 1;</code> */
     public boolean hasLocal() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required .Payload local = 1;</code>
-     */
+    /** <code>required .Payload local = 1;</code> */
     public akka.remote.ContainerFormats.Payload getLocal() {
       return local_;
     }
-    /**
-     * <code>required .Payload local = 1;</code>
-     */
+    /** <code>required .Payload local = 1;</code> */
     public akka.remote.ContainerFormats.PayloadOrBuilder getLocalOrBuilder() {
       return local_;
     }
@@ -16242,36 +15108,25 @@ public final class WireFormats {
     // repeated .AddressData nodes = 2;
     public static final int NODES_FIELD_NUMBER = 2;
     private java.util.List<akka.remote.WireFormats.AddressData> nodes_;
-    /**
-     * <code>repeated .AddressData nodes = 2;</code>
-     */
+    /** <code>repeated .AddressData nodes = 2;</code> */
     public java.util.List<akka.remote.WireFormats.AddressData> getNodesList() {
       return nodes_;
     }
-    /**
-     * <code>repeated .AddressData nodes = 2;</code>
-     */
-    public java.util.List<? extends akka.remote.WireFormats.AddressDataOrBuilder> 
+    /** <code>repeated .AddressData nodes = 2;</code> */
+    public java.util.List<? extends akka.remote.WireFormats.AddressDataOrBuilder>
         getNodesOrBuilderList() {
       return nodes_;
     }
-    /**
-     * <code>repeated .AddressData nodes = 2;</code>
-     */
+    /** <code>repeated .AddressData nodes = 2;</code> */
     public int getNodesCount() {
       return nodes_.size();
     }
-    /**
-     * <code>repeated .AddressData nodes = 2;</code>
-     */
+    /** <code>repeated .AddressData nodes = 2;</code> */
     public akka.remote.WireFormats.AddressData getNodes(int index) {
       return nodes_.get(index);
     }
-    /**
-     * <code>repeated .AddressData nodes = 2;</code>
-     */
-    public akka.remote.WireFormats.AddressDataOrBuilder getNodesOrBuilder(
-        int index) {
+    /** <code>repeated .AddressData nodes = 2;</code> */
+    public akka.remote.WireFormats.AddressDataOrBuilder getNodesOrBuilder(int index) {
       return nodes_.get(index);
     }
 
@@ -16279,7 +15134,9 @@ public final class WireFormats {
       local_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
       nodes_ = java.util.Collections.emptyList();
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -16302,8 +15159,7 @@ public final class WireFormats {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeMessage(1, local_);
@@ -16315,18 +15171,17 @@ public final class WireFormats {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(1, local_);
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(1, local_);
       }
       for (int i = 0; i < nodes_.size(); i++) {
-        size += akka.protobuf.CodedOutputStream
-          .computeMessageSize(2, nodes_.get(i));
+        size += akka.protobuf.CodedOutputStream.computeMessageSize(2, nodes_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -16334,94 +15189,100 @@ public final class WireFormats {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
     public static akka.remote.WireFormats.RemoteRouterConfig parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data) throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.RemoteRouterConfig parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.RemoteRouterConfig parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static akka.remote.WireFormats.RemoteRouterConfig parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.RemoteRouterConfig parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.RemoteRouterConfig parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static akka.remote.WireFormats.RemoteRouterConfig parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static akka.remote.WireFormats.RemoteRouterConfig parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static akka.remote.WireFormats.RemoteRouterConfig parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static akka.remote.WireFormats.RemoteRouterConfig parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static akka.remote.WireFormats.RemoteRouterConfig parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
     public static Builder newBuilder(akka.remote.WireFormats.RemoteRouterConfig prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code RemoteRouterConfig}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements akka.remote.WireFormats.RemoteRouterConfigOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
+    /** Protobuf type {@code RemoteRouterConfig} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements akka.remote.WireFormats.RemoteRouterConfigOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
         return akka.remote.WireFormats.internal_static_RemoteRouterConfig_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
         return akka.remote.WireFormats.internal_static_RemoteRouterConfig_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                akka.remote.WireFormats.RemoteRouterConfig.class, akka.remote.WireFormats.RemoteRouterConfig.Builder.class);
+                akka.remote.WireFormats.RemoteRouterConfig.class,
+                akka.remote.WireFormats.RemoteRouterConfig.Builder.class);
       }
 
       // Construct using akka.remote.WireFormats.RemoteRouterConfig.newBuilder()
@@ -16429,17 +15290,18 @@ public final class WireFormats {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
         if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getLocalFieldBuilder();
           getNodesFieldBuilder();
         }
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -16465,8 +15327,7 @@ public final class WireFormats {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
         return akka.remote.WireFormats.internal_static_RemoteRouterConfig_descriptor;
       }
 
@@ -16483,7 +15344,8 @@ public final class WireFormats {
       }
 
       public akka.remote.WireFormats.RemoteRouterConfig buildPartial() {
-        akka.remote.WireFormats.RemoteRouterConfig result = new akka.remote.WireFormats.RemoteRouterConfig(this);
+        akka.remote.WireFormats.RemoteRouterConfig result =
+            new akka.remote.WireFormats.RemoteRouterConfig(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -16510,7 +15372,7 @@ public final class WireFormats {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.remote.WireFormats.RemoteRouterConfig) {
-          return mergeFrom((akka.remote.WireFormats.RemoteRouterConfig)other);
+          return mergeFrom((akka.remote.WireFormats.RemoteRouterConfig) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -16540,9 +15402,10 @@ public final class WireFormats {
               nodesBuilder_ = null;
               nodes_ = other.nodes_;
               bitField0_ = (bitField0_ & ~0x00000002);
-              nodesBuilder_ = 
-                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
-                   getNodesFieldBuilder() : null;
+              nodesBuilder_ =
+                  akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders
+                      ? getNodesFieldBuilder()
+                      : null;
             } else {
               nodesBuilder_.addAllMessages(other.nodes_);
             }
@@ -16554,16 +15417,16 @@ public final class WireFormats {
 
       public final boolean isInitialized() {
         if (!hasLocal()) {
-          
+
           return false;
         }
         if (!getLocal().isInitialized()) {
-          
+
           return false;
         }
         for (int i = 0; i < getNodesCount(); i++) {
           if (!getNodes(i).isInitialized()) {
-            
+
             return false;
           }
         }
@@ -16587,21 +15450,22 @@ public final class WireFormats {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required .Payload local = 1;
-      private akka.remote.ContainerFormats.Payload local_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
+      private akka.remote.ContainerFormats.Payload local_ =
+          akka.remote.ContainerFormats.Payload.getDefaultInstance();
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> localBuilder_;
-      /**
-       * <code>required .Payload local = 1;</code>
-       */
+              akka.remote.ContainerFormats.Payload,
+              akka.remote.ContainerFormats.Payload.Builder,
+              akka.remote.ContainerFormats.PayloadOrBuilder>
+          localBuilder_;
+      /** <code>required .Payload local = 1;</code> */
       public boolean hasLocal() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required .Payload local = 1;</code>
-       */
+      /** <code>required .Payload local = 1;</code> */
       public akka.remote.ContainerFormats.Payload getLocal() {
         if (localBuilder_ == null) {
           return local_;
@@ -16609,9 +15473,7 @@ public final class WireFormats {
           return localBuilder_.getMessage();
         }
       }
-      /**
-       * <code>required .Payload local = 1;</code>
-       */
+      /** <code>required .Payload local = 1;</code> */
       public Builder setLocal(akka.remote.ContainerFormats.Payload value) {
         if (localBuilder_ == null) {
           if (value == null) {
@@ -16625,11 +15487,8 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .Payload local = 1;</code>
-       */
-      public Builder setLocal(
-          akka.remote.ContainerFormats.Payload.Builder builderForValue) {
+      /** <code>required .Payload local = 1;</code> */
+      public Builder setLocal(akka.remote.ContainerFormats.Payload.Builder builderForValue) {
         if (localBuilder_ == null) {
           local_ = builderForValue.build();
           onChanged();
@@ -16639,15 +15498,15 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .Payload local = 1;</code>
-       */
+      /** <code>required .Payload local = 1;</code> */
       public Builder mergeLocal(akka.remote.ContainerFormats.Payload value) {
         if (localBuilder_ == null) {
-          if (((bitField0_ & 0x00000001) == 0x00000001) &&
-              local_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
+          if (((bitField0_ & 0x00000001) == 0x00000001)
+              && local_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
             local_ =
-              akka.remote.ContainerFormats.Payload.newBuilder(local_).mergeFrom(value).buildPartial();
+                akka.remote.ContainerFormats.Payload.newBuilder(local_)
+                    .mergeFrom(value)
+                    .buildPartial();
           } else {
             local_ = value;
           }
@@ -16658,9 +15517,7 @@ public final class WireFormats {
         bitField0_ |= 0x00000001;
         return this;
       }
-      /**
-       * <code>required .Payload local = 1;</code>
-       */
+      /** <code>required .Payload local = 1;</code> */
       public Builder clearLocal() {
         if (localBuilder_ == null) {
           local_ = akka.remote.ContainerFormats.Payload.getDefaultInstance();
@@ -16671,17 +15528,13 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
-      /**
-       * <code>required .Payload local = 1;</code>
-       */
+      /** <code>required .Payload local = 1;</code> */
       public akka.remote.ContainerFormats.Payload.Builder getLocalBuilder() {
         bitField0_ |= 0x00000001;
         onChanged();
         return getLocalFieldBuilder().getBuilder();
       }
-      /**
-       * <code>required .Payload local = 1;</code>
-       */
+      /** <code>required .Payload local = 1;</code> */
       public akka.remote.ContainerFormats.PayloadOrBuilder getLocalOrBuilder() {
         if (localBuilder_ != null) {
           return localBuilder_.getMessageOrBuilder();
@@ -16689,18 +15542,19 @@ public final class WireFormats {
           return local_;
         }
       }
-      /**
-       * <code>required .Payload local = 1;</code>
-       */
+      /** <code>required .Payload local = 1;</code> */
       private akka.protobuf.SingleFieldBuilder<
-          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> 
+              akka.remote.ContainerFormats.Payload,
+              akka.remote.ContainerFormats.Payload.Builder,
+              akka.remote.ContainerFormats.PayloadOrBuilder>
           getLocalFieldBuilder() {
         if (localBuilder_ == null) {
-          localBuilder_ = new akka.protobuf.SingleFieldBuilder<
-              akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder>(
-                  local_,
-                  getParentForChildren(),
-                  isClean());
+          localBuilder_ =
+              new akka.protobuf.SingleFieldBuilder<
+                  akka.remote.ContainerFormats.Payload,
+                  akka.remote.ContainerFormats.Payload.Builder,
+                  akka.remote.ContainerFormats.PayloadOrBuilder>(
+                  local_, getParentForChildren(), isClean());
           local_ = null;
         }
         return localBuilder_;
@@ -16708,20 +15562,22 @@ public final class WireFormats {
 
       // repeated .AddressData nodes = 2;
       private java.util.List<akka.remote.WireFormats.AddressData> nodes_ =
-        java.util.Collections.emptyList();
+          java.util.Collections.emptyList();
+
       private void ensureNodesIsMutable() {
         if (!((bitField0_ & 0x00000002) == 0x00000002)) {
           nodes_ = new java.util.ArrayList<akka.remote.WireFormats.AddressData>(nodes_);
           bitField0_ |= 0x00000002;
-         }
+        }
       }
 
       private akka.protobuf.RepeatedFieldBuilder<
-          akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder> nodesBuilder_;
+              akka.remote.WireFormats.AddressData,
+              akka.remote.WireFormats.AddressData.Builder,
+              akka.remote.WireFormats.AddressDataOrBuilder>
+          nodesBuilder_;
 
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
+      /** <code>repeated .AddressData nodes = 2;</code> */
       public java.util.List<akka.remote.WireFormats.AddressData> getNodesList() {
         if (nodesBuilder_ == null) {
           return java.util.Collections.unmodifiableList(nodes_);
@@ -16729,9 +15585,7 @@ public final class WireFormats {
           return nodesBuilder_.getMessageList();
         }
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
+      /** <code>repeated .AddressData nodes = 2;</code> */
       public int getNodesCount() {
         if (nodesBuilder_ == null) {
           return nodes_.size();
@@ -16739,9 +15593,7 @@ public final class WireFormats {
           return nodesBuilder_.getCount();
         }
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
+      /** <code>repeated .AddressData nodes = 2;</code> */
       public akka.remote.WireFormats.AddressData getNodes(int index) {
         if (nodesBuilder_ == null) {
           return nodes_.get(index);
@@ -16749,11 +15601,8 @@ public final class WireFormats {
           return nodesBuilder_.getMessage(index);
         }
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
-      public Builder setNodes(
-          int index, akka.remote.WireFormats.AddressData value) {
+      /** <code>repeated .AddressData nodes = 2;</code> */
+      public Builder setNodes(int index, akka.remote.WireFormats.AddressData value) {
         if (nodesBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -16766,9 +15615,7 @@ public final class WireFormats {
         }
         return this;
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
+      /** <code>repeated .AddressData nodes = 2;</code> */
       public Builder setNodes(
           int index, akka.remote.WireFormats.AddressData.Builder builderForValue) {
         if (nodesBuilder_ == null) {
@@ -16780,9 +15627,7 @@ public final class WireFormats {
         }
         return this;
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
+      /** <code>repeated .AddressData nodes = 2;</code> */
       public Builder addNodes(akka.remote.WireFormats.AddressData value) {
         if (nodesBuilder_ == null) {
           if (value == null) {
@@ -16796,11 +15641,8 @@ public final class WireFormats {
         }
         return this;
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
-      public Builder addNodes(
-          int index, akka.remote.WireFormats.AddressData value) {
+      /** <code>repeated .AddressData nodes = 2;</code> */
+      public Builder addNodes(int index, akka.remote.WireFormats.AddressData value) {
         if (nodesBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
@@ -16813,11 +15655,8 @@ public final class WireFormats {
         }
         return this;
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
-      public Builder addNodes(
-          akka.remote.WireFormats.AddressData.Builder builderForValue) {
+      /** <code>repeated .AddressData nodes = 2;</code> */
+      public Builder addNodes(akka.remote.WireFormats.AddressData.Builder builderForValue) {
         if (nodesBuilder_ == null) {
           ensureNodesIsMutable();
           nodes_.add(builderForValue.build());
@@ -16827,9 +15666,7 @@ public final class WireFormats {
         }
         return this;
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
+      /** <code>repeated .AddressData nodes = 2;</code> */
       public Builder addNodes(
           int index, akka.remote.WireFormats.AddressData.Builder builderForValue) {
         if (nodesBuilder_ == null) {
@@ -16841,9 +15678,7 @@ public final class WireFormats {
         }
         return this;
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
+      /** <code>repeated .AddressData nodes = 2;</code> */
       public Builder addAllNodes(
           java.lang.Iterable<? extends akka.remote.WireFormats.AddressData> values) {
         if (nodesBuilder_ == null) {
@@ -16855,9 +15690,7 @@ public final class WireFormats {
         }
         return this;
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
+      /** <code>repeated .AddressData nodes = 2;</code> */
       public Builder clearNodes() {
         if (nodesBuilder_ == null) {
           nodes_ = java.util.Collections.emptyList();
@@ -16868,9 +15701,7 @@ public final class WireFormats {
         }
         return this;
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
+      /** <code>repeated .AddressData nodes = 2;</code> */
       public Builder removeNodes(int index) {
         if (nodesBuilder_ == null) {
           ensureNodesIsMutable();
@@ -16881,62 +15712,53 @@ public final class WireFormats {
         }
         return this;
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
-      public akka.remote.WireFormats.AddressData.Builder getNodesBuilder(
-          int index) {
+      /** <code>repeated .AddressData nodes = 2;</code> */
+      public akka.remote.WireFormats.AddressData.Builder getNodesBuilder(int index) {
         return getNodesFieldBuilder().getBuilder(index);
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
-      public akka.remote.WireFormats.AddressDataOrBuilder getNodesOrBuilder(
-          int index) {
+      /** <code>repeated .AddressData nodes = 2;</code> */
+      public akka.remote.WireFormats.AddressDataOrBuilder getNodesOrBuilder(int index) {
         if (nodesBuilder_ == null) {
-          return nodes_.get(index);  } else {
+          return nodes_.get(index);
+        } else {
           return nodesBuilder_.getMessageOrBuilder(index);
         }
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
-      public java.util.List<? extends akka.remote.WireFormats.AddressDataOrBuilder> 
-           getNodesOrBuilderList() {
+      /** <code>repeated .AddressData nodes = 2;</code> */
+      public java.util.List<? extends akka.remote.WireFormats.AddressDataOrBuilder>
+          getNodesOrBuilderList() {
         if (nodesBuilder_ != null) {
           return nodesBuilder_.getMessageOrBuilderList();
         } else {
           return java.util.Collections.unmodifiableList(nodes_);
         }
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
+      /** <code>repeated .AddressData nodes = 2;</code> */
       public akka.remote.WireFormats.AddressData.Builder addNodesBuilder() {
-        return getNodesFieldBuilder().addBuilder(
-            akka.remote.WireFormats.AddressData.getDefaultInstance());
+        return getNodesFieldBuilder()
+            .addBuilder(akka.remote.WireFormats.AddressData.getDefaultInstance());
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
-      public akka.remote.WireFormats.AddressData.Builder addNodesBuilder(
-          int index) {
-        return getNodesFieldBuilder().addBuilder(
-            index, akka.remote.WireFormats.AddressData.getDefaultInstance());
+      /** <code>repeated .AddressData nodes = 2;</code> */
+      public akka.remote.WireFormats.AddressData.Builder addNodesBuilder(int index) {
+        return getNodesFieldBuilder()
+            .addBuilder(index, akka.remote.WireFormats.AddressData.getDefaultInstance());
       }
-      /**
-       * <code>repeated .AddressData nodes = 2;</code>
-       */
-      public java.util.List<akka.remote.WireFormats.AddressData.Builder> 
-           getNodesBuilderList() {
+      /** <code>repeated .AddressData nodes = 2;</code> */
+      public java.util.List<akka.remote.WireFormats.AddressData.Builder> getNodesBuilderList() {
         return getNodesFieldBuilder().getBuilderList();
       }
+
       private akka.protobuf.RepeatedFieldBuilder<
-          akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder> 
+              akka.remote.WireFormats.AddressData,
+              akka.remote.WireFormats.AddressData.Builder,
+              akka.remote.WireFormats.AddressDataOrBuilder>
           getNodesFieldBuilder() {
         if (nodesBuilder_ == null) {
-          nodesBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
-              akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder>(
+          nodesBuilder_ =
+              new akka.protobuf.RepeatedFieldBuilder<
+                  akka.remote.WireFormats.AddressData,
+                  akka.remote.WireFormats.AddressData.Builder,
+                  akka.remote.WireFormats.AddressDataOrBuilder>(
                   nodes_,
                   ((bitField0_ & 0x00000002) == 0x00000002),
                   getParentForChildren(),
@@ -16958,307 +15780,317 @@ public final class WireFormats {
   }
 
   private static akka.protobuf.Descriptors.Descriptor
-    internal_static_AckAndEnvelopeContainer_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_AckAndEnvelopeContainer_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_AckAndEnvelopeContainer_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_RemoteEnvelope_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_RemoteEnvelope_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_RemoteEnvelope_fieldAccessorTable;
   private static akka.protobuf.Descriptors.Descriptor
-    internal_static_AcknowledgementInfo_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_AcknowledgementInfo_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_AcknowledgementInfo_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_ActorRefData_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_ActorRefData_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ActorRefData_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_SerializedMessage_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_SerializedMessage_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_SerializedMessage_fieldAccessorTable;
   private static akka.protobuf.Descriptors.Descriptor
-    internal_static_DaemonMsgCreateData_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_DaemonMsgCreateData_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_DaemonMsgCreateData_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_PropsData_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_PropsData_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_PropsData_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_DeployData_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_DeployData_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_DeployData_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_AddressData_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_AddressData_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_AddressData_fieldAccessorTable;
   private static akka.protobuf.Descriptors.Descriptor
-    internal_static_AkkaProtocolMessage_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_AkkaProtocolMessage_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_AkkaProtocolMessage_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_AkkaControlMessage_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_AkkaControlMessage_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_AkkaControlMessage_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_AkkaHandshakeInfo_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_AkkaHandshakeInfo_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_AkkaHandshakeInfo_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_FiniteDuration_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_FiniteDuration_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_FiniteDuration_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_RemoteScope_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_RemoteScope_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_RemoteScope_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_DefaultResizer_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_DefaultResizer_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_DefaultResizer_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_FromConfig_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_FromConfig_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_FromConfig_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_GenericRoutingPool_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_GenericRoutingPool_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_GenericRoutingPool_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_ScatterGatherPool_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_ScatterGatherPool_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ScatterGatherPool_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_TailChoppingPool_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_TailChoppingPool_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_TailChoppingPool_fieldAccessorTable;
-  private static akka.protobuf.Descriptors.Descriptor
-    internal_static_RemoteRouterConfig_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+  private static akka.protobuf.Descriptors.Descriptor internal_static_RemoteRouterConfig_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_RemoteRouterConfig_fieldAccessorTable;
 
-  public static akka.protobuf.Descriptors.FileDescriptor
-      getDescriptor() {
+  public static akka.protobuf.Descriptors.FileDescriptor getDescriptor() {
     return descriptor;
   }
-  private static akka.protobuf.Descriptors.FileDescriptor
-      descriptor;
+
+  private static akka.protobuf.Descriptors.FileDescriptor descriptor;
+
   static {
     java.lang.String[] descriptorData = {
-      "\n\021WireFormats.proto\032\026ContainerFormats.pr" +
-      "oto\"_\n\027AckAndEnvelopeContainer\022!\n\003ack\030\001 " +
-      "\001(\0132\024.AcknowledgementInfo\022!\n\010envelope\030\002 " +
-      "\001(\0132\017.RemoteEnvelope\"\203\001\n\016RemoteEnvelope\022" +
-      " \n\trecipient\030\001 \002(\0132\r.ActorRefData\022#\n\007mes" +
-      "sage\030\002 \002(\0132\022.SerializedMessage\022\035\n\006sender" +
-      "\030\004 \001(\0132\r.ActorRefData\022\013\n\003seq\030\005 \001(\006\";\n\023Ac" +
-      "knowledgementInfo\022\025\n\rcumulativeAck\030\001 \002(\006" +
-      "\022\r\n\005nacks\030\002 \003(\006\"\034\n\014ActorRefData\022\014\n\004path\030" +
-      "\001 \002(\t\"S\n\021SerializedMessage\022\017\n\007message\030\001 ",
-      "\002(\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageMani" +
-      "fest\030\003 \001(\014\"~\n\023DaemonMsgCreateData\022\031\n\005pro" +
-      "ps\030\001 \002(\0132\n.PropsData\022\033\n\006deploy\030\002 \002(\0132\013.D" +
-      "eployData\022\014\n\004path\030\003 \002(\t\022!\n\nsupervisor\030\004 " +
-      "\002(\0132\r.ActorRefData\"\204\001\n\tPropsData\022\033\n\006depl" +
-      "oy\030\002 \002(\0132\013.DeployData\022\r\n\005clazz\030\003 \002(\t\022\014\n\004" +
-      "args\030\004 \003(\014\022\021\n\tmanifests\030\005 \003(\t\022\025\n\rseriali" +
-      "zerIds\030\006 \003(\005\022\023\n\013hasManifest\030\007 \003(\010\"\211\002\n\nDe" +
-      "ployData\022\014\n\004path\030\001 \002(\t\022\016\n\006config\030\002 \001(\014\022\024" +
-      "\n\014routerConfig\030\003 \001(\014\022\r\n\005scope\030\004 \001(\014\022\022\n\nd",
-      "ispatcher\030\005 \001(\t\022\031\n\021scopeSerializerId\030\006 \001" +
-      "(\005\022\025\n\rscopeManifest\030\007 \001(\t\022\032\n\022configSeria" +
-      "lizerId\030\010 \001(\005\022\026\n\016configManifest\030\t \001(\t\022 \n" +
-      "\030routerConfigSerializerId\030\n \001(\005\022\034\n\024route" +
-      "rConfigManifest\030\013 \001(\t\"O\n\013AddressData\022\016\n\006" +
-      "system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003" +
-      " \002(\r\022\020\n\010protocol\030\004 \001(\t\"P\n\023AkkaProtocolMe" +
-      "ssage\022\017\n\007payload\030\001 \001(\014\022(\n\013instruction\030\002 " +
-      "\001(\0132\023.AkkaControlMessage\"b\n\022AkkaControlM" +
-      "essage\022!\n\013commandType\030\001 \002(\0162\014.CommandTyp",
-      "e\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHandshake" +
-      "Info\"N\n\021AkkaHandshakeInfo\022\034\n\006origin\030\001 \002(" +
-      "\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030\003" +
-      " \001(\t\"8\n\016FiniteDuration\022\r\n\005value\030\001 \002(\003\022\027\n" +
-      "\004unit\030\002 \002(\0162\t.TimeUnit\")\n\013RemoteScope\022\032\n" +
-      "\004node\030\001 \002(\0132\014.AddressData\"\261\001\n\016DefaultRes" +
-      "izer\022\022\n\nlowerBound\030\001 \002(\r\022\022\n\nupperBound\030\002" +
-      " \002(\r\022\031\n\021pressureThreshold\030\003 \002(\r\022\022\n\nrampu" +
-      "pRate\030\004 \002(\001\022\030\n\020backoffThreshold\030\005 \002(\001\022\023\n" +
-      "\013backoffRate\030\006 \002(\001\022\031\n\021messagesPerResize\030",
-      "\007 \002(\r\"A\n\nFromConfig\022\031\n\007resizer\030\001 \001(\0132\010.P" +
-      "ayload\022\030\n\020routerDispatcher\030\002 \001(\t\"{\n\022Gene" +
-      "ricRoutingPool\022\025\n\rnrOfInstances\030\001 \002(\r\022\030\n" +
-      "\020routerDispatcher\030\002 \001(\t\022\031\n\021usePoolDispat" +
-      "cher\030\003 \002(\010\022\031\n\007resizer\030\004 \001(\0132\010.Payload\"Z\n" +
-      "\021ScatterGatherPool\022$\n\007generic\030\001 \002(\0132\023.Ge" +
-      "nericRoutingPool\022\037\n\006within\030\002 \002(\0132\017.Finit" +
-      "eDuration\"|\n\020TailChoppingPool\022$\n\007generic" +
-      "\030\001 \002(\0132\023.GenericRoutingPool\022\037\n\006within\030\002 " +
-      "\002(\0132\017.FiniteDuration\022!\n\010interval\030\003 \002(\0132\017",
-      ".FiniteDuration\"J\n\022RemoteRouterConfig\022\027\n" +
-      "\005local\030\001 \002(\0132\010.Payload\022\033\n\005nodes\030\002 \003(\0132\014." +
-      "AddressData*{\n\013CommandType\022\r\n\tASSOCIATE\020" +
-      "\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DI" +
-      "SASSOCIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIA" +
-      "TE_QUARANTINED\020\005*n\n\010TimeUnit\022\017\n\013NANOSECO" +
-      "NDS\020\001\022\020\n\014MICROSECONDS\020\002\022\020\n\014MILLISECONDS\020" +
-      "\003\022\013\n\007SECONDS\020\004\022\013\n\007MINUTES\020\005\022\t\n\005HOURS\020\006\022\010" +
-      "\n\004DAYS\020\007B\017\n\013akka.remoteH\001"
+      "\n\021WireFormats.proto\032\026ContainerFormats.pr"
+          + "oto\"_\n\027AckAndEnvelopeContainer\022!\n\003ack\030\001 "
+          + "\001(\0132\024.AcknowledgementInfo\022!\n\010envelope\030\002 "
+          + "\001(\0132\017.RemoteEnvelope\"\203\001\n\016RemoteEnvelope\022"
+          + " \n\trecipient\030\001 \002(\0132\r.ActorRefData\022#\n\007mes"
+          + "sage\030\002 \002(\0132\022.SerializedMessage\022\035\n\006sender"
+          + "\030\004 \001(\0132\r.ActorRefData\022\013\n\003seq\030\005 \001(\006\";\n\023Ac"
+          + "knowledgementInfo\022\025\n\rcumulativeAck\030\001 \002(\006"
+          + "\022\r\n\005nacks\030\002 \003(\006\"\034\n\014ActorRefData\022\014\n\004path\030"
+          + "\001 \002(\t\"S\n\021SerializedMessage\022\017\n\007message\030\001 ",
+      "\002(\014\022\024\n\014serializerId\030\002 \002(\005\022\027\n\017messageMani"
+          + "fest\030\003 \001(\014\"~\n\023DaemonMsgCreateData\022\031\n\005pro"
+          + "ps\030\001 \002(\0132\n.PropsData\022\033\n\006deploy\030\002 \002(\0132\013.D"
+          + "eployData\022\014\n\004path\030\003 \002(\t\022!\n\nsupervisor\030\004 "
+          + "\002(\0132\r.ActorRefData\"\204\001\n\tPropsData\022\033\n\006depl"
+          + "oy\030\002 \002(\0132\013.DeployData\022\r\n\005clazz\030\003 \002(\t\022\014\n\004"
+          + "args\030\004 \003(\014\022\021\n\tmanifests\030\005 \003(\t\022\025\n\rseriali"
+          + "zerIds\030\006 \003(\005\022\023\n\013hasManifest\030\007 \003(\010\"\211\002\n\nDe"
+          + "ployData\022\014\n\004path\030\001 \002(\t\022\016\n\006config\030\002 \001(\014\022\024"
+          + "\n\014routerConfig\030\003 \001(\014\022\r\n\005scope\030\004 \001(\014\022\022\n\nd",
+      "ispatcher\030\005 \001(\t\022\031\n\021scopeSerializerId\030\006 \001"
+          + "(\005\022\025\n\rscopeManifest\030\007 \001(\t\022\032\n\022configSeria"
+          + "lizerId\030\010 \001(\005\022\026\n\016configManifest\030\t \001(\t\022 \n"
+          + "\030routerConfigSerializerId\030\n \001(\005\022\034\n\024route"
+          + "rConfigManifest\030\013 \001(\t\"O\n\013AddressData\022\016\n\006"
+          + "system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003"
+          + " \002(\r\022\020\n\010protocol\030\004 \001(\t\"P\n\023AkkaProtocolMe"
+          + "ssage\022\017\n\007payload\030\001 \001(\014\022(\n\013instruction\030\002 "
+          + "\001(\0132\023.AkkaControlMessage\"b\n\022AkkaControlM"
+          + "essage\022!\n\013commandType\030\001 \002(\0162\014.CommandTyp",
+      "e\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHandshake"
+          + "Info\"N\n\021AkkaHandshakeInfo\022\034\n\006origin\030\001 \002("
+          + "\0132\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030\003"
+          + " \001(\t\"8\n\016FiniteDuration\022\r\n\005value\030\001 \002(\003\022\027\n"
+          + "\004unit\030\002 \002(\0162\t.TimeUnit\")\n\013RemoteScope\022\032\n"
+          + "\004node\030\001 \002(\0132\014.AddressData\"\261\001\n\016DefaultRes"
+          + "izer\022\022\n\nlowerBound\030\001 \002(\r\022\022\n\nupperBound\030\002"
+          + " \002(\r\022\031\n\021pressureThreshold\030\003 \002(\r\022\022\n\nrampu"
+          + "pRate\030\004 \002(\001\022\030\n\020backoffThreshold\030\005 \002(\001\022\023\n"
+          + "\013backoffRate\030\006 \002(\001\022\031\n\021messagesPerResize\030",
+      "\007 \002(\r\"A\n\nFromConfig\022\031\n\007resizer\030\001 \001(\0132\010.P"
+          + "ayload\022\030\n\020routerDispatcher\030\002 \001(\t\"{\n\022Gene"
+          + "ricRoutingPool\022\025\n\rnrOfInstances\030\001 \002(\r\022\030\n"
+          + "\020routerDispatcher\030\002 \001(\t\022\031\n\021usePoolDispat"
+          + "cher\030\003 \002(\010\022\031\n\007resizer\030\004 \001(\0132\010.Payload\"Z\n"
+          + "\021ScatterGatherPool\022$\n\007generic\030\001 \002(\0132\023.Ge"
+          + "nericRoutingPool\022\037\n\006within\030\002 \002(\0132\017.Finit"
+          + "eDuration\"|\n\020TailChoppingPool\022$\n\007generic"
+          + "\030\001 \002(\0132\023.GenericRoutingPool\022\037\n\006within\030\002 "
+          + "\002(\0132\017.FiniteDuration\022!\n\010interval\030\003 \002(\0132\017",
+      ".FiniteDuration\"J\n\022RemoteRouterConfig\022\027\n"
+          + "\005local\030\001 \002(\0132\010.Payload\022\033\n\005nodes\030\002 \003(\0132\014."
+          + "AddressData*{\n\013CommandType\022\r\n\tASSOCIATE\020"
+          + "\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DI"
+          + "SASSOCIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIA"
+          + "TE_QUARANTINED\020\005*n\n\010TimeUnit\022\017\n\013NANOSECO"
+          + "NDS\020\001\022\020\n\014MICROSECONDS\020\002\022\020\n\014MILLISECONDS\020"
+          + "\003\022\013\n\007SECONDS\020\004\022\013\n\007MINUTES\020\005\022\t\n\005HOURS\020\006\022\010"
+          + "\n\004DAYS\020\007B\017\n\013akka.remoteH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public akka.protobuf.ExtensionRegistry assignDescriptors(
-            akka.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_AckAndEnvelopeContainer_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_AckAndEnvelopeContainer_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_AckAndEnvelopeContainer_descriptor,
-              new java.lang.String[] { "Ack", "Envelope", });
-          internal_static_RemoteEnvelope_descriptor =
-            getDescriptor().getMessageTypes().get(1);
-          internal_static_RemoteEnvelope_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_RemoteEnvelope_descriptor,
-              new java.lang.String[] { "Recipient", "Message", "Sender", "Seq", });
-          internal_static_AcknowledgementInfo_descriptor =
-            getDescriptor().getMessageTypes().get(2);
-          internal_static_AcknowledgementInfo_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_AcknowledgementInfo_descriptor,
-              new java.lang.String[] { "CumulativeAck", "Nacks", });
-          internal_static_ActorRefData_descriptor =
-            getDescriptor().getMessageTypes().get(3);
-          internal_static_ActorRefData_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_ActorRefData_descriptor,
-              new java.lang.String[] { "Path", });
-          internal_static_SerializedMessage_descriptor =
-            getDescriptor().getMessageTypes().get(4);
-          internal_static_SerializedMessage_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_SerializedMessage_descriptor,
-              new java.lang.String[] { "Message", "SerializerId", "MessageManifest", });
-          internal_static_DaemonMsgCreateData_descriptor =
-            getDescriptor().getMessageTypes().get(5);
-          internal_static_DaemonMsgCreateData_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_DaemonMsgCreateData_descriptor,
-              new java.lang.String[] { "Props", "Deploy", "Path", "Supervisor", });
-          internal_static_PropsData_descriptor =
-            getDescriptor().getMessageTypes().get(6);
-          internal_static_PropsData_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_PropsData_descriptor,
-              new java.lang.String[] { "Deploy", "Clazz", "Args", "Manifests", "SerializerIds", "HasManifest", });
-          internal_static_DeployData_descriptor =
-            getDescriptor().getMessageTypes().get(7);
-          internal_static_DeployData_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_DeployData_descriptor,
-              new java.lang.String[] { "Path", "Config", "RouterConfig", "Scope", "Dispatcher", "ScopeSerializerId", "ScopeManifest", "ConfigSerializerId", "ConfigManifest", "RouterConfigSerializerId", "RouterConfigManifest", });
-          internal_static_AddressData_descriptor =
-            getDescriptor().getMessageTypes().get(8);
-          internal_static_AddressData_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_AddressData_descriptor,
-              new java.lang.String[] { "System", "Hostname", "Port", "Protocol", });
-          internal_static_AkkaProtocolMessage_descriptor =
-            getDescriptor().getMessageTypes().get(9);
-          internal_static_AkkaProtocolMessage_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_AkkaProtocolMessage_descriptor,
-              new java.lang.String[] { "Payload", "Instruction", });
-          internal_static_AkkaControlMessage_descriptor =
-            getDescriptor().getMessageTypes().get(10);
-          internal_static_AkkaControlMessage_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_AkkaControlMessage_descriptor,
-              new java.lang.String[] { "CommandType", "HandshakeInfo", });
-          internal_static_AkkaHandshakeInfo_descriptor =
-            getDescriptor().getMessageTypes().get(11);
-          internal_static_AkkaHandshakeInfo_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_AkkaHandshakeInfo_descriptor,
-              new java.lang.String[] { "Origin", "Uid", "Cookie", });
-          internal_static_FiniteDuration_descriptor =
-            getDescriptor().getMessageTypes().get(12);
-          internal_static_FiniteDuration_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_FiniteDuration_descriptor,
-              new java.lang.String[] { "Value", "Unit", });
-          internal_static_RemoteScope_descriptor =
-            getDescriptor().getMessageTypes().get(13);
-          internal_static_RemoteScope_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_RemoteScope_descriptor,
-              new java.lang.String[] { "Node", });
-          internal_static_DefaultResizer_descriptor =
-            getDescriptor().getMessageTypes().get(14);
-          internal_static_DefaultResizer_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_DefaultResizer_descriptor,
-              new java.lang.String[] { "LowerBound", "UpperBound", "PressureThreshold", "RampupRate", "BackoffThreshold", "BackoffRate", "MessagesPerResize", });
-          internal_static_FromConfig_descriptor =
-            getDescriptor().getMessageTypes().get(15);
-          internal_static_FromConfig_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_FromConfig_descriptor,
-              new java.lang.String[] { "Resizer", "RouterDispatcher", });
-          internal_static_GenericRoutingPool_descriptor =
-            getDescriptor().getMessageTypes().get(16);
-          internal_static_GenericRoutingPool_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_GenericRoutingPool_descriptor,
-              new java.lang.String[] { "NrOfInstances", "RouterDispatcher", "UsePoolDispatcher", "Resizer", });
-          internal_static_ScatterGatherPool_descriptor =
-            getDescriptor().getMessageTypes().get(17);
-          internal_static_ScatterGatherPool_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_ScatterGatherPool_descriptor,
-              new java.lang.String[] { "Generic", "Within", });
-          internal_static_TailChoppingPool_descriptor =
-            getDescriptor().getMessageTypes().get(18);
-          internal_static_TailChoppingPool_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_TailChoppingPool_descriptor,
-              new java.lang.String[] { "Generic", "Within", "Interval", });
-          internal_static_RemoteRouterConfig_descriptor =
-            getDescriptor().getMessageTypes().get(19);
-          internal_static_RemoteRouterConfig_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_RemoteRouterConfig_descriptor,
-              new java.lang.String[] { "Local", "Nodes", });
-          return null;
-        }
-      };
-    akka.protobuf.Descriptors.FileDescriptor
-      .internalBuildGeneratedFileFrom(descriptorData,
+        new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+          public akka.protobuf.ExtensionRegistry assignDescriptors(
+              akka.protobuf.Descriptors.FileDescriptor root) {
+            descriptor = root;
+            internal_static_AckAndEnvelopeContainer_descriptor =
+                getDescriptor().getMessageTypes().get(0);
+            internal_static_AckAndEnvelopeContainer_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_AckAndEnvelopeContainer_descriptor,
+                    new java.lang.String[] {
+                      "Ack", "Envelope",
+                    });
+            internal_static_RemoteEnvelope_descriptor = getDescriptor().getMessageTypes().get(1);
+            internal_static_RemoteEnvelope_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_RemoteEnvelope_descriptor,
+                    new java.lang.String[] {
+                      "Recipient", "Message", "Sender", "Seq",
+                    });
+            internal_static_AcknowledgementInfo_descriptor =
+                getDescriptor().getMessageTypes().get(2);
+            internal_static_AcknowledgementInfo_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_AcknowledgementInfo_descriptor,
+                    new java.lang.String[] {
+                      "CumulativeAck", "Nacks",
+                    });
+            internal_static_ActorRefData_descriptor = getDescriptor().getMessageTypes().get(3);
+            internal_static_ActorRefData_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_ActorRefData_descriptor,
+                    new java.lang.String[] {
+                      "Path",
+                    });
+            internal_static_SerializedMessage_descriptor = getDescriptor().getMessageTypes().get(4);
+            internal_static_SerializedMessage_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_SerializedMessage_descriptor,
+                    new java.lang.String[] {
+                      "Message", "SerializerId", "MessageManifest",
+                    });
+            internal_static_DaemonMsgCreateData_descriptor =
+                getDescriptor().getMessageTypes().get(5);
+            internal_static_DaemonMsgCreateData_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_DaemonMsgCreateData_descriptor,
+                    new java.lang.String[] {
+                      "Props", "Deploy", "Path", "Supervisor",
+                    });
+            internal_static_PropsData_descriptor = getDescriptor().getMessageTypes().get(6);
+            internal_static_PropsData_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_PropsData_descriptor,
+                    new java.lang.String[] {
+                      "Deploy", "Clazz", "Args", "Manifests", "SerializerIds", "HasManifest",
+                    });
+            internal_static_DeployData_descriptor = getDescriptor().getMessageTypes().get(7);
+            internal_static_DeployData_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_DeployData_descriptor,
+                    new java.lang.String[] {
+                      "Path",
+                      "Config",
+                      "RouterConfig",
+                      "Scope",
+                      "Dispatcher",
+                      "ScopeSerializerId",
+                      "ScopeManifest",
+                      "ConfigSerializerId",
+                      "ConfigManifest",
+                      "RouterConfigSerializerId",
+                      "RouterConfigManifest",
+                    });
+            internal_static_AddressData_descriptor = getDescriptor().getMessageTypes().get(8);
+            internal_static_AddressData_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_AddressData_descriptor,
+                    new java.lang.String[] {
+                      "System", "Hostname", "Port", "Protocol",
+                    });
+            internal_static_AkkaProtocolMessage_descriptor =
+                getDescriptor().getMessageTypes().get(9);
+            internal_static_AkkaProtocolMessage_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_AkkaProtocolMessage_descriptor,
+                    new java.lang.String[] {
+                      "Payload", "Instruction",
+                    });
+            internal_static_AkkaControlMessage_descriptor =
+                getDescriptor().getMessageTypes().get(10);
+            internal_static_AkkaControlMessage_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_AkkaControlMessage_descriptor,
+                    new java.lang.String[] {
+                      "CommandType", "HandshakeInfo",
+                    });
+            internal_static_AkkaHandshakeInfo_descriptor =
+                getDescriptor().getMessageTypes().get(11);
+            internal_static_AkkaHandshakeInfo_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_AkkaHandshakeInfo_descriptor,
+                    new java.lang.String[] {
+                      "Origin", "Uid", "Cookie",
+                    });
+            internal_static_FiniteDuration_descriptor = getDescriptor().getMessageTypes().get(12);
+            internal_static_FiniteDuration_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_FiniteDuration_descriptor,
+                    new java.lang.String[] {
+                      "Value", "Unit",
+                    });
+            internal_static_RemoteScope_descriptor = getDescriptor().getMessageTypes().get(13);
+            internal_static_RemoteScope_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_RemoteScope_descriptor,
+                    new java.lang.String[] {
+                      "Node",
+                    });
+            internal_static_DefaultResizer_descriptor = getDescriptor().getMessageTypes().get(14);
+            internal_static_DefaultResizer_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_DefaultResizer_descriptor,
+                    new java.lang.String[] {
+                      "LowerBound",
+                      "UpperBound",
+                      "PressureThreshold",
+                      "RampupRate",
+                      "BackoffThreshold",
+                      "BackoffRate",
+                      "MessagesPerResize",
+                    });
+            internal_static_FromConfig_descriptor = getDescriptor().getMessageTypes().get(15);
+            internal_static_FromConfig_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_FromConfig_descriptor,
+                    new java.lang.String[] {
+                      "Resizer", "RouterDispatcher",
+                    });
+            internal_static_GenericRoutingPool_descriptor =
+                getDescriptor().getMessageTypes().get(16);
+            internal_static_GenericRoutingPool_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_GenericRoutingPool_descriptor,
+                    new java.lang.String[] {
+                      "NrOfInstances", "RouterDispatcher", "UsePoolDispatcher", "Resizer",
+                    });
+            internal_static_ScatterGatherPool_descriptor =
+                getDescriptor().getMessageTypes().get(17);
+            internal_static_ScatterGatherPool_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_ScatterGatherPool_descriptor,
+                    new java.lang.String[] {
+                      "Generic", "Within",
+                    });
+            internal_static_TailChoppingPool_descriptor = getDescriptor().getMessageTypes().get(18);
+            internal_static_TailChoppingPool_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_TailChoppingPool_descriptor,
+                    new java.lang.String[] {
+                      "Generic", "Within", "Interval",
+                    });
+            internal_static_RemoteRouterConfig_descriptor =
+                getDescriptor().getMessageTypes().get(19);
+            internal_static_RemoteRouterConfig_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_RemoteRouterConfig_descriptor,
+                    new java.lang.String[] {
+                      "Local", "Nodes",
+                    });
+            return null;
+          }
+        };
+    akka.protobuf.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(
+        descriptorData,
         new akka.protobuf.Descriptors.FileDescriptor[] {
           akka.remote.ContainerFormats.getDescriptor(),
-        }, assigner);
+        },
+        assigner);
   }
 
   // @@protoc_insertion_point(outer_class_scope)

@@ -1,7 +1,4 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
- */
-
+/** Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com> */
 package jdocs.akka.actor.testkit.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
@@ -14,12 +11,12 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-//#test-header
+// #test-header
 public class AsyncTestingExampleTest {
-  final static ActorTestKit testKit = ActorTestKit.create();
-//#test-header
+  static final ActorTestKit testKit = ActorTestKit.create();
+  // #test-header
 
-  //#under-test
+  // #under-test
   public static class Ping {
     private String msg;
     private ActorRef<Pong> replyTo;
@@ -29,6 +26,7 @@ public class AsyncTestingExampleTest {
       this.replyTo = replyTo;
     }
   }
+
   public static class Pong {
     private String msg;
 
@@ -37,34 +35,36 @@ public class AsyncTestingExampleTest {
     }
   }
 
-  Behavior<Ping> echoActor = Behaviors.receive((ctx, ping) -> {
-    ping.replyTo.tell(new Pong(ping.msg));
-    return Behaviors.same();
-  });
-  //#under-test
+  Behavior<Ping> echoActor =
+      Behaviors.receive(
+          (ctx, ping) -> {
+            ping.replyTo.tell(new Pong(ping.msg));
+            return Behaviors.same();
+          });
+  // #under-test
 
-  //#test-shutdown
+  // #test-shutdown
   @AfterClass
   public void cleanup() {
     testKit.shutdownTestKit();
   }
-  //#test-shutdown
+  // #test-shutdown
 
   @Test
   public void testVerifyingAResponse() {
-    //#test-spawn
+    // #test-spawn
     ActorRef<Ping> pinger = testKit.spawn(echoActor, "ping");
     TestProbe<Pong> probe = testKit.createTestProbe();
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMessage(new Pong("hello"));
-    //#test-spawn
+    // #test-spawn
   }
 
   @Test
   public void testVerifyingAResponseAnonymous() {
-    //#test-spawn-anonymous
+    // #test-spawn-anonymous
     ActorRef<Ping> pinger = testKit.spawn(echoActor);
-    //#test-spawn-anonymous
+    // #test-spawn-anonymous
     TestProbe<Pong> probe = testKit.createTestProbe();
     pinger.tell(new Ping("hello", probe.ref()));
     probe.expectMessage(new Pong("hello"));

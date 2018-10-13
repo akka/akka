@@ -1,7 +1,4 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- */
-
+/** Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com> */
 package akka.actor;
 
 import akka.event.Logging;
@@ -30,8 +27,8 @@ import static org.junit.Assert.*;
 public class JavaAPI extends JUnitSuite {
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("JavaAPI",
-      AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("JavaAPI", AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
 
@@ -61,20 +58,23 @@ public class JavaAPI extends JUnitSuite {
   }
 
   public static Props mkProps() {
-    return Props.create(new Creator<Actor>() {
-      public Actor create() {
-        return new JavaAPITestActor();
-      }
-    });
+    return Props.create(
+        new Creator<Actor>() {
+          public Actor create() {
+            return new JavaAPITestActor();
+          }
+        });
   }
 
   @SuppressWarnings("unchecked")
   public static Props mkErasedProps() {
-    return Props.create(JavaAPITestActor.class, new Creator() {
-      public Object create() {
-        return new JavaAPITestActor();
-      }
-    });
+    return Props.create(
+        JavaAPITestActor.class,
+        new Creator() {
+          public Object create() {
+            return new JavaAPITestActor();
+          }
+        });
   }
 
   @Test
@@ -91,7 +91,9 @@ public class JavaAPI extends JUnitSuite {
 
   @Test
   public void mustBeAbleToCreateActorWIthConstructorParams() {
-    ActorRef ref = system.actorOf(Props.create(ActorWithConstructorParams.class, "a", "b", new Integer(17), 18));
+    ActorRef ref =
+        system.actorOf(
+            Props.create(ActorWithConstructorParams.class, "a", "b", new Integer(17), 18));
     final TestProbe probe = new TestProbe(system);
     probe.send(ref, "get");
     probe.expectMsg("a-b-17-18");
@@ -99,7 +101,9 @@ public class JavaAPI extends JUnitSuite {
 
   @Test
   public void mustBeAbleToCreateActorWIthBoxedAndUnBoxedConstructorParams() {
-    ActorRef ref = system.actorOf(Props.create(ActorWithConstructorParams.class, "a", "b", 17, new Integer(18)));
+    ActorRef ref =
+        system.actorOf(
+            Props.create(ActorWithConstructorParams.class, "a", "b", 17, new Integer(18)));
     final TestProbe probe = new TestProbe(system);
     probe.send(ref, "get");
     probe.expectMsg("a-b-17-18");
@@ -107,7 +111,8 @@ public class JavaAPI extends JUnitSuite {
 
   @Test
   public void mustBeAbleToCreateActorWIthNullConstructorParams() {
-    ActorRef ref = system.actorOf(Props.create(ActorWithConstructorParams.class, "a", null, null, 18));
+    ActorRef ref =
+        system.actorOf(Props.create(ActorWithConstructorParams.class, "a", null, null, 18));
     final TestProbe probe = new TestProbe(system);
     probe.send(ref, "get");
     probe.expectMsg("a-null-null-18");
@@ -116,7 +121,8 @@ public class JavaAPI extends JUnitSuite {
   @Test
   public void mustBeAbleToCreateActorWIthNullConstructorParams2() {
     // without this Object array wrapper it will not compile: "reference to create is ambiguous"
-    ActorRef ref = system.actorOf(Props.create(ActorWithConstructorParams.class, new Object[] { null }));
+    ActorRef ref =
+        system.actorOf(Props.create(ActorWithConstructorParams.class, new Object[] {null}));
     final TestProbe probe = new TestProbe(system);
     probe.send(ref, "get");
     probe.expectMsg("null-undefined-0-0");
@@ -190,9 +196,15 @@ public class JavaAPI extends JUnitSuite {
     }
 
     public void onReceive(Object msg) {
-      String reply = String.valueOf(a) + "-" + String.valueOf(b) + "-" + String.valueOf(c) + "-" + String.valueOf(d);
+      String reply =
+          String.valueOf(a)
+              + "-"
+              + String.valueOf(b)
+              + "-"
+              + String.valueOf(c)
+              + "-"
+              + String.valueOf(d);
       getSender().tell(reply, getSelf());
     }
   }
-
 }

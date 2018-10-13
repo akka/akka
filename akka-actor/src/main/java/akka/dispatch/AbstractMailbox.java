@@ -1,21 +1,22 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- */
-
+/** Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com> */
 package akka.dispatch;
 
 import akka.util.Unsafe;
 
 final class AbstractMailbox {
-    final static long mailboxStatusOffset;
-    final static long systemMessageOffset;
+  static final long mailboxStatusOffset;
+  static final long systemMessageOffset;
 
-    static {
-        try {
-          mailboxStatusOffset = Unsafe.instance.objectFieldOffset(Mailbox.class.getDeclaredField("_statusDoNotCallMeDirectly"));
-          systemMessageOffset = Unsafe.instance.objectFieldOffset(Mailbox.class.getDeclaredField("_systemQueueDoNotCallMeDirectly"));
-        } catch(Throwable t){
-            throw new ExceptionInInitializerError(t);
-        }
+  static {
+    try {
+      mailboxStatusOffset =
+          Unsafe.instance.objectFieldOffset(
+              Mailbox.class.getDeclaredField("_statusDoNotCallMeDirectly"));
+      systemMessageOffset =
+          Unsafe.instance.objectFieldOffset(
+              Mailbox.class.getDeclaredField("_systemQueueDoNotCallMeDirectly"));
+    } catch (Throwable t) {
+      throw new ExceptionInInitializerError(t);
     }
+  }
 }

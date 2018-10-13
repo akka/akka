@@ -1,7 +1,4 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- */
-
+/** Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com> */
 package akka.actor;
 
 import java.util.concurrent.TimeoutException;
@@ -15,8 +12,8 @@ import org.scalatest.junit.JUnitSuite;
 public class InboxJavaAPITest extends JUnitSuite {
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("InboxJavaAPITest",
-      AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("InboxJavaAPITest", AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
 
@@ -25,5 +22,4 @@ public class InboxJavaAPITest extends JUnitSuite {
     Inbox inbox = Inbox.create(system);
     inbox.receive(Duration.ofMillis(10));
   }
-
 }

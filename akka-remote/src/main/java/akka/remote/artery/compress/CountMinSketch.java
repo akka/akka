@@ -9,11 +9,12 @@ import akka.actor.ActorRef;
 /**
  * INTERNAL API: Count-Min Sketch datastructure.
  *
- * Not thread-safe.
+ * <p>Not thread-safe.
  *
- * An Improved Data Stream Summary: The Count-Min Sketch and its Applications
+ * <p>An Improved Data Stream Summary: The Count-Min Sketch and its Applications
  * https://web.archive.org/web/20060907232042/http://www.eecs.harvard.edu/~michaelm/CS222/countmin.pdf
- * This implementation is mostly taken and adjusted from the Apache V2 licensed project `stream-lib`, located here:
+ * This implementation is mostly taken and adjusted from the Apache V2 licensed project
+ * `stream-lib`, located here:
  * https://github.com/clearspring/stream-lib/blob/master/src/main/java/com/clearspring/analytics/stream/frequency/CountMinSketch.java
  */
 public class CountMinSketch {
@@ -27,10 +28,9 @@ public class CountMinSketch {
 
   private int[] recyclableCMSHashBuckets;
 
-
   public CountMinSketch(int depth, int width, int seed) {
-    if((width & (width-1)) != 0){
-      throw new IllegalArgumentException("width must be a power of 2, was: " + width );
+    if ((width & (width - 1)) != 0) {
+      throw new IllegalArgumentException("width must be a power of 2, was: " + width);
     }
     this.depth = depth;
     this.width = width;
@@ -40,14 +40,11 @@ public class CountMinSketch {
     initTablesWith(depth, width, seed);
   }
 
-
   private void initTablesWith(int depth, int width, int seed) {
     this.table = new long[depth][width];
   }
 
-  /**
-   * Referred to as {@code epsilon} in the whitepaper
-   */
+  /** Referred to as {@code epsilon} in the whitepaper */
   public double relativeError() {
     return eps;
   }
@@ -57,8 +54,9 @@ public class CountMinSketch {
   }
 
   /**
-   * Similar to {@code add}, however we reuse the fact that the hask buckets have to be calculated for {@code add}
-   * already, and a separate {@code estimateCount} operation would have to calculate them again, so we do it all in one go.
+   * Similar to {@code add}, however we reuse the fact that the hask buckets have to be calculated
+   * for {@code add} already, and a separate {@code estimateCount} operation would have to calculate
+   * them again, so we do it all in one go.
    */
   public long addObjectAndEstimateCount(Object item, long count) {
     if (count < 0) {
@@ -81,8 +79,8 @@ public class CountMinSketch {
   }
 
   /**
-   * The estimate is correct within {@code 'epsilon' * (total item count)},
-   * with probability {@code confidence}.
+   * The estimate is correct within {@code 'epsilon' * (total item count)}, with probability {@code
+   * confidence}.
    */
   public long estimateCount(Object item) {
     Murmur3.hashBuckets(item, recyclableCMSHashBuckets, width);
@@ -90,8 +88,8 @@ public class CountMinSketch {
   }
 
   /**
-   * The estimate is correct within {@code 'epsilon' * (total item count)},
-   * with probability {@code confidence}.
+   * The estimate is correct within {@code 'epsilon' * (total item count)}, with probability {@code
+   * confidence}.
    *
    * @param buckets the "indexes" of buckets from which we want to calculate the count
    */
@@ -103,20 +101,18 @@ public class CountMinSketch {
     return res;
   }
 
-
   /**
    * Local implementation of murmur3 hash optimized to used in count min sketch
    *
-   * Inspired by scala (scala.util.hashing.MurmurHash3) and C port of MurmurHash3
+   * <p>Inspired by scala (scala.util.hashing.MurmurHash3) and C port of MurmurHash3
    *
-   * scala.util.hashing => https://github.com/scala/scala/blob/2.12.x/src/library/scala/util/hashing/MurmurHash3.scala
-   * C port of MurmurHash3 => https://github.com/PeterScott/murmur3/blob/master/murmur3.c
+   * <p>scala.util.hashing =>
+   * https://github.com/scala/scala/blob/2.12.x/src/library/scala/util/hashing/MurmurHash3.scala C
+   * port of MurmurHash3 => https://github.com/PeterScott/murmur3/blob/master/murmur3.c
    */
   private static class Murmur3 {
 
-    /**
-     * Force all bits of the hash to avalanche. Used for finalizing the hash.
-     */
+    /** Force all bits of the hash to avalanche. Used for finalizing the hash. */
     private static int avalanche(int hash) {
       int h = hash;
 
@@ -132,13 +128,12 @@ public class CountMinSketch {
     private static int mixLast(int hash, int data) {
       int k = data;
 
-      k *= 0xcc9e2d51; //c1
+      k *= 0xcc9e2d51; // c1
       k = Integer.rotateLeft(k, 15);
-      k *= 0x1b873593; //c2
+      k *= 0x1b873593; // c2
 
       return hash ^ k;
     }
-
 
     private static int mix(int hash, int data) {
       int h = mixLast(hash, data);
@@ -151,9 +146,11 @@ public class CountMinSketch {
         return 0;
       }
       if (o instanceof ActorRef) { // TODO possibly scary optimisation
-        // ActorRef hashcode is the ActorPath#uid, which is a random number assigned at its creation,
+        // ActorRef hashcode is the ActorPath#uid, which is a random number assigned at its
+        // creation,
         // thus no hashing happens here - the value is already cached.
-        // TODO it should be thought over if this preciseness (just a random number, and not hashing) is good enough here?
+        // TODO it should be thought over if this preciseness (just a random number, and not
+        // hashing) is good enough here?
         // this is not cryptographic one, anything which is stable and random is good enough
         return o.hashCode();
       }
@@ -219,8 +216,9 @@ public class CountMinSketch {
     /**
      * Hash item using pair independent hash functions.
      *
-     * Implemetation based on "Less Hashing, Same Performance: Building a
-     * Better Bloom Filter" https://www.eecs.harvard.edu/~michaelm/postscripts/tr-02-05.pdf
+     * <p>Implemetation based on "Less Hashing, Same Performance: Building a Better Bloom Filter"
+     * https://www.eecs.harvard.edu/~michaelm/postscripts/tr-02-05.pdf
+     *
      * @param item what should be hashed
      * @param hashBuckets where hashes should be placed
      * @param limit value to shrink result
@@ -231,10 +229,12 @@ public class CountMinSketch {
       final int depth = hashBuckets.length;
       final int mask = limit - 1;
       for (int i = 0; i < depth; i++) {
-        hashBuckets[i] = Math.abs((hash1 + i * hash2) & mask); //shrink done by AND instead MOD. Assume limit is power of 2
+        hashBuckets[i] =
+            Math.abs(
+                (hash1 + i * hash2)
+                    & mask); // shrink done by AND instead MOD. Assume limit is power of 2
       }
     }
-
   }
 
   private int[] preallocateHashBucketsArray(int depth) {
@@ -243,11 +243,15 @@ public class CountMinSketch {
 
   @Override
   public String toString() {
-    return "CountMinSketch{" +
-      "confidence=" + confidence +
-      ", size=" + size +
-      ", depth=" + depth +
-      ", width=" + width +
-      '}';
+    return "CountMinSketch{"
+        + "confidence="
+        + confidence
+        + ", size="
+        + size
+        + ", depth="
+        + depth
+        + ", width="
+        + width
+        + '}';
   }
 }
