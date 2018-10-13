@@ -27,7 +27,8 @@ import java.util.concurrent.TimeUnit;
 public class CustomRouteTest extends JUnitSuite {
 
   @Rule
-  public AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("CustomRouteTest");
+  public AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("CustomRouteTest");
 
   private ActorSystem system = null;
   private Camel camel = null;
@@ -47,9 +48,10 @@ public class CustomRouteTest extends JUnitSuite {
 
   @Test
   public void testCustomProducerRoute() throws Exception {
-    MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockProducer", MockEndpoint.class);
+    MockEndpoint mockEndpoint =
+        camel.context().getEndpoint("mock:mockProducer", MockEndpoint.class);
     ActorRef producer = system.actorOf(Props.create(MockEndpointProducer.class), "mockEndpoint");
-    camel.context().addRoutes(new CustomRouteBuilder("direct:test",producer));
+    camel.context().addRoutes(new CustomRouteBuilder("direct:test", producer));
     camel.template().sendBody("direct:test", "test");
     assertMockEndpoint(mockEndpoint);
     system.stop(producer);
@@ -57,9 +59,12 @@ public class CustomRouteTest extends JUnitSuite {
 
   @Test
   public void testCustomProducerUriRoute() throws Exception {
-    MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockProducerUri", MockEndpoint.class);
-    ActorRef producer = system.actorOf(Props.create(EndpointProducer.class, "mock:mockProducerUri"), "mockEndpointUri");
-    camel.context().addRoutes(new CustomRouteBuilder("direct:test",producer));
+    MockEndpoint mockEndpoint =
+        camel.context().getEndpoint("mock:mockProducerUri", MockEndpoint.class);
+    ActorRef producer =
+        system.actorOf(
+            Props.create(EndpointProducer.class, "mock:mockProducerUri"), "mockEndpointUri");
+    camel.context().addRoutes(new CustomRouteBuilder("direct:test", producer));
     camel.template().sendBody("direct:test", "test");
     assertMockEndpoint(mockEndpoint);
     system.stop(producer);
@@ -67,14 +72,19 @@ public class CustomRouteTest extends JUnitSuite {
 
   @Test
   public void testCustomConsumerRoute() throws Exception {
-    MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockConsumer", MockEndpoint.class);
+    MockEndpoint mockEndpoint =
+        camel.context().getEndpoint("mock:mockConsumer", MockEndpoint.class);
     FiniteDuration duration = Duration.create(10, TimeUnit.SECONDS);
     Timeout timeout = new Timeout(duration);
     ExecutionContext executionContext = system.dispatcher();
-    ActorRef consumer = Await.result(
-            camel.activationFutureFor(system.actorOf(Props.create(TestConsumer.class), "testConsumer"), timeout, executionContext),
+    ActorRef consumer =
+        Await.result(
+            camel.activationFutureFor(
+                system.actorOf(Props.create(TestConsumer.class), "testConsumer"),
+                timeout,
+                executionContext),
             duration);
-    camel.context().addRoutes(new CustomRouteBuilder("direct:testRouteConsumer",consumer));
+    camel.context().addRoutes(new CustomRouteBuilder("direct:testRouteConsumer", consumer));
     camel.template().sendBody("direct:testRouteConsumer", "test");
     assertMockEndpoint(mockEndpoint);
     system.stop(consumer);
@@ -86,12 +96,15 @@ public class CustomRouteTest extends JUnitSuite {
     FiniteDuration duration = Duration.create(10, TimeUnit.SECONDS);
     Timeout timeout = new Timeout(duration);
     ExecutionContext executionContext = system.dispatcher();
-    ActorRef consumer = Await.result(
-      camel.activationFutureFor(
-        system.actorOf(
-          Props.create(TestAckConsumer.class, "direct:testConsumerAck","mock:mockAck"), "testConsumerAck"),
-      timeout, executionContext),
-    duration);
+    ActorRef consumer =
+        Await.result(
+            camel.activationFutureFor(
+                system.actorOf(
+                    Props.create(TestAckConsumer.class, "direct:testConsumerAck", "mock:mockAck"),
+                    "testConsumerAck"),
+                timeout,
+                executionContext),
+            duration);
     camel.context().addRoutes(new CustomRouteBuilder("direct:testAck", consumer, false, duration));
     camel.template().sendBody("direct:testAck", "test");
     assertMockEndpoint(mockEndpoint);
@@ -101,40 +114,64 @@ public class CustomRouteTest extends JUnitSuite {
   @Test
   public void testCustomAckConsumerRouteFromUri() throws Exception {
     MockEndpoint mockEndpoint = camel.context().getEndpoint("mock:mockAckUri", MockEndpoint.class);
-      ExecutionContext executionContext = system.dispatcher();
+    ExecutionContext executionContext = system.dispatcher();
     FiniteDuration duration = Duration.create(10, TimeUnit.SECONDS);
     Timeout timeout = new Timeout(duration);
-    ActorRef consumer = Await.result(
-      camel.activationFutureFor(system.actorOf(Props.create(TestAckConsumer.class, "direct:testConsumerAckFromUri","mock:mockAckUri"), "testConsumerAckUri"),
-      timeout, executionContext),
-    duration);
-    camel.context().addRoutes(new CustomRouteBuilder("direct:testAckFromUri","akka://CustomRouteTest/user/testConsumerAckUri?autoAck=false"));
+    ActorRef consumer =
+        Await.result(
+            camel.activationFutureFor(
+                system.actorOf(
+                    Props.create(
+                        TestAckConsumer.class, "direct:testConsumerAckFromUri", "mock:mockAckUri"),
+                    "testConsumerAckUri"),
+                timeout,
+                executionContext),
+            duration);
+    camel
+        .context()
+        .addRoutes(
+            new CustomRouteBuilder(
+                "direct:testAckFromUri",
+                "akka://CustomRouteTest/user/testConsumerAckUri?autoAck=false"));
     camel.template().sendBody("direct:testAckFromUri", "test");
     assertMockEndpoint(mockEndpoint);
     system.stop(consumer);
   }
 
-  @Test(expected=CamelExecutionException.class)
+  @Test(expected = CamelExecutionException.class)
   public void testCustomTimeoutConsumerRoute() throws Exception {
     FiniteDuration duration = Duration.create(10, TimeUnit.SECONDS);
     Timeout timeout = new Timeout(duration);
     ExecutionContext executionContext = system.dispatcher();
-    ActorRef consumer = Await.result(
-      camel.activationFutureFor(system.actorOf(Props.create(TestAckConsumer.class, "direct:testConsumerException","mock:mockException"), "testConsumerException"),
-      timeout, executionContext),
-    duration);
-    camel.context().addRoutes(new CustomRouteBuilder("direct:testException", consumer, false, Duration.create(0, TimeUnit.SECONDS)));
+    ActorRef consumer =
+        Await.result(
+            camel.activationFutureFor(
+                system.actorOf(
+                    Props.create(
+                        TestAckConsumer.class,
+                        "direct:testConsumerException",
+                        "mock:mockException"),
+                    "testConsumerException"),
+                timeout,
+                executionContext),
+            duration);
+    camel
+        .context()
+        .addRoutes(
+            new CustomRouteBuilder(
+                "direct:testException", consumer, false, Duration.create(0, TimeUnit.SECONDS)));
     camel.template().sendBody("direct:testException", "test");
   }
 
   private void assertMockEndpoint(MockEndpoint mockEndpoint) throws InterruptedException {
     mockEndpoint.expectedMessageCount(1);
-    mockEndpoint.expectedMessagesMatches(new Predicate() {
-      @Override
-      public boolean matches(Exchange exchange) {
-        return exchange.getIn().getBody().equals("test");
-      }
-    });
+    mockEndpoint.expectedMessagesMatches(
+        new Predicate() {
+          @Override
+          public boolean matches(Exchange exchange) {
+            return exchange.getIn().getBody().equals("test");
+          }
+        });
     mockEndpoint.assertIsSatisfied();
   }
 
@@ -163,7 +200,6 @@ public class CustomRouteTest extends JUnitSuite {
     }
   }
 
-
   public static class TestConsumer extends UntypedConsumerActor {
     @Override
     public String getEndpointUri() {
@@ -172,7 +208,7 @@ public class CustomRouteTest extends JUnitSuite {
 
     @Override
     public void onReceive(Object message) {
-      this.getProducerTemplate().sendBody("mock:mockConsumer","test");
+      this.getProducerTemplate().sendBody("mock:mockConsumer", "test");
     }
   }
 
@@ -208,7 +244,7 @@ public class CustomRouteTest extends JUnitSuite {
     private final String myuri;
     private final String to;
 
-    public TestAckConsumer(String uri, String to){
+    public TestAckConsumer(String uri, String to) {
       myuri = uri;
       this.to = to;
     }

@@ -1,9 +1,8 @@
-/**
+/*
  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.persistence.typed;
-
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
@@ -15,10 +14,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class MovieWatchList extends PersistentBehavior<MovieWatchList.Command, MovieWatchList.Event, MovieWatchList.MovieList> {
+public class MovieWatchList
+    extends PersistentBehavior<
+        MovieWatchList.Command, MovieWatchList.Event, MovieWatchList.MovieList> {
 
-  interface Command {
-  }
+  interface Command {}
 
   public static class AddMovie implements Command {
     public final String movieId;
@@ -36,8 +36,7 @@ public class MovieWatchList extends PersistentBehavior<MovieWatchList.Command, M
     }
   }
 
-  interface Event {
-  }
+  interface Event {}
 
   public static class MovieAdded implements Event {
     public final String movieId;
@@ -71,9 +70,9 @@ public class MovieWatchList extends PersistentBehavior<MovieWatchList.Command, M
     }
 
     public MovieList add(String movieId) {
-        Set<String> newSet = new HashSet<>(movieIds);
-        newSet.add(movieId);
-        return new MovieList(newSet);
+      Set<String> newSet = new HashSet<>(movieIds);
+      newSet.add(movieId);
+      return new MovieList(newSet);
     }
 
     public MovieList remove(String movieId) {
@@ -99,26 +98,30 @@ public class MovieWatchList extends PersistentBehavior<MovieWatchList.Command, M
   @Override
   public CommandHandler<Command, Event, MovieList> commandHandler() {
     return commandHandlerBuilder(MovieList.class)
-        .matchCommand(AddMovie.class, (state, cmd) -> {
-          return Effect().persist(new MovieAdded(cmd.movieId));
-        })
-        .matchCommand(RemoveMovie.class, (state, cmd) -> {
-          return Effect().persist(new MovieRemoved(cmd.movieId));
-        })
-        .matchCommand(GetMovieList.class, (state, cmd) -> {
-          cmd.replyTo.tell(state);
-          return Effect().none();
-        })
+        .matchCommand(
+            AddMovie.class,
+            (state, cmd) -> {
+              return Effect().persist(new MovieAdded(cmd.movieId));
+            })
+        .matchCommand(
+            RemoveMovie.class,
+            (state, cmd) -> {
+              return Effect().persist(new MovieRemoved(cmd.movieId));
+            })
+        .matchCommand(
+            GetMovieList.class,
+            (state, cmd) -> {
+              cmd.replyTo.tell(state);
+              return Effect().none();
+            })
         .build();
   }
 
   @Override
   public EventHandler<MovieList, Event> eventHandler() {
     return eventHandlerBuilder()
-      .matchEvent(MovieAdded.class, (state, event) -> state.add(event.movieId))
-      .matchEvent(MovieRemoved.class, (state, event) -> state.remove(event.movieId))
-      .build();
+        .matchEvent(MovieAdded.class, (state, event) -> state.add(event.movieId))
+        .matchEvent(MovieRemoved.class, (state, event) -> state.remove(event.movieId))
+        .build();
   }
-
-
 }

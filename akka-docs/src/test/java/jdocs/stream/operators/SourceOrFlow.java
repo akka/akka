@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
@@ -7,55 +7,55 @@ package jdocs.stream.operators;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 
-//#zip-with-index
+// #zip-with-index
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import java.util.Arrays;
 
-//#zip-with-index
-//#log
+// #zip-with-index
+// #log
 import akka.stream.Attributes;
 import akka.stream.javadsl.Source;
-//#log
+// #log
 
 import java.time.Duration;
 import java.util.Arrays;
-
 
 class SourceOrFlow {
 
   void logExample() {
     Flow.of(String.class)
-        //#log
+        // #log
         .log("myStream")
-        .addAttributes(Attributes.createLogLevels(
-            Attributes.logLevelOff(), // onElement
-            Attributes.logLevelError(), // onFailure
-            Attributes.logLevelInfo())) // onFinish
-    //#log
+        .addAttributes(
+            Attributes.createLogLevels(
+                Attributes.logLevelOff(), // onElement
+                Attributes.logLevelError(), // onFailure
+                Attributes.logLevelInfo())) // onFinish
+    // #log
     ;
   }
 
   void zipWithIndexExample() {
     Materializer materializer = null;
-    //#zip-with-index
+    // #zip-with-index
     Source.from(Arrays.asList("apple", "orange", "banana"))
-            .zipWithIndex()
-            .runWith(Sink.foreach(System.out::print), materializer);
+        .zipWithIndex()
+        .runWith(Sink.foreach(System.out::print), materializer);
     // this will print ('apple', 0), ('orange', 1), ('banana', 2)
-    //#zip-with-index
+    // #zip-with-index
   }
-  
+
   void conflateExample() {
-    //#conflate
+    // #conflate
     Source.cycle(() -> Arrays.asList(1, 10, 100).iterator())
         .throttle(10, Duration.ofSeconds(1)) // fast upstream
         .conflate((Integer acc, Integer el) -> acc + el)
         .throttle(1, Duration.ofSeconds(1)); // slow downstream
-    //#conflate
+    // #conflate
   }
 
-  static //#conflateWithSeed-type
+  static // #conflateWithSeed-type
   class Summed {
 
     private final Integer el;
@@ -68,15 +68,15 @@ class SourceOrFlow {
       return new Summed(this.el + other.el);
     }
   }
-  //#conflateWithSeed-type
+  // #conflateWithSeed-type
 
   void conflateWithSeedExample() {
-    //#conflateWithSeed
+    // #conflateWithSeed
 
     Source.cycle(() -> Arrays.asList(1, 10, 100).iterator())
         .throttle(10, Duration.ofSeconds(1)) // fast upstream
         .conflateWithSeed(Summed::new, (Summed acc, Integer el) -> acc.sum(new Summed(el)))
         .throttle(1, Duration.ofSeconds(1)); // slow downstream
-    //#conflateWithSeed
+    // #conflateWithSeed
   }
 }

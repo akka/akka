@@ -3,13 +3,13 @@
  */
 
 package jdocs.camel;
-//#Consumer3
+// #Consumer3
 import akka.actor.Status;
 import akka.camel.Ack;
 import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedConsumerActor;
 
-public class Consumer3 extends UntypedConsumerActor{
+public class Consumer3 extends UntypedConsumerActor {
 
   @Override
   public boolean autoAck() {
@@ -28,8 +28,7 @@ public class Consumer3 extends UntypedConsumerActor{
       Exception someException = new Exception("e1");
       // on failure
       getSender().tell(new Status.Failure(someException), getSelf());
-    } else
-      unhandled(message);
+    } else unhandled(message);
   }
 }
-//#Consumer3
+// #Consumer3

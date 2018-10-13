@@ -4,19 +4,18 @@
 
 package jdocs.actor;
 
-//#bytebufserializer-with-manifest
+// #bytebufserializer-with-manifest
 import akka.serialization.ByteBufferSerializer;
 import akka.serialization.SerializerWithStringManifest;
 
-//#bytebufserializer-with-manifest
+// #bytebufserializer-with-manifest
 import java.nio.ByteBuffer;
 
 public class ByteBufferSerializerDocTest {
 
-
-  static //#bytebufserializer-with-manifest
+  static // #bytebufserializer-with-manifest
   class ExampleByteBufSerializer extends SerializerWithStringManifest
-    implements ByteBufferSerializer {
+      implements ByteBufferSerializer {
 
     @Override
     public int identifier() {
@@ -56,24 +55,21 @@ public class ByteBufferSerializerDocTest {
       return null;
     }
   }
-  //#bytebufserializer-with-manifest
-  
+  // #bytebufserializer-with-manifest
+
   static class OnlyForDocInclude {
     static
-    //#ByteBufferSerializer-interface
+    // #ByteBufferSerializer-interface
     interface ByteBufferSerializer {
-      /**
-       * Serializes the given object into the `ByteBuffer`.
-       */
+      /** Serializes the given object into the `ByteBuffer`. */
       void toBinary(Object o, ByteBuffer buf);
-  
+
       /**
-       * Produces an object from a `ByteBuffer`, with an optional type-hint;
-       * the class should be loaded using ActorSystem.dynamicAccess.
+       * Produces an object from a `ByteBuffer`, with an optional type-hint; the class should be
+       * loaded using ActorSystem.dynamicAccess.
        */
       Object fromBinary(ByteBuffer buf, String manifest);
     }
-    //#ByteBufferSerializer-interface
+    // #ByteBufferSerializer-interface
   }
-
 }

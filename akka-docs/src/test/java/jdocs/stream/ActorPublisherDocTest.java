@@ -40,15 +40,14 @@ public class ActorPublisherDocTest extends AbstractJavaTest {
     mat = null;
   }
 
-  //#job-manager
+  // #job-manager
   public static class JobManagerProtocol {
-    final public static class Job {
+    public static final class Job {
       public final String payload;
 
       public Job(String payload) {
         this.payload = payload;
       }
-
     }
 
     public static class JobAcceptedMessage {
@@ -57,6 +56,7 @@ public class ActorPublisherDocTest extends AbstractJavaTest {
         return "JobAccepted";
       }
     }
+
     public static final JobAcceptedMessage JobAccepted = new JobAcceptedMessage();
 
     public static class JobDeniedMessage {
@@ -65,12 +65,15 @@ public class ActorPublisherDocTest extends AbstractJavaTest {
         return "JobDenied";
       }
     }
+
     public static final JobDeniedMessage JobDenied = new JobDeniedMessage();
   }
-  
+
   public static class JobManager extends AbstractActorPublisher<JobManagerProtocol.Job> {
 
-    public static Props props() { return Props.create(JobManager.class); }
+    public static Props props() {
+      return Props.create(JobManager.class);
+    }
 
     private final int MAX_BUFFER_SIZE = 100;
     private final List<JobManagerProtocol.Job> buf = new ArrayList<>();
@@ -78,46 +81,50 @@ public class ActorPublisherDocTest extends AbstractJavaTest {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(JobManagerProtocol.Job.class, job -> buf.size() == MAX_BUFFER_SIZE, job -> {
-          getSender().tell(JobManagerProtocol.JobDenied, getSelf());
-        })
-        .match(JobManagerProtocol.Job.class, job -> {
-          getSender().tell(JobManagerProtocol.JobAccepted, getSelf());
+          .match(
+              JobManagerProtocol.Job.class,
+              job -> buf.size() == MAX_BUFFER_SIZE,
+              job -> {
+                getSender().tell(JobManagerProtocol.JobDenied, getSelf());
+              })
+          .match(
+              JobManagerProtocol.Job.class,
+              job -> {
+                getSender().tell(JobManagerProtocol.JobAccepted, getSelf());
 
-          if (buf.isEmpty() && totalDemand() > 0)
-            onNext(job);
-          else {
-            buf.add(job);
-            deliverBuf();
-          }
-        })
-        .match(ActorPublisherMessage.Request.class, request -> deliverBuf())
-        .match(ActorPublisherMessage.Cancel.class, cancel -> getContext().stop(getSelf()))
-        .build();
+                if (buf.isEmpty() && totalDemand() > 0) onNext(job);
+                else {
+                  buf.add(job);
+                  deliverBuf();
+                }
+              })
+          .match(ActorPublisherMessage.Request.class, request -> deliverBuf())
+          .match(ActorPublisherMessage.Cancel.class, cancel -> getContext().stop(getSelf()))
+          .build();
     }
 
     void deliverBuf() {
       while (totalDemand() > 0) {
-          /*
-           * totalDemand is a Long and could be larger than
-           * what buf.splitAt can accept
-           */
+        /*
+         * totalDemand is a Long and could be larger than
+         * what buf.splitAt can accept
+         */
         if (totalDemand() <= Integer.MAX_VALUE) {
           final List<JobManagerProtocol.Job> took =
-            buf.subList(0, Math.min(buf.size(), (int) totalDemand()));
+              buf.subList(0, Math.min(buf.size(), (int) totalDemand()));
           took.forEach(this::onNext);
           buf.removeAll(took);
           break;
         } else {
           final List<JobManagerProtocol.Job> took =
-            buf.subList(0, Math.min(buf.size(), Integer.MAX_VALUE));
+              buf.subList(0, Math.min(buf.size(), Integer.MAX_VALUE));
           took.forEach(this::onNext);
           buf.removeAll(took);
         }
       }
     }
   }
-  //#job-manager
+  // #job-manager
 
   @Test
   public void demonstrateActorPublisherUsage() {
@@ -125,23 +132,25 @@ public class ActorPublisherDocTest extends AbstractJavaTest {
       private final SilenceSystemOut.System System = SilenceSystemOut.get(getTestActor());
 
       {
-        //#actor-publisher-usage
+        // #actor-publisher-usage
         final Source<JobManagerProtocol.Job, ActorRef> jobManagerSource =
-          Source.actorPublisher(JobManager.props());
+            Source.actorPublisher(JobManager.props());
 
-        final ActorRef ref = jobManagerSource
-          .map(job -> job.payload.toUpperCase())
-          .map(elem -> {
-            System.out.println(elem);
-            return elem;
-          })
-          .to(Sink.ignore())
-          .run(mat);
+        final ActorRef ref =
+            jobManagerSource
+                .map(job -> job.payload.toUpperCase())
+                .map(
+                    elem -> {
+                      System.out.println(elem);
+                      return elem;
+                    })
+                .to(Sink.ignore())
+                .run(mat);
 
         ref.tell(new JobManagerProtocol.Job("a"), ActorRef.noSender());
         ref.tell(new JobManagerProtocol.Job("b"), ActorRef.noSender());
         ref.tell(new JobManagerProtocol.Job("c"), ActorRef.noSender());
-        //#actor-publisher-usage
+        // #actor-publisher-usage
 
         expectMsgEquals("A");
         expectMsgEquals("B");
@@ -149,5 +158,4 @@ public class ActorPublisherDocTest extends AbstractJavaTest {
       }
     };
   }
-
 }

@@ -10,5 +10,5 @@ import java.lang.annotation.*;
 @Target(ElementType.METHOD)
 @Inherited
 public @interface TestAnnotation {
-    String someString() default "pigdog";
+  String someString() default "pigdog";
 }

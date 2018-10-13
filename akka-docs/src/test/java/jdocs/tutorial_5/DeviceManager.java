@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
@@ -31,8 +31,7 @@ public class DeviceManager extends AbstractActor {
     }
   }
 
-  public static final class DeviceRegistered {
-  }
+  public static final class DeviceRegistered {}
 
   final Map<String, ActorRef> groupIdToActor = new HashMap<>();
   final Map<ActorRef, String> actorToGroupId = new HashMap<>();
@@ -72,9 +71,8 @@ public class DeviceManager extends AbstractActor {
 
   public Receive createReceive() {
     return receiveBuilder()
-            .match(RequestTrackDevice.class, this::onTrackDevice)
-            .match(Terminated.class, this::onTerminated)
-            .build();
+        .match(RequestTrackDevice.class, this::onTrackDevice)
+        .match(Terminated.class, this::onTerminated)
+        .build();
   }
-
 }

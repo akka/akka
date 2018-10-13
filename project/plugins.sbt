@@ -8,6 +8,7 @@ libraryDependencies += "org.kohsuke" % "github-api" % "1.93"
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
 //#sbt-multi-jvm
 
+addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.4.1")
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.2")
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.4")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.3.0")
@@ -23,6 +24,5 @@ addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.12")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "1.0.0")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.1") // for advanced PR validation features
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0") // for maintenance of copyright file header
-
 // used for @unidoc directive
 libraryDependencies += "io.github.lukehutch" % "fast-classpath-scanner" % "2.12.3"

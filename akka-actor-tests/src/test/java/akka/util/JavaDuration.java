@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
@@ -19,5 +19,4 @@ public class JavaDuration extends JUnitSuite {
     assert Duration.Zero().lteq(Duration.Inf());
     assert Duration.Inf().gt(Duration.Zero().neg());
   }
-
 }

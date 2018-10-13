@@ -3,7 +3,7 @@
  */
 
 package jdocs.camel;
-//#Consumer2
+// #Consumer2
 import akka.camel.CamelMessage;
 import akka.camel.javaapi.UntypedConsumerActor;
 
@@ -16,9 +16,8 @@ public class Consumer2 extends UntypedConsumerActor {
     if (message instanceof CamelMessage) {
       CamelMessage camelMessage = (CamelMessage) message;
       String body = camelMessage.getBodyAs(String.class, getCamelContext());
-      getSender().tell(String.format("Received message: %s",body), getSelf());
-    } else
-      unhandled(message);
+      getSender().tell(String.format("Received message: %s", body), getSelf());
+    } else unhandled(message);
   }
 }
-//#Consumer2
+// #Consumer2

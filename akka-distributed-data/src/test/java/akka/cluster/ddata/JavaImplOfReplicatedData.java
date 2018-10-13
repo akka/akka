@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
@@ -6,8 +6,8 @@ package akka.cluster.ddata;
 
 import akka.cluster.UniqueAddress;
 
-public class JavaImplOfReplicatedData extends AbstractReplicatedData<JavaImplOfReplicatedData> implements
-    RemovedNodePruning {
+public class JavaImplOfReplicatedData extends AbstractReplicatedData<JavaImplOfReplicatedData>
+    implements RemovedNodePruning {
 
   @Override
   public JavaImplOfReplicatedData mergeData(JavaImplOfReplicatedData other) {
