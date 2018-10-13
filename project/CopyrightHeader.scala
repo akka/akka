@@ -52,9 +52,7 @@ trait CopyrightHeader extends AutoPlugin {
     s"Copyright (C) $year Lightbend Inc. <https://www.lightbend.com>"
 
   val cStyleComment = HeaderCommentStyle.cStyleBlockComment.copy(commentCreator = new CommentCreator() {
-
-    import HeaderCommentStyle.cStyleBlockComment.commentCreator
-
+    
     def updateLightbendHeader(header: String): String = header match {
       case CopyrightHeaderPattern(years, null, _)     =>
         if (years != CurrentYear)
@@ -68,10 +66,8 @@ trait CopyrightHeader extends AutoPlugin {
     }
 
     override def apply(text: String, existingText: Option[String]): String = {
-      existingText
-        .map(updateLightbendHeader)
-        .getOrElse(commentCreator(text, existingText))
-        .trim
+      val updatedExistingText = existingText.map(updateLightbendHeader)
+      HeaderCommentStyle.cStyleBlockComment.commentCreator(text,updatedExistingText)
     }
   })
 }
