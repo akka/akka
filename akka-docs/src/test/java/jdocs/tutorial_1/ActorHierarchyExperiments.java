@@ -2,10 +2,10 @@
  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
-//#print-refs
+// #print-refs
 package com.lightbend.akka.sample;
 
-//#print-refs
+// #print-refs
 
 import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
@@ -13,7 +13,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
-//#print-refs
+// #print-refs
 import akka.actor.AbstractActor;
 import akka.actor.AbstractActor.Receive;
 import akka.actor.ActorRef;
@@ -24,16 +24,18 @@ class PrintMyActorRefActor extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-        .matchEquals("printit", p -> {
-          ActorRef secondRef = getContext().actorOf(Props.empty(), "second-actor");
-          System.out.println("Second: " + secondRef);
-        })
+        .matchEquals(
+            "printit",
+            p -> {
+              ActorRef secondRef = getContext().actorOf(Props.empty(), "second-actor");
+              System.out.println("Second: " + secondRef);
+            })
         .build();
   }
 }
-//#print-refs
+// #print-refs
 
-//#start-stop
+// #start-stop
 class StartStopActor1 extends AbstractActor {
   @Override
   public void preStart() {
@@ -49,9 +51,11 @@ class StartStopActor1 extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-        .matchEquals("stop", s -> {
-          getContext().stop(getSelf());
-        })
+        .matchEquals(
+            "stop",
+            s -> {
+              getContext().stop(getSelf());
+            })
         .build();
   }
 }
@@ -71,22 +75,23 @@ class StartStopActor2 extends AbstractActor {
   // want to handle any messages in the actor.
   @Override
   public Receive createReceive() {
-    return receiveBuilder()
-        .build();
+    return receiveBuilder().build();
   }
 }
-//#start-stop
+// #start-stop
 
-//#supervise
+// #supervise
 class SupervisingActor extends AbstractActor {
   ActorRef child = getContext().actorOf(Props.create(SupervisedActor.class), "supervised-actor");
 
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-        .matchEquals("failChild", f -> {
-          child.tell("fail", getSelf());
-        })
+        .matchEquals(
+            "failChild",
+            f -> {
+              child.tell("fail", getSelf());
+            })
         .build();
   }
 }
@@ -105,16 +110,18 @@ class SupervisedActor extends AbstractActor {
   @Override
   public Receive createReceive() {
     return receiveBuilder()
-        .matchEquals("fail", f -> {
-          System.out.println("supervised actor fails now");
-          throw new Exception("I failed!");
-        })
+        .matchEquals(
+            "fail",
+            f -> {
+              System.out.println("supervised actor fails now");
+              throw new Exception("I failed!");
+            })
         .build();
   }
 }
-//#supervise
+// #supervise
 
-//#print-refs
+// #print-refs
 public class ActorHierarchyExperiments {
   public static void main(String[] args) throws java.io.IOException {
     ActorSystem system = ActorSystem.create("testSystem");
@@ -131,8 +138,7 @@ public class ActorHierarchyExperiments {
     }
   }
 }
-//#print-refs
-
+// #print-refs
 
 class ActorHierarchyExperimentsTest extends JUnitSuite {
   static ActorSystem system;
@@ -150,17 +156,18 @@ class ActorHierarchyExperimentsTest extends JUnitSuite {
 
   @Test
   public void testStartAndStopActors() {
-    //#start-stop-main
+    // #start-stop-main
     ActorRef first = system.actorOf(Props.create(StartStopActor1.class), "first");
     first.tell("stop", ActorRef.noSender());
-    //#start-stop-main
+    // #start-stop-main
   }
 
   @Test
   public void testSuperviseActors() {
-    //#supervise-main
-    ActorRef supervisingActor = system.actorOf(Props.create(SupervisingActor.class), "supervising-actor");
+    // #supervise-main
+    ActorRef supervisingActor =
+        system.actorOf(Props.create(SupervisingActor.class), "supervising-actor");
     supervisingActor.tell("failChild", ActorRef.noSender());
-    //#supervise-main
+    // #supervise-main
   }
 }

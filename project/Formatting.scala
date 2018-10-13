@@ -28,12 +28,13 @@ object Formatting {
         "sun.reflect",
       )
 
-      val ignoredFiles = {
-        val javaSourceBase = (javaSource in Compile).value
+      def getIgnoredFiles(javaSourceBase :File): Set[File] ={
         ignoredPackages.map(_.split('.'))
           .map(_.foldLeft(javaSourceBase)((parent, subPath) => parent / subPath))
           .flatMap(file => Path.allSubpaths(file).map(_._1))
-      }.toSet
+          .toSet
+      }
+      val ignoredFiles = getIgnoredFiles((javaSource in Compile).value)
       new SimpleFileFilter(file => {
         val ignored = ignoredFiles.contains(file)
         if (ignored) {

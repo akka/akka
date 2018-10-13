@@ -9,35 +9,23 @@ package docs.persistence.proto;
 
 public final class FlightAppModels {
   private FlightAppModels() {}
-  public static void registerAllExtensions(
-      akka.protobuf.ExtensionRegistry registry) {
-  }
-  public interface SeatReservedOrBuilder
-      extends akka.protobuf.MessageOrBuilder {
+
+  public static void registerAllExtensions(akka.protobuf.ExtensionRegistry registry) {}
+
+  public interface SeatReservedOrBuilder extends akka.protobuf.MessageOrBuilder {
 
     // required string letter = 1;
-    /**
-     * <code>required string letter = 1;</code>
-     */
+    /** <code>required string letter = 1;</code> */
     boolean hasLetter();
-    /**
-     * <code>required string letter = 1;</code>
-     */
+    /** <code>required string letter = 1;</code> */
     java.lang.String getLetter();
-    /**
-     * <code>required string letter = 1;</code>
-     */
-    akka.protobuf.ByteString
-        getLetterBytes();
+    /** <code>required string letter = 1;</code> */
+    akka.protobuf.ByteString getLetterBytes();
 
     // required uint32 row = 2;
-    /**
-     * <code>required uint32 row = 2;</code>
-     */
+    /** <code>required uint32 row = 2;</code> */
     boolean hasRow();
-    /**
-     * <code>required uint32 row = 2;</code>
-     */
+    /** <code>required uint32 row = 2;</code> */
     int getRow();
 
     // optional string seatType = 3;
@@ -64,23 +52,23 @@ public final class FlightAppModels {
      * the new field
      * </pre>
      */
-    akka.protobuf.ByteString
-        getSeatTypeBytes();
+    akka.protobuf.ByteString getSeatTypeBytes();
   }
-  /**
-   * Protobuf type {@code docs.persistence.SeatReserved}
-   */
-  public static final class SeatReserved extends
-      akka.protobuf.GeneratedMessage
+  /** Protobuf type {@code docs.persistence.SeatReserved} */
+  public static final class SeatReserved extends akka.protobuf.GeneratedMessage
       implements SeatReservedOrBuilder {
     // Use SeatReserved.newBuilder() to construct.
     private SeatReserved(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private SeatReserved(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private SeatReserved(boolean noInit) {
+      this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance();
+    }
 
     private static final SeatReserved defaultInstance;
+
     public static SeatReserved getDefaultInstance() {
       return defaultInstance;
     }
@@ -90,14 +78,14 @@ public final class FlightAppModels {
     }
 
     private final akka.protobuf.UnknownFieldSet unknownFields;
+
     @java.lang.Override
-    public final akka.protobuf.UnknownFieldSet
-        getUnknownFields() {
+    public final akka.protobuf.UnknownFieldSet getUnknownFields() {
       return this.unknownFields;
     }
+
     private SeatReserved(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
@@ -111,61 +99,68 @@ public final class FlightAppModels {
             case 0:
               done = true;
               break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
+            default:
+              {
+                if (!parseUnknownField(
+                    input, unknownFields,
+                    extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
               }
-              break;
-            }
-            case 10: {
-              bitField0_ |= 0x00000001;
-              letter_ = input.readBytes();
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              row_ = input.readUInt32();
-              break;
-            }
-            case 26: {
-              bitField0_ |= 0x00000004;
-              seatType_ = input.readBytes();
-              break;
-            }
+            case 10:
+              {
+                bitField0_ |= 0x00000001;
+                letter_ = input.readBytes();
+                break;
+              }
+            case 16:
+              {
+                bitField0_ |= 0x00000002;
+                row_ = input.readUInt32();
+                break;
+              }
+            case 26:
+              {
+                bitField0_ |= 0x00000004;
+                seatType_ = input.readBytes();
+                break;
+              }
           }
         }
       } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new akka.protobuf.InvalidProtocolBufferException(
-            e.getMessage()).setUnfinishedMessage(this);
+        throw new akka.protobuf.InvalidProtocolBufferException(e.getMessage())
+            .setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final akka.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return docs.persistence.proto.FlightAppModels.internal_static_docs_persistence_SeatReserved_descriptor;
+
+    public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
+      return docs.persistence.proto.FlightAppModels
+          .internal_static_docs_persistence_SeatReserved_descriptor;
     }
 
-    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return docs.persistence.proto.FlightAppModels.internal_static_docs_persistence_SeatReserved_fieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
+      return docs.persistence.proto.FlightAppModels
+          .internal_static_docs_persistence_SeatReserved_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              docs.persistence.proto.FlightAppModels.SeatReserved.class, docs.persistence.proto.FlightAppModels.SeatReserved.Builder.class);
+              docs.persistence.proto.FlightAppModels.SeatReserved.class,
+              docs.persistence.proto.FlightAppModels.SeatReserved.Builder.class);
     }
 
     public static akka.protobuf.Parser<SeatReserved> PARSER =
         new akka.protobuf.AbstractParser<SeatReserved>() {
-      public SeatReserved parsePartialFrom(
-          akka.protobuf.CodedInputStream input,
-          akka.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws akka.protobuf.InvalidProtocolBufferException {
-        return new SeatReserved(input, extensionRegistry);
-      }
-    };
+          public SeatReserved parsePartialFrom(
+              akka.protobuf.CodedInputStream input,
+              akka.protobuf.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobuf.InvalidProtocolBufferException {
+            return new SeatReserved(input, extensionRegistry);
+          }
+        };
 
     @java.lang.Override
     public akka.protobuf.Parser<SeatReserved> getParserForType() {
@@ -176,22 +171,17 @@ public final class FlightAppModels {
     // required string letter = 1;
     public static final int LETTER_FIELD_NUMBER = 1;
     private java.lang.Object letter_;
-    /**
-     * <code>required string letter = 1;</code>
-     */
+    /** <code>required string letter = 1;</code> */
     public boolean hasLetter() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    /**
-     * <code>required string letter = 1;</code>
-     */
+    /** <code>required string letter = 1;</code> */
     public java.lang.String getLetter() {
       java.lang.Object ref = letter_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           letter_ = s;
@@ -199,16 +189,11 @@ public final class FlightAppModels {
         return s;
       }
     }
-    /**
-     * <code>required string letter = 1;</code>
-     */
-    public akka.protobuf.ByteString
-        getLetterBytes() {
+    /** <code>required string letter = 1;</code> */
+    public akka.protobuf.ByteString getLetterBytes() {
       java.lang.Object ref = letter_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         letter_ = b;
         return b;
       } else {
@@ -219,15 +204,11 @@ public final class FlightAppModels {
     // required uint32 row = 2;
     public static final int ROW_FIELD_NUMBER = 2;
     private int row_;
-    /**
-     * <code>required uint32 row = 2;</code>
-     */
+    /** <code>required uint32 row = 2;</code> */
     public boolean hasRow() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    /**
-     * <code>required uint32 row = 2;</code>
-     */
+    /** <code>required uint32 row = 2;</code> */
     public int getRow() {
       return row_;
     }
@@ -257,8 +238,7 @@ public final class FlightAppModels {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        akka.protobuf.ByteString bs = 
-            (akka.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           seatType_ = s;
@@ -273,13 +253,10 @@ public final class FlightAppModels {
      * the new field
      * </pre>
      */
-    public akka.protobuf.ByteString
-        getSeatTypeBytes() {
+    public akka.protobuf.ByteString getSeatTypeBytes() {
       java.lang.Object ref = seatType_;
       if (ref instanceof java.lang.String) {
-        akka.protobuf.ByteString b = 
-            akka.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
+        akka.protobuf.ByteString b = akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
         seatType_ = b;
         return b;
       } else {
@@ -292,7 +269,9 @@ public final class FlightAppModels {
       row_ = 0;
       seatType_ = "";
     }
+
     private byte memoizedIsInitialized = -1;
+
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
       if (isInitialized != -1) return isInitialized == 1;
@@ -309,8 +288,7 @@ public final class FlightAppModels {
       return true;
     }
 
-    public void writeTo(akka.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
+    public void writeTo(akka.protobuf.CodedOutputStream output) throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, getLetterBytes());
@@ -325,22 +303,20 @@ public final class FlightAppModels {
     }
 
     private int memoizedSerializedSize = -1;
+
     public int getSerializedSize() {
       int size = memoizedSerializedSize;
       if (size != -1) return size;
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(1, getLetterBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(1, getLetterBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeUInt32Size(2, row_);
+        size += akka.protobuf.CodedOutputStream.computeUInt32Size(2, row_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += akka.protobuf.CodedOutputStream
-          .computeBytesSize(3, getSeatTypeBytes());
+        size += akka.protobuf.CodedOutputStream.computeBytesSize(3, getSeatTypeBytes());
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -348,94 +324,103 @@ public final class FlightAppModels {
     }
 
     private static final long serialVersionUID = 0L;
+
     @java.lang.Override
-    protected java.lang.Object writeReplace()
-        throws java.io.ObjectStreamException {
+    protected java.lang.Object writeReplace() throws java.io.ObjectStreamException {
       return super.writeReplace();
     }
 
     public static docs.persistence.proto.FlightAppModels.SeatReserved parseFrom(
-        akka.protobuf.ByteString data)
-        throws akka.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data) throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static docs.persistence.proto.FlightAppModels.SeatReserved parseFrom(
-        akka.protobuf.ByteString data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ByteString data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
+
     public static docs.persistence.proto.FlightAppModels.SeatReserved parseFrom(byte[] data)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
+
     public static docs.persistence.proto.FlightAppModels.SeatReserved parseFrom(
-        byte[] data,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        byte[] data, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
-    public static docs.persistence.proto.FlightAppModels.SeatReserved parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static docs.persistence.proto.FlightAppModels.SeatReserved parseFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static docs.persistence.proto.FlightAppModels.SeatReserved parseFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
-    public static docs.persistence.proto.FlightAppModels.SeatReserved parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
+
+    public static docs.persistence.proto.FlightAppModels.SeatReserved parseDelimitedFrom(
+        java.io.InputStream input) throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input);
     }
+
     public static docs.persistence.proto.FlightAppModels.SeatReserved parseDelimitedFrom(
-        java.io.InputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        java.io.InputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
+
     public static docs.persistence.proto.FlightAppModels.SeatReserved parseFrom(
-        akka.protobuf.CodedInputStream input)
-        throws java.io.IOException {
+        akka.protobuf.CodedInputStream input) throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
+
     public static docs.persistence.proto.FlightAppModels.SeatReserved parseFrom(
-        akka.protobuf.CodedInputStream input,
-        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input, akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
 
-    public static Builder newBuilder() { return Builder.create(); }
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(docs.persistence.proto.FlightAppModels.SeatReserved prototype) {
+    public static Builder newBuilder() {
+      return Builder.create();
+    }
+
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
+    public static Builder newBuilder(
+        docs.persistence.proto.FlightAppModels.SeatReserved prototype) {
       return newBuilder().mergeFrom(prototype);
     }
-    public Builder toBuilder() { return newBuilder(this); }
+
+    public Builder toBuilder() {
+      return newBuilder(this);
+    }
 
     @java.lang.Override
-    protected Builder newBuilderForType(
-        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+    protected Builder newBuilderForType(akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
-    /**
-     * Protobuf type {@code docs.persistence.SeatReserved}
-     */
-    public static final class Builder extends
-        akka.protobuf.GeneratedMessage.Builder<Builder>
-       implements docs.persistence.proto.FlightAppModels.SeatReservedOrBuilder {
-      public static final akka.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return docs.persistence.proto.FlightAppModels.internal_static_docs_persistence_SeatReserved_descriptor;
+    /** Protobuf type {@code docs.persistence.SeatReserved} */
+    public static final class Builder extends akka.protobuf.GeneratedMessage.Builder<Builder>
+        implements docs.persistence.proto.FlightAppModels.SeatReservedOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor getDescriptor() {
+        return docs.persistence.proto.FlightAppModels
+            .internal_static_docs_persistence_SeatReserved_descriptor;
       }
 
-      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return docs.persistence.proto.FlightAppModels.internal_static_docs_persistence_SeatReserved_fieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable internalGetFieldAccessorTable() {
+        return docs.persistence.proto.FlightAppModels
+            .internal_static_docs_persistence_SeatReserved_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
-                docs.persistence.proto.FlightAppModels.SeatReserved.class, docs.persistence.proto.FlightAppModels.SeatReserved.Builder.class);
+                docs.persistence.proto.FlightAppModels.SeatReserved.class,
+                docs.persistence.proto.FlightAppModels.SeatReserved.Builder.class);
       }
 
       // Construct using docs.persistence.proto.FlightAppModels.SeatReserved.newBuilder()
@@ -443,15 +428,15 @@ public final class FlightAppModels {
         maybeForceBuilderInitialization();
       }
 
-      private Builder(
-          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      private Builder(akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
+
       private void maybeForceBuilderInitialization() {
-        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-        }
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {}
       }
+
       private static Builder create() {
         return new Builder();
       }
@@ -471,9 +456,9 @@ public final class FlightAppModels {
         return create().mergeFrom(buildPartial());
       }
 
-      public akka.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return docs.persistence.proto.FlightAppModels.internal_static_docs_persistence_SeatReserved_descriptor;
+      public akka.protobuf.Descriptors.Descriptor getDescriptorForType() {
+        return docs.persistence.proto.FlightAppModels
+            .internal_static_docs_persistence_SeatReserved_descriptor;
       }
 
       public docs.persistence.proto.FlightAppModels.SeatReserved getDefaultInstanceForType() {
@@ -489,7 +474,8 @@ public final class FlightAppModels {
       }
 
       public docs.persistence.proto.FlightAppModels.SeatReserved buildPartial() {
-        docs.persistence.proto.FlightAppModels.SeatReserved result = new docs.persistence.proto.FlightAppModels.SeatReserved(this);
+        docs.persistence.proto.FlightAppModels.SeatReserved result =
+            new docs.persistence.proto.FlightAppModels.SeatReserved(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -511,7 +497,7 @@ public final class FlightAppModels {
 
       public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof docs.persistence.proto.FlightAppModels.SeatReserved) {
-          return mergeFrom((docs.persistence.proto.FlightAppModels.SeatReserved)other);
+          return mergeFrom((docs.persistence.proto.FlightAppModels.SeatReserved) other);
         } else {
           super.mergeFrom(other);
           return this;
@@ -519,7 +505,8 @@ public final class FlightAppModels {
       }
 
       public Builder mergeFrom(docs.persistence.proto.FlightAppModels.SeatReserved other) {
-        if (other == docs.persistence.proto.FlightAppModels.SeatReserved.getDefaultInstance()) return this;
+        if (other == docs.persistence.proto.FlightAppModels.SeatReserved.getDefaultInstance())
+          return this;
         if (other.hasLetter()) {
           bitField0_ |= 0x00000001;
           letter_ = other.letter_;
@@ -539,11 +526,11 @@ public final class FlightAppModels {
 
       public final boolean isInitialized() {
         if (!hasLetter()) {
-          
+
           return false;
         }
         if (!hasRow()) {
-          
+
           return false;
         }
         return true;
@@ -557,7 +544,8 @@ public final class FlightAppModels {
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
         } catch (akka.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (docs.persistence.proto.FlightAppModels.SeatReserved) e.getUnfinishedMessage();
+          parsedMessage =
+              (docs.persistence.proto.FlightAppModels.SeatReserved) e.getUnfinishedMessage();
           throw e;
         } finally {
           if (parsedMessage != null) {
@@ -566,108 +554,84 @@ public final class FlightAppModels {
         }
         return this;
       }
+
       private int bitField0_;
 
       // required string letter = 1;
       private java.lang.Object letter_ = "";
-      /**
-       * <code>required string letter = 1;</code>
-       */
+      /** <code>required string letter = 1;</code> */
       public boolean hasLetter() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      /**
-       * <code>required string letter = 1;</code>
-       */
+      /** <code>required string letter = 1;</code> */
       public java.lang.String getLetter() {
         java.lang.Object ref = letter_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           letter_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
-      /**
-       * <code>required string letter = 1;</code>
-       */
-      public akka.protobuf.ByteString
-          getLetterBytes() {
+      /** <code>required string letter = 1;</code> */
+      public akka.protobuf.ByteString getLetterBytes() {
         java.lang.Object ref = letter_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           letter_ = b;
           return b;
         } else {
           return (akka.protobuf.ByteString) ref;
         }
       }
-      /**
-       * <code>required string letter = 1;</code>
-       */
-      public Builder setLetter(
-          java.lang.String value) {
+      /** <code>required string letter = 1;</code> */
+      public Builder setLetter(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
         letter_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required string letter = 1;</code>
-       */
+      /** <code>required string letter = 1;</code> */
       public Builder clearLetter() {
         bitField0_ = (bitField0_ & ~0x00000001);
         letter_ = getDefaultInstance().getLetter();
         onChanged();
         return this;
       }
-      /**
-       * <code>required string letter = 1;</code>
-       */
-      public Builder setLetterBytes(
-          akka.protobuf.ByteString value) {
+      /** <code>required string letter = 1;</code> */
+      public Builder setLetterBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
         letter_ = value;
         onChanged();
         return this;
       }
 
       // required uint32 row = 2;
-      private int row_ ;
-      /**
-       * <code>required uint32 row = 2;</code>
-       */
+      private int row_;
+      /** <code>required uint32 row = 2;</code> */
       public boolean hasRow() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      /**
-       * <code>required uint32 row = 2;</code>
-       */
+      /** <code>required uint32 row = 2;</code> */
       public int getRow() {
         return row_;
       }
-      /**
-       * <code>required uint32 row = 2;</code>
-       */
+      /** <code>required uint32 row = 2;</code> */
       public Builder setRow(int value) {
         bitField0_ |= 0x00000002;
         row_ = value;
         onChanged();
         return this;
       }
-      /**
-       * <code>required uint32 row = 2;</code>
-       */
+      /** <code>required uint32 row = 2;</code> */
       public Builder clearRow() {
         bitField0_ = (bitField0_ & ~0x00000002);
         row_ = 0;
@@ -697,8 +661,7 @@ public final class FlightAppModels {
       public java.lang.String getSeatType() {
         java.lang.Object ref = seatType_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((akka.protobuf.ByteString) ref)
-              .toStringUtf8();
+          java.lang.String s = ((akka.protobuf.ByteString) ref).toStringUtf8();
           seatType_ = s;
           return s;
         } else {
@@ -712,13 +675,11 @@ public final class FlightAppModels {
        * the new field
        * </pre>
        */
-      public akka.protobuf.ByteString
-          getSeatTypeBytes() {
+      public akka.protobuf.ByteString getSeatTypeBytes() {
         java.lang.Object ref = seatType_;
         if (ref instanceof String) {
-          akka.protobuf.ByteString b = 
-              akka.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
+          akka.protobuf.ByteString b =
+              akka.protobuf.ByteString.copyFromUtf8((java.lang.String) ref);
           seatType_ = b;
           return b;
         } else {
@@ -732,12 +693,11 @@ public final class FlightAppModels {
        * the new field
        * </pre>
        */
-      public Builder setSeatType(
-          java.lang.String value) {
+      public Builder setSeatType(java.lang.String value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000004;
         seatType_ = value;
         onChanged();
         return this;
@@ -762,12 +722,11 @@ public final class FlightAppModels {
        * the new field
        * </pre>
        */
-      public Builder setSeatTypeBytes(
-          akka.protobuf.ByteString value) {
+      public Builder setSeatTypeBytes(akka.protobuf.ByteString value) {
         if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000004;
         seatType_ = value;
         onChanged();
         return this;
@@ -785,42 +744,41 @@ public final class FlightAppModels {
   }
 
   private static akka.protobuf.Descriptors.Descriptor
-    internal_static_docs_persistence_SeatReserved_descriptor;
-  private static
-    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_docs_persistence_SeatReserved_descriptor;
+  private static akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_docs_persistence_SeatReserved_fieldAccessorTable;
 
-  public static akka.protobuf.Descriptors.FileDescriptor
-      getDescriptor() {
+  public static akka.protobuf.Descriptors.FileDescriptor getDescriptor() {
     return descriptor;
   }
-  private static akka.protobuf.Descriptors.FileDescriptor
-      descriptor;
+
+  private static akka.protobuf.Descriptors.FileDescriptor descriptor;
+
   static {
     java.lang.String[] descriptorData = {
-      "\n\025FlightAppModels.proto\022\020docs.persistenc" +
-      "e\"=\n\014SeatReserved\022\016\n\006letter\030\001 \002(\t\022\013\n\003row" +
-      "\030\002 \002(\r\022\020\n\010seatType\030\003 \001(\tB\032\n\026docs.persist" +
-      "ence.protoH\001"
+      "\n\025FlightAppModels.proto\022\020docs.persistenc"
+          + "e\"=\n\014SeatReserved\022\016\n\006letter\030\001 \002(\t\022\013\n\003row"
+          + "\030\002 \002(\r\022\020\n\010seatType\030\003 \001(\tB\032\n\026docs.persist"
+          + "ence.protoH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public akka.protobuf.ExtensionRegistry assignDescriptors(
-            akka.protobuf.Descriptors.FileDescriptor root) {
-          descriptor = root;
-          internal_static_docs_persistence_SeatReserved_descriptor =
-            getDescriptor().getMessageTypes().get(0);
-          internal_static_docs_persistence_SeatReserved_fieldAccessorTable = new
-            akka.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_docs_persistence_SeatReserved_descriptor,
-              new java.lang.String[] { "Letter", "Row", "SeatType", });
-          return null;
-        }
-      };
-    akka.protobuf.Descriptors.FileDescriptor
-      .internalBuildGeneratedFileFrom(descriptorData,
-        new akka.protobuf.Descriptors.FileDescriptor[] {
-        }, assigner);
+        new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+          public akka.protobuf.ExtensionRegistry assignDescriptors(
+              akka.protobuf.Descriptors.FileDescriptor root) {
+            descriptor = root;
+            internal_static_docs_persistence_SeatReserved_descriptor =
+                getDescriptor().getMessageTypes().get(0);
+            internal_static_docs_persistence_SeatReserved_fieldAccessorTable =
+                new akka.protobuf.GeneratedMessage.FieldAccessorTable(
+                    internal_static_docs_persistence_SeatReserved_descriptor,
+                    new java.lang.String[] {
+                      "Letter", "Row", "SeatType",
+                    });
+            return null;
+          }
+        };
+    akka.protobuf.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(
+        descriptorData, new akka.protobuf.Descriptors.FileDescriptor[] {}, assigner);
   }
 
   // @@protoc_insertion_point(outer_class_scope)

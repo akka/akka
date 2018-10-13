@@ -1,4 +1,5 @@
 /** Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com> */
+
 package akka.persistence.fsm;
 
 import akka.actor.*;

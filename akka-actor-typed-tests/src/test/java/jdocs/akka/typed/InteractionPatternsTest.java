@@ -1,5 +1,4 @@
 /** Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com> */
-
 package jdocs.akka.typed;
 
 import akka.actor.typed.ActorRef;

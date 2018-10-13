@@ -1,5 +1,4 @@
 /** Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com> */
-
 package jdocs.akka.typed.coexistence;
 
 import akka.actor.AbstractActor;

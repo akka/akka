@@ -45,19 +45,20 @@ class KillSwitchDocTest extends AbstractJavaTest {
   }
 
   @Test
-  public void compileOnlyTest() {
-  }
+  public void compileOnlyTest() {}
 
   public void uniqueKillSwitchShutdownExample() throws Exception {
-    //#unique-shutdown
+    // #unique-shutdown
     final Source<Integer, NotUsed> countingSrc =
-      Source.from(new ArrayList<>(Arrays.asList(1, 2, 3, 4)))
-        .delay(Duration.ofSeconds(1), DelayOverflowStrategy.backpressure());
+        Source.from(new ArrayList<>(Arrays.asList(1, 2, 3, 4)))
+            .delay(Duration.ofSeconds(1), DelayOverflowStrategy.backpressure());
     final Sink<Integer, CompletionStage<Integer>> lastSnk = Sink.last();
 
-    final Pair<UniqueKillSwitch, CompletionStage<Integer>> stream = countingSrc
-      .viaMat(KillSwitches.single(), Keep.right())
-      .toMat(lastSnk, Keep.both()).run(mat);
+    final Pair<UniqueKillSwitch, CompletionStage<Integer>> stream =
+        countingSrc
+            .viaMat(KillSwitches.single(), Keep.right())
+            .toMat(lastSnk, Keep.both())
+            .run(mat);
 
     final UniqueKillSwitch killSwitch = stream.first();
     final CompletionStage<Integer> completionStage = stream.second();
@@ -65,22 +66,23 @@ class KillSwitchDocTest extends AbstractJavaTest {
     doSomethingElse();
     killSwitch.shutdown();
 
-    final int finalCount =
-      completionStage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    final int finalCount = completionStage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(2, finalCount);
-    //#unique-shutdown
+    // #unique-shutdown
   }
 
   public static void uniqueKillSwitchAbortExample() throws Exception {
-    //#unique-abort
+    // #unique-abort
     final Source<Integer, NotUsed> countingSrc =
-      Source.from(new ArrayList<>(Arrays.asList(1, 2, 3, 4)))
-        .delay(Duration.ofSeconds(1), DelayOverflowStrategy.backpressure());
+        Source.from(new ArrayList<>(Arrays.asList(1, 2, 3, 4)))
+            .delay(Duration.ofSeconds(1), DelayOverflowStrategy.backpressure());
     final Sink<Integer, CompletionStage<Integer>> lastSnk = Sink.last();
 
-    final Pair<UniqueKillSwitch, CompletionStage<Integer>> stream = countingSrc
-       .viaMat(KillSwitches.single(), Keep.right())
-       .toMat(lastSnk, Keep.both()).run(mat);
+    final Pair<UniqueKillSwitch, CompletionStage<Integer>> stream =
+        countingSrc
+            .viaMat(KillSwitches.single(), Keep.right())
+            .toMat(lastSnk, Keep.both())
+            .run(mat);
 
     final UniqueKillSwitch killSwitch = stream.first();
     final CompletionStage<Integer> completionStage = stream.second();
@@ -89,68 +91,65 @@ class KillSwitchDocTest extends AbstractJavaTest {
     killSwitch.abort(error);
 
     final int result =
-      completionStage.toCompletableFuture().exceptionally(e -> -1).get(1, TimeUnit.SECONDS);
+        completionStage.toCompletableFuture().exceptionally(e -> -1).get(1, TimeUnit.SECONDS);
     assertEquals(-1, result);
-    //#unique-abort
+    // #unique-abort
   }
 
   public void sharedKillSwitchShutdownExample() throws Exception {
-    //#shared-shutdown
+    // #shared-shutdown
     final Source<Integer, NotUsed> countingSrc =
-      Source.from(new ArrayList<>(Arrays.asList(1, 2, 3, 4)))
-        .delay( Duration.ofSeconds(1), DelayOverflowStrategy.backpressure());
+        Source.from(new ArrayList<>(Arrays.asList(1, 2, 3, 4)))
+            .delay(Duration.ofSeconds(1), DelayOverflowStrategy.backpressure());
     final Sink<Integer, CompletionStage<Integer>> lastSnk = Sink.last();
     final SharedKillSwitch killSwitch = KillSwitches.shared("my-kill-switch");
 
-    final CompletionStage<Integer> completionStage = countingSrc
-      .viaMat(killSwitch.flow(), Keep.right())
-      .toMat(lastSnk, Keep.right()).run(mat);
-    final CompletionStage<Integer> completionStageDelayed = countingSrc
-      .delay( Duration.ofSeconds(1), DelayOverflowStrategy.backpressure())
-      .viaMat(killSwitch.flow(), Keep.right())
-      .toMat(lastSnk, Keep.right()).run(mat);
+    final CompletionStage<Integer> completionStage =
+        countingSrc.viaMat(killSwitch.flow(), Keep.right()).toMat(lastSnk, Keep.right()).run(mat);
+    final CompletionStage<Integer> completionStageDelayed =
+        countingSrc
+            .delay(Duration.ofSeconds(1), DelayOverflowStrategy.backpressure())
+            .viaMat(killSwitch.flow(), Keep.right())
+            .toMat(lastSnk, Keep.right())
+            .run(mat);
 
     doSomethingElse();
     killSwitch.shutdown();
 
-    final int finalCount =
-      completionStage.toCompletableFuture().get(1, TimeUnit.SECONDS);
+    final int finalCount = completionStage.toCompletableFuture().get(1, TimeUnit.SECONDS);
     final int finalCountDelayed =
-      completionStageDelayed.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        completionStageDelayed.toCompletableFuture().get(1, TimeUnit.SECONDS);
 
     assertEquals(2, finalCount);
     assertEquals(1, finalCountDelayed);
-    //#shared-shutdown
+    // #shared-shutdown
   }
 
   public static void sharedKillSwitchAbortExample() throws Exception {
-    //#shared-abort
+    // #shared-abort
     final Source<Integer, NotUsed> countingSrc =
-      Source.from(new ArrayList<>(Arrays.asList(1, 2, 3, 4)))
-        .delay( Duration.ofSeconds(1), DelayOverflowStrategy.backpressure());
+        Source.from(new ArrayList<>(Arrays.asList(1, 2, 3, 4)))
+            .delay(Duration.ofSeconds(1), DelayOverflowStrategy.backpressure());
     final Sink<Integer, CompletionStage<Integer>> lastSnk = Sink.last();
     final SharedKillSwitch killSwitch = KillSwitches.shared("my-kill-switch");
 
-    final CompletionStage<Integer> completionStage1 = countingSrc
-      .viaMat(killSwitch.flow(), Keep.right())
-      .toMat(lastSnk, Keep.right()).run(mat);
-    final CompletionStage<Integer> completionStage2 = countingSrc
-      .viaMat(killSwitch.flow(), Keep.right())
-      .toMat(lastSnk, Keep.right()).run(mat);
+    final CompletionStage<Integer> completionStage1 =
+        countingSrc.viaMat(killSwitch.flow(), Keep.right()).toMat(lastSnk, Keep.right()).run(mat);
+    final CompletionStage<Integer> completionStage2 =
+        countingSrc.viaMat(killSwitch.flow(), Keep.right()).toMat(lastSnk, Keep.right()).run(mat);
 
     final Exception error = new Exception("boom!");
     killSwitch.abort(error);
 
     final int result1 =
-      completionStage1.toCompletableFuture().exceptionally(e -> -1).get(1, TimeUnit.SECONDS);
+        completionStage1.toCompletableFuture().exceptionally(e -> -1).get(1, TimeUnit.SECONDS);
     final int result2 =
-      completionStage2.toCompletableFuture().exceptionally(e -> -1).get(1, TimeUnit.SECONDS);
+        completionStage2.toCompletableFuture().exceptionally(e -> -1).get(1, TimeUnit.SECONDS);
 
     assertEquals(-1, result1);
     assertEquals(-1, result2);
-    //#shared-abort
+    // #shared-abort
   }
 
-  private static void doSomethingElse(){
-  }
+  private static void doSomethingElse() {}
 }

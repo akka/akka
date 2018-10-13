@@ -1,6 +1,4 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
- */
+/** Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com> */
 
 package akka.stream.typed.javadsl;
 
@@ -16,9 +14,13 @@ import java.time.temporal.ChronoUnit;
 public class ActorFlowCompileTest {
 
   interface Protocol {}
+
   class Init implements Protocol {}
+
   class Msg implements Protocol {}
+
   class Complete implements Protocol {}
+
   class Failure implements Protocol {
     public Exception ex;
   }
@@ -29,7 +31,7 @@ public class ActorFlowCompileTest {
   }
 
   static
-  //#ask-actor
+  // #ask-actor
   class AskMe {
     final String payload;
     final ActorRef<String> replyTo;
@@ -40,22 +42,21 @@ public class ActorFlowCompileTest {
     }
   }
 
-  //#ask-actor
+  // #ask-actor
 
   {
     final ActorRef<AskMe> ref = null;
 
-    //#ask
+    // #ask
     Duration timeout = Duration.of(1, ChronoUnit.SECONDS);
 
-    Source.repeat("hello")
-      .via(ActorFlow.ask(ref, timeout, AskMe::new))
-      .to(Sink.ignore());
+    Source.repeat("hello").via(ActorFlow.ask(ref, timeout, AskMe::new)).to(Sink.ignore());
 
     Source.repeat("hello")
-      .via(ActorFlow.<String, AskMe, String>ask(ref, timeout, (msg, replyTo) -> new AskMe(msg, replyTo)))
-      .to(Sink.ignore());
-    //#ask
+        .via(
+            ActorFlow.<String, AskMe, String>ask(
+                ref, timeout, (msg, replyTo) -> new AskMe(msg, replyTo)))
+        .to(Sink.ignore());
+    // #ask
   }
-
 }

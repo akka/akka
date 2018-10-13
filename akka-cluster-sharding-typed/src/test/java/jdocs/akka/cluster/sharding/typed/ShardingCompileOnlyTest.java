@@ -1,6 +1,4 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
- */
+/** Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com> */
 
 package jdocs.akka.cluster.sharding.typed;
 
@@ -12,7 +10,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.Behaviors;
 
-//#import
+// #import
 import akka.cluster.sharding.typed.ClusterShardingSettings;
 import akka.cluster.sharding.typed.ShardingEnvelope;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
@@ -20,7 +18,7 @@ import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.cluster.sharding.typed.javadsl.ShardedEntity;
 
-//#import
+// #import
 
 import jdocs.akka.persistence.typed.InDepthPersistentBehaviorTest.BlogCommand;
 import jdocs.akka.persistence.typed.InDepthPersistentBehaviorTest.BlogBehavior;
@@ -28,132 +26,135 @@ import jdocs.akka.persistence.typed.InDepthPersistentBehaviorTest.PassivatePost;
 
 public class ShardingCompileOnlyTest {
 
-  //#counter-messages
+  // #counter-messages
   interface CounterCommand {}
-  public static class Increment implements CounterCommand { }
-  public static class GoodByeCounter implements CounterCommand { }
+
+  public static class Increment implements CounterCommand {}
+
+  public static class GoodByeCounter implements CounterCommand {}
 
   public static class GetValue implements CounterCommand {
     private final ActorRef<Integer> replyTo;
+
     public GetValue(ActorRef<Integer> replyTo) {
       this.replyTo = replyTo;
     }
   }
-  //#counter-messages
+  // #counter-messages
 
-  //#counter
+  // #counter
 
   public static Behavior<CounterCommand> counter(String entityId, Integer value) {
     return Behaviors.receive(CounterCommand.class)
-      .onMessage(Increment.class, (ctx, msg) -> {
-        return counter(entityId,value + 1);
-      })
-      .onMessage(GetValue.class, (ctx, msg) -> {
-        msg.replyTo.tell(value);
-        return Behaviors.same();
-      })
-      .onMessage(GoodByeCounter.class, (ctx, msg) -> {
-        return Behaviors.stopped();
-      })
-      .build();
+        .onMessage(
+            Increment.class,
+            (ctx, msg) -> {
+              return counter(entityId, value + 1);
+            })
+        .onMessage(
+            GetValue.class,
+            (ctx, msg) -> {
+              msg.replyTo.tell(value);
+              return Behaviors.same();
+            })
+        .onMessage(
+            GoodByeCounter.class,
+            (ctx, msg) -> {
+              return Behaviors.stopped();
+            })
+        .build();
   }
-  //#counter
+  // #counter
 
-  //#counter-passivate
-  public static class Idle implements CounterCommand { }
+  // #counter-passivate
+  public static class Idle implements CounterCommand {}
 
-  public static Behavior<CounterCommand> counter2(ActorRef<ClusterSharding.ShardCommand> shard, String entityId) {
-    return Behaviors.setup(ctx -> {
-      ctx.setReceiveTimeout(Duration.ofSeconds(30), new Idle());
-      return counter2(shard, entityId, 0);
-    });
+  public static Behavior<CounterCommand> counter2(
+      ActorRef<ClusterSharding.ShardCommand> shard, String entityId) {
+    return Behaviors.setup(
+        ctx -> {
+          ctx.setReceiveTimeout(Duration.ofSeconds(30), new Idle());
+          return counter2(shard, entityId, 0);
+        });
   }
 
   private static Behavior<CounterCommand> counter2(
-      ActorRef<ClusterSharding.ShardCommand> shard,
-      String entityId,
-      Integer value) {
+      ActorRef<ClusterSharding.ShardCommand> shard, String entityId, Integer value) {
     return Behaviors.receive(CounterCommand.class)
-        .onMessage(Increment.class, (ctx, msg) -> {
-          return counter(entityId,value + 1);
-        })
-        .onMessage(GetValue.class, (ctx, msg) -> {
-          msg.replyTo.tell(value);
-          return Behaviors.same();
-        })
-        .onMessage(Idle.class, (ctx, msg) -> {
-          // after receive timeout
-          shard.tell(new ClusterSharding.Passivate<>(ctx.getSelf()));
-          return Behaviors.same();
-        })
-        .onMessage(GoodByeCounter.class, (ctx, msg) -> {
-          // the stopMessage, used for rebalance and passivate
-          return Behaviors.stopped();
-        })
+        .onMessage(
+            Increment.class,
+            (ctx, msg) -> {
+              return counter(entityId, value + 1);
+            })
+        .onMessage(
+            GetValue.class,
+            (ctx, msg) -> {
+              msg.replyTo.tell(value);
+              return Behaviors.same();
+            })
+        .onMessage(
+            Idle.class,
+            (ctx, msg) -> {
+              // after receive timeout
+              shard.tell(new ClusterSharding.Passivate<>(ctx.getSelf()));
+              return Behaviors.same();
+            })
+        .onMessage(
+            GoodByeCounter.class,
+            (ctx, msg) -> {
+              // the stopMessage, used for rebalance and passivate
+              return Behaviors.stopped();
+            })
         .build();
   }
-  //#counter-passivate
+  // #counter-passivate
 
   public static void startPassivateExample() {
-    ActorSystem system = ActorSystem.create(
-        Behaviors.empty(), "ShardingExample"
-    );
+    ActorSystem system = ActorSystem.create(Behaviors.empty(), "ShardingExample");
     ClusterSharding sharding = ClusterSharding.get(system);
 
-    //#counter-passivate-start
-    
+    // #counter-passivate-start
+
     EntityTypeKey<CounterCommand> typeKey = EntityTypeKey.create(CounterCommand.class, "Counter");
 
     sharding.start(
-      ShardedEntity.create(
-        (shard, entityId) -> counter2(shard, entityId),
-        typeKey,
-        new GoodByeCounter()));
-    //#counter-passivate-start
+        ShardedEntity.create(
+            (shard, entityId) -> counter2(shard, entityId), typeKey, new GoodByeCounter()));
+    // #counter-passivate-start
   }
 
   public static void example() {
 
-    ActorSystem system = ActorSystem.create(
-      Behaviors.empty(), "ShardingExample"
-    );
+    ActorSystem system = ActorSystem.create(Behaviors.empty(), "ShardingExample");
 
-    //#sharding-extension
+    // #sharding-extension
     ClusterSharding sharding = ClusterSharding.get(system);
-    //#sharding-extension
+    // #sharding-extension
 
-    //#start
+    // #start
     EntityTypeKey<CounterCommand> typeKey = EntityTypeKey.create(CounterCommand.class, "Counter");
 
-    ActorRef<ShardingEnvelope<CounterCommand>> shardRegion = sharding.start(
-      ShardedEntity.create(
-        entityId -> counter(entityId,0),
-        typeKey,
-        new GoodByeCounter()));
-    //#start
+    ActorRef<ShardingEnvelope<CounterCommand>> shardRegion =
+        sharding.start(
+            ShardedEntity.create(entityId -> counter(entityId, 0), typeKey, new GoodByeCounter()));
+    // #start
 
-    //#send
+    // #send
     EntityRef<CounterCommand> counterOne = sharding.entityRefFor(typeKey, "counter-`");
     counterOne.tell(new Increment());
 
     shardRegion.tell(new ShardingEnvelope<>("counter-1", new Increment()));
-    //#send
+    // #send
   }
 
   public static void persistenceExample() {
-    ActorSystem system = ActorSystem.create(
-        Behaviors.empty(), "ShardingExample"
-    );
+    ActorSystem system = ActorSystem.create(Behaviors.empty(), "ShardingExample");
     ClusterSharding sharding = ClusterSharding.get(system);
 
-    //#persistence
+    // #persistence
     EntityTypeKey<BlogCommand> blogTypeKey = EntityTypeKey.create(BlogCommand.class, "BlogPost");
 
-    sharding.start(
-      ShardedEntity.create(
-        BlogBehavior::behavior,
-        blogTypeKey,
-        new PassivatePost()));
-    //#persistence
+    sharding.start(ShardedEntity.create(BlogBehavior::behavior, blogTypeKey, new PassivatePost()));
+    // #persistence
   }
 }

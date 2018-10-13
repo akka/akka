@@ -6,7 +6,7 @@ package jdocs.cluster;
 
 import java.io.Serializable;
 
-//#messages
+// #messages
 public interface TransformationMessages {
 
   public static class TransformationJob implements Serializable {
@@ -62,6 +62,5 @@ public interface TransformationMessages {
   }
 
   public static final String BACKEND_REGISTRATION = "BackendRegistration";
-
 }
-//#messages
+// #messages

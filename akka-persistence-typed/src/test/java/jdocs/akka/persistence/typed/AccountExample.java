@@ -1,4 +1,5 @@
 /** Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com> */
+
 package jdocs.akka.persistence.typed;
 
 import akka.actor.typed.Behavior;

@@ -19,13 +19,12 @@ import akka.testkit.javadsl.TestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-//#imports
+// #imports
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Processor;
-//#imports
+// #imports
 import org.reactivestreams.Subscription;
-
 
 import java.lang.Exception;
 
@@ -60,82 +59,81 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
     // below class additionally helps with aligning code includes nicely
     static class Data {
 
-      static //#authors
-      final Flow<Tweet, Author, NotUsed> authors = Flow.of(Tweet.class)
-        .filter(t -> t.hashtags().contains(AKKA))
-        .map(t -> t.author);
+      static // #authors
+      final Flow<Tweet, Author, NotUsed> authors =
+          Flow.of(Tweet.class).filter(t -> t.hashtags().contains(AKKA)).map(t -> t.author);
 
-      //#authors
+      // #authors
     }
 
     static interface RS {
-      //#tweets-publisher
+      // #tweets-publisher
       Publisher<Tweet> tweets();
-      //#tweets-publisher
+      // #tweets-publisher
 
-      //#author-storage-subscriber
+      // #author-storage-subscriber
       Subscriber<Author> storage();
-      //#author-storage-subscriber
+      // #author-storage-subscriber
 
-      //#author-alert-subscriber
+      // #author-alert-subscriber
       Subscriber<Author> alert();
-      //#author-alert-subscriber
+      // #author-alert-subscriber
     }
   }
 
-  final Fixture.RS rs = new Fixture.RS() {
-    @Override
-    public Publisher<Tweet> tweets() {
-      return TwitterStreamQuickstartDocTest.Model.tweets.runWith(Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), mat);
-    }
+  final Fixture.RS rs =
+      new Fixture.RS() {
+        @Override
+        public Publisher<Tweet> tweets() {
+          return TwitterStreamQuickstartDocTest.Model.tweets.runWith(
+              Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), mat);
+        }
 
-    /**
-     * This is a minimal version of SubscriberProbe,
-     * which lives in akka-stream-testkit (test scope) and for
-     * now wanted to avoid setting up (test -> compile) dependency for Maven).
-     *
-     * TODO: Once SubscriberProbe is easily used here replace this MPS with it.
-     */
-    class MinimalProbeSubscriber<T> implements Subscriber<T> {
+        /**
+         * This is a minimal version of SubscriberProbe, which lives in akka-stream-testkit (test
+         * scope) and for now wanted to avoid setting up (test -> compile) dependency for Maven).
+         *
+         * <p>TODO: Once SubscriberProbe is easily used here replace this MPS with it.
+         */
+        class MinimalProbeSubscriber<T> implements Subscriber<T> {
 
-      private final ActorRef ref;
+          private final ActorRef ref;
 
-      public MinimalProbeSubscriber(ActorRef ref) {
-        this.ref = ref;
-      }
+          public MinimalProbeSubscriber(ActorRef ref) {
+            this.ref = ref;
+          }
 
-      @Override
-      public void onSubscribe(Subscription s) {
-        s.request(Long.MAX_VALUE);
-      }
+          @Override
+          public void onSubscribe(Subscription s) {
+            s.request(Long.MAX_VALUE);
+          }
 
-      @Override
-      public void onNext(T t) {
-        ref.tell(t, ActorRef.noSender());
-      }
+          @Override
+          public void onNext(T t) {
+            ref.tell(t, ActorRef.noSender());
+          }
 
-      @Override
-      public void onError(Throwable t) {
-        ref.tell(t, ActorRef.noSender());
-      }
+          @Override
+          public void onError(Throwable t) {
+            ref.tell(t, ActorRef.noSender());
+          }
 
-      @Override
-      public void onComplete() {
-        ref.tell("complete", ActorRef.noSender());
-      }
-    }
+          @Override
+          public void onComplete() {
+            ref.tell("complete", ActorRef.noSender());
+          }
+        }
 
-    @Override
-    public Subscriber<Author> storage() {
-      return new MinimalProbeSubscriber<>(storageProbe.ref());
-    }
+        @Override
+        public Subscriber<Author> storage() {
+          return new MinimalProbeSubscriber<>(storageProbe.ref());
+        }
 
-    @Override
-    public Subscriber<Author> alert() {
-      return new MinimalProbeSubscriber<>(alertProbe.ref());
-    }
-  };
-
+        @Override
+        public Subscriber<Author> alert() {
+          return new MinimalProbeSubscriber<>(alertProbe.ref());
+        }
+      };
 
   @Test
   public void reactiveStreamsPublisherViaFlowToSubscriber() throws Exception {
@@ -143,11 +141,9 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
       final TestProbe probe = new TestProbe(system);
 
       {
-        //#connect-all
-        Source.fromPublisher(rs.tweets())
-          .via(authors)
-          .to(Sink.fromSubscriber(rs.storage()));
-        //#connect-all
+        // #connect-all
+        Source.fromPublisher(rs.tweets()).via(authors).to(Sink.fromSubscriber(rs.storage()));
+        // #connect-all
       }
     };
   }
@@ -158,14 +154,12 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
       final TestProbe probe = new TestProbe(system);
 
       {
-        //#flow-publisher-subscriber
-        final Processor<Tweet, Author> processor =
-          authors.toProcessor().run(mat);
-
+        // #flow-publisher-subscriber
+        final Processor<Tweet, Author> processor = authors.toProcessor().run(mat);
 
         rs.tweets().subscribe(processor);
         processor.subscribe(rs.storage());
-        //#flow-publisher-subscriber
+        // #flow-publisher-subscriber
 
         assertStorageResult();
       }
@@ -178,14 +172,14 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
       final TestProbe probe = new TestProbe(system);
 
       {
-        //#source-publisher
+        // #source-publisher
         final Publisher<Author> authorPublisher =
-          Source.fromPublisher(rs.tweets())
-            .via(authors)
-            .runWith(Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), mat);
+            Source.fromPublisher(rs.tweets())
+                .via(authors)
+                .runWith(Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), mat);
 
         authorPublisher.subscribe(rs.storage());
-        //#source-publisher
+        // #source-publisher
 
         assertStorageResult();
       }
@@ -198,15 +192,15 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
       final TestProbe probe = new TestProbe(system);
 
       {
-        //#source-fanoutPublisher
+        // #source-fanoutPublisher
         final Publisher<Author> authorPublisher =
-          Source.fromPublisher(rs.tweets())
-            .via(authors)
-            .runWith(Sink.asPublisher(AsPublisher.WITH_FANOUT), mat);
+            Source.fromPublisher(rs.tweets())
+                .via(authors)
+                .runWith(Sink.asPublisher(AsPublisher.WITH_FANOUT), mat);
 
         authorPublisher.subscribe(rs.storage());
         authorPublisher.subscribe(rs.alert());
-        //#source-fanoutPublisher
+        // #source-fanoutPublisher
 
         assertStorageResult();
       }
@@ -219,16 +213,14 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
       final TestProbe probe = new TestProbe(system);
 
       {
-        //#sink-subscriber
+        // #sink-subscriber
         final Subscriber<Author> storage = rs.storage();
 
         final Subscriber<Tweet> tweetSubscriber =
-          authors
-            .to(Sink.fromSubscriber(storage))
-            .runWith(Source.asSubscriber(), mat);
+            authors.to(Sink.fromSubscriber(storage)).runWith(Source.asSubscriber(), mat);
 
         rs.tweets().subscribe(tweetSubscriber);
-        //#sink-subscriber
+        // #sink-subscriber
 
         assertStorageResult();
       }
@@ -239,18 +231,18 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
   public void useProcessor() throws Exception {
     new TestKit(system) {
       {
-        //#use-processor
+        // #use-processor
         // An example Processor factory
         final Creator<Processor<Integer, Integer>> factory =
-                new Creator<Processor<Integer, Integer>>() {
-                  public Processor<Integer, Integer> create() {
-                    return Flow.of(Integer.class).toProcessor().run(mat);
-                  }
-                };
+            new Creator<Processor<Integer, Integer>>() {
+              public Processor<Integer, Integer> create() {
+                return Flow.of(Integer.class).toProcessor().run(mat);
+              }
+            };
 
         final Flow<Integer, Integer, NotUsed> flow = Flow.fromProcessor(factory);
 
-        //#use-processor
+        // #use-processor
       }
     };
   }
@@ -265,5 +257,4 @@ public class ReactiveStreamsDocTest extends AbstractJavaTest {
     storageProbe.expectMsg(new Author("akkateam"));
     storageProbe.expectMsg("complete");
   }
-
 }

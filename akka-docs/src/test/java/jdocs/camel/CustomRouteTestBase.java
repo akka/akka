@@ -12,14 +12,14 @@ import akka.camel.CamelExtension;
 import akka.testkit.javadsl.TestKit;
 
 public class CustomRouteTestBase {
-  public void customRoute() throws Exception{
-    //#CustomRoute
+  public void customRoute() throws Exception {
+    // #CustomRoute
     ActorSystem system = ActorSystem.create("some-system");
     try {
       Camel camel = CamelExtension.get(system);
       ActorRef responder = system.actorOf(Props.create(Responder.class), "TestResponder");
       camel.context().addRoutes(new CustomRouteBuilder(responder));
-      //#CustomRoute
+      // #CustomRoute
     } finally {
       TestKit.shutdownActorSystem(system);
     }
