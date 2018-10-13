@@ -1,4 +1,6 @@
-/** Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com> */
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
 
 package jdocs.actor;
 
