@@ -70,7 +70,6 @@ private[io] final class AsyncDnsManager(val ext: DnsExt) extends Actor
     case Dns.Resolve(name) ⇒
       // adapt legacy protocol to new protocol
       log.debug("Resolution request for {} from {}", name, sender())
-      warnAboutOldProtocolUse(name)
       val adapted = DnsProtocol.Resolve(name)
       val reply = (resolver ? adapted).mapTo[DnsProtocol.Resolved]
         .map { asyncResolved ⇒
@@ -84,15 +83,6 @@ private[io] final class AsyncDnsManager(val ext: DnsExt) extends Actor
 
     case CacheCleanup ⇒
       cacheCleanup.foreach(_.cleanup())
-  }
-
-  private def warnAboutOldProtocolUse(name: String): Unit = {
-    val warnAtMostTimes = 10
-    if (oldProtocolWarningLoggedTimes < warnAtMostTimes) {
-      oldProtocolWarningLoggedTimes += 1
-      log.warning("Received Dns.Resolve({}) message while Async DNS resolver active. Please use the new API [akka.io.dns.DnsProtocol] to issue resolve requests. " +
-        "(This warning will be logged at most {} times)", name, warnAtMostTimes)
-    }
   }
 }
 
