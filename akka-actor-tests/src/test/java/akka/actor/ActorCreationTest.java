@@ -201,7 +201,7 @@ public class ActorCreationTest extends JUnitSuite {
       Props.create(new G());
       assert false;
     } catch (IllegalArgumentException e) {
-      assertEquals("erased Creator types are unsupported, use Props.create(actorClass, creator) instead", e.getMessage());
+      assertEquals("erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead", e.getMessage());
     }
     Props.create(AbstractActor.class, new G());
   }
@@ -305,7 +305,7 @@ public class ActorCreationTest extends JUnitSuite {
       TestActor.propsUsingLamdaWithoutClass(17);
       org.junit.Assert.fail("Should have detected lambda erasure, and thrown");
     } catch (IllegalArgumentException e) {
-      assertEquals("erased Creator types are unsupported, use Props.create(actorClass, creator) instead",
+      assertEquals("erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead",
           e.getMessage());
     }
   }

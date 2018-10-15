@@ -60,14 +60,6 @@ public class JavaAPI extends JUnitSuite {
     assertNotNull(ref);
   }
 
-  public static Props mkProps() {
-    return Props.create(new Creator<Actor>() {
-      public Actor create() {
-        return new JavaAPITestActor();
-      }
-    });
-  }
-
   @SuppressWarnings("unchecked")
   public static Props mkErasedProps() {
     return Props.create(JavaAPITestActor.class, new Creator() {
@@ -77,9 +69,13 @@ public class JavaAPI extends JUnitSuite {
     });
   }
 
+  public static Props mkPropsWithLambda() {
+    return Props.create(JavaAPITestActor.class, JavaAPITestActor::new);
+  }
+
   @Test
   public void mustBeAbleToCreateActorRefFromFactory() {
-    ActorRef ref = system.actorOf(mkProps());
+    ActorRef ref = system.actorOf(mkPropsWithLambda());
     assertNotNull(ref);
   }
 
