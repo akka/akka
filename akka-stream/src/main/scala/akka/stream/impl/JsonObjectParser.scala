@@ -33,49 +33,85 @@ import scala.annotation.{ switch, tailrec }
     (b == Space) || (b == LineBreak) || (b == LineBreak2) || (b == Tab)
 
   private sealed trait ParserState {
-    def proceed(input: Byte, pp: JsonObjectParser): Unit
+    protected final def sameState: ParserState = this
 
-    final def proceedIfPossible(pp: JsonObjectParser): Unit = {
+    private def debugState(pp: JsonObjectParser, nextState: ParserState): String = {
+      val wholebuf = pp.buffer ++ pp.nextBuffer
+      val (before, after) = wholebuf.splitAt(pp.pos)
+      val trans = if (nextState == this) this.toString else s"$this→$nextState"
+
+      s"${before.utf8String} <${trans}> ${after.utf8String}"
+    }
+
+    @inline
+    protected def proceed(input: Byte, pp: JsonObjectParser): ParserState
+
+    def seekNextEvent(pp: JsonObjectParser): Boolean
+  }
+
+  private sealed trait ParserStateMachinery {
+    this: ParserState ⇒
+
+    /* this is a performance trick
+
+    the code below really belongs to [[ParserState]]. Putting it into a non-leftmost trait within each final (leaf)
+    object will trick scalac into duplicating the code for the benefit of the JVM, which will in turn trick the JVM into
+    considering each leaf type's instance of the code as different for the purpose of making inline decisions.
+
+    This in turn causes (on OpenJDK 8 through 10 at least) the JRE to optimize each ParserState without accidentally
+    accreting too much unrelated code.
+     */
+
+    @tailrec
+    final def seekNextEvent(pp: JsonObjectParser): Boolean = {
+      val nextState = proceed(pp.nextInput, pp)
+
+      // println(debugState(pp, nextState))
+
       if (pp.keepSeeking) {
-        pp.proceedKnownNextIfPossible(this)
+        if (nextState eq this) {
+          /* same-type tailrec: inline */
+          seekNextEvent(pp)
+        } else {
+          /* sibling-type tailrec: not inlined, but it turns out it works, too */
+          // nextState.seekNextEvent(pp)
+          true
+        }
+      } else {
+        false
       }
     }
   }
 
   private object ParserState {
 
-    object UnknownState extends ParserState {
+    object UnknownState extends ParserState with ParserStateMachinery {
       override def toString: String = "Unknown"
 
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit =
+      final override def proceed(input: Byte, pp: JsonObjectParser): ParserState =
         throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — unknown state")
 
     }
 
-    object InitialState extends ParserState {
+    object InitialState extends ParserState with ParserStateMachinery {
       override def toString: String = "Initial"
 
-      @tailrec
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
+      final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
         if (input == SquareBraceStart) {
           pp.skip()
-          pp.enterState(MainArrayBeforeElement).proceedIfPossible(pp)
+          pp.enterState(MainArrayBeforeElement)
         } else if (input == DoubleQuote) {
           pp.take()
-          pp.enterState(InOuterString(NotArrayAfterElement, pp)).proceedIfPossible(pp)
+          pp.enterState(InOuterString(NotArrayAfterElement, pp))
         } else if (input == CurlyBraceStart) {
           pp.take()
-          pp.enterContainer(InOuterObject, NotArrayAfterElement).proceedIfPossible(pp)
+          pp.enterContainer(InOuterObject, NotArrayAfterElement)
         } else if (isWhitespace(input)) {
           pp.skip()
-
-          if (pp.keepSeeking) {
-            /* this.proceedIfProssible(pp) — inlined for tailrec */
-            proceed(pp.nextInput, pp)
-          }
+          sameState
         } else {
           pp.take()
-          pp.enterState(InOuterNaked(NotArrayAfterElement, pp)).proceedIfPossible(pp)
+          pp.enterState(InOuterNaked(NotArrayAfterElement, pp))
         }
       }
     }
@@ -83,17 +119,13 @@ import scala.annotation.{ switch, tailrec }
     /**
      * We are in this state whenever we're inside a JSON Array-style stream, before any element
      */
-    private object MainArrayBeforeElement extends ParserState {
+    private object MainArrayBeforeElement extends ParserState with ParserStateMachinery {
       override def toString: String = "MainArrayBeforeElement"
 
-      @tailrec
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
+      final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
         if (isWhitespace(input)) {
           pp.skip()
-          if (pp.keepSeeking) {
-            /* this.proceedIfPossible(pp) — inlined for tailrec */
-            proceed(pp.nextInput, pp)
-          }
+          sameState
         } else if (input == Comma) {
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}]")
         } else if (input == SquareBraceEnd) {
@@ -101,57 +133,49 @@ import scala.annotation.{ switch, tailrec }
           pp.enterState(AfterMainArray)
         } else if (input == SquareBraceStart) {
           pp.take()
-          pp.enterContainer(InOuterArray, MainArrayAfterElement).proceedIfPossible(pp)
+          pp.enterContainer(InOuterArray, MainArrayAfterElement)
         } else if (input == DoubleQuote) {
           pp.take()
-          pp.enterState(InOuterString(MainArrayAfterElement, pp)).proceedIfPossible(pp)
-
+          pp.enterState(InOuterString(MainArrayAfterElement, pp))
         } else if (input == CurlyBraceStart) {
           pp.take()
-          pp.enterContainer(InOuterObject, MainArrayAfterElement).proceedIfPossible(pp)
+          pp.enterContainer(InOuterObject, MainArrayAfterElement)
         } else {
           pp.take()
-          pp.enterState(InOuterNaked(MainArrayAfterElement, pp)).proceedIfPossible(pp)
+          pp.enterState(InOuterNaked(MainArrayAfterElement, pp))
         }
       }
 
     }
 
-    private object AfterMainArray extends ParserState {
+    private object AfterMainArray extends ParserState with ParserStateMachinery {
       override def toString: String = "AfterMainArray"
 
-      @tailrec
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit =
+      final override def proceed(input: Byte, pp: JsonObjectParser): ParserState =
         if (isWhitespace(input)) {
           pp.skip()
-          if (pp.keepSeeking) {
-            /* this.proceedIfPossible(pp) — inlined for tailrec */
-            proceed(pp.nextInput, pp)
-          }
+          sameState
         } else {
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] after closed JSON-style array")
         }
     }
 
-    private object MainArrayAfterElement extends ParserState {
+    private object MainArrayAfterElement extends ParserState with ParserStateMachinery {
       override def toString: String = "MainArrayAfterElement"
 
       /* note: we don't mark the object complete as it's been done, if necessary, as part of the
       exit action that happened just before we ended up here.
        */
-      @tailrec
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
+      final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
         if (isWhitespace(input)) {
           pp.skip()
-          if (pp.keepSeeking) {
-            proceed(pp.nextInput, pp)
-          }
+          sameState
         } else if (input == Comma) {
           pp.skip()
           pp.enterState(MainArrayBeforeElement)
         } else if (input == SquareBraceEnd) {
           pp.skip()
-          pp.enterState(AfterMainArray).proceedIfPossible(pp)
+          pp.enterState(AfterMainArray)
         } else {
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] after JSON-style array element")
         }
@@ -162,14 +186,14 @@ import scala.annotation.{ switch, tailrec }
       def apply(nextState: ParserState, pp: JsonObjectParser): ParserState
     }
 
-    private object AfterBackslash extends LeafParserState {
+    private object AfterBackslash extends LeafParserState with ParserStateMachinery {
       override def toString: String = "AfterBackslash"
 
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
+      final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
         pp.take()
-        val n = pp.enterState(pp.stateAfterBackslash)
+        val nstate = pp.enterState(pp.stateAfterBackslash)
         pp.stateAfterBackslash = UnknownState
-        pp.proceedKnownNextIfPossible(n)
+        nstate
       }
 
       def apply(nextState: ParserState, pp: JsonObjectParser): ParserState = {
@@ -180,42 +204,45 @@ import scala.annotation.{ switch, tailrec }
     }
 
     private trait HasExitAction { this: ParserState ⇒
-      def exitAction(pp: JsonObjectParser): Unit
+      def exitAction(pp: JsonObjectParser): ParserState
     }
 
     private trait HasEmptyExitAction extends HasExitAction { this: ParserState ⇒
-      final def exitAction(pp: JsonObjectParser): Unit = {}
+      final def exitAction(pp: JsonObjectParser): ParserState = pp.state
     }
     private trait CompleteObjectOnExitAction extends HasExitAction { this: ParserState ⇒
-      final def exitAction(pp: JsonObjectParser): Unit = pp.objectDone()
+      final def exitAction(pp: JsonObjectParser): ParserState = {
+        pp.objectDone()
+        pp.state
+      }
     }
 
     private trait LeaveContainerOnExit extends HasExitAction { this: ParserState ⇒
-      final def exitAction(pp: JsonObjectParser): Unit = {
+      final def exitAction(pp: JsonObjectParser): ParserState = {
         pp.leaveContainer()
       }
     }
 
     private trait CompleteObjectAndLeaveContainerOnExit extends HasExitAction { this: ParserState ⇒
-      final def exitAction(pp: JsonObjectParser): Unit = {
-        pp.leaveContainer()
+      final def exitAction(pp: JsonObjectParser): ParserState = {
+        val next = pp.leaveContainer()
         pp.objectDone()
+        next
       }
     }
 
     private abstract class InStringBase extends LeafParserState with HasExitAction {
-      def exitAction(pp: JsonObjectParser): Unit
+      def exitAction(pp: JsonObjectParser): ParserState
 
       def apply(nextState: ParserState, pp: JsonObjectParser): ParserState = {
         pp.stateAfterStringValue = nextState
         pp.enterState(this)
       }
 
-      @tailrec
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
+      final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
         if (input == Backslash) {
           pp.take()
-          pp.enterState(AfterBackslash(this, pp)).proceedIfPossible(pp)
+          pp.enterState(AfterBackslash(this, pp))
         } else if (input == DoubleQuote) {
           pp.take()
           pp.enterState(pp.stateAfterStringValue)
@@ -224,17 +251,15 @@ import scala.annotation.{ switch, tailrec }
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — line break in string")
         } else {
           pp.take()
-          if (pp.keepSeeking) { /* inlining this.proceedIfPossible(pp) for tailrec */
-            proceed(pp.nextInput, pp)
-          }
+          sameState
         }
       }
     }
 
-    private object InString extends InStringBase with HasEmptyExitAction {
+    private object InString extends InStringBase with HasEmptyExitAction with ParserStateMachinery {
       override def toString: String = "InString"
     }
-    private object InOuterString extends InStringBase with CompleteObjectOnExitAction {
+    private object InOuterString extends InStringBase with CompleteObjectOnExitAction with ParserStateMachinery {
       override def toString: String = "InOuterString"
     }
 
@@ -245,17 +270,16 @@ import scala.annotation.{ switch, tailrec }
         this
       }
 
-      private def finish(input: Byte, pp: JsonObjectParser): Unit = {
+      private def finish(input: Byte, pp: JsonObjectParser): ParserState = {
         val nextState = pp.stateAfterNakedValue
         pp.stateAfterNakedValue = UnknownState
 
         pp.enterState(nextState)
         exitAction(pp)
-        nextState.proceed(input, pp)
+        nextState
       }
 
-      @tailrec
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
+      final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
         if ((input == Comma) || (input == SquareBraceEnd) || (input == CurlyBraceEnd) || (input == LineBreak)) {
           finish(input, pp)
 
@@ -263,81 +287,73 @@ import scala.annotation.{ switch, tailrec }
           finish(input, pp)
         } else {
           pp.take()
-          if (pp.keepSeeking) { /* inlining this.proceedIfPossible(pp) for tailrec */
-            proceed(pp.nextInput, pp)
-          }
+          sameState
         }
       }
     }
 
-    private object InNaked extends InNakedBase with HasEmptyExitAction {
+    private object InNaked extends InNakedBase with HasEmptyExitAction with ParserStateMachinery {
       override def toString: String = "InNaked"
     }
-    private object InOuterNaked extends InNakedBase with CompleteObjectOnExitAction {
+    private object InOuterNaked extends InNakedBase with CompleteObjectOnExitAction with ParserStateMachinery {
       override def toString: String = "InOuterNaked"
     }
 
     private abstract class InContainerBase(containerEnd: Int) extends ParserState with HasExitAction {
 
-      @tailrec
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
+      final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
 
         /* within a container, we always take whichever character we find. We'll act after. */
         pp.take()
 
         if (input == DoubleQuote) {
-          pp.enterState(InString(this, pp)).proceedIfPossible(pp)
+          pp.enterState(InString(this, pp))
         } else if ((input == Comma) || (input == Colon)) {
           /* in a real JSON parser we'd check whether the colon and commas appear at appropriate places. Here
             we do without: we're just framing JSON and this is good enough */
-          if (pp.keepSeeking) { /* inlining this.proceedIfPossible(pp) for tailrec */
-            proceed(pp.nextInput, pp)
-          }
+          sameState
         } else if (input == CurlyBraceStart) {
-          pp.enterContainer(InObject, this).proceedIfPossible(pp)
+          pp.enterContainer(InObject, this)
         } else if (input == SquareBraceStart) {
-          pp.enterContainer(InArray, this).proceedIfPossible(pp)
+          pp.enterContainer(InArray, this)
         } else if (input == containerEnd) {
           /* this is our end! */
           exitAction(pp)
         } else if (isWhitespace(input)) {
-          if (pp.keepSeeking) { /* inlining this.proceedIfPossible(ppfor tailrec */
-            proceed(pp.nextInput, pp)
-          }
+          sameState
         } else {
-          pp.enterState(InNaked(this, pp)).proceedIfPossible(pp)
+          pp.enterState(InNaked(this, pp))
         }
       }
     }
 
-    private object InArray extends InContainerBase(SquareBraceEnd) with LeaveContainerOnExit {
+    private object InArray extends InContainerBase(SquareBraceEnd) with LeaveContainerOnExit with ParserStateMachinery {
       override def toString: String = "InArray"
     }
-    private object InOuterArray extends InContainerBase(SquareBraceEnd) with CompleteObjectAndLeaveContainerOnExit {
+    private object InOuterArray extends InContainerBase(SquareBraceEnd) with CompleteObjectAndLeaveContainerOnExit with ParserStateMachinery {
       override def toString: String = "InOuterArray"
     }
 
-    private object InObject extends InContainerBase(CurlyBraceEnd) with LeaveContainerOnExit {
+    private object InObject extends InContainerBase(CurlyBraceEnd) with LeaveContainerOnExit with ParserStateMachinery {
       override def toString: String = "InObject"
     }
-    private object InOuterObject extends InContainerBase(CurlyBraceEnd) with CompleteObjectAndLeaveContainerOnExit {
+    private object InOuterObject extends InContainerBase(CurlyBraceEnd) with CompleteObjectAndLeaveContainerOnExit with ParserStateMachinery {
       override def toString: String = "InOuterObject"
     }
 
-    private object NotArrayAfterElement extends ParserState {
+    private object NotArrayAfterElement extends ParserState with ParserStateMachinery {
       override def toString: String = "NotArrayAfter"
 
       /* in this state we know we are not in a JSON array-formatted stream, but we don't yet know yet what kind of
       separator is being used. We'll never revisit this state or InitialState once we meet a separator
        */
-      @tailrec
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
+      final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
         if (input == Comma) {
           pp.skip()
-          pp.enterState(CommaSeparatedBeforeElement).proceedIfPossible(pp)
+          pp.enterState(CommaSeparatedBeforeElement)
         } else if (input == LineBreak) {
           pp.skip()
-          pp.enterState(LinebreakSeparatedBeforeElement).proceedIfPossible(pp)
+          pp.enterState(LinebreakSeparatedBeforeElement)
         } else if (isWhitespace(input)) {
           pp.skip()
 
@@ -347,12 +363,10 @@ import scala.annotation.{ switch, tailrec }
             We can't extend the same tolerance to arrays, as any stream whose first non-whitespace character is a SquareBraceStart
             will be considered to be a JSON Array stream
              */
-          if (pp.keepSeeking) { /* inlining this.proceedIfPossible(pp) for tailrec */
-            proceed(pp.nextInput, pp)
-          }
+          sameState
         } else if (input == CurlyBraceStart) {
           pp.take()
-          pp.enterContainer(InOuterObject, NotArrayAfterElement).proceedIfPossible(pp)
+          pp.enterContainer(InOuterObject, NotArrayAfterElement)
         } else {
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — junk after value in linebreak or comma-separated stream")
         }
@@ -364,7 +378,7 @@ import scala.annotation.{ switch, tailrec }
 
       def beforeNextItem: ParserState
 
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
+      final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
         if (input == separator) {
           pp.skip()
           pp.enterState(beforeNextItem)
@@ -377,16 +391,12 @@ import scala.annotation.{ switch, tailrec }
             We can't extend the same tolerance to arrays, as any stream whose first non-whitespace character is a SquareBraceStart
             will be considered to be a JSON Array stream
              */
-          if (pp.keepSeeking) {
-            /* inlining this.proceedKnownNextIfPossible(pp) for tailrec */
-            proceed(pp.nextInput, pp)
-          }
+          sameState
         } else if (input == CurlyBraceStart) {
           pp.take()
-          pp.enterContainer(InOuterObject, this).proceedIfPossible(pp)
+          pp.enterContainer(InOuterObject, this)
         } else {
           throw new FramingException(s"Invalid JSON encountered at position [${pp.pos}] of [${pp.buffer}] — junk after value in $separatorName-separated stream")
-
         }
       }
     }
@@ -394,43 +404,35 @@ import scala.annotation.{ switch, tailrec }
     private abstract sealed class SeparatorSeparatedBeforeElement(val afterState: SeparatorSeparatedAfterElement) extends ParserState {
       private val separator = afterState.separator
 
-      @tailrec
-      final override def proceed(input: Byte, pp: JsonObjectParser): Unit = {
+      final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
         if (input == DoubleQuote) {
           pp.take()
-          pp.enterState(InOuterString(afterState, pp)).proceedIfPossible(pp)
+          pp.enterState(InOuterString(afterState, pp))
         } else if (input == SquareBraceStart) {
           pp.take()
-          pp.enterContainer(InOuterArray, afterState).proceedIfPossible(pp)
+          pp.enterContainer(InOuterArray, afterState)
         } else if (input == CurlyBraceStart) {
           pp.take()
-          pp.enterContainer(InOuterObject, afterState).proceedIfPossible(pp)
+          pp.enterContainer(InOuterObject, afterState)
         } else if (input == separator) {
           pp.skip()
           /* note: effectively, empty lines are tolerated, ignored and skipped. Throw a FramingError if desired otherwise */
-
-          if (pp.keepSeeking) { /* inlining this.proceedIfPossible(pp) for tailrec */
-            proceed(pp.nextInput, pp)
-          }
-
+          sameState
         } else if (isWhitespace(input)) {
           pp.skip()
-
-          if (pp.keepSeeking) { /* inlining this.proceedIfPossible(pp) for tailrec */
-            proceed(pp.nextInput, pp)
-          }
+          sameState
         } else {
           pp.take()
-          pp.enterState(InOuterNaked(afterState, pp)).proceedIfPossible(pp)
+          pp.enterState(InOuterNaked(afterState, pp))
         }
       }
     }
 
-    private object LinebreakSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(LinebreakSeparatedAfterElement) {
+    private object LinebreakSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(LinebreakSeparatedAfterElement) with ParserStateMachinery {
       override def toString: String = "LinebreakSeparatedBeforeElement"
     }
 
-    private object LinebreakSeparatedAfterElement extends SeparatorSeparatedAfterElement(LineBreak) {
+    private object LinebreakSeparatedAfterElement extends SeparatorSeparatedAfterElement(LineBreak) with ParserStateMachinery {
       override def toString: String = "LinebreakSeparatedAfterElement"
 
       override def separatorName: String = "linebreak"
@@ -438,11 +440,11 @@ import scala.annotation.{ switch, tailrec }
       override def beforeNextItem: ParserState = LinebreakSeparatedBeforeElement
     }
 
-    private object CommaSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(CommaSeparatedAfterElement) {
+    private object CommaSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(CommaSeparatedAfterElement) with ParserStateMachinery {
       override def toString: String = "CommaSeparatedBeforeEement"
     }
 
-    private object CommaSeparatedAfterElement extends SeparatorSeparatedAfterElement(Comma) {
+    private object CommaSeparatedAfterElement extends SeparatorSeparatedAfterElement(Comma) with ParserStateMachinery {
       override def toString: String = "CommaSeparatedAfterElement"
 
       override def separatorName: String = "comma"
@@ -522,9 +524,6 @@ import scala.annotation.{ switch, tailrec }
     completedObject = true
   }
 
-  private def debugCurrentSelection: String =
-    buffer.take(pos).drop(trimFront).take(charsInObject).utf8String
-
   /**
    * Appends input ByteString to internal byte string buffer.
    * Use [[poll]] to extract contained JSON objects.
@@ -577,12 +576,6 @@ import scala.annotation.{ switch, tailrec }
   @inline private def keepSeeking: Boolean = (pos < maxSeekPos) && !completedObject
   @inline private def nextInput: Byte = buffer(pos)
 
-  @inline private def proceedKnownNextIfPossible[S <: ParserState](next: S): Unit = {
-    if (keepSeeking) {
-      next.proceed(nextInput, this)
-    }
-  }
-
   /** @return true if an entire valid JSON object was found, false otherwise */
   private def seekObject(): Boolean = {
     completedObject = false
@@ -591,12 +584,18 @@ import scala.annotation.{ switch, tailrec }
     if (internalSeekObject()) {
       true
     } else {
-      /* we haven't found a completedObject */
+      /* we haven't yet found a completedObject, but we might have additional data lying around */
 
       if ((pos == maxSeekPos) && nextBuffer.nonEmpty) {
         /* ah, we've reached the end of buffer but the nextBuffer contains things. Let's keep trying for a bit */
 
-        buffer = (buffer ++ nextBuffer).compact // TBD, do we compact or not? Do we compact whole or just next?
+        buffer = (if (buffer.isEmpty) {
+          nextBuffer
+        } else {
+          buffer ++ nextBuffer
+        }).compact
+        /* compacting the buffer here does cause a copy of the underlying bytes but then ensures that nextInput will
+            always result in calling into the same subtype of ByteBuffer, which helps the JRE better inline */
         nextBuffer = ByteString.empty
         maxSeekPos = Math.min(buffer.size, maximumObjectLength)
 
@@ -609,8 +608,10 @@ import scala.annotation.{ switch, tailrec }
   }
 
   private def internalSeekObject(): Boolean = {
-    while (keepSeeking) {
-      state.proceed(nextInput, this)
+    if (keepSeeking) {
+      while (state.seekNextEvent(this)) {
+        // keep going
+      }
     }
 
     if (pos >= maximumObjectLength)
