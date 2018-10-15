@@ -44,7 +44,7 @@ class CustomGuardianAndMaterializerSpec extends ScalaTestWithActorTestKit with W
       var doneF: Future[Done] = null
       val behavior =
         Behaviors.setup[String] { ctx ⇒
-          implicit val mat: ActorMaterializer = ActorMaterializer.fromContext(ctx)
+          implicit val mat: ActorMaterializer = ActorMaterializer.boundToActor(ctx)
           doneF = Source.repeat("hello").runWith(Sink.ignore)
 
           Behaviors.receiveMessage[String](_ ⇒ Behaviors.stopped)

@@ -38,7 +38,7 @@ object ActorMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def fromContext[T](ctx: ActorContext[T], materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None): ActorMaterializer =
+  def boundToActor[T](ctx: ActorContext[T], materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None): ActorMaterializer =
     akka.stream.ActorMaterializer(materializerSettings, namePrefix)(ctx.toUntyped)
 
 }
