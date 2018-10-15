@@ -35,7 +35,7 @@ import scala.annotation.{ switch, tailrec }
   private sealed trait ParserState {
     protected final def sameState: ParserState = this
 
-    private def debugState(pp: JsonObjectParser, nextState: ParserState): String = {
+    protected def debugState(pp: JsonObjectParser, nextState: ParserState): String = {
       val wholebuf = pp.buffer ++ pp.nextBuffer
       val (before, after) = wholebuf.splitAt(pp.pos)
       val trans = if (nextState == this) this.toString else s"$this→$nextState"
@@ -46,7 +46,8 @@ import scala.annotation.{ switch, tailrec }
     @inline
     protected def proceed(input: Byte, pp: JsonObjectParser): ParserState
 
-    def seekNextEvent(pp: JsonObjectParser): Boolean
+    def seekNextEvent(pp: JsonObjectParser, maxSeekPos: Int): Boolean
+    def seekNextEventInternal(pp: JsonObjectParser, remainingSteps: Int, stackDepth: Int): Boolean
   }
 
   private sealed trait ParserStateMachinery {
@@ -62,23 +63,47 @@ import scala.annotation.{ switch, tailrec }
     accreting too much unrelated code.
      */
 
+    final override def seekNextEvent(pp: JsonObjectParser, maxSeekPos: Int): Boolean = {
+      val remainingSteps = maxSeekPos - pp.pos
+
+      //if (keepSeeking(pp, remainingSteps)) {
+      seekNextEventInternal(pp, remainingSteps, 0)
+      //} else {
+      //  pp.completedObject
+      //}
+    }
+
+    final private def keepSeeking(pp: JsonObjectParser, remainingSteps: Int): Boolean = (!pp.completedObject) && (remainingSteps > 0)
+
     @tailrec
-    final def seekNextEvent(pp: JsonObjectParser): Boolean = {
-      val nextState = proceed(pp.nextInput, pp)
+    final def seekNextEventInternal(pp: JsonObjectParser, remainingSteps: Int, stackDepth: Int): Boolean = {
+      if (keepSeeking(pp, remainingSteps)) {
 
-      // println(debugState(pp, nextState))
+        val oldPos = pp.pos
+        val nextState = proceed(pp.nextInput, pp)
+        val consumed = pp.pos - oldPos
 
-      if (pp.keepSeeking) {
+        //println(s"pos=${pp.pos} bufsize=${pp.buffer.size} remsteps=${remainingSteps} sd=${stackDepth} complete=${pp.completedObject} state=${debugState(pp, nextState)}")
+
         if (nextState eq this) {
           /* same-type tailrec: inline */
-          seekNextEvent(pp)
+          seekNextEventInternal(pp, remainingSteps - consumed, stackDepth)
         } else {
-          /* sibling-type tailrec: not inlined, but it turns out it works, too */
-          // nextState.seekNextEvent(pp)
-          true
+          if ((stackDepth > 0) && (remainingSteps > 1)) {
+            /* *if* the next state is almost always the same, then let the JVM figure that out and attempt to avoid
+            the virtual call. Otherwise, well, we'll pay with some actual execution stack depth. */
+
+            //println("drill")
+            nextState.seekNextEventInternal(pp, remainingSteps - consumed, stackDepth - 1)
+          } else {
+            /* bounce back to the outer loop to enter the next state's own inner loop */
+            //println("bounce")
+            true
+          }
         }
+
       } else {
-        false
+        false /* we must stop seeking. Either we found an object or we're out of bytes in the buffer */
       }
     }
   }
@@ -282,7 +307,6 @@ import scala.annotation.{ switch, tailrec }
       final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
         if ((input == Comma) || (input == SquareBraceEnd) || (input == CurlyBraceEnd) || (input == LineBreak)) {
           finish(input, pp)
-
         } else if (isWhitespace(input)) {
           finish(input, pp)
         } else {
@@ -441,7 +465,7 @@ import scala.annotation.{ switch, tailrec }
     }
 
     private object CommaSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(CommaSeparatedAfterElement) with ParserStateMachinery {
-      override def toString: String = "CommaSeparatedBeforeEement"
+      override def toString: String = "CommaSeparatedBeforeElement"
     }
 
     private object CommaSeparatedAfterElement extends SeparatorSeparatedAfterElement(Comma) with ParserStateMachinery {
@@ -472,7 +496,6 @@ import scala.annotation.{ switch, tailrec }
   private var pos = 0 // latest position of pointer while scanning for json object end
   private var trimFront = 0 // number of chars to drop from the front of the bytestring before emitting (skip whitespace etc)
   private var charsInObject = 0
-  private var maxSeekPos: Int = _ // where to stop looking within the buffer in the current 'poll' operation
   private var completedObject = false
   private var state: ParserState = ParserState.InitialState
 
@@ -573,15 +596,14 @@ import scala.annotation.{ switch, tailrec }
     result
   }
 
-  @inline private def keepSeeking: Boolean = (pos < maxSeekPos) && !completedObject
   @inline private def nextInput: Byte = buffer(pos)
 
   /** @return true if an entire valid JSON object was found, false otherwise */
   private def seekObject(): Boolean = {
     completedObject = false
-    maxSeekPos = Math.min(buffer.size, maximumObjectLength)
+    val maxSeekPos = Math.min(buffer.size, maximumObjectLength)
 
-    if (internalSeekObject()) {
+    if (internalSeekObject(maxSeekPos)) {
       true
     } else {
       /* we haven't yet found a completedObject, but we might have additional data lying around */
@@ -597,21 +619,24 @@ import scala.annotation.{ switch, tailrec }
         /* compacting the buffer here does cause a copy of the underlying bytes but then ensures that nextInput will
             always result in calling into the same subtype of ByteBuffer, which helps the JRE better inline */
         nextBuffer = ByteString.empty
-        maxSeekPos = Math.min(buffer.size, maximumObjectLength)
 
-        // we can (should) retry once. No use doing it more, since nextBuffer can't be filled again in the meantime.
-        internalSeekObject()
+        if (buffer.isEmpty) {
+          false
+        } else {
+          val newMaxSeekPos = Math.min(buffer.size, maximumObjectLength)
+
+          // we can (should) retry once. No use doing it more, since nextBuffer can't be filled again in the meantime.
+          internalSeekObject(newMaxSeekPos)
+        }
       } else {
         false
       }
     }
   }
 
-  private def internalSeekObject(): Boolean = {
-    if (keepSeeking) {
-      while (state.seekNextEvent(this)) {
-        // keep going
-      }
+  private def internalSeekObject(maxSeekPos: Int): Boolean = {
+    while (state.seekNextEvent(this, maxSeekPos)) {
+      // keep going
     }
 
     if (pos >= maximumObjectLength)
