@@ -153,7 +153,7 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       val sourceB = Source(List(10, 20, 30, 40))
 
       sourceA.merge(sourceB).runWith(Sink.foreach(println))
-      //prints 1, 2, 3, 4, 10, 20, 30, 40 in random order
+      // merging is not deterministic, can for example print 1, 2, 3, 4, 10, 20, 30, 40
       //#merge
     }
   }

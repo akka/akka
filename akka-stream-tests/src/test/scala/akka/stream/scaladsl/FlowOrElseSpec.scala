@@ -145,12 +145,12 @@ class FlowOrElseSpec extends AkkaSpec {
       //#or-else
       val source1 = Source(List("First source"))
       val source2 = Source(List("Second source"))
-      val source3 = Source(List())
+      val emptySource = Source.empty[String]
 
       source1.orElse(source2).runWith(Sink.foreach(println))
       // this will print "First source"
 
-      source3.orElse(source2).runWith(Sink.foreach(println))
+      emptySource.orElse(source2).runWith(Sink.foreach(println))
       // this will print "Second source"
       //#or-else
     }

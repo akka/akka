@@ -95,7 +95,7 @@ class SourceOrFlow {
       //#prepend
       Source<String, NotUsed> ladies = Source.from(Arrays.asList("Emma", "Emily"));
       Source<String, NotUsed> gentlemen = Source.from(Arrays.asList("Liam", "William"));
-      ladies.prepend(gentlemen).runWith(Sink.foreach(System.out::print), materializer);
+      gentlemen.prepend(ladies).runWith(Sink.foreach(System.out::print), materializer);
       // this will print "Emma", "Emily", "Liam", "William"
 
       //#prepend
@@ -129,7 +129,7 @@ class SourceOrFlow {
       Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
       Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
       sourceA.merge(sourceB).runWith(Sink.foreach(System.out::print), materializer);
-      //prints 1, 2, 3, 4, 10, 20, 30, 40 in random order
+      // merging is not deterministic, can for example print 1, 2, 3, 4, 10, 20, 30, 40
 
       //#merge
   }
@@ -152,12 +152,12 @@ class SourceOrFlow {
     //#or-else
       Source<String, NotUsed> source1 = Source.from(Arrays.asList("First source"));
       Source<String, NotUsed> source2 = Source.from(Arrays.asList("Second source"));
-      Source<String, NotUsed> source3 = Source.from(Arrays.asList());
+      Source<String, NotUsed> emptySource = Source.empty();
 
       source1.orElse(source2).runWith(Sink.foreach(System.out::print), materializer);
       // this will print "First source"
 
-      source3.orElse(source2).runWith(Sink.foreach(System.out::print), materializer);
+      emptySource.orElse(source2).runWith(Sink.foreach(System.out::print), materializer);
       // this will print "Second source"
 
     //#or-else
