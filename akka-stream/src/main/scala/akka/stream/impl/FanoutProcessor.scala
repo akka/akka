@@ -127,7 +127,7 @@ import org.reactivestreams.Subscriber
       log.debug("fail due to: {}", e.getMessage)
     primaryInputs.cancel()
     primaryOutputs.error(e)
-    // Stopping will happen after flush
+    context.stop(self)
   }
 
   override def pumpFinished(): Unit = {
