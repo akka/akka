@@ -6163,6 +6163,1232 @@ public final class ClusterShardingMessages {
     // @@protoc_insertion_point(class_scope:ShardStats)
   }
 
+  public interface ShardRegionStatsOrBuilder
+      extends akka.protobuf.MessageOrBuilder {
+
+    // repeated .MapFieldEntry stats = 1;
+    /**
+     * <code>repeated .MapFieldEntry stats = 1;</code>
+     */
+    java.util.List<akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry> 
+        getStatsList();
+    /**
+     * <code>repeated .MapFieldEntry stats = 1;</code>
+     */
+    akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry getStats(int index);
+    /**
+     * <code>repeated .MapFieldEntry stats = 1;</code>
+     */
+    int getStatsCount();
+    /**
+     * <code>repeated .MapFieldEntry stats = 1;</code>
+     */
+    java.util.List<? extends akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntryOrBuilder> 
+        getStatsOrBuilderList();
+    /**
+     * <code>repeated .MapFieldEntry stats = 1;</code>
+     */
+    akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntryOrBuilder getStatsOrBuilder(
+        int index);
+  }
+  /**
+   * Protobuf type {@code ShardRegionStats}
+   */
+  public static final class ShardRegionStats extends
+      akka.protobuf.GeneratedMessage
+      implements ShardRegionStatsOrBuilder {
+    // Use ShardRegionStats.newBuilder() to construct.
+    private ShardRegionStats(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private ShardRegionStats(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final ShardRegionStats defaultInstance;
+    public static ShardRegionStats getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public ShardRegionStats getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final akka.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final akka.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private ShardRegionStats(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+                stats_ = new java.util.ArrayList<akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry>();
+                mutable_bitField0_ |= 0x00000001;
+              }
+              stats_.add(input.readMessage(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.PARSER, extensionRegistry));
+              break;
+            }
+          }
+        }
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
+          stats_ = java.util.Collections.unmodifiableList(stats_);
+        }
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardRegionStats_descriptor;
+    }
+
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardRegionStats_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats.Builder.class);
+    }
+
+    public static akka.protobuf.Parser<ShardRegionStats> PARSER =
+        new akka.protobuf.AbstractParser<ShardRegionStats>() {
+      public ShardRegionStats parsePartialFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
+        return new ShardRegionStats(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public akka.protobuf.Parser<ShardRegionStats> getParserForType() {
+      return PARSER;
+    }
+
+    // repeated .MapFieldEntry stats = 1;
+    public static final int STATS_FIELD_NUMBER = 1;
+    private java.util.List<akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry> stats_;
+    /**
+     * <code>repeated .MapFieldEntry stats = 1;</code>
+     */
+    public java.util.List<akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry> getStatsList() {
+      return stats_;
+    }
+    /**
+     * <code>repeated .MapFieldEntry stats = 1;</code>
+     */
+    public java.util.List<? extends akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntryOrBuilder> 
+        getStatsOrBuilderList() {
+      return stats_;
+    }
+    /**
+     * <code>repeated .MapFieldEntry stats = 1;</code>
+     */
+    public int getStatsCount() {
+      return stats_.size();
+    }
+    /**
+     * <code>repeated .MapFieldEntry stats = 1;</code>
+     */
+    public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry getStats(int index) {
+      return stats_.get(index);
+    }
+    /**
+     * <code>repeated .MapFieldEntry stats = 1;</code>
+     */
+    public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntryOrBuilder getStatsOrBuilder(
+        int index) {
+      return stats_.get(index);
+    }
+
+    private void initFields() {
+      stats_ = java.util.Collections.emptyList();
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(akka.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      for (int i = 0; i < stats_.size(); i++) {
+        output.writeMessage(1, stats_.get(i));
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      for (int i = 0; i < stats_.size(); i++) {
+        size += akka.protobuf.CodedOutputStream
+          .computeMessageSize(1, stats_.get(i));
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parseFrom(
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parseFrom(
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parseFrom(byte[] data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parseFrom(
+        byte[] data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parseFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parseFrom(
+        akka.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parseFrom(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code ShardRegionStats}
+     */
+    public static final class Builder extends
+        akka.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStatsOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardRegionStats_descriptor;
+      }
+
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardRegionStats_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats.Builder.class);
+      }
+
+      // Construct using akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getStatsFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        if (statsBuilder_ == null) {
+          stats_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000001);
+        } else {
+          statsBuilder_.clear();
+        }
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public akka.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_ShardRegionStats_descriptor;
+      }
+
+      public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats getDefaultInstanceForType() {
+        return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats.getDefaultInstance();
+      }
+
+      public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats build() {
+        akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats buildPartial() {
+        akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats result = new akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats(this);
+        int from_bitField0_ = bitField0_;
+        if (statsBuilder_ == null) {
+          if (((bitField0_ & 0x00000001) == 0x00000001)) {
+            stats_ = java.util.Collections.unmodifiableList(stats_);
+            bitField0_ = (bitField0_ & ~0x00000001);
+          }
+          result.stats_ = stats_;
+        } else {
+          result.stats_ = statsBuilder_.build();
+        }
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(akka.protobuf.Message other) {
+        if (other instanceof akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats) {
+          return mergeFrom((akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats other) {
+        if (other == akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats.getDefaultInstance()) return this;
+        if (statsBuilder_ == null) {
+          if (!other.stats_.isEmpty()) {
+            if (stats_.isEmpty()) {
+              stats_ = other.stats_;
+              bitField0_ = (bitField0_ & ~0x00000001);
+            } else {
+              ensureStatsIsMutable();
+              stats_.addAll(other.stats_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.stats_.isEmpty()) {
+            if (statsBuilder_.isEmpty()) {
+              statsBuilder_.dispose();
+              statsBuilder_ = null;
+              stats_ = other.stats_;
+              bitField0_ = (bitField0_ & ~0x00000001);
+              statsBuilder_ = 
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                   getStatsFieldBuilder() : null;
+            } else {
+              statsBuilder_.addAllMessages(other.stats_);
+            }
+          }
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      public Builder mergeFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // repeated .MapFieldEntry stats = 1;
+      private java.util.List<akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry> stats_ =
+        java.util.Collections.emptyList();
+      private void ensureStatsIsMutable() {
+        if (!((bitField0_ & 0x00000001) == 0x00000001)) {
+          stats_ = new java.util.ArrayList<akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry>(stats_);
+          bitField0_ |= 0x00000001;
+         }
+      }
+
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.Builder, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntryOrBuilder> statsBuilder_;
+
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public java.util.List<akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry> getStatsList() {
+        if (statsBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(stats_);
+        } else {
+          return statsBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public int getStatsCount() {
+        if (statsBuilder_ == null) {
+          return stats_.size();
+        } else {
+          return statsBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry getStats(int index) {
+        if (statsBuilder_ == null) {
+          return stats_.get(index);
+        } else {
+          return statsBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public Builder setStats(
+          int index, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry value) {
+        if (statsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureStatsIsMutable();
+          stats_.set(index, value);
+          onChanged();
+        } else {
+          statsBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public Builder setStats(
+          int index, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.Builder builderForValue) {
+        if (statsBuilder_ == null) {
+          ensureStatsIsMutable();
+          stats_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          statsBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public Builder addStats(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry value) {
+        if (statsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureStatsIsMutable();
+          stats_.add(value);
+          onChanged();
+        } else {
+          statsBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public Builder addStats(
+          int index, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry value) {
+        if (statsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureStatsIsMutable();
+          stats_.add(index, value);
+          onChanged();
+        } else {
+          statsBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public Builder addStats(
+          akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.Builder builderForValue) {
+        if (statsBuilder_ == null) {
+          ensureStatsIsMutable();
+          stats_.add(builderForValue.build());
+          onChanged();
+        } else {
+          statsBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public Builder addStats(
+          int index, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.Builder builderForValue) {
+        if (statsBuilder_ == null) {
+          ensureStatsIsMutable();
+          stats_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          statsBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public Builder addAllStats(
+          java.lang.Iterable<? extends akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry> values) {
+        if (statsBuilder_ == null) {
+          ensureStatsIsMutable();
+          super.addAll(values, stats_);
+          onChanged();
+        } else {
+          statsBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public Builder clearStats() {
+        if (statsBuilder_ == null) {
+          stats_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000001);
+          onChanged();
+        } else {
+          statsBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public Builder removeStats(int index) {
+        if (statsBuilder_ == null) {
+          ensureStatsIsMutable();
+          stats_.remove(index);
+          onChanged();
+        } else {
+          statsBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.Builder getStatsBuilder(
+          int index) {
+        return getStatsFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntryOrBuilder getStatsOrBuilder(
+          int index) {
+        if (statsBuilder_ == null) {
+          return stats_.get(index);  } else {
+          return statsBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public java.util.List<? extends akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntryOrBuilder> 
+           getStatsOrBuilderList() {
+        if (statsBuilder_ != null) {
+          return statsBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(stats_);
+        }
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.Builder addStatsBuilder() {
+        return getStatsFieldBuilder().addBuilder(
+            akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.Builder addStatsBuilder(
+          int index) {
+        return getStatsFieldBuilder().addBuilder(
+            index, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .MapFieldEntry stats = 1;</code>
+       */
+      public java.util.List<akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.Builder> 
+           getStatsBuilderList() {
+        return getStatsFieldBuilder().getBuilderList();
+      }
+      private akka.protobuf.RepeatedFieldBuilder<
+          akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.Builder, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntryOrBuilder> 
+          getStatsFieldBuilder() {
+        if (statsBuilder_ == null) {
+          statsBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
+              akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.Builder, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntryOrBuilder>(
+                  stats_,
+                  ((bitField0_ & 0x00000001) == 0x00000001),
+                  getParentForChildren(),
+                  isClean());
+          stats_ = null;
+        }
+        return statsBuilder_;
+      }
+
+      // @@protoc_insertion_point(builder_scope:ShardRegionStats)
+    }
+
+    static {
+      defaultInstance = new ShardRegionStats(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:ShardRegionStats)
+  }
+
+  public interface MapFieldEntryOrBuilder
+      extends akka.protobuf.MessageOrBuilder {
+
+    // optional string key = 1;
+    /**
+     * <code>optional string key = 1;</code>
+     */
+    boolean hasKey();
+    /**
+     * <code>optional string key = 1;</code>
+     */
+    java.lang.String getKey();
+    /**
+     * <code>optional string key = 1;</code>
+     */
+    akka.protobuf.ByteString
+        getKeyBytes();
+
+    // optional int32 value = 2;
+    /**
+     * <code>optional int32 value = 2;</code>
+     */
+    boolean hasValue();
+    /**
+     * <code>optional int32 value = 2;</code>
+     */
+    int getValue();
+  }
+  /**
+   * Protobuf type {@code MapFieldEntry}
+   */
+  public static final class MapFieldEntry extends
+      akka.protobuf.GeneratedMessage
+      implements MapFieldEntryOrBuilder {
+    // Use MapFieldEntry.newBuilder() to construct.
+    private MapFieldEntry(akka.protobuf.GeneratedMessage.Builder<?> builder) {
+      super(builder);
+      this.unknownFields = builder.getUnknownFields();
+    }
+    private MapFieldEntry(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
+
+    private static final MapFieldEntry defaultInstance;
+    public static MapFieldEntry getDefaultInstance() {
+      return defaultInstance;
+    }
+
+    public MapFieldEntry getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+
+    private final akka.protobuf.UnknownFieldSet unknownFields;
+    @java.lang.Override
+    public final akka.protobuf.UnknownFieldSet
+        getUnknownFields() {
+      return this.unknownFields;
+    }
+    private MapFieldEntry(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      initFields();
+      int mutable_bitField0_ = 0;
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+            case 10: {
+              bitField0_ |= 0x00000001;
+              key_ = input.readBytes();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              value_ = input.readInt32();
+              break;
+            }
+          }
+        }
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobuf.InvalidProtocolBufferException(
+            e.getMessage()).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_MapFieldEntry_descriptor;
+    }
+
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_MapFieldEntry_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.Builder.class);
+    }
+
+    public static akka.protobuf.Parser<MapFieldEntry> PARSER =
+        new akka.protobuf.AbstractParser<MapFieldEntry>() {
+      public MapFieldEntry parsePartialFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
+        return new MapFieldEntry(input, extensionRegistry);
+      }
+    };
+
+    @java.lang.Override
+    public akka.protobuf.Parser<MapFieldEntry> getParserForType() {
+      return PARSER;
+    }
+
+    private int bitField0_;
+    // optional string key = 1;
+    public static final int KEY_FIELD_NUMBER = 1;
+    private java.lang.Object key_;
+    /**
+     * <code>optional string key = 1;</code>
+     */
+    public boolean hasKey() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    /**
+     * <code>optional string key = 1;</code>
+     */
+    public java.lang.String getKey() {
+      java.lang.Object ref = key_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          key_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string key = 1;</code>
+     */
+    public akka.protobuf.ByteString
+        getKeyBytes() {
+      java.lang.Object ref = key_;
+      if (ref instanceof java.lang.String) {
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        key_ = b;
+        return b;
+      } else {
+        return (akka.protobuf.ByteString) ref;
+      }
+    }
+
+    // optional int32 value = 2;
+    public static final int VALUE_FIELD_NUMBER = 2;
+    private int value_;
+    /**
+     * <code>optional int32 value = 2;</code>
+     */
+    public boolean hasValue() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    /**
+     * <code>optional int32 value = 2;</code>
+     */
+    public int getValue() {
+      return value_;
+    }
+
+    private void initFields() {
+      key_ = "";
+      value_ = 0;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    public void writeTo(akka.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeBytes(1, getKeyBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeInt32(2, value_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeBytesSize(1, getKeyBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeInt32Size(2, value_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parseFrom(
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parseFrom(
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parseFrom(byte[] data)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parseFrom(
+        byte[] data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parseFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseDelimitedFrom(input, extensionRegistry);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parseFrom(
+        akka.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input);
+    }
+    public static akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parseFrom(
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return PARSER.parseFrom(input, extensionRegistry);
+    }
+
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code MapFieldEntry}
+     */
+    public static final class Builder extends
+        akka.protobuf.GeneratedMessage.Builder<Builder>
+       implements akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntryOrBuilder {
+      public static final akka.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_MapFieldEntry_descriptor;
+      }
+
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_MapFieldEntry_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.class, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.Builder.class);
+      }
+
+      // Construct using akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+
+      public Builder clear() {
+        super.clear();
+        key_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        value_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+
+      public akka.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.internal_static_MapFieldEntry_descriptor;
+      }
+
+      public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry getDefaultInstanceForType() {
+        return akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.getDefaultInstance();
+      }
+
+      public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry build() {
+        akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry buildPartial() {
+        akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry result = new akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.key_ = key_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.value_ = value_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      public Builder mergeFrom(akka.protobuf.Message other) {
+        if (other instanceof akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry) {
+          return mergeFrom((akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry other) {
+        if (other == akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry.getDefaultInstance()) return this;
+        if (other.hasKey()) {
+          bitField0_ |= 0x00000001;
+          key_ = other.key_;
+          onChanged();
+        }
+        if (other.hasValue()) {
+          setValue(other.getValue());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      public Builder mergeFrom(
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.MapFieldEntry) e.getUnfinishedMessage();
+          throw e;
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      // optional string key = 1;
+      private java.lang.Object key_ = "";
+      /**
+       * <code>optional string key = 1;</code>
+       */
+      public boolean hasKey() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      /**
+       * <code>optional string key = 1;</code>
+       */
+      public java.lang.String getKey() {
+        java.lang.Object ref = key_;
+        if (!(ref instanceof java.lang.String)) {
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
+              .toStringUtf8();
+          key_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string key = 1;</code>
+       */
+      public akka.protobuf.ByteString
+          getKeyBytes() {
+        java.lang.Object ref = key_;
+        if (ref instanceof String) {
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          key_ = b;
+          return b;
+        } else {
+          return (akka.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string key = 1;</code>
+       */
+      public Builder setKey(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        key_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string key = 1;</code>
+       */
+      public Builder clearKey() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        key_ = getDefaultInstance().getKey();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string key = 1;</code>
+       */
+      public Builder setKeyBytes(
+          akka.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        key_ = value;
+        onChanged();
+        return this;
+      }
+
+      // optional int32 value = 2;
+      private int value_ ;
+      /**
+       * <code>optional int32 value = 2;</code>
+       */
+      public boolean hasValue() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>optional int32 value = 2;</code>
+       */
+      public int getValue() {
+        return value_;
+      }
+      /**
+       * <code>optional int32 value = 2;</code>
+       */
+      public Builder setValue(int value) {
+        bitField0_ |= 0x00000002;
+        value_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 value = 2;</code>
+       */
+      public Builder clearValue() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        value_ = 0;
+        onChanged();
+        return this;
+      }
+
+      // @@protoc_insertion_point(builder_scope:MapFieldEntry)
+    }
+
+    static {
+      defaultInstance = new MapFieldEntry(true);
+      defaultInstance.initFields();
+    }
+
+    // @@protoc_insertion_point(class_scope:MapFieldEntry)
+  }
+
   public interface StartEntityOrBuilder
       extends akka.protobuf.MessageOrBuilder {
 
@@ -7336,6 +8562,16 @@ public final class ClusterShardingMessages {
     akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ShardStats_fieldAccessorTable;
   private static akka.protobuf.Descriptors.Descriptor
+    internal_static_ShardRegionStats_descriptor;
+  private static
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_ShardRegionStats_fieldAccessorTable;
+  private static akka.protobuf.Descriptors.Descriptor
+    internal_static_MapFieldEntry_descriptor;
+  private static
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_MapFieldEntry_fieldAccessorTable;
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_StartEntity_descriptor;
   private static
     akka.protobuf.GeneratedMessage.FieldAccessorTable
@@ -7367,10 +8603,12 @@ public final class ClusterShardingMessages {
       "ties\030\001 \003(\t\"!\n\rEntityStarted\022\020\n\010entityId\030" +
       "\001 \002(\t\"!\n\rEntityStopped\022\020\n\010entityId\030\001 \002(\t" +
       "\"0\n\nShardStats\022\r\n\005shard\030\001 \002(\t\022\023\n\013entityC" +
-      "ount\030\002 \002(\005\"\037\n\013StartEntity\022\020\n\010entityId\030\001 " +
-      "\002(\t\"3\n\016StartEntityAck\022\020\n\010entityId\030\001 \002(\t\022" +
-      "\017\n\007shardId\030\002 \002(\tB&\n\"akka.cluster.shardin" +
-      "g.protobuf.msgH\001"
+      "ount\030\002 \002(\005\"1\n\020ShardRegionStats\022\035\n\005stats\030" +
+      "\001 \003(\0132\016.MapFieldEntry\"+\n\rMapFieldEntry\022\013" +
+      "\n\003key\030\001 \001(\t\022\r\n\005value\030\002 \001(\005\"\037\n\013StartEntit" +
+      "y\022\020\n\010entityId\030\001 \002(\t\"3\n\016StartEntityAck\022\020\n" +
+      "\010entityId\030\001 \002(\t\022\017\n\007shardId\030\002 \002(\tB&\n\"akka" +
+      ".cluster.sharding.protobuf.msgH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -7437,14 +8675,26 @@ public final class ClusterShardingMessages {
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ShardStats_descriptor,
               new java.lang.String[] { "Shard", "EntityCount", });
-          internal_static_StartEntity_descriptor =
+          internal_static_ShardRegionStats_descriptor =
             getDescriptor().getMessageTypes().get(9);
+          internal_static_ShardRegionStats_fieldAccessorTable = new
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_ShardRegionStats_descriptor,
+              new java.lang.String[] { "Stats", });
+          internal_static_MapFieldEntry_descriptor =
+            getDescriptor().getMessageTypes().get(10);
+          internal_static_MapFieldEntry_fieldAccessorTable = new
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_MapFieldEntry_descriptor,
+              new java.lang.String[] { "Key", "Value", });
+          internal_static_StartEntity_descriptor =
+            getDescriptor().getMessageTypes().get(11);
           internal_static_StartEntity_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_StartEntity_descriptor,
               new java.lang.String[] { "EntityId", });
           internal_static_StartEntityAck_descriptor =
-            getDescriptor().getMessageTypes().get(10);
+            getDescriptor().getMessageTypes().get(12);
           internal_static_StartEntityAck_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_StartEntityAck_descriptor,
