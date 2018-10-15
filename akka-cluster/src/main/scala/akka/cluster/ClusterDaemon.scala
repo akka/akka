@@ -992,7 +992,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         // ExitingCompleted will be received via CoordinatedShutdown to continue
         // the leaving process. Meanwhile the gossip state is not marked as seen.
         exitingTasksInProgress = true
-        logInfo("Exiting, starting coordinated shutdown")
+        if (coordShutdown.shutdownReason().isEmpty)
+          logInfo("Exiting, starting coordinated shutdown")
         selfExiting.trySuccess(Done)
         coordShutdown.run(CoordinatedShutdown.ClusterLeavingReason)
       }
@@ -1192,7 +1193,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           // ExitingCompleted will be received via CoordinatedShutdown to continue
           // the leaving process. Meanwhile the gossip state is not marked as seen.
           exitingTasksInProgress = true
-          logInfo("Exiting (leader), starting coordinated shutdown")
+          if (coordShutdown.shutdownReason().isEmpty)
+            logInfo("Exiting (leader), starting coordinated shutdown")
           selfExiting.trySuccess(Done)
           coordShutdown.run(CoordinatedShutdown.ClusterLeavingReason)
         }

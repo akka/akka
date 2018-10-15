@@ -44,6 +44,12 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
   akka.loglevel = DEBUG
   akka.actor.provider = akka.cluster.ClusterActorRefProvider
   akka.cluster.auto-down-unreachable-after = 2s
+
+  # With 10 systems and setting min-number-of-hand-over-retries to 5 and gossip-interval to 2s it's possible to
+  # reproduce the ClusterSingletonManagerIsStuck and slow hand over in issue #25639
+  # akka.cluster.singleton.min-number-of-hand-over-retries = 5
+  # akka.cluster.gossip-interval = 2s
+
   akka.remote {
     netty.tcp {
       hostname = "127.0.0.1"
@@ -95,16 +101,16 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
 
     "quickly hand-over to next oldest" in {
 
-      val durations = systems.indices.map { i ⇒
+      val durations = systems.indices.take(1).map { i ⇒
         val t0 = System.nanoTime()
         val leaveAddress = Cluster(systems(i)).selfAddress
+        CoordinatedShutdown(systems(i)).run(CoordinatedShutdown.ClusterLeavingReason)
         //        Cluster(systems(i)).leave(leaveAddress)
-        //        CoordinatedShutdown(systems(i)).run(CoordinatedShutdown.ClusterLeavingReason)
-        Cluster(system).leave(leaveAddress)
+        //        Cluster(system).leave(leaveAddress)
         probes(i).expectMsg(10.seconds, "stopped")
         val stoppedDuration = (System.nanoTime() - t0).nanos
         val startedProbe = if (i == systems.size - 1) this else probes(i + 1)
-        startedProbe.expectMsg(10.seconds, "started")
+        startedProbe.expectMsg(30.seconds, "started")
         val startedDuration = (System.nanoTime() - t0).nanos
 
         within(15.seconds) {
