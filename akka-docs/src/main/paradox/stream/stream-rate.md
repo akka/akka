@@ -46,7 +46,7 @@ C: 3
 
 Note that the order is *not* `A:1, B:1, C:1, A:2, B:2, C:2,` which would correspond to the normal fused synchronous
 execution model of flows where an element completely passes through the processing pipeline before the next element
-enters the flow. The next element is processed by an asynchronous operator as soon as it is emitted the previous one.
+enters the flow. The next element is processed by an asynchronous operator as soon as it has emitted the previous one.
 
 While pipelining in general increases throughput, in practice there is a cost of passing an element through the
 asynchronous (and therefore thread crossing) boundary which is significant. To amortize this cost Akka Streams uses
