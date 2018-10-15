@@ -92,7 +92,7 @@ object OSGi {
       packages = Seq(
         "akka.stream.*",
         "com.typesafe.sslconfig.akka.*"),
-      imports = Seq(scalaJava8CompatImport(), scalaParsingCombinatorImport(), sslConfigCoreImport()))
+      imports = Seq(scalaJava8CompatImport(), scalaParsingCombinatorImport(), sslConfigCoreImport(), sslConfigCoreSslImport(), sslConfigCoreUtilImport()))
 
   val streamTestkit = exports(Seq("akka.stream.testkit.*"))
 
@@ -127,7 +127,9 @@ object OSGi {
   }
   def scalaJava8CompatImport(packageName: String = "scala.compat.java8.*") = versionedImport(packageName, "0.7.0", "1.0.0")
   def scalaParsingCombinatorImport(packageName: String = "scala.util.parsing.combinator.*") = versionedImport(packageName, "1.1.0", "1.2.0")
-  def sslConfigCoreImport(packageName: String = "com.typesafe.sslconfig.*") = versionedImport(packageName, "0.2.3", "1.0.0")
+  def sslConfigCoreImport(packageName: String = "com.typesafe.sslconfig") = versionedImport(packageName, "0.2.3", "1.0.0")
+  def sslConfigCoreSslImport(packageName: String = "com.typesafe.sslconfig.ssl.*") = versionedImport(packageName, "0.2.3", "1.0.0")
+  def sslConfigCoreUtilImport(packageName: String = "com.typesafe.sslconfig.util.*") = versionedImport(packageName, "0.2.3", "1.0.0")
   def kamonImport(packageName: String = "kamon.sigar.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def sigarImport(packageName: String = "org.hyperic.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
