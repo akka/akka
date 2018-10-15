@@ -33,8 +33,8 @@ import akka.util.ByteString
   }
 
   val connecting: Receive = {
-    case CommandFailed(_: Connect) ⇒
-      throw new AkkaException(s"Failed to connect to TCP DNS server at [$ns]")
+    case failure @ CommandFailed(_: Connect) ⇒
+      throwFailure(s"Failed to connect to TCP DNS server at [$ns]", failure.cause)
     case _: Tcp.Connected ⇒
       log.debug("Connected to TCP address [{}]", ns)
       val connection = sender()
@@ -49,8 +49,8 @@ import akka.util.ByteString
     case msg: Message ⇒
       val bytes = msg.write()
       connection ! Tcp.Write(encodeLength(bytes.length) ++ bytes)
-    case CommandFailed(_: Write) ⇒
-      throw new AkkaException("Write failed")
+    case failure @ CommandFailed(_: Write) ⇒
+      throwFailure("Write failed", failure.cause)
     case Received(newData) ⇒
       val data = buffer ++ newData
       // TCP DNS responses are prefixed by 2 bytes encoding the length of the response
@@ -89,4 +89,12 @@ private[internal] object TcpDnsClient {
 
   def decodeLength(data: ByteString): Int =
     ((data(0).toInt + 256) % 256) * 256 + ((data(1) + 256) % 256)
+
+  def throwFailure(message: String, cause: Option[Throwable]): Unit =
+    cause match {
+      case None ⇒
+        throw new AkkaException(message)
+      case Some(throwable) ⇒
+        throw new AkkaException(message, throwable)
+    }
 }
