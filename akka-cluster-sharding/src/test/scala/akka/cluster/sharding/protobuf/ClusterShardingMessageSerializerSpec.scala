@@ -7,6 +7,7 @@ package akka.cluster.sharding.protobuf
 import akka.actor.ExtendedActorSystem
 import akka.testkit.AkkaSpec
 import akka.actor.Props
+import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.{ Shard, ShardCoordinator, ShardRegion }
 
 class ClusterShardingMessageSerializerSpec extends AkkaSpec {
@@ -76,6 +77,15 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
 
     "be able to serialize ShardStats" in {
       checkSerialization(Shard.ShardStats("a", 23))
+    }
+
+    "be able to serialize GetShardRegionStats" in {
+      checkSerialization(ShardRegion.GetShardRegionStats)
+    }
+
+    "be able to serialize ShardRegionStats" in {
+      checkSerialization(ShardRegion.ShardRegionStats(Map.empty[ShardId, Int]))
+      checkSerialization(ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23)))
     }
 
     "be able to serialize StartEntity" in {
