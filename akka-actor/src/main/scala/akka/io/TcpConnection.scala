@@ -336,11 +336,15 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     catch {
       case NonFatal(e) ⇒
         // setSoLinger can fail due to http://bugs.sun.com/view_bug.do?bug_id=6799574
-        // (also affected: OS/X Java 1.6.0_37)
+        // (also affected: OS/X Java 1.6.0_37, MacOS Java 11)
         if (TraceLogging) log.debug("setSoLinger(true, 0) failed with [{}]", e)
     }
     channel.close()
 
+    // Java 11:
+    // all platforms - closing the channel leads to a RST once the channel has been flushed from all selectors
+
+    // Pre Java 11:
     // On linux, closing the channel directly triggers a RST as a side effect of `preClose`
     // called from `sun.nio.ch.SocketChannelImpl#implCloseSelectableChannel`.
 
@@ -348,7 +352,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     // and `sun.nio.ch.SelectorImpl` will kill those from `processDeregisterQueue` after the select poll has returned.
 
     // We don't want to have to wait for that, hence explicitly triggering the cancellation:
-    registration.foreach(_.cancel())
+    registration.foreach { reg ⇒
+      reg.cancel()
+    }
   }
 
   def stopWith(closeInfo: CloseInformation): Unit = {

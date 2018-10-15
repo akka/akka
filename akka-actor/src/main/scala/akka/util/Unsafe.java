@@ -14,7 +14,7 @@ public final class Unsafe {
     public static final sun.misc.Unsafe instance;
 
     private static final long stringValueFieldOffset;
-    private static final boolean isJavaVersion9Plus;
+    private static final boolean isJavaVersion9Plus = JavaVersion.majorVersion() > 8;
 
     static {
         try {
@@ -29,15 +29,6 @@ public final class Unsafe {
             if (found == null) throw new IllegalStateException("Can't find instance of sun.misc.Unsafe");
             else instance = found;
             stringValueFieldOffset = instance.objectFieldOffset(String.class.getDeclaredField("value"));
-
-            // See Oracle section 1.5.3 at:
-            // https://docs.oracle.com/javase/8/docs/technotes/guides/versioning/spec/versioning2.html
-            final int[] version = Arrays.
-                stream(System.getProperty("java.specification.version").split("\\.")).
-                mapToInt(Integer::parseInt).
-                toArray();
-            final int javaVersion = version[0] == 1 ? version[1] : version[0];
-            isJavaVersion9Plus = javaVersion > 8;
         } catch (Throwable t) {
             throw new ExceptionInInitializerError(t);
         }

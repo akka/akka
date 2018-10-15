@@ -23,7 +23,7 @@ import akka.io.SelectionHandler._
 import akka.io.Inet.SocketOption
 import akka.actor._
 import akka.testkit.{ AkkaSpec, EventFilter, SocketUtil, TestActorRef, TestProbe }
-import akka.util.{ ByteString, Helpers }
+import akka.util.{ ByteString, Helpers, JavaVersion }
 import akka.testkit.SocketUtil._
 import java.util.Random
 import java.net.SocketTimeoutException
@@ -457,7 +457,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
           val buffer = ByteBuffer.allocate(1)
           val thrown = the[IOException] thrownBy {
-            windowsWorkaroundToDetectAbort()
+            makeSureSelectorIsFlushed()
             serverSideChannel.read(buffer)
           }
           thrown.getMessage should ===(ConnectionResetByPeerMessage)
@@ -961,12 +961,19 @@ class TcpConnectionSpec extends AkkaSpec("""
     lazy val serverSelectionKey = registerChannel(serverSideChannel, "server")
     lazy val defaultbuffer = ByteBuffer.allocate(TestSize)
 
-    def windowsWorkaroundToDetectAbort(): Unit = {
-      // Due to a Windows quirk we need to set an OP_CONNECT to reliably detect connection resets, see #1576
-      if (Helpers.isWindows) {
+    def makeSureSelectorIsFlushed(): Unit = {
+
+      // On Java >= 11
+      if (JavaVersion.majorVersion >= 11) {
+        // reset doesn't happen until the selector is flushed
+        nioSelector.select(10)
+      } else if (Helpers.isWindows) {
+        // On Java < 11
+        // Due to a Windows quirk we need to set an OP_CONNECT to reliably detect connection resets, see #1576
         serverSelectionKey.interestOps(OP_CONNECT)
         nioSelector.select(10)
       }
+
     }
 
     override def ignoreWindowsWorkaroundForTicket15766(): Unit = {
@@ -1105,7 +1112,8 @@ class TcpConnectionSpec extends AkkaSpec("""
           log.debug("setSoLinger(true, 0) failed with {}", e)
       }
       channel.close()
-      if (Helpers.isWindows) nioSelector.select(10) // Windows needs this
+      // Pre Java 11: Windows needs this, 11 and up, everyone needs it
+      if (Helpers.isWindows || JavaVersion.majorVersion >= 11) nioSelector.select(10)
     }
   }
 
