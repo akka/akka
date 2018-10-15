@@ -72,7 +72,7 @@ class MyEventsByTagJavaPublisher extends AbstractActorPublisher<EventEnvelope> {
 
   public static Props props(Connection conn, String tag, Long offset, 
       Duration refreshInterval) {
-    return Props.create(() -> 
+    return Props.create(MyEventsByTagJavaPublisher.class, () ->
       new MyEventsByTagJavaPublisher(conn, tag, offset, refreshInterval));
   }
 

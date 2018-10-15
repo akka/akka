@@ -29,7 +29,7 @@ public class Device extends AbstractActor {
   }
 
   public static Props props(String groupId, String deviceId) {
-    return Props.create(Device.class, groupId, deviceId);
+    return Props.create(Device.class, () -> new Device(groupId, deviceId));
   }
 
   public static final class RecordTemperature {
