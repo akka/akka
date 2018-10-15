@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.util.{ ByteString, Helpers }
+import akka.util.{ ByteString, Helpers, JavaVersion }
 import akka.io.Inet.DatagramChannelCreator
 import akka.io.SelectionHandler._
 import akka.io.Udp._
@@ -77,7 +77,9 @@ private[io] class UdpListener(
       log.debug("Unbinding endpoint [{}]", bind.localAddress)
       try {
         channel.close()
-        if (Helpers.isWindows) registration.enableInterest(OP_READ)
+        registration.enableInterest(OP_READ)
+        // On JDK the actual unbind isn't immediate but is done async when the selector is flushed
+        if (JavaVersion.majorVersion >= 11 || Helpers.isWindows) registration.enableInterest(OP_READ)
         sender() ! Unbound
         log.debug("Unbound endpoint [{}], stopping listener", bind.localAddress)
       } finally context.stop(self)

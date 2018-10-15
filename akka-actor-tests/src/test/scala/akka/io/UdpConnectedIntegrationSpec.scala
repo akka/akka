@@ -5,13 +5,13 @@
 package akka.io
 
 import java.net.InetSocketAddress
-import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
-import akka.util.ByteString
+
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+import akka.util.{ ByteString, JavaVersion }
 import akka.actor.ActorRef
 import akka.testkit.SocketUtil._
 
 class UdpConnectedIntegrationSpec extends AkkaSpec("""
-    akka.loglevel = INFO
     akka.actor.serialize-creators = on
     """) with ImplicitSender {
 
