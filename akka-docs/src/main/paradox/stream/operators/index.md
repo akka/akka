@@ -270,6 +270,18 @@ Operators meant for inter-operating between Akka Streams and Actors:
 |ActorSink|<a name="actorref"></a>@ref[actorRef](ActorSink/actorRef.md)|Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`].|
 |ActorFlow|<a name="ask"></a>@ref[ask](ActorFlow/ask.md)|Use the `AskPattern` to send each element as an `ask` to the target actor, and expect a reply back that will be sent further downstream.|
 
+## Error handling
+
+For more background see the @ref[Error Handling in Streams](../stream-error.md) section.
+
+| |Operator|Description|
+|--|--|--|
+|RestartSource|<a name="onfailureswithbackoff"></a>@ref[onFailuresWithBackoff](RestartSource/onFailuresWithBackoff.md)|Wrap the given @unidoc[Source] with a @unidoc[Source] that will restart it when it fails using an exponential backoff.|
+|RestartFlow|<a name="onfailureswithbackoff"></a>@ref[onFailuresWithBackoff](RestartFlow/onFailuresWithBackoff.md)|Wrap the given @unidoc[Flow] with a @unidoc[Flow] that will restart it when it fails using an exponential backoff. Notice that this @unidoc[Flow] will not restart on completion of the wrapped flow.|
+|RestartSource|<a name="withbackoff"></a>@ref[withBackoff](RestartSource/withBackoff.md)|Wrap the given @unidoc[Source] with a @unidoc[Source] that will restart it when it fails or complete using an exponential backoff.|
+|RestartFlow|<a name="withbackoff"></a>@ref[withBackoff](RestartFlow/withBackoff.md)|Wrap the given @unidoc[Flow] with a @unidoc[Flow] that will restart it when it fails or complete using an exponential backoff.|
+|RestartSink|<a name="withbackoff"></a>@ref[withBackoff](RestartSink/withBackoff.md)|Wrap the given @unidoc[Sink] with a @unidoc[Sink] that will restart it when it fails or complete using an exponential backoff.|
+
 @@@ index
 
 * [combine](Source/combine.md)
@@ -408,6 +420,11 @@ Operators meant for inter-operating between Akka Streams and Actors:
 * [fromPath](FileIO/fromPath.md)
 * [toFile](FileIO/toFile.md)
 * [toPath](FileIO/toPath.md)
+* [withBackoff](RestartSource/withBackoff.md)
+* [onFailuresWithBackoff](RestartSource/onFailuresWithBackoff.md)
+* [withBackoff](RestartFlow/withBackoff.md)
+* [onFailuresWithBackoff](RestartFlow/onFailuresWithBackoff.md)
+* [withBackoff](RestartSink/withBackoff.md)
 * [ask](ActorFlow/ask.md)
 * [actorRef](ActorSink/actorRef.md)
 

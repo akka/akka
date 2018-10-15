@@ -35,7 +35,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     // TODO these don't show up as def's yet so don't show up in the index..
 //    "Fan-out operators",
     "Watching status operators",
-    "Actor interop operators"
+    "Actor interop operators",
+    "Error handling"
   )
 
   def categoryId(name: String): String = name.toLowerCase.replace(' ', '-')
@@ -119,7 +120,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     Set("productArity", "canEqual", "productPrefix", "copy", "productIterator", "productElement") ++
     Set("create", "apply", "ops", "appendJava", "andThen", "andThenMat", "isIdentity", "withAttributes", "transformMaterializing") ++
     Set("asScala", "asJava", "deprecatedAndThen", "deprecatedAndThenMat") ++
-    Set("++")
+    Set("++", "onPush", "onPull")
 
   def isPending(element: String, opName: String) =
     pendingTestCases.get(element).exists(_.contains(opName))
@@ -145,6 +146,12 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
         "akka-stream/src/main/scala/akka/stream/javadsl/StreamConverters.scala",
         "akka-stream/src/main/scala/akka/stream/scaladsl/FileIO.scala",
         "akka-stream/src/main/scala/akka/stream/javadsl/FileIO.scala",
+        "akka-stream/src/main/scala/akka/stream/scaladsl/RestartSource.scala",
+        "akka-stream/src/main/scala/akka/stream/javadsl/RestartSource.scala",
+        "akka-stream/src/main/scala/akka/stream/scaladsl/RestartFlow.scala",
+        "akka-stream/src/main/scala/akka/stream/javadsl/RestartFlow.scala",
+        "akka-stream/src/main/scala/akka/stream/scaladsl/RestartSink.scala",
+        "akka-stream/src/main/scala/akka/stream/javadsl/RestartSink.scala",
 
         // akka-stream-typed
         "akka-stream-typed/src/main/scala/akka/stream/typed/javadsl/ActorSource.scala",
