@@ -393,13 +393,13 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
     }
 
     "use the stopMessage for leaving/rebalance" in {
-      var replies1 = Set.empty[String]
-      (1 to 10).foreach { n ⇒
-        val p = TestProbe[String]()
-        shardingRef1 ! ShardingEnvelope(s"test$n", WhoAreYou(p.ref))
-        replies1 += p.expectMessageType[String]
+      // use many entites to reduce the risk that all are hashed to the same shard/node
+      val numberOfEntities = 100
+      val probe1 = TestProbe[String]()
+      (1 to numberOfEntities).foreach { n ⇒
+        shardingRef1 ! ShardingEnvelope(s"test$n", WhoAreYou(probe1.ref))
       }
-      replies1.size should ===(10)
+      val replies1 = probe1.receiveN(numberOfEntities, 10.seconds)
 
       Cluster(system2).manager ! Leave(Cluster(system2).selfMember.address)
 
@@ -408,13 +408,11 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
         Cluster(system2).isTerminated should ===(true)
       }
 
-      var replies2 = Set.empty[String]
-      (1 to 10).foreach { n ⇒
-        val p = TestProbe[String]()
-        shardingRef1 ! ShardingEnvelope(s"test$n", WhoAreYou(p.ref))
-        replies2 += p.expectMessageType[String](10.seconds)
+      val probe2 = TestProbe[String]()
+      (1 to numberOfEntities).foreach { n ⇒
+        shardingRef1 ! ShardingEnvelope(s"test$n", WhoAreYou(probe2.ref))
       }
-      replies2.size should ===(10)
+      val replies2 = probe2.receiveN(numberOfEntities, 10.seconds)
       replies2 should !==(replies1) // different addresses
     }
   }
