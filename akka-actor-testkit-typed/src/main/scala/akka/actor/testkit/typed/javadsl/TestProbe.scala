@@ -6,6 +6,7 @@ package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 import java.util.function.Supplier
+import java.util.{ List ⇒ JList }
 
 import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.annotation.DoNotInherit
@@ -13,6 +14,7 @@ import akka.actor.testkit.typed.internal.TestProbeImpl
 import akka.actor.testkit.typed.{ FishingOutcome, TestKitSettings }
 import akka.actor.testkit.typed.scaladsl.TestDuration
 import akka.util.JavaDurationConverters._
+import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
 
@@ -217,6 +219,22 @@ abstract class TestProbe[M] {
    * INTERNAL API
    */
   @InternalApi protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C
+
+  /**
+   * Same as `receiveN(n, remaining)` but correctly taking into account
+   * the timeFactor.
+   */
+  def receiveMessages(n: Int): JList[M] = receiveN_internal(n, getRemainingOrDefault.asScala).asJava
+
+  /**
+   * Receive `n` messages in a row before the given deadline.
+   */
+  def receiveMessages(n: Int, max: Duration): JList[M] = receiveN_internal(n, max.asScala.dilated).asJava
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi protected def receiveN_internal(n: Int, max: FiniteDuration): immutable.Seq[M]
 
   /**
    * Java API: Allows for flexible matching of multiple messages within a timeout, the fisher function is fed each incoming
