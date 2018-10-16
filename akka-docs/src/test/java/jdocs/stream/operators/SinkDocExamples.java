@@ -6,17 +6,17 @@ package jdocs.stream.operators;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.japi.Pair;
+
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import scala.Tuple2;
-
+//#takeLast-operator-example
+import akka.japi.Pair;
+//#takeLast-operator-example
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class SinkDocExamples {
@@ -29,8 +29,7 @@ public class SinkDocExamples {
         //#reduce-operator-example
         Source<Integer, NotUsed> ints = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
         CompletionStage<Integer> sum = ints.runWith(Sink.reduce((a, b) -> a + b), materializer);
-        int result = sum.toCompletableFuture().get(3, TimeUnit.SECONDS);
-        System.out.println(result);
+        sum.thenAccept(System.out::println);
         // 55
         //#reduce-operator-example
     }
@@ -45,13 +44,13 @@ public class SinkDocExamples {
 
         CompletionStage<List<Pair>> topThree = studentSource.runWith(Sink.takeLast(3), materializer);
 
-        List<Pair> result = topThree.toCompletableFuture().get(3, TimeUnit.SECONDS);
-
-        System.out.println("#### Top students ####");
-        for (int i = result.size() - 1; i >= 0; i--) {
-            Pair<String, Double> s = result.get(i);
-            System.out.println("Name: " + s.first() + ", " + "GPA: " + s.second());
-        }
+        topThree.thenAccept(result -> {
+            System.out.println("#### Top students ####");
+            for (int i = result.size() - 1; i >= 0; i--) {
+                Pair<String, Double> s = result.get(i);
+                System.out.println("Name: " + s.first() + ", " + "GPA: " + s.second());
+            }
+        });
         /*
         #### Top students ####
         Name: Alison, GPA: 4.7
@@ -65,8 +64,7 @@ public class SinkDocExamples {
         //#last-operator-example
         Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
         CompletionStage<Integer> result = source.runWith(Sink.last(), materializer);
-        int lastItem = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
-        System.out.println(lastItem);
+        result.thenAccept(System.out::println);
         // 10
         //#last-operator-example
     }
@@ -75,8 +73,7 @@ public class SinkDocExamples {
         //#lastOption-operator-example
         Source<Integer, NotUsed> source = Source.empty();
         CompletionStage<Optional<Integer>> result = source.runWith(Sink.lastOption(), materializer);
-        Optional<Integer> optItem = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
-        System.out.println(optItem);
+        result.thenAccept(System.out::println);
         // Optional.empty
         //#lastOption-operator-example
     }
