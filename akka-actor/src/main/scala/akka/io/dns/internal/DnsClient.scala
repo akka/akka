@@ -7,13 +7,15 @@ package akka.io.dns.internal
 import java.net.{ InetAddress, InetSocketAddress }
 
 import akka.actor.Status.Failure
-import akka.actor.{ Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded, Stash }
+import akka.actor.{ Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded, Props, Stash }
 import akka.annotation.InternalApi
 import akka.io.dns.{ RecordClass, RecordType, ResourceRecord }
-import akka.io.{ IO, Udp }
+import akka.io.{ IO, Tcp, Udp }
+import akka.pattern.BackoffSupervisor
 
 import scala.collection.{ immutable ⇒ im }
 import scala.util.Try
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API
@@ -38,13 +40,20 @@ import scala.util.Try
 
   import context.system
 
-  IO(Udp) ! Udp.Bind(self, new InetSocketAddress(InetAddress.getByAddress(Array.ofDim(4)), 0))
+  val udp = IO(Udp)
+  val tcp = IO(Tcp)
 
-  var inflightRequests: Map[Short, ActorRef] = Map.empty
+  var inflightRequests: Map[Short, (ActorRef, Message)] = Map.empty
+
+  lazy val tcpDnsClient: ActorRef = createTcpClient()
+
+  override def preStart() = {
+    udp ! Udp.Bind(self, new InetSocketAddress(InetAddress.getByAddress(Array.ofDim(4)), 0))
+  }
 
   def receive: Receive = {
     case Udp.Bound(local) ⇒
-      log.debug(s"Bound to UDP address [{}]", local)
+      log.debug("Bound to UDP address [{}]", local)
       context.become(ready(sender()))
       unstashAll()
     case _: Question4 ⇒
@@ -65,23 +74,23 @@ import scala.util.Try
       inflightRequests -= id
     case Question4(id, name) ⇒
       log.debug("Resolving [{}] (A)", name)
-      inflightRequests += (id -> sender())
       val msg = message(name, id, RecordType.A)
-      log.debug(s"Message [{}] to [{}]: [{}]", id, ns, msg)
+      inflightRequests += (id -> (sender(), msg))
+      log.debug("Message [{}] to [{}]: [{}]", id, ns, msg)
       socket ! Udp.Send(msg.write(), ns)
 
     case Question6(id, name) ⇒
       log.debug("Resolving [{}] (AAAA)", name)
-      inflightRequests += (id -> sender())
       val msg = message(name, id, RecordType.AAAA)
-      log.debug(s"Message to [{}]: [{}]", ns, msg)
+      inflightRequests += (id -> (sender(), msg))
+      log.debug("Message to [{}]: [{}]", ns, msg)
       socket ! Udp.Send(msg.write(), ns)
 
     case SrvQuestion(id, name) ⇒
       log.debug("Resolving [{}] (SRV)", name)
-      inflightRequests += (id -> sender())
       val msg = message(name, id, RecordType.SRV)
-      log.debug(s"Message to {}: msg", ns, msg)
+      inflightRequests += (id -> (sender(), msg))
+      log.debug("Message to [{}]: [{}]", ns, msg)
       socket ! Udp.Send(msg.write(), ns)
 
     case Udp.CommandFailed(cmd) ⇒
@@ -91,33 +100,51 @@ import scala.util.Try
           // best effort, don't throw
           Try {
             val msg = Message.parse(send.payload)
-            inflightRequests.get(msg.id).foreach { s ⇒
-              s ! Failure(new RuntimeException("Send failed to nameserver"))
-              inflightRequests -= msg.id
+            inflightRequests.get(msg.id).foreach {
+              case (s, _) ⇒
+                s ! Failure(new RuntimeException("Send failed to nameserver"))
+                inflightRequests -= msg.id
             }
           }
         case _ ⇒
           log.warning("Dns client failed to send {}", cmd)
       }
     case Udp.Received(data, remote) ⇒
-      log.debug(s"Received message from [{}]: [{}]", remote, data)
+      log.debug("Received message from [{}]: [{}]", remote, data)
       val msg = Message.parse(data)
-      log.debug(s"Decoded: $msg")
-      // TODO remove me when #25460 is implemented
+      log.debug("Decoded UDP DNS response [{}]", data)
+
       if (msg.flags.isTruncated) {
-        log.warning("DNS response truncated and fallback to TCP is not yet implemented. See #25460")
+        log.debug("DNS response truncated, falling back to TCP")
+        inflightRequests.get(msg.id) match {
+          case Some((_, msg)) ⇒
+            tcpDnsClient ! msg
+          case _ ⇒
+            log.debug("Client for id {} not found. Discarding unsuccessful response.", msg.id)
+        }
+      } else {
+        val (recs, additionalRecs) = if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (Nil, Nil)
+        self ! Answer(msg.id, recs, additionalRecs)
       }
-      val (recs, additionalRecs) = if (msg.flags.responseCode == ResponseCode.SUCCESS) (msg.answerRecs, msg.additionalRecs) else (Nil, Nil)
-      val response = Answer(msg.id, recs, additionalRecs)
+    case response: Answer ⇒
       inflightRequests.get(response.id) match {
-        case Some(reply) ⇒
+        case Some((reply, _)) ⇒
           reply ! response
           inflightRequests -= response.id
         case None ⇒
           log.debug("Client for id {} not found. Discarding response.", response.id)
       }
-
     case Udp.Unbind  ⇒ socket ! Udp.Unbind
     case Udp.Unbound ⇒ context.stop(self)
+  }
+
+  def createTcpClient() = {
+    context.actorOf(BackoffSupervisor.props(
+      Props(classOf[TcpDnsClient], tcp, ns, self),
+      childName = "tcpDnsClient",
+      minBackoff = 10.millis,
+      maxBackoff = 20.seconds,
+      randomFactor = 0.1
+    ), "tcpDnsClientSupervisor")
   }
 }
