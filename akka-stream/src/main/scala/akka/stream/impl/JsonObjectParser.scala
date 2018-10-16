@@ -6,7 +6,7 @@ package akka.stream.impl
 
 import akka.annotation.InternalApi
 import akka.stream.scaladsl.Framing.FramingException
-import akka.util.ByteString
+import akka.util.{ ByteString, CompactByteString }
 
 import scala.annotation.{ switch, tailrec }
 
@@ -46,14 +46,18 @@ import scala.annotation.{ switch, tailrec }
     @inline
     protected def proceed(input: Byte, pp: JsonObjectParser): ParserState
 
-    final def seekNextEvent(pp: JsonObjectParser, maxSeekPos: Int, buffer: ByteString): Boolean = {
-      val remainingSteps = maxSeekPos - pp.pos
+    final def seekNextEventCompact(pp: JsonObjectParser, maxSeekPos: Int, buffer: ByteString.ByteString1C): Boolean = {
+      seekNextEventInternal(pp, maxSeekPos, buffer)
+    }
+    final def seekNextEventOther(pp: JsonObjectParser, maxSeekPos: Int, buffer: ByteString): Boolean = {
+      seekNextEventInternal(pp, maxSeekPos, buffer)
+    }
 
-      def keepSeeking(pp: JsonObjectParser, remainingSteps: Int): Boolean = (!pp.completedObject) && (remainingSteps > 0)
+    private final def seekNextEventInternal(pp: JsonObjectParser, maxSeekPos: Int, buffer: ByteString): Boolean = {
 
       @tailrec
-      def seekInternal(remainingSteps: Int): Boolean = {
-        if (keepSeeking(pp, remainingSteps)) {
+      def seekInternal(maxPos: Int): Boolean = {
+        if ((!pp.completedObject) && (pp.pos < maxPos)) {
 
           // val oldPos = pp.pos
           val nextState = proceed(buffer(pp.pos), pp) // must mutate pp.pos OR (inclusive) return a different state
@@ -64,7 +68,7 @@ import scala.annotation.{ switch, tailrec }
           if (nextState eq this) {
             /* same-type tailrec: inline */
             // if (consumed != 1) throw new IllegalStateException("assumption violate: if we keep the same state then we MUST advance the position")
-            seekInternal(remainingSteps - 1)
+            seekInternal(maxPos)
           } else {
             // consumed may be 0 or 1 (we'll recompute the steps to the end anyway)
 
@@ -76,7 +80,15 @@ import scala.annotation.{ switch, tailrec }
         }
       }
 
-      seekInternal(remainingSteps)
+      if (pp.pos >= 0) {
+        if (maxSeekPos < buffer.length) {
+          seekInternal(maxSeekPos)
+        } else {
+          seekInternal(buffer.length)
+        }
+      } else {
+        false // out of bounds
+      }
     }
   }
 
@@ -607,8 +619,15 @@ import scala.annotation.{ switch, tailrec }
   }
 
   private def internalSeekObject(maxSeekPos: Int): Boolean = {
-    while (state.seekNextEvent(this, maxSeekPos, buffer)) {
-      // keep going
+    buffer match {
+      case compact: ByteString.ByteString1C ⇒
+        while (state.seekNextEventCompact(this, maxSeekPos, compact)) {
+          // keep going
+        }
+      case _ ⇒
+        while (state.seekNextEventOther(this, maxSeekPos, buffer)) {
+          // keep going
+        }
     }
 
     if (pos >= maximumObjectLength)
