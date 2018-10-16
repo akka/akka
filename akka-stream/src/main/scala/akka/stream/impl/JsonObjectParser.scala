@@ -47,7 +47,6 @@ import scala.annotation.{ switch, tailrec }
     protected def proceed(input: Byte, pp: JsonObjectParser): ParserState
 
     def seekNextEvent(pp: JsonObjectParser, maxSeekPos: Int): Boolean
-    def seekNextEventInternal(pp: JsonObjectParser, remainingSteps: Int, stackDepth: Int): Boolean
   }
 
   private sealed trait ParserStateMachinery {
@@ -66,46 +65,35 @@ import scala.annotation.{ switch, tailrec }
     final override def seekNextEvent(pp: JsonObjectParser, maxSeekPos: Int): Boolean = {
       val remainingSteps = maxSeekPos - pp.pos
 
-      //if (keepSeeking(pp, remainingSteps)) {
-      seekNextEventInternal(pp, remainingSteps, 0)
-      //} else {
-      //  pp.completedObject
-      //}
-    }
+      def keepSeeking(pp: JsonObjectParser, remainingSteps: Int): Boolean = (!pp.completedObject) && (remainingSteps > 0)
 
-    final private def keepSeeking(pp: JsonObjectParser, remainingSteps: Int): Boolean = (!pp.completedObject) && (remainingSteps > 0)
+      @tailrec
+      def seekInternal(pp: JsonObjectParser, remainingSteps: Int, buffer: ByteString): Boolean = {
+        if (keepSeeking(pp, remainingSteps)) {
 
-    @tailrec
-    final def seekNextEventInternal(pp: JsonObjectParser, remainingSteps: Int, stackDepth: Int): Boolean = {
-      if (keepSeeking(pp, remainingSteps)) {
+          val oldPos = pp.pos
+          val nextState = proceed(buffer(pp.pos), pp)
+          val consumed = pp.pos - oldPos
 
-        val oldPos = pp.pos
-        val nextState = proceed(pp.nextInput, pp)
-        val consumed = pp.pos - oldPos
+          //println(s"pos=${pp.pos} bufsize=${pp.buffer.size} remsteps=${remainingSteps} sd=${stackDepth} complete=${pp.completedObject} state=${debugState(pp, nextState)}")
 
-        //println(s"pos=${pp.pos} bufsize=${pp.buffer.size} remsteps=${remainingSteps} sd=${stackDepth} complete=${pp.completedObject} state=${debugState(pp, nextState)}")
-
-        if (nextState eq this) {
-          /* same-type tailrec: inline */
-          seekNextEventInternal(pp, remainingSteps - consumed, stackDepth)
-        } else {
-          if ((stackDepth > 0) && (remainingSteps > 1)) {
-            /* *if* the next state is almost always the same, then let the JVM figure that out and attempt to avoid
-            the virtual call. Otherwise, well, we'll pay with some actual execution stack depth. */
-
-            //println("drill")
-            nextState.seekNextEventInternal(pp, remainingSteps - consumed, stackDepth - 1)
+          if (nextState eq this) {
+            /* same-type tailrec: inline */
+            seekInternal(pp, remainingSteps - consumed, buffer)
           } else {
+
             /* bounce back to the outer loop to enter the next state's own inner loop */
-            //println("bounce")
             true
           }
-        }
 
-      } else {
-        false /* we must stop seeking. Either we found an object or we're out of bytes in the buffer */
+        } else {
+          false /* we must stop seeking. Either we found an object or we're out of bytes in the buffer */
+        }
       }
+
+      seekInternal(pp, remainingSteps, pp.buffer)
     }
+
   }
 
   private object ParserState {
