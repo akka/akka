@@ -46,59 +46,43 @@ import scala.annotation.{ switch, tailrec }
     @inline
     protected def proceed(input: Byte, pp: JsonObjectParser): ParserState
 
-    def seekNextEvent(pp: JsonObjectParser, maxSeekPos: Int): Boolean
-  }
-
-  private sealed trait ParserStateMachinery {
-    this: ParserState ⇒
-
-    /* this is a performance trick
-
-    the code below really belongs to [[ParserState]]. Putting it into a non-leftmost trait within each final (leaf)
-    object will trick scalac into duplicating the code for the benefit of the JVM, which will in turn trick the JVM into
-    considering each leaf type's instance of the code as different for the purpose of making inline decisions.
-
-    This in turn causes (on OpenJDK 8 through 10 at least) the JRE to optimize each ParserState without accidentally
-    accreting too much unrelated code.
-     */
-
-    final override def seekNextEvent(pp: JsonObjectParser, maxSeekPos: Int): Boolean = {
+    final def seekNextEvent(pp: JsonObjectParser, maxSeekPos: Int, buffer: ByteString): Boolean = {
       val remainingSteps = maxSeekPos - pp.pos
 
       def keepSeeking(pp: JsonObjectParser, remainingSteps: Int): Boolean = (!pp.completedObject) && (remainingSteps > 0)
 
       @tailrec
-      def seekInternal(pp: JsonObjectParser, remainingSteps: Int, buffer: ByteString): Boolean = {
+      def seekInternal(remainingSteps: Int): Boolean = {
         if (keepSeeking(pp, remainingSteps)) {
 
-          val oldPos = pp.pos
-          val nextState = proceed(buffer(pp.pos), pp)
-          val consumed = pp.pos - oldPos
+          // val oldPos = pp.pos
+          val nextState = proceed(buffer(pp.pos), pp) // must mutate pp.pos OR (inclusive) return a different state
+          // val consumed = pp.pos - oldPos
 
-          //println(s"pos=${pp.pos} bufsize=${pp.buffer.size} remsteps=${remainingSteps} sd=${stackDepth} complete=${pp.completedObject} state=${debugState(pp, nextState)}")
+          //println(s"pos=${pp.pos} bufsize=${buffer.size} remsteps=${remainingSteps} sd=${stackDepth} complete=${pp.completedObject} state=${debugState(pp, nextState)}")
 
           if (nextState eq this) {
             /* same-type tailrec: inline */
-            seekInternal(pp, remainingSteps - consumed, buffer)
+            // if (consumed != 1) throw new IllegalStateException("assumption violate: if we keep the same state then we MUST advance the position")
+            seekInternal(remainingSteps - 1)
           } else {
+            // consumed may be 0 or 1 (we'll recompute the steps to the end anyway)
 
-            /* bounce back to the outer loop to enter the next state's own inner loop */
+            /* bounce back to the outer loop to enter the next state's own seekNextEvent() loop */
             true
           }
-
         } else {
           false /* we must stop seeking. Either we found an object or we're out of bytes in the buffer */
         }
       }
 
-      seekInternal(pp, remainingSteps, pp.buffer)
+      seekInternal(remainingSteps)
     }
-
   }
 
   private object ParserState {
 
-    object UnknownState extends ParserState with ParserStateMachinery {
+    object UnknownState extends ParserState {
       override def toString: String = "Unknown"
 
       final override def proceed(input: Byte, pp: JsonObjectParser): ParserState =
@@ -106,7 +90,7 @@ import scala.annotation.{ switch, tailrec }
 
     }
 
-    object InitialState extends ParserState with ParserStateMachinery {
+    object InitialState extends ParserState {
       override def toString: String = "Initial"
 
       final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
@@ -132,7 +116,7 @@ import scala.annotation.{ switch, tailrec }
     /**
      * We are in this state whenever we're inside a JSON Array-style stream, before any element
      */
-    private object MainArrayBeforeElement extends ParserState with ParserStateMachinery {
+    private object MainArrayBeforeElement extends ParserState {
       override def toString: String = "MainArrayBeforeElement"
 
       final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
@@ -161,7 +145,7 @@ import scala.annotation.{ switch, tailrec }
 
     }
 
-    private object AfterMainArray extends ParserState with ParserStateMachinery {
+    private object AfterMainArray extends ParserState {
       override def toString: String = "AfterMainArray"
 
       final override def proceed(input: Byte, pp: JsonObjectParser): ParserState =
@@ -173,7 +157,7 @@ import scala.annotation.{ switch, tailrec }
         }
     }
 
-    private object MainArrayAfterElement extends ParserState with ParserStateMachinery {
+    private object MainArrayAfterElement extends ParserState {
       override def toString: String = "MainArrayAfterElement"
 
       /* note: we don't mark the object complete as it's been done, if necessary, as part of the
@@ -199,7 +183,7 @@ import scala.annotation.{ switch, tailrec }
       def apply(nextState: ParserState, pp: JsonObjectParser): ParserState
     }
 
-    private object AfterBackslash extends LeafParserState with ParserStateMachinery {
+    private object AfterBackslash extends LeafParserState {
       override def toString: String = "AfterBackslash"
 
       final override def proceed(input: Byte, pp: JsonObjectParser): ParserState = {
@@ -269,10 +253,10 @@ import scala.annotation.{ switch, tailrec }
       }
     }
 
-    private object InString extends InStringBase with HasEmptyExitAction with ParserStateMachinery {
+    private object InString extends InStringBase with HasEmptyExitAction {
       override def toString: String = "InString"
     }
-    private object InOuterString extends InStringBase with CompleteObjectOnExitAction with ParserStateMachinery {
+    private object InOuterString extends InStringBase with CompleteObjectOnExitAction {
       override def toString: String = "InOuterString"
     }
 
@@ -304,10 +288,10 @@ import scala.annotation.{ switch, tailrec }
       }
     }
 
-    private object InNaked extends InNakedBase with HasEmptyExitAction with ParserStateMachinery {
+    private object InNaked extends InNakedBase with HasEmptyExitAction {
       override def toString: String = "InNaked"
     }
-    private object InOuterNaked extends InNakedBase with CompleteObjectOnExitAction with ParserStateMachinery {
+    private object InOuterNaked extends InNakedBase with CompleteObjectOnExitAction {
       override def toString: String = "InOuterNaked"
     }
 
@@ -339,21 +323,21 @@ import scala.annotation.{ switch, tailrec }
       }
     }
 
-    private object InArray extends InContainerBase(SquareBraceEnd) with LeaveContainerOnExit with ParserStateMachinery {
+    private object InArray extends InContainerBase(SquareBraceEnd) with LeaveContainerOnExit {
       override def toString: String = "InArray"
     }
-    private object InOuterArray extends InContainerBase(SquareBraceEnd) with CompleteObjectAndLeaveContainerOnExit with ParserStateMachinery {
+    private object InOuterArray extends InContainerBase(SquareBraceEnd) with CompleteObjectAndLeaveContainerOnExit {
       override def toString: String = "InOuterArray"
     }
 
-    private object InObject extends InContainerBase(CurlyBraceEnd) with LeaveContainerOnExit with ParserStateMachinery {
+    private object InObject extends InContainerBase(CurlyBraceEnd) with LeaveContainerOnExit {
       override def toString: String = "InObject"
     }
-    private object InOuterObject extends InContainerBase(CurlyBraceEnd) with CompleteObjectAndLeaveContainerOnExit with ParserStateMachinery {
+    private object InOuterObject extends InContainerBase(CurlyBraceEnd) with CompleteObjectAndLeaveContainerOnExit {
       override def toString: String = "InOuterObject"
     }
 
-    private object NotArrayAfterElement extends ParserState with ParserStateMachinery {
+    private object NotArrayAfterElement extends ParserState {
       override def toString: String = "NotArrayAfter"
 
       /* in this state we know we are not in a JSON array-formatted stream, but we don't yet know yet what kind of
@@ -440,11 +424,11 @@ import scala.annotation.{ switch, tailrec }
       }
     }
 
-    private object LinebreakSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(LinebreakSeparatedAfterElement) with ParserStateMachinery {
+    private object LinebreakSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(LinebreakSeparatedAfterElement) {
       override def toString: String = "LinebreakSeparatedBeforeElement"
     }
 
-    private object LinebreakSeparatedAfterElement extends SeparatorSeparatedAfterElement(LineBreak) with ParserStateMachinery {
+    private object LinebreakSeparatedAfterElement extends SeparatorSeparatedAfterElement(LineBreak) {
       override def toString: String = "LinebreakSeparatedAfterElement"
 
       override def separatorName: String = "linebreak"
@@ -452,11 +436,11 @@ import scala.annotation.{ switch, tailrec }
       override def beforeNextItem: ParserState = LinebreakSeparatedBeforeElement
     }
 
-    private object CommaSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(CommaSeparatedAfterElement) with ParserStateMachinery {
+    private object CommaSeparatedBeforeElement extends SeparatorSeparatedBeforeElement(CommaSeparatedAfterElement) {
       override def toString: String = "CommaSeparatedBeforeElement"
     }
 
-    private object CommaSeparatedAfterElement extends SeparatorSeparatedAfterElement(Comma) with ParserStateMachinery {
+    private object CommaSeparatedAfterElement extends SeparatorSeparatedAfterElement(Comma) {
       override def toString: String = "CommaSeparatedAfterElement"
 
       override def separatorName: String = "comma"
@@ -589,7 +573,7 @@ import scala.annotation.{ switch, tailrec }
   /** @return true if an entire valid JSON object was found, false otherwise */
   private def seekObject(): Boolean = {
     completedObject = false
-    val maxSeekPos = Math.min(buffer.size, maximumObjectLength)
+    val maxSeekPos = Math.min(buffer.length, maximumObjectLength)
 
     if (internalSeekObject(maxSeekPos)) {
       true
@@ -611,7 +595,7 @@ import scala.annotation.{ switch, tailrec }
         if (buffer.isEmpty) {
           false
         } else {
-          val newMaxSeekPos = Math.min(buffer.size, maximumObjectLength)
+          val newMaxSeekPos = Math.min(buffer.length, maximumObjectLength)
 
           // we can (should) retry once. No use doing it more, since nextBuffer can't be filled again in the meantime.
           internalSeekObject(newMaxSeekPos)
@@ -623,7 +607,7 @@ import scala.annotation.{ switch, tailrec }
   }
 
   private def internalSeekObject(maxSeekPos: Int): Boolean = {
-    while (state.seekNextEvent(this, maxSeekPos)) {
+    while (state.seekNextEvent(this, maxSeekPos, buffer)) {
       // keep going
     }
 
