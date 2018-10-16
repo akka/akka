@@ -120,6 +120,28 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       }
     }
 
+    "allow receiving N messages" in {
+      val probe = TestProbe[String]()
+
+      probe.ref ! "one"
+      probe.ref ! "two"
+      probe.ref ! "three"
+
+      val result = probe.receiveN(3)
+
+      result should ===(List("one", "two", "three"))
+    }
+
+    "time out when not receiving N messages" in {
+      val probe = TestProbe[String]()
+
+      probe.ref ! "one"
+
+      intercept[AssertionError] {
+        probe.receiveN(3, 50.millis)
+      }
+    }
+
   }
 
 }
