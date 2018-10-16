@@ -11,17 +11,33 @@ import akka.cluster.ClusterEvent;
 import akka.cluster.typed.*;
 //#cluster-imports
 import akka.actor.testkit.typed.javadsl.TestProbe;
-import docs.akka.cluster.typed.BasicClusterManualSpec;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 
 // FIXME these tests are awaiting typed Java testkit to be able to await cluster forming like in BasicClusterExampleSpec
 public class BasicClusterExampleTest { // extends JUnitSuite {
 
+  private Config clusterConfig = ConfigFactory.parseString(
+      "akka { \n" +
+       "  actor.provider = cluster \n" +
+       "  remote { \n" +
+       "    netty.tcp { \n" +
+       "      hostname = \"127.0.0.1\" \n" +
+       "      port = 2551 \n" +
+       "    } \n" +
+       "  } \n" +
+       "}  \n");
+
+  private  Config noPort = ConfigFactory.parseString(
+    "      akka.remote.netty.tcp.port = 0 \n" +
+       "      akka.remote.artery.canonical.port = 0 \n");
+
   // @Test
   public void clusterApiExample() {
     ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "ClusterSystem",
-        BasicClusterManualSpec.noPort().withFallback(BasicClusterManualSpec.clusterConfig()));
+        noPort.withFallback(clusterConfig));
     ActorSystem<Object> system2 = ActorSystem.create(Behaviors.empty(), "ClusterSystem",
-        BasicClusterManualSpec.noPort().withFallback(BasicClusterManualSpec.clusterConfig()));
+        noPort.withFallback(clusterConfig));
 
     try {
       //#cluster-create
@@ -52,9 +68,9 @@ public class BasicClusterExampleTest { // extends JUnitSuite {
   // @Test
   public void clusterLeave() throws Exception {
     ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "ClusterSystem",
-        BasicClusterManualSpec.noPort().withFallback(BasicClusterManualSpec.clusterConfig()));
+        noPort.withFallback(clusterConfig));
     ActorSystem<Object> system2 = ActorSystem.create(Behaviors.empty(), "ClusterSystem",
-        BasicClusterManualSpec.noPort().withFallback(BasicClusterManualSpec.clusterConfig()));
+        noPort.withFallback(clusterConfig));
 
     try {
       Cluster cluster = Cluster.get(system);
