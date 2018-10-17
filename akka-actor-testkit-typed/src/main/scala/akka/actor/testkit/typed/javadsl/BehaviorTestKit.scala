@@ -53,6 +53,12 @@ abstract class BehaviorTestKit[T] {
   def childInbox[U](name: String): TestInbox[U]
 
   /**
+   * Get the child inbox for the child with the given name, or fail if there is no child with the given name
+   * spawned
+   */
+  def childInbox[U](child: ActorRef[U]): TestInbox[U]
+
+  /**
    * Get the [[akka.actor.typed.Behavior]] testkit for the given child [[akka.actor.typed.ActorRef]].
    */
   def childTestKit[U](child: ActorRef[U]): BehaviorTestKit[U]
