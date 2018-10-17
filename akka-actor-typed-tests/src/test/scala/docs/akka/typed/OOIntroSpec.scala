@@ -9,7 +9,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, MutableBehavior }
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, AbstractBehavior }
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -17,7 +17,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 //#imports
 
-object MutableIntroSpec {
+object OOIntroSpec {
 
   //#chatroom-actor
   object ChatRoom {
@@ -46,7 +46,7 @@ object MutableIntroSpec {
     def behavior(): Behavior[RoomCommand] =
       Behaviors.setup[RoomCommand](ctx ⇒ new ChatRoomBehavior(ctx))
 
-    class ChatRoomBehavior(ctx: ActorContext[RoomCommand]) extends MutableBehavior[RoomCommand] {
+    class ChatRoomBehavior(ctx: ActorContext[RoomCommand]) extends AbstractBehavior[RoomCommand] {
       private var sessions: List[ActorRef[SessionCommand]] = List.empty
 
       override def onMessage(msg: RoomCommand): Behavior[RoomCommand] = {
@@ -87,9 +87,9 @@ object MutableIntroSpec {
 
 }
 
-class MutableIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
-  import MutableIntroSpec._
+  import OOIntroSpec._
 
   "A chat room" must {
     "chat" in {

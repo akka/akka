@@ -85,9 +85,10 @@ object Behaviors {
    * [[ActorContext]] that allows access to the system, spawning and watching
    * other actors, etc.
    *
-   * This constructor is called immutable because the behavior instance does not
-   * need and in fact should not use (close over) mutable variables, but instead
-   * return a potentially different behavior encapsulating any state changes.
+   * Compared to using [[AbstractBehavior]] this factory is a more functional style
+   * of defining the `Behavior`. Processing the next message results in a new behavior
+   * that can potentially be different from this one. State is maintained by returning
+   * a new behavior that holds the new immutable state.
    */
   def receive[T](onMessage: (ActorContext[T], T) ⇒ Behavior[T]): Receive[T] =
     new ReceiveImpl(onMessage)
@@ -103,15 +104,16 @@ object Behaviors {
    * [[ActorContext]] that allows access to the system, spawning and watching
    * other actors, etc.
    *
-   * This constructor is called immutable because the behavior instance does not
-   * need and in fact should not use (close over) mutable variables, but instead
-   * return a potentially different behavior encapsulating any state changes.
+   * Compared to using [[AbstractBehavior]] this factory is a more functional style
+   * of defining the `Behavior`. Processing the next message results in a new behavior
+   * that can potentially be different from this one. State is maintained by returning
+   * a new behavior that holds the new immutable state.
    */
   def receiveMessage[T](onMessage: T ⇒ Behavior[T]): Receive[T] =
     new ReceiveMessageImpl(onMessage)
 
   /**
-   * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
+   * Construct an actor `Behavior` from a partial message handler which treats undefined messages as unhandled.
    *
    * Behaviors can also be composed with [[Behavior#orElse]].
    */
@@ -121,7 +123,7 @@ object Behaviors {
     }
 
   /**
-   * Construct an immutable actor behavior from a partial message handler which treats undefined messages as unhandled.
+   * Construct an actor `Behavior` from a partial message handler which treats undefined messages as unhandled.
    *
    * Behaviors can also be composed with [[Behavior#orElse]].
    */
@@ -131,7 +133,7 @@ object Behaviors {
     }
 
   /**
-   * Construct an actor behavior that can react to lifecycle signals only.
+   * Construct an actor `Behavior` that can react to lifecycle signals only.
    */
   def receiveSignal[T](handler: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T] =
     receive[T]((_, _) ⇒ same).receiveSignal(handler)
@@ -247,18 +249,13 @@ object Behaviors {
   def withMdc[T](staticMdc: Map[String, Any], mdcForMessage: T ⇒ Map[String, Any])(behavior: Behavior[T]): Behavior[T] =
     WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage, behavior)
 
-  // TODO
-  // final case class Selective[T](timeout: FiniteDuration, selector: PartialFunction[T, Behavior[T]], onTimeout: () ⇒ Behavior[T])
-
   /**
-   * Immutable behavior that exposes additional fluent DSL methods
-   * to further change the message or signal reception behavior.
+   * `Behavior` that exposes additional fluent DSL methods to further change the message or
+   * signal reception behavior. It's returned by for example [[Behaviors.receiveMessage]].
    */
   @DoNotInherit
   trait Receive[T] extends ExtensibleBehavior[T] {
     def receiveSignal(onSignal: PartialFunction[(ActorContext[T], Signal), Behavior[T]]): Behavior[T]
-
-    // TODO orElse can be defined here
   }
 
   @InternalApi

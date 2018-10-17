@@ -139,14 +139,18 @@ The console output may look like this:
 
 ## A More Complex Example
 
-### Functional Style
-
 The next example is more realistic and demonstrates some important patterns:
 
 * Using a sealed trait and case class/objects to represent multiple messages an actor can receive
 * Handle sessions by using child actors
 * Handling state by changing behavior
 * Using multiple typed actors to represent different parts of a protocol in a type safe way
+
+### Functional Style
+
+First we will show this example in a functional style, and then the same example is shown with an
+@ref:[Object-oriented style](#object-oriented-style). Which style you choose to use is a matter of
+taste and both styles can be mixed depending on which is best for a specific actor.
 
 Consider an Actor that runs a chat room: client Actors may connect by sending
 a message that contains their screen name and then they can post messages. The
@@ -281,12 +285,15 @@ where you pass a function to a factory which then constructs a behavior, for sta
 actors this means passing immutable state around as parameters and switching to a new behavior 
 whenever you need to act on a changed state. An alternative way to express the same is a more 
 object oriented style where a concrete class for the actor behavior is defined and mutable 
-state is kept inside of it as fields. 
+state is kept inside of it as fields. Which style you choose to use is a matter of
+taste and both styles can be mixed depending on which is best for a specific actor.
 
-Some reasons why you may want to do this are:
+Some reasons why you may want to use the object-oriented style:
 
 @@@ div {.group-java}
 
+ * you are more familiar with an object-oriented style of structuring the code with methods
+   in a class rather than functions
  * Java lambdas can only close over final or effectively final fields, making it 
    impractical to use this style in behaviors that mutate their fields
  * some state is not immutable, e.g. immutable collections are not widely used in Java
@@ -299,6 +306,8 @@ Some reasons why you may want to do this are:
 
 @@@ div {.group-scala}
 
+ * you are more familiar with an object-oriented style of structuring the code with methods
+   in a class rather than functions
  * some state is not immutable
  * it could be more familiar and easier to migrate existing untyped actors to this style
  * mutable state can sometimes have better performance, e.g. mutable collections and 
@@ -307,21 +316,21 @@ Some reasons why you may want to do this are:
 
 @@@
 
-#### MutableBehavior API
+#### AbstractBehavior API
 
 Defining a class based actor behavior starts with extending 
-@scala[`akka.actor.typed.scaladsl.MutableBehavior[T]`]
-@java[`akka.actor.typed.javadsl.MutableBehavior<T>`] where `T` is the type of messages 
+@scala[`akka.actor.typed.scaladsl.AbstractBehavior[T]`]
+@java[`akka.actor.typed.javadsl.AbstractBehavior<T>`] where `T` is the type of messages
 the behavior will accept.
 
 Let's repeat the chat room sample from @ref:[A more complex example above](#a-more-complex-example) but implemented
-using `MutableBehavior`. The protocol for interacting with the actor looks the same:
+using `AbstractBehavior`. The protocol for interacting with the actor looks the same:
 
 Scala
-:  @@snip [MutableIntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/MutableIntroSpec.scala) {  #chatroom-protocol }
+:  @@snip [OOIntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/OOIntroSpec.scala) {  #chatroom-protocol }
 
 Java
-:  @@snip [MutableIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/MutableIntroTest.java) {  #chatroom-protocol }
+:  @@snip [OOIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/OOIntroTest.java) {  #chatroom-protocol }
 
 Initially the client Actors only get access to an @scala[`ActorRef[GetSession]`]@java[`ActorRef<GetSession>`]
 which allows them to make the first step. Once a client’s session has been
@@ -335,20 +344,20 @@ that the client has revealed its own address, via the `replyTo` argument, so tha
 This illustrates how Actors can express more than just the equivalent of method
 calls on Java objects. The declared message types and their contents describe a
 full protocol that can involve multiple Actors and that can evolve over
-multiple steps. Here's the `MutableBehavior` implementation of the chat room protocol:
+multiple steps. Here's the `AbstractBehavior` implementation of the chat room protocol:
 
 Scala
-:  @@snip [MutableIntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/MutableIntroSpec.scala) {  #chatroom-behavior }
+:  @@snip [OOIntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/OOIntroSpec.scala) {  #chatroom-behavior }
 
 Java
-:  @@snip [MutableIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/MutableIntroTest.java) {  #chatroom-behavior }
+:  @@snip [OOIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/OOIntroTest.java) {  #chatroom-behavior }
 
 The state is managed through fields in the class, just like with a regular object oriented class.
 As the state is mutable, we never return a different behavior from the message logic, but can return
-the `MutableBehavior` instance itself (`this`) as a behavior to use for processing the next message coming in.
+the `AbstractBehavior` instance itself (`this`) as a behavior to use for processing the next message coming in.
 We could also return `Behavior.same` to achieve the same.
 
-It is also possible to return a new different `MutableBehavior`, for example to represent a different state in a 
+It is also possible to return a new different `AbstractBehavior`, for example to represent a different state in a
 finite state machine (FSM), or use one of the functional behavior factories to combine the object oriented 
 with the functional style for different parts of the lifecycle of the same Actor behavior.
 
@@ -361,7 +370,7 @@ screen name.
 
 To implement the logic where we spawn a child for the session we need access 
 to the `ActorContext`. This is injected as a constructor parameter upon creation 
-of the behavior, note how we combine the `MutableBehavior` with  `Behaviors.setup` 
+of the behavior, note how we combine the `AbstractBehavior` with  `Behaviors.setup`
 to do this in the `behavior` method. 
 
 The behavior that we declare here can handle both subtypes of `RoomCommand`.
@@ -390,14 +399,14 @@ problematic, so passing an @scala[`ActorRef[PublishSessionMessage]`]@java[`Actor
 #### Trying it out
 
 In order to see this chat room in action we need to write a client Actor that can use it, for this 
-stateless actor it doesn't make much sense to use the `MutableBehavior` so let's just reuse the
+stateless actor it doesn't make much sense to use the `AbstractBehavior` so let's just reuse the
 functional style gabbler from the sample above:
 
 Scala
-:  @@snip [MutableIntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/MutableIntroSpec.scala) {  #chatroom-gabbler }
+:  @@snip [OOIntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/OOIntroSpec.scala) {  #chatroom-gabbler }
 
 Java
-:  @@snip [MutableIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/MutableIntroTest.java) {  #chatroom-gabbler }
+:  @@snip [OOIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/OOIntroTest.java) {  #chatroom-gabbler }
 
 Now to try things out we must start both a chat room and a gabbler and of
 course we do this inside an Actor system. Since there can be only one guardian
@@ -408,10 +417,10 @@ choice:
 
 
 Scala
-:  @@snip [MutableIntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/MutableIntroSpec.scala) {  #chatroom-main }
+:  @@snip [OOIntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/OOIntroSpec.scala) {  #chatroom-main }
 
 Java
-:  @@snip [MutableIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/MutableIntroTest.java) {  #chatroom-main }
+:  @@snip [OOIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/OOIntroTest.java) {  #chatroom-main }
 
 In good tradition we call the `main` Actor what it is, it directly
 corresponds to the `main` method in a traditional Java application. This

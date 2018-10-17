@@ -25,8 +25,9 @@ import akka.actor.typed.Behavior;
 import akka.cluster.ddata.typed.javadsl.Replicator.Command;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Adapter;
-import akka.actor.typed.javadsl.MutableBehavior;
+import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.Receive;
 
 // #sample
 
@@ -83,7 +84,7 @@ public class ReplicatorTest extends JUnitSuite {
 
   static final Key<GCounter> Key = GCounterKey.create("counter");
 
-  static class Counter extends MutableBehavior<ClientCommand> {
+  static class Counter extends AbstractBehavior<ClientCommand> {
     private final ActorRef<Replicator.Command> replicator;
     private final Cluster node;
     final ActorRef<Replicator.UpdateResponse<GCounter>> updateResponseAdapter;
@@ -132,7 +133,7 @@ public class ReplicatorTest extends JUnitSuite {
     // #sample
 
     @Override
-    public Behaviors.Receive<ClientCommand> createReceive() {
+    public Receive<ClientCommand> createReceive() {
       return receiveBuilder()
         .onMessage(Increment.class, this::onIncrement)
         .onMessage(InternalUpdateResponse.class, msg -> Behaviors.same())

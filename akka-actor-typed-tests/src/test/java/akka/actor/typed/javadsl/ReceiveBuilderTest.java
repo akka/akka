@@ -18,7 +18,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
   @Test
   public void testMutableCounter() {
-    Behavior<BehaviorBuilderTest.CounterMessage> mutable = Behaviors.setup(ctx -> new MutableBehavior<BehaviorBuilderTest.CounterMessage>() {
+    Behavior<BehaviorBuilderTest.CounterMessage> mutable = Behaviors.setup(ctx -> new AbstractBehavior<BehaviorBuilderTest.CounterMessage>() {
       int currentValue = 0;
 
       private Behavior<BehaviorBuilderTest.CounterMessage> receiveIncrease(BehaviorBuilderTest.Increase msg) {
@@ -32,7 +32,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
       }
 
       @Override
-      public Behaviors.Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
+      public Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
         return receiveBuilder()
           .onMessage(BehaviorBuilderTest.Increase.class, this::receiveIncrease)
           .onMessage(BehaviorBuilderTest.Get.class, this::receiveGet)
@@ -41,16 +41,16 @@ public class ReceiveBuilderTest extends JUnitSuite {
     });
   }
 
-  private static class MyMutableBehavior extends MutableBehavior<BehaviorBuilderTest.CounterMessage> {
+  private static class MyAbstractBehavior extends AbstractBehavior<BehaviorBuilderTest.CounterMessage> {
     private int value;
 
-    public MyMutableBehavior(int initialValue) {
+    public MyAbstractBehavior(int initialValue) {
       super();
       this.value = initialValue;
     }
 
     @Override
-    public Behaviors.Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
+    public Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
       assertEquals(42, value);
       return receiveBuilder().build();
     }
@@ -58,7 +58,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
   @Test
   public void testInitializationOrder() throws Exception {
-    MyMutableBehavior mutable = new MyMutableBehavior(42);
+    MyAbstractBehavior mutable = new MyAbstractBehavior(42);
     assertEquals(Behaviors.unhandled(), mutable.receive(null, new BehaviorBuilderTest.Increase()));
   }
 }
