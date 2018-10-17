@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.javadsl;
 
+import akka.Done;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
@@ -17,6 +18,7 @@ import akka.persistence.query.PersistenceQuery;
 import akka.persistence.query.Sequence;
 import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
 import akka.persistence.typed.EventAdapter;
+import akka.persistence.typed.ExpectingReply;
 import akka.persistence.typed.NoOpEventAdapter;
 import akka.persistence.typed.PersistenceId;
 import akka.stream.ActorMaterializer;
@@ -83,6 +85,20 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   }
 
   static class IncrementTwiceAndLog implements Command {
+  }
+
+  public static class IncrementWithConfirmation implements Command, ExpectingReply<Done> {
+
+    private final ActorRef<Done> replyTo;
+
+    public IncrementWithConfirmation(ActorRef<Done> replyTo) {
+      this.replyTo = replyTo;
+    }
+
+    @Override
+    public ActorRef<Done> replyTo() {
+      return replyTo;
+    }
   }
 
   static class StopThenLog implements Command {
@@ -251,7 +267,11 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
         @Override
         public CommandHandler<Command, Incremented, State> commandHandler() {
           return commandHandlerBuilder(State.class)
-              .matchCommand(Increment.class, (state, command) -> Effect().persist(new Incremented(1)))
+              .matchCommand(Increment.class, (state, command) ->
+                  Effect().persist(new Incremented(1)))
+              .matchCommand(IncrementWithConfirmation.class, (state, command) ->
+                  Effect().persist(new Incremented(1))
+                    .thenReply(command, newState -> Done.getInstance()))
               .matchCommand(GetValue.class, (state, command) -> {
                 command.replyTo.tell(state);
                 return Effect().none();
@@ -359,6 +379,14 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     c2.tell(Increment.instance);
     c2.tell(new GetValue(probe.ref()));
     probe.expectMessage(new State(4, Arrays.asList(0, 1, 2, 3)));
+  }
+
+  @Test
+  public void thenReplyEffect() {
+    ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c1b")));
+    TestProbe<Done> probe = testKit.createTestProbe();
+    c.tell(new IncrementWithConfirmation(probe.ref()));
+    probe.expectMessage(Done.getInstance());
   }
 
   @Test
