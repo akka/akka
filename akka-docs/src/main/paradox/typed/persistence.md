@@ -172,7 +172,7 @@ Scala
 :  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #state }
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #state }
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #state }
 
 The commands, of which only a subset are valid depending on the state:
 
@@ -180,7 +180,7 @@ Scala
 :  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #commands }
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #commands }
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #commands }
 
 @java[The commandler handler to process each command is decided by the state class (or state predicate) that is
 given to the `commandHandlerBuilder` and the match cases in the builders. Several builders can be composed with `orElse`:]
@@ -200,17 +200,17 @@ Scala
 TODO rewrite this example to be more like the Scala example
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #command-handler }
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #command-handler }
 
 The `CommandHandlerBuilder` for a post that hasn't been initialized with content:
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #initial-command-handler }
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #initial-command-handler }
 
 And a different `CommandHandlerBuilder` for after the post content has been added:
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #post-added-command-handler }
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #post-added-command-handler }
 
 @@@
 
@@ -220,7 +220,7 @@ Scala
 :  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #event-handler }
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #event-handler }
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #event-handler }
 
 And finally the behavior is created @scala[from the `PersistentBehavior.apply`]:
 
@@ -228,7 +228,7 @@ Scala
 :  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #behavior }
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #behavior }
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #behavior }
 
 This can be taken one or two steps further by defining the event and command handlers in the state class as
 illustrated in @ref:[event handlers in the state](persistence-style.md#event-handlers-in-the-state) and
@@ -273,7 +273,19 @@ Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`Act
 commands. After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
 be sent to the `ActorRef`.
 
-TODO example of thenRun reply
+Scala
+:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #reply-command }
+
+Java
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #reply-command }
+
+
+Scala
+:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #reply }
+
+Java
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #reply }
+
 
 Since this is such a common pattern there is a reply effect for this purpose. It has the nice property that
 it can be used to enforce that replies are not forgotten when implementing the `PersistentBehavior`.
@@ -288,10 +300,24 @@ is not used, but then there will be no compilation errors if the reply decision 
 Note that the `noReply` is a way of making conscious decision that a reply shouldn't be sent for a specific
 command or the reply will be sent later, perhaps after some asynchronous interaction with other actors or services.
 
-TODO example of thenReply
+Scala
+:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #reply-command }
+
+TODO include corresponding example in Java
 
 When using the reply effect the commands must implement `ExpectingReply` to include the @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]
 in a standardized way.
+
+Scala
+:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #reply }
+
+TODO include corresponding example in Java
+
+Scala
+:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #withEnforcedReplies }
+
+TODO include corresponding example in Java
+
 
 ## Serialization
 

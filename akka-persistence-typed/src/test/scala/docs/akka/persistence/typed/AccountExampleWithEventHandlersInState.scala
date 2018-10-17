@@ -25,23 +25,29 @@ object AccountExampleWithEventHandlersInState {
   //#account-entity
   object AccountEntity {
     // Command
+    //#reply-command
     sealed trait AccountCommand[Reply] extends ExpectingReply[Reply]
+    //#reply-command
     final case class CreateAccount()(override val replyTo: ActorRef[OperationResult])
       extends AccountCommand[OperationResult]
     final case class Deposit(amount: BigDecimal)(override val replyTo: ActorRef[OperationResult])
       extends AccountCommand[OperationResult]
+    //#reply-command
     final case class Withdraw(amount: BigDecimal)(override val replyTo: ActorRef[OperationResult])
       extends AccountCommand[OperationResult]
+    //#reply-command
     final case class GetBalance()(override val replyTo: ActorRef[CurrentBalance])
       extends AccountCommand[CurrentBalance]
     final case class CloseAccount()(override val replyTo: ActorRef[OperationResult])
       extends AccountCommand[OperationResult]
 
     // Reply
+    //#reply-command
     sealed trait AccountCommandReply
     sealed trait OperationResult extends AccountCommandReply
     case object Confirmed extends OperationResult
     final case class Rejected(reason: String) extends OperationResult
+    //#reply-command
     final case class CurrentBalance(balance: BigDecimal) extends AccountCommandReply
 
     // Event
@@ -88,6 +94,7 @@ object AccountExampleWithEventHandlersInState {
     // When filling in the parameters of PersistentBehaviors.apply you can use IntelliJ alt+Enter > createValue
     // to generate the stub with types for the command and event handlers.
 
+    //#withEnforcedReplies
     def behavior(accountNumber: String): Behavior[AccountCommand[AccountCommandReply]] = {
       PersistentBehavior.withEnforcedReplies(
         PersistenceId(s"Account|$accountNumber"),
@@ -96,6 +103,7 @@ object AccountExampleWithEventHandlersInState {
         eventHandler
       )
     }
+    //#withEnforcedReplies
 
     private val commandHandler: (Account, AccountCommand[_]) ⇒ ReplyEffect[AccountEvent, Account] = {
       (state, cmd) ⇒
@@ -141,6 +149,7 @@ object AccountExampleWithEventHandlersInState {
         .thenReply(cmd)(_ ⇒ Confirmed)
     }
 
+    //#reply
     private def withdraw(acc: OpenedAccount, cmd: Withdraw): ReplyEffect[AccountEvent, Account] = {
       if (acc.canWithdraw(cmd.amount)) {
         Effect.persist(Withdrawn(cmd.amount))
@@ -150,6 +159,7 @@ object AccountExampleWithEventHandlersInState {
         Effect.reply(cmd)(Rejected(s"Insufficient balance ${acc.balance} to be able to withdraw ${cmd.amount}"))
       }
     }
+    //#reply
 
     private def getBalance(acc: OpenedAccount, cmd: GetBalance): ReplyEffect[AccountEvent, Account] = {
       Effect.reply(cmd)(CurrentBalance(acc.balance))

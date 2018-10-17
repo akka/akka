@@ -17,7 +17,7 @@ import akka.persistence.typed.javadsl.PersistentBehavior;
 
 import java.util.Optional;
 
-public class InDepthPersistentBehaviorTest {
+public class BlogPostExample {
 
   //#event
   interface BlogEvent {
@@ -94,6 +94,7 @@ public class InDepthPersistentBehaviorTest {
   //#commands
   public interface BlogCommand {
   }
+  //#reply-command
   public static class AddPost implements BlogCommand {
     final PostContent content;
     final ActorRef<AddPostDone> replyTo;
@@ -110,6 +111,7 @@ public class InDepthPersistentBehaviorTest {
       this.postId = postId;
     }
   }
+  //#reply-command
   public static class GetPost implements BlogCommand {
     final ActorRef<PostContent> replyTo;
 
@@ -163,9 +165,11 @@ public class InDepthPersistentBehaviorTest {
     private CommandHandlerBuilder<BlogCommand, BlogEvent, BlankState, BlogState> initialCommandHandler() {
       return commandHandlerBuilder(BlankState.class)
           .matchCommand(AddPost.class, (state, cmd) -> {
+            //#reply
             PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
             return Effect().persist(event)
                 .andThen(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
+            //#reply
           });
     }
     //#initial-command-handler

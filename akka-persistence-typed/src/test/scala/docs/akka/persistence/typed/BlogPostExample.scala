@@ -44,8 +44,10 @@ object BlogPostExample {
 
   //#commands
   sealed trait BlogCommand
+  //#reply-command
   final case class AddPost(content: PostContent, replyTo: ActorRef[AddPostDone]) extends BlogCommand
   final case class AddPostDone(postId: String)
+  //#reply-command
   final case class GetPost(replyTo: ActorRef[PostContent]) extends BlogCommand
   final case class ChangeBody(newBody: String, replyTo: ActorRef[Done]) extends BlogCommand
   final case class Publish(replyTo: ActorRef[Done]) extends BlogCommand
@@ -89,11 +91,13 @@ object BlogPostExample {
   }
 
   private def addPost(cmd: AddPost): Effect[BlogEvent, BlogState] = {
+    //#reply
     val evt = PostAdded(cmd.content.postId, cmd.content)
     Effect.persist(evt).thenRun { _ ⇒
       // After persist is done additional side effects can be performed
       cmd.replyTo ! AddPostDone(cmd.content.postId)
     }
+    //#reply
   }
 
   private def changeBody(state: DraftState, cmd: ChangeBody): Effect[BlogEvent, BlogState] = {
