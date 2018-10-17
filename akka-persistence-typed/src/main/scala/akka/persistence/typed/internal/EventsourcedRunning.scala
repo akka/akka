@@ -7,7 +7,7 @@ package akka.persistence.typed.internal
 import akka.Done
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.MutableBehavior
+import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
@@ -179,7 +179,7 @@ private[akka] object EventsourcedRunning {
     numberOfEvents:             Int,
     shouldSnapshotAfterPersist: Boolean,
     var sideEffects:            immutable.Seq[SideEffect[S]])
-    extends MutableBehavior[EventsourcedBehavior.InternalProtocol] {
+    extends AbstractBehavior[EventsourcedBehavior.InternalProtocol] {
 
     private var eventCounter = 0
 

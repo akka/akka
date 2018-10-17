@@ -120,7 +120,7 @@ object StashSpec {
       active(Vector.empty)
     }
 
-  class MutableStash(ctx: ActorContext[Command]) extends MutableBehavior[Command] {
+  class MutableStash(ctx: ActorContext[Command]) extends AbstractBehavior[Command] {
 
     private val buffer = StashBuffer.apply[Command](capacity = 10)
     private var stashing = false

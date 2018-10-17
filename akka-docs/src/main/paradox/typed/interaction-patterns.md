@@ -119,7 +119,7 @@ their registration order, i.e. the last registered first.
 
 A message adapter (and the returned `ActorRef`) has the same lifecycle as
 the receiving actor. It's recommended to register the adapters in a top level
-`Behaviors.setup` or constructor of `MutableBehavior` but it's possible to
+`Behaviors.setup` or constructor of `AbstractBehavior` but it's possible to
 register them later also if needed.
 
 The adapter function is running in the receiving actor and can safely access state of it, but if it throws an exception the actor is stopped.

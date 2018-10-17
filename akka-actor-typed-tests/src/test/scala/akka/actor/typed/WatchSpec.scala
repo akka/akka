@@ -6,7 +6,7 @@ package akka.actor.typed
 
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.MutableBehavior
+import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -28,7 +28,7 @@ object WatchSpec {
       case (_, Stop) ⇒ Behaviors.stopped
     }
 
-  val mutableTerminatorBehavior = new MutableBehavior[Stop.type] {
+  val mutableTerminatorBehavior = new AbstractBehavior[Stop.type] {
     override def onMessage(msg: Stop.type) = msg match {
       case Stop ⇒ Behaviors.stopped
     }

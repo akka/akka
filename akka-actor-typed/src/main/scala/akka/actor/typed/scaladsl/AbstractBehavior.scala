@@ -7,20 +7,22 @@ package akka.actor.typed.scaladsl
 import akka.actor.typed.{ Behavior, ExtensibleBehavior, Signal }
 
 /**
- * Mutable behavior can be implemented by extending this class and implement the
- * abstract method [[MutableBehavior#onMessage]] and optionally override
- * [[MutableBehavior#onSignal]].
+ * An actor `Behavior` can be implemented by extending this class and implement the
+ * abstract method [[AbstractBehavior#onMessage]] and optionally override
+ * [[AbstractBehavior#onSignal]]. Mutable state can be defined as instance variables
+ * of the class.
  *
- * Instances of this behavior should be created via [[Behaviors#setup]] and if
+ * This is an Object-oriented style of defining a `Behavior`. A more functional style
+ * alternative is provided by the factory methods in [[Behaviors]], for example
+ * [[Behaviors.receiveMessage]].
+ *
+ * Instances of this behavior should be created via [[Behaviors.setup]] and if
  * the [[ActorContext]] is needed it can be passed as a constructor parameter
  * from the factory function.
  *
- * @see [[Behaviors#setup]]
+ * @see [[Behaviors.setup]]
  */
-abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
-  @throws(classOf[Exception])
-  override final def receive(ctx: akka.actor.typed.ActorContext[T], msg: T): Behavior[T] =
-    onMessage(msg)
+abstract class AbstractBehavior[T] extends ExtensibleBehavior[T] {
 
   /**
    * Implement this method to process an incoming message and return the next behavior.
@@ -35,10 +37,6 @@ abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
    */
   @throws(classOf[Exception])
   def onMessage(msg: T): Behavior[T]
-
-  @throws(classOf[Exception])
-  override final def receiveSignal(ctx: akka.actor.typed.ActorContext[T], msg: Signal): Behavior[T] =
-    onSignal.applyOrElse(msg, { case _ ⇒ Behavior.unhandled }: PartialFunction[Signal, Behavior[T]])
 
   /**
    * Override this method to process an incoming [[akka.actor.typed.Signal]] and return the next behavior.
@@ -55,4 +53,12 @@ abstract class MutableBehavior[T] extends ExtensibleBehavior[T] {
    */
   @throws(classOf[Exception])
   def onSignal: PartialFunction[Signal, Behavior[T]] = PartialFunction.empty
+
+  @throws(classOf[Exception])
+  override final def receive(ctx: akka.actor.typed.ActorContext[T], msg: T): Behavior[T] =
+    onMessage(msg)
+
+  @throws(classOf[Exception])
+  override final def receiveSignal(ctx: akka.actor.typed.ActorContext[T], msg: Signal): Behavior[T] =
+    onSignal.applyOrElse(msg, { case _ ⇒ Behavior.unhandled }: PartialFunction[Signal, Behavior[T]])
 }

@@ -8,7 +8,7 @@ import java.io.IOException
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger }
 
 import akka.actor.ActorInitializationException
-import akka.actor.typed.scaladsl.{ Behaviors, MutableBehavior }
+import akka.actor.typed.scaladsl.{ Behaviors, AbstractBehavior }
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl._
@@ -64,7 +64,7 @@ object SupervisionSpec {
         Behaviors.same
     }
 
-  class FailingConstructor(monitor: ActorRef[Event]) extends MutableBehavior[Command] {
+  class FailingConstructor(monitor: ActorRef[Event]) extends AbstractBehavior[Command] {
     monitor ! Started
     throw new RuntimeException("simulated exc from constructor") with NoStackTrace
 
@@ -257,7 +257,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
   class FailingConstructorTestSetup(failCount: Int) {
     val failCounter = new AtomicInteger(0)
-    class FailingConstructor(monitor: ActorRef[Event]) extends MutableBehavior[Command] {
+    class FailingConstructor(monitor: ActorRef[Event]) extends AbstractBehavior[Command] {
       monitor ! Started
       if (failCounter.getAndIncrement() < failCount) {
         throw TE("simulated exc from constructor")
@@ -732,7 +732,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       }
     }
 
-    "fail when exception from MutableBehavior constructor" in new FailingConstructorTestSetup(failCount = 1) {
+    "fail when exception from AbstractBehavior constructor" in new FailingConstructorTestSetup(failCount = 1) {
       val probe = TestProbe[Event]("evt")
       val behv = supervise(setup[Command](_ ⇒ new FailingConstructor(probe.ref)))
         .onFailure[Exception](SupervisorStrategy.restart)
