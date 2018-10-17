@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
- * Adopted from Apache v2 licensed: https://github.com/ilya-epifanov/akka-dns
  */
 
 package akka.io.dns

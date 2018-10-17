@@ -1,25 +1,18 @@
-/**
- *  Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.routing
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Address
-import akka.actor.Props
+import akka.actor.{ Actor, ActorRef, Address, Props }
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.routing.Broadcast
-import akka.routing.ConsistentHashingGroup
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
-import akka.routing.GetRoutees
-import akka.routing.Routees
+import akka.routing.{ Broadcast, ConsistentHashingGroup, GetRoutees, Routees }
 import akka.testkit._
+
+import scala.concurrent.Await
 
 object ClusterConsistentHashingGroupMultiJvmSpec extends MultiNodeConfig {
 

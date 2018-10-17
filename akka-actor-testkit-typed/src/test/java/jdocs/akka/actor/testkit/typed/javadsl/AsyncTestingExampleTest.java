@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
