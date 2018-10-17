@@ -5,6 +5,7 @@
 package docs.akka.persistence.typed
 
 import akka.actor.typed.Behavior
+import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.PersistentBehavior
 import akka.persistence.typed.scaladsl.PersistentBehavior.CommandHandler
@@ -90,7 +91,7 @@ object AccountExample1 {
 
   def behavior(accountNumber: String): Behavior[AccountCommand] =
     PersistentBehavior[AccountCommand, AccountEvent, Option[Account]](
-      persistenceId = accountNumber,
+      persistenceId = PersistenceId(s"Account-$accountNumber"),
       emptyState = None,
       commandHandler = commandHandler,
       eventHandler = eventHandler

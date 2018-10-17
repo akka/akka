@@ -6,9 +6,11 @@ package akka.persistence.typed.scaladsl
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
+import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SideEffect
 
 object PersistentActorCompileOnlyTest {
@@ -44,7 +46,7 @@ object PersistentActorCompileOnlyTest {
     //#behavior
     val simpleBehavior: PersistentBehavior[SimpleCommand, SimpleEvent, ExampleState] =
       PersistentBehavior[SimpleCommand, SimpleEvent, ExampleState](
-        persistenceId = "sample-id-1",
+        persistenceId = PersistenceId("sample-id-1"),
         emptyState = ExampleState(Nil),
         commandHandler = commandHandler,
         eventHandler = eventHandler)
@@ -64,7 +66,7 @@ object PersistentActorCompileOnlyTest {
     case class ExampleState(events: List[String] = Nil)
 
     PersistentBehavior[MyCommand, MyEvent, ExampleState](
-      persistenceId = "sample-id-1",
+      persistenceId = PersistenceId("sample-id-1"),
 
       emptyState = ExampleState(Nil),
 
@@ -109,7 +111,7 @@ object PersistentActorCompileOnlyTest {
 
     val behavior: Behavior[Command] = Behaviors.setup(ctx ⇒
       PersistentBehavior[Command, Event, EventsInFlight](
-        persistenceId = "recovery-complete-id",
+        persistenceId = PersistenceId("recovery-complete-id"),
 
         emptyState = EventsInFlight(0, Map.empty),
 
@@ -151,7 +153,7 @@ object PersistentActorCompileOnlyTest {
     case class MoodChanged(to: Mood) extends Event
 
     val b: Behavior[Command] = PersistentBehavior[Command, Event, Mood](
-      persistenceId = "myPersistenceId",
+      persistenceId = PersistenceId("myPersistenceId"),
       emptyState = Happy,
       commandHandler = { (state, command) ⇒
         state match {
@@ -193,7 +195,7 @@ object PersistentActorCompileOnlyTest {
     case class State(tasksInFlight: List[Task])
 
     PersistentBehavior[Command, Event, State](
-      persistenceId = "asdf",
+      persistenceId = PersistenceId("asdf"),
       emptyState = State(Nil),
       commandHandler = CommandHandler.command {
         case RegisterTask(task) ⇒ Effect.persist(TaskRegistered(task))
@@ -221,7 +223,7 @@ object PersistentActorCompileOnlyTest {
 
     val behavior: Behavior[Command] = Behaviors.setup(ctx ⇒
       PersistentBehavior[Command, Event, State](
-        persistenceId = "asdf",
+        persistenceId = PersistenceId("asdf"),
         emptyState = State(Nil),
         commandHandler = (_, cmd) ⇒ cmd match {
           case RegisterTask(task) ⇒
@@ -284,7 +286,7 @@ object PersistentActorCompileOnlyTest {
           .thenRun(_ ⇒ metadataRegistry ! GetMetaData(id, adapt))
 
       PersistentBehavior[Command, Event, List[Id]](
-        persistenceId = "basket-1",
+        persistenceId = PersistenceId("basket-1"),
         emptyState = Nil,
         commandHandler = { (state, cmd) ⇒
           if (isFullyHydrated(basket, state))
@@ -376,7 +378,7 @@ object PersistentActorCompileOnlyTest {
     }
 
     PersistentBehavior[Command, Event, Mood](
-      persistenceId = "myPersistenceId",
+      persistenceId = PersistenceId("myPersistenceId"),
       emptyState = Sad,
       commandHandler,
       eventHandler)
@@ -404,7 +406,7 @@ object PersistentActorCompileOnlyTest {
     }
 
     PersistentBehavior[Command, Event, State](
-      persistenceId = "myPersistenceId",
+      persistenceId = PersistenceId("myPersistenceId"),
       emptyState = new State,
       commandHandler,
       eventHandler)
@@ -416,7 +418,7 @@ object PersistentActorCompileOnlyTest {
     class Second extends State
 
     PersistentBehavior[String, String, State](
-      persistenceId = "myPersistenceId",
+      persistenceId = PersistenceId("myPersistenceId"),
       emptyState = new First,
       commandHandler = CommandHandler.command {
         cmd ⇒
@@ -441,7 +443,7 @@ object PersistentActorCompileOnlyTest {
     val behavior: Behavior[String] =
       Behaviors.setup { ctx ⇒
         PersistentBehavior[String, String, State](
-          persistenceId = "myPersistenceId",
+          persistenceId = PersistenceId("myPersistenceId"),
           emptyState = new State,
           commandHandler = CommandHandler.command {
             cmd ⇒

@@ -36,6 +36,7 @@ import akka.event.LoggingAdapter
 import akka.japi.function.{ Function ⇒ JFunction }
 import akka.pattern.AskTimeoutException
 import akka.pattern.PromiseActorRef
+import akka.persistence.typed.PersistenceId
 import akka.util.ByteString
 import akka.util.Timeout
 
@@ -75,8 +76,38 @@ import akka.util.Timeout
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case class EntityTypeKeyImpl[T](name: String, messageClassName: String)
+@InternalApi private[akka] object EntityTypeKeyImpl {
+  /**
+   * Default separator character used for concatenating EntityTypeKey with entityId to construct unique persistenceId.
+   * This must be same as in Lagom's `scaladsl.PersistentEntity`, for compatibility. No separator is used
+   * in Lagom's `javadsl.PersistentEntity` so for compatibility with that the `""` separator must be defined
+   * `withEntityIdSeparator`.
+   */
+  val EntityIdSeparator = "|"
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final case class EntityTypeKeyImpl[T](name: String, messageClassName: String,
+                                                                 entityIdSeparator: String = EntityTypeKeyImpl.EntityIdSeparator)
   extends javadsl.EntityTypeKey[T] with scaladsl.EntityTypeKey[T] {
+
+  if (!entityIdSeparator.isEmpty && name.contains(entityIdSeparator))
+    throw new IllegalArgumentException(s"EntityTypeKey.name [$name] contains [$entityIdSeparator] which is " +
+      "a reserved character")
+
+  override def persistenceIdFrom(entityId: String): PersistenceId = {
+    if (!entityIdSeparator.isEmpty && entityId.contains(entityIdSeparator))
+      throw new IllegalArgumentException(s"entityId [$entityId] contains [$entityIdSeparator] which is " +
+        "a reserved character")
+
+    PersistenceId(name + entityIdSeparator + entityId)
+  }
+
+  override def withEntityIdSeparator(separator: String): EntityTypeKeyImpl[T] =
+    EntityTypeKeyImpl[T](name, messageClassName, separator)
+
   override def toString: String = s"EntityTypeKey[$messageClassName]($name)"
 }
 

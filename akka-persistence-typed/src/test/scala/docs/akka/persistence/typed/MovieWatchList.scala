@@ -6,6 +6,7 @@ package docs.akka.persistence.typed
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.PersistentBehavior
 import akka.persistence.typed.scaladsl.PersistentBehavior.CommandHandler
@@ -44,7 +45,7 @@ object MovieWatchList {
 
   def behavior(userId: String): Behavior[Command] = {
     PersistentBehavior[Command, Event, MovieList](
-      persistenceId = "movies-" + userId,
+      persistenceId = PersistenceId(s"movies-$userId"),
       emptyState = MovieList(Set.empty),
       commandHandler,
       eventHandler = (state, event) ⇒ state.applyEvent(event)
