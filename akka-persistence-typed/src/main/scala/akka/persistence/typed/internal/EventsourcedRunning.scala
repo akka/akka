@@ -292,8 +292,8 @@ private[akka] object EventsourcedRunning {
     case _: Stop.type @unchecked ⇒
       Behaviors.stopped
 
-    case Callback(sideEffects) ⇒
-      sideEffects(state.state)
+    case callback: Callback[_] ⇒
+      callback.sideEffect(state.state)
       Behaviors.same
 
     case _ ⇒

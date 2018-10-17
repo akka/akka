@@ -26,6 +26,7 @@ import scala.concurrent.duration._
 import scala.util.{ Success, Try }
 
 import akka.persistence.journal.inmem.InmemJournal
+import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import org.scalatest.WordSpecLike
 
@@ -81,6 +82,7 @@ object PersistentBehaviorSpec {
   final case object IncrementLater extends Command
   final case object IncrementAfterReceiveTimeout extends Command
   final case object IncrementTwiceAndThenLog extends Command
+  final case class IncrementWithConfirmation(override val replyTo: ActorRef[Done]) extends Command with ExpectingReply[Done]
   final case object DoNothingAndThenLog extends Command
   final case object EmptyEventsListAndThenLog extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
@@ -148,6 +150,10 @@ object PersistentBehaviorSpec {
 
         case IncrementWithPersistAll(n) ⇒
           Effect.persist((0 until n).map(_ ⇒ Incremented(1)))
+
+        case cmd: IncrementWithConfirmation ⇒
+          Effect.persist(Incremented(1))
+            .thenReply(cmd)(newState ⇒ Done)
 
         case GetValue(replyTo) ⇒
           replyTo ! state
@@ -325,6 +331,18 @@ class PersistentBehaviorSpec extends ScalaTestWithActorTestKit(PersistentBehavio
       loggingProbe.expectMessage(firstLogging)
       watchProbe.expectMessage("Terminated")
 
+    }
+
+    "persist an event thenReply" in {
+      val c = spawn(counter(nextPid))
+      val probe = TestProbe[Done]
+      c ! IncrementWithConfirmation(probe.ref)
+      probe.expectMessage(Done)
+
+      c ! IncrementWithConfirmation(probe.ref)
+      c ! IncrementWithConfirmation(probe.ref)
+      probe.expectMessage(Done)
+      probe.expectMessage(Done)
     }
 
     /** Proves that side-effects are called when emitting an empty list of events */

@@ -248,6 +248,36 @@ Java
 Any `SideEffect`s are executed on an at-once basis and will not be executed if the persist fails.
 The `SideEffect`s are executed sequentially, it is not possible to execute `SideEffect`s in parallel.
 
+## Replies
+
+The @ref:[Request-Response interaction pattern](interaction-patterns.md#request-response) is very common for
+persistent actors, because you typically want to know if the command was rejected due to validation errors and
+when accepted you want a confirmation when the events have been successfully stored.
+
+Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`] in the
+commands. After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
+be sent to the `ActorRef`.
+
+TODO example of thenRun reply
+
+Since this is such a common pattern there is a reply effect for this purpose. It has the nice property that
+it can be used to enforce that replies are not forgotten when implementing the `PersistentBehavior`.
+If it's defined with @scala[`PersistentBehavior.withEnforcedReplies`]@java[`PersistentBehaviorWithEnforcedReplies`]
+there will be compilation errors if the returned effect isn't a `ReplyEffect`, which can be
+created with @scala[`Effect.reply`]@java[`Effects().reply`], @scala[`Effect.noReply`]@java[`Effects().noReply`],
+@scala[`Effect.thenReply`]@java[`Effects().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effects().thenNoReply`].
+
+These effects will send the reply message even when @scala[`PersistentBehavior.withEnforcedReplies`]@java[`PersistentBehaviorWithEnforcedReplies`]
+is not used, but then there will be no compilation errors if the reply decision is left out.
+
+Note that the `noReply` is a way of making conscious decision that a reply shouldn't be sent for a specific
+command or the reply will be sent later, perhaps after some asynchronous interaction with other actors or services.
+
+TODO example of thenReply
+
+When using the reply effect the commands must implement `ExpectingReply` to include the @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]
+in a standardized way.
+
 ## Serialization
 
 The same @ref:[serialization](../serialization.md) mechanism as for untyped
