@@ -25,7 +25,6 @@ object ParadoxSupport {
       import _root_.io.github.classgraph.ClassGraph
       lazy val scanner = new ClassGraph()
         .whitelistPackages("akka")
-        .verbose()
         .addClassLoader(classloader)
         .scan()
       val allClasses = scanner.getAllClasses.getNames.asScala.toVector
