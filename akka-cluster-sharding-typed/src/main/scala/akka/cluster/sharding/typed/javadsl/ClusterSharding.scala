@@ -20,6 +20,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function ⇒ JFunction }
+import akka.persistence.typed.PersistenceId
 import akka.util.Timeout
 
 @FunctionalInterface
@@ -304,12 +305,37 @@ object StartEntity {
  * Not for user extension.
  */
 @DoNotInherit abstract class EntityTypeKey[T] { scaladslSelf: scaladsl.EntityTypeKey[T] ⇒
+
+  /**
+   * Name of the entity type.
+   */
   def name: String
 
   /**
    * INTERNAL API
    */
   @InternalApi private[akka] def asScala: scaladsl.EntityTypeKey[T] = scaladslSelf
+
+  /**
+   * Constructs a [[PersistenceId]] from this `EntityTypeKey` and the given `entityId` by
+   * concatenating them with `|` separator.
+   *
+   * The `|` separator is also used in Lagom's `scaladsl.PersistentEntity` but no separator is used
+   * in Lagom's `javadsl.PersistentEntity`. For compatibility with Lagom's `javadsl.PersistentEntity`
+   * you should use `""` as the separator in [[EntityTypeKey.withEntityIdSeparator]].
+   */
+  def persistenceIdFrom(entityId: String): PersistenceId
+
+  /**
+   * Specify a custom separator for compatibility with old naming conventions. The separator is used between the
+   * `EntityTypeKey` and the `entityId` when constructing a `persistenceId` with [[EntityTypeKey.persistenceIdFrom]].
+   *
+   * The default `|` separator is also used in Lagom's `scaladsl.PersistentEntity` but no separator is used
+   * in Lagom's `javadsl.PersistentEntity`. For compatibility with Lagom's `javadsl.PersistentEntity`
+   * you should use `""` as the separator here.
+   */
+  def withEntityIdSeparator(separator: String): EntityTypeKey[T]
+
 }
 
 object EntityTypeKey {

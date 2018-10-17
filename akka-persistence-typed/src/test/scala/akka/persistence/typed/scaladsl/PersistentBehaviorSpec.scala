@@ -20,12 +20,13 @@ import akka.stream.scaladsl.Sink
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.{ Success, Try }
+
 import akka.persistence.journal.inmem.InmemJournal
+import akka.persistence.typed.PersistenceId
 import org.scalatest.WordSpecLike
 
 object PersistentBehaviorSpec {
@@ -97,30 +98,30 @@ object PersistentBehaviorSpec {
   val firstLogging = "first logging"
   val secondLogging = "second logging"
 
-  def counter(persistenceId: String)(implicit system: ActorSystem[_]): Behavior[Command] =
+  def counter(persistenceId: PersistenceId)(implicit system: ActorSystem[_]): Behavior[Command] =
     Behaviors.setup(ctx ⇒ counter(ctx, persistenceId))
 
-  def counter(persistenceId: String, logging: ActorRef[String])(implicit system: ActorSystem[_]): Behavior[Command] =
+  def counter(persistenceId: PersistenceId, logging: ActorRef[String])(implicit system: ActorSystem[_]): Behavior[Command] =
     Behaviors.setup(ctx ⇒ counter(ctx, persistenceId, logging))
 
-  def counter(ctx: ActorContext[Command], persistenceId: String)(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+  def counter(ctx: ActorContext[Command], persistenceId: PersistenceId)(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
     counter(ctx, persistenceId, loggingActor = TestProbe[String].ref, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
 
-  def counter(ctx: ActorContext[Command], persistenceId: String, logging: ActorRef[String])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+  def counter(ctx: ActorContext[Command], persistenceId: PersistenceId, logging: ActorRef[String])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
     counter(ctx, persistenceId, loggingActor = logging, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
 
-  def counterWithProbe(ctx: ActorContext[Command], persistenceId: String, probe: ActorRef[(State, Event)], snapshotProbe: ActorRef[Try[Done]])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+  def counterWithProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[(State, Event)], snapshotProbe: ActorRef[Try[Done]])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
     counter(ctx, persistenceId, TestProbe[String].ref, probe, snapshotProbe)
 
-  def counterWithProbe(ctx: ActorContext[Command], persistenceId: String, probe: ActorRef[(State, Event)])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+  def counterWithProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[(State, Event)])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
     counter(ctx, persistenceId, TestProbe[String].ref, probe, TestProbe[Try[Done]].ref)
 
-  def counterWithSnapshotProbe(ctx: ActorContext[Command], persistenceId: String, probe: ActorRef[Try[Done]])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+  def counterWithSnapshotProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[Try[Done]])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
     counter(ctx, persistenceId, TestProbe[String].ref, TestProbe[(State, Event)].ref, snapshotProbe = probe)
 
   def counter(
     ctx:           ActorContext[Command],
-    persistenceId: String,
+    persistenceId: PersistenceId,
     loggingActor:  ActorRef[String],
     probe:         ActorRef[(State, Event)],
     snapshotProbe: ActorRef[Try[Done]]): PersistentBehavior[Command, Event, State] = {
@@ -231,7 +232,7 @@ class PersistentBehaviorSpec extends ScalaTestWithActorTestKit(PersistentBehavio
     LeveldbReadJournal.Identifier)
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): String = s"c${pidCounter.incrementAndGet()}"
+  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
 
   "A typed persistent actor" must {
 
@@ -508,7 +509,7 @@ class PersistentBehaviorSpec extends ScalaTestWithActorTestKit(PersistentBehavio
       replyProbe.expectMessage(State(1, Vector(0)))
 
       val events = queries.currentEventsByTag("tag1").runWith(Sink.seq).futureValue
-      events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Incremented(1)))
+      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Incremented(1)))
     }
 
     "adapt events" in {
@@ -526,8 +527,8 @@ class PersistentBehaviorSpec extends ScalaTestWithActorTestKit(PersistentBehavio
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
 
-      val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
-      events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
+      val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
+      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Wrapper(Incremented(1))))
 
       val c2 = spawn(Behaviors.setup[Command](ctx ⇒
         counter(ctx, pid).eventAdapter(new WrapperEventAdapter[Event])
@@ -548,10 +549,10 @@ class PersistentBehaviorSpec extends ScalaTestWithActorTestKit(PersistentBehavio
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(2, Vector(0, 1)))
 
-      val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
+      val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
       events shouldEqual List(
-        EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))),
-        EventEnvelope(Sequence(2), pid, 2, Wrapper(Incremented(1)))
+        EventEnvelope(Sequence(1), pid.id, 1, Wrapper(Incremented(1))),
+        EventEnvelope(Sequence(2), pid.id, 2, Wrapper(Incremented(1)))
       )
 
       val c2 = spawn(Behaviors.setup[Command](ctx ⇒
@@ -574,8 +575,8 @@ class PersistentBehaviorSpec extends ScalaTestWithActorTestKit(PersistentBehavio
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
 
-      val events = queries.currentEventsByPersistenceId(pid).runWith(Sink.seq).futureValue
-      events shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
+      val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
+      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Wrapper(Incremented(1))))
 
       val c2 = spawn(Behaviors.setup[Command](ctx ⇒
         counter(ctx, pid).eventAdapter(new WrapperEventAdapter[Event]))
@@ -584,7 +585,7 @@ class PersistentBehaviorSpec extends ScalaTestWithActorTestKit(PersistentBehavio
       replyProbe.expectMessage(State(1, Vector(0)))
 
       val taggedEvents = queries.currentEventsByTag("tag99").runWith(Sink.seq).futureValue
-      taggedEvents shouldEqual List(EventEnvelope(Sequence(1), pid, 1, Wrapper(Incremented(1))))
+      taggedEvents shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Wrapper(Incremented(1))))
     }
 
     "handle scheduled message arriving before recovery completed " in {

@@ -34,7 +34,7 @@ private[akka] trait EventsourcedJournalInteractions[C, E, S] {
     val senderNotKnownBecauseAkkaTyped = null
     val repr = PersistentRepr(
       event,
-      persistenceId = setup.persistenceId,
+      persistenceId = setup.persistenceId.id,
       sequenceNr = newState.seqNr,
       writerUuid = setup.writerIdentity.writerUuid,
       sender = senderNotKnownBecauseAkkaTyped
@@ -56,7 +56,7 @@ private[akka] trait EventsourcedJournalInteractions[C, E, S] {
         newState = newState.nextSequenceNr()
         PersistentRepr(
           event,
-          persistenceId = setup.persistenceId,
+          persistenceId = setup.persistenceId.id,
           sequenceNr = newState.seqNr,
           writerUuid = setup.writerIdentity.writerUuid,
           sender = ActorRef.noSender)
@@ -71,7 +71,7 @@ private[akka] trait EventsourcedJournalInteractions[C, E, S] {
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     setup.log.debug("Replaying messages: from: {}, to: {}", fromSeqNr, toSeqNr)
-    setup.journal ! ReplayMessages(fromSeqNr, toSeqNr, setup.recovery.replayMax, setup.persistenceId, setup.selfUntyped)
+    setup.journal ! ReplayMessages(fromSeqNr, toSeqNr, setup.recovery.replayMax, setup.persistenceId.id, setup.selfUntyped)
   }
 
   protected def requestRecoveryPermit(): Unit = {
@@ -104,11 +104,11 @@ private[akka] trait EventsourcedJournalInteractions[C, E, S] {
    * to the running [[PersistentActor]].
    */
   protected def loadSnapshot(criteria: SnapshotSelectionCriteria, toSequenceNr: Long): Unit = {
-    setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId, criteria, toSequenceNr), setup.selfUntyped)
+    setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId.id, criteria, toSequenceNr), setup.selfUntyped)
   }
 
   protected def internalSaveSnapshot(state: EventsourcedRunning.EventsourcedState[S]): Unit = {
-    setup.snapshotStore.tell(SnapshotProtocol.SaveSnapshot(SnapshotMetadata(setup.persistenceId, state.seqNr), state.state), setup.selfUntyped)
+    setup.snapshotStore.tell(SnapshotProtocol.SaveSnapshot(SnapshotMetadata(setup.persistenceId.id, state.seqNr), state.state), setup.selfUntyped)
   }
 
 }

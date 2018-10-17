@@ -12,9 +12,10 @@ import akka.persistence.typed.scaladsl.PersistentBehavior.CommandHandler
 import akka.actor.testkit.typed.TE
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.duration._
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.persistence.typed.PersistenceId
 import org.scalatest.WordSpecLike
 
 object PerformanceSpec {
@@ -62,7 +63,7 @@ object PerformanceSpec {
     Behaviors.supervise({
       val parameters = Parameters()
       PersistentBehavior[Command, String, String](
-        persistenceId = name,
+        persistenceId = PersistenceId(name),
         "",
         commandHandler = CommandHandler.command {
           case StopMeasure      ⇒ Effect.none.thenRun(_ ⇒ probe.ref ! StopMeasure)

@@ -14,11 +14,12 @@ import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.EventRejectedException
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
-
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Try
+
+import akka.persistence.typed.PersistenceId
 
 class ChaosJournal extends InmemJournal {
   var count = 0
@@ -66,7 +67,7 @@ class PersistentBehaviorFailureSpec extends ScalaTestWithActorTestKit(Persistent
 
   implicit val testSettings = TestKitSettings(system)
 
-  def failingPersistentActor(pid: String, probe: ActorRef[String]): Behavior[String] = PersistentBehavior[String, String, String](
+  def failingPersistentActor(pid: PersistenceId, probe: ActorRef[String]): Behavior[String] = PersistentBehavior[String, String, String](
     pid, "",
     (_, cmd) ⇒ {
       probe.tell("persisting")
@@ -83,7 +84,7 @@ class PersistentBehaviorFailureSpec extends ScalaTestWithActorTestKit(Persistent
   "A typed persistent actor (failures)" must {
     "restart with backoff" in {
       val probe = TestProbe[String]()
-      val behav = failingPersistentActor("fail-first-2", probe.ref)
+      val behav = failingPersistentActor(PersistenceId("fail-first-2"), probe.ref)
       val c = spawn(behav)
       probe.expectMessage("starting")
       // fail
@@ -106,7 +107,7 @@ class PersistentBehaviorFailureSpec extends ScalaTestWithActorTestKit(Persistent
 
     "restart with backoff for recovery" in {
       val probe = TestProbe[String]()
-      val behav = failingPersistentActor("fail-recovery-once", probe.ref)
+      val behav = failingPersistentActor(PersistenceId("fail-recovery-once"), probe.ref)
       spawn(behav)
       // First time fails, second time should work and call onRecoveryComplete
       probe.expectMessage("starting")
@@ -117,7 +118,7 @@ class PersistentBehaviorFailureSpec extends ScalaTestWithActorTestKit(Persistent
       val probe = TestProbe[String]()
       val behav =
         Behaviors.supervise(
-          failingPersistentActor("reject-first", probe.ref)).onFailure[EventRejectedException](
+          failingPersistentActor(PersistenceId("reject-first"), probe.ref)).onFailure[EventRejectedException](
             SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1))
       val c = spawn(behav)
       // First time fails, second time should work and call onRecoveryComplete

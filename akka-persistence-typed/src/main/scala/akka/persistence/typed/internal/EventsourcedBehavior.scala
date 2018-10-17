@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
+import akka.persistence.typed.PersistenceId
 
 /** INTERNAL API */
 @InternalApi
@@ -36,9 +37,9 @@ private[akka] object EventsourcedBehavior {
     val PersistingEvents  = "persist-evts"
     // format: ON
 
-    def create(persistenceId: String, phaseName: String): Map[String, Any] = {
+    def create(persistenceId: PersistenceId, phaseName: String): Map[String, Any] = {
       Map(
-        "persistenceId" → persistenceId,
+        "persistenceId" → persistenceId.id,
         "phase" → phaseName
       )
     }

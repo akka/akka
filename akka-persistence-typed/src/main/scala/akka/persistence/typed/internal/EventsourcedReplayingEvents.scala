@@ -144,9 +144,10 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
 
     val msg = message match {
       case Some(evt) ⇒
-        s"Exception during recovery while handling [${evt.getClass.getName}] with sequence number [$sequenceNr]. PersistenceId: [${setup.persistence}]"
+        s"Exception during recovery while handling [${evt.getClass.getName}] with sequence number [$sequenceNr]. " +
+          s"PersistenceId [${setup.persistenceId.id}]"
       case None ⇒
-        s"Exception during recovery.  Last known sequence number [$sequenceNr]. PersistenceId: [${setup.persistenceId}]"
+        s"Exception during recovery.  Last known sequence number [$sequenceNr]. PersistenceId [${setup.persistenceId.id}]"
     }
 
     throw new JournalFailureException(msg, cause)

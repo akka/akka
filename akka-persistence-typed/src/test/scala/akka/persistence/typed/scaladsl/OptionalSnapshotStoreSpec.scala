@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.adapter.{ TypedActorRefOps, TypedActorSystemOps
 import akka.event.Logging
 import akka.persistence.typed.scaladsl.PersistentBehavior.CommandHandler
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.persistence.typed.PersistenceId
 import org.scalatest.WordSpecLike
 
 object OptionalSnapshotStoreSpec {
@@ -27,7 +28,7 @@ object OptionalSnapshotStoreSpec {
     probe: TestProbe[State],
     name:  String           = UUID.randomUUID().toString) =
     PersistentBehavior[Command, Event, State](
-      persistenceId = name,
+      persistenceId = PersistenceId(name),
       emptyState = State(),
       commandHandler = CommandHandler.command {
         _ ⇒ Effect.persist(Event()).thenRun(probe.ref ! _)
