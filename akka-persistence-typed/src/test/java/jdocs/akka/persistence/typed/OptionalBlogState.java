@@ -129,7 +129,7 @@ public class OptionalBlogState {
             return Effect().persist(event)
                 .andThen(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
           })
-          .matchCommand(PassivatePost.class, (state, cmd) -> Effect().stop());
+          .matchCommand(PassivatePost.class, cmd -> Effect().stop());
     }
 
     private CommandHandlerBuilder<BlogCommand, BlogEvent, Optional<BlogState>, Optional<BlogState>> postCommandHandler() {
@@ -148,7 +148,7 @@ public class OptionalBlogState {
             return Effect().none();
           })
           .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled())
-          .matchCommand(PassivatePost.class, (state, cmd) -> Effect().stop());
+          .matchCommand(PassivatePost.class, cmd -> Effect().stop());
     }
 
     public BlogBehavior(PersistenceId persistenceId) {

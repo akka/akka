@@ -17,7 +17,6 @@ import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
 import java.util.Objects;
-import java.util.function.Predicate;
 
 public class NullEmptyStateTest extends JUnitSuite {
 
@@ -51,16 +50,18 @@ public class NullEmptyStateTest extends JUnitSuite {
       CommandHandlerBuilder<String, String, String, String> b1 =
         commandHandlerBuilder(Objects::isNull)
           .matchCommand("stop"::equals, command -> Effect().stop())
-          .matchCommand(String.class, command -> Effect().persist(command));
+          .matchCommand(String.class, this::persistCommand);
 
       CommandHandlerBuilder<String, String, String, String> b2 =
         commandHandlerBuilder(String.class)
-        .matchCommand("stop"::equals, (state, command) -> Effect().stop())
-        .matchCommand(String.class, (state, command) -> Effect().persist(command));
+        .matchCommand("stop"::equals, command -> Effect().stop())
+        .matchCommand(String.class, this::persistCommand);
 
-
-      //return b2.orElse(b1).build();
       return b1.orElse(b2).build();
+    }
+
+    private Effect<String, String> persistCommand(String command) {
+      return Effect().persist(command);
     }
 
     @Override
