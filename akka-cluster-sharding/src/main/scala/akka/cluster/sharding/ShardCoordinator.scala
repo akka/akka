@@ -1025,7 +1025,8 @@ class DDataShardCoordinator(typeName: String, settings: ClusterShardingSettings,
 
     case UpdateTimeout(CoordinatorStateKey, Some(`evt`)) ⇒
       log.error(
-        "The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis (retrying), event={}",
+        "The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis (retrying). " +
+          "Perhaps the ShardRegion has not started on all active nodes yet? event={}",
         writeMajority.timeout.toMillis, evt)
       // repeat until UpdateSuccess
       sendCoordinatorStateUpdate(evt)
