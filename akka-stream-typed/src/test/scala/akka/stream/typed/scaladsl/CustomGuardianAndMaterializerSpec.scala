@@ -4,13 +4,15 @@
 
 package akka.stream.typed.scaladsl
 
-import scala.concurrent.Future
+import akka.Done
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.stream.AbruptStageTerminationException
+import akka.stream.scaladsl.{ Sink, Source }
 import org.scalatest.WordSpecLike
+
+import scala.concurrent.Future
 
 object CustomGuardianAndMaterializerSpec {
 
@@ -38,6 +40,20 @@ class CustomGuardianAndMaterializerSpec extends ScalaTestWithActorTestKit with W
       it.futureValue should ===("hello")
     }
 
-  }
+    "should kill streams with bound actor context" in {
+      var doneF: Future[Done] = null
+      val behavior =
+        Behaviors.setup[String] { ctx ⇒
+          implicit val mat: ActorMaterializer = ActorMaterializer.boundToActor(ctx)
+          doneF = Source.repeat("hello").runWith(Sink.ignore)
 
+          Behaviors.receiveMessage[String](_ ⇒ Behaviors.stopped)
+        }
+
+      val actorRef = spawn(behavior)
+
+      actorRef ! "kill"
+      eventually(doneF.failed.futureValue shouldBe an[AbruptStageTerminationException])
+    }
+  }
 }
