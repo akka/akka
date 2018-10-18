@@ -17,7 +17,7 @@ import akka.persistence.typed.javadsl.PersistentBehavior;
 
 import java.util.Optional;
 
-public class InDepthPersistentBehaviorTest {
+public class BlogPostExample {
 
   //#event
   interface BlogEvent {
@@ -54,19 +54,19 @@ public class InDepthPersistentBehaviorTest {
   //#state
   interface BlogState {}
 
-  public static class BlankState implements BlogState {}
+  public static enum BlankState implements BlogState {
+    INSTANCE
+  }
 
   public static class DraftState implements BlogState {
     final PostContent postContent;
-    final boolean published;
 
-    DraftState(PostContent postContent, boolean published) {
+    DraftState(PostContent postContent) {
       this.postContent = postContent;
-      this.published = published;
     }
 
     public DraftState withContent(PostContent newContent) {
-      return new DraftState(newContent, this.published);
+      return new DraftState(newContent);
     }
 
     public String postId() {
@@ -94,6 +94,7 @@ public class InDepthPersistentBehaviorTest {
   //#commands
   public interface BlogCommand {
   }
+  //#reply-command
   public static class AddPost implements BlogCommand {
     final PostContent content;
     final ActorRef<AddPostDone> replyTo;
@@ -110,6 +111,7 @@ public class InDepthPersistentBehaviorTest {
       this.postId = postId;
     }
   }
+  //#reply-command
   public static class GetPost implements BlogCommand {
     final ActorRef<PostContent> replyTo;
 
@@ -163,9 +165,11 @@ public class InDepthPersistentBehaviorTest {
     private CommandHandlerBuilder<BlogCommand, BlogEvent, BlankState, BlogState> initialCommandHandler() {
       return commandHandlerBuilder(BlankState.class)
           .matchCommand(AddPost.class, (state, cmd) -> {
+            //#reply
             PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
             return Effect().persist(event)
                 .andThen(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
+            //#reply
           });
     }
     //#initial-command-handler
@@ -225,7 +229,7 @@ public class InDepthPersistentBehaviorTest {
     public EventHandler<BlogState, BlogEvent> eventHandler() {
       return eventHandlerBuilder()
           .matchEvent(PostAdded.class, (state, event) ->
-              new DraftState(event.content, false))
+              new DraftState(event.content))
           .matchEvent(BodyChanged.class, DraftState.class, (state, chg) ->
               state.withContent(new PostContent(state.postId(), state.postContent.title, chg.newBody)))
           .matchEvent(BodyChanged.class, PublishedState.class, (state, chg) ->
@@ -245,7 +249,7 @@ public class InDepthPersistentBehaviorTest {
 
     @Override
     public BlogState emptyState() {
-      return new BlankState();
+      return BlankState.INSTANCE;
     }
 
     // commandHandler, eventHandler as in above snippets

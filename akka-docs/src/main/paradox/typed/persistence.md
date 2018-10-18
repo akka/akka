@@ -1,5 +1,11 @@
 # Persistence
 
+@@@ index
+
+* [Persistence - coding style](persistence-style.md)
+
+@@@
+
 ## Dependency
 
 To use Akka Persistence Typed, add the module to your project:
@@ -140,7 +146,7 @@ Java
 
 
 
-## Larger example
+## Changing Behavior
 
 After processing a message, plain typed actors are able to return the `Behavior` that is used
 for next message.
@@ -153,73 +159,82 @@ That would be very prone to mistakes and thus not allowed in Typed Persistence.
 
 For basic actors you can use the same set of command handlers independent of what state the entity is in,
 as shown in above example. For more complex actors it's useful to be able to change the behavior in the sense
-that different functions for processing commands may be defined depending on what state the actor is in. This is useful when implementing finite state machine (FSM) like entities.
+that different functions for processing commands may be defined depending on what state the actor is in.
+This is useful when implementing finite state machine (FSM) like entities.
 
 The next example shows how to define different behavior based on the current `State`. It is an actor that
-represents the state of a blog post. Before a post is started the only command it can process is to `AddPost`. Once it is started
-then it we can look it up with `GetPost`, modify it with `ChangeBody` or publish it with `Publish`.
+represents the state of a blog post. Before a post is started the only command it can process is to `AddPost`.
+Once it is started then it we can look it up with `GetPost`, modify it with `ChangeBody` or publish it with `Publish`.
 
 The state is captured by:
 
 Scala
-:  @@snip [InDepthPersistentBehaviorSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #state }
+:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #state }
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #state }
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #state }
 
 The commands, of which only a subset are valid depending on the state:
 
 Scala
-:  @@snip [InDepthPersistentBehaviorSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #commands }
+:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #commands }
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #commands }
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #commands }
 
 @java[The commandler handler to process each command is decided by the state class (or state predicate) that is
 given to the `commandHandlerBuilder` and the match cases in the builders. Several builders can be composed with `orElse`:]
-@scala[The command handler to process each command is composed by two levels of command handlers, 
-one which matches on the state and then delegates to the another handler, specific to the state:]
+@scala[The command handler to process each command is decided by first looking at the state and then the command.
+It typically becomes two levels of pattern matching, first on the state and then on the command. Delegating to methods
+is a good practise because the one-line cases give a nice overview of the message dispatch.]
+
+@@@ div { .group-scala }
 
 Scala
-:  @@snip [InDepthPersistentBehaviorSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #by-state-command-handler }
+:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #command-handler }
+
+@@@
+
+@@@ div { .group-java }
+
+TODO rewrite this example to be more like the Scala example
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #command-handler }
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #command-handler }
 
-The @java[`CommandHandlerBuilder`]@scala[`CommandHandler`] for a post that hasn't been initialized with content:
+The `CommandHandlerBuilder` for a post that hasn't been initialized with content:
+
+Java
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #initial-command-handler }
+
+And a different `CommandHandlerBuilder` for after the post content has been added:
+
+Java
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #post-added-command-handler }
+
+@@@
+
+The event handler:
 
 Scala
-:  @@snip [InDepthPersistentBehaviorSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #initial-command-handler }
+:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #event-handler }
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #initial-command-handler }
-
-And a different @java[`CommandHandlerBuilder`]@scala[`CommandHandler`] for after the post content has been added:
-
-Scala
-:  @@snip [InDepthPersistentBehaviorSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #post-added-command-handler }
-
-Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #post-added-command-handler }
-
-The event handler is always the same independent of state. The main reason for not making the event handler
-part of the `CommandHandler` is that contrary to Commands, all events must be handled and that is typically independent of what the
-current state is. The event handler can still decide what to do based on the state, if that is needed.
-
-Scala
-:  @@snip [InDepthPersistentBehaviorSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #event-handler }
-
-Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #event-handler }
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #event-handler }
 
 And finally the behavior is created @scala[from the `PersistentBehavior.apply`]:
 
 Scala
-:  @@snip [InDepthPersistentBehaviorSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/InDepthPersistentBehaviorSpec.scala) { #behavior }
+:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #behavior }
 
 Java
-:  @@snip [InDepthPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/InDepthPersistentBehaviorTest.java) { #behavior }
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #behavior }
 
+This can be taken one or two steps further by defining the event and command handlers in the state class as
+illustrated in @ref:[event handlers in the state](persistence-style.md#event-handlers-in-the-state) and
+@ref:[command handlers in the state](persistence-style.md#command-handlers-in-the-state).
+
+There is also an example illustrating an @ref:[optional initial state](persistence-style.md#optional-initial-state).
 
 ## Effects and Side Effects
 
@@ -258,7 +273,19 @@ Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`Act
 commands. After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
 be sent to the `ActorRef`.
 
-TODO example of thenRun reply
+Scala
+:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #reply-command }
+
+Java
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #reply-command }
+
+
+Scala
+:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #reply }
+
+Java
+:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #reply }
+
 
 Since this is such a common pattern there is a reply effect for this purpose. It has the nice property that
 it can be used to enforce that replies are not forgotten when implementing the `PersistentBehavior`.
@@ -273,10 +300,24 @@ is not used, but then there will be no compilation errors if the reply decision 
 Note that the `noReply` is a way of making conscious decision that a reply shouldn't be sent for a specific
 command or the reply will be sent later, perhaps after some asynchronous interaction with other actors or services.
 
-TODO example of thenReply
+Scala
+:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #reply-command }
+
+TODO include corresponding example in Java
 
 When using the reply effect the commands must implement `ExpectingReply` to include the @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]
 in a standardized way.
+
+Scala
+:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #reply }
+
+TODO include corresponding example in Java
+
+Scala
+:  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/AccountExampleWithEventHandlersInState.scala) { #withEnforcedReplies }
+
+TODO include corresponding example in Java
+
 
 ## Serialization
 

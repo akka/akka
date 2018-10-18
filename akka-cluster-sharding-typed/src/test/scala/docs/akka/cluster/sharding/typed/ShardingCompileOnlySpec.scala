@@ -9,8 +9,8 @@ import scala.concurrent.duration._
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.ShardedEntity
-import docs.akka.persistence.typed.InDepthPersistentBehaviorSpec
-import docs.akka.persistence.typed.InDepthPersistentBehaviorSpec.{ BlogCommand, PassivatePost }
+import docs.akka.persistence.typed.BlogPostExample
+import docs.akka.persistence.typed.BlogPostExample.{ BlogCommand, PassivatePost }
 
 object ShardingCompileOnlySpec {
 
@@ -65,7 +65,7 @@ object ShardingCompileOnlySpec {
   shardRegion ! ShardingEnvelope("counter-1", Increment)
   //#send
 
-  import InDepthPersistentBehaviorSpec.behavior
+  import BlogPostExample.behavior
   //#persistence
   val BlogTypeKey = EntityTypeKey[BlogCommand]("BlogPost")
 
