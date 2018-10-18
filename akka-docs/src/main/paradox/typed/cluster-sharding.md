@@ -64,24 +64,36 @@ Java
 When using sharding entities can be moved to different nodes in the cluster. Persistence can be used to recover the state of
 an actor after it has moved.
 
-Taking the larger example from the @ref:[persistence documentation](persistence.md#larger-example) and making it into
-a sharded entity is the same as for a non persistent behavior. The behavior:
+Akka Persistence is based on the single-writer principle, for a particular `persitenceId` only one persistent actor
+instance should be active. If multiple instances were to persist events at the same time, the events would be
+interleaved and might not be interpreted correctly on replay. Cluster sharding is typically used together with
+persistence to ensure that there is only one active entity for each `persistenceId` (`entityId`).
+
+Here is an example of a persistent actor that is used as a sharded entity:
 
 Scala
-:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #behavior }
+:  @@snip [HelloWorldPersistentEntityExample.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/HelloWorldPersistentEntityExample.scala) { #persistent-entity }
 
 Java
-:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #behavior }
+:  @@snip [HelloWorldPersistentEntityExample.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/HelloWorldPersistentEntityExample.java) { #persistent-entity-import #persistent-entity }
 
-To create the entity:
+Note that `PersistentEntity` is used in this example. Any `Behavior` can be used as a sharded entity actor,
+but the combination of sharding and persistent actors is very common and therefore the `PersistentEntity`
+@scala[factory]@java[class] is provided as convenience. It selects the `persistenceId` automatically from
+the `EntityTypeKey` and `entityId` @java[constructor] parameters by using `EntityTypeKey.persistenceIdFrom`.
+
+To initialize and use the entity:
 
 Scala
-:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #persistence }
+:  @@snip [HelloWorldPersistentEntityExample.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/HelloWorldPersistentEntityExample.scala) { #persistent-entity-usage }
 
 Java
-:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #persistence }
+:  @@snip [HelloWorldPersistentEntityExample.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/HelloWorldPersistentEntityExample.java) { #persistent-entity-usage-import #persistent-entity-usage }
 
-Sending messages to entities is the same as the example above. The only difference is when an entity is moved the state will be restored.
+Sending messages to persistent entities is the same as if the entity wasn't persistent. The only difference is
+when an entity is moved the state will be restored. In the above example @ref:[ask](interaction-patterns.md#outside-ask)
+is used but `tell` or any of the other @ref:[Interaction Patterns](interaction-patterns.md) can be used.
+
 See @ref:[persistence](persistence.md) for more details.
 
 ## Passivation
@@ -92,7 +104,7 @@ the entity actors for example by defining receive timeout (`context.setReceiveTi
 If a message is already enqueued to the entity when it stops itself the enqueued message
 in the mailbox will be dropped. To support graceful passivation without losing such
 messages the entity actor can send `ClusterSharding.Passivate` to to the
-@scala:[`ActorRef[ShardCommand]`]@java:[`ActorRef<ShardCommand>`] that was passed in to
+@scala[`ActorRef[ShardCommand]`]@java[`ActorRef<ShardCommand>`] that was passed in to
 the factory method when creating the entity. The specified `handOffStopMessage` message
 will be sent back to the entity, which is then supposed to stop itself. Incoming messages
 will be buffered by the `Shard` between reception of `Passivate` and termination of the
