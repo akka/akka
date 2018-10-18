@@ -7,10 +7,10 @@ package akka.actor.typed.javadsl
 import java.util.Collections
 import java.util.function.{ Function ⇒ JFunction }
 
-import akka.actor.typed.{ ActorRef, Behavior, BehaviorInterceptor, ExtensibleBehavior, Signal, SupervisorStrategy }
+import akka.actor.typed.{ ActorRef, Behavior, BehaviorInterceptor, Signal, SupervisorStrategy }
 import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
 import akka.actor.typed.scaladsl
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.ApiMayChange
 import akka.japi.function.{ Function2 ⇒ JapiFunction2 }
 import akka.japi.pf.PFBuilder
 
@@ -97,11 +97,10 @@ object Behaviors {
    * [[ActorContext]] that allows access to the system, spawning and watching
    * other actors, etc.
    *
-   * This constructor is called immutable because the behavior instance doesn't
-   * have or close over any mutable state. Processing the next message
-   * results in a new behavior that can potentially be different from this one.
-   * State is updated by returning a new behavior that holds the new immutable
-   * state.
+   * Compared to using [[AbstractBehavior]] this factory is a more functional style
+   * of defining the `Behavior`. Processing the next message results in a new behavior
+   * that can potentially be different from this one. State is maintained by returning
+   * a new behavior that holds the new immutable state.
    */
   def receive[T](onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]]): Behavior[T] =
     new BehaviorImpl.ReceiveBehavior((ctx, msg) ⇒ onMessage.apply(ctx.asJava, msg))
@@ -117,11 +116,10 @@ object Behaviors {
    * [[ActorContext]] that allows access to the system, spawning and watching
    * other actors, etc.
    *
-   * This constructor is called immutable because the behavior instance doesn't
-   * have or close over any mutable state. Processing the next message
-   * results in a new behavior that can potentially be different from this one.
-   * State is updated by returning a new behavior that holds the new immutable
-   * state.
+   * Compared to using [[AbstractBehavior]] this factory is a more functional style
+   * of defining the `Behavior`. Processing the next message results in a new behavior
+   * that can potentially be different from this one. State is maintained by returning
+   * a new behavior that holds the new immutable state.
    */
   def receiveMessage[T](onMessage: akka.japi.Function[T, Behavior[T]]): Behavior[T] =
     new BehaviorImpl.ReceiveBehavior((_, msg) ⇒ onMessage.apply(msg))
@@ -133,11 +131,10 @@ object Behaviors {
    * [[ActorContext]] that allows access to the system, spawning and watching
    * other actors, etc.
    *
-   * This constructor is called immutable because the behavior instance doesn't
-   * have or close over any mutable state. Processing the next message
-   * results in a new behavior that can potentially be different from this one.
-   * State is updated by returning a new behavior that holds the new immutable
-   * state.
+   * Compared to using [[AbstractBehavior]] this factory is a more functional style
+   * of defining the `Behavior`. Processing the next message results in a new behavior
+   * that can potentially be different from this one. State is maintained by returning
+   * a new behavior that holds the new immutable state.
    */
   def receive[T](
     onMessage: JapiFunction2[ActorContext[T], T, Behavior[T]],
@@ -151,10 +148,10 @@ object Behaviors {
    * Constructs an actor behavior builder that can build a behavior that can react to both
    * incoming messages and lifecycle signals.
    *
-   * This constructor is called immutable because the behavior instance does not
-   * need and in fact should not use (close over) mutable variables, but instead
-   * return a potentially different behavior encapsulating any state changes.
-   * If no change is desired, use {@link #same}.
+   * Compared to using [[AbstractBehavior]] this factory is a more functional style
+   * of defining the `Behavior`. Processing the next message results in a new behavior
+   * that can potentially be different from this one. State is maintained by returning
+   * a new behavior that holds the new immutable state.
    *
    * @param type the supertype of all messages accepted by this behavior
    * @return the behavior builder
@@ -273,10 +270,6 @@ object Behaviors {
    */
   def withTimers[T](factory: akka.japi.function.Function[TimerScheduler[T], Behavior[T]]): Behavior[T] =
     TimerSchedulerImpl.withTimers(timers ⇒ factory.apply(timers))
-
-  /** A specialized "receive" behavior that is implemented using message matching builders. */
-  @DoNotInherit
-  trait Receive[T] extends ExtensibleBehavior[T]
 
   /**
    * Per message MDC (Mapped Diagnostic Context) logging.

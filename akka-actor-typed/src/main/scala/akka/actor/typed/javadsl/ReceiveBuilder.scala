@@ -6,14 +6,11 @@ package akka.actor.typed.javadsl
 
 import scala.annotation.tailrec
 import akka.japi.function.{ Creator, Function, Predicate }
-import akka.actor.typed.javadsl.Behaviors.Receive
 import akka.actor.typed.{ Behavior, Signal }
-import ReceiveBuilder._
-import akka.actor.typed
 import akka.annotation.InternalApi
 
 /**
- * Used when implementing [[MutableBehavior]].
+ * Used when implementing [[AbstractBehavior]].
  *
  * When handling a message or signal, this [[Behavior]] will consider all handlers in the order they were added,
  * looking for the first handler for which both the type and the (optional) predicate match.
@@ -21,9 +18,11 @@ import akka.annotation.InternalApi
  * @tparam T the common superclass of all supported messages.
  */
 class ReceiveBuilder[T] private (
-  private val messageHandlers: List[Case[T, T]],
-  private val signalHandlers:  List[Case[T, Signal]]
+  private val messageHandlers: List[ReceiveBuilder.Case[T, T]],
+  private val signalHandlers:  List[ReceiveBuilder.Case[T, Signal]]
 ) {
+
+  import ReceiveBuilder.Case
 
   def build(): Receive[T] = new BuiltReceive(messageHandlers.reverse, signalHandlers.reverse)
 
@@ -144,18 +143,17 @@ object ReceiveBuilder {
 }
 
 /**
- * Receive type for [[MutableBehavior]]
+ * Receive type for [[AbstractBehavior]]
  */
 private final class BuiltReceive[T](
-  private val messageHandlers: List[Case[T, T]],
-  private val signalHandlers:  List[Case[T, Signal]]
+  private val messageHandlers: List[ReceiveBuilder.Case[T, T]],
+  private val signalHandlers:  List[ReceiveBuilder.Case[T, Signal]]
 ) extends Receive[T] {
+  import ReceiveBuilder.Case
 
-  override def receive(ctx: typed.ActorContext[T], msg: T): Behavior[T] = receive[T](msg, messageHandlers)
-  //  override def receiveMessage(msg: T): Behavior[T] = receive[T](msg, messageHandlers)
+  override def receiveMessage(msg: T): Behavior[T] = receive[T](msg, messageHandlers)
 
-  override def receiveSignal(ctx: typed.ActorContext[T], msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers)
-  //  override def receiveSignal(msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers)
+  override def receiveSignal(msg: Signal): Behavior[T] = receive[Signal](msg, signalHandlers)
 
   @tailrec
   private def receive[M](msg: M, handlers: List[Case[T, M]]): Behavior[T] =

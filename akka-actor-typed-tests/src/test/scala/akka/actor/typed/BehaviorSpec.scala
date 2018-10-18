@@ -5,7 +5,7 @@
 package akka.actor.typed
 
 import akka.actor.typed.scaladsl.{ Behaviors ⇒ SBehaviors }
-import akka.actor.typed.scaladsl.{ MutableBehavior ⇒ SMutableBehavior }
+import akka.actor.typed.scaladsl.{ AbstractBehavior ⇒ SAbstractBehavior }
 import akka.actor.typed.javadsl.{ ActorContext ⇒ JActorContext, Behaviors ⇒ JBehaviors }
 import akka.japi.function.{ Function ⇒ F1e, Function2 ⇒ F2, Procedure2 ⇒ P2 }
 import akka.japi.pf.{ FI, PFBuilder }
@@ -451,7 +451,7 @@ class MutableScalaBehaviorSpec extends Messages with Become with Stoppable {
 
   def behv(monitor: ActorRef[Event]): Behavior[Command] =
     SBehaviors.setup[Command] { ctx ⇒
-      new SMutableBehavior[Command] {
+      new SAbstractBehavior[Command] {
         private var state: State = StateA
 
         override def onMessage(msg: Command): Behavior[Command] = {
