@@ -1,0 +1,3 @@
+# #25742 zip/unzip 22 parameters support
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.ZipWithApply.apply")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.UnzipWithApply.apply")
