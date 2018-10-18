@@ -12,9 +12,9 @@ import akka.persistence.typed.javadsl.CommandHandlerBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.PersistentBehavior;
 
-import java.util.Optional;
+import java.util.Objects;
 
-public class OptionalBlogState {
+public class NullBlogState {
 
   interface BlogEvent {
   }
@@ -120,11 +120,11 @@ public class OptionalBlogState {
     }
   }
 
-  public static class BlogBehavior extends PersistentBehavior<BlogCommand, BlogEvent, Optional<BlogState>> {
+  public static class BlogBehavior extends PersistentBehavior<BlogCommand, BlogEvent, BlogState> {
 
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, Optional<BlogState>, Optional<BlogState>> initialCommandHandler() {
-      return commandHandlerBuilder(state -> !state.isPresent())
-          .matchCommand(AddPost.class, (state, cmd) -> {
+    private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState> initialCommandHandler() {
+      return commandHandlerBuilder(Objects::isNull)
+          .matchCommand(AddPost.class, cmd -> {
             PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
             return Effect().persist(event)
                 .andThen(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
@@ -132,19 +132,19 @@ public class OptionalBlogState {
           .matchCommand(PassivatePost.class, cmd -> Effect().stop());
     }
 
-    private CommandHandlerBuilder<BlogCommand, BlogEvent, Optional<BlogState>, Optional<BlogState>> postCommandHandler() {
-      return commandHandlerBuilder(state -> state.isPresent())
+    private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState> postCommandHandler() {
+      return commandHandlerBuilder(Objects::nonNull)
           .matchCommand(ChangeBody.class, (state, cmd) -> {
-            BodyChanged event = new BodyChanged(state.get().postId(), cmd.newBody);
+            BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
             return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
           })
           .matchCommand(Publish.class, (state, cmd) -> Effect()
-              .persist(new Published(state.get().postId())).andThen(() -> {
-                System.out.println("Blog post published: " + state.get().postId());
+              .persist(new Published(state.postId())).andThen(() -> {
+                System.out.println("Blog post published: " + state.postId());
                 cmd.replyTo.tell(Done.getInstance());
               }))
           .matchCommand(GetPost.class, (state, cmd) -> {
-            cmd.replyTo.tell(state.get().postContent);
+            cmd.replyTo.tell(state.postContent);
             return Effect().none();
           })
           .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled())
@@ -156,25 +156,25 @@ public class OptionalBlogState {
     }
 
     @Override
-    public Optional<BlogState> emptyState() {
-      return Optional.empty();
+    public BlogState emptyState() {
+      return null;
     }
 
     @Override
-    public CommandHandler<BlogCommand, BlogEvent, Optional<BlogState>> commandHandler() {
+    public CommandHandler<BlogCommand, BlogEvent, BlogState> commandHandler() {
       return initialCommandHandler().orElse(postCommandHandler()).build();
     }
 
     @Override
-    public EventHandler<Optional<BlogState>, BlogEvent> eventHandler() {
+    public EventHandler<BlogState, BlogEvent> eventHandler() {
       return eventHandlerBuilder()
-        .matchEvent(PostAdded.class, (state, event) ->
-            Optional.of(new BlogState(event.content, false)))
+        .matchEvent(PostAdded.class, event ->
+            new BlogState(event.content, false))
         .matchEvent(BodyChanged.class, (state, chg) ->
-            state.map(blogState -> blogState.withContent(
-              new PostContent(blogState.postId(), blogState.postContent.title, chg.newBody))))
+            state.withContent(
+              new PostContent(state.postId(), state.postContent.title, chg.newBody)))
         .matchEvent(Published.class, (state, event) ->
-            state.map(blogState -> new BlogState(blogState.postContent, true)))
+            new BlogState(state.postContent, true))
         .build();
     }
   }
