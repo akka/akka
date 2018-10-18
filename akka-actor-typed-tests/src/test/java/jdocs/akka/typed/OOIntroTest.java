@@ -10,17 +10,17 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Terminated;
-import akka.actor.typed.javadsl.Behaviors;
-import akka.actor.typed.javadsl.Behaviors.Receive;
+import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.MutableBehavior;
+import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Receive;
 //#imports
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MutableIntroTest {
+public class OOIntroTest {
 
   //#chatroom-actor
   public static class ChatRoom {
@@ -89,7 +89,7 @@ public class MutableIntroTest {
       return Behaviors.setup(ChatRoomBehavior::new);
     }
 
-    public static class ChatRoomBehavior extends MutableBehavior<RoomCommand> {
+    public static class ChatRoomBehavior extends AbstractBehavior<RoomCommand> {
       final ActorContext<RoomCommand> ctx;
       final List<ActorRef<SessionCommand>> sessions = new ArrayList<>();
 
