@@ -20,7 +20,7 @@ import akka.persistence.typed.PersistenceId
 object PersistentBehavior {
 
   /**
-   * Type alias for the command handler function for reacting on events having been persisted.
+   * Type alias for the command handler function that defines how to act on commands.
    *
    * The type alias is not used in API signatures because it's easier to see (in IDE) what is needed
    * when full function type is used. When defining the handler as a separate function value it can
@@ -29,7 +29,7 @@ object PersistentBehavior {
   type CommandHandler[Command, Event, State] = (State, Command) ⇒ Effect[Event, State]
 
   /**
-   * Type alias for the event handler function defines how to act on commands.
+   * Type alias for the event handler function for updating the state based on events having been persisted.
    *
    * The type alias is not used in API signatures because it's easier to see (in IDE) what is needed
    * when full function type is used. When defining the handler as a separate function value it can

@@ -9,11 +9,9 @@ import java.time.Duration;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
-import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.Behaviors;
 
 //#import
-import akka.cluster.sharding.typed.ClusterShardingSettings;
 import akka.cluster.sharding.typed.ShardingEnvelope;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
@@ -22,9 +20,9 @@ import akka.cluster.sharding.typed.javadsl.ShardedEntity;
 
 //#import
 
-import jdocs.akka.persistence.typed.InDepthPersistentBehaviorTest.BlogCommand;
-import jdocs.akka.persistence.typed.InDepthPersistentBehaviorTest.BlogBehavior;
-import jdocs.akka.persistence.typed.InDepthPersistentBehaviorTest.PassivatePost;
+import jdocs.akka.persistence.typed.BlogPostExample.BlogCommand;
+import jdocs.akka.persistence.typed.BlogPostExample.BlogBehavior;
+import jdocs.akka.persistence.typed.BlogPostExample.PassivatePost;
 
 public class ShardingCompileOnlyTest {
 
