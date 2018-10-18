@@ -16,7 +16,7 @@ import akka.cluster.sharding.typed.ShardingEnvelope;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
-import akka.cluster.sharding.typed.javadsl.ShardedEntity;
+import akka.cluster.sharding.typed.javadsl.Entity;
 
 //#import
 
@@ -103,9 +103,9 @@ public class ShardingCompileOnlyTest {
     EntityTypeKey<CounterCommand> typeKey = EntityTypeKey.create(CounterCommand.class, "Counter");
 
     sharding.start(
-      ShardedEntity.create(
-        (shard, entityId) -> counter2(shard, entityId),
+      Entity.of(
         typeKey,
+        ctx -> counter2(ctx.getShard(), ctx.getEntityId()),
         new GoodByeCounter()));
     //#counter-passivate-start
   }
@@ -124,9 +124,9 @@ public class ShardingCompileOnlyTest {
     EntityTypeKey<CounterCommand> typeKey = EntityTypeKey.create(CounterCommand.class, "Counter");
 
     ActorRef<ShardingEnvelope<CounterCommand>> shardRegion = sharding.start(
-      ShardedEntity.create(
-        entityId -> counter(entityId,0),
+      Entity.of(
         typeKey,
+        ctx -> counter(ctx.getEntityId(),0),
         new GoodByeCounter()));
     //#start
 
@@ -148,9 +148,9 @@ public class ShardingCompileOnlyTest {
     EntityTypeKey<BlogCommand> blogTypeKey = EntityTypeKey.create(BlogCommand.class, "BlogPost");
 
     sharding.start(
-      ShardedEntity.create(
-        BlogBehavior::behavior,
+      Entity.of(
         blogTypeKey,
+        ctx -> BlogBehavior.behavior(ctx.getEntityId()),
         new PassivatePost()));
     //#persistence
   }
