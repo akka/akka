@@ -76,8 +76,6 @@ import scala.reflect.ClassTag
         val input = pp.buffer(pp.pos)
         val nextState = (evaluateNextCharacter(input): @inline) // must mutate pp.pos OR (inclusive) return a different state
 
-        //println(s"pos=${pp.pos} bufsize=${buffer.size} remsteps=${remainingSteps} sd=${stackDepth} complete=${pp.completedObject} state=${debugState(pp, nextState)}")
-
         if (nextState eq this) {
           /* same-type tailrec: inline */
           seekNextEventInternal(maxSeekPos)
@@ -681,10 +679,7 @@ import scala.reflect.ClassTag
       val foundObject = seekObject()
 
       if (foundObject && (pos > 0)) {
-        val r = emitItem()
-        // println("emit=",r.map(_.utf8String))
-        r
-
+        emitItem()
       } else {
         None
       }
@@ -718,8 +713,6 @@ import scala.reflect.ClassTag
   }
 
   @noinline private def takeNextBufferInternal(): Boolean = {
-    // println("enlarge: before = ", state.debugState(state))
-
     val headNext = nextBuffers.removeHead()
 
     val taken = headNext
@@ -733,8 +726,6 @@ import scala.reflect.ClassTag
     pos = 0
     trimFront = 0
     buffer = taken
-
-    // println("enlarge: after = ", state.debugState(state))
 
     buffer.nonEmpty
 
@@ -751,7 +742,6 @@ import scala.reflect.ClassTag
   /** @return true if an entire valid JSON object was found, false otherwise */
   @tailrec
   private def seekObject(): Boolean = {
-    // println("start of seek= ", state.debugState(state))
     completedObject = false
 
     val maxSeekPos = Math.min(buffer.length, maximumObjectLength)
