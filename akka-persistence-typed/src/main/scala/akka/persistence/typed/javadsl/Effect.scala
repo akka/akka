@@ -10,25 +10,98 @@ import akka.persistence.typed.internal._
 import akka.persistence.typed.{ SideEffect, Stop }
 import scala.collection.JavaConverters._
 
+import akka.annotation.InternalApi
 import akka.persistence.typed.ExpectingReply
 
-object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
+/**
+ * Factory methods for creating [[Effect]] directives - how a persistent actor reacts on a command.
+ */
+object Effects {
+
+  // FIXME type inference doesn't work well, see EffectsOutsidePersistentBehavior in PersistentActorCompileOnlyTest.java
+
+  /**
+   * Persist a single event
+   *
+   * Side effects can be chained with `andThen`
+   */
+  def persist[Event, State](event: Event): Effect[Event, State] = Persist(event)
+
+  /**
+   * Persist multiple events
+   *
+   * Side effects can be chained with `andThen`
+   */
+  final def persist[Event, State](events: java.util.List[Event]): Effect[Event, State] = PersistAll(events.asScala.toVector)
+
+  /**
+   * Do not persist anything
+   *
+   * Side effects can be chained with `andThen`
+   */
+  def none[Event, State]: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
+
+  /**
+   * This command is not handled, but it is not an error that it isn't.
+   *
+   * Side effects can be chained with `andThen`
+   */
+  def unhandled[Event, State]: Effect[Event, State] = Unhandled.asInstanceOf[Effect[Event, State]]
+
+  /**
+   * Stop this persistent actor
+   * Side effects can be chained with `andThen`
+   */
+  def stop[Event, State]: Effect[Event, State] = none.thenStop()
+
+  /**
+   * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
+   * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
+   *
+   * This has the same semantics as `cmd.replyTo.tell`.
+   *
+   * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
+   * when the `PersistentBehavior` is created with [[PersistentBehaviorWithEnforcedReplies]]. When
+   * `withEnforcedReplies` is used there will be compilation errors if the returned effect isn't a [[ReplyEffect]].
+   * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
+   * finding mistakes.
+   */
+  def reply[Event, State, ReplyMessage](cmd: ExpectingReply[ReplyMessage], replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
+    none.thenReply[ReplyMessage](cmd, new function.Function[State, ReplyMessage] {
+      override def apply(param: State): ReplyMessage = replyWithMessage
+    })
+
+  /**
+   * When [[PersistentBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
+   * isn't a [[ReplyEffect]]. This `noReply` can be used as a conscious decision that a reply shouldn't be
+   * sent for a specific command or the reply will be sent later.
+   */
+  def noReply[Event, State](): ReplyEffect[Event, State] =
+    none.thenNoReply()
+}
 
 /**
- * Factory methods for creating [[Effect]] directives.
+ * INTERNAL API: see `class EffectFactories`
+ */
+@InternalApi private[akka] object EffectFactories extends EffectFactories[Nothing, Nothing]
+
+/**
+ * Factory methods for creating [[Effect]] directives - how a persistent actor reacts on a command.
  *
  * Not for user extension
  */
-@DoNotInherit sealed class EffectFactories[Command, Event, State] {
+@DoNotInherit sealed class EffectFactories[Event, State] {
   /**
-   * Persist a single event
+   * Persist a single event.
+   *
+   * Side effects can be chained with `andThen`.
    */
   final def persist(event: Event): Effect[Event, State] = Persist(event)
 
   /**
-   * Persist all of a the given events. Each event will be applied through `applyEffect` separately but not until
-   * all events has been persisted. If an `afterCallBack` is added through [[Effect#andThen]] that will invoked
-   * after all the events has been persisted.
+   * Persist multiple events
+   *
+   * Side effects can be chained with `andThen`.
    */
   final def persist(events: java.util.List[Event]): Effect[Event, State] = PersistAll(events.asScala.toVector)
 
@@ -38,7 +111,7 @@ object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
   def none: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
 
   /**
-   * Stop this persistent actor
+   * Stop this persistent actor.
    */
   def stop: Effect[Event, State] = none.thenStop()
 

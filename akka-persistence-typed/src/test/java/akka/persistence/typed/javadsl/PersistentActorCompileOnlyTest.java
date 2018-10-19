@@ -23,6 +23,33 @@ import static akka.actor.typed.javadsl.AskPattern.ask;
 
 public class PersistentActorCompileOnlyTest {
 
+  public static class Ack {
+  }
+  interface MyCommand {
+  }
+  public static class Cmd implements MyCommand {
+    private final String data;
+    private final ActorRef<Ack> sender;
+
+    public Cmd(String data, ActorRef<Ack> sender) {
+      this.data = data;
+      this.sender = sender;
+    }
+  }
+
+  interface MyEvent {
+  }
+  public static class Evt implements MyEvent {
+    private final String data;
+
+    public Evt(String data) {
+      this.data = data;
+    }
+  }
+
+  static class ExampleState {
+    private List<String> events = new ArrayList<>();
+  }
 
   public static abstract class Simple {
 
@@ -126,34 +153,6 @@ public class PersistentActorCompileOnlyTest {
   }
 
   static abstract class WithAck {
-    public static class Ack {
-    }
-
-    interface MyCommand {
-    }
-    public static class Cmd implements MyCommand {
-      private final String data;
-      private final ActorRef<Ack> sender;
-
-      public Cmd(String data, ActorRef<Ack> sender) {
-        this.data = data;
-        this.sender = sender;
-      }
-    }
-
-    interface MyEvent {
-    }
-    public static class Evt implements MyEvent {
-      private final String data;
-
-      public Evt(String data) {
-        this.data = data;
-      }
-    }
-
-    static class ExampleState {
-      private List<String> events = new ArrayList<>();
-    }
 
     //#commonChainedEffects
     // Factored out Chained effect
@@ -193,6 +192,22 @@ public class PersistentActorCompileOnlyTest {
           .build();
       }
     };
+  }
+
+  static class EffectsOutsidePersistentBehavior {
+    // FIXME this is rather verbose with the extra types .<MyEvent, ExampleState>
+    // probably not something we should recommend, or even support?
+
+    CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler =
+      CommandHandlerBuilder.<MyCommand, MyEvent, ExampleState, ExampleState> builder(ExampleState.class)
+      .matchCommand(MyCommand.class, this::handleMyCommand)
+      .build();
+
+    private Effect<MyEvent, ExampleState> handleMyCommand(ExampleState exampleState, MyCommand cmd) {
+      return Effects
+        .<MyEvent, ExampleState> persist(new Evt("data"))
+        .andThen(newState -> System.out.println(newState));
+    }
   }
 
   static abstract class RecoveryComplete {
