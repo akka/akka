@@ -70,7 +70,7 @@ object BlogPostExample {
 
       case BlankState ⇒ command match {
         case cmd: AddPost  ⇒ addPost(cmd)
-        case PassivatePost ⇒ Effect.stop
+        case PassivatePost ⇒ Effect.stop()
         case _             ⇒ Effect.unhandled
       }
 
@@ -79,12 +79,12 @@ object BlogPostExample {
         case Publish(replyTo) ⇒ publish(draftState, replyTo)
         case GetPost(replyTo) ⇒ getPost(draftState, replyTo)
         case _: AddPost       ⇒ Effect.unhandled
-        case PassivatePost    ⇒ Effect.stop
+        case PassivatePost    ⇒ Effect.stop()
       }
 
       case publishedState: PublishedState ⇒ command match {
         case GetPost(replyTo) ⇒ getPost(publishedState, replyTo)
-        case PassivatePost    ⇒ Effect.stop
+        case PassivatePost    ⇒ Effect.stop()
         case _                ⇒ Effect.unhandled
       }
     }

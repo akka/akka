@@ -7,9 +7,9 @@ package akka.persistence.typed.internal
 import scala.collection.immutable
 
 import akka.persistence.typed.{ SideEffect, javadsl, scaladsl }
-
 import akka.annotation.InternalApi
 import akka.persistence.typed.NoReplyEffectImpl
+import akka.persistence.typed.Stop
 
 /** INTERNAL API */
 @InternalApi
@@ -22,6 +22,9 @@ private[akka] abstract class EffectImpl[+Event, State] extends javadsl.ReplyEffe
 
   override def thenNoReply(): EffectImpl[Event, State] =
     CompositeEffect(this, new NoReplyEffectImpl[State])
+
+  override def thenStop(): EffectImpl[Event, State] =
+    CompositeEffect(this, Stop.asInstanceOf[SideEffect[State]])
 
 }
 

@@ -7,15 +7,20 @@ package akka.persistence.typed.javadsl
 import akka.annotation.DoNotInherit
 import akka.japi.function
 import akka.persistence.typed.internal._
-import akka.persistence.typed.{ SideEffect, Stop }
+import akka.persistence.typed.SideEffect
 import scala.collection.JavaConverters._
 
+import akka.annotation.InternalApi
 import akka.persistence.typed.ExpectingReply
 
-object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
+/**
+ * INTERNAL API: see `class EffectFactories`
+ */
+@InternalApi private[akka] object EffectFactories extends EffectFactories[Nothing, Nothing, Nothing]
 
 /**
- * Factory methods for creating [[Effect]] directives.
+ * Factory methods for creating [[Effect]] directives - how a persistent actor reacts on a command.
+ * Created via [[PersistentBehavior.Effect]].
  *
  * Not for user extension
  */
@@ -35,17 +40,17 @@ object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
   /**
    * Do not persist anything
    */
-  def none: Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
+  def none(): Effect[Event, State] = PersistNothing.asInstanceOf[Effect[Event, State]]
 
   /**
    * Stop this persistent actor
    */
-  def stop: Effect[Event, State] = none.thenStop()
+  def stop(): Effect[Event, State] = none().thenStop()
 
   /**
    * This command is not handled, but it is not an error that it isn't.
    */
-  def unhandled: Effect[Event, State] = Unhandled.asInstanceOf[Effect[Event, State]]
+  def unhandled(): Effect[Event, State] = Unhandled.asInstanceOf[Effect[Event, State]]
 
   /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
@@ -60,7 +65,7 @@ object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
    * finding mistakes.
    */
   def reply[ReplyMessage](cmd: ExpectingReply[ReplyMessage], replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
-    none.thenReply[ReplyMessage](cmd, new function.Function[State, ReplyMessage] {
+    none().thenReply[ReplyMessage](cmd, new function.Function[State, ReplyMessage] {
       override def apply(param: State): ReplyMessage = replyWithMessage
     })
 
@@ -70,7 +75,7 @@ object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
    * sent for a specific command or the reply will be sent later.
    */
   def noReply(): ReplyEffect[Event, State] =
-    none.thenNoReply()
+    none().thenNoReply()
 }
 
 /**
@@ -78,24 +83,31 @@ object EffectFactory extends EffectFactories[Nothing, Nothing, Nothing]
  *
  * Additional side effects can be performed in the callback `andThen`
  *
- * Instances of `Effect` are available through factories in the respective Java and Scala DSL packages.
+ * Instances of `Effect` are available through factories [[PersistentBehavior.Effect]].
  *
  * Not intended for user extension.
  */
 @DoNotInherit abstract class Effect[+Event, State] {
   self: EffectImpl[Event, State] ⇒
-  /** Convenience method to register a side effect with just a callback function */
-  final def andThen(callback: function.Procedure[State]): Effect[Event, State] =
+  /**
+   * Run the given callback. Callbacks are run sequentially.
+   */
+  final def thenRun(callback: function.Procedure[State]): Effect[Event, State] =
     CompositeEffect(this, SideEffect[State](s ⇒ callback.apply(s)))
 
-  /** Convenience method to register a side effect that doesn't need access to state */
-  final def andThen(callback: function.Effect): Effect[Event, State] =
+  /**
+   * Run the given callback. Callbacks are run sequentially.
+   */
+  final def thenRun(callback: function.Effect): Effect[Event, State] =
     CompositeEffect(this, SideEffect[State]((_: State) ⇒ callback.apply()))
 
+  /**
+   * Run the given callback after the current Effect
+   */
   def andThen(chainedEffect: SideEffect[State]): Effect[Event, State]
 
-  final def thenStop(): Effect[Event, State] =
-    CompositeEffect(this, Stop.asInstanceOf[SideEffect[State]])
+  /** The side effect is to stop the actor */
+  def thenStop(): Effect[Event, State]
 
   /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
