@@ -136,7 +136,9 @@ object Framing {
   def simpleFramingProtocolEncoder(maximumMessageLength: Int): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].via(new SimpleFramingProtocolEncoder(maximumMessageLength))
 
-  class FramingException(msg: String) extends RuntimeException(msg)
+  class FramingException(msg: String, inner: Throwable) extends RuntimeException(msg, inner) {
+    def this(msg: String) = this(msg, null)
+  }
 
   private final val bigEndianDecoder: (ByteIterator, Int) ⇒ Int = (bs, length) ⇒ {
     var count = length
