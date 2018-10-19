@@ -70,3 +70,4 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObje
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.SquareBraceEnd")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.CurlyBraceStart")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.SquareBraceStart")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.JsonObjectParser.isWhitespace")
