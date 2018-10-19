@@ -88,7 +88,7 @@ public class AccountExample extends PersistentBehavior<AccountExample.AccountCom
           return Effect().unhandled(); // TODO replies are missing in this example
         } else {
           return Effect().persist(new Withdrawn(cmd.amount))
-            .andThen(acc2 -> { // FIXME in scaladsl it's named thenRun, change javadsl also?
+            .thenRun(acc2 -> { // FIXME in scaladsl it's named thenRun, change javadsl also?
               // we know this cast is safe, but somewhat ugly
               OpenedAccount openAccount = (OpenedAccount) acc2;
               // do some side-effect using balance

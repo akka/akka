@@ -150,7 +150,7 @@ public class HelloWorldPersistentEntityExample {
 
     private Effect<Greeted, KnownPeople> greet(KnownPeople state, Greet cmd) {
       return Effect().persist(new Greeted(cmd.whom))
-        .andThen(newState -> cmd.replyTo.tell(new Greeting(cmd.whom, newState.numberOfPeople())));
+        .thenRun(newState -> cmd.replyTo.tell(new Greeting(cmd.whom, newState.numberOfPeople())));
     }
 
     @Override
