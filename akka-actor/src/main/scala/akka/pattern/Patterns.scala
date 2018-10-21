@@ -431,6 +431,7 @@ object Patterns {
    * Returns a [[scala.concurrent.Future]] that will be completed with the success or failure of the provided Callable
    * after the specified duration.
    */
+  @deprecated("Use the overload one which accepts a Callable of Future instead.", since = "2.5.22")
   def after[T](duration: FiniteDuration, scheduler: Scheduler, context: ExecutionContext, value: Future[T]): Future[T] =
     scalaAfter(duration, scheduler)(value)(context)
 
@@ -438,6 +439,7 @@ object Patterns {
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
+  @deprecated("Use the overloaded one which accepts a Callable of CompletionStage instead.", since = "2.5.22")
   def after[T](duration: java.time.Duration,
                scheduler: Scheduler,
                context: ExecutionContext,
@@ -871,7 +873,8 @@ object PatternsCS {
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
-  @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
+  @deprecated("Use Patterns.after which accepts java.time.Duration and Callable of CompletionStage instead.",
+              since = "2.5.22")
   def after[T](duration: FiniteDuration,
                scheduler: Scheduler,
                context: ExecutionContext,
@@ -882,7 +885,8 @@ object PatternsCS {
    * Returns a [[java.util.concurrent.CompletionStage]] that will be completed with the success or failure of the provided value
    * after the specified duration.
    */
-  @deprecated("Use Patterns.after instead.", since = "2.5.19")
+  @deprecated("Use Patterns.after which accepts java.time.Duration and Callable of CompletionStage instead.",
+              since = "2.5.22")
   def after[T](duration: java.time.Duration,
                scheduler: Scheduler,
                context: ExecutionContext,
