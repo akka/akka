@@ -51,7 +51,6 @@ object BlogPostExample {
   final case class GetPost(replyTo: ActorRef[PostContent]) extends BlogCommand
   final case class ChangeBody(newBody: String, replyTo: ActorRef[Done]) extends BlogCommand
   final case class Publish(replyTo: ActorRef[Done]) extends BlogCommand
-  final case object PassivatePost extends BlogCommand
   final case class PostContent(postId: String, title: String, body: String)
   //#commands
 
@@ -69,9 +68,8 @@ object BlogPostExample {
     state match {
 
       case BlankState ⇒ command match {
-        case cmd: AddPost  ⇒ addPost(cmd)
-        case PassivatePost ⇒ Effect.stop()
-        case _             ⇒ Effect.unhandled
+        case cmd: AddPost ⇒ addPost(cmd)
+        case _            ⇒ Effect.unhandled
       }
 
       case draftState: DraftState ⇒ command match {
@@ -79,12 +77,10 @@ object BlogPostExample {
         case Publish(replyTo) ⇒ publish(draftState, replyTo)
         case GetPost(replyTo) ⇒ getPost(draftState, replyTo)
         case _: AddPost       ⇒ Effect.unhandled
-        case PassivatePost    ⇒ Effect.stop()
       }
 
       case publishedState: PublishedState ⇒ command match {
         case GetPost(replyTo) ⇒ getPost(publishedState, replyTo)
-        case PassivatePost    ⇒ Effect.stop()
         case _                ⇒ Effect.unhandled
       }
     }

@@ -16,10 +16,12 @@ import akka.persistence.typed.{ Callback, EventRejectedException, SideEffect, St
 import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, MDC }
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
 import akka.persistence.typed.scaladsl.Effect
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.{ Failure, Success }
+
+import akka.actor.typed.Signal
+import akka.actor.typed.internal.PoisonPill
 
 /**
  * INTERNAL API
@@ -42,8 +44,9 @@ import scala.util.{ Failure, Success }
 private[akka] object EventsourcedRunning {
 
   final case class EventsourcedState[State](
-    seqNr: Long,
-    state: State
+    seqNr:              Long,
+    state:              State,
+    receivedPoisonPill: Boolean
   ) {
 
     def nextSequenceNr(): EventsourcedState[State] =
@@ -158,6 +161,10 @@ private[akka] object EventsourcedRunning {
       case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
       case SnapshotterResponse(r)           ⇒ onSnapshotterResponse(r, Behaviors.same)
       case _                                ⇒ Behaviors.unhandled
+    }.receiveSignal {
+      case (_, PoisonPill) ⇒
+        if (isStashEmpty) Behaviors.stopped
+        else handlingCommands(state.copy(receivedPoisonPill = true))
     }
 
   }
@@ -194,8 +201,14 @@ private[akka] object EventsourcedRunning {
     }
 
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
-      stash(cmd)
-      this
+      if (state.receivedPoisonPill) {
+        if (setup.settings.logOnStashing) setup.log.debug(
+          "Discarding message [{}], because actor is to be stopped", cmd)
+        Behaviors.unhandled
+      } else {
+        stash(cmd)
+        this
+      }
     }
 
     final def onJournalResponse(
@@ -246,6 +259,13 @@ private[akka] object EventsourcedRunning {
       }
     }
 
+    override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
+      case PoisonPill ⇒
+        // wait for journal responses before stopping
+        state = state.copy(receivedPoisonPill = true)
+        this
+    }
+
   }
 
   private def onSnapshotterResponse(
@@ -285,7 +305,10 @@ private[akka] object EventsourcedRunning {
       if (stopped) res = Behaviors.stopped
     }
 
-    res
+    if (state.receivedPoisonPill && isStashEmpty)
+      Behaviors.stopped
+    else
+      res
   }
 
   def applySideEffect(effect: SideEffect[S], state: EventsourcedState[S]): Behavior[InternalProtocol] = effect match {
