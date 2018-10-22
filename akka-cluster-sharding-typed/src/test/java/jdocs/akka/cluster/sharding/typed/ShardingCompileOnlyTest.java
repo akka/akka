@@ -105,8 +105,8 @@ public class ShardingCompileOnlyTest {
     sharding.start(
       Entity.of(
         typeKey,
-        ctx -> counter2(ctx.getShard(), ctx.getEntityId()),
-        new GoodByeCounter()));
+        ctx -> counter2(ctx.getShard(), ctx.getEntityId()))
+        .withStopMessage(new GoodByeCounter()));
     //#counter-passivate-start
   }
 
@@ -126,8 +126,8 @@ public class ShardingCompileOnlyTest {
     ActorRef<ShardingEnvelope<CounterCommand>> shardRegion = sharding.start(
       Entity.of(
         typeKey,
-        ctx -> counter(ctx.getEntityId(),0),
-        new GoodByeCounter()));
+        ctx -> counter(ctx.getEntityId(),0))
+        .withStopMessage(new GoodByeCounter()));
     //#start
 
     //#send
@@ -150,8 +150,8 @@ public class ShardingCompileOnlyTest {
     sharding.start(
       Entity.of(
         blogTypeKey,
-        ctx -> BlogBehavior.behavior(ctx.getEntityId()),
-        new PassivatePost()));
+        ctx -> BlogBehavior.behavior(ctx.getEntityId()))
+        .withStopMessage(new PassivatePost()));
     //#persistence
   }
 }

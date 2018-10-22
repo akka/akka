@@ -51,8 +51,8 @@ object ShardingCompileOnlySpec {
 
   val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] = sharding.start(Entity(
     typeKey = TypeKey,
-    createBehavior = ctx ⇒ counter(ctx.entityId, 0),
-    stopMessage = GoodByeCounter))
+    createBehavior = ctx ⇒ counter(ctx.entityId, 0))
+    .withStopMessage(GoodByeCounter))
   //#start
 
   //#send
@@ -70,8 +70,8 @@ object ShardingCompileOnlySpec {
 
   ClusterSharding(system).start(Entity(
     typeKey = BlogTypeKey,
-    createBehavior = ctx ⇒ behavior(ctx.entityId),
-    stopMessage = PassivatePost))
+    createBehavior = ctx ⇒ behavior(ctx.entityId))
+    .withStopMessage(PassivatePost))
   //#persistence
 
   //#counter-passivate
@@ -104,8 +104,8 @@ object ShardingCompileOnlySpec {
 
   sharding.start(Entity(
     typeKey = TypeKey,
-    createBehavior = ctx ⇒ counter2(ctx.shard, ctx.entityId),
-    stopMessage = GoodByeCounter))
+    createBehavior = ctx ⇒ counter2(ctx.shard, ctx.entityId))
+    .withStopMessage(GoodByeCounter))
   //#counter-passivate
 
 }

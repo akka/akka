@@ -23,15 +23,18 @@ import akka.persistence.typed.javadsl.PersistentBehavior
  */
 abstract class PersistentEntity[Command, Event, State >: Null] private (
   val entityTypeKey: EntityTypeKey[Command],
+  val entityId:      String,
   persistenceId:     PersistenceId, supervisorStrategy: Optional[BackoffSupervisorStrategy])
   extends PersistentBehavior[Command, Event, State](persistenceId, supervisorStrategy) {
 
   def this(entityTypeKey: EntityTypeKey[Command], entityId: String) = {
-    this(entityTypeKey, persistenceId = entityTypeKey.persistenceIdFrom(entityId), Optional.empty[BackoffSupervisorStrategy])
+    this(entityTypeKey, entityId,
+      persistenceId = entityTypeKey.persistenceIdFrom(entityId), Optional.empty[BackoffSupervisorStrategy])
   }
 
   def this(entityTypeKey: EntityTypeKey[Command], entityId: String, backoffSupervisorStrategy: BackoffSupervisorStrategy) = {
-    this(entityTypeKey, persistenceId = entityTypeKey.persistenceIdFrom(entityId), Optional.ofNullable(backoffSupervisorStrategy))
+    this(entityTypeKey, entityId,
+      persistenceId = entityTypeKey.persistenceIdFrom(entityId), Optional.ofNullable(backoffSupervisorStrategy))
   }
 
 }

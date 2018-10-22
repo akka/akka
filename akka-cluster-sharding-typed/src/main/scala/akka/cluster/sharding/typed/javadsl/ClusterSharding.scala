@@ -212,9 +212,8 @@ object Entity {
    */
   def of[M](
     typeKey:        EntityTypeKey[M],
-    createBehavior: JFunction[EntityContext[M], Behavior[M]],
-    stopMessage:    M): Entity[M, ShardingEnvelope[M]] = {
-    new Entity(createBehavior, typeKey, stopMessage, Props.empty, Optional.empty(), Optional.empty(), Optional.empty())
+    createBehavior: JFunction[EntityContext[M], Behavior[M]]): Entity[M, ShardingEnvelope[M]] = {
+    new Entity(createBehavior, typeKey, Optional.empty(), Props.empty, Optional.empty(), Optional.empty(), Optional.empty())
   }
 
   /**
@@ -231,8 +230,7 @@ object Entity {
    */
   def ofPersistentEntity[Command, Event, State >: Null](
     typeKey:                EntityTypeKey[Command],
-    createPersistentEntity: JFunction[EntityContext[Command], PersistentEntity[Command, Event, State]],
-    stopMessage:            Command): Entity[Command, ShardingEnvelope[Command]] = {
+    createPersistentEntity: JFunction[EntityContext[Command], PersistentEntity[Command, Event, State]]): Entity[Command, ShardingEnvelope[Command]] = {
 
     of(typeKey, new JFunction[EntityContext[Command], Behavior[Command]] {
       override def apply(ctx: EntityContext[Command]): Behavior[Command] = {
@@ -242,7 +240,7 @@ object Entity {
             s" [${persistentEntity.getClass.getName}] doesn't match expected $typeKey.")
         persistentEntity
       }
-    }, stopMessage)
+    })
   }
 
 }
@@ -253,7 +251,7 @@ object Entity {
 final class Entity[M, E] private[akka] (
   val createBehavior:     JFunction[EntityContext[M], Behavior[M]],
   val typeKey:            EntityTypeKey[M],
-  val stopMessage:        M,
+  val stopMessage:        Optional[M],
   val entityProps:        Props,
   val settings:           Optional[ClusterShardingSettings],
   val messageExtractor:   Optional[ShardingMessageExtractor[E, M]],
@@ -270,6 +268,15 @@ final class Entity[M, E] private[akka] (
    */
   def withSettings(newSettings: ClusterShardingSettings): Entity[M, E] =
     copy(settings = Optional.ofNullable(newSettings))
+
+  /**
+   * Message sent to an entity to tell it to stop, e.g. when rebalanced or passivated.
+   * If this is not defined it will be stopped automatically.
+   * It can be useful to define a custom stop message if the entity needs to perform
+   * some asynchronous cleanup or interactions before stopping.
+   */
+  def withStopMessage(newStopMessage: M): Entity[M, E] =
+    copy(stopMessage = Optional.ofNullable(newStopMessage))
 
   /**
    *
@@ -292,7 +299,7 @@ final class Entity[M, E] private[akka] (
   private def copy(
     createBehavior:     JFunction[EntityContext[M], Behavior[M]] = createBehavior,
     typeKey:            EntityTypeKey[M]                         = typeKey,
-    stopMessage:        M                                        = stopMessage,
+    stopMessage:        Optional[M]                              = stopMessage,
     entityProps:        Props                                    = entityProps,
     settings:           Optional[ClusterShardingSettings]        = settings,
     allocationStrategy: Optional[ShardAllocationStrategy]        = allocationStrategy

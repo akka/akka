@@ -25,8 +25,8 @@ object HelloWorldPersistentEntityExample {
 
     sharding.start(Entity(
       typeKey = HelloWorld.entityTypeKey,
-      createBehavior = entityContext ⇒ HelloWorld.persistentEntity(entityContext.entityId),
-      stopMessage = HelloWorld.Passivate))
+      createBehavior = entityContext ⇒ HelloWorld.persistentEntity(entityContext.entityId))
+      .withStopMessage(HelloWorld.Passivate))
 
     private implicit val askTimeout: Timeout = Timeout(5.seconds)
 

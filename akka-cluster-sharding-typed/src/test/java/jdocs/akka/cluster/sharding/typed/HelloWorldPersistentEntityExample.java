@@ -45,8 +45,8 @@ public class HelloWorldPersistentEntityExample {
       sharding.start(
         Entity.ofPersistentEntity(
           HelloWorld.ENTITY_TYPE_KEY,
-          ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId()),
-          HelloWorld.Passivate.INSTANCE));
+          ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId()))
+            .withStopMessage(HelloWorld.Passivate.INSTANCE));
     }
 
     // usage example

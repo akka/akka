@@ -18,6 +18,7 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.ActorSystem
+import akka.actor.typed.PostStop
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.MemberStatus
@@ -148,14 +149,14 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
   }
 
   private val typeKey = EntityTypeKey[TestProtocol]("envelope-shard")
-  private def behavior(shard: ActorRef[ClusterSharding.ShardCommand], stopProbe: Option[ActorRef[Done]] = None) =
+  private def behavior(shard: ActorRef[ClusterSharding.ShardCommand], stopProbe: Option[ActorRef[String]] = None) =
     Behaviors.receive[TestProtocol] {
       case (ctx, PassivatePlz()) ⇒
         shard ! ClusterSharding.Passivate(ctx.self)
         Behaviors.same
 
       case (_, StopPlz()) ⇒
-        stopProbe.foreach(_ ! Done)
+        stopProbe.foreach(_ ! "StopPlz")
         Behaviors.stopped
 
       case (ctx, WhoAreYou(replyTo)) ⇒
@@ -165,6 +166,10 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
 
       case (_, ReplyPlz(toMe)) ⇒
         toMe ! "Hello!"
+        Behaviors.same
+    }.receiveSignal {
+      case (_, PostStop) ⇒
+        stopProbe.foreach(_ ! "PostStop")
         Behaviors.same
     }
 
@@ -185,35 +190,35 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
 
   private val shardingRef1: ActorRef[ShardingEnvelope[TestProtocol]] = sharding.start(Entity(
     typeKey,
-    ctx ⇒ behavior(ctx.shard),
-    StopPlz()))
+    ctx ⇒ behavior(ctx.shard))
+    .withStopMessage(StopPlz()))
 
   private val shardingRef2 = sharding2.start(Entity(
     typeKey,
-    ctx ⇒ behavior(ctx.shard),
-    StopPlz()))
+    ctx ⇒ behavior(ctx.shard))
+    .withStopMessage(StopPlz()))
 
   private val shardingRef3: ActorRef[IdTestProtocol] = sharding.start(Entity(
     typeKey2,
-    ctx ⇒ behaviorWithId(ctx.shard),
-    IdStopPlz())
+    ctx ⇒ behaviorWithId(ctx.shard))
     .withMessageExtractor(ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
       case IdReplyPlz(id, _)  ⇒ id
       case IdWhoAreYou(id, _) ⇒ id
       case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
     })
+    .withStopMessage(IdStopPlz())
   )
 
   private val shardingRef4 = sharding2.start(Entity(
     typeKey2,
-    ctx ⇒ behaviorWithId(ctx.shard),
-    IdStopPlz())
+    ctx ⇒ behaviorWithId(ctx.shard))
     .withMessageExtractor(
       ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
         case IdReplyPlz(id, _)  ⇒ id
         case IdWhoAreYou(id, _) ⇒ id
         case other              ⇒ throw new IllegalArgumentException(s"Unexpected message $other")
       })
+    .withStopMessage(IdStopPlz())
   )
 
   def totalEntityCount1(): Int = {
@@ -258,23 +263,45 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       }
     }
 
-    "be able to passivate" in {
-      val stopProbe = TestProbe[Done]()
+    "be able to passivate with custom stop message" in {
+      val stopProbe = TestProbe[String]()
       val p = TestProbe[String]()
       val typeKey3 = EntityTypeKey[TestProtocol]("passivate-test")
 
       val shardingRef3: ActorRef[ShardingEnvelope[TestProtocol]] = sharding.start(Entity(
         typeKey3,
-        ctx ⇒ behavior(ctx.shard, Some(stopProbe.ref)),
-        StopPlz()))
+        ctx ⇒ behavior(ctx.shard, Some(stopProbe.ref)))
+        .withStopMessage(StopPlz()))
 
       shardingRef3 ! ShardingEnvelope(s"test1", ReplyPlz(p.ref))
       p.expectMessage("Hello!")
 
       shardingRef3 ! ShardingEnvelope(s"test1", PassivatePlz())
-      stopProbe.expectMessage(Done)
+      stopProbe.expectMessage("StopPlz")
+      stopProbe.expectMessage("PostStop")
 
       shardingRef3 ! ShardingEnvelope(s"test1", ReplyPlz(p.ref))
+      p.expectMessage("Hello!")
+    }
+
+    "be able to passivate with PoisonPill" in {
+      val stopProbe = TestProbe[String]()
+      val p = TestProbe[String]()
+      val typeKey4 = EntityTypeKey[TestProtocol]("passivate-test-poison")
+
+      val shardingRef4: ActorRef[ShardingEnvelope[TestProtocol]] = sharding.start(Entity(
+        typeKey4,
+        ctx ⇒ behavior(ctx.shard, Some(stopProbe.ref))))
+      // no StopPlz stopMessage
+
+      shardingRef4 ! ShardingEnvelope(s"test4", ReplyPlz(p.ref))
+      p.expectMessage("Hello!")
+
+      shardingRef4 ! ShardingEnvelope(s"test4", PassivatePlz())
+      // no StopPlz
+      stopProbe.expectMessage("PostStop")
+
+      shardingRef4 ! ShardingEnvelope(s"test4", ReplyPlz(p.ref))
       p.expectMessage("Hello!")
     }
 
@@ -283,8 +310,8 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       val ex = intercept[Exception] {
         sharding.start(Entity(
           EntityTypeKey[IdTestProtocol]("envelope-shard"),
-          ctx ⇒ behaviorWithId(ctx.shard),
-          IdStopPlz()))
+          ctx ⇒ behaviorWithId(ctx.shard))
+          .withStopMessage(IdStopPlz()))
       }
 
       ex.getMessage should include("already started")
@@ -349,8 +376,8 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
 
       sharding.start(Entity(
         ignorantKey,
-        _ ⇒ Behaviors.ignore[TestProtocol],
-        StopPlz()))
+        _ ⇒ Behaviors.ignore[TestProtocol])
+        .withStopMessage(StopPlz()))
 
       val ref = sharding.entityRefFor(ignorantKey, "sloppy")
 
