@@ -12,8 +12,9 @@ import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
 import akka.persistence.typed.internal.EventsourcedBehavior._
-
 import scala.util.control.NonFatal
+
+import akka.actor.typed.internal.PoisonPill
 
 /***
  * INTERNAL API
@@ -37,7 +38,8 @@ private[persistence] object EventsourcedReplayingEvents {
     seqNr:               Long,
     state:               State,
     eventSeenInInterval: Boolean,
-    toSeqNr:             Long
+    toSeqNr:             Long,
+    receivedPoisonPill:  Boolean
   )
 
   def apply[C, E, S](
@@ -69,9 +71,11 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
       case JournalResponse(r)      ⇒ onJournalResponse(state, r)
       case SnapshotterResponse(r)  ⇒ onSnapshotterResponse(r)
       case RecoveryTickEvent(snap) ⇒ onRecoveryTick(state, snap)
-      case cmd: IncomingCommand[C] ⇒ onCommand(cmd)
+      case cmd: IncomingCommand[C] ⇒ onCommand(cmd, state)
       case RecoveryPermitGranted   ⇒ Behaviors.unhandled // should not happen, we already have the permit
-    }.receiveSignal(returnPermitOnStop)
+    }.receiveSignal(returnPermitOnStop.orElse {
+      case (_, PoisonPill) ⇒ stay(state.copy(receivedPoisonPill = true))
+    })
 
   private def onJournalResponse(
     state:    ReplayingState[S],
@@ -106,10 +110,16 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
     }
   }
 
-  private def onCommand(cmd: InternalProtocol): Behavior[InternalProtocol] = {
+  private def onCommand(cmd: InternalProtocol, state: ReplayingState[S]): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
-    stash(cmd)
-    Behaviors.same
+    if (state.receivedPoisonPill) {
+      if (setup.settings.logOnStashing) setup.log.debug(
+        "Discarding message [{}], because actor is to be stopped", cmd)
+      Behaviors.unhandled
+    } else {
+      stash(cmd)
+      Behaviors.same
+    }
   }
 
   protected def onRecoveryTick(state: ReplayingState[S], snapshot: Boolean): Behavior[InternalProtocol] =
@@ -157,12 +167,16 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
     tryReturnRecoveryPermit("replay completed successfully")
     setup.recoveryCompleted(state.state)
 
-    val running = EventsourcedRunning[C, E, S](
-      setup,
-      EventsourcedRunning.EventsourcedState[S](state.seqNr, state.state)
-    )
+    if (state.receivedPoisonPill && isStashEmpty)
+      Behaviors.stopped
+    else {
+      val running = EventsourcedRunning[C, E, S](
+        setup,
+        EventsourcedRunning.EventsourcedState[S](state.seqNr, state.state, state.receivedPoisonPill)
+      )
 
-    tryUnstash(running)
+      tryUnstash(running)
+    }
   } finally {
     setup.cancelRecoveryTimer()
   }

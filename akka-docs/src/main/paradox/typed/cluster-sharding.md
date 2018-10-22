@@ -105,10 +105,11 @@ If a message is already enqueued to the entity when it stops itself the enqueued
 in the mailbox will be dropped. To support graceful passivation without losing such
 messages the entity actor can send `ClusterSharding.Passivate` to to the
 @scala[`ActorRef[ShardCommand]`]@java[`ActorRef<ShardCommand>`] that was passed in to
-the factory method when creating the entity. The specified `handOffStopMessage` message
-will be sent back to the entity, which is then supposed to stop itself. Incoming messages
-will be buffered by the `Shard` between reception of `Passivate` and termination of the
-entity. Such buffered messages are thereafter delivered to a new incarnation of the entity.
+the factory method when creating the entity. The optional `stopMessage` message
+will be sent back to the entity, which is then supposed to stop itself, otherwise it will
+be stopped automatically. Incoming messages will be buffered by the `Shard` between reception
+of `Passivate` and termination of the entity. Such buffered messages are thereafter delivered
+to a new incarnation of the entity.
 
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #counter-messages #counter-passivate }
@@ -116,6 +117,10 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #counter-messages #counter-passivate #counter-passivate-start }
 
+Note that in the above example the `stopMessage` is specified as `GoodByeCounter`. That message will be sent to
+the entity when it's supposed to stop itself due to rebalance or passivation. If the `stopMessage` is not defined
+it will be stopped automatically without receiving a specific message. It can be useful to define a custom stop
+message if the entity needs to perform some asynchronous cleanup or interactions before stopping.
 
 ### Automatic Passivation
 
@@ -123,5 +128,5 @@ The entities can be configured to be automatically passivated if they haven't re
 a message for a while using the `akka.cluster.sharding.passivate-idle-entity-after` setting,
 or by explicitly setting `ClusterShardingSettings.passivateIdleEntityAfter` to a suitable
 time to keep the actor alive. Note that only messages sent through sharding are counted, so direct messages
-to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity. 
+to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity.
 By default automatic passivation is disabled.

@@ -215,14 +215,12 @@ object Entity {
    *
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param createBehavior Create the behavior for an entity given a [[EntityContext]] (includes entityId)
-   * @param stopMessage Message sent to an entity to tell it to stop, e.g. when rebalanced or passivated.
    * @tparam M The type of message the entity accepts
    */
   def apply[M](
     typeKey:        EntityTypeKey[M],
-    createBehavior: EntityContext ⇒ Behavior[M],
-    stopMessage:    M): Entity[M, ShardingEnvelope[M]] =
-    new Entity(createBehavior, typeKey, stopMessage, Props.empty, None, None, None)
+    createBehavior: EntityContext ⇒ Behavior[M]): Entity[M, ShardingEnvelope[M]] =
+    new Entity(createBehavior, typeKey, None, Props.empty, None, None, None)
 }
 
 /**
@@ -231,7 +229,7 @@ object Entity {
 final class Entity[M, E] private[akka] (
   val createBehavior:     EntityContext ⇒ Behavior[M],
   val typeKey:            EntityTypeKey[M],
-  val stopMessage:        M,
+  val stopMessage:        Option[M],
   val entityProps:        Props,
   val settings:           Option[ClusterShardingSettings],
   val messageExtractor:   Option[ShardingMessageExtractor[E, M]],
@@ -248,6 +246,15 @@ final class Entity[M, E] private[akka] (
    */
   def withSettings(newSettings: ClusterShardingSettings): Entity[M, E] =
     copy(settings = Option(newSettings))
+
+  /**
+   * Message sent to an entity to tell it to stop, e.g. when rebalanced or passivated.
+   * If this is not defined it will be stopped automatically.
+   * It can be useful to define a custom stop message if the entity needs to perform
+   * some asynchronous cleanup or interactions before stopping.
+   */
+  def withStopMessage(newStopMessage: M): Entity[M, E] =
+    copy(stopMessage = Option(newStopMessage))
 
   /**
    *
@@ -270,7 +277,7 @@ final class Entity[M, E] private[akka] (
   private def copy(
     createBehavior:     EntityContext ⇒ Behavior[M]     = createBehavior,
     typeKey:            EntityTypeKey[M]                = typeKey,
-    stopMessage:        M                               = stopMessage,
+    stopMessage:        Option[M]                       = stopMessage,
     entityProps:        Props                           = entityProps,
     settings:           Option[ClusterShardingSettings] = settings,
     allocationStrategy: Option[ShardAllocationStrategy] = allocationStrategy
