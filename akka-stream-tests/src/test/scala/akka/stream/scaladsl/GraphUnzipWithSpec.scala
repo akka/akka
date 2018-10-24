@@ -225,16 +225,16 @@ class GraphUnzipWithSpec extends StreamSpec {
       probe2.expectComplete()
     }
 
-    "work with up to 20 outputs" in {
+    "work with up to 22 outputs" in {
       val probe0 = TestSubscriber.manualProbe[Int]()
       val probe5 = TestSubscriber.manualProbe[String]()
       val probe10 = TestSubscriber.manualProbe[Int]()
       val probe15 = TestSubscriber.manualProbe[String]()
-      val probe19 = TestSubscriber.manualProbe[String]()
+      val probe21 = TestSubscriber.manualProbe[String]()
 
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
 
-        val split20 = (a: (List[Int])) ⇒
+        val split22 = (a: (List[Int])) ⇒
           (a(0), a(0).toString,
             a(1), a(1).toString,
             a(2), a(2).toString,
@@ -244,12 +244,13 @@ class GraphUnzipWithSpec extends StreamSpec {
             a(6), a(6).toString,
             a(7), a(7).toString,
             a(8), a(8).toString,
-            a(9), a(9).toString)
+            a(9), a(9).toString,
+            a(10), a(10).toString)
 
         // odd input ports will be Int, even input ports will be String
-        val unzip = b.add(UnzipWith(split20))
+        val unzip = b.add(UnzipWith(split22))
 
-        Source.single((0 to 19).toList) ~> unzip.in
+        Source.single((0 to 21).toList) ~> unzip.in
 
         def createSink[T](o: Outlet[T]) =
           o ~> Flow[T].buffer(1, OverflowStrategy.backpressure) ~> Sink.fromSubscriber(TestSubscriber.manualProbe[T]())
@@ -276,8 +277,10 @@ class GraphUnzipWithSpec extends StreamSpec {
         createSink(unzip.out16)
         createSink(unzip.out17)
         createSink(unzip.out18)
+        createSink(unzip.out19)
+        createSink(unzip.out20)
 
-        unzip.out19 ~> Sink.fromSubscriber(probe19)
+        unzip.out21 ~> Sink.fromSubscriber(probe21)
 
         ClosedShape
       }).run()
@@ -286,19 +289,19 @@ class GraphUnzipWithSpec extends StreamSpec {
       probe5.expectSubscription().request(1)
       probe10.expectSubscription().request(1)
       probe15.expectSubscription().request(1)
-      probe19.expectSubscription().request(1)
+      probe21.expectSubscription().request(1)
 
       probe0.expectNext(0)
       probe5.expectNext("2")
       probe10.expectNext(5)
       probe15.expectNext("7")
-      probe19.expectNext("9")
+      probe21.expectNext("10")
 
       probe0.expectComplete()
       probe5.expectComplete()
       probe10.expectComplete()
       probe15.expectComplete()
-      probe19.expectComplete()
+      probe21.expectComplete()
     }
 
   }

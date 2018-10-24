@@ -9,7 +9,7 @@ import akka.stream.stage._
 
 trait ZipWithApply {
 
-  [2..20#/**
+  [2..22#/**
    * Create a new `ZipWith` specialized for 1 inputs.
    *
    * @param zipper zipping-function from the input values to the output value
@@ -22,7 +22,7 @@ trait ZipWithApply {
 
 }
 
-[2..20#/** `ZipWith` specialized for 1 inputs */
+[2..22#/** `ZipWith` specialized for 1 inputs */
 class ZipWith1[[#A1#], O] (val zipper: ([#A1#]) ⇒ O) extends GraphStage[FanInShape1[[#A1#], O]] {
   override def initialAttributes = Attributes.name("ZipWith1")
   override val shape: FanInShape1[[#A1#], O] = new FanInShape1[[#A1#], O]("ZipWith1")
