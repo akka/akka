@@ -6,6 +6,7 @@
 
 * [common/cluster](common/cluster.md)
 * [cluster-usage](cluster-usage.md)
+* [cluster-routing](cluster-routing.md)
 * [cluster-singleton](cluster-singleton.md)
 * [distributed-pub-sub](distributed-pub-sub.md)
 * [cluster-client](cluster-client.md)
