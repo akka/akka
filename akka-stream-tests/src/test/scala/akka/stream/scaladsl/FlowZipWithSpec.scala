@@ -4,6 +4,12 @@
 
 package akka.stream.scaladsl
 
+//#zip-with
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.Sink
+
+//#zip-with
+
 import akka.stream.testkit.{ BaseTwoStreamsSetup, TestSubscriber }
 import org.reactivestreams.Publisher
 import scala.concurrent.duration._
@@ -91,6 +97,18 @@ class FlowZipWithSpec extends BaseTwoStreamsSetup {
       subscriber2.expectSubscriptionAndError(TestException)
     }
 
+    "work in fruits example" in {
+      //#zip-with
+      val sourceCount = Source(List("one", "two", "three"))
+      val sourceFruits = Source(List("apple", "orange", "banana"))
+
+      sourceCount.zipWith(sourceFruits) {
+        (countStr, fruitName) ⇒
+          s"$countStr $fruitName"
+      }.runWith(Sink.foreach(println))
+      // this will print 'one apple', 'two orange', 'three banana'
+      //#zip-with
+    }
   }
 
 }

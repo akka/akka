@@ -28,3 +28,10 @@ source completes the rest of the other stream will be emitted.
 
 @@@
 
+
+## Example
+Scala
+:   @@snip [FlowInterleaveSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowInterleaveSpec.scala) { #interleave }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #interleave }
