@@ -117,7 +117,7 @@ object DnsSettings {
     // this method is used as a fallback in case JNDI results in an empty list
     // this method will not work when running modularised of course since it needs access to internal sun classes
     def getNameserversUsingReflection: Try[List[InetSocketAddress]] = {
-      system.dynamicAccess.getClassFor("sun.net.dns.ResolerConfiguration")
+      system.dynamicAccess.getClassFor("sun.net.dns.ResolverConfiguration")
         .flatMap { c ⇒
           Try {
             val open = c.getMethod("open")
