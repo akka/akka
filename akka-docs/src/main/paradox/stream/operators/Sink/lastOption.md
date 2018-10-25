@@ -27,3 +27,10 @@ completed with @scala[`None`] @java[an empty `Optional`].
 
 @@@
 
+## Example
+
+Scala
+:   @@snip [LastSinkSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/LastSinkSpec.scala) { #lastOption-operator-example }
+
+Java
+:   @@snip [SinkDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SinkDocExamples.java) { #lastOption-operator-example }

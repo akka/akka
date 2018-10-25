@@ -28,4 +28,10 @@ If there is a failure signaled in the stream the @scala[`Future`] @java[`Complet
 
 @@@
 
+## Example
 
+Scala
+:   @@snip [TakeLastSinkSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/TakeLastSinkSpec.scala) { #takeLast-operator-example }
+
+Java
+:   @@snip [SinkDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SinkDocExamples.java) { #takeLast-operator-example }
