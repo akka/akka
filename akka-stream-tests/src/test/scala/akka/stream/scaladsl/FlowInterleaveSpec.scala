@@ -232,6 +232,19 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
       up1.expectSubscription().expectCancellation()
       up2.expectSubscription().expectCancellation()
     }
+
+    "work in example" in {
+      //#interleave
+      import akka.stream.scaladsl.Source
+      import akka.stream.scaladsl.Sink
+
+      val sourceA = Source(List(1, 2, 3, 4))
+      val sourceB = Source(List(10, 20, 30, 40))
+
+      sourceA.interleave(sourceB, segmentSize = 2).runWith(Sink.foreach(println))
+      //prints 1, 2, 10, 20, 3, 4, 30, 40
+      //#interleave
+    }
   }
 
 }
