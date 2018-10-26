@@ -12,11 +12,11 @@ import akka.dispatch.Dispatchers
 import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.stream._
-import akka.stream.impl.fusing.GraphInterpreterShell
-import akka.util.OptionVal
+import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphInterpreterShell }
+import akka.util.{ OptionVal, Timeout }
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Await, ExecutionContextExecutor }
+import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
 
 /**
  * ExtendedActorMaterializer used by subtypes which delegates in-island wiring to [[akka.stream.impl.PhaseIsland]]s
@@ -168,8 +168,6 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
   case object StopChildren
   /** Testing purpose */
   case object StoppedChildren
-  /** Testing purpose */
-  case object PrintDebugDump
 }
 
 /**

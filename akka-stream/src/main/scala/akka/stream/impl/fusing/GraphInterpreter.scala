@@ -640,49 +640,40 @@ import akka.stream.Attributes.LogLevels
   }
 
   /**
-   * Debug utility to dump the "waits-on" relationships in DOT format to the console for analysis of deadlocks.
-   * Use dot/graphviz to render graph.
+   * Debug utility to dump the "waits-on" relationships in an AST format for rendering in some suitable format for
+   * analysis of deadlocks.
    *
    * Only invoke this after the interpreter completely settled, otherwise the results might be off. This is a very
    * simplistic tool, make sure you are understanding what you are doing and then it will serve you well.
    */
-  def dumpWaits(): Unit = println(toString)
+  def toSnapshot: InterpreterSnapshot = {
 
-  override def toString: String = {
-    try {
-      val builder = new StringBuilder("\ndot format graph for deadlock analysis:\n")
-      builder.append("================================================================\n")
-      builder.append("digraph waits {\n")
-
-      for (i ← logics.indices) {
-        val logic = logics(i)
+    val logicSnapshots = logics.zipWithIndex.map {
+      case (logic, idx) ⇒
         val label = logic.originalStage.getOrElse(logic).toString
-        builder.append(s"""  N$i [label="$label"];""").append('\n')
-      }
-
-      val logicIndexes = logics.zipWithIndex.map { case (stage, idx) ⇒ stage → idx }.toMap
-      for (connection ← connections if connection != null) {
-        val inName = "N" + logicIndexes(connection.inOwner)
-        val outName = "N" + logicIndexes(connection.outOwner)
-
-        builder.append(s"  $inName -> $outName ")
-        connection.portState match {
-          case InReady ⇒
-            builder.append("[label=shouldPull, color=blue];")
-          case OutReady ⇒
-            builder.append(s"[label=shouldPush, color=red];")
-          case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) ⇒
-            builder.append("[style=dotted, label=closed, dir=both];")
-          case _ ⇒
-        }
-        builder.append("\n")
-      }
-
-      builder.append("}\n================================================================\n")
-      builder.append(s"// $queueStatus (running=$runningStages, shutdown=${shutdownCounter.mkString(",")})")
-      builder.toString()
-    } catch {
-      case _: NoSuchElementException ⇒ "Not all logics has a stage listed, cannot create graph"
+        LogicSnapshot(idx, label, logic.attributes)
     }
+    val logicIndexes = logics.zipWithIndex.map { case (stage, idx) ⇒ stage → idx }.toMap
+    val connectionSnapshots = connections.filter(_ != null)
+      .map { connection ⇒
+        ConnectionSnapshot(
+          connection.id,
+          logicSnapshots(logicIndexes(connection.inOwner)),
+          logicSnapshots(logicIndexes(connection.outOwner)),
+          connection.portState match {
+            case InReady ⇒ ConnectionSnapshot.ShouldPull
+            case OutReady ⇒ ConnectionSnapshot.ShouldPush
+            case x if (x | InClosed | OutClosed) == (InClosed | OutClosed) ⇒ ConnectionSnapshot.Closed
+          }
+        )
+      }
+
+    InterpreterSnapshot(
+      logicSnapshots,
+      connectionSnapshots,
+      queueStatus,
+      runningStages,
+      shutdownCounter.toList)
   }
+
 }
