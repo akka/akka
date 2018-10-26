@@ -61,7 +61,7 @@ trait RetrySupport {
    * )
    * }}}
    */
-  def retry[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration, backoff: Int = 1)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] =
+  def retry[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration, backoff: Int)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] =
     retryF(attempt, attempts, delay, backoff)((_, _) => ())
 
   /**
