@@ -22,8 +22,6 @@ import static org.junit.Assert.assertNotEquals;
 
 import org.scalatest.junit.JUnitSuite;
 
-import static jdocs.tutorial_5.DeviceGroupQueryTest.assertEqualTemperatures;
-
 public class DeviceGroupTest extends JUnitSuite {
 
   static ActorSystem system;
@@ -166,9 +164,9 @@ public class DeviceGroupTest extends JUnitSuite {
     Map<String, DeviceGroup.TemperatureReading> expectedTemperatures = new HashMap<>();
     expectedTemperatures.put("device1", new DeviceGroup.Temperature(1.0));
     expectedTemperatures.put("device2", new DeviceGroup.Temperature(2.0));
-    expectedTemperatures.put("device3", new DeviceGroup.TemperatureNotAvailable());
+    expectedTemperatures.put("device3", DeviceGroup.TemperatureNotAvailable.INSTANCE);
 
-    assertEqualTemperatures(expectedTemperatures, response.temperatures);
+    assertEquals(expectedTemperatures, response.temperatures);
   }
   //#group-query-integration-test
 }

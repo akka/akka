@@ -52,7 +52,7 @@ public class BlogPostExample {
   //#state
   interface BlogState {}
 
-  public static enum BlankState implements BlogState {
+  public enum BlankState implements BlogState {
     INSTANCE
   }
 
