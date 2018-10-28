@@ -156,7 +156,7 @@ public class ClusterShardingTest {
   static//#counter-actor
   public class Counter extends AbstractPersistentActor {
 
-    public static enum CounterOp {
+    public enum CounterOp {
       INCREMENT, DECREMENT
     }
 

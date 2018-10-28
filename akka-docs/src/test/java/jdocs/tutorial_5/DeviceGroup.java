@@ -77,22 +77,47 @@ public class DeviceGroup extends AbstractActor {
     public Temperature(double value) {
       this.value = value;
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      Temperature that = (Temperature) o;
+
+      return Double.compare(that.value, value) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+      long temp = Double.doubleToLongBits(value);
+      return (int) (temp ^ (temp >>> 32));
+    }
+
+    @Override
+    public String toString() {
+      return "Temperature{" +
+        "value=" + value +
+        '}';
+    }
   }
 
-  public static final class TemperatureNotAvailable implements TemperatureReading {
+  public enum TemperatureNotAvailable implements TemperatureReading {
+    INSTANCE
   }
 
-  public static final class DeviceNotAvailable implements TemperatureReading {
+  public enum DeviceNotAvailable implements TemperatureReading {
+    INSTANCE
   }
 
-  public static final class DeviceTimedOut implements TemperatureReading {
+  public enum DeviceTimedOut implements TemperatureReading {
+    INSTANCE
   }
   //#query-protocol
 
 
   final Map<String, ActorRef> deviceIdToActor = new HashMap<>();
   final Map<ActorRef, String> actorToDeviceId = new HashMap<>();
-  final long nextCollectionId = 0L;
 
   @Override
   public void preStart() {
