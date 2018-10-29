@@ -1,6 +1,5 @@
-/**
+/*
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- * Copyright (C) 2012-2016 Eligotech BV.
  */
 
 package akka.persistence.journal
