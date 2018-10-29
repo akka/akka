@@ -53,8 +53,6 @@ trait CopyrightHeader extends AutoPlugin {
 
   val cStyleComment = HeaderCommentStyle.cStyleBlockComment.copy(commentCreator = new CommentCreator() {
 
-    import HeaderCommentStyle.cStyleBlockComment.commentCreator
-
     def updateLightbendHeader(header: String): String = header match {
       case CopyrightHeaderPattern(years, null, _)     =>
         if (years != CurrentYear)
@@ -67,11 +65,35 @@ trait CopyrightHeader extends AutoPlugin {
         header
     }
 
+    def parseStartAndEndYear(header:String):Option[(String,Option[String])] = header match {
+      case CopyrightHeaderPattern(years, null, _)     =>
+        Some((years,None))
+      case CopyrightHeaderPattern(years, endYears, _) =>
+        Some((years,Some(endYears)))
+      case _                                          =>
+        None
+    }
+
     override def apply(text: String, existingText: Option[String]): String = {
-      existingText
-        .map(updateLightbendHeader)
-        .getOrElse(commentCreator(text, existingText))
-        .trim
+      val formatted = existingText match {
+        case Some(existedText) => parseStartAndEndYear(existedText) match {
+          case Some((years,None)) =>
+            if (years != CurrentYear){
+              val header = headerFor(years + "-" + CurrentYear)
+              HeaderCommentStyle.cStyleBlockComment.commentCreator(header,existingText)
+            }else {
+              HeaderCommentStyle.cStyleBlockComment.commentCreator(headerFor(CurrentYear),existingText)
+            }
+          case Some((years,Some(endYears))) =>
+            val header = headerFor(years.replace(endYears, "-" + CurrentYear))
+            HeaderCommentStyle.cStyleBlockComment.commentCreator(header,existingText)
+          case None =>
+            existedText
+        }
+        case None =>
+          HeaderCommentStyle.cStyleBlockComment.commentCreator(text,existingText)
+      }
+      formatted.trim
     }
   })
 }
@@ -81,7 +103,7 @@ object CopyrightHeader extends CopyrightHeader
 object CopyrightHeaderInPr extends CopyrightHeader {
 
   override val additional = Def.settings(
-      additionalTasks in ValidatePR += headerCheck in Compile,
-      additionalTasks in ValidatePR += headerCheck in Test
-    )
+    additionalTasks in ValidatePR += headerCheck in Compile,
+    additionalTasks in ValidatePR += headerCheck in Test
+  )
 }
