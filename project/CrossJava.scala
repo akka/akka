@@ -135,8 +135,8 @@ object CrossJava {
       def javaHomes: Vector[(String, File)] =
         wrapNull(base.list())
           .collect {
-            case dir@JavaHomeDir(vendor, m, n) =>
-              val v = JavaVersion(nullBlank(m) + n).withVendor(vendor).toString
+            case dir@JavaHomeDir(_, m, n) =>
+              val v = JavaVersion(nullBlank(m) + n).toString
               if ((base / dir / "Contents" / "Home").exists) v -> (base / dir / "Contents" / "Home")
               else v -> (base / dir)
           }
