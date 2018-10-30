@@ -4,14 +4,12 @@
 
 package akka.stream.impl
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Keep, Sink, Source }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
-import akka.testkit.TestProbe
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import akka.testkit.TestProbe
 
 class FanoutProcessorSpec extends StreamSpec {
 
@@ -47,6 +45,16 @@ class FanoutProcessorSpec extends StreamSpec {
       promise.failure(boom)
     }
 
+    "not leak running actors on completed upstream no subscriptions" in assertAllStagesStopped {
+      val probe = TestProbe()
+      val (promise, publisher) = Source.maybe[Int].toMat(Sink.asPublisher(true))(Keep.both).run()
+      val publisherRef = publisher.asInstanceOf[ActorPublisher[Int]].impl
+      probe.watch(publisherRef)
+      promise.success(None)
+
+      probe.expectTerminated(publisherRef)
+    }
+
     "not leak running actors on completed upstream with one subscription" in assertAllStagesStopped {
       val probe = TestProbe()
       val (promise, publisher) = Source.maybe[Int].toMat(Sink.asPublisher(true))(Keep.both).run()
@@ -54,14 +62,13 @@ class FanoutProcessorSpec extends StreamSpec {
       val completed = Source.fromPublisher(publisher).runWith(Sink.ignore)
       probe.watch(publisherRef)
 
-      promise.success(Some(1))
+      promise.success(None)
 
       probe.expectTerminated(publisherRef)
       // would throw if not completed
       completed.futureValue
     }
 
-    // #25634
     "not leak running actors on completed upstream with multiple subscriptions" in assertAllStagesStopped {
       val probe = TestProbe()
       val (promise, publisher) = Source.maybe[Int].toMat(Sink.asPublisher(true))(Keep.both).run()
@@ -69,7 +76,7 @@ class FanoutProcessorSpec extends StreamSpec {
       val completed1 = Source.fromPublisher(publisher).runWith(Sink.ignore)
       val completed2 = Source.fromPublisher(publisher).runWith(Sink.ignore)
       probe.watch(publisherRef)
-      promise.success(Some(1))
+      promise.success(None)
 
       probe.expectTerminated(publisherRef)
       // would throw if not completed
