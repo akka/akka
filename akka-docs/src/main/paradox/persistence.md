@@ -727,7 +727,7 @@ active entity (`PersistentActor`) for each id within a data center. Lightbend's
 [Multi-DC Persistence](https://developer.lightbend.com/docs/akka-commercial-addons/current/persistence-dc/index.html)
 supports active-active persistent entities across data centers.
 
-The [Lagom framework](https://www.lagom-framework.com), which is built on top of Akka encodes many of the best practices 
+The [Lagom framework](https://www.lagomframework.com), which is built on top of Akka encodes many of the best practices 
 around this. For more details see @java[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/java/ES_CQRS.html)]
 @scala[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/scala/ES_CQRS.html)] and 
 @java[[Persistent Entity](https://www.lagomframework.com/documentation/current/java/PersistentEntity.html)] 
