@@ -130,12 +130,20 @@ object Helpers {
    * INTERNAL API
    */
   private[akka] final implicit class ConfigOps(val config: Config) extends AnyVal {
+
+    import JavaDurationConverters._
+
     def getMillisDuration(path: String): FiniteDuration = getDuration(path, TimeUnit.MILLISECONDS)
 
     def getNanosDuration(path: String): FiniteDuration = getDuration(path, TimeUnit.NANOSECONDS)
 
     private def getDuration(path: String, unit: TimeUnit): FiniteDuration =
       Duration(config.getDuration(path, unit), unit)
+
+    def getPotentiallyInfiniteDuration(path: String): Duration = config.getString(path) match {
+      case "infinite" => Duration.Inf
+      case _ => config.getDuration(path).asScala
+    }
   }
 
 }
