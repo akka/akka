@@ -34,8 +34,10 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
   val hostPort = AsyncDnsResolverIntegrationSpec.dockerDnsServerPort
 
   "Resolver" must {
-    if (!dockerAvailable())
+    if (!dockerAvailable()) {
+      system.log.info("Test not run as docker is not available")
       pending
+    }
 
     "resolve single A record" in {
       val name = "a-single.foo.test"
@@ -122,8 +124,8 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
 
       answer.name shouldEqual name
       answer.records.collect { case r: SRVRecord ⇒ r }.toSet shouldEqual Set(
-        SRVRecord("service.tcp.foo.test", 86400, 10, 60, 5060, "a-single.foo.test"),
-        SRVRecord("service.tcp.foo.test", 86400, 10, 40, 5070, "a-double.foo.test")
+        SRVRecord("service.tcp.foo.test", 86400, 10, 65534, 5060, "a-single.foo.test"),
+        SRVRecord("service.tcp.foo.test", 86400, 65533, 40, 65535, "a-double.foo.test")
       )
     }
 

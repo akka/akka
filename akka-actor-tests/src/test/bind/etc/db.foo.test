@@ -72,8 +72,8 @@ many in AAAA 2001:985:965:1:ba27:ebff:fe5f:9d2d
 many in AAAA 2001:985:965:1:ba27:ebff:fe5f:9d2e
 many in AAAA 2001:985:965:1:ba27:ebff:fe5f:9d2f
 
-service.tcp   86400 IN    SRV 10       60     5060 a-single
-service.tcp   86400 IN    SRV 10       40     5070 a-double
+service.tcp   86400 IN    SRV 10       65534    5060 a-single
+service.tcp   86400 IN    SRV 65533    40       65535 a-double
 
 cname-in IN CNAME  a-double
 cname-ext IN CNAME  a-single.bar.example.
