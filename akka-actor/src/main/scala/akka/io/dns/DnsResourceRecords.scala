@@ -14,7 +14,7 @@ import akka.util.{ ByteIterator, ByteString, ByteStringBuilder }
 import scala.annotation.switch
 
 @ApiMayChange
-sealed abstract class ResourceRecord(val name: String, val ttl: Int, val recType: Short, val recClass: Short)
+sealed abstract class ResourceRecord(val name: String, val ttlSeconds: Int, val recType: Short, val recClass: Short)
   extends NoSerializationVerificationNeeded {
 
   /**
@@ -29,8 +29,8 @@ sealed abstract class ResourceRecord(val name: String, val ttl: Int, val recType
 }
 
 @ApiMayChange
-final case class ARecord(override val name: String, override val ttl: Int,
-                         ip: InetAddress) extends ResourceRecord(name, ttl, RecordType.A.code, RecordClass.IN.code) {
+final case class ARecord(override val name: String, override val ttlSeconds: Int,
+                         ip: InetAddress) extends ResourceRecord(name, ttlSeconds, RecordType.A.code, RecordClass.IN.code) {
 
   /**
    * INTERNAL API
@@ -57,8 +57,8 @@ private[dns] object ARecord {
 }
 
 @ApiMayChange
-final case class AAAARecord(override val name: String, override val ttl: Int,
-                            ip: Inet6Address) extends ResourceRecord(name, ttl, RecordType.AAAA.code, RecordClass.IN.code) {
+final case class AAAARecord(override val name: String, override val ttlSeconds: Int,
+                            ip: Inet6Address) extends ResourceRecord(name, ttlSeconds, RecordType.AAAA.code, RecordClass.IN.code) {
 
   /**
    * INTERNAL API
@@ -90,8 +90,8 @@ private[dns] object AAAARecord {
 }
 
 @ApiMayChange
-final case class CNameRecord(override val name: String, override val ttl: Int,
-                             canonicalName: String) extends ResourceRecord(name, ttl, RecordType.CNAME.code, RecordClass.IN.code) {
+final case class CNameRecord(override val name: String, override val ttlSeconds: Int,
+                             canonicalName: String) extends ResourceRecord(name, ttlSeconds, RecordType.CNAME.code, RecordClass.IN.code) {
   /**
    * INTERNAL API
    */
@@ -115,8 +115,8 @@ private[dns] object CNameRecord {
 }
 
 @ApiMayChange
-final case class SRVRecord(override val name: String, override val ttl: Int,
-                           priority: Int, weight: Int, port: Int, target: String) extends ResourceRecord(name, ttl, RecordType.SRV.code, RecordClass.IN.code) {
+final case class SRVRecord(override val name: String, override val ttlSeconds: Int,
+                           priority: Int, weight: Int, port: Int, target: String) extends ResourceRecord(name, ttlSeconds, RecordType.SRV.code, RecordClass.IN.code) {
   /**
    * INTERNAL API
    */
@@ -148,9 +148,9 @@ private[dns] object SRVRecord {
 }
 
 @ApiMayChange
-final case class UnknownRecord(override val name: String, override val ttl: Int,
+final case class UnknownRecord(override val name: String, override val ttlSeconds: Int,
                                override val recType: Short, override val recClass: Short,
-                               data: ByteString) extends ResourceRecord(name, ttl, recType, recClass) {
+                               data: ByteString) extends ResourceRecord(name, ttlSeconds, recType, recClass) {
   /**
    * INTERNAL API
    */
