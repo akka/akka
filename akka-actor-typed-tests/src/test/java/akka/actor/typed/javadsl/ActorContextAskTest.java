@@ -49,7 +49,7 @@ public class ActorContextAskTest extends JUnitSuite {
             else return exception;
           });
 
-      return Behaviors.receive((ActorContext<Object> ctx, Object message) -> {
+      return Behaviors.receiveMessage((Object message) -> {
         probe.ref().tell(message);
         return Behaviors.same();
       });
