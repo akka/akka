@@ -14,7 +14,7 @@ import akka.util.{ ByteIterator, ByteString, ByteStringBuilder }
 import scala.annotation.switch
 
 @ApiMayChange
-sealed abstract class ResourceRecord(val name: String, val ttlSeconds: Int, val recType: Short, val recClass: Short)
+sealed abstract class ResourceRecord(val name: String, val ttlInSeconds: Int, val recType: Short, val recClass: Short)
   extends NoSerializationVerificationNeeded {
 
   /**
@@ -29,8 +29,8 @@ sealed abstract class ResourceRecord(val name: String, val ttlSeconds: Int, val 
 }
 
 @ApiMayChange
-final case class ARecord(override val name: String, override val ttlSeconds: Int,
-                         ip: InetAddress) extends ResourceRecord(name, ttlSeconds, RecordType.A.code, RecordClass.IN.code) {
+final case class ARecord(override val name: String, override val ttlInSeconds: Int,
+                         ip: InetAddress) extends ResourceRecord(name, ttlInSeconds, RecordType.A.code, RecordClass.IN.code) {
 
   /**
    * INTERNAL API
@@ -49,16 +49,16 @@ final case class ARecord(override val name: String, override val ttlSeconds: Int
  */
 @InternalApi
 private[dns] object ARecord {
-  def parseBody(name: String, ttlSeconds: Int, length: Short, it: ByteIterator): ARecord = {
+  def parseBody(name: String, ttlInSeconds: Int, length: Short, it: ByteIterator): ARecord = {
     val addr = Array.ofDim[Byte](4)
     it.getBytes(addr)
-    ARecord(name, ttlSeconds, InetAddress.getByAddress(addr).asInstanceOf[Inet4Address])
+    ARecord(name, ttlInSeconds, InetAddress.getByAddress(addr).asInstanceOf[Inet4Address])
   }
 }
 
 @ApiMayChange
-final case class AAAARecord(override val name: String, override val ttlSeconds: Int,
-                            ip: Inet6Address) extends ResourceRecord(name, ttlSeconds, RecordType.AAAA.code, RecordClass.IN.code) {
+final case class AAAARecord(override val name: String, override val ttlInSeconds: Int,
+                            ip: Inet6Address) extends ResourceRecord(name, ttlInSeconds, RecordType.AAAA.code, RecordClass.IN.code) {
 
   /**
    * INTERNAL API
@@ -82,16 +82,16 @@ private[dns] object AAAARecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttlSeconds: Int, length: Short, it: ByteIterator): AAAARecord = {
+  def parseBody(name: String, ttlInSeconds: Int, length: Short, it: ByteIterator): AAAARecord = {
     val addr = Array.ofDim[Byte](16)
     it.getBytes(addr)
-    AAAARecord(name, ttlSeconds, InetAddress.getByAddress(addr).asInstanceOf[Inet6Address])
+    AAAARecord(name, ttlInSeconds, InetAddress.getByAddress(addr).asInstanceOf[Inet6Address])
   }
 }
 
 @ApiMayChange
-final case class CNameRecord(override val name: String, override val ttlSeconds: Int,
-                             canonicalName: String) extends ResourceRecord(name, ttlSeconds, RecordType.CNAME.code, RecordClass.IN.code) {
+final case class CNameRecord(override val name: String, override val ttlInSeconds: Int,
+                             canonicalName: String) extends ResourceRecord(name, ttlInSeconds, RecordType.CNAME.code, RecordClass.IN.code) {
   /**
    * INTERNAL API
    */
@@ -109,14 +109,14 @@ private[dns] object CNameRecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttlSeconds: Int, length: Short, it: ByteIterator, msg: ByteString): CNameRecord = {
-    CNameRecord(name, ttlSeconds, DomainName.parse(it, msg))
+  def parseBody(name: String, ttlInSeconds: Int, length: Short, it: ByteIterator, msg: ByteString): CNameRecord = {
+    CNameRecord(name, ttlInSeconds, DomainName.parse(it, msg))
   }
 }
 
 @ApiMayChange
-final case class SRVRecord(override val name: String, override val ttlSeconds: Int,
-                           priority: Int, weight: Int, port: Int, target: String) extends ResourceRecord(name, ttlSeconds, RecordType.SRV.code, RecordClass.IN.code) {
+final case class SRVRecord(override val name: String, override val ttlInSeconds: Int,
+                           priority: Int, weight: Int, port: Int, target: String) extends ResourceRecord(name, ttlInSeconds, RecordType.SRV.code, RecordClass.IN.code) {
   /**
    * INTERNAL API
    */
@@ -139,18 +139,18 @@ private[dns] object SRVRecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttlSeconds: Int, length: Short, it: ByteIterator, msg: ByteString): SRVRecord = {
+  def parseBody(name: String, ttlInSeconds: Int, length: Short, it: ByteIterator, msg: ByteString): SRVRecord = {
     val priority = it.getShort
     val weight = it.getShort
     val port = it.getShort
-    SRVRecord(name, ttlSeconds, priority, weight, port, DomainName.parse(it, msg))
+    SRVRecord(name, ttlInSeconds, priority, weight, port, DomainName.parse(it, msg))
   }
 }
 
 @ApiMayChange
-final case class UnknownRecord(override val name: String, override val ttlSeconds: Int,
+final case class UnknownRecord(override val name: String, override val ttlInSeconds: Int,
                                override val recType: Short, override val recClass: Short,
-                               data: ByteString) extends ResourceRecord(name, ttlSeconds, recType, recClass) {
+                               data: ByteString) extends ResourceRecord(name, ttlInSeconds, recType, recClass) {
   /**
    * INTERNAL API
    */
@@ -171,8 +171,8 @@ private[dns] object UnknownRecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttlSeconds: Int, recType: Short, recClass: Short, length: Short, it: ByteIterator): UnknownRecord =
-    UnknownRecord(name, ttlSeconds, recType, recClass, it.toByteString)
+  def parseBody(name: String, ttlInSeconds: Int, recType: Short, recClass: Short, length: Short, it: ByteIterator): UnknownRecord =
+    UnknownRecord(name, ttlInSeconds, recType, recClass, it.toByteString)
 }
 
 /**

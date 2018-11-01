@@ -116,12 +116,12 @@ private[io] final class AsyncDnsResolver(
         ipv4Recs.flatMap(ipv4Records ⇒ {
           // TODO, do we want config to specify a max for this?
           if (ipv4Records.rrs.nonEmpty) {
-            val minTtl4 = ipv4Records.rrs.minBy(_.ttlSeconds).ttlSeconds
+            val minTtl4 = ipv4Records.rrs.minBy(_.ttlInSeconds).ttlInSeconds
             cache.put((name, Ipv4Type), ipv4Records, minTtl4 * 1000)
           }
           ipv6Recs.map(ipv6Records ⇒ {
             if (ipv6Records.rrs.nonEmpty) {
-              val minTtl6 = ipv6Records.rrs.minBy(_.ttlSeconds).ttlSeconds
+              val minTtl6 = ipv6Records.rrs.minBy(_.ttlInSeconds).ttlInSeconds
               cache.put((name, Ipv6Type), ipv6Records, minTtl6 * 1000)
             }
             ipv4Records.rrs ++ ipv6Records.rrs
@@ -136,8 +136,8 @@ private[io] final class AsyncDnsResolver(
             sendQuestion(resolver, SrvQuestion(nextId(), caseFoldedName))
               .map(answer ⇒ {
                 if (answer.rrs.nonEmpty) {
-                  val minTtlSeconds = answer.rrs.minBy(_.ttlSeconds).ttlSeconds
-                  cache.put((name, SrvType), answer, minTtlSeconds * 1000) // cache uses ttl in millis
+                  val minttlInSeconds = answer.rrs.minBy(_.ttlInSeconds).ttlInSeconds
+                  cache.put((name, SrvType), answer, minttlInSeconds * 1000) // cache uses ttl in millis
                 }
                 DnsProtocol.Resolved(name, answer.rrs, answer.additionalRecs)
               })
