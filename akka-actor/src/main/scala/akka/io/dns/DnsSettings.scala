@@ -68,7 +68,7 @@ object DnsSettings {
 
   /**
    * INTERNAL API
-   * Find out the default search domains that Java would use normally, e.g. when using InetAddress to resolve domains.
+   * Find out the default search lists that Java would use normally, e.g. when using InetAddress to resolve domains.
    *
    * The default nameservers are attempted to be obtained from: jndi-dns and from `sun.net.dnsResolverConfiguration`
    * as a fallback (which is expected to fail though when running on JDK9+ due to the module encapsulation of sun packages).
