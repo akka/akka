@@ -49,10 +49,10 @@ final case class ARecord(override val name: String, override val ttlSeconds: Int
  */
 @InternalApi
 private[dns] object ARecord {
-  def parseBody(name: String, ttl: Int, length: Short, it: ByteIterator): ARecord = {
+  def parseBody(name: String, ttlSeconds: Int, length: Short, it: ByteIterator): ARecord = {
     val addr = Array.ofDim[Byte](4)
     it.getBytes(addr)
-    ARecord(name, ttl, InetAddress.getByAddress(addr).asInstanceOf[Inet4Address])
+    ARecord(name, ttlSeconds, InetAddress.getByAddress(addr).asInstanceOf[Inet4Address])
   }
 }
 
@@ -82,10 +82,10 @@ private[dns] object AAAARecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttl: Int, length: Short, it: ByteIterator): AAAARecord = {
+  def parseBody(name: String, ttlSeconds: Int, length: Short, it: ByteIterator): AAAARecord = {
     val addr = Array.ofDim[Byte](16)
     it.getBytes(addr)
-    AAAARecord(name, ttl, InetAddress.getByAddress(addr).asInstanceOf[Inet6Address])
+    AAAARecord(name, ttlSeconds, InetAddress.getByAddress(addr).asInstanceOf[Inet6Address])
   }
 }
 
@@ -109,8 +109,8 @@ private[dns] object CNameRecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttl: Int, length: Short, it: ByteIterator, msg: ByteString): CNameRecord = {
-    CNameRecord(name, ttl, DomainName.parse(it, msg))
+  def parseBody(name: String, ttlSeconds: Int, length: Short, it: ByteIterator, msg: ByteString): CNameRecord = {
+    CNameRecord(name, ttlSeconds, DomainName.parse(it, msg))
   }
 }
 
@@ -139,11 +139,11 @@ private[dns] object SRVRecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttl: Int, length: Short, it: ByteIterator, msg: ByteString): SRVRecord = {
+  def parseBody(name: String, ttlSeconds: Int, length: Short, it: ByteIterator, msg: ByteString): SRVRecord = {
     val priority = it.getShort
     val weight = it.getShort
     val port = it.getShort
-    SRVRecord(name, ttl, priority, weight, port, DomainName.parse(it, msg))
+    SRVRecord(name, ttlSeconds, priority, weight, port, DomainName.parse(it, msg))
   }
 }
 
@@ -171,8 +171,8 @@ private[dns] object UnknownRecord {
    * INTERNAL API
    */
   @InternalApi
-  def parseBody(name: String, ttl: Int, recType: Short, recClass: Short, length: Short, it: ByteIterator): UnknownRecord =
-    UnknownRecord(name, ttl, recType, recClass, it.toByteString)
+  def parseBody(name: String, ttlSeconds: Int, recType: Short, recClass: Short, length: Short, it: ByteIterator): UnknownRecord =
+    UnknownRecord(name, ttlSeconds, recType, recClass, it.toByteString)
 }
 
 /**
