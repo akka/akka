@@ -2,7 +2,9 @@
 
 @@@ warning
 
-`async-dns` does not currently support TCP fallback and so DNS repsonses may be truncated. See [#25460](https://github.com/akka/akka/issues/25460)
+`async-dns` does not support:
+* [Local hosts file](https://github.com/akka/akka/issues/25846) e.g. `/etc/hosts` on Unix systems
+* [Search domains](https://github.com/akka/akka/issues/25825) e.g. in `/etc/resolve.conf` on Unix systems
 
 @@@
 
