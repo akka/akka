@@ -92,13 +92,13 @@ public class IntroTest {
     }
 
     public static final Behavior<Start> main =
-      Behaviors.setup(context -> {
+      Behaviors.setup(ctx -> {
         final ActorRef<HelloWorld.Greet> greeter =
-            context.spawn(HelloWorld.greeter, "greeter");
+            ctx.spawn(HelloWorld.greeter, "greeter");
 
         return Behaviors.receiveMessage(msg -> {
           ActorRef<HelloWorld.Greeted> replyTo =
-              context.spawn(HelloWorldBot.bot(0, 3), msg.name);
+              ctx.spawn(HelloWorldBot.bot(0, 3), msg.name);
           greeter.tell(new HelloWorld.Greet(msg.name, replyTo));
           return Behaviors.same();
         });
@@ -120,16 +120,16 @@ public class IntroTest {
 
     //#hello-world-main-with-dispatchers
     public static final Behavior<Start> main =
-      Behaviors.setup(context -> {
+      Behaviors.setup(ctx -> {
         final String dispatcherPath = "akka.actor.default-blocking-io-dispatcher";
 
         Props props = DispatcherSelector.fromConfig(dispatcherPath);
         final ActorRef<HelloWorld.Greet> greeter =
-            context.spawn(HelloWorld.greeter, "greeter", props);
+            ctx.spawn(HelloWorld.greeter, "greeter", props);
 
         return Behaviors.receiveMessage(msg -> {
           ActorRef<HelloWorld.Greeted> replyTo =
-              context.spawn(HelloWorldBot.bot(0, 3), msg.name);
+              ctx.spawn(HelloWorldBot.bot(0, 3), msg.name);
           greeter.tell(new HelloWorld.Greet(msg.name, replyTo));
           return Behaviors.same();
         });

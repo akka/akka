@@ -57,8 +57,8 @@ public class GracefulStopDocTest {
 
           // perform graceful stop, executing cleanup before final system termination
           // behavior executing cleanup is passed as a parameter to Actor.stopped
-          return Behaviors.stopped(Behaviors.receiveSignal((context, PostStop) -> {
-            context.getSystem().log().info("Cleanup!");
+          return Behaviors.stopped(Behaviors.receiveSignal((ctx, PostStop) -> {
+            ctx.getSystem().log().info("Cleanup!");
             return Behaviors.same();
           }));
         })

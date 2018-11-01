@@ -31,7 +31,7 @@ public class ActorContextAskTest extends JUnitSuite {
 
   @Test
   public void provideASafeAsk() {
-    final Behavior<Ping> pingPongBehavior = Behaviors.receive((ActorContext<Ping> context, Ping message) -> {
+    final Behavior<Ping> pingPongBehavior = Behaviors.receive((ActorContext<Ping> ctx, Ping message) -> {
       message.respondTo.tell(new Pong());
       return Behaviors.same();
     });
@@ -49,7 +49,7 @@ public class ActorContextAskTest extends JUnitSuite {
             else return exception;
           });
 
-      return Behaviors.receive((ActorContext<Object> context, Object message) -> {
+      return Behaviors.receive((ActorContext<Object> ctx, Object message) -> {
         probe.ref().tell(message);
         return Behaviors.same();
       });

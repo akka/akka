@@ -100,7 +100,7 @@ See @ref:[persistence](persistence.md) for more details.
 
 If the state of the entities are persistent you may stop entities that are not used to
 reduce memory consumption. This is done by the application specific implementation of
-the entity actors for example by defining receive timeout (`context.setReceiveTimeout`).
+the entity actors for example by defining receive timeout (`ctx.setReceiveTimeout`).
 If a message is already enqueued to the entity when it stops itself the enqueued message
 in the mailbox will be dropped. To support graceful passivation without losing such
 messages the entity actor can send `ClusterSharding.Passivate` to to the

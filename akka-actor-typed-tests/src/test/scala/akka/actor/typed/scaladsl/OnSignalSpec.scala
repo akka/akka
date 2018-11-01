@@ -16,9 +16,9 @@ final class OnSignalSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "must correctly install the signal handler" in {
       val probe = TestProbe[Done]("probe")
       val behavior =
-        Behaviors.setup[Nothing] { context ⇒
-          val stoppedChild = context.spawn(Behaviors.stopped, "stopped-child")
-          context.watch(stoppedChild)
+        Behaviors.setup[Nothing] { ctx ⇒
+          val stoppedChild = ctx.spawn(Behaviors.stopped, "stopped-child")
+          ctx.watch(stoppedChild)
           Behaviors.receiveSignal[Nothing] {
             case (_, Terminated(`stoppedChild`)) ⇒
               probe.ref ! Done

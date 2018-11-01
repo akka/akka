@@ -27,20 +27,20 @@ object TypedWatchingUntypedSpec {
     case object Pong extends Command
 
     val behavior: Behavior[Command] =
-      Behaviors.setup { context ⇒
-        // context.spawn is an implicit extension method
-        val untyped = context.actorOf(Untyped.props(), "second")
+      Behaviors.setup { ctx ⇒
+        // ctx.actorOf is an implicit extension method
+        val untyped = ctx.actorOf(Untyped.props(), "second")
 
-        // context.watch is an implicit extension method
-        context.watch(untyped)
+        // ctx.watch is an implicit extension method
+        ctx.watch(untyped)
 
         // illustrating how to pass sender, toUntyped is an implicit extension method
-        untyped.tell(Typed.Ping(context.self), context.self.toUntyped)
+        untyped.tell(Typed.Ping(ctx.self), ctx.self.toUntyped)
 
         Behaviors.receivePartial[Command] {
           case (ctx, Pong) ⇒
             // it's not possible to get the sender, that must be sent in message
-            // context.stop is an implicit extension method
+            // ctx.stop is an implicit extension method
             ctx.stop(untyped)
             Behaviors.same
         } receiveSignal {

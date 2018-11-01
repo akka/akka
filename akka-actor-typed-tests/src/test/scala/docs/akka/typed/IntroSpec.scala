@@ -70,11 +70,11 @@ object IntroSpec {
     final case class Start(name: String)
 
     val main: Behavior[Start] =
-      Behaviors.setup { context ⇒
-        val greeter = context.spawn(HelloWorld.greeter, "greeter")
+      Behaviors.setup { ctx ⇒
+        val greeter = ctx.spawn(HelloWorld.greeter, "greeter")
 
         Behaviors.receiveMessage { msg ⇒
-          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name)
+          val replyTo = ctx.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name)
           greeter ! HelloWorld.Greet(msg.name, replyTo)
           Behaviors.same
         }
@@ -89,14 +89,14 @@ object IntroSpec {
 
     //#hello-world-main-with-dispatchers
     val main: Behavior[Start] =
-      Behaviors.setup { context ⇒
+      Behaviors.setup { ctx ⇒
         val dispatcherPath = "akka.actor.default-blocking-io-dispatcher"
 
         val props = DispatcherSelector.fromConfig(dispatcherPath)
-        val greeter = context.spawn(HelloWorld.greeter, "greeter", props)
+        val greeter = ctx.spawn(HelloWorld.greeter, "greeter", props)
 
         Behaviors.receiveMessage { msg ⇒
-          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name)
+          val replyTo = ctx.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name)
 
           greeter ! HelloWorld.Greet(msg.name, replyTo)
           Behaviors.same
