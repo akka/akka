@@ -244,6 +244,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         probe.expectMsgType[MemberUp]
 
         Cluster(sys3).down(Cluster(sys3).selfAddress)
+        probe.expectMsgType[MemberDowned]
         probe.expectMsgType[MemberRemoved]
         Await.result(sys3.whenTerminated, 10.seconds)
         Cluster(sys3).isTerminated should ===(true)
