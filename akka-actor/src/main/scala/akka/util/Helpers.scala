@@ -148,7 +148,6 @@ object Helpers {
     def getPotentiallyUndefinedDuration(path: String): Duration = toRootLowerCase(config.getString(path)) match {
       case "" | "off" => Duration.Undefined
       case _ => config.getDuration(path).asScala
-
     }
   }
 
