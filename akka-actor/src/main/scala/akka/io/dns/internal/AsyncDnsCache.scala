@@ -55,10 +55,10 @@ import scala.annotation.tailrec
   }
 
   @tailrec
-  private[io] final def put(key: (String, QueryType), records: Answer, ttlMillis: Long): Unit = {
+  private[io] final def put(key: (String, QueryType), records: Answer, ttlInMillis: Long): Unit = {
     val c = cache.get()
-    if (!cache.compareAndSet(c, c.put(key, records, ttlMillis)))
-      put(key, records, ttlMillis)
+    if (!cache.compareAndSet(c, c.put(key, records, ttlInMillis)))
+      put(key, records, ttlInMillis)
   }
 
   @tailrec
