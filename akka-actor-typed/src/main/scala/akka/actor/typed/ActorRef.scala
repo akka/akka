@@ -4,6 +4,7 @@
 
 package akka.actor.typed
 
+import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.{ actor ⇒ a }
 import scala.annotation.unchecked.uncheckedVariance
@@ -20,7 +21,10 @@ import akka.actor.typed.internal.InternalRecipientRef
  * messages are delivered to the [[DeadLetter]] channel of the
  * [[akka.event.EventStream]] on a best effort basis
  * (i.e. this delivery is not reliable).
+ *
+ * Not for user extension
  */
+@DoNotInherit
 trait ActorRef[-T] extends RecipientRef[T] with java.lang.Comparable[ActorRef[_]] with java.io.Serializable { this: InternalRecipientRef[T] ⇒
   /**
    * Send a message to the Actor referenced by this ActorRef using *at-most-once*
