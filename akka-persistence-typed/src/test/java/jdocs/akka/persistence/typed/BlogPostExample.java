@@ -135,8 +135,6 @@ public class BlogPostExample {
       this.replyTo = replyTo;
     }
   }
-  public static class PassivatePost implements BlogCommand {
-  }
   public static class PostContent implements BlogCommand {
     final String postId;
     final String title;
@@ -206,8 +204,7 @@ public class BlogPostExample {
 
     private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState> commonCommandHandler() {
       return commandHandlerBuilder(BlogState.class)
-          .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled())
-          .matchCommand(PassivatePost.class, (state, cmd) -> Effect().stop());
+          .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled());
     }
     //#post-added-command-handler
 

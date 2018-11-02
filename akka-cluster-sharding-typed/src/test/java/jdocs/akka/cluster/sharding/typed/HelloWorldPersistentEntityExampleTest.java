@@ -44,8 +44,7 @@ public class HelloWorldPersistentEntityExampleTest extends JUnitSuite {
       sharding.start(
         Entity.ofPersistentEntity(
           HelloWorld.ENTITY_TYPE_KEY,
-          ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId()))
-        .withStopMessage(HelloWorld.Passivate.INSTANCE));
+          ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
       _sharding = sharding;
     }
     return _sharding;

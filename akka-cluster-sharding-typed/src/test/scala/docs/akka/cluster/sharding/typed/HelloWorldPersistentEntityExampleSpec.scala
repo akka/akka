@@ -37,8 +37,7 @@ class HelloWorldPersistentEntityExampleSpec extends ScalaTestWithActorTestKit(He
 
     sharding.start(Entity(
       HelloWorld.entityTypeKey,
-      ctx ⇒ HelloWorld.persistentEntity(ctx.entityId))
-      .withStopMessage(HelloWorld.Passivate))
+      ctx ⇒ HelloWorld.persistentEntity(ctx.entityId)))
   }
 
   "HelloWorld example" must {

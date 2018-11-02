@@ -105,9 +105,6 @@ public class NullBlogState {
       this.replyTo = replyTo;
     }
   }
-  public static class PassivatePost implements BlogCommand {
-
-  }
   public static class PostContent implements BlogCommand {
     final String postId;
     final String title;
@@ -128,8 +125,7 @@ public class NullBlogState {
             PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
             return Effect().persist(event)
                 .andThen(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
-          })
-          .matchCommand(PassivatePost.class, cmd -> Effect().stop());
+          });
     }
 
     private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState> postCommandHandler() {
@@ -147,8 +143,7 @@ public class NullBlogState {
             cmd.replyTo.tell(state.postContent);
             return Effect().none();
           })
-          .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled())
-          .matchCommand(PassivatePost.class, cmd -> Effect().stop());
+          .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled());
     }
 
     public BlogBehavior(PersistenceId persistenceId) {

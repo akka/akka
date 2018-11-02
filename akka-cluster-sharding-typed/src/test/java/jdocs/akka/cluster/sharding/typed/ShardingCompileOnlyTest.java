@@ -22,14 +22,12 @@ import akka.cluster.sharding.typed.javadsl.Entity;
 
 import jdocs.akka.persistence.typed.BlogPostExample.BlogCommand;
 import jdocs.akka.persistence.typed.BlogPostExample.BlogBehavior;
-import jdocs.akka.persistence.typed.BlogPostExample.PassivatePost;
 
 public class ShardingCompileOnlyTest {
 
   //#counter-messages
   interface CounterCommand {}
   public static class Increment implements CounterCommand { }
-  public static class GoodByeCounter implements CounterCommand { }
 
   public static class GetValue implements CounterCommand {
     private final ActorRef<Integer> replyTo;
@@ -50,15 +48,14 @@ public class ShardingCompileOnlyTest {
         msg.replyTo.tell(value);
         return Behaviors.same();
       })
-      .onMessage(GoodByeCounter.class, (ctx, msg) -> {
-        return Behaviors.stopped();
-      })
       .build();
   }
   //#counter
 
   //#counter-passivate
   public static class Idle implements CounterCommand { }
+
+  public static class GoodByeCounter implements CounterCommand { }
 
   public static Behavior<CounterCommand> counter2(ActorRef<ClusterSharding.ShardCommand> shard, String entityId) {
     return Behaviors.setup(ctx -> {
@@ -126,8 +123,7 @@ public class ShardingCompileOnlyTest {
     ActorRef<ShardingEnvelope<CounterCommand>> shardRegion = sharding.start(
       Entity.of(
         typeKey,
-        ctx -> counter(ctx.getEntityId(),0))
-        .withStopMessage(new GoodByeCounter()));
+        ctx -> counter(ctx.getEntityId(),0)));
     //#start
 
     //#send
@@ -150,8 +146,7 @@ public class ShardingCompileOnlyTest {
     sharding.start(
       Entity.of(
         blogTypeKey,
-        ctx -> BlogBehavior.behavior(ctx.getEntityId()))
-        .withStopMessage(new PassivatePost()));
+        ctx -> BlogBehavior.behavior(ctx.getEntityId())));
     //#persistence
   }
 }
