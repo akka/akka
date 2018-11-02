@@ -6,7 +6,7 @@ package akka.actor.testkit.typed
 
 import com.typesafe.config.Config
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 import akka.actor.typed.ActorSystem
