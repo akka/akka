@@ -104,16 +104,16 @@ public class StashDocTest extends JUnitSuite {
 
     private Behavior<Command> init() {
       return Behaviors.receive(Command.class)
-          .onMessage(InitialState.class, (context, msg) -> {
+          .onMessage(InitialState.class, (context, message) -> {
             // now we are ready to handle stashed messages if any
-            return buffer.unstashAll(context, active(msg.value));
+            return buffer.unstashAll(context, active(message.value));
           })
-          .onMessage(DBError.class, (context, msg) -> {
-            throw msg.cause;
+          .onMessage(DBError.class, (context, message) -> {
+            throw message.cause;
           })
-          .onMessage(Command.class, (context, msg) -> {
+          .onMessage(Command.class, (context, message) -> {
             // stash all other messages for later processing
-            buffer.stash(msg);
+            buffer.stash(message);
             return Behaviors.same();
           })
           .build();
@@ -121,19 +121,19 @@ public class StashDocTest extends JUnitSuite {
 
     private Behavior<Command> active(String state) {
       return Behaviors.receive(Command.class)
-          .onMessage(Get.class, (context, msg) -> {
-            msg.replyTo.tell(state);
+          .onMessage(Get.class, (context, message) -> {
+            message.replyTo.tell(state);
             return Behaviors.same();
           })
-          .onMessage(Save.class, (context, msg) -> {
-            db.save(id, msg.payload)
+          .onMessage(Save.class, (context, message) -> {
+            db.save(id, message.payload)
               .whenComplete((value, cause) -> {
                 if (cause == null)
                   context.getSelf().tell(SaveSuccess.instance);
                 else
                   context.getSelf().tell(new DBError(asRuntimeException(cause)));
               });
-            return saving(msg.payload, msg.replyTo);
+            return saving(message.payload, message.replyTo);
           })
           .build();
     }
@@ -144,11 +144,11 @@ public class StashDocTest extends JUnitSuite {
             replyTo.tell(Done.getInstance());
             return buffer.unstashAll(context, active(state));
           })
-          .onMessage(DBError.class, (context, msg) -> {
-            throw msg.cause;
+          .onMessage(DBError.class, (context, message) -> {
+            throw message.cause;
           })
-          .onMessage(Command.class, (context, msg) -> {
-            buffer.stash(msg);
+          .onMessage(Command.class, (context, message) -> {
+            buffer.stash(message);
             return Behaviors.same();
           })
           .build();

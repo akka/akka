@@ -25,8 +25,8 @@ class FaultToleranceDocSpec extends ScalaTestWithActorTestKit(
       sealed trait Message
       case class Fail(text: String) extends Message
 
-      val worker = Behaviors.receive[Message] { (context, msg) ⇒
-        msg match {
+      val worker = Behaviors.receive[Message] { (context, message) ⇒
+        message match {
           case Fail(text) ⇒ throw new RuntimeException(text)
         }
       }
@@ -39,8 +39,8 @@ class FaultToleranceDocSpec extends ScalaTestWithActorTestKit(
         // here we don't handle Terminated at all which means that
         // when the child fails or stops gracefully this actor will
         // fail with a DeathWatchException
-        Behaviors.receive[Message] { (context, msg) ⇒
-          child ! msg
+        Behaviors.receive[Message] { (context, message) ⇒
+          child ! message
           Behaviors.same
         }
       }
@@ -53,8 +53,8 @@ class FaultToleranceDocSpec extends ScalaTestWithActorTestKit(
         // here we don't handle Terminated at all which means that
         // when middle management fails with a DeathWatchException
         // this actor will also fail
-        Behaviors.receive[Message] { (context, msg) ⇒
-          middleManagment ! msg
+        Behaviors.receive[Message] { (context, message) ⇒
+          middleManagment ! message
           Behaviors.same
         }
       }).onFailure[DeathPactException](SupervisorStrategy.restart)

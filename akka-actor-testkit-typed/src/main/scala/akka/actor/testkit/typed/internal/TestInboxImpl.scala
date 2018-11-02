@@ -23,7 +23,7 @@ private[akka] final class TestInboxImpl[T](path: ActorPath)
 
   private val q = new ConcurrentLinkedQueue[T]
 
-  override val ref: ActorRef[T] = new FunctionRef[T](path, (msg, self) ⇒ q.add(msg))
+  override val ref: ActorRef[T] = new FunctionRef[T](path, (message, self) ⇒ q.add(message))
   override def getRef() = ref
 
   override def receiveMessage(): T = q.poll() match {
@@ -33,7 +33,7 @@ private[akka] final class TestInboxImpl[T](path: ActorPath)
 
   override def expectMessage(expectedMessage: T): TestInboxImpl[T] = {
     q.poll() match {
-      case null    ⇒ assert(assertion = false, s"expected msg: $expectedMessage but no messages were received")
+      case null    ⇒ assert(assertion = false, s"expected message: $expectedMessage but no messages were received")
       case message ⇒ assert(message == expectedMessage, s"expected: $expectedMessage but received $message")
     }
     this

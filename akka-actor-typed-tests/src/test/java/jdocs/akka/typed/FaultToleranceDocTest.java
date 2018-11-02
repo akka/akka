@@ -46,9 +46,9 @@ public class FaultToleranceDocTest extends JUnitSuite {
       // when the child fails or stops gracefully this actor will
       // fail with a DeathWatchException
       return Behaviors.receive(Message.class)
-          .onMessage(Message.class, (innerCtx, msg) -> {
+          .onMessage(Message.class, (innerCtx, message) -> {
             // just pass messages on to the child
-            child.tell(msg);
+            child.tell(message);
             return Behaviors.same();
           }).build();
     });
@@ -62,9 +62,9 @@ public class FaultToleranceDocTest extends JUnitSuite {
       // when middle management fails with a DeathWatchException
       // this actor will also fail
       return Behaviors.receive(Message.class)
-          .onMessage(Message.class, (innerCtx, msg) -> {
+          .onMessage(Message.class, (innerCtx, message) -> {
             // just pass messages on to the child
-            middleManagement.tell(msg);
+            middleManagement.tell(message);
             return Behaviors.same();
           }).build();
     });

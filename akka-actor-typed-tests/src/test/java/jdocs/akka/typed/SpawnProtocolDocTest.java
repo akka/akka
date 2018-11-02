@@ -56,8 +56,8 @@ public class SpawnProtocolDocTest {
         system.scheduler());
 
     Behavior<HelloWorld.Greeted> greetedBehavior =
-        Behaviors.receive((context, msg) -> {
-          context.getLog().info("Greeting for {} from {}", msg.whom, msg.from);
+        Behaviors.receive((context, message) -> {
+          context.getLog().info("Greeting for {} from {}", message.whom, message.from);
           return Behaviors.stopped();
         });
 

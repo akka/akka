@@ -84,8 +84,8 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
 
     "be usable from Behavior.interpretMessage" in {
       // compilation only
-      lazy val b: Behavior[String] = Behaviors.receive { (context, msg) ⇒
-        Behavior.interpretMessage(b, context, msg)
+      lazy val b: Behavior[String] = Behaviors.receive { (context, message) ⇒
+        Behavior.interpretMessage(b, context, message)
       }
     }
 
@@ -636,8 +636,8 @@ class InterceptActorContextSpec extends ActorContextSpec {
   import BehaviorInterceptor._
 
   def tap[T] = new BehaviorInterceptor[T, T] {
-    override def aroundReceive(context: ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] =
-      target(context, msg)
+    override def aroundReceive(context: ActorContext[T], message: T, target: ReceiveTarget[T]): Behavior[T] =
+      target(context, message)
     override def aroundSignal(context: ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] =
       target(context, signal)
   }

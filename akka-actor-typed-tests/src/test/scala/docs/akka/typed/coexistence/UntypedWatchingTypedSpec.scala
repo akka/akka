@@ -58,8 +58,8 @@ object UntypedWatchingTypedSpec {
     case object Pong
 
     val behavior: Behavior[Command] =
-      Behaviors.receive { (context, msg) ⇒
-        msg match {
+      Behaviors.receive { (context, message) ⇒
+        message match {
           case Ping(replyTo) ⇒
             context.log.info(s"${context.self} got Ping from $replyTo")
             // replyTo is an untyped actor that has been converted for coexistence

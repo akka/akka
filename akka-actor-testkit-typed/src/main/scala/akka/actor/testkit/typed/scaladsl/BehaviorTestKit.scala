@@ -119,9 +119,9 @@ trait BehaviorTestKit[T] {
   def isAlive: Boolean
 
   /**
-   * Send the msg to the behavior and record any [[Effect]]s
+   * Send the message to the behavior and record any [[Effect]]s
    */
-  def run(msg: T): Unit
+  def run(message: T): Unit
 
   /**
    * Send the first message in the selfInbox to the behavior and run it, recording [[Effect]]s.

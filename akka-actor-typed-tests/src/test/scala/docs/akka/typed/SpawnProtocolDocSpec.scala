@@ -63,8 +63,8 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val greeter: Future[ActorRef[HelloWorld.Greet]] =
         system ? SpawnProtocol.Spawn(behavior = HelloWorld.greeter, name = "greeter", props = Props.empty)
 
-      val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (context, msg) ⇒
-        context.log.info("Greeting for {} from {}", msg.whom, msg.from)
+      val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (context, message) ⇒
+        context.log.info("Greeting for {} from {}", message.whom, message.from)
         Behaviors.stopped
       }
 

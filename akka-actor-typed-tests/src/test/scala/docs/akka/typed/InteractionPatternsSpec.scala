@@ -158,7 +158,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     case object TimerKey
 
     trait Msg
-    case class ExcitingMessage(msg: String) extends Msg
+    case class ExcitingMessage(message: String) extends Msg
     final case class Batch(messages: Vector[Msg])
     case object Timeout extends Msg
 
@@ -168,9 +168,9 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
 
     def idle(timers: TimerScheduler[Msg], target: ActorRef[Batch],
              after: FiniteDuration, maxSize: Int): Behavior[Msg] = {
-      Behaviors.receiveMessage[Msg] { msg ⇒
+      Behaviors.receiveMessage[Msg] { message ⇒
         timers.startSingleTimer(TimerKey, Timeout, after)
-        active(Vector(msg), timers, target, after, maxSize)
+        active(Vector(message), timers, target, after, maxSize)
       }
     }
 
@@ -244,8 +244,8 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       Behaviors.receiveMessage {
         // the adapted message ends up being processed like any other
         // message sent to the actor
-        case AdaptedResponse(msg) ⇒
-          context.log.info("Got response from hal: {}", msg)
+        case AdaptedResponse(message) ⇒
+          context.log.info("Got response from hal: {}", message)
           Behaviors.same
       }
     }
@@ -287,11 +287,11 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     case class GetKeys(whoseKeys: String, respondTo: ActorRef[Keys])
     case class GetWallet(whoseWallet: String, respondTo: ActorRef[Wallet])
 
-    def homeBehavior = Behaviors.receive[HomeCommand] { (context, msg) ⇒
+    def homeBehavior = Behaviors.receive[HomeCommand] { (context, message) ⇒
       val keyCabinet: ActorRef[GetKeys] = context.spawn(keyCabinetBehavior, "key-cabinet")
       val drawer: ActorRef[GetWallet] = context.spawn(drawerBehavior, "drawer")
 
-      msg match {
+      message match {
         case LeaveHome(who, respondTo) ⇒
           context.spawn(prepareToLeaveHome(who, respondTo, keyCabinet, drawer), s"leaving-$who")
           Behavior.same
@@ -354,8 +354,8 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     // #standalone-ask
 
     // keep this out of the sample as it uses the testkit spawn
-    val cookieActorRef = spawn(Behaviors.receiveMessage[GiveMeCookies] { msg ⇒
-      msg.replyTo ! Cookies(5)
+    val cookieActorRef = spawn(Behaviors.receiveMessage[GiveMeCookies] { message ⇒
+      message.replyTo ! Cookies(5)
       Behaviors.same
     })
 

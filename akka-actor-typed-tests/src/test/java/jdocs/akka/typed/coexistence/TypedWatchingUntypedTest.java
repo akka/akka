@@ -46,7 +46,7 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
           Adapter.toUntyped(context.getSelf()));
 
         return akka.actor.typed.javadsl.Behaviors.receive(Typed.Command.class)
-          .onMessage(Typed.Pong.class, (_ctx, msg) -> {
+          .onMessage(Typed.Pong.class, (_ctx, message) -> {
             Adapter.stop(context, second);
             return same();
           })
@@ -66,8 +66,8 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(Typed.Ping.class, msg -> {
-          msg.replyTo.tell(new Typed.Pong());
+        .match(Typed.Ping.class, message -> {
+          message.replyTo.tell(new Typed.Pong());
         })
         .build();
     }

@@ -67,8 +67,8 @@ object ReceptionistApiSpec {
       // to cover as much of the API as possible
       context.system.receptionist ! Receptionist.Register(key, context.self.narrow, context.self.narrow)
 
-      Behaviors.receive { (context, msg) ⇒
-        msg match {
+      Behaviors.receive { (context, message) ⇒
+        message match {
           case key.Listing(services) ⇒
             services.foreach(_ ! "woho")
             Behaviors.same

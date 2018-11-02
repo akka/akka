@@ -36,9 +36,9 @@ object SupervisionSpec {
   case object Started extends Event
   case object StartFailed extends Event
 
-  class Exc1(msg: String = "exc-1") extends RuntimeException(msg) with NoStackTrace
+  class Exc1(message: String = "exc-1") extends RuntimeException(message) with NoStackTrace
   class Exc2 extends Exc1("exc-2")
-  class Exc3(msg: String = "exc-3") extends RuntimeException(msg) with NoStackTrace
+  class Exc3(message: String = "exc-3") extends RuntimeException(message) with NoStackTrace
 
   def targetBehavior(monitor: ActorRef[Event], state: State = State(0, Map.empty)): Behavior[Command] =
     receive[Command] { (context, cmd) ⇒
@@ -68,7 +68,7 @@ object SupervisionSpec {
     monitor ! Started
     throw new RuntimeException("simulated exc from constructor") with NoStackTrace
 
-    override def onMessage(msg: Command): Behavior[Command] = {
+    override def onMessage(message: Command): Behavior[Command] = {
       monitor ! Pong
       Behaviors.same
     }
@@ -262,7 +262,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       if (failCounter.getAndIncrement() < failCount) {
         throw TE("simulated exc from constructor")
       }
-      override def onMessage(msg: Command): Behavior[Command] = {
+      override def onMessage(message: Command): Behavior[Command] = {
         monitor ! Pong
         Behaviors.same
       }
@@ -805,8 +805,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       // irrelevant for test case but needed to use intercept in the pyramid of doom below
       val whateverInterceptor = new BehaviorInterceptor[String, String] {
         // identity intercept
-        override def aroundReceive(context: ActorContext[String], msg: String, target: ReceiveTarget[String]): Behavior[String] =
-          target(context, msg)
+        override def aroundReceive(context: ActorContext[String], message: String, target: ReceiveTarget[String]): Behavior[String] =
+          target(context, message)
 
         override def aroundSignal(context: ActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] =
           target(context, signal)
@@ -907,8 +907,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     "be able to recover from a DeathPactException" in {
       val probe = TestProbe[AnyRef]()
       val actor = spawn(Behaviors.supervise(Behaviors.setup[String] { context ⇒
-        val child = context.spawnAnonymous(Behaviors.receive[String] { (context, msg) ⇒
-          msg match {
+        val child = context.spawnAnonymous(Behaviors.receive[String] { (context, message) ⇒
+          message match {
             case "boom" ⇒
               probe.ref ! context.self
               Behaviors.stopped

@@ -17,7 +17,7 @@ import org.scalatest.junit.JUnitSuite;
 public class SyncTestingExampleTest extends JUnitSuite {
 
   //#child
-  public static Behavior<String> childActor = Behaviors.receive((context, msg) -> Behaviors.same());
+  public static Behavior<String> childActor = Behaviors.receive((context, message) -> Behaviors.same());
   //#child
 
   //#under-test
@@ -45,25 +45,25 @@ public class SyncTestingExampleTest extends JUnitSuite {
   }
 
   public static Behavior<Command> myBehavior = Behaviors.receive(Command.class)
-    .onMessage(CreateAChild.class, (context, msg) -> {
-      context.spawn(childActor, msg.childName);
+    .onMessage(CreateAChild.class, (context, message) -> {
+      context.spawn(childActor, message.childName);
       return Behaviors.same();
     })
-    .onMessage(CreateAnAnonymousChild.class, (context, msg) -> {
+    .onMessage(CreateAnAnonymousChild.class, (context, message) -> {
       context.spawnAnonymous(childActor);
       return Behaviors.same();
     })
-    .onMessage(SayHelloToChild.class, (context, msg) -> {
-      ActorRef<String> child = context.spawn(childActor, msg.childName);
+    .onMessage(SayHelloToChild.class, (context, message) -> {
+      ActorRef<String> child = context.spawn(childActor, message.childName);
       child.tell("hello");
       return Behaviors.same();
     })
-    .onMessage(SayHelloToAnonymousChild.class, (context, msg) -> {
+    .onMessage(SayHelloToAnonymousChild.class, (context, message) -> {
       ActorRef<String> child = context.spawnAnonymous(childActor);
       child.tell("hello stranger");
       return Behaviors.same();
-    }).onMessage(SayHello.class, (context, msg) -> {
-      msg.who.tell("hello");
+    }).onMessage(SayHello.class, (context, message) -> {
+      message.who.tell("hello");
       return Behaviors.same();
     }).build();
   //#under-test

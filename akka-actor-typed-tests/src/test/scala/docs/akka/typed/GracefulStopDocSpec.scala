@@ -28,8 +28,8 @@ object GracefulStopDocSpec {
     // Predefined cleanup operation
     def cleanup(log: Logger): Unit = log.info("Cleaning up!")
 
-    val mcpa = Behaviors.receive[JobControlLanguage] { (context, msg) ⇒
-      msg match {
+    val mcpa = Behaviors.receive[JobControlLanguage] { (context, message) ⇒
+      message match {
         case SpawnJob(jobName) ⇒
           context.log.info("Spawning job {}!", jobName)
           context.spawn(Job.job(jobName), name = jobName)

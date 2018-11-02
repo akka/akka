@@ -41,7 +41,7 @@ public class UntypedWatchingTypedTest extends JUnitSuite {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(Typed.Pong.class, msg -> {
+        .match(Typed.Pong.class, message -> {
           Adapter.stop(getContext(), second);
         })
         .match(akka.actor.Terminated.class, t -> {
@@ -68,8 +68,8 @@ public class UntypedWatchingTypedTest extends JUnitSuite {
 
     public static Behavior<Command> behavior() {
       return Behaviors.receive(Typed.Command.class)
-        .onMessage(Typed.Ping.class, (context, msg) -> {
-          msg.replyTo.tell(new Pong());
+        .onMessage(Typed.Ping.class, (context, message) -> {
+          message.replyTo.tell(new Pong());
           return same();
         })
         .build();

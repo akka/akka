@@ -43,16 +43,16 @@ public class GracefulStopDocTest {
     }
 
     public static final Behavior<JobControlLanguage> mcpa = Behaviors.receive(JobControlLanguage.class)
-        .onMessage(SpawnJob.class, (context, msg) -> {
-          context.getSystem().log().info("Spawning job {}!", msg.name);
-          context.spawn(Job.job(msg.name), msg.name);
+        .onMessage(SpawnJob.class, (context, message) -> {
+          context.getSystem().log().info("Spawning job {}!", message.name);
+          context.spawn(Job.job(message.name), message.name);
           return Behaviors.same();
         })
         .onSignal(PostStop.class, (context, signal) -> {
           context.getSystem().log().info("Master Control Programme stopped");
           return Behaviors.same();
         })
-        .onMessage(GracefulShutdown.class, (context, msg) -> {
+        .onMessage(GracefulShutdown.class, (context, message) -> {
           context.getSystem().log().info("Initiating graceful shutdown...");
 
           // perform graceful stop, executing cleanup before final system termination

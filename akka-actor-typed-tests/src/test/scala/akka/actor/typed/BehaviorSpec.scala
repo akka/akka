@@ -384,8 +384,8 @@ class ImmutableWithSignalScalaBehaviorSpec extends Messages with BecomeWithLifec
 
   def behv(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] =
     SBehaviors.receive[Command] {
-      (context, msg) ⇒
-        msg match {
+      (context, message) ⇒
+        message match {
           case GetSelf ⇒
             monitor ! Self(context.self)
             SBehaviors.same
@@ -419,8 +419,8 @@ class ImmutableScalaBehaviorSpec extends Messages with Become with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
 
   def behv(monitor: ActorRef[Event], state: State): Behavior[Command] =
-    SBehaviors.receive[Command] { (context, msg) ⇒
-      msg match {
+    SBehaviors.receive[Command] { (context, message) ⇒
+      message match {
         case GetSelf ⇒
           monitor ! Self(context.self)
           SBehaviors.same
@@ -454,8 +454,8 @@ class MutableScalaBehaviorSpec extends Messages with Become with Stoppable {
       new SAbstractBehavior[Command] {
         private var state: State = StateA
 
-        override def onMessage(msg: Command): Behavior[Command] = {
-          msg match {
+        override def onMessage(message: Command): Behavior[Command] = {
+          message match {
             case GetSelf ⇒
               monitor ! Self(context.self)
               this
@@ -512,9 +512,9 @@ class InterceptScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec wi
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
     val tap = new BehaviorInterceptor[Command, Command] {
-      override def aroundReceive(context: ActorContext[Command], msg: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
-        inbox.ref ! Right(msg)
-        target(context, msg)
+      override def aroundReceive(context: ActorContext[Command], message: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
+        inbox.ref ! Right(message)
+        target(context, message)
       }
 
       override def aroundSignal(context: ActorContext[Command], signal: Signal, target: SignalTarget[Command]): Behavior[Command] = {
@@ -536,7 +536,7 @@ class ImmutableWithSignalJavaBehaviorSpec extends Messages with BecomeWithLifecy
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor) → null
   def behv(monitor: ActorRef[Event], state: State = StateA): Behavior[Command] =
     JBehaviors.receive(
-      fc((context, msg) ⇒ msg match {
+      fc((context, message) ⇒ message match {
         case GetSelf ⇒
           monitor ! Self(context.getSelf)
           SBehaviors.same
@@ -568,8 +568,8 @@ class ImmutableJavaBehaviorSpec extends Messages with Become with Stoppable {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = behv(monitor, StateA) → null
   def behv(monitor: ActorRef[Event], state: State): Behavior[Command] =
     JBehaviors.receive {
-      fc((context, msg) ⇒
-        msg match {
+      fc((context, message) ⇒
+        message match {
           case GetSelf ⇒
             monitor ! Self(context.getSelf)
             SBehaviors.same
@@ -625,9 +625,9 @@ class TapJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
     val inbox = TestInbox[Either[Signal, Command]]("tapListener")
     val tap = new BehaviorInterceptor[Command, Command] {
-      override def aroundReceive(context: ActorContext[Command], msg: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
-        inbox.ref ! Right(msg)
-        target(context, msg)
+      override def aroundReceive(context: ActorContext[Command], message: Command, target: ReceiveTarget[Command]): Behavior[Command] = {
+        inbox.ref ! Right(message)
+        target(context, message)
       }
 
       override def aroundSignal(context: ActorContext[Command], signal: Signal, target: SignalTarget[Command]): Behavior[Command] = {

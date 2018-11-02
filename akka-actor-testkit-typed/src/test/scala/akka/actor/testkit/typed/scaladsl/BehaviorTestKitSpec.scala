@@ -36,8 +36,8 @@ object BehaviorTestKitSpec {
     case class SpawnSession(replyTo: ActorRef[ActorRef[String]], sessionHandler: ActorRef[String]) extends Command
     case class KillSession(session: ActorRef[String], replyTo: ActorRef[Done]) extends Command
 
-    val init: Behavior[Command] = Behaviors.receive[Command] { (context, msg) ⇒
-      msg match {
+    val init: Behavior[Command] = Behaviors.receive[Command] { (context, message) ⇒
+      message match {
         case SpawnChild ⇒
           context.spawn(Child.initial, "child")
           Behaviors.same
@@ -84,8 +84,8 @@ object BehaviorTestKitSpec {
           context.watchWith(c, m)
           Behaviors.same
         case SpawnSession(replyTo, sessionHandler) ⇒
-          val session = context.spawnAnonymous[String](Behaviors.receiveMessage { msg ⇒
-            sessionHandler ! msg
+          val session = context.spawnAnonymous[String](Behaviors.receiveMessage { message ⇒
+            sessionHandler ! message
             Behavior.same
           })
           replyTo ! session
@@ -106,8 +106,8 @@ object BehaviorTestKitSpec {
 
     sealed trait Action
 
-    val initial: Behavior[Action] = Behaviors.receive[Action] { (_, msg) ⇒
-      msg match {
+    val initial: Behavior[Action] = Behaviors.receive[Action] { (_, message) ⇒
+      message match {
         case _ ⇒
           Behaviors.empty
       }

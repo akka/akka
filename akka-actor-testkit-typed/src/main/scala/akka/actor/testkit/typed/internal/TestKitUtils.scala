@@ -97,9 +97,9 @@ private[akka] object TestKitUtils {
     system.terminate()
     try Await.ready(system.whenTerminated, timeout) catch {
       case _: TimeoutException ⇒
-        val msg = "Failed to stop [%s] within [%s] \n%s".format(system.name, timeout, system.printTree)
-        if (throwIfShutdownTimesOut) throw new RuntimeException(msg)
-        else println(msg)
+        val message = "Failed to stop [%s] within [%s] \n%s".format(system.name, timeout, system.printTree)
+        if (throwIfShutdownTimesOut) throw new RuntimeException(message)
+        else println(message)
     }
   }
 }

@@ -57,7 +57,7 @@ case we don't need to update any state, so we return `same`, which means
 the next behavior is "the same as the current one".
 
 The type of the messages handled by this behavior is declared to be of class
-`Greet`, meaning that `msg` argument is
+`Greet`, meaning that `message` argument is
 also typed as such. This is why we can access the `whom` and `replyTo`
 members without needing to use a pattern match.
 

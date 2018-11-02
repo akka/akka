@@ -32,10 +32,10 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
   implicit val untypedSystem = system.toUntyped
 
   private def snitchingInterceptor(probe: ActorRef[String]) = new BehaviorInterceptor[String, String] {
-    override def aroundReceive(context: ActorContext[String], msg: String, target: ReceiveTarget[String]): Behavior[String] = {
-      probe ! ("before " + msg)
-      val b = target(context, msg)
-      probe ! ("after " + msg)
+    override def aroundReceive(context: ActorContext[String], message: String, target: ReceiveTarget[String]): Behavior[String] = {
+      probe ! ("before " + message)
+      val b = target(context, message)
+      probe ! ("after " + message)
       b
     }
 
@@ -180,8 +180,8 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
           Behaviors.stopped
         }
 
-        def aroundReceive(context: ActorContext[String], msg: String, target: ReceiveTarget[String]): Behavior[String] =
-          target(context, msg)
+        def aroundReceive(context: ActorContext[String], message: String, target: ReceiveTarget[String]): Behavior[String] =
+          target(context, message)
 
         def aroundSignal(context: ActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] =
           target(context, signal)
@@ -282,8 +282,8 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
     }
 
     val poisonInterceptor = new BehaviorInterceptor[Any, Msg] {
-      override def aroundReceive(context: ActorContext[Any], msg: Any, target: ReceiveTarget[Msg]): Behavior[Msg] =
-        msg match {
+      override def aroundReceive(context: ActorContext[Any], message: Any, target: ReceiveTarget[Msg]): Behavior[Msg] =
+        message match {
           case MyPoisonPill ⇒ Behaviors.stopped
           case m: Msg       ⇒ target(context, m)
           case _            ⇒ Behaviors.unhandled

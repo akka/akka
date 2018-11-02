@@ -35,9 +35,9 @@ private[akka] final class FunctionRef[-T](
   send:              (T, FunctionRef[T]) ⇒ Unit)
   extends ActorRef[T] with ActorRefImpl[T] with InternalRecipientRef[T] {
 
-  override def tell(msg: T): Unit = {
-    if (msg == null) throw InvalidMessageException("[null] is not an allowed message")
-    send(msg, this)
+  override def tell(message: T): Unit = {
+    if (message == null) throw InvalidMessageException("[null] is not an allowed message")
+    send(message, this)
   }
 
   // impl ActorRefImpl
@@ -189,12 +189,12 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
     }
   }
   override def watch[U](other: ActorRef[U]): Unit = ()
-  override def watchWith[U](other: ActorRef[U], msg: T): Unit = ()
+  override def watchWith[U](other: ActorRef[U], message: T): Unit = ()
   override def unwatch[U](other: ActorRef[U]): Unit = ()
-  override def setReceiveTimeout(d: FiniteDuration, msg: T): Unit = ()
+  override def setReceiveTimeout(d: FiniteDuration, message: T): Unit = ()
   override def cancelReceiveTimeout(): Unit = ()
 
-  override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): untyped.Cancellable = new untyped.Cancellable {
+  override def schedule[U](delay: FiniteDuration, target: ActorRef[U], message: U): untyped.Cancellable = new untyped.Cancellable {
     override def cancel() = false
     override def isCancelled = true
   }
@@ -214,7 +214,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
 
     new FunctionRef[U](
       p,
-      (msg, _) ⇒ { val m = f(msg); if (m != null) { selfInbox.ref ! m; i.selfInbox.ref ! msg } })
+      (message, _) ⇒ { val m = f(message); if (m != null) { selfInbox.ref ! m; i.selfInbox.ref ! message } })
   }
 
   /**

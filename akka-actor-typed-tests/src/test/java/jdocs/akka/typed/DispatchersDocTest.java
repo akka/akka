@@ -13,7 +13,7 @@ public class DispatchersDocTest {
 
     private static Behavior<String> yourBehavior = Behaviors.empty();
 
-    private static Behavior<Object> example = Behaviors.receive((context, msg) -> {
+    private static Behavior<Object> example = Behaviors.receive((context, message) -> {
 
         //#spawn-dispatcher
         context.spawn(yourBehavior, "DefaultDispatcher");

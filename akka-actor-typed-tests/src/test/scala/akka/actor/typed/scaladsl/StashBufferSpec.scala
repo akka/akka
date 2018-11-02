@@ -85,12 +85,12 @@ class StashBufferSpec extends WordSpec with Matchers {
 
       val valueInbox = TestInbox[String]()
       def behavior(state: String): Behavior[String] =
-        Behaviors.receive[String] { (_, msg) ⇒
-          if (msg == "get") {
+        Behaviors.receive[String] { (_, message) ⇒
+          if (message == "get") {
             valueInbox.ref ! state
             Behaviors.same
           } else {
-            behavior(state + msg)
+            behavior(state + message)
           }
         }
 
@@ -108,12 +108,12 @@ class StashBufferSpec extends WordSpec with Matchers {
 
       val valueInbox = TestInbox[String]()
       def behavior(state: String): Behavior[String] =
-        Behaviors.receive[String] { (_, msg) ⇒
-          if (msg == "get") {
+        Behaviors.receive[String] { (_, message) ⇒
+          if (message == "get") {
             valueInbox.ref ! state
             Behaviors.same
           } else {
-            Behaviors.setup[String](_ ⇒ behavior(state + msg))
+            Behaviors.setup[String](_ ⇒ behavior(state + message))
           }
         }
 
@@ -131,15 +131,15 @@ class StashBufferSpec extends WordSpec with Matchers {
 
       val valueInbox = TestInbox[String]()
       def behavior(state: String): Behavior[String] =
-        Behaviors.receive[String] { (_, msg) ⇒
-          if (msg == "get") {
+        Behaviors.receive[String] { (_, message) ⇒
+          if (message == "get") {
             valueInbox.ref ! state
             Behaviors.same
-          } else if (msg == "m2") {
+          } else if (message == "m2") {
             buffer.stash("m2")
             Behaviors.same
           } else {
-            behavior(state + msg)
+            behavior(state + message)
           }
         }
 

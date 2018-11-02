@@ -273,10 +273,10 @@ public class InteractionPatternsTest extends JUnitSuite {
   }
 
   public static final class ExcitingMessage implements Msg {
-    private final String msg;
+    private final String message;
 
-    public ExcitingMessage(String msg) {
-      this.msg = msg;
+    public ExcitingMessage(String message) {
+      this.message = message;
     }
   }
 
@@ -292,10 +292,10 @@ public class InteractionPatternsTest extends JUnitSuite {
   private static Behavior<Msg> idle(TimerScheduler<Msg> timers, ActorRef<Batch> target,
                                     Duration after, int maxSize) {
     return Behaviors.receive(Msg.class)
-      .onMessage(Msg.class, (context, msg) -> {
+      .onMessage(Msg.class, (context, message) -> {
         timers.startSingleTimer(TIMER_KEY, new TimeoutMsg(), after);
         List<Msg> buffer = new ArrayList<>();
-        buffer.add(msg);
+        buffer.add(message);
         return active(buffer, timers, target, after, maxSize);
       })
       .build();
@@ -304,12 +304,12 @@ public class InteractionPatternsTest extends JUnitSuite {
   private static Behavior<Msg> active(List<Msg> buffer, TimerScheduler<Msg> timers,
                                       ActorRef<Batch> target, Duration after, int maxSize) {
     return Behaviors.receive(Msg.class)
-      .onMessage(TimeoutMsg.class, (context, msg) -> {
+      .onMessage(TimeoutMsg.class, (context, message) -> {
         target.tell(new Batch(buffer));
         return idle(timers, target, after, maxSize);
       })
-      .onMessage(Msg.class, (context, msg) -> {
-        buffer.add(msg);
+      .onMessage(Msg.class, (context, message) -> {
+        buffer.add(message);
         if (buffer.size() == maxSize) {
           timers.cancel(TIMER_KEY);
           target.tell(new Batch(buffer));
@@ -362,8 +362,8 @@ public class InteractionPatternsTest extends JUnitSuite {
 
   static final Behavior<HalCommand> halBehavior =
     Behaviors.receive(HalCommand.class)
-      .onMessage(OpenThePodBayDoorsPlease.class, (context, msg) -> {
-        msg.respondTo.tell(new HalResponse("I'm sorry, Dave. I'm afraid I can't do that."));
+      .onMessage(OpenThePodBayDoorsPlease.class, (context, message) -> {
+        message.respondTo.tell(new HalResponse("I'm sorry, Dave. I'm afraid I can't do that."));
         return Behaviors.same();
       }).build();
 
@@ -514,8 +514,8 @@ public class InteractionPatternsTest extends JUnitSuite {
       final ActorRef<GetWallet> drawer = context.spawn(drawerBehavior, "drawer");
 
       return Behaviors.receive(HomeCommand.class)
-        .onMessage(LeaveHome.class, (innerCtx, msg) -> {
-          context.spawn(new PrepareToLeaveHome(msg.who, msg.respondTo, keyCabinet, drawer), "leaving" + msg.who);
+        .onMessage(LeaveHome.class, (innerCtx, message) -> {
+          context.spawn(new PrepareToLeaveHome(message.who, message.respondTo, keyCabinet, drawer), "leaving" + message.who);
           return Behavior.same();
         }).build();
     });

@@ -149,17 +149,17 @@ public class OOIntroTest {
 
     public static Behavior<ChatRoom.SessionEvent> behavior() {
       return Behaviors.receive(ChatRoom.SessionEvent.class)
-          .onMessage(ChatRoom.SessionDenied.class, (context, msg) -> {
-            System.out.println("cannot start chat room session: " + msg.reason);
+          .onMessage(ChatRoom.SessionDenied.class, (context, message) -> {
+            System.out.println("cannot start chat room session: " + message.reason);
             return Behaviors.stopped();
           })
-          .onMessage(ChatRoom.SessionGranted.class, (context, msg) -> {
-            msg.handle.tell(new ChatRoom.PostMessage("Hello World!"));
+          .onMessage(ChatRoom.SessionGranted.class, (context, message) -> {
+            message.handle.tell(new ChatRoom.PostMessage("Hello World!"));
             return Behaviors.same();
           })
-          .onMessage(ChatRoom.MessagePosted.class, (context, msg) -> {
+          .onMessage(ChatRoom.MessagePosted.class, (context, message) -> {
             System.out.println("message has been posted by '" +
-                msg.screenName +"': " + msg.message);
+                message.screenName +"': " + message.message);
             return Behaviors.stopped();
           })
           .build();

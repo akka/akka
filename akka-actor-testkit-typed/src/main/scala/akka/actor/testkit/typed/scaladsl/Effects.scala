@@ -62,16 +62,16 @@ object Effects {
   def unwatched[T](other: ActorRef[T]): Unwatched[T] = Unwatched(other)
 
   /**
-   * The behavior set a new receive timeout, with `msg` as timeout notification
+   * The behavior set a new receive timeout, with `message` as timeout notification
    */
-  def receiveTimeoutSet[T](d: FiniteDuration, msg: T): ReceiveTimeoutSet[T] = ReceiveTimeoutSet(d, msg)
+  def receiveTimeoutSet[T](d: FiniteDuration, message: T): ReceiveTimeoutSet[T] = ReceiveTimeoutSet(d, message)
 
   /**
-   * The behavior used `context.schedule` to schedule `msg` to be sent to `target` after `delay`
+   * The behavior used `context.schedule` to schedule `message` to be sent to `target` after `delay`
    * FIXME what about events scheduled through the scheduler?
    */
-  def scheduled[U](delay: FiniteDuration, target: ActorRef[U], msg: U): Scheduled[U] =
-    Scheduled(delay, target, msg)
+  def scheduled[U](delay: FiniteDuration, target: ActorRef[U], message: U): Scheduled[U] =
+    Scheduled(delay, target, message)
 
   /**
    * Used to represent an empty list of effects - in other words, the behavior didn't do anything observable

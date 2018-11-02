@@ -32,8 +32,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         spawn(Behaviors.setup[String] { context ⇒
           context.log.info("Started")
 
-          Behaviors.receive { (context, msg) ⇒
-            context.log.info("got message {}", msg)
+          Behaviors.receive { (context, message) ⇒
+            context.log.info("got message {}", message)
             Behaviors.same
           }
         }, "the-actor")
@@ -194,17 +194,17 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       val behaviors = Behaviors.withMdc[Protocol](
         Map("static" -> 1),
         // FIXME why u no infer the type here Scala??
-        (msg: Protocol) ⇒
-          if (msg.transactionId == 1)
+        (message: Protocol) ⇒
+          if (message.transactionId == 1)
             Map(
-            "txId" -> msg.transactionId,
+            "txId" -> message.transactionId,
             "first" -> true
           )
-          else Map("txId" -> msg.transactionId)
+          else Map("txId" -> message.transactionId)
       ) {
           Behaviors.setup { context ⇒
             context.log.info("Starting")
-            Behaviors.receiveMessage { msg ⇒
+            Behaviors.receiveMessage { message ⇒
               context.log.info("Got message!")
               Behaviors.same
             }
@@ -250,8 +250,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       val behavior =
         Behaviors.withMdc[String](Map("outermost" -> true)) {
           Behaviors.withMdc(Map("innermost" -> true)) {
-            Behaviors.receive { (context, msg) ⇒
-              context.log.info(msg)
+            Behaviors.receive { (context, message) ⇒
+              context.log.info(message)
               Behaviors.same
             }
           }
@@ -271,8 +271,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
     "keep being applied when behavior changes to other behavior" in {
       def behavior: Behavior[String] =
-        Behaviors.receive { (context, msg) ⇒
-          msg match {
+        Behaviors.receive { (context, message) ⇒
+          message match {
             case "new-behavior" ⇒
               behavior
             case other ⇒
@@ -311,8 +311,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       val id = new AtomicInteger(0)
       def behavior: Behavior[String] =
         Behaviors.withMdc(Map("mdc-version" -> id.incrementAndGet())) {
-          Behaviors.receive { (context, msg) ⇒
-            msg match {
+          Behaviors.receive { (context, message) ⇒
+            message match {
               case "new-mdc" ⇒
                 behavior
               case other ⇒
@@ -348,7 +348,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     "provide a withMdc decorator" in {
       val behavior = Behaviors.withMdc[Protocol](Map("mdc" -> "outer"))(
         Behaviors.setup { context ⇒
-          Behaviors.receiveMessage { msg ⇒
+          Behaviors.receiveMessage { message ⇒
             context.log.withMdc(Map("mdc" -> "inner")).info("Got message log.withMDC!")
             // after log.withMdc so we know it didn't change the outer mdc
             context.log.info("Got message behavior.withMdc!")

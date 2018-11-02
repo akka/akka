@@ -21,24 +21,24 @@ public class AsyncTestingExampleTest {
 
   //#under-test
   public static class Ping {
-    private String msg;
+    private String message;
     private ActorRef<Pong> replyTo;
 
-    public Ping(String msg, ActorRef<Pong> replyTo) {
-      this.msg = msg;
+    public Ping(String message, ActorRef<Pong> replyTo) {
+      this.message = message;
       this.replyTo = replyTo;
     }
   }
   public static class Pong {
-    private String msg;
+    private String message;
 
-    public Pong(String msg) {
-      this.msg = msg;
+    public Pong(String message) {
+      this.message = message;
     }
   }
 
   Behavior<Ping> echoActor = Behaviors.receive((context, ping) -> {
-    ping.replyTo.tell(new Pong(ping.msg));
+    ping.replyTo.tell(new Pong(ping.message));
     return Behaviors.same();
   });
   //#under-test

@@ -27,8 +27,8 @@ object StashSpec {
       def active(processed: Vector[String]): Behavior[Command] =
         Behaviors.receive { (context, cmd) ⇒
           cmd match {
-            case msg: Msg ⇒
-              active(processed :+ msg.s)
+            case message: Msg ⇒
+              active(processed :+ message.s)
             case GetProcessed(replyTo) ⇒
               replyTo ! processed
               Behaviors.same
@@ -49,8 +49,8 @@ object StashSpec {
       def stashing(processed: Vector[String]): Behavior[Command] =
         Behaviors.receive { (context, cmd) ⇒
           cmd match {
-            case msg: Msg ⇒
-              buffer.stash(msg)
+            case message: Msg ⇒
+              buffer.stash(message)
               Behaviors.same
             case g: GetProcessed ⇒
               buffer.stash(g)
@@ -80,16 +80,16 @@ object StashSpec {
       def unstashing(processed: Vector[String]): Behavior[Command] =
         Behaviors.receive { (context, cmd) ⇒
           cmd match {
-            case Unstashed(msg: Msg) ⇒
-              context.log.debug(s"unstashed $msg")
-              unstashing(processed :+ msg.s)
+            case Unstashed(message: Msg) ⇒
+              context.log.debug(s"unstashed $message")
+              unstashing(processed :+ message.s)
             case Unstashed(GetProcessed(replyTo)) ⇒
               context.log.debug(s"unstashed GetProcessed")
               replyTo ! processed
               Behaviors.same
-            case msg: Msg ⇒
-              context.log.debug(s"got $msg in unstashing")
-              buffer.stash(msg)
+            case message: Msg ⇒
+              context.log.debug(s"got $message in unstashing")
+              buffer.stash(message)
               Behaviors.same
             case g: GetProcessed ⇒
               context.log.debug(s"got GetProcessed in unstashing")
@@ -128,11 +128,11 @@ object StashSpec {
 
     override def onMessage(cmd: Command): Behavior[Command] = {
       cmd match {
-        case msg: Msg ⇒
+        case message: Msg ⇒
           if (stashing)
-            buffer.stash(msg)
+            buffer.stash(message)
           else
-            processed :+= msg.s
+            processed :+= message.s
           this
         case g @ GetProcessed(replyTo) ⇒
           if (stashing)
@@ -159,9 +159,9 @@ object StashSpec {
             context.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
             buffer.unstash(context, this, numberOfMessages, Unstashed)
           }
-        case Unstashed(msg: Msg) ⇒
-          context.log.debug(s"unstashed $msg")
-          processed :+= msg.s
+        case Unstashed(message: Msg) ⇒
+          context.log.debug(s"unstashed $message")
+          processed :+= message.s
           this
         case Unstashed(GetProcessed(replyTo)) ⇒
           context.log.debug(s"unstashed GetProcessed")

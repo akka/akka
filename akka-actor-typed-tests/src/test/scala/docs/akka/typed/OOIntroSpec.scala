@@ -49,8 +49,8 @@ object OOIntroSpec {
     class ChatRoomBehavior(context: ActorContext[RoomCommand]) extends AbstractBehavior[RoomCommand] {
       private var sessions: List[ActorRef[SessionCommand]] = List.empty
 
-      override def onMessage(msg: RoomCommand): Behavior[RoomCommand] = {
-        msg match {
+      override def onMessage(message: RoomCommand): Behavior[RoomCommand] = {
+        message match {
           case GetSession(screenName, client) ⇒
             // create a child actor for further interaction with the client
             val ses = context.spawn(

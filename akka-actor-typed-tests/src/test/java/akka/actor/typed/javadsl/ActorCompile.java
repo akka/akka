@@ -33,14 +33,14 @@ public class ActorCompile {
     }
   }
 
-  Behavior<MyMsg> actor1 = Behaviors.receive((context, msg) -> stopped(), (context, signal) -> same());
-  Behavior<MyMsg> actor2 = Behaviors.receive((context, msg) -> unhandled());
+  Behavior<MyMsg> actor1 = Behaviors.receive((context, message) -> stopped(), (context, signal) -> same());
+  Behavior<MyMsg> actor2 = Behaviors.receive((context, message) -> unhandled());
   Behavior<MyMsg> actor4 = empty();
   Behavior<MyMsg> actor5 = ignore();
   Behavior<MyMsg> actor6 = intercept(new BehaviorInterceptor<MyMsg, MyMsg>() {
     @Override
-    public Behavior<MyMsg> aroundReceive(ActorContext<MyMsg> context, MyMsg msg, ReceiveTarget<MyMsg> target) {
-      return target.apply(context, msg);
+    public Behavior<MyMsg> aroundReceive(ActorContext<MyMsg> context, MyMsg message, ReceiveTarget<MyMsg> target) {
+      return target.apply(context, message);
     }
 
     @Override
@@ -54,16 +54,16 @@ public class ActorCompile {
     return monitor(self, ignore());
   });
   Behavior<MyMsg> actor9 = widened(actor7, pf -> pf.match(MyMsgA.class, x -> x));
-  Behavior<MyMsg> actor10 = Behaviors.receive((context, msg) -> stopped(actor4), (context, signal) -> same());
+  Behavior<MyMsg> actor10 = Behaviors.receive((context, message) -> stopped(actor4), (context, signal) -> same());
 
   ActorSystem<MyMsg> system = ActorSystem.create(actor1, "Sys");
 
   {
-    Behaviors.<MyMsg>receive((context, msg) -> {
-      if (msg instanceof MyMsgA) {
+    Behaviors.<MyMsg>receive((context, message) -> {
+      if (message instanceof MyMsgA) {
         return Behaviors.receive((ctx2, msg2) -> {
           if (msg2 instanceof MyMsgB) {
-            ((MyMsgA) msg).replyTo.tell(((MyMsgB) msg2).greeting);
+            ((MyMsgA) message).replyTo.tell(((MyMsgB) msg2).greeting);
 
             ActorRef<String> adapter = ctx2.messageAdapter(String.class, s -> new MyMsgB(s.toUpperCase()));
           }
@@ -84,12 +84,12 @@ public class ActorCompile {
   static class MyBehavior extends ExtensibleBehavior<MyMsg> {
 
     @Override
-    public Behavior<MyMsg> receiveSignal(ActorContext<MyMsg> context, Signal msg) throws Exception {
+    public Behavior<MyMsg> receiveSignal(ActorContext<MyMsg> context, Signal message) throws Exception {
       return this;
     }
 
     @Override
-    public Behavior<MyMsg> receive(ActorContext<MyMsg> context, MyMsg msg) throws Exception {
+    public Behavior<MyMsg> receive(ActorContext<MyMsg> context, MyMsg message) throws Exception {
       ActorRef<String> adapter = context.asJava().messageAdapter(String.class, s -> new MyMsgB(s.toUpperCase()));
       return this;
     }

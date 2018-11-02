@@ -50,9 +50,9 @@ public class IntroTest {
       }
     }
 
-    public static final Behavior<Greet> greeter = Behaviors.receive((context, msg) -> {
-      context.getLog().info("Hello {}!", msg.whom);
-      msg.replyTo.tell(new Greeted(msg.whom, context.getSelf()));
+    public static final Behavior<Greet> greeter = Behaviors.receive((context, message) -> {
+      context.getLog().info("Hello {}!", message.whom);
+      message.replyTo.tell(new Greeted(message.whom, context.getSelf()));
       return Behaviors.same();
     });
   }
@@ -64,13 +64,13 @@ public class IntroTest {
     }
 
     public static final Behavior<HelloWorld.Greeted> bot(int greetingCounter, int max) {
-      return Behaviors.receive((context, msg) -> {
+      return Behaviors.receive((context, message) -> {
         int n = greetingCounter + 1;
-        context.getLog().info("Greeting {} for {}", n, msg.whom);
+        context.getLog().info("Greeting {} for {}", n, message.whom);
         if (n == max) {
           return Behaviors.stopped();
         } else {
-          msg.from.tell(new HelloWorld.Greet(msg.whom, context.getSelf()));
+          message.from.tell(new HelloWorld.Greet(message.whom, context.getSelf()));
           return bot(n, max);
         }
       });
@@ -96,10 +96,10 @@ public class IntroTest {
         final ActorRef<HelloWorld.Greet> greeter =
             context.spawn(HelloWorld.greeter, "greeter");
 
-        return Behaviors.receiveMessage(msg -> {
+        return Behaviors.receiveMessage(message -> {
           ActorRef<HelloWorld.Greeted> replyTo =
-              context.spawn(HelloWorldBot.bot(0, 3), msg.name);
-          greeter.tell(new HelloWorld.Greet(msg.name, replyTo));
+              context.spawn(HelloWorldBot.bot(0, 3), message.name);
+          greeter.tell(new HelloWorld.Greet(message.name, replyTo));
           return Behaviors.same();
         });
       });
@@ -127,10 +127,10 @@ public class IntroTest {
         final ActorRef<HelloWorld.Greet> greeter =
             context.spawn(HelloWorld.greeter, "greeter", props);
 
-        return Behaviors.receiveMessage(msg -> {
+        return Behaviors.receiveMessage(message -> {
           ActorRef<HelloWorld.Greeted> replyTo =
-              context.spawn(HelloWorldBot.bot(0, 3), msg.name);
-          greeter.tell(new HelloWorld.Greet(msg.name, replyTo));
+              context.spawn(HelloWorldBot.bot(0, 3), message.name);
+          greeter.tell(new HelloWorld.Greet(message.name, replyTo));
           return Behaviors.same();
         });
       });
@@ -268,17 +268,17 @@ public class IntroTest {
 
     public static Behavior<ChatRoom.SessionEvent> behavior() {
       return Behaviors.receive(ChatRoom.SessionEvent.class)
-        .onMessage(ChatRoom.SessionDenied.class, (context, msg) -> {
-          System.out.println("cannot start chat room session: " + msg.reason);
+        .onMessage(ChatRoom.SessionDenied.class, (context, message) -> {
+          System.out.println("cannot start chat room session: " + message.reason);
           return Behaviors.stopped();
         })
-        .onMessage(ChatRoom.SessionGranted.class, (context, msg) -> {
-          msg.handle.tell(new ChatRoom.PostMessage("Hello World!"));
+        .onMessage(ChatRoom.SessionGranted.class, (context, message) -> {
+          message.handle.tell(new ChatRoom.PostMessage("Hello World!"));
           return Behaviors.same();
         })
-        .onMessage(ChatRoom.MessagePosted.class, (context, msg) -> {
+        .onMessage(ChatRoom.MessagePosted.class, (context, message) -> {
           System.out.println("message has been posted by '" +
-            msg.screenName +"': " + msg.message);
+            message.screenName +"': " + message.message);
           return Behaviors.stopped();
         })
         .build();

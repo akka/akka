@@ -32,8 +32,8 @@ object AdapterSpec {
 
   def typed1(ref: untyped.ActorRef, probe: ActorRef[String]): Behavior[String] =
     Behaviors.receive[String] {
-      (context, msg) ⇒
-        msg match {
+      (context, message) ⇒
+        message match {
           case "send" ⇒
             val replyTo = context.self.toUntyped
             ref.tell("ping", replyTo)
@@ -129,8 +129,8 @@ object AdapterSpec {
   }
 
   def typed2: Behavior[Typed2Msg] =
-    Behaviors.receive { (context, msg) ⇒
-      msg match {
+    Behaviors.receive { (context, message) ⇒
+      message match {
         case Ping(replyTo) ⇒
           replyTo ! "pong"
           Behaviors.same
@@ -172,9 +172,9 @@ class AdapterSpec extends AkkaSpec(
       for { _ ← 0 to 10 } {
         var system: akka.actor.typed.ActorSystem[Done] = null
         try {
-          system = ActorSystem.create(Behaviors.receive[Done] { (context, msg) ⇒
+          system = ActorSystem.create(Behaviors.receive[Done] { (context, message) ⇒
             context.self ! Done
-            msg match {
+            message match {
               case Done ⇒ Behaviors.stopped
             }
 
