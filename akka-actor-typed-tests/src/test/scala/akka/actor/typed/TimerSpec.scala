@@ -152,7 +152,7 @@ class TimerSpec extends ScalaTestWithActorTestKit(
         case _: Tock   ⇒ FishingOutcomes.continue
         // but we know that after we saw Cancelled we won't see any more
         case Cancelled ⇒ FishingOutcomes.complete
-        case message       ⇒ FishingOutcomes.fail(s"unexpected message: $message")
+        case message   ⇒ FishingOutcomes.fail(s"unexpected message: $message")
       }
       probe.expectNoMessage(interval + 100.millis.dilated)
 

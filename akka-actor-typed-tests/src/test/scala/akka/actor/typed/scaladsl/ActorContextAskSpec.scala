@@ -90,7 +90,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
       val snitch = Behaviors.setup[AnyRef] { context ⇒
         context.ask(pingPong)(Ping) {
           case Success(message) ⇒ throw new NotImplementedError(message.toString)
-          case Failure(x)   ⇒ x
+          case Failure(x)       ⇒ x
         }
 
         Behaviors.receive[AnyRef] {

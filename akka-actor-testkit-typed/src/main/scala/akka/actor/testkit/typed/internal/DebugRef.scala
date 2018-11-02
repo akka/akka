@@ -41,15 +41,15 @@ import akka.actor.typed.internal.InternalRecipientRef
   def hasSomething: Boolean = q.peek != null
 
   def receiveMessage(): T = q.poll match {
-    case null         ⇒ throw new NoSuchElementException("empty DebugRef")
-    case Left(signal) ⇒ throw new IllegalStateException(s"expected message but found signal $signal")
-    case Right(message)   ⇒ message
+    case null           ⇒ throw new NoSuchElementException("empty DebugRef")
+    case Left(signal)   ⇒ throw new IllegalStateException(s"expected message but found signal $signal")
+    case Right(message) ⇒ message
   }
 
   def receiveSignal(): SystemMessage = q.poll match {
-    case null         ⇒ throw new NoSuchElementException("empty DebugRef")
-    case Left(signal) ⇒ signal
-    case Right(message)   ⇒ throw new IllegalStateException(s"expected signal but found message $message")
+    case null           ⇒ throw new NoSuchElementException("empty DebugRef")
+    case Left(signal)   ⇒ signal
+    case Right(message) ⇒ throw new IllegalStateException(s"expected signal but found message $message")
   }
 
   def receiveAll(): List[Either[SystemMessage, T]] = {
