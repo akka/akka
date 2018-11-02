@@ -247,6 +247,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
     case state: CurrentClusterState ⇒ handleInitial(state)
     case MemberUp(m)                ⇒ add(m)
     case MemberExited(m)            ⇒ remove(m)
+    case MemberDowned(m)            ⇒ remove(m)
     case MemberRemoved(m, _) ⇒
       if (m.uniqueAddress == cluster.selfUniqueAddress)
         context.stop(self)

@@ -317,6 +317,8 @@ object ClusterSingletonManager {
         case state: CurrentClusterState ⇒ handleInitial(state)
         case MemberUp(m)                ⇒ add(m)
         case MemberRemoved(m, _)        ⇒ remove(m)
+        case MemberDowned(m) if m.uniqueAddress != cluster.selfUniqueAddress ⇒
+          remove(m)
         case MemberExited(m) if m.uniqueAddress != cluster.selfUniqueAddress ⇒
           remove(m)
         case SelfExiting ⇒
@@ -338,6 +340,9 @@ object ClusterSingletonManager {
           add(m)
           deliverChanges()
         case MemberRemoved(m, _) ⇒
+          remove(m)
+          deliverChanges()
+        case MemberDowned(m) if m.uniqueAddress != cluster.selfUniqueAddress ⇒
           remove(m)
           deliverChanges()
         case MemberExited(m) if m.uniqueAddress != cluster.selfUniqueAddress ⇒

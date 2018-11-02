@@ -176,6 +176,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
     case MemberUp(m)                ⇒ addMember(m)
     case MemberWeaklyUp(m)          ⇒ addMember(m)
     case MemberRemoved(m, _)        ⇒ removeMember(m)
+    case MemberDowned(m)            ⇒ removeMember(m)
     case MemberExited(m)            ⇒ removeMember(m)
     case UnreachableMember(m)       ⇒ removeMember(m)
     case ReachableMember(m) ⇒
