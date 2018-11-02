@@ -73,5 +73,5 @@ final class TestKitSettings(val config: Config) {
    * Java API: Scale the `duration` with the configured `TestTimeFactor`
    */
   def dilated(duration: java.time.Duration): java.time.Duration =
-    java.time.Duration.ofMillis((duration.toMillis * TestTimeFactor).toLong)
+    java.time.Duration.ofMillis((duration.toMillis * TestTimeFactor + 0.5).toLong)
 }
