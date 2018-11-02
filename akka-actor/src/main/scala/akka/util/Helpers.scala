@@ -141,8 +141,14 @@ object Helpers {
       Duration(config.getDuration(path, unit), unit)
 
     def getPotentiallyInfiniteDuration(path: String): Duration = toRootLowerCase(config.getString(path)) match {
-        case "infinite" | "" | "off" => Duration.Inf
+        case "infinite" => Duration.Inf
         case _ => config.getDuration(path).asScala
+    }
+
+    def getPotentiallyUndefinedDuration(path: String): Duration = toRootLowerCase(config.getString(path)) match {
+      case "" | "off" => Duration.Undefined
+      case _ => config.getDuration(path).asScala
+
     }
   }
 
