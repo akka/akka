@@ -67,7 +67,7 @@ final class TestKitSettings(val config: Config) {
    * Scala API: Scale the `duration` with the configured `TestTimeFactor`
    */
   def dilated(duration: FiniteDuration): FiniteDuration =
-    (duration * TestTimeFactor).asInstanceOf[FiniteDuration]
+    Duration.fromNanos((duration.toNanos * TestTimeFactor + 0.5).toLong)
 
   /**
    * Java API: Scale the `duration` with the configured `TestTimeFactor`

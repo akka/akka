@@ -48,7 +48,7 @@ package object testkit {
    */
   implicit class TestDuration(val duration: FiniteDuration) extends AnyVal {
     def dilated(implicit system: ActorSystem): FiniteDuration =
-      (duration * TestKitExtension(system).TestTimeFactor).asInstanceOf[FiniteDuration]
+      Duration.fromNanos((duration.toNanos * TestKitExtension(system).TestTimeFactor + 0.5).toLong)
   }
 
 }
