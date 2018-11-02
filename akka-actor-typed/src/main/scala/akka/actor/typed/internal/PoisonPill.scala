@@ -46,5 +46,5 @@ import akka.annotation.InternalApi
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean =
     // only one interceptor per behavior stack is needed
-    other.isInstanceOf[TimerInterceptor[_]]
+    other.isInstanceOf[PoisonPillInterceptor[_]]
 }

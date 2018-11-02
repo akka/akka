@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -19,8 +20,11 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.Behaviors
+import akka.cluster.sharding.ShardRegion.CurrentShardRegionState
+import akka.cluster.sharding.ShardRegion.GetShardRegionState
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding.Passivate
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding.ShardCommand
+import akka.cluster.sharding.{ ClusterSharding ⇒ UntypedClusterSharding }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.persistence.typed.ExpectingReply
@@ -115,6 +119,23 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
     _entityId.toString
   }
 
+  private def awaitEntityTerminatedAndRemoved(ref: ActorRef[_], entityId: String): Unit = {
+    val p = TestProbe[Any]()
+    p.expectTerminated(ref, p.remainingOrDefault)
+
+    // also make sure that the entity is removed from the Shard before continuing
+    // FIXME rewrite this with Typed API when region queries are supported
+    import akka.actor.typed.scaladsl.adapter._
+    val regionStateProbe = TestProbe[CurrentShardRegionState]()
+    val untypedRegion = UntypedClusterSharding(system.toUntyped)
+    regionStateProbe.awaitAssert {
+      untypedRegion.shardRegion(typeKey.name).tell(GetShardRegionState, regionStateProbe.ref.toUntyped)
+      regionStateProbe.expectMessageType[CurrentShardRegionState].shards.foreach { shardState ⇒
+        shardState.entityIds should not contain entityId
+      }
+    }
+  }
+
   "Typed cluster sharding with persistent actor" must {
 
     ClusterSharding(system).start(Entity(
@@ -150,7 +171,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       p.expectMessage("2:a|b")
     }
 
-    "handle PoisionPill after persist effect" in {
+    "handle PoisonPill after persist effect" in {
       val entityId = nextEntityId()
       val recoveryProbe = TestProbe[String]()
       recoveryCompletedProbes.put(entityId, recoveryProbe.ref)
@@ -160,7 +181,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       (1 to 10).foreach { n ⇒
         ref ! PassivateAndPersist(n.toString)(p1.ref)
         // recoveryCompleted each time, verifies that it was actually stopped
-        recoveryProbe.expectMessage("recoveryCompleted:" + (1 until n).map(_.toString).mkString("|"))
+        recoveryProbe.expectMessage(5.seconds, "recoveryCompleted:" + (1 until n).map(_.toString).mkString("|"))
         p1.expectMessage(Done)
       }
 
@@ -169,7 +190,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       p2.expectMessage(entityId + ":" + (1 to 10).map(_.toString).mkString("|"))
     }
 
-    "handle PoisionPill after several stashed commands that persist" in {
+    "handle PoisonPill after several stashed commands that persist" in {
       val entityId = nextEntityId()
       val actorRefPromise = Promise[ActorRef[Any]]()
       entityActorRefs.put(entityId, actorRefPromise)
@@ -179,13 +200,14 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       recoveryCompletedProbes.put(entityId, recoveryProbe.ref)
 
       val entityRef = ClusterSharding(system).entityRefFor(typeKey, entityId)
-      // this will wakup the entity, and complete the entityActorRefPromise
+      // this will wakeup the entity, and complete the entityActorRefPromise
       entityRef ! AddWithConfirmation("a")(addProbe.ref)
       addProbe.expectMessage(Done)
       recoveryProbe.expectMessage("recoveryCompleted:")
       // now we know that it's in EventSourcedRunning with no stashed commands
 
       val actorRef = actorRefPromise.future.futureValue
+
       // not sending via the EntityRef because that would make the test racy
       // these are stashed, since before the PoisonPill
       val latch = new CountDownLatch(1)
@@ -206,16 +228,15 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       addProbe.expectMessage(Done)
 
       // wake up again
+      awaitEntityTerminatedAndRemoved(actorRef, entityId)
       val p2 = TestProbe[String]()
-      p2.expectTerminated(actorRef, p2.remainingOrDefault)
-      Thread.sleep(500) // possible race that the Shard doesn't get Terminated first
       entityRef ! AddWithConfirmation("f")(addProbe.ref)
       entityRef ! Get(p2.ref)
       recoveryProbe.expectMessage("recoveryCompleted:a|b|c")
       p2.expectMessage(entityId + ":a|b|c|f")
     }
 
-    "handle PoisionPill after several stashed commands that DON'T persist" in {
+    "handle PoisonPill after several stashed commands that DON'T persist" in {
       val entityId = nextEntityId()
       val actorRefPromise = Promise[ActorRef[Any]]()
       entityActorRefs.put(entityId, actorRefPromise)
@@ -226,7 +247,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       recoveryCompletedProbes.put(entityId, recoveryProbe.ref)
 
       val entityRef = ClusterSharding(system).entityRefFor(typeKey, entityId)
-      // this will wakup the entity, and complete the entityActorRefPromise
+      // this will wakeup the entity, and complete the entityActorRefPromise
       entityRef ! AddWithConfirmation("a")(addProbe.ref)
       addProbe.expectMessage(Done)
       recoveryProbe.expectMessage("recoveryCompleted:")
@@ -257,9 +278,8 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       addProbe.expectMessage(Done)
 
       // wake up again
+      awaitEntityTerminatedAndRemoved(actorRef, entityId)
       val p2 = TestProbe[String]()
-      p2.expectTerminated(actorRef, p2.remainingOrDefault)
-      Thread.sleep(500) // possible race that the Shard doesn't get Terminated first
       entityRef ! Echo("echo-4", echoProbe.ref)
       echoProbe.expectMessage("echo-4")
       entityRef ! AddWithConfirmation("f")(addProbe.ref)
@@ -268,7 +288,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       p2.expectMessage(entityId + ":a|b|c|f")
     }
 
-    "handle PoisionPill when stash empty" in {
+    "handle PoisonPill when stash empty" in {
       val entityId = nextEntityId()
       val actorRefPromise = Promise[ActorRef[Any]]()
       entityActorRefs.put(entityId, actorRefPromise)
@@ -278,7 +298,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       recoveryCompletedProbes.put(entityId, recoveryProbe.ref)
 
       val entityRef = ClusterSharding(system).entityRefFor(typeKey, entityId)
-      // this will wakup the entity, and complete the entityActorRefPromise
+      // this will wakeup the entity, and complete the entityActorRefPromise
       entityRef ! AddWithConfirmation("a")(addProbe.ref)
       addProbe.expectMessage(Done)
       recoveryProbe.expectMessage("recoveryCompleted:")
@@ -296,16 +316,15 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       latch.countDown()
 
       // wake up again
+      awaitEntityTerminatedAndRemoved(actorRef, entityId)
       val p2 = TestProbe[String]()
-      p2.expectTerminated(actorRef, p2.remainingOrDefault)
-      Thread.sleep(500) // possible race that the Shard doesn't get Terminated first
       entityRef ! AddWithConfirmation("c")(addProbe.ref)
       entityRef ! Get(p2.ref)
       recoveryProbe.expectMessage("recoveryCompleted:a")
       p2.expectMessage(entityId + ":a|c")
     }
 
-    "handle PoisionPill before recovery completed without stashed commands" in {
+    "handle PoisonPill before recovery completed without stashed commands" in {
       val entityId = nextEntityId()
       val actorRefPromise = Promise[ActorRef[Any]]()
       entityActorRefs.put(entityId, actorRefPromise)
@@ -316,7 +335,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       val entityRef = ClusterSharding(system).entityRefFor(typeKey, entityId)
       val ignoreFirstEchoProbe = TestProbe[String]()
       val echoProbe = TestProbe[String]()
-      // first echo will wakup the entity, and complete the entityActorRefPromise
+      // first echo will wakeup the entity, and complete the entityActorRefPromise
       // ignore the first echo reply since it may be racy with the PoisonPill
       entityRef ! Echo("echo-1", ignoreFirstEchoProbe.ref)
 
@@ -333,14 +352,13 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       recoveryProbe.expectMessage("recoveryCompleted:")
 
       // wake up again
-      echoProbe.expectTerminated(actorRef, echoProbe.remainingOrDefault)
-      Thread.sleep(500) // possible race that the Shard doesn't get Terminated first
+      awaitEntityTerminatedAndRemoved(actorRef, entityId)
       entityRef ! Echo("echo-2", echoProbe.ref)
       echoProbe.expectMessage("echo-2")
       recoveryProbe.expectMessage("recoveryCompleted:")
     }
 
-    "handle PoisionPill before recovery completed with stashed commands" in {
+    "handle PoisonPill before recovery completed with stashed commands" in {
       val entityId = nextEntityId()
       val actorRefPromise = Promise[ActorRef[Any]]()
       entityActorRefs.put(entityId, actorRefPromise)
@@ -352,7 +370,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       val addProbe = TestProbe[Done]()
       val ignoreFirstEchoProbe = TestProbe[String]()
       val echoProbe = TestProbe[String]()
-      // first echo will wakup the entity, and complete the entityActorRefPromise
+      // first echo will wakeup the entity, and complete the entityActorRefPromise
       // ignore the first echo reply since it may be racy with the PoisonPill
       entityRef ! Echo("echo-1", ignoreFirstEchoProbe.ref)
 
@@ -383,8 +401,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       addProbe.expectMessage(Done)
 
       // wake up again
-      echoProbe.expectTerminated(actorRef, echoProbe.remainingOrDefault)
-      Thread.sleep(500) // possible race that the Shard doesn't get Terminated first
+      awaitEntityTerminatedAndRemoved(actorRef, entityId)
       entityRef ! Echo("echo-5", echoProbe.ref)
       echoProbe.expectMessage("echo-5")
       recoveryProbe.expectMessage("recoveryCompleted:a|b")
