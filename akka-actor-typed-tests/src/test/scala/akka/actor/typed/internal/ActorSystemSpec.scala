@@ -58,7 +58,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "shutdown if guardian shuts down immediately" in {
       val stoppable =
         Behaviors.receive[Done] {
-          case (ctx, Done) ⇒ Behaviors.stopped
+          case (context, Done) ⇒ Behaviors.stopped
         }
       withSystem("shutdown", stoppable, doTerminate = false) { sys: ActorSystem[Done] ⇒
         sys ! Done

@@ -108,7 +108,7 @@ object Effect {
 
   /**
    * INTERNAL API
-   * The behavior spawned an anonymous adapter, through `ctx.spawnMessageAdapter`
+   * The behavior spawned an anonymous adapter, through `context.spawnMessageAdapter`
    */
   @InternalApi
   private[akka] final class SpawnedAnonymousAdapter[T](val ref: ActorRef[T])
@@ -153,12 +153,12 @@ object Effect {
   final case class Stopped(childName: String) extends Effect
 
   /**
-   * The behavior started watching `other`, through `ctx.watch(other)`
+   * The behavior started watching `other`, through `context.watch(other)`
    */
   final case class Watched[T](other: ActorRef[T]) extends Effect
 
   /**
-   * The behavior started watching `other`, through `ctx.unwatch(other)`
+   * The behavior started watching `other`, through `context.unwatch(other)`
    */
   final case class Unwatched[T](other: ActorRef[T]) extends Effect
 
@@ -177,7 +177,7 @@ object Effect {
   sealed abstract class ReceiveTimeoutCancelled extends Effect
 
   /**
-   * The behavior used `ctx.schedule` to schedule `msg` to be sent to `target` after `delay`
+   * The behavior used `context.schedule` to schedule `msg` to be sent to `target` after `delay`
    * FIXME what about events scheduled through the scheduler?
    */
   final case class Scheduled[U](delay: FiniteDuration, target: ActorRef[U], msg: U) extends Effect {

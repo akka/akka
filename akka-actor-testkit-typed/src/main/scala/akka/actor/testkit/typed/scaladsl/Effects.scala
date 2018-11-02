@@ -52,12 +52,12 @@ object Effects {
    */
   def stopped(childName: String): Stopped = Stopped(childName)
   /**
-   * The behavior started watching `other`, through `ctx.watch(other)`
+   * The behavior started watching `other`, through `context.watch(other)`
    */
   def watched[T](other: ActorRef[T]): Watched[T] = Watched(other)
 
   /**
-   * The behavior started watching `other`, through `ctx.unwatch(other)`
+   * The behavior started watching `other`, through `context.unwatch(other)`
    */
   def unwatched[T](other: ActorRef[T]): Unwatched[T] = Unwatched(other)
 
@@ -67,7 +67,7 @@ object Effects {
   def receiveTimeoutSet[T](d: FiniteDuration, msg: T): ReceiveTimeoutSet[T] = ReceiveTimeoutSet(d, msg)
 
   /**
-   * The behavior used `ctx.schedule` to schedule `msg` to be sent to `target` after `delay`
+   * The behavior used `context.schedule` to schedule `msg` to be sent to `target` after `delay`
    * FIXME what about events scheduled through the scheduler?
    */
   def scheduled[U](delay: FiniteDuration, target: ActorRef[U], msg: U): Scheduled[U] =

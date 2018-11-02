@@ -31,7 +31,7 @@ public class ActorContextAskTest extends JUnitSuite {
 
   @Test
   public void provideASafeAsk() {
-    final Behavior<Ping> pingPongBehavior = Behaviors.receive((ActorContext<Ping> ctx, Ping message) -> {
+    final Behavior<Ping> pingPongBehavior = Behaviors.receive((ActorContext<Ping> context, Ping message) -> {
       message.respondTo.tell(new Pong());
       return Behaviors.same();
     });
@@ -39,8 +39,8 @@ public class ActorContextAskTest extends JUnitSuite {
     final ActorRef<Ping> pingPong = testKit.spawn(pingPongBehavior);
     final TestProbe<Object> probe = testKit.createTestProbe();
 
-    final Behavior<Object> snitch = Behaviors.setup((ActorContext<Object> ctx) -> {
-      ctx.ask(Pong.class,
+    final Behavior<Object> snitch = Behaviors.setup((ActorContext<Object> context) -> {
+      context.ask(Pong.class,
           pingPong,
           new Timeout(3, TimeUnit.SECONDS),
           (ActorRef<Pong> ref) -> new Ping(ref),

@@ -46,28 +46,28 @@ object ReceptionistApiSpec {
         instances.foreach(_ ! "woho")
     }
 
-    Behaviors.setup[Any] { ctx ⇒
+    Behaviors.setup[Any] { context ⇒
       // oneoff ask inside of actor, this should be a rare use case
-      ctx.ask(system.receptionist)(Receptionist.Find(key)) {
+      context.ask(system.receptionist)(Receptionist.Find(key)) {
         case Success(key.Listing(services)) ⇒ services // Set[ActorRef[String]] !!
         case _                              ⇒ "unexpected"
       }
 
       // this is a more "normal" use case which is clean
-      ctx.system.receptionist ! Receptionist.Subscribe(key, ctx.self.narrow)
+      context.system.receptionist ! Receptionist.Subscribe(key, context.self.narrow)
 
       // another more "normal" is subscribe using an adapter
       // FIXME inference doesn't work with partial function
-      val adapter = ctx.spawnMessageAdapter { listing: Receptionist.Listing ⇒
+      val adapter = context.spawnMessageAdapter { listing: Receptionist.Listing ⇒
         listing.serviceInstances(key) // Set[ActorRef[String]] !!
       }
-      ctx.system.receptionist ! Receptionist.Subscribe(key, adapter)
+      context.system.receptionist ! Receptionist.Subscribe(key, adapter)
 
       // ofc this doesn't make sense to do in the same actor, this is just
       // to cover as much of the API as possible
-      ctx.system.receptionist ! Receptionist.Register(key, ctx.self.narrow, ctx.self.narrow)
+      context.system.receptionist ! Receptionist.Register(key, context.self.narrow, context.self.narrow)
 
-      Behaviors.receive { (ctx, msg) ⇒
+      Behaviors.receive { (context, msg) ⇒
         msg match {
           case key.Listing(services) ⇒
             services.foreach(_ ! "woho")

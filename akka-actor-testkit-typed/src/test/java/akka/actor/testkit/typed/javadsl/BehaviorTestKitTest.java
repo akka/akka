@@ -119,55 +119,55 @@ public class BehaviorTestKitTest extends JUnitSuite {
   private static Props props = Props.empty().withDispatcherFromConfig("cat");
 
   private static Behavior<Command> behavior = Behaviors.receive(Command.class)
-    .onMessage(SpawnChildren.class, (ctx, msg) -> {
+    .onMessage(SpawnChildren.class, (context, msg) -> {
       IntStream.range(0, msg.numberOfChildren).forEach(i -> {
-        ctx.spawn(childInitial, "child" + i);
+        context.spawn(childInitial, "child" + i);
       });
       return Behaviors.same();
     })
-    .onMessage(SpawnChildrenAnonymous.class, (ctx, msg) -> {
+    .onMessage(SpawnChildrenAnonymous.class, (context, msg) -> {
       IntStream.range(0, msg.numberOfChildren).forEach(i -> {
-        ctx.spawnAnonymous(childInitial);
+        context.spawnAnonymous(childInitial);
       });
       return Behaviors.same();
     })
-    .onMessage(SpawnChildrenWithProps.class, (ctx, msg) -> {
+    .onMessage(SpawnChildrenWithProps.class, (context, msg) -> {
       IntStream.range(0, msg.numberOfChildren).forEach(i -> {
-        ctx.spawn(childInitial, "child" + i, msg.props);
+        context.spawn(childInitial, "child" + i, msg.props);
       });
       return Behaviors.same();
     })
-    .onMessage(SpawnChildrenAnonymousWithProps.class, (ctx, msg) -> {
+    .onMessage(SpawnChildrenAnonymousWithProps.class, (context, msg) -> {
       IntStream.range(0, msg.numberOfChildren).forEach(i -> {
-        ctx.spawnAnonymous(childInitial, msg.props);
+        context.spawnAnonymous(childInitial, msg.props);
       });
       return Behaviors.same();
     })
-    .onMessage(CreateMessageAdapter.class, (ctx, msg) -> {
-      ctx.messageAdapter(msg.clazz, msg.f);
+    .onMessage(CreateMessageAdapter.class, (context, msg) -> {
+      context.messageAdapter(msg.clazz, msg.f);
       return Behaviors.same();
     })
-    .onMessage(SpawnWatchAndUnWatch.class, (ctx, msg) -> {
-      ActorRef<Action> c = ctx.spawn(childInitial, msg.name);
-      ctx.watch(c);
-      ctx.unwatch(c);
+    .onMessage(SpawnWatchAndUnWatch.class, (context, msg) -> {
+      ActorRef<Action> c = context.spawn(childInitial, msg.name);
+      context.watch(c);
+      context.unwatch(c);
       return Behaviors.same();
     })
-    .onMessage(SpawnAndWatchWith.class, (ctx, msg) -> {
-      ActorRef<Action> c = ctx.spawn(childInitial, msg.name);
-      ctx.watchWith(c, msg);
+    .onMessage(SpawnAndWatchWith.class, (context, msg) -> {
+      ActorRef<Action> c = context.spawn(childInitial, msg.name);
+      context.watchWith(c, msg);
       return Behaviors.same();
     })
-    .onMessage(SpawnSession.class, (ctx, msg) -> {
-      ActorRef<String> session = ctx.spawnAnonymous(Behaviors.receiveMessage( m -> {
+    .onMessage(SpawnSession.class, (context, msg) -> {
+      ActorRef<String> session = context.spawnAnonymous(Behaviors.receiveMessage( m -> {
         msg.sessionHandler.tell(m);
         return Behaviors.same();
       }));
       msg.replyTo.tell(session);
       return Behaviors.same();
     })
-    .onMessage(KillSession.class, (ctx, msg) -> {
-      ctx.stop(msg.session);
+    .onMessage(KillSession.class, (context, msg) -> {
+      context.stop(msg.session);
       msg.replyTo.tell(Done.getInstance());
       return Behaviors.same();
     })

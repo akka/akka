@@ -33,8 +33,8 @@ public class InteractionPatternsTest extends JUnitSuite {
   }
 
   static final Behavior<PrintMe> printerBehavior = Behaviors.receive(PrintMe.class)
-    .onMessage(PrintMe.class, (ctx, printMe) -> {
-      ctx.getLog().info(printMe.message);
+    .onMessage(PrintMe.class, (context, printMe) -> {
+      context.getLog().info(printMe.message);
       return Behaviors.same();
     }).build();
   // #fire-and-forget-definition
@@ -62,7 +62,7 @@ public class InteractionPatternsTest extends JUnitSuite {
     // #request-response-respond
     // actor behavior
     Behaviors.receive(Request.class)
-      .onMessage(Request.class, (ctx, request) -> {
+      .onMessage(Request.class, (context, request) -> {
         // ... process request ...
         request.respondTo.tell(new Response("Here's your response!"));
         return Behaviors.same();
@@ -70,10 +70,10 @@ public class InteractionPatternsTest extends JUnitSuite {
     // #request-response-respond
 
     ActorRef<Request> otherActor = null;
-    ActorContext<Response> ctx = null;
+    ActorContext<Response> context = null;
 
     // #request-response-send
-    otherActor.tell(new Request("give me cookies", ctx.getSelf()));
+    otherActor.tell(new Request("give me cookies", context.getSelf()));
     // #request-response-send
   }
 
@@ -171,18 +171,18 @@ public class InteractionPatternsTest extends JUnitSuite {
     }
 
     public static class Translator extends AbstractBehavior<Command> {
-      private final ActorContext<Command> ctx;
+      private final ActorContext<Command> context;
       private final ActorRef<Backend.Request> backend;
       private final ActorRef<Backend.Response> backendResponseAdapter;
 
       private int taskIdCounter = 0;
       private Map<Integer, ActorRef<URI>> inProgress = new HashMap<>();
 
-      public Translator(ActorContext<Command> ctx, ActorRef<Backend.Request> backend) {
-        this.ctx = ctx;
+      public Translator(ActorContext<Command> context, ActorRef<Backend.Request> backend) {
+        this.context = context;
         this.backend = backend;
         this.backendResponseAdapter =
-            ctx.messageAdapter(Backend.Response.class, rsp -> {
+            context.messageAdapter(Backend.Response.class, rsp -> {
               if (rsp instanceof Backend.JobStarted)
                 return new WrappedJobStarted((Backend.JobStarted) rsp);
               else if (rsp instanceof Backend.JobProgress)
@@ -204,16 +204,16 @@ public class InteractionPatternsTest extends JUnitSuite {
             return this;
           })
           .onMessage(WrappedJobStarted.class, wrapped -> {
-            ctx.getLog().info("Started {}", wrapped.response.taskId);
+            context.getLog().info("Started {}", wrapped.response.taskId);
             return this;
           })
           .onMessage(WrappedJobProgress.class, wrapped -> {
-            ctx.getLog().info("Progress {}: {}", wrapped.response.taskId,
+            context.getLog().info("Progress {}: {}", wrapped.response.taskId,
               wrapped.response.progress);
             return this;
           })
           .onMessage(WrappedJobCompleted.class, wrapped -> {
-            ctx.getLog().info("Completed {}: {}", wrapped.response.taskId,
+            context.getLog().info("Completed {}: {}", wrapped.response.taskId,
               wrapped.response.result);
             return this;
           })
@@ -292,7 +292,7 @@ public class InteractionPatternsTest extends JUnitSuite {
   private static Behavior<Msg> idle(TimerScheduler<Msg> timers, ActorRef<Batch> target,
                                     Duration after, int maxSize) {
     return Behaviors.receive(Msg.class)
-      .onMessage(Msg.class, (ctx, msg) -> {
+      .onMessage(Msg.class, (context, msg) -> {
         timers.startSingleTimer(TIMER_KEY, new TimeoutMsg(), after);
         List<Msg> buffer = new ArrayList<>();
         buffer.add(msg);
@@ -304,11 +304,11 @@ public class InteractionPatternsTest extends JUnitSuite {
   private static Behavior<Msg> active(List<Msg> buffer, TimerScheduler<Msg> timers,
                                       ActorRef<Batch> target, Duration after, int maxSize) {
     return Behaviors.receive(Msg.class)
-      .onMessage(TimeoutMsg.class, (ctx, msg) -> {
+      .onMessage(TimeoutMsg.class, (context, msg) -> {
         target.tell(new Batch(buffer));
         return idle(timers, target, after, maxSize);
       })
-      .onMessage(Msg.class, (ctx, msg) -> {
+      .onMessage(Msg.class, (context, msg) -> {
         buffer.add(msg);
         if (buffer.size() == maxSize) {
           timers.cancel(TIMER_KEY);
@@ -362,7 +362,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
   static final Behavior<HalCommand> halBehavior =
     Behaviors.receive(HalCommand.class)
-      .onMessage(OpenThePodBayDoorsPlease.class, (ctx, msg) -> {
+      .onMessage(OpenThePodBayDoorsPlease.class, (context, msg) -> {
         msg.respondTo.tell(new HalResponse("I'm sorry, Dave. I'm afraid I can't do that."));
         return Behaviors.same();
       }).build();
@@ -378,13 +378,13 @@ public class InteractionPatternsTest extends JUnitSuite {
   }
 
   public static Behavior<DaveProtocol> daveBehavior(final ActorRef<HalCommand> hal) {
-    return Behaviors.setup((ActorContext<DaveProtocol> ctx) -> {
+    return Behaviors.setup((ActorContext<DaveProtocol> context) -> {
 
       // asking someone requires a timeout, if the timeout hits without response
       // the ask is failed with a TimeoutException
       final Timeout timeout = Timeout.apply(3, TimeUnit.SECONDS);
 
-      ctx.ask(
+      context.ask(
         HalResponse.class,
         hal,
         timeout,
@@ -404,7 +404,7 @@ public class InteractionPatternsTest extends JUnitSuite {
       // changed at the time the response arrives and the transformation is done, best is to
       // use immutable state we have closed over like here.
       final int requestId = 1;
-      ctx.ask(
+      context.ask(
         HalResponse.class,
         hal,
         timeout,
@@ -509,13 +509,13 @@ public class InteractionPatternsTest extends JUnitSuite {
 
   // actor behavior
   public Behavior<HomeCommand> homeBehavior() {
-    return Behaviors.setup((ctx) -> {
-      final ActorRef<GetKeys> keyCabinet = ctx.spawn(keyCabinetBehavior, "key-cabinet");
-      final ActorRef<GetWallet> drawer = ctx.spawn(drawerBehavior, "drawer");
+    return Behaviors.setup((context) -> {
+      final ActorRef<GetKeys> keyCabinet = context.spawn(keyCabinetBehavior, "key-cabinet");
+      final ActorRef<GetWallet> drawer = context.spawn(drawerBehavior, "drawer");
 
       return Behaviors.receive(HomeCommand.class)
         .onMessage(LeaveHome.class, (innerCtx, msg) -> {
-          ctx.spawn(new PrepareToLeaveHome(msg.who, msg.respondTo, keyCabinet, drawer), "leaving" + msg.who);
+          context.spawn(new PrepareToLeaveHome(msg.who, msg.respondTo, keyCabinet, drawer), "leaving" + msg.who);
           return Behavior.same();
         }).build();
     });

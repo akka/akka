@@ -44,15 +44,15 @@ public class WatchTest extends JUnitSuite {
 
   final Timeout timeout = Timeout.create(Duration.ofSeconds(5));
 
-  final Behavior<Stop> exitingActor = receive((ctx, msg) -> {
+  final Behavior<Stop> exitingActor = receive((context, msg) -> {
     System.out.println("Stopping!");
     return stopped();
   });
 
   private Behavior<RunTest> waitingForTermination(ActorRef<Done> replyWhenTerminated) {
     return receive(
-      (ctx, msg) -> unhandled(),
-      (ctx, sig) -> {
+      (context, msg) -> unhandled(),
+      (context, sig) -> {
         if (sig instanceof Terminated) {
           replyWhenTerminated.tell(done());
         }
@@ -63,7 +63,7 @@ public class WatchTest extends JUnitSuite {
 
   private Behavior<Message> waitingForMessage(ActorRef<Done> replyWhenReceived) {
     return receive(
-      (ctx, msg) -> {
+      (context, msg) -> {
         if (msg instanceof CustomTerminationMessage) {
           replyWhenReceived.tell(done());
           return same();
@@ -77,9 +77,9 @@ public class WatchTest extends JUnitSuite {
   @Test
   public void shouldWatchTerminatingActor() throws Exception {
     Behavior<RunTest> exiting = Behaviors.receive(RunTest.class)
-      .onMessage(RunTest.class, (ctx, msg) -> {
-        ActorRef<Stop> watched = ctx.spawn(exitingActor, "exitingActor");
-        ctx.watch(watched);
+      .onMessage(RunTest.class, (context, msg) -> {
+        ActorRef<Stop> watched = context.spawn(exitingActor, "exitingActor");
+        context.watch(watched);
         watched.tell(new Stop());
         return waitingForTermination(msg.replyTo);
       }).build();
@@ -92,9 +92,9 @@ public class WatchTest extends JUnitSuite {
   @Test
   public void shouldWatchWithCustomMessage() throws Exception {
     Behavior<Message> exiting = Behaviors.receive(Message.class)
-      .onMessage(RunTest.class, (ctx, msg) -> {
-        ActorRef<Stop> watched = ctx.spawn(exitingActor, "exitingActor");
-        ctx.watchWith(watched, new CustomTerminationMessage());
+      .onMessage(RunTest.class, (context, msg) -> {
+        ActorRef<Stop> watched = context.spawn(exitingActor, "exitingActor");
+        context.watchWith(watched, new CustomTerminationMessage());
         watched.tell(new Stop());
         return waitingForMessage(msg.replyTo);
       }).build();

@@ -33,22 +33,22 @@ object DispatchersDocSpec {
 
   case class WhichDispatcher(replyTo: ActorRef[Dispatcher])
 
-  val giveMeYourDispatcher = Behaviors.receive[WhichDispatcher] { (ctx, msg) ⇒
-    msg.replyTo ! ctx.executionContext.asInstanceOf[Dispatcher]
+  val giveMeYourDispatcher = Behaviors.receive[WhichDispatcher] { (context, msg) ⇒
+    msg.replyTo ! context.executionContext.asInstanceOf[Dispatcher]
     Behaviors.same
   }
 
   val yourBehavior: Behavior[String] = Behaviors.same
 
-  val example = Behaviors.receive[Any] { (ctx, msg) ⇒
+  val example = Behaviors.receive[Any] { (context, msg) ⇒
 
     //#spawn-dispatcher
     import akka.actor.typed.DispatcherSelector
 
-    ctx.spawn(yourBehavior, "DefaultDispatcher")
-    ctx.spawn(yourBehavior, "ExplicitDefaultDispatcher", DispatcherSelector.default())
-    ctx.spawn(yourBehavior, "BlockingDispatcher", DispatcherSelector.blocking())
-    ctx.spawn(yourBehavior, "DispatcherFromConfig", DispatcherSelector.fromConfig("your-dispatcher"))
+    context.spawn(yourBehavior, "DefaultDispatcher")
+    context.spawn(yourBehavior, "ExplicitDefaultDispatcher", DispatcherSelector.default())
+    context.spawn(yourBehavior, "BlockingDispatcher", DispatcherSelector.blocking())
+    context.spawn(yourBehavior, "DispatcherFromConfig", DispatcherSelector.fromConfig("your-dispatcher"))
     //#spawn-dispatcher
 
     Behaviors.same

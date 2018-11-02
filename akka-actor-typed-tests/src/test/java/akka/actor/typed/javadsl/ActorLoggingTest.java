@@ -52,8 +52,8 @@ public class ActorLoggingTest extends JUnitSuite {
         return mdc;
       },
       Behaviors.receive(Protocol.class)
-        .onMessage(Message.class, (ctx, msg) -> {
-          ctx.getLog().info(msg.toString());
+        .onMessage(Message.class, (context, msg) -> {
+          context.getLog().info(msg.toString());
           return Behaviors.same();
         }).build()
     );

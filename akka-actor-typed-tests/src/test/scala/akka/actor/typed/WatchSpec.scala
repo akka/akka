@@ -58,8 +58,8 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
     val watcher = spawn(
       Behaviors.supervise(
         Behaviors.receive[StartWatching] {
-          case (ctx, StartWatching(watchee)) ⇒
-            ctx.watch(watchee)
+          case (context, StartWatching(watchee)) ⇒
+            context.watch(watchee)
             watchProbe.ref ! Done
             Behaviors.same
         }.receiveSignal {
@@ -85,13 +85,13 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       case class Failed(t: Terminated) // we need to wrap it as it is handled specially
       val probe = TestProbe[Any]()
       val ex = new TestException("boom")
-      val parent = spawn(Behaviors.setup[Any] { ctx ⇒
-        val child = ctx.spawn(Behaviors.receive[Any]((ctx, msg) ⇒
+      val parent = spawn(Behaviors.setup[Any] { context ⇒
+        val child = context.spawn(Behaviors.receive[Any]((context, msg) ⇒
           throw ex
         ), "child")
-        ctx.watch(child)
+        context.watch(child)
 
-        Behaviors.receive[Any] { (ctx, msg) ⇒
+        Behaviors.receive[Any] { (context, msg) ⇒
           child ! msg
           Behaviors.same
         }.receiveSignal {
@@ -111,22 +111,22 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       case class Failed(t: Terminated) // we need to wrap it as it is handled specially
       val probe = TestProbe[Any]()
       val ex = new TestException("boom")
-      val grossoBosso = spawn(Behaviors.setup[Any] { ctx ⇒
-        val middleManagement = ctx.spawn(Behaviors.setup[Any] { ctx ⇒
-          val sixPackJoe = ctx.spawn(Behaviors.receive[Any]((ctx, msg) ⇒
+      val grossoBosso = spawn(Behaviors.setup[Any] { context ⇒
+        val middleManagement = context.spawn(Behaviors.setup[Any] { context ⇒
+          val sixPackJoe = context.spawn(Behaviors.receive[Any]((context, msg) ⇒
             throw ex
           ), "joe")
-          ctx.watch(sixPackJoe)
+          context.watch(sixPackJoe)
 
-          Behaviors.receive[Any] { (ctx, msg) ⇒
+          Behaviors.receive[Any] { (context, msg) ⇒
             sixPackJoe ! msg
             Behaviors.same
           } // no handling of terminated, even though we watched!!!
         }, "middle-management")
 
-        ctx.watch(middleManagement)
+        context.watch(middleManagement)
 
-        Behaviors.receive[Any] { (ctx, msg) ⇒
+        Behaviors.receive[Any] { (context, msg) ⇒
           middleManagement ! msg
           Behaviors.same
         }.receiveSignal {
@@ -165,8 +165,8 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val watcher = spawn(
         Behaviors.supervise(
           Behaviors.receive[Message] {
-            case (ctx, StartWatchingWith(watchee, msg)) ⇒
-              ctx.watchWith(watchee, msg)
+            case (context, StartWatchingWith(watchee, msg)) ⇒
+              context.watchWith(watchee, msg)
               watchProbe.ref ! Done
               Behaviors.same
             case (_, msg) ⇒
@@ -201,12 +201,12 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val watcher = spawn(
         Behaviors.supervise(
           Behaviors.receive[Message] {
-            case (ctx, StartWatching(watchee)) ⇒
-              ctx.watch(watchee)
+            case (context, StartWatching(watchee)) ⇒
+              context.watch(watchee)
               Behaviors.same
-            case (ctx, StartWatchingWith(watchee, msg)) ⇒
-              ctx.unwatch(watchee)
-              ctx.watchWith(watchee, msg)
+            case (context, StartWatchingWith(watchee, msg)) ⇒
+              context.unwatch(watchee)
+              context.watchWith(watchee, msg)
               watchProbe.ref ! Done
               Behaviors.same
             case (_, msg) ⇒
@@ -231,9 +231,9 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val watcher = spawn(
         Behaviors.supervise(
           Behaviors.receive[Message] {
-            case (ctx, StartWatchingWith(watchee, msg)) ⇒
-              ctx.unwatch(watchee)
-              ctx.watchWith(watchee, msg)
+            case (context, StartWatchingWith(watchee, msg)) ⇒
+              context.unwatch(watchee)
+              context.watchWith(watchee, msg)
               watchProbe.ref ! Done
               Behaviors.same
             case (_, msg) ⇒
@@ -257,11 +257,11 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val watcher = spawn(
         Behaviors.supervise(
           Behaviors.receive[Message] {
-            case (ctx, StartWatchingWith(watchee, msg)) ⇒
-              ctx.watchWith(watchee, msg)
+            case (context, StartWatchingWith(watchee, msg)) ⇒
+              context.watchWith(watchee, msg)
               Behaviors.same
-            case (ctx, StartWatching(watchee)) ⇒
-              ctx.watch(watchee)
+            case (context, StartWatching(watchee)) ⇒
+              context.watch(watchee)
               Behaviors.same
             case (_, msg) ⇒
               Behaviors.stopped

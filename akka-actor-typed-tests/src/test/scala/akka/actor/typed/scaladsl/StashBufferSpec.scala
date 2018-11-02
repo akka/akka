@@ -11,7 +11,7 @@ import org.scalatest.{ Matchers, WordSpec }
 
 class StashBufferSpec extends WordSpec with Matchers {
 
-  val ctx = new StubbedActorContext[String]("StashBufferSpec")
+  val context = new StubbedActorContext[String]("StashBufferSpec")
 
   "A StashBuffer" must {
 
@@ -34,12 +34,12 @@ class StashBufferSpec extends WordSpec with Matchers {
       val m1 = buffer.head
       m1 should ===("m1")
       buffer.size should ===(2)
-      buffer.unstash(ctx, Behaviors.ignore, 1, identity)
+      buffer.unstash(context, Behaviors.ignore, 1, identity)
       buffer.size should ===(1)
       m1 should ===("m1")
       val m2 = buffer.head
       m2 should ===("m2")
-      buffer.unstash(ctx, Behaviors.ignore, 1, identity)
+      buffer.unstash(context, Behaviors.ignore, 1, identity)
       buffer.size should ===(0)
       intercept[NoSuchElementException] {
         buffer.head
@@ -70,7 +70,7 @@ class StashBufferSpec extends WordSpec with Matchers {
       val sb1 = new StringBuilder()
       buffer.foreach(sb1.append(_))
       sb1.toString() should ===("m1m2m3")
-      buffer.unstash(ctx, Behaviors.ignore, 1, identity)
+      buffer.unstash(context, Behaviors.ignore, 1, identity)
       val sb2 = new StringBuilder()
       buffer.foreach(sb2.append(_))
       sb2.toString() should ===("m2m3")
@@ -94,7 +94,7 @@ class StashBufferSpec extends WordSpec with Matchers {
           }
         }
 
-      buffer.unstashAll(ctx, behavior(""))
+      buffer.unstashAll(context, behavior(""))
       valueInbox.expectMessage("m1m2m3")
       buffer.isEmpty should ===(true)
     }
@@ -117,7 +117,7 @@ class StashBufferSpec extends WordSpec with Matchers {
           }
         }
 
-      buffer.unstashAll(ctx, behavior(""))
+      buffer.unstashAll(context, behavior(""))
       valueInbox.expectMessage("m1m2m3")
       buffer.isEmpty should ===(true)
     }
@@ -146,12 +146,12 @@ class StashBufferSpec extends WordSpec with Matchers {
       // It's only supposed to unstash the messages that are in the buffer when
       // the call is made, not unstash new messages added to the buffer while
       // unstashing.
-      val b2 = buffer.unstashAll(ctx, behavior(""))
+      val b2 = buffer.unstashAll(context, behavior(""))
       valueInbox.expectMessage("m1m3")
       buffer.size should ===(1)
       buffer.head should ===("m2")
 
-      buffer.unstashAll(ctx, b2)
+      buffer.unstashAll(context, b2)
       buffer.size should ===(1)
       buffer.head should ===("m2")
     }

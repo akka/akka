@@ -18,7 +18,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
   @Test
   public void testMutableCounter() {
-    Behavior<BehaviorBuilderTest.CounterMessage> mutable = Behaviors.setup(ctx -> new AbstractBehavior<BehaviorBuilderTest.CounterMessage>() {
+    Behavior<BehaviorBuilderTest.CounterMessage> mutable = Behaviors.setup(context -> new AbstractBehavior<BehaviorBuilderTest.CounterMessage>() {
       int currentValue = 0;
 
       private Behavior<BehaviorBuilderTest.CounterMessage> receiveIncrease(BehaviorBuilderTest.Increase msg) {

@@ -37,17 +37,17 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
     public static class Pong implements Command { }
 
     public static Behavior<Command> behavior() {
-      return akka.actor.typed.javadsl.Behaviors.setup(ctx -> {
-        akka.actor.ActorRef second = Adapter.actorOf(ctx, Untyped.props(), "second");
+      return akka.actor.typed.javadsl.Behaviors.setup(context -> {
+        akka.actor.ActorRef second = Adapter.actorOf(context, Untyped.props(), "second");
 
-        Adapter.watch(ctx, second);
+        Adapter.watch(context, second);
 
-        second.tell(new Typed.Ping(ctx.getSelf().narrow()),
-          Adapter.toUntyped(ctx.getSelf()));
+        second.tell(new Typed.Ping(context.getSelf().narrow()),
+          Adapter.toUntyped(context.getSelf()));
 
         return akka.actor.typed.javadsl.Behaviors.receive(Typed.Command.class)
           .onMessage(Typed.Pong.class, (_ctx, msg) -> {
-            Adapter.stop(ctx, second);
+            Adapter.stop(context, second);
             return same();
           })
           .onSignal(akka.actor.typed.Terminated.class, (_ctx, sig) -> stopped())

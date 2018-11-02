@@ -42,19 +42,19 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
       case class Ping(sender: ActorRef[Pong])
       case class Pong(selfName: String, threadName: String)
 
-      val pingPong = spawn(Behaviors.receive[Ping] { (ctx, msg) ⇒
-        msg.sender ! Pong(ctx.self.path.name, Thread.currentThread().getName)
+      val pingPong = spawn(Behaviors.receive[Ping] { (context, msg) ⇒
+        msg.sender ! Pong(context.self.path.name, Thread.currentThread().getName)
         Behaviors.same
       }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
 
       val probe = TestProbe[Pong]()
 
-      val snitch = Behaviors.setup[Pong] { ctx ⇒
+      val snitch = Behaviors.setup[Pong] { context ⇒
 
         // Timeout comes from TypedAkkaSpec
 
-        ctx.ask(pingPong)(Ping) {
-          case Success(_)  ⇒ Pong(ctx.self.path.name + "1", Thread.currentThread().getName)
+        context.ask(pingPong)(Ping) {
+          case Success(_)  ⇒ Pong(context.self.path.name + "1", Thread.currentThread().getName)
           case Failure(ex) ⇒ throw ex
         }
 
@@ -87,8 +87,8 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
         }
       ))
 
-      val snitch = Behaviors.setup[AnyRef] { ctx ⇒
-        ctx.ask(pingPong)(Ping) {
+      val snitch = Behaviors.setup[AnyRef] { context ⇒
+        context.ask(pingPong)(Ping) {
           case Success(msg) ⇒ throw new NotImplementedError(msg.toString)
           case Failure(x)   ⇒ x
         }
@@ -115,9 +115,9 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
 
     "deal with timeouts in ask" in {
       val probe = TestProbe[AnyRef]()
-      val snitch = Behaviors.setup[AnyRef] { ctx ⇒
+      val snitch = Behaviors.setup[AnyRef] { context ⇒
 
-        ctx.ask[String, String](system.deadLetters)(ref ⇒ "boo") {
+        context.ask[String, String](system.deadLetters)(ref ⇒ "boo") {
           case Success(m) ⇒ m
           case Failure(x) ⇒ x
         }(10.millis, implicitly[ClassTag[String]])
@@ -141,9 +141,9 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
     "must timeout if recipient doesn't reply in time" in {
       val target = spawn(Behaviors.ignore[String])
       val probe = TestProbe[AnyRef]()
-      val snitch = Behaviors.setup[AnyRef] { ctx ⇒
+      val snitch = Behaviors.setup[AnyRef] { context ⇒
 
-        ctx.ask[String, String](target)(_ ⇒ "bar") {
+        context.ask[String, String](target)(_ ⇒ "bar") {
           case Success(m) ⇒ m
           case Failure(x) ⇒ x
         }(10.millis, implicitly[ClassTag[String]])

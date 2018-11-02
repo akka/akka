@@ -19,14 +19,14 @@ final class GracefulStopSpec extends ScalaTestWithActorTestKit with WordSpecLike
       val probe = TestProbe[String]("probe")
 
       val behavior =
-        Behaviors.setup[akka.NotUsed] { ctx ⇒
-          ctx.spawn[NotUsed](Behaviors.receiveSignal {
+        Behaviors.setup[akka.NotUsed] { context ⇒
+          context.spawn[NotUsed](Behaviors.receiveSignal {
             case (_, PostStop) ⇒
               probe.ref ! "child-done"
               Behaviors.stopped
           }, "child1")
 
-          ctx.spawn[NotUsed](Behaviors.receiveSignal {
+          context.spawn[NotUsed](Behaviors.receiveSignal {
             case (_, PostStop) ⇒
               probe.ref ! "child-done"
               Behaviors.stopped

@@ -68,7 +68,7 @@ public class UntypedWatchingTypedTest extends JUnitSuite {
 
     public static Behavior<Command> behavior() {
       return Behaviors.receive(Typed.Command.class)
-        .onMessage(Typed.Ping.class, (ctx, msg) -> {
+        .onMessage(Typed.Ping.class, (context, msg) -> {
           msg.replyTo.tell(new Pong());
           return same();
         })

@@ -51,7 +51,7 @@ class TimerSpec extends ScalaTestWithActorTestKit(
       target(monitor, timer, nextCount)
     }
 
-    Behaviors.receive[Command] { (ctx, cmd) ⇒
+    Behaviors.receive[Command] { (context, cmd) ⇒
       cmd match {
         case Tick(n) ⇒
           monitor ! Tock(n)
@@ -74,10 +74,10 @@ class TimerSpec extends ScalaTestWithActorTestKit(
           throw e
       }
     } receiveSignal {
-      case (ctx, PreRestart) ⇒
+      case (context, PreRestart) ⇒
         monitor ! GotPreRestart(timer.isTimerActive("T"))
         Behaviors.same
-      case (ctx, PostStop) ⇒
+      case (context, PostStop) ⇒
         monitor ! GotPostStop(timer.isTimerActive("T"))
         Behaviors.same
     }

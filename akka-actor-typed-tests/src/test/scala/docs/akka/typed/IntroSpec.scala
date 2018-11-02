@@ -29,14 +29,14 @@ object IntroSpec {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
     final case class Greeted(whom: String, from: ActorRef[Greet])
 
-    val greeter: Behavior[Greet] = Behaviors.receive { (ctx, msg) ⇒
+    val greeter: Behavior[Greet] = Behaviors.receive { (context, msg) ⇒
   //#fiddle_code
-      ctx.log.info("Hello {}!", msg.whom)
+      context.log.info("Hello {}!", msg.whom)
   //#fiddle_code
   //#hello-world-actor
       println(s"Hello ${msg.whom}!")
   //#hello-world-actor
-      msg.replyTo ! Greeted(msg.whom, ctx.self)
+      msg.replyTo ! Greeted(msg.whom, context.self)
       Behaviors.same
     }
   }
@@ -46,10 +46,10 @@ object IntroSpec {
   object HelloWorldBot {
 
     def bot(greetingCounter: Int, max: Int): Behavior[HelloWorld.Greeted] =
-      Behaviors.receive { (ctx, msg) ⇒
+      Behaviors.receive { (context, msg) ⇒
         val n = greetingCounter + 1
   //#fiddle_code
-        ctx.log.info("Greeting {} for {}", n, msg.whom)
+        context.log.info("Greeting {} for {}", n, msg.whom)
   //#fiddle_code
   //#hello-world-bot
         println(s"Greeting ${n} for ${msg.whom}")
@@ -57,7 +57,7 @@ object IntroSpec {
         if (n == max) {
           Behaviors.stopped
         } else {
-          msg.from ! HelloWorld.Greet(msg.whom, ctx.self)
+          msg.from ! HelloWorld.Greet(msg.whom, context.self)
           bot(n, max)
         }
       }
@@ -70,11 +70,11 @@ object IntroSpec {
     final case class Start(name: String)
 
     val main: Behavior[Start] =
-      Behaviors.setup { ctx ⇒
-        val greeter = ctx.spawn(HelloWorld.greeter, "greeter")
+      Behaviors.setup { context ⇒
+        val greeter = context.spawn(HelloWorld.greeter, "greeter")
 
         Behaviors.receiveMessage { msg ⇒
-          val replyTo = ctx.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name)
+          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name)
           greeter ! HelloWorld.Greet(msg.name, replyTo)
           Behaviors.same
         }
@@ -89,14 +89,14 @@ object IntroSpec {
 
     //#hello-world-main-with-dispatchers
     val main: Behavior[Start] =
-      Behaviors.setup { ctx ⇒
+      Behaviors.setup { context ⇒
         val dispatcherPath = "akka.actor.default-blocking-io-dispatcher"
 
         val props = DispatcherSelector.fromConfig(dispatcherPath)
-        val greeter = ctx.spawn(HelloWorld.greeter, "greeter", props)
+        val greeter = context.spawn(HelloWorld.greeter, "greeter", props)
 
         Behaviors.receiveMessage { msg ⇒
-          val replyTo = ctx.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name)
+          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name)
 
           greeter ! HelloWorld.Greet(msg.name, replyTo)
           Behaviors.same
@@ -133,12 +133,12 @@ object IntroSpec {
       chatRoom(List.empty)
 
     private def chatRoom(sessions: List[ActorRef[SessionCommand]]): Behavior[RoomCommand] =
-      Behaviors.receive { (ctx, msg) ⇒
+      Behaviors.receive { (context, msg) ⇒
         msg match {
           case GetSession(screenName, client) ⇒
             // create a child actor for further interaction with the client
-            val ses = ctx.spawn(
-              session(ctx.self, screenName, client),
+            val ses = context.spawn(
+              session(context.self, screenName, client),
               name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
             client ! SessionGranted(ses)
             chatRoom(ses :: sessions)
@@ -153,7 +153,7 @@ object IntroSpec {
       room:       ActorRef[PublishSessionMessage],
       screenName: String,
       client:     ActorRef[SessionEvent]): Behavior[SessionCommand] =
-      Behaviors.receive { (ctx, msg) ⇒
+      Behaviors.receive { (context, msg) ⇒
         msg match {
           case PostMessage(message) ⇒
             // from client, publish to others via the room
@@ -216,10 +216,10 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       //#chatroom-main
       val main: Behavior[NotUsed] =
-        Behaviors.setup { ctx ⇒
-          val chatRoom = ctx.spawn(ChatRoom.behavior, "chatroom")
-          val gabblerRef = ctx.spawn(gabbler, "gabbler")
-          ctx.watch(gabblerRef)
+        Behaviors.setup { context ⇒
+          val chatRoom = context.spawn(ChatRoom.behavior, "chatroom")
+          val gabblerRef = context.spawn(gabbler, "gabbler")
+          context.watch(gabblerRef)
           chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
           Behaviors.receiveSignal {

@@ -25,14 +25,14 @@ private[akka] object ActorTestKitGuardian {
   final case object Ack
 
   val testKitGuardian: Behavior[TestKitCommand] = Behaviors.receive[TestKitCommand] {
-    case (ctx, SpawnActor(name, behavior, reply, props)) ⇒
-      reply ! ctx.spawn(behavior, name, props)
+    case (context, SpawnActor(name, behavior, reply, props)) ⇒
+      reply ! context.spawn(behavior, name, props)
       Behaviors.same
-    case (ctx, SpawnActorAnonymous(behavior, reply, props)) ⇒
-      reply ! ctx.spawnAnonymous(behavior, props)
+    case (context, SpawnActorAnonymous(behavior, reply, props)) ⇒
+      reply ! context.spawnAnonymous(behavior, props)
       Behaviors.same
-    case (ctx, StopActor(ref, reply)) ⇒
-      ctx.stop(ref)
+    case (context, StopActor(ref, reply)) ⇒
+      context.stop(ref)
       reply ! Ack
       Behaviors.same
   }

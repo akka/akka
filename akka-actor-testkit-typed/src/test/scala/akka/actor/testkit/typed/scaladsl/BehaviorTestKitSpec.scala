@@ -36,66 +36,66 @@ object BehaviorTestKitSpec {
     case class SpawnSession(replyTo: ActorRef[ActorRef[String]], sessionHandler: ActorRef[String]) extends Command
     case class KillSession(session: ActorRef[String], replyTo: ActorRef[Done]) extends Command
 
-    val init: Behavior[Command] = Behaviors.receive[Command] { (ctx, msg) ⇒
+    val init: Behavior[Command] = Behaviors.receive[Command] { (context, msg) ⇒
       msg match {
         case SpawnChild ⇒
-          ctx.spawn(Child.initial, "child")
+          context.spawn(Child.initial, "child")
           Behaviors.same
         case SpawnChildren(numberOfChildren) if numberOfChildren > 0 ⇒
           0.until(numberOfChildren).foreach { i ⇒
-            ctx.spawn(Child.initial, s"child$i")
+            context.spawn(Child.initial, s"child$i")
           }
           Behaviors.same
         case SpawnChildrenWithProps(numberOfChildren, props) if numberOfChildren > 0 ⇒
           0.until(numberOfChildren).foreach { i ⇒
-            ctx.spawn(Child.initial, s"child$i", props)
+            context.spawn(Child.initial, s"child$i", props)
           }
           Behaviors.same
         case SpawnAnonymous(numberOfChildren) if numberOfChildren > 0 ⇒
           0.until(numberOfChildren).foreach { _ ⇒
-            ctx.spawnAnonymous(Child.initial)
+            context.spawnAnonymous(Child.initial)
           }
           Behaviors.same
         case SpawnAnonymousWithProps(numberOfChildren, props) if numberOfChildren > 0 ⇒
           0.until(numberOfChildren).foreach { _ ⇒
-            ctx.spawnAnonymous(Child.initial, props)
+            context.spawnAnonymous(Child.initial, props)
           }
           Behaviors.same
         case StopChild(child) ⇒
-          ctx.stop(child)
+          context.stop(child)
           Behaviors.same
         case SpawnAdapter ⇒
-          ctx.spawnMessageAdapter {
+          context.spawnMessageAdapter {
             r: Reproduce ⇒ SpawnAnonymous(r.times)
           }
           Behaviors.same
         case SpawnAdapterWithName(name) ⇒
-          ctx.spawnMessageAdapter({
+          context.spawnMessageAdapter({
             r: Reproduce ⇒ SpawnAnonymous(r.times)
           }, name)
           Behaviors.same
         case SpawnAndWatchUnwatch(name) ⇒
-          val c = ctx.spawn(Child.initial, name)
-          ctx.watch(c)
-          ctx.unwatch(c)
+          val c = context.spawn(Child.initial, name)
+          context.watch(c)
+          context.unwatch(c)
           Behaviors.same
         case m @ SpawnAndWatchWith(name) ⇒
-          val c = ctx.spawn(Child.initial, name)
-          ctx.watchWith(c, m)
+          val c = context.spawn(Child.initial, name)
+          context.watchWith(c, m)
           Behaviors.same
         case SpawnSession(replyTo, sessionHandler) ⇒
-          val session = ctx.spawnAnonymous[String](Behaviors.receiveMessage { msg ⇒
+          val session = context.spawnAnonymous[String](Behaviors.receiveMessage { msg ⇒
             sessionHandler ! msg
             Behavior.same
           })
           replyTo ! session
           Behaviors.same
         case KillSession(session, replyTo) ⇒
-          ctx.stop(session)
+          context.stop(session)
           replyTo ! Done
           Behaviors.same
         case CreateMessageAdapter(messageClass, f) ⇒
-          ctx.messageAdapter(f)(ClassTag(messageClass))
+          context.messageAdapter(f)(ClassTag(messageClass))
           Behaviors.same
 
       }

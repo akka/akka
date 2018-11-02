@@ -33,9 +33,9 @@ public class SpawnProtocolDocTest {
     }
 
     public static final Behavior<SpawnProtocol> main =
-      Behaviors.setup( ctx -> {
+      Behaviors.setup( context -> {
         // Start initial tasks
-        // ctx.spawn(...)
+        // context.spawn(...)
 
         return SpawnProtocol.behavior();
       });
@@ -56,8 +56,8 @@ public class SpawnProtocolDocTest {
         system.scheduler());
 
     Behavior<HelloWorld.Greeted> greetedBehavior =
-        Behaviors.receive((ctx, msg) -> {
-          ctx.getLog().info("Greeting for {} from {}", msg.whom, msg.from);
+        Behaviors.receive((context, msg) -> {
+          context.getLog().info("Greeting for {} from {}", msg.whom, msg.from);
           return Behaviors.stopped();
         });
 

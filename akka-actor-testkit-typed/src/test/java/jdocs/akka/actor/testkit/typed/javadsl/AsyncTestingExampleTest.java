@@ -37,7 +37,7 @@ public class AsyncTestingExampleTest {
     }
   }
 
-  Behavior<Ping> echoActor = Behaviors.receive((ctx, ping) -> {
+  Behavior<Ping> echoActor = Behaviors.receive((context, ping) -> {
     ping.replyTo.tell(new Pong(ping.msg));
     return Behaviors.same();
   });

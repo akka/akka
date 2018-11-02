@@ -45,22 +45,22 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
 
       case class AnotherPong(selfName: String, threadName: String)
 
-      val pingPong = spawn(Behaviors.receive[Ping] { (ctx, msg) ⇒
-        msg.sender ! Pong(ctx.self.path.name, Thread.currentThread().getName)
+      val pingPong = spawn(Behaviors.receive[Ping] { (context, msg) ⇒
+        msg.sender ! Pong(context.self.path.name, Thread.currentThread().getName)
         Behaviors.same
       }, "ping-pong", Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
 
       val probe = TestProbe[AnotherPong]()
 
-      val snitch = Behaviors.setup[AnotherPong] { ctx ⇒
+      val snitch = Behaviors.setup[AnotherPong] { context ⇒
 
-        val replyTo = ctx.messageAdapter[Response](_ ⇒
-          AnotherPong(ctx.self.path.name, Thread.currentThread().getName))
+        val replyTo = context.messageAdapter[Response](_ ⇒
+          AnotherPong(context.self.path.name, Thread.currentThread().getName))
         pingPong ! Ping(replyTo)
 
         // also verify the internal spawnMessageAdapter
-        val replyTo2: ActorRef[Response] = ctx.spawnMessageAdapter(_ ⇒
-          AnotherPong(ctx.self.path.name, Thread.currentThread().getName))
+        val replyTo2: ActorRef[Response] = context.spawnMessageAdapter(_ ⇒
+          AnotherPong(context.self.path.name, Thread.currentThread().getName))
         pingPong ! Ping(replyTo2)
 
         Behaviors.receiveMessage { anotherPong ⇒
@@ -102,11 +102,11 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
 
       val probe = TestProbe[Wrapped]()
 
-      val snitch = Behaviors.setup[Wrapped] { ctx ⇒
+      val snitch = Behaviors.setup[Wrapped] { context ⇒
 
-        ctx.messageAdapter[Response](pong ⇒ Wrapped(qualifier = "wrong", pong)) // this is replaced
-        val replyTo1: ActorRef[Response] = ctx.messageAdapter(pong ⇒ Wrapped(qualifier = "1", pong))
-        val replyTo2 = ctx.messageAdapter[Pong2](pong ⇒ Wrapped(qualifier = "2", pong))
+        context.messageAdapter[Response](pong ⇒ Wrapped(qualifier = "wrong", pong)) // this is replaced
+        val replyTo1: ActorRef[Response] = context.messageAdapter(pong ⇒ Wrapped(qualifier = "1", pong))
+        val replyTo2 = context.messageAdapter[Pong2](pong ⇒ Wrapped(qualifier = "2", pong))
         pingPong ! Ping1(replyTo1)
         pingPong ! Ping2(replyTo2)
 
@@ -144,9 +144,9 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
 
       val probe = TestProbe[Wrapped]()
 
-      val snitch = Behaviors.setup[Wrapped] { ctx ⇒
+      val snitch = Behaviors.setup[Wrapped] { context ⇒
 
-        val replyTo1 = ctx.messageAdapter[Pong1](pong ⇒ Wrapped(qualifier = "1", pong))
+        val replyTo1 = context.messageAdapter[Pong1](pong ⇒ Wrapped(qualifier = "1", pong))
         pingPong ! Ping1(replyTo1)
         // doing something terribly wrong
         // Pong2 message adapter not registered
@@ -180,10 +180,10 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
 
       val probe = TestProbe[Any]()
 
-      val snitch = Behaviors.setup[Wrapped] { ctx ⇒
+      val snitch = Behaviors.setup[Wrapped] { context ⇒
 
         var count = 0
-        val replyTo = ctx.messageAdapter[Pong] { pong ⇒
+        val replyTo = context.messageAdapter[Pong] { pong ⇒
           count += 1
           if (count == 3) throw new TestException("boom")
           else Wrapped(count, pong)
@@ -227,9 +227,9 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
 
       val probe = TestProbe[Any]()
 
-      val snitch = Behaviors.setup[Wrapped] { ctx ⇒
+      val snitch = Behaviors.setup[Wrapped] { context ⇒
 
-        val replyTo = ctx.messageAdapter[Pong] { pong ⇒
+        val replyTo = context.messageAdapter[Pong] { pong ⇒
           Wrapped(pong)
         }
         (1 to 5).foreach { _ ⇒

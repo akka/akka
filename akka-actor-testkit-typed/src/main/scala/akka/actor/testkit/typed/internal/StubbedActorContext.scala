@@ -156,15 +156,15 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
   private val childName = Iterator from 0 map (Helpers.base64(_))
   private val loggingAdapter = new StubbedLogger
 
-  override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.ctx.self)
+  override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.context.self)
   def childrenNames: Iterable[String] = _children.keys
 
-  override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ctx.self)
+  override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.context.self)
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
     val btk = new BehaviorTestKitImpl[U](path / childName.next() withUid rnd().nextInt(), behavior)
-    _children += btk.ctx.self.path.name → btk
-    btk.ctx.self
+    _children += btk.context.self.path.name → btk
+    btk.context.self
   }
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] =
     _children get name match {
@@ -172,7 +172,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
       case None ⇒
         val btk = new BehaviorTestKitImpl[U](path / name withUid rnd().nextInt(), behavior)
         _children += name → btk
-        btk.ctx.self
+        btk.context.self
     }
 
   /**
@@ -223,8 +223,8 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
    */
   def childInbox[U](child: ActorRef[U]): TestInboxImpl[U] = {
     val btk = _children(child.path.name)
-    if (btk.ctx.self != child) throw new IllegalArgumentException(s"$child is not a child of $this")
-    btk.ctx.selfInbox.as[U]
+    if (btk.context.self != child) throw new IllegalArgumentException(s"$child is not a child of $this")
+    btk.context.selfInbox.as[U]
   }
 
   /**
@@ -233,14 +233,14 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
    */
   def childTestKit[U](child: ActorRef[U]): BehaviorTestKitImpl[U] = {
     val btk = _children(child.path.name)
-    if (btk.ctx.self != child) throw new IllegalArgumentException(s"$child is not a child of $this")
+    if (btk.context.self != child) throw new IllegalArgumentException(s"$child is not a child of $this")
     btk.as
   }
 
   /**
    * Retrieve the inbox representing the child actor with the given name.
    */
-  def childInbox[U](name: String): Option[TestInboxImpl[U]] = _children.get(name).map(_.ctx.selfInbox.as[U])
+  def childInbox[U](name: String): Option[TestInboxImpl[U]] = _children.get(name).map(_.context.selfInbox.as[U])
 
   /**
    * Remove the given inbox from the list of children, for example after
@@ -253,7 +253,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
   override def log: Logger = loggingAdapter
 
   /**
-   * The log entries logged through ctx.log.{debug, info, warn, error} are captured and can be inspected through
+   * The log entries logged through context.log.{debug, info, warn, error} are captured and can be inspected through
    * this method.
    */
   def logEntries: List[CapturedLogEvent] = loggingAdapter.logEntries

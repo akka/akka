@@ -27,8 +27,8 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       case class PrintMe(message: String)
 
       val printerBehavior: Behavior[PrintMe] = Behaviors.receive {
-        case (ctx, PrintMe(message)) ⇒
-          ctx.log.info(message)
+        case (context, PrintMe(message)) ⇒
+          context.log.info(message)
           Behaviors.same
       }
       // #fire-and-forget-definition
@@ -67,11 +67,11 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       val probe = TestProbe[Response]()
       // shhh, don't tell anyone
       import scala.language.reflectiveCalls
-      val ctx = new {
+      val context = new {
         def self = probe.ref
       }
       // #request-response-send
-      otherActor ! Request("give me cookies", ctx.self)
+      otherActor ! Request("give me cookies", context.self)
       // #request-response-send
 
       probe.expectMessageType[Response]
@@ -101,9 +101,9 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
         private final case class WrappedBackendResponse(response: Backend.Response) extends Command
 
         def translator(backend: ActorRef[Backend.Request]): Behavior[Command] =
-          Behaviors.setup[Command] { ctx ⇒
+          Behaviors.setup[Command] { context ⇒
             val backendResponseMapper: ActorRef[Backend.Response] =
-              ctx.messageAdapter(rsp ⇒ WrappedBackendResponse(rsp))
+              context.messageAdapter(rsp ⇒ WrappedBackendResponse(rsp))
 
             def active(
               inProgress: Map[Int, ActorRef[URI]],
@@ -116,13 +116,13 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
 
                 case wrapped: WrappedBackendResponse ⇒ wrapped.response match {
                   case Backend.JobStarted(taskId) ⇒
-                    ctx.log.info("Started {}", taskId)
+                    context.log.info("Started {}", taskId)
                     Behaviors.same
                   case Backend.JobProgress(taskId, progress) ⇒
-                    ctx.log.info("Progress {}: {}", taskId, progress)
+                    context.log.info("Progress {}: {}", taskId, progress)
                     Behaviors.same
                   case Backend.JobCompleted(taskId, result) ⇒
-                    ctx.log.info("Completed {}: {}", taskId, result)
+                    context.log.info("Completed {}: {}", taskId, result)
                     inProgress(taskId) ! result
                     active(inProgress - taskId, count)
                 }
@@ -216,7 +216,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     // this is a part of the protocol that is internal to the actor itself
     case class AdaptedResponse(message: String) extends DaveMessage
 
-    def daveBehavior(hal: ActorRef[HalCommand]) = Behaviors.setup[DaveMessage] { ctx ⇒
+    def daveBehavior(hal: ActorRef[HalCommand]) = Behaviors.setup[DaveMessage] { context ⇒
 
       // asking someone requires a timeout, if the timeout hits without response
       // the ask is failed with a TimeoutException
@@ -226,7 +226,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       // as OpenThePodBayDoorsPlease is a case class it has a factory apply method
       // that is what we are passing as the second parameter here it could also be written
       // as `ref => OpenThePodBayDoorsPlease(ref)`
-      ctx.ask(hal)(OpenThePodBayDoorsPlease) {
+      context.ask(hal)(OpenThePodBayDoorsPlease) {
         case Success(HalResponse(message)) ⇒ AdaptedResponse(message)
         case Failure(ex)                   ⇒ AdaptedResponse("Request failed")
       }
@@ -236,7 +236,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       // changed at the time the response arrives and the transformation is done, best is to
       // use immutable state we have closed over like here.
       val requestId = 1
-      ctx.ask(hal)(OpenThePodBayDoorsPlease) {
+      context.ask(hal)(OpenThePodBayDoorsPlease) {
         case Success(HalResponse(message)) ⇒ AdaptedResponse(s"$requestId: $message")
         case Failure(ex)                   ⇒ AdaptedResponse(s"$requestId: Request failed")
       }
@@ -245,7 +245,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
         // the adapted message ends up being processed like any other
         // message sent to the actor
         case AdaptedResponse(msg) ⇒
-          ctx.log.info("Got response from hal: {}", msg)
+          context.log.info("Got response from hal: {}", msg)
           Behaviors.same
       }
     }
@@ -287,13 +287,13 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     case class GetKeys(whoseKeys: String, respondTo: ActorRef[Keys])
     case class GetWallet(whoseWallet: String, respondTo: ActorRef[Wallet])
 
-    def homeBehavior = Behaviors.receive[HomeCommand] { (ctx, msg) ⇒
-      val keyCabinet: ActorRef[GetKeys] = ctx.spawn(keyCabinetBehavior, "key-cabinet")
-      val drawer: ActorRef[GetWallet] = ctx.spawn(drawerBehavior, "drawer")
+    def homeBehavior = Behaviors.receive[HomeCommand] { (context, msg) ⇒
+      val keyCabinet: ActorRef[GetKeys] = context.spawn(keyCabinetBehavior, "key-cabinet")
+      val drawer: ActorRef[GetWallet] = context.spawn(drawerBehavior, "drawer")
 
       msg match {
         case LeaveHome(who, respondTo) ⇒
-          ctx.spawn(prepareToLeaveHome(who, respondTo, keyCabinet, drawer), s"leaving-$who")
+          context.spawn(prepareToLeaveHome(who, respondTo, keyCabinet, drawer), s"leaving-$who")
           Behavior.same
       }
     }
@@ -307,13 +307,13 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       // we don't _really_ care about the actor protocol here as nobody will send us
       // messages except for responses to our queries, so we just accept any kind of message
       // but narrow that to more limited types then we interact
-      Behaviors.setup[AnyRef] { ctx ⇒
+      Behaviors.setup[AnyRef] { context ⇒
         var wallet: Option[Wallet] = None
         var keys: Option[Keys] = None
 
         // we narrow the ActorRef type to any subtype of the actual type we accept
-        keyCabinet ! GetKeys(whoIsLeaving, ctx.self.narrow[Keys])
-        drawer ! GetWallet(whoIsLeaving, ctx.self.narrow[Wallet])
+        keyCabinet ! GetKeys(whoIsLeaving, context.self.narrow[Keys])
+        drawer ! GetWallet(whoIsLeaving, context.self.narrow[Wallet])
 
         def nextBehavior: Behavior[AnyRef] =
           (keys, wallet) match {

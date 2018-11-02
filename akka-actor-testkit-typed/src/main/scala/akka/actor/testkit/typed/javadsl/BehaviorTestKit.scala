@@ -64,7 +64,7 @@ abstract class BehaviorTestKit[T] {
   def childTestKit[U](child: ActorRef[U]): BehaviorTestKit[U]
 
   /**
-   * The self inbox contains messages the behavior sent to `ctx.self`
+   * The self inbox contains messages the behavior sent to `context.self`
    */
   def selfInbox(): TestInbox[T]
 

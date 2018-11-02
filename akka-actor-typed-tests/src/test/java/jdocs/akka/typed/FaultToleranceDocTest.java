@@ -30,17 +30,17 @@ public class FaultToleranceDocTest extends JUnitSuite {
   public void bubblingSample() {
     // #bubbling-example
     final Behavior<Message> failingChildBehavior = Behaviors.receive(Message.class)
-        .onMessage(Fail.class, (ctx, message) -> {
+        .onMessage(Fail.class, (context, message) -> {
           throw new RuntimeException(message.text);
         })
         .build();
 
-    Behavior<Message> middleManagementBehavior = Behaviors.setup((ctx) -> {
-      ctx.getLog().info("Middle management starting up");
-      final ActorRef<Message> child = ctx.spawn(failingChildBehavior, "child");
+    Behavior<Message> middleManagementBehavior = Behaviors.setup((context) -> {
+      context.getLog().info("Middle management starting up");
+      final ActorRef<Message> child = context.spawn(failingChildBehavior, "child");
       // we want to know when the child terminates, but since we do not handle
       // the Terminated signal, we will in turn fail on child termination
-      ctx.watch(child);
+      context.watch(child);
 
       // here we don't handle Terminated at all which means that
       // when the child fails or stops gracefully this actor will
@@ -53,10 +53,10 @@ public class FaultToleranceDocTest extends JUnitSuite {
           }).build();
     });
 
-    Behavior<Message> bossBehavior = Behaviors.setup((ctx) -> {
-      ctx.getLog().info("Boss starting up");
-      final ActorRef<Message> middleManagement = ctx.spawn(middleManagementBehavior, "middle-management");
-      ctx.watch(middleManagement);
+    Behavior<Message> bossBehavior = Behaviors.setup((context) -> {
+      context.getLog().info("Boss starting up");
+      final ActorRef<Message> middleManagement = context.spawn(middleManagementBehavior, "middle-management");
+      context.watch(middleManagement);
 
       // here we don't handle Terminated at all which means that
       // when middle management fails with a DeathWatchException
