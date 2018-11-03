@@ -194,7 +194,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
           outcome match {
             case FishingOutcome.Complete    ⇒ (message :: seen).reverse
             case FishingOutcome.Fail(error) ⇒ throw new AssertionError(s"$error, hint: $hint")
-            case continue ⇒
+            case continue: FishingOutcome.ContinueOutcome ⇒
               val newTimeout =
                 if (timeout.isFinite()) timeout - (System.nanoTime() - start).nanos
                 else timeout
@@ -205,7 +205,6 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
                 continue match {
                   case FishingOutcome.Continue          ⇒ loop(newTimeout, message :: seen)
                   case FishingOutcome.ContinueAndIgnore ⇒ loop(newTimeout, seen)
-                  case _                                ⇒ ??? // cannot happen
                 }
 
               }
