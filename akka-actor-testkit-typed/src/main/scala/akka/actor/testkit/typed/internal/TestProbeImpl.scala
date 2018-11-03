@@ -187,30 +187,29 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
       val maybeMsg = Option(receiveOne(timeout))
       maybeMsg match {
         case Some(message) ⇒
-          try {
-            fisher(message) match {
-              case FishingOutcome.Complete    ⇒ (message :: seen).reverse
-              case FishingOutcome.Fail(error) ⇒ throw new AssertionError(s"$error, hint: $hint")
-              case continue ⇒
-                val newTimeout =
-                  if (timeout.isFinite()) timeout - (System.nanoTime() - start).nanos
-                  else timeout
-                if (newTimeout.toMillis <= 0) {
-                  throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
-                } else {
-
-                  continue match {
-                    case FishingOutcome.Continue          ⇒ loop(newTimeout, message :: seen)
-                    case FishingOutcome.ContinueAndIgnore ⇒ loop(newTimeout, seen)
-                    case _                                ⇒ ??? // cannot happen
-                  }
-
-                }
-            }
-          } catch {
+          val outcome = try fisher(message) catch {
             case ex: MatchError ⇒ throw new AssertionError(
               s"Unexpected message $message while fishing for messages, " +
                 s"seen messages ${seen.reverse}, hint: $hint", ex)
+          }
+          outcome match {
+            case FishingOutcome.Complete    ⇒ (message :: seen).reverse
+            case FishingOutcome.Fail(error) ⇒ throw new AssertionError(s"$error, hint: $hint")
+            case continue ⇒
+              val newTimeout =
+                if (timeout.isFinite()) timeout - (System.nanoTime() - start).nanos
+                else timeout
+              if (newTimeout.toMillis <= 0) {
+                throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
+              } else {
+
+                continue match {
+                  case FishingOutcome.Continue          ⇒ loop(newTimeout, message :: seen)
+                  case FishingOutcome.ContinueAndIgnore ⇒ loop(newTimeout, seen)
+                  case _                                ⇒ ??? // cannot happen
+                }
+
+              }
           }
 
         case None ⇒
