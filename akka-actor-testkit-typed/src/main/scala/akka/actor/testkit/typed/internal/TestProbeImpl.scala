@@ -181,8 +181,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   }
 
   override protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): List[M] = {
-    // not tailrec but that should be ok
-    def loop(timeout: FiniteDuration, seen: List[M]): List[M] = {
+    @tailrec def loop(timeout: FiniteDuration, seen: List[M]): List[M] = {
       val start = System.nanoTime()
       val maybeMsg = Option(receiveOne(timeout))
       maybeMsg match {
