@@ -41,7 +41,7 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       case object Stop
       val probe = TestProbe()
       val ref = spawn(Behaviors.receive[Stop.type]((ctx, message) ⇒
-        Behaviors.withTimers { (timer) ⇒
+        Behaviors.withTimers[String, Stop.type] { (timer) ⇒
           timer.startSingleTimer("key", Stop, 300.millis)
 
           Behaviors.receive((ctx, stop) ⇒
