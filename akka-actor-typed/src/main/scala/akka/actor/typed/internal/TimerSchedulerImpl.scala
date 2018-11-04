@@ -205,6 +205,7 @@ private final class TimerInterceptor[K, T](private val timerSchedulerImpl: Timer
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = (this eq other) || (other match {
     case that: TimerInterceptor[_, _] ⇒ timerSchedulerImpl eq that.timerSchedulerImpl
+    case _                            ⇒ false
   })
 
 }
