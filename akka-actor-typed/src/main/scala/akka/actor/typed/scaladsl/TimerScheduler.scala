@@ -15,7 +15,8 @@ import scala.concurrent.duration.FiniteDuration
  * `TimerScheduler` is not thread-safe, i.e. it must only be used within
  * the actor that owns it.
  */
-trait KeyTypedTimerScheduler[-K, T] {
+trait TimerScheduler[T] {
+  type K = Any
 
   /**
    * Start a periodic timer that will send `msg` to the `self` actor at
@@ -60,10 +61,6 @@ trait KeyTypedTimerScheduler[-K, T] {
    */
   def cancelAll(): Unit
 
-}
-
-trait TimerScheduler[T] extends KeyTypedTimerScheduler[Any, T] {
-
-  def withKeyType[K]: KeyTypedTimerScheduler[K, T] = this
+  def withKeyType[K1]: TimerScheduler[T] { type K >: K1 } = this
 
 }
