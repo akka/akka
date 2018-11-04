@@ -5,6 +5,7 @@
 package akka.actor.typed
 package internal
 
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.{ Function ⇒ JFunction }
 import java.util.ArrayList
 import java.util.Optional
@@ -29,6 +30,9 @@ import akka.util.JavaDurationConverters._
 
   private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
   private var _messageAdapters: List[(Class[_], Any ⇒ T)] = Nil
+  private val timerCounter = new AtomicInteger(0)
+
+  def timerCount: Int = timerCounter.incrementAndGet()
 
   override def asJava: javadsl.ActorContext[T] = this
 
