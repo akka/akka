@@ -175,7 +175,7 @@ object PersistentActorCompileOnlyTest {
         case (_, MoodChanged(to)) ⇒ to
       })
 
-    Behaviors.withTimers((timers: TimerScheduler[Command]) ⇒ {
+    Behaviors.withTimers((timers: TimerScheduler[String, Command]) ⇒ {
       timers.startPeriodicTimer("swing", MoodSwing, 10.seconds)
       b
     })
