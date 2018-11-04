@@ -30,26 +30,25 @@ import scala.concurrent.duration.FiniteDuration
     extends TimerMsg[K] with NotInfluenceReceiveTimeout
 
   def withTimers[T](factory: SharedSchedulerImpl[T] ⇒ Behavior[T]): Behavior[T] = {
-    scaladsl.Behaviors.setup[T](wrapWithTimers(sharedScheduler, factory))
+    scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
   def withKeyTypedTimers[K, T](factory: TimerSchedulerImpl[K, T] ⇒ Behavior[T]): Behavior[T] = {
-    scaladsl.Behaviors.setup[T](wrapWithTimers(new TimerSchedulerImpl[K, T](_), factory))
+    scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
   def sharedScheduler[T](ctx: ActorContext[T]): SharedSchedulerImpl[T] = {
     ctx match {
       case ctxImpl: ActorContextImpl[T] ⇒ ctxImpl.timer
-      case _                            ⇒ new SharedSchedulerImpl[T](ctx)
+      case _                            ⇒ throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
     }
   }
 
   def wrapWithTimers[T, S <: TimerSchedulerImpl[_, T]](
-    schedulerFactory: ActorContext[T] ⇒ S,
-    behaviorFactory:  S ⇒ Behavior[T]
+    behaviorFactory: S ⇒ Behavior[T]
   )(ctx: ActorContext[T]): Behavior[T] = {
-    val timerScheduler = schedulerFactory(ctx)
-    val behavior = behaviorFactory(timerScheduler)
+    val timerScheduler = sharedScheduler(ctx)
+    val behavior = behaviorFactory(timerScheduler.asInstanceOf[S])
     timerScheduler.intercept(behavior)
   }
 
@@ -58,7 +57,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class TimerSchedulerImpl[K, T](ctx: ActorContext[T])
+@InternalApi private[akka] abstract class TimerSchedulerImpl[K, T](ctx: ActorContext[T])
   extends scaladsl.KeyTypedTimerScheduler[K, T] with javadsl.KeyTypedTimerScheduler[K, T] {
   import TimerSchedulerImpl._
 
@@ -132,14 +131,9 @@ import scala.concurrent.duration.FiniteDuration
   def interceptTimerMsg(log: Logger, timerMsg: TimerMsg[K]): T = {
     timers.get(timerMsg.key) match {
       case None ⇒
-        if (timerMsg.owner eq this) {
-          // it was from canceled timer that was already enqueued in mailbox
-          log.debug("Received timer [{}] that has been removed, discarding", timerMsg.key)
-          null.asInstanceOf[T] // message should be ignored
-        } else {
-          // a valid timer, belonging to another scheduler, pass it on
-          timerMsg.asInstanceOf[T]
-        }
+        // it was from canceled timer that was already enqueued in mailbox
+        log.debug("Received timer [{}] that has been removed, discarding", timerMsg.key)
+        null.asInstanceOf[T] // message should be ignored
       case Some(t) ⇒
         if (timerMsg.owner ne this) {
           // after restart, it was from an old instance that was enqueued in mailbox before canceled
@@ -203,9 +197,7 @@ private final class TimerInterceptor[K, T](private val timerSchedulerImpl: Timer
     target(ctx, signal)
   }
 
-  override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = (this eq other) || (other match {
-    case that: TimerInterceptor[_, _] ⇒ timerSchedulerImpl eq that.timerSchedulerImpl
-    case _                            ⇒ false
-  })
-
+  override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean =
+    // only one timer interceptor per behavior stack is needed
+    other.isInstanceOf[TimerInterceptor[_, _]]
 }
