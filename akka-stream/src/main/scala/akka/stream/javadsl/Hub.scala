@@ -54,6 +54,15 @@ object MergeHub {
    */
   def of[T](): Source[T, Sink[T, NotUsed]] = of(16)
 
+  @Deprecated
+  @deprecated("Use the overloaded that doesn't require a Class value.", since = "v2.5.18")
+  def of[T](clazz: Class[T], perProducerBufferSize: Int): Source[T, Sink[T, NotUsed]] =
+    of(perProducerBufferSize)
+
+  @Deprecated
+  @deprecated("Use the overloaded that doesn't require a Class value.", since = "v2.5.18")
+  def of[T](clazz: Class[T]): Source[T, Sink[T, NotUsed]] = of(16)
+
 }
 
 /**
@@ -92,6 +101,14 @@ object BroadcastHub {
   }
 
   def of[T](): Sink[T, Source[T, NotUsed]] = of(256)
+
+  @Deprecated
+  @deprecated("Use the overloaded that doesn't require a Class value.", since = "v2.5.18")
+  def of[T](clazz: Class[T], bufferSize: Int): Sink[T, Source[T, NotUsed]] = of(bufferSize)
+
+  @Deprecated
+  @deprecated("Use the overloaded that doesn't require a Class value.", since = "v2.5.18")
+  def of[T](clazz: Class[T]): Sink[T, Source[T, NotUsed]] = of()
 
 }
 

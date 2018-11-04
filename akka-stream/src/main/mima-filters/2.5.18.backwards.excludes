@@ -1,0 +1,5 @@
+# #25864 dropped 'clazz' from @ApiMayChange Java streaming hub factories
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.PartitionHub.of")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.PartitionHub.ofStateful")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.javadsl.PartitionHub.of")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.javadsl.PartitionHub.ofStateful")
