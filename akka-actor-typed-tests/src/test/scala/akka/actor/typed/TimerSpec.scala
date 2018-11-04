@@ -311,5 +311,13 @@ class TimerSpec extends ScalaTestWithActorTestKit(
       if (elements.count(_.getClassName contains "TimerInterceptor") > 1)
         fail(s"Stack contains TimerInterceptor more than once: \n${elements.mkString("\n\t")}")
     }
+
+    "typecheck when using withKeyType" in {
+      Behaviors.withTimers[String] { timers0 ⇒
+        val timers = timers0.withKeyType[String]
+        timers.startSingleTimer("key", "tick", 1.millis)
+        Behaviors.same
+      }
+    }
   }
 }
