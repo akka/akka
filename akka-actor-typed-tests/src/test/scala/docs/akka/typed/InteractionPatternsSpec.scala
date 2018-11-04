@@ -169,10 +169,10 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     case object Timeout extends Msg
 
     def behavior(target: ActorRef[Batch], after: FiniteDuration, maxSize: Int): Behavior[Msg] = {
-      Behaviors.withTimers(timers ⇒ idle(timers, target, after, maxSize))
+      Behaviors.withTimers[TimerKey.type, Msg](timers ⇒ idle(timers, target, after, maxSize))
     }
 
-    def idle(timers: TimerScheduler[Msg], target: ActorRef[Batch],
+    def idle(timers: TimerScheduler[TimerKey.type, Msg], target: ActorRef[Batch],
              after: FiniteDuration, maxSize: Int): Behavior[Msg] = {
       Behaviors.receive[Msg] { (ctx, msg) ⇒
         timers.startSingleTimer(TimerKey, Timeout, after)
@@ -180,7 +180,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       }
     }
 
-    def active(buffer: Vector[Msg], timers: TimerScheduler[Msg],
+    def active(buffer: Vector[Msg], timers: TimerScheduler[TimerKey.type, Msg],
                target: ActorRef[Batch], after: FiniteDuration, maxSize: Int): Behavior[Msg] = {
       Behaviors.receive[Msg] { (_, msg) ⇒
         msg match {
