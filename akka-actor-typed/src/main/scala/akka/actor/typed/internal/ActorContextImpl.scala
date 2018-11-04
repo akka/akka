@@ -29,13 +29,13 @@ import akka.util.JavaDurationConverters._
 
   private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
   private var _messageAdapters: List[(Class[_], Any ⇒ T)] = Nil
-  private var _timer: OptionVal[AnyKeyTimerSchedulerImpl[T]] = OptionVal.None
+  private var _timer: OptionVal[SharedSchedulerImpl[T]] = OptionVal.None
 
   // context-shared timer needed to allow for nested timer usage, only used for untyped keys
-  def timer: AnyKeyTimerSchedulerImpl[T] = _timer match {
+  def timer: SharedSchedulerImpl[T] = _timer match {
     case OptionVal.Some(timer) ⇒ timer
     case OptionVal.None ⇒
-      val timer = new AnyKeyTimerSchedulerImpl[T](this)
+      val timer = new SharedSchedulerImpl[T](this)
       _timer = OptionVal.Some(timer)
       timer
   }
