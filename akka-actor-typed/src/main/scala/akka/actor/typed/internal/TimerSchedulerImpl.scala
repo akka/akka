@@ -144,6 +144,15 @@ import scala.concurrent.duration.FiniteDuration
     }
   }
 
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] class TimerSchedulerImpl[T](ctx: ActorContext[T])
+  extends KeyTypedTimerSchedulerImpl[Any, T](ctx)
+  with scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T] {
+
   def intercept(behavior: Behavior[T]): Behavior[T] = {
     // The scheduled TimerMsg is intercepted to guard against old messages enqueued
     // in mailbox before timer was canceled.
@@ -152,13 +161,6 @@ import scala.concurrent.duration.FiniteDuration
   }
 
 }
-
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] class TimerSchedulerImpl[T](ctx: ActorContext[T])
-  extends KeyTypedTimerSchedulerImpl[Any, T](ctx)
-  with scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T]
 
 /**
  * INTERNAL API
