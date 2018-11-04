@@ -20,12 +20,13 @@ import scala.concurrent.duration.FiniteDuration
 @InternalApi private[akka] object TimerSchedulerImpl {
   sealed trait TimerMsg[K] {
     def key: K
+    def generation: Int
     def owner: AnyRef
   }
 
-  final case class Timer[K, T](key: K, msg: T, repeat: Boolean, task: Cancellable)
-  final case class InfluenceReceiveTimeoutTimerMsg[K](key: K, owner: AnyRef) extends TimerMsg[K]
-  final case class NotInfluenceReceiveTimeoutTimerMsg[K](key: K, owner: AnyRef)
+  final case class Timer[K, T](key: K, msg: T, repeat: Boolean, generation: Int, task: Cancellable)
+  final case class InfluenceReceiveTimeoutTimerMsg[K](key: K, generation: Int, owner: AnyRef) extends TimerMsg[K]
+  final case class NotInfluenceReceiveTimeoutTimerMsg[K](key: K, generation: Int, owner: AnyRef)
     extends TimerMsg[K] with NotInfluenceReceiveTimeout
 
   def withTimers[K, T](factory: TimerSchedulerImpl[K, T] ⇒ Behavior[T]): Behavior[T] = {
@@ -48,6 +49,7 @@ import scala.concurrent.duration.FiniteDuration
   import TimerSchedulerImpl._
 
   private var timers: Map[K, Timer[K, T]] = Map.empty
+  private val timerGen = Iterator from 1
 
   override def startPeriodicTimer(key: K, msg: T, interval: FiniteDuration): Unit =
     startTimer(key, msg, interval, repeat = true)
@@ -66,12 +68,13 @@ import scala.concurrent.duration.FiniteDuration
       case Some(t) ⇒ cancelTimer(t)
       case None    ⇒
     }
+    val nextGen = timerGen.next()
 
     val timerMsg =
       if (msg.isInstanceOf[NotInfluenceReceiveTimeout])
-        NotInfluenceReceiveTimeoutTimerMsg(key, this)
+        NotInfluenceReceiveTimeoutTimerMsg(key, nextGen, this)
       else
-        InfluenceReceiveTimeoutTimerMsg(key, this)
+        InfluenceReceiveTimeoutTimerMsg(key, nextGen, this)
 
     val task =
       if (repeat)
@@ -83,8 +86,8 @@ import scala.concurrent.duration.FiniteDuration
           ctx.self.upcast ! timerMsg
         }(ExecutionContexts.sameThreadExecutionContext)
 
-    val nextTimer = Timer(key, msg, repeat, task)
-    ctx.log.debug("Start timer [{}]", key)
+    val nextTimer = Timer(key, msg, repeat, nextGen, task)
+    ctx.log.debug("Start timer [{}] with generation [{}]", key, nextGen)
     timers = timers.updated(key, nextTimer)
   }
 
@@ -99,7 +102,7 @@ import scala.concurrent.duration.FiniteDuration
   }
 
   private def cancelTimer(timer: Timer[K, T]): Unit = {
-    ctx.log.debug("Cancel timer [{}]", timer.key)
+    ctx.log.debug("Cancel timer [{}] with generation [{}]", timer.key, timer.generation)
     timer.task.cancel()
     timers -= timer.key
   }
@@ -128,11 +131,17 @@ import scala.concurrent.duration.FiniteDuration
           // after restart, it was from an old instance that was enqueued in mailbox before canceled
           log.debug("Received timer [{}] from old restarted instance, discarding", timerMsg.key)
           null.asInstanceOf[T] // message should be ignored
-        } else {
+        } else if (timerMsg.generation == t.generation) {
           // valid timer
           if (!t.repeat)
             timers -= t.key
           t.msg
+        } else {
+          // it was from an old timer that was enqueued in mailbox before canceled
+          ctx.log.debug(
+            "Received timer [{}] from old generation [{}], expected generation [{}], discarding",
+            timerMsg.key, timerMsg.generation, t.generation)
+          null.asInstanceOf[T] // message should be ignored
         }
     }
   }
@@ -143,6 +152,7 @@ import scala.concurrent.duration.FiniteDuration
     // Intercept some signals to cancel timers when restarting and stopping.
     BehaviorImpl.intercept(new TimerInterceptor(this))(behavior)
   }
+
 }
 
 /**
