@@ -167,8 +167,6 @@ import scala.concurrent.duration.FiniteDuration
     BehaviorImpl.intercept(new TimerInterceptor(this))(behavior)
   }
 
-  def isSame(that: TimerSchedulerImpl[_, _]): Boolean = this eq that
-
 }
 
 /**
@@ -176,9 +174,7 @@ import scala.concurrent.duration.FiniteDuration
  */
 @InternalApi private[akka] class AnyKeyTimerSchedulerImpl[T](ctx: ActorContext[T])
   extends TimerSchedulerImpl[Any, T](ctx)
-  with scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T] {
-  override def isSame(that: TimerSchedulerImpl[_, _]): Boolean = true
-}
+  with scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T]
 
 /**
  * INTERNAL API
@@ -208,7 +204,7 @@ private final class TimerInterceptor[K, T](private val timerSchedulerImpl: Timer
   }
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = (this eq other) || (other match {
-    case that: TimerInterceptor[_, _] ⇒ timerSchedulerImpl.isSame(that.timerSchedulerImpl)
+    case that: TimerInterceptor[_, _] ⇒ timerSchedulerImpl eq that.timerSchedulerImpl
   })
 
 }
