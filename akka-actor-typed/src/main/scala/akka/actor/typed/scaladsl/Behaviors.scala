@@ -205,15 +205,6 @@ object Behaviors {
     TimerSchedulerImpl.withTimers(factory)
 
   /**
-   * Support for scheduled `self` messages in an actor, for a given key type.
-   * It takes care of the lifecycle of the timers such as cancelling them when the actor
-   * is restarted or stopped.
-   * @see [[TimerScheduler]]
-   */
-  def withKeyTypedTimers[K, T](factory: KeyTypedTimerScheduler[K, T] ⇒ Behavior[T]): Behavior[T] =
-    TimerSchedulerImpl.withKeyTypedTimers(factory)
-
-  /**
    * Per message MDC (Mapped Diagnostic Context) logging.
    *
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after

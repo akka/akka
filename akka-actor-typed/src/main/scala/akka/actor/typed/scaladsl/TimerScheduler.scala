@@ -62,4 +62,8 @@ trait KeyTypedTimerScheduler[K, T] {
 
 }
 
-trait TimerScheduler[T] extends KeyTypedTimerScheduler[Any, T]
+trait TimerScheduler[T] extends KeyTypedTimerScheduler[Any, T] {
+
+  def withKeyType[K]: KeyTypedTimerScheduler[K, T] = this.asInstanceOf[KeyTypedTimerScheduler[K, T]]
+
+}

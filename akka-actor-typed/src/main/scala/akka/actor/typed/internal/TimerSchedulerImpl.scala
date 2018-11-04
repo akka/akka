@@ -33,24 +33,14 @@ import scala.concurrent.duration.FiniteDuration
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
-  def withKeyTypedTimers[K, T](factory: KeyTypedTimerSchedulerImpl[K, T] ⇒ Behavior[T]): Behavior[T] = {
-    scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
-  }
-
-  def sharedScheduler[T](ctx: ActorContext[T]): TimerSchedulerImpl[T] = {
+  def wrapWithTimers[T](factory: TimerSchedulerImpl[T] ⇒ Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
     ctx match {
-      case ctxImpl: ActorContextImpl[T] ⇒ ctxImpl.timer
-      case _                            ⇒ throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
+      case ctxImpl: ActorContextImpl[T] ⇒
+        val timerScheduler = ctxImpl.timer
+        val behavior = factory(timerScheduler)
+        timerScheduler.intercept(behavior)
+      case _ ⇒ throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
     }
-  }
-
-  def wrapWithTimers[T, S <: KeyTypedTimerSchedulerImpl[_, T]](
-    behaviorFactory: S ⇒ Behavior[T]
-  )(ctx: ActorContext[T]): Behavior[T] = {
-    val timerScheduler = sharedScheduler(ctx)
-    val behavior = behaviorFactory(timerScheduler.asInstanceOf[S])
-    timerScheduler.intercept(behavior)
-  }
 
 }
 

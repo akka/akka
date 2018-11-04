@@ -272,15 +272,6 @@ object Behaviors {
     TimerSchedulerImpl.withTimers(timers ⇒ factory.apply(timers))
 
   /**
-   * Support for scheduled `self` messages in an actor, for a given key type.
-   * It takes care of the lifecycle of the timers such as cancelling them when the actor
-   * is restarted or stopped.
-   * @see [[TimerScheduler]]
-   */
-  def withKeyTypedTimers[K, T](factory: akka.japi.function.Function[KeyTypedTimerScheduler[K, T], Behavior[T]]): Behavior[T] =
-    TimerSchedulerImpl.withKeyTypedTimers[K, T](timers ⇒ factory.apply(timers))
-
-  /**
    * Per message MDC (Mapped Diagnostic Context) logging.
    *
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
