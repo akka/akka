@@ -289,7 +289,7 @@ public class InteractionPatternsTest extends JUnitSuite {
     return Behaviors.withTimers(timers -> idle(timers, target, after, maxSize));
   }
 
-  private static Behavior<Msg> idle(TimerScheduler<Object, Msg> timers, ActorRef<Batch> target,
+  private static Behavior<Msg> idle(TimerScheduler<Msg> timers, ActorRef<Batch> target,
                                     Duration after, int maxSize) {
     return Behaviors.receive(Msg.class)
       .onMessage(Msg.class, (ctx, msg) -> {
@@ -301,7 +301,7 @@ public class InteractionPatternsTest extends JUnitSuite {
       .build();
   }
 
-  private static Behavior<Msg> active(List<Msg> buffer, TimerScheduler<Object, Msg> timers,
+  private static Behavior<Msg> active(List<Msg> buffer, TimerScheduler<Msg> timers,
                                       ActorRef<Batch> target, Duration after, int maxSize) {
     return Behaviors.receive(Msg.class)
       .onMessage(TimeoutMsg.class, (ctx, msg) -> {

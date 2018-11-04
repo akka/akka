@@ -44,7 +44,7 @@ class TimerSpec extends ScalaTestWithActorTestKit(
 
   val interval = 1.second
 
-  def target(monitor: ActorRef[Event], timer: TimerScheduler[Any, Command], bumpCount: Int): Behavior[Command] = {
+  def target(monitor: ActorRef[Event], timer: TimerScheduler[Command], bumpCount: Int): Behavior[Command] = {
     def bump(): Behavior[Command] = {
       val nextCount = bumpCount + 1
       timer.startPeriodicTimer("T", Tick(nextCount), interval)

@@ -29,7 +29,7 @@ import scala.concurrent.duration.FiniteDuration
   final case class NotInfluenceReceiveTimeoutTimerMsg[K](key: K, generation: Int, owner: AnyRef)
     extends TimerMsg[K] with NotInfluenceReceiveTimeout
 
-  def withTimers[T](factory: TimerSchedulerImpl[Any, T] ⇒ Behavior[T]): Behavior[T] = {
+  def withTimers[T](factory: AnyKeyTimerSchedulerImpl[T] ⇒ Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(sharedScheduler, factory))
   }
 
@@ -37,10 +37,10 @@ import scala.concurrent.duration.FiniteDuration
     scaladsl.Behaviors.setup[T](wrapWithTimers(new TimerSchedulerImpl[K, T](_), factory))
   }
 
-  def sharedScheduler[T](ctx: ActorContext[T]): TimerSchedulerImpl[Any, T] = {
+  def sharedScheduler[T](ctx: ActorContext[T]): AnyKeyTimerSchedulerImpl[T] = {
     ctx match {
       case ctxImpl: ActorContextImpl[T] ⇒ ctxImpl.timer
-      case _                            ⇒ new TimerSchedulerImpl[Any, T](ctx)
+      case _                            ⇒ new AnyKeyTimerSchedulerImpl[T](ctx)
     }
   }
 
@@ -59,7 +59,7 @@ import scala.concurrent.duration.FiniteDuration
  * INTERNAL API
  */
 @InternalApi private[akka] class TimerSchedulerImpl[K, T](ctx: ActorContext[T])
-  extends scaladsl.TimerScheduler[K, T] with javadsl.TimerScheduler[K, T] {
+  extends scaladsl.KeyTypedTimerScheduler[K, T] with javadsl.KeyTypedTimerScheduler[K, T] {
   import TimerSchedulerImpl._
 
   private var timers: Map[K, Timer[K, T]] = Map.empty
@@ -168,6 +168,13 @@ import scala.concurrent.duration.FiniteDuration
   }
 
 }
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] class AnyKeyTimerSchedulerImpl[T](ctx: ActorContext[T])
+  extends TimerSchedulerImpl[Any, T](ctx)
+  with scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T]
 
 /**
  * INTERNAL API

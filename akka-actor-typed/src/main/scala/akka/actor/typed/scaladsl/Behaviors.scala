@@ -201,7 +201,7 @@ object Behaviors {
    * is restarted or stopped.
    * @see [[TimerScheduler]]
    */
-  def withTimers[T](factory: TimerScheduler[Any, T] ⇒ Behavior[T]): Behavior[T] =
+  def withTimers[T](factory: TimerScheduler[T] ⇒ Behavior[T]): Behavior[T] =
     TimerSchedulerImpl.withTimers(factory)
 
   /**
@@ -210,7 +210,7 @@ object Behaviors {
    * is restarted or stopped.
    * @see [[TimerScheduler]]
    */
-  def withKeyTypedTimers[K, T](factory: TimerScheduler[K, T] ⇒ Behavior[T]): Behavior[T] =
+  def withKeyTypedTimers[K, T](factory: KeyTypedTimerScheduler[K, T] ⇒ Behavior[T]): Behavior[T] =
     TimerSchedulerImpl.withKeyTypedTimers(factory)
 
   /**

@@ -172,7 +172,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       Behaviors.withTimers(timers ⇒ idle(timers, target, after, maxSize))
     }
 
-    def idle(timers: TimerScheduler[Any, Msg], target: ActorRef[Batch],
+    def idle(timers: TimerScheduler[Msg], target: ActorRef[Batch],
              after: FiniteDuration, maxSize: Int): Behavior[Msg] = {
       Behaviors.receive[Msg] { (ctx, msg) ⇒
         timers.startSingleTimer(TimerKey, Timeout, after)
@@ -180,7 +180,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       }
     }
 
-    def active(buffer: Vector[Msg], timers: TimerScheduler[Any, Msg],
+    def active(buffer: Vector[Msg], timers: TimerScheduler[Msg],
                target: ActorRef[Batch], after: FiniteDuration, maxSize: Int): Behavior[Msg] = {
       Behaviors.receive[Msg] { (_, msg) ⇒
         msg match {
