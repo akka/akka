@@ -33,7 +33,7 @@ import scala.concurrent.duration.FiniteDuration
     scaladsl.Behaviors.setup[T](wrapWithTimers(sharedScheduler, factory))
   }
 
-  def withTypedTimers[K, T](factory: TimerSchedulerImpl[K, T] ⇒ Behavior[T]): Behavior[T] = {
+  def withKeyTypedTimers[K, T](factory: TimerSchedulerImpl[K, T] ⇒ Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(new TimerSchedulerImpl[K, T](_), factory))
   }
 

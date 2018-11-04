@@ -210,8 +210,8 @@ object Behaviors {
    * is restarted or stopped.
    * @see [[TimerScheduler]]
    */
-  def withTypedTimers[K, T](factory: TimerScheduler[K, T] ⇒ Behavior[T]): Behavior[T] =
-    TimerSchedulerImpl.withTypedTimers(factory)
+  def withKeyTypedTimers[K, T](factory: TimerScheduler[K, T] ⇒ Behavior[T]): Behavior[T] =
+    TimerSchedulerImpl.withKeyTypedTimers(factory)
 
   /**
    * Per message MDC (Mapped Diagnostic Context) logging.
