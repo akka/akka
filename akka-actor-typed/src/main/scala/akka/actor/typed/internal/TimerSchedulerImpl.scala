@@ -146,7 +146,7 @@ import scala.concurrent.duration.FiniteDuration
           t.msg
         } else {
           // it was from an old timer that was enqueued in mailbox before canceled
-          ctx.log.debug(
+          log.debug(
             "Received timer [{}] from old generation [{}], expected generation [{}], discarding",
             timerMsg.key, timerMsg.generation, t.generation)
           null.asInstanceOf[T] // message should be ignored
