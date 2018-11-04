@@ -268,7 +268,16 @@ object Behaviors {
    * is restarted or stopped.
    * @see [[TimerScheduler]]
    */
-  def withTimers[K, T](factory: akka.japi.function.Function[TimerScheduler[K, T], Behavior[T]]): Behavior[T] =
+  def withTimers[T](factory: akka.japi.function.Function[TimerScheduler[Any, T], Behavior[T]]): Behavior[T] =
+    TimerSchedulerImpl.withTimers[Any, T](timers ⇒ factory.apply(timers))
+
+  /**
+   * Support for scheduled `self` messages in an actor, for a given key type.
+   * It takes care of the lifecycle of the timers such as cancelling them when the actor
+   * is restarted or stopped.
+   * @see [[TimerScheduler]]
+   */
+  def withTypedTimers[K, T](factory: akka.japi.function.Function[TimerScheduler[K, T], Behavior[T]]): Behavior[T] =
     TimerSchedulerImpl.withTimers[K, T](timers ⇒ factory.apply(timers))
 
   /**

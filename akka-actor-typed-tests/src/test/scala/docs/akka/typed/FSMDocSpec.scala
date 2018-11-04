@@ -43,7 +43,7 @@ object FSMDocSpec {
   }
 
   def active(data: Todo): Behavior[Event] =
-    Behaviors.withTimers[Timeout.type, Event] { timers ⇒
+    Behaviors.withTimers[Event] { timers ⇒
       // instead of FSM state timeout
       timers.startSingleTimer(Timeout, Timeout, 1.second)
       Behaviors.receiveMessagePartial {

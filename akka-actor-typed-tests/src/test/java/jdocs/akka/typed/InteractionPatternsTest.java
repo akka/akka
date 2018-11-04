@@ -280,17 +280,16 @@ public class InteractionPatternsTest extends JUnitSuite {
     }
   }
 
-  private enum TimerKey { INSTANCE }
-  private static final TimerKey TIMER_KEY = TimerKey.INSTANCE;
+  private static final Object TIMER_KEY = new Object();
 
   private static class TimeoutMsg implements Msg {
   }
 
   public static Behavior<Msg> behavior(ActorRef<Batch> target, Duration after, int maxSize) {
-    return Behaviors.<TimerKey, Msg>withTimers(timers -> idle(timers, target, after, maxSize));
+    return Behaviors.withTimers(timers -> idle(timers, target, after, maxSize));
   }
 
-  private static Behavior<Msg> idle(TimerScheduler<TimerKey, Msg> timers, ActorRef<Batch> target,
+  private static Behavior<Msg> idle(TimerScheduler<Object, Msg> timers, ActorRef<Batch> target,
                                     Duration after, int maxSize) {
     return Behaviors.receive(Msg.class)
       .onMessage(Msg.class, (ctx, msg) -> {
@@ -302,7 +301,7 @@ public class InteractionPatternsTest extends JUnitSuite {
       .build();
   }
 
-  private static Behavior<Msg> active(List<Msg> buffer, TimerScheduler<TimerKey, Msg> timers,
+  private static Behavior<Msg> active(List<Msg> buffer, TimerScheduler<Object, Msg> timers,
                                       ActorRef<Batch> target, Duration after, int maxSize) {
     return Behaviors.receive(Msg.class)
       .onMessage(TimeoutMsg.class, (ctx, msg) -> {

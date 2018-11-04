@@ -161,7 +161,7 @@ object PersistentBehaviorSpec {
 
         case IncrementLater ⇒
           // purpose is to test signals
-          val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type, Tick.type] { timers ⇒
+          val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type] { timers ⇒
             timers.startSingleTimer(Tick, Tick, 10.millis)
             Behaviors.receive((_, msg) ⇒ msg match {
               case Tick ⇒ Behaviors.stopped
@@ -607,7 +607,7 @@ class PersistentBehaviorSpec extends ScalaTestWithActorTestKit(PersistentBehavio
     }
 
     "handle scheduled message arriving before recovery completed " in {
-      val c = spawn(Behaviors.withTimers[String, Command] {
+      val c = spawn(Behaviors.withTimers[Command] {
         timers ⇒
           timers.startSingleTimer("tick", Increment, 1.millis)
           Thread.sleep(30) // now it's probably already in the mailbox, and will be stashed
@@ -623,7 +623,7 @@ class PersistentBehaviorSpec extends ScalaTestWithActorTestKit(PersistentBehavio
     }
 
     "handle scheduled message arriving after recovery completed " in {
-      val c = spawn(Behaviors.withTimers[String, Command] {
+      val c = spawn(Behaviors.withTimers[Command] {
         timers ⇒
           // probably arrives after recovery completed
           timers.startSingleTimer("tick", Increment, 200.millis)
