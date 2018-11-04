@@ -289,27 +289,5 @@ class TimerSpec extends ScalaTestWithActorTestKit(
 
       ref ! "stop"
     }
-
-    "not grow stack when nesting withTimers" in {
-      def next(n: Int, probe: ActorRef[Array[StackTraceElement]]): Behavior[String] = Behaviors.withTimers[String, String] { timers ⇒
-        timers.startSingleTimer("key", "tick", 1.millis)
-        Behaviors.receiveMessage { msg ⇒
-          if (n == 20) {
-            val e = new RuntimeException().fillInStackTrace()
-            val trace = e.getStackTrace
-            probe ! trace
-            Behaviors.stopped
-          } else {
-            next(n + 1, probe)
-          }
-        }
-      }
-
-      val probe = TestProbe[Array[StackTraceElement]]()
-      spawn(next(0, probe.ref))
-      val elements = probe.expectMessageType[Array[StackTraceElement]]
-      if (elements.count(_.getClassName == "TimerInterceptor") > 1)
-        fail(s"Stack contains TimerInterceptor more than once: \n${elements.mkString("\n\t")}")
-    }
   }
 }
