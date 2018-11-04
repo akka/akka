@@ -269,7 +269,7 @@ object Behaviors {
    * @see [[TimerScheduler]]
    */
   def withTimers[T](factory: akka.japi.function.Function[TimerScheduler[Any, T], Behavior[T]]): Behavior[T] =
-    TimerSchedulerImpl.withTimers[Any, T](timers ⇒ factory.apply(timers))
+    TimerSchedulerImpl.withTimers[T](timers ⇒ factory.apply(timers))
 
   /**
    * Support for scheduled `self` messages in an actor, for a given key type.
@@ -278,7 +278,7 @@ object Behaviors {
    * @see [[TimerScheduler]]
    */
   def withTypedTimers[K, T](factory: akka.japi.function.Function[TimerScheduler[K, T], Behavior[T]]): Behavior[T] =
-    TimerSchedulerImpl.withTimers[K, T](timers ⇒ factory.apply(timers))
+    TimerSchedulerImpl.withTypedTimers[K, T](timers ⇒ factory.apply(timers))
 
   /**
    * Per message MDC (Mapped Diagnostic Context) logging.

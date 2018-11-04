@@ -29,11 +29,25 @@ import scala.concurrent.duration.FiniteDuration
   final case class NotInfluenceReceiveTimeoutTimerMsg[K](key: K, generation: Int, owner: AnyRef)
     extends TimerMsg[K] with NotInfluenceReceiveTimeout
 
-  def withTimers[K, T](factory: TimerSchedulerImpl[K, T] ⇒ Behavior[T]): Behavior[T] = {
+  def withTimers[T](factory: TimerSchedulerImpl[Any, T] ⇒ Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
-  def wrapWithTimers[K, T](factory: TimerSchedulerImpl[K, T] ⇒ Behavior[T])(ctx: ActorContext[T]): Behavior[T] = {
+  def withTypedTimers[K, T](factory: TimerSchedulerImpl[K, T] ⇒ Behavior[T]): Behavior[T] = {
+    scaladsl.Behaviors.setup[T](wrapWithTypedTimers(factory))
+  }
+
+  def wrapWithTimers[K, T](factory: TimerSchedulerImpl[Any, T] ⇒ Behavior[T])(ctx: ActorContext[T]): Behavior[T] = {
+    ctx match {
+      case ctxImpl: ActorContextImpl[T] ⇒
+        val timerScheduler = ctxImpl.timer
+        val behavior = factory(timerScheduler)
+        timerScheduler.intercept(behavior)
+      case _ ⇒ wrapWithTypedTimers(factory)(ctx)
+    }
+  }
+
+  def wrapWithTypedTimers[K, T](factory: TimerSchedulerImpl[K, T] ⇒ Behavior[T])(ctx: ActorContext[T]): Behavior[T] = {
     val timerScheduler = new TimerSchedulerImpl[K, T](ctx)
     val behavior = factory(timerScheduler)
     timerScheduler.intercept(behavior)

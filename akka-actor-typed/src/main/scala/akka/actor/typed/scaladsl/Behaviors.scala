@@ -211,7 +211,7 @@ object Behaviors {
    * @see [[TimerScheduler]]
    */
   def withTypedTimers[K, T](factory: TimerScheduler[K, T] ⇒ Behavior[T]): Behavior[T] =
-    TimerSchedulerImpl.withTimers(factory)
+    TimerSchedulerImpl.withTypedTimers(factory)
 
   /**
    * Per message MDC (Mapped Diagnostic Context) logging.
