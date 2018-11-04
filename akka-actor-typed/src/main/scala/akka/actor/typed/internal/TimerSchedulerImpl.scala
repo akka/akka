@@ -39,11 +39,9 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class TimerSchedulerImpl[T](ctx: ActorContext[T])
-  extends scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T] {
+@InternalApi private[akka] abstract class KeyTypedTimerSchedulerImpl[-K, T](ctx: ActorContext[T])
+  extends scaladsl.KeyTypedTimerScheduler[K, T] with javadsl.KeyTypedTimerScheduler[K, T] {
   import TimerSchedulerImpl._
-
-  override type K = Any
 
   private var timers: Map[Any, Timer[T]] = Map.empty
   private val timerGen = Iterator from 1
@@ -138,7 +136,16 @@ import scala.concurrent.duration.FiniteDuration
     }
   }
 
-  override def withKeyType[K1]: TimerSchedulerImpl[T] { type K >: K1 } = this
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] class TimerSchedulerImpl[T](ctx: ActorContext[T])
+  extends KeyTypedTimerSchedulerImpl[Any, T](ctx)
+  with scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T] {
+
+  override def withKeyType[K]: KeyTypedTimerSchedulerImpl[K, T] = this
 
   def intercept(behavior: Behavior[T]): Behavior[T] = {
     // The scheduled TimerMsg is intercepted to guard against old messages enqueued
