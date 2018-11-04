@@ -15,7 +15,7 @@ import java.time.Duration
  * `TimerScheduler` is not thread-safe, i.e. it must only be used within
  * the actor that owns it.
  */
-trait KeyTypedTimerScheduler[K, T] {
+trait KeyTypedTimerScheduler[-K, T] {
 
   /**
    * Start a periodic timer that will send `msg` to the `self` actor at
@@ -64,6 +64,6 @@ trait KeyTypedTimerScheduler[K, T] {
 
 trait TimerScheduler[T] extends KeyTypedTimerScheduler[Any, T] {
 
-  def withKeyType[K]: KeyTypedTimerScheduler[K, T] = this.asInstanceOf[KeyTypedTimerScheduler[K, T]]
+  def withKeyType[K]: KeyTypedTimerScheduler[K, T] = this
 
 }
