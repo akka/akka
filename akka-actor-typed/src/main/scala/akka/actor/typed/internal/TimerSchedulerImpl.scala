@@ -44,9 +44,9 @@ import scala.concurrent.duration.FiniteDuration
     }
   }
 
-  def wrapWithTimers[K, T](
-    schedulerFactory: ActorContext[T] ⇒ TimerSchedulerImpl[K, T],
-    behaviorFactory:  TimerSchedulerImpl[K, T] ⇒ Behavior[T]
+  def wrapWithTimers[T, S <: TimerSchedulerImpl[_, T]](
+    schedulerFactory: ActorContext[T] ⇒ S,
+    behaviorFactory:  S ⇒ Behavior[T]
   )(ctx: ActorContext[T]): Behavior[T] = {
     val timerScheduler = schedulerFactory(ctx)
     val behavior = behaviorFactory(timerScheduler)
