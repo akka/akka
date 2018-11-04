@@ -164,7 +164,7 @@ import scala.concurrent.duration.FiniteDuration
  * INTERNAL API
  */
 @InternalApi
-private final class TimerInterceptor[K, T](private val timerSchedulerImpl: KeyTypedTimerSchedulerImpl[K, T]) extends BehaviorInterceptor[T, T] {
+private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T]) extends BehaviorInterceptor[T, T] {
   import TimerSchedulerImpl._
   import BehaviorInterceptor._
 
@@ -189,5 +189,5 @@ private final class TimerInterceptor[K, T](private val timerSchedulerImpl: KeyTy
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean =
     // only one timer interceptor per behavior stack is needed
-    other.isInstanceOf[TimerInterceptor[_, _]]
+    other.isInstanceOf[TimerInterceptor[_]]
 }
