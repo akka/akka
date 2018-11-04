@@ -70,10 +70,10 @@ object ActorMaterializer {
   private def actorOfStreamSupervisor(materializerSettings: ActorMaterializerSettings, context: ActorRefFactory, haveShutDown: AtomicBoolean) =
     context match {
       case s: ExtendedActorSystem ⇒
-        s.systemActorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName())
+        s.systemActorOf(StreamSupervisor.props(materializerSettings, haveShutDown), StreamSupervisor.nextName())
 
       case a: ActorContext ⇒
-        a.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName())
+        a.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown), StreamSupervisor.nextName())
     }
 
   /**
@@ -101,8 +101,9 @@ object ActorMaterializer {
       system,
       materializerSettings,
       system.dispatchers,
-      system.systemActorOf(StreamSupervisor.props(materializerSettings, haveShutDown)
-        .withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName()),
+      system.systemActorOf(
+        StreamSupervisor.props(materializerSettings, haveShutDown),
+        StreamSupervisor.nextName()),
       haveShutDown,
       FlowNames(system).name.copy(namePrefix))
   }
