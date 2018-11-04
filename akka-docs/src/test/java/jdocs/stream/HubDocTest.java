@@ -50,7 +50,7 @@ public class HubDocTest extends AbstractJavaTest {
     // Attach a MergeHub Source to the consumer. This will materialize to a
     // corresponding Sink.
     RunnableGraph<Sink<String, NotUsed>> runnableGraph =
-      MergeHub.of(String.class, 16).to(consumer);
+      MergeHub.<String>of(16).to(consumer);
 
     // By running/materializing the consumer we get back a Sink, and hence
     // now have access to feed elements into it. This Sink can be materialized
@@ -81,7 +81,7 @@ public class HubDocTest extends AbstractJavaTest {
     // (We need to use toMat and Keep.right since by default the materialized
     // value to the left is used)
     RunnableGraph<Source<String, NotUsed>> runnableGraph =
-      producer.toMat(BroadcastHub.of(String.class, 256), Keep.right());
+      producer.toMat(BroadcastHub.of(256), Keep.right());
 
     // By running/materializing the producer, we get back a Source, which
     // gives us access to the elements published by the producer.
@@ -101,8 +101,8 @@ public class HubDocTest extends AbstractJavaTest {
     //#pub-sub-1
     // Obtain a Sink and Source which will publish and receive from the "bus" respectively.
     Pair<Sink<String, NotUsed>, Source<String, NotUsed>> sinkAndSource =
-      MergeHub.of(String.class, 16)
-        .toMat(BroadcastHub.of(String.class, 256), Keep.both())
+      MergeHub.<String>of(16)
+        .toMat(BroadcastHub.of(256), Keep.both())
         .run(materializer);
 
     Sink<String, NotUsed> sink = sinkAndSource.first();
@@ -157,7 +157,6 @@ public class HubDocTest extends AbstractJavaTest {
     // value to the left is used)
     RunnableGraph<Source<String, NotUsed>> runnableGraph =
       producer.toMat(PartitionHub.of(
-          String.class, 
           (size, elem) -> Math.abs(elem.hashCode() % size),
           2, 256), Keep.right());
 
@@ -209,7 +208,6 @@ public class HubDocTest extends AbstractJavaTest {
     RunnableGraph<Source<String, NotUsed>> runnableGraph =
       producer.toMat(
         PartitionHub.ofStateful(
-          String.class,
           () -> new RoundRobin<String>(),
           2, 
           256),
@@ -241,7 +239,6 @@ public class HubDocTest extends AbstractJavaTest {
     RunnableGraph<Source<Integer, NotUsed>> runnableGraph =
       producer.toMat(
         PartitionHub.ofStateful(
-          Integer.class,
           () -> (info, elem) -> {
             final List<Object> ids = info.getConsumerIds();
             int minValue = info.queueSize(0);
