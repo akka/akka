@@ -268,8 +268,8 @@ object Behaviors {
    * is restarted or stopped.
    * @see [[TimerScheduler]]
    */
-  def withTimers[T](factory: akka.japi.function.Function[TimerScheduler[T], Behavior[T]]): Behavior[T] =
-    TimerSchedulerImpl.withTimers(timers ⇒ factory.apply(timers))
+  def withTimers[K, T](factory: akka.japi.function.Function[TimerScheduler[K, T], Behavior[T]]): Behavior[T] =
+    TimerSchedulerImpl.withTimers[K, T](timers ⇒ factory.apply(timers))
 
   /**
    * Per message MDC (Mapped Diagnostic Context) logging.

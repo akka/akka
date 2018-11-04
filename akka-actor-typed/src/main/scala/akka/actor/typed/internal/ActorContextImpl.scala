@@ -29,16 +29,6 @@ import akka.util.JavaDurationConverters._
 
   private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
   private var _messageAdapters: List[(Class[_], Any ⇒ T)] = Nil
-  private var _timer: OptionVal[TimerSchedulerImpl[T]] = OptionVal.None
-
-  // context-shared timer needed to allow for nested timer usage
-  def timer: TimerSchedulerImpl[T] = _timer match {
-    case OptionVal.Some(timer) ⇒ timer
-    case OptionVal.None ⇒
-      val timer = new TimerSchedulerImpl[T](this)
-      _timer = OptionVal.Some(timer)
-      timer
-  }
 
   override def asJava: javadsl.ActorContext[T] = this
 

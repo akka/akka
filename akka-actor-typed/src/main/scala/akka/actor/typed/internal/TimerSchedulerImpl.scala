@@ -18,55 +18,52 @@ import scala.concurrent.duration.FiniteDuration
  * INTERNAL API
  */
 @InternalApi private[akka] object TimerSchedulerImpl {
-  sealed trait TimerMsg {
-    def key: Any
+  sealed trait TimerMsg[K] {
+    def key: K
     def generation: Int
     def owner: AnyRef
   }
 
-  final case class Timer[T](key: Any, msg: T, repeat: Boolean, generation: Int, task: Cancellable)
-  final case class InfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: AnyRef) extends TimerMsg
-  final case class NotInfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: AnyRef)
-    extends TimerMsg with NotInfluenceReceiveTimeout
+  final case class Timer[K, T](key: K, msg: T, repeat: Boolean, generation: Int, task: Cancellable)
+  final case class InfluenceReceiveTimeoutTimerMsg[K](key: K, generation: Int, owner: AnyRef) extends TimerMsg[K]
+  final case class NotInfluenceReceiveTimeoutTimerMsg[K](key: K, generation: Int, owner: AnyRef)
+    extends TimerMsg[K] with NotInfluenceReceiveTimeout
 
-  def withTimers[T](factory: TimerSchedulerImpl[T] ⇒ Behavior[T]): Behavior[T] = {
+  def withTimers[K, T](factory: TimerSchedulerImpl[K, T] ⇒ Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
-  def wrapWithTimers[T](factory: TimerSchedulerImpl[T] ⇒ Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
-    ctx match {
-      case ctxImpl: ActorContextImpl[T] ⇒
-        val timerScheduler = ctxImpl.timer
-        val behavior = factory(timerScheduler)
-        timerScheduler.intercept(behavior)
-      case _ ⇒ throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
-    }
+  def wrapWithTimers[K, T](factory: TimerSchedulerImpl[K, T] ⇒ Behavior[T])(ctx: ActorContext[T]): Behavior[T] = {
+    val timerScheduler = new TimerSchedulerImpl[K, T](ctx)
+    val behavior = factory(timerScheduler)
+    timerScheduler.intercept(behavior)
+  }
 
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class TimerSchedulerImpl[T](ctx: ActorContext[T])
-  extends scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T] {
+@InternalApi private[akka] class TimerSchedulerImpl[K, T](ctx: ActorContext[T])
+  extends scaladsl.TimerScheduler[K, T] with javadsl.TimerScheduler[K, T] {
   import TimerSchedulerImpl._
 
-  private var timers: Map[Any, Timer[T]] = Map.empty
+  private var timers: Map[K, Timer[K, T]] = Map.empty
   private val timerGen = Iterator from 1
 
-  override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =
+  override def startPeriodicTimer(key: K, msg: T, interval: FiniteDuration): Unit =
     startTimer(key, msg, interval, repeat = true)
 
-  override def startPeriodicTimer(key: Any, msg: T, interval: java.time.Duration): Unit =
+  override def startPeriodicTimer(key: K, msg: T, interval: java.time.Duration): Unit =
     startPeriodicTimer(key, msg, interval.asScala)
 
-  override def startSingleTimer(key: Any, msg: T, timeout: FiniteDuration): Unit =
+  override def startSingleTimer(key: K, msg: T, timeout: FiniteDuration): Unit =
     startTimer(key, msg, timeout, repeat = false)
 
-  def startSingleTimer(key: Any, msg: T, timeout: java.time.Duration): Unit =
+  def startSingleTimer(key: K, msg: T, timeout: java.time.Duration): Unit =
     startSingleTimer(key, msg, timeout.asScala)
 
-  private def startTimer(key: Any, msg: T, timeout: FiniteDuration, repeat: Boolean): Unit = {
+  private def startTimer(key: K, msg: T, timeout: FiniteDuration, repeat: Boolean): Unit = {
     timers.get(key) match {
       case Some(t) ⇒ cancelTimer(t)
       case None    ⇒
@@ -94,17 +91,17 @@ import scala.concurrent.duration.FiniteDuration
     timers = timers.updated(key, nextTimer)
   }
 
-  override def isTimerActive(key: Any): Boolean =
+  override def isTimerActive(key: K): Boolean =
     timers.contains(key)
 
-  override def cancel(key: Any): Unit = {
+  override def cancel(key: K): Unit = {
     timers.get(key) match {
       case None    ⇒ // already removed/canceled
       case Some(t) ⇒ cancelTimer(t)
     }
   }
 
-  private def cancelTimer(timer: Timer[T]): Unit = {
+  private def cancelTimer(timer: Timer[K, T]): Unit = {
     ctx.log.debug("Cancel timer [{}] with generation [{}]", timer.key, timer.generation)
     timer.task.cancel()
     timers -= timer.key
@@ -118,7 +115,7 @@ import scala.concurrent.duration.FiniteDuration
     timers = Map.empty
   }
 
-  def interceptTimerMsg(log: Logger, timerMsg: TimerMsg): T = {
+  def interceptTimerMsg(log: Logger, timerMsg: TimerMsg[K]): T = {
     timers.get(timerMsg.key) match {
       case None ⇒
         // it was from canceled timer that was already enqueued in mailbox
@@ -147,8 +144,8 @@ import scala.concurrent.duration.FiniteDuration
   def intercept(behavior: Behavior[T]): Behavior[T] = {
     // The scheduled TimerMsg is intercepted to guard against old messages enqueued
     // in mailbox before timer was canceled.
-    // Intercept some signals to cancel timers when when restarting and stopping.
-    BehaviorImpl.intercept(new TimerInterceptor(this))(behavior).asInstanceOf[Behavior[T]]
+    // Intercept some signals to cancel timers when restarting and stopping.
+    BehaviorImpl.intercept(new TimerInterceptor(this))(behavior)
   }
 
 }
@@ -157,14 +154,14 @@ import scala.concurrent.duration.FiniteDuration
  * INTERNAL API
  */
 @InternalApi
-private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T]) extends BehaviorInterceptor[AnyRef, T] {
+private final class TimerInterceptor[K, T](timerSchedulerImpl: TimerSchedulerImpl[K, T]) extends BehaviorInterceptor[T, T] {
   import TimerSchedulerImpl._
   import BehaviorInterceptor._
 
-  override def aroundReceive(ctx: typed.ActorContext[AnyRef], msg: AnyRef, target: ReceiveTarget[T]): Behavior[T] = {
+  override def aroundReceive(ctx: typed.ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     val intercepted = msg match {
-      case msg: TimerMsg ⇒ timerSchedulerImpl.interceptTimerMsg(ctx.asScala.log, msg)
-      case msg           ⇒ msg.asInstanceOf[T]
+      case msg: TimerMsg[K] ⇒ timerSchedulerImpl.interceptTimerMsg(ctx.asScala.log, msg)
+      case msg              ⇒ msg
     }
 
     // null means not applicable
@@ -172,15 +169,11 @@ private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T
     else target(ctx, intercepted)
   }
 
-  override def aroundSignal(ctx: typed.ActorContext[AnyRef], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+  override def aroundSignal(ctx: typed.ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     signal match {
       case PreRestart | PostStop ⇒ timerSchedulerImpl.cancelAll()
       case _                     ⇒ // unhandled
     }
     target(ctx, signal)
   }
-
-  override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean =
-    // only one timer interceptor per behavior stack is needed
-    other.isInstanceOf[TimerInterceptor[_]]
 }

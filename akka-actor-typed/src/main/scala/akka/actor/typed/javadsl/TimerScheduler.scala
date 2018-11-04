@@ -15,7 +15,7 @@ import java.time.Duration
  * `TimerScheduler` is not thread-safe, i.e. it must only be used within
  * the actor that owns it.
  */
-trait TimerScheduler[T] {
+trait TimerScheduler[K, T] {
 
   /**
    * Start a periodic timer that will send `msg` to the `self` actor at
@@ -26,7 +26,7 @@ trait TimerScheduler[T] {
    * previous timer is not received, even though it might already be enqueued
    * in the mailbox when the new timer is started.
    */
-  def startPeriodicTimer(key: Any, msg: T, interval: Duration): Unit
+  def startPeriodicTimer(key: K, msg: T, interval: Duration): Unit
 
   /**
    * * Start a timer that will send `msg` once to the `self` actor after
@@ -37,12 +37,12 @@ trait TimerScheduler[T] {
    * previous timer is not received, even though it might already be enqueued
    * in the mailbox when the new timer is started.
    */
-  def startSingleTimer(key: Any, msg: T, timeout: Duration): Unit
+  def startSingleTimer(key: K, msg: T, timeout: Duration): Unit
 
   /**
    * Check if a timer with a given `key` is active.
    */
-  def isTimerActive(key: Any): Boolean
+  def isTimerActive(key: K): Boolean
 
   /**
    * Cancel a timer with a given `key`.
@@ -53,7 +53,7 @@ trait TimerScheduler[T] {
    * for the same key, will not be received by the actor, even though the message might already
    * be enqueued in the mailbox when cancel is called.
    */
-  def cancel(key: Any): Unit
+  def cancel(key: K): Unit
 
   /**
    * Cancel all timers.

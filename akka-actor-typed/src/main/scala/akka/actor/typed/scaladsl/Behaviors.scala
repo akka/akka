@@ -201,7 +201,7 @@ object Behaviors {
    * is restarted or stopped.
    * @see [[TimerScheduler]]
    */
-  def withTimers[T](factory: TimerScheduler[T] ⇒ Behavior[T]): Behavior[T] =
+  def withTimers[K, T](factory: TimerScheduler[K, T] ⇒ Behavior[T]): Behavior[T] =
     TimerSchedulerImpl.withTimers(factory)
 
   /**
