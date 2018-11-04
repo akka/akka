@@ -29,22 +29,22 @@ import scala.concurrent.duration.FiniteDuration
   final case class NotInfluenceReceiveTimeoutTimerMsg[K](key: K, generation: Int, owner: AnyRef)
     extends TimerMsg[K] with NotInfluenceReceiveTimeout
 
-  def withTimers[T](factory: SharedSchedulerImpl[T] ⇒ Behavior[T]): Behavior[T] = {
+  def withTimers[T](factory: TimerSchedulerImpl[T] ⇒ Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
-  def withKeyTypedTimers[K, T](factory: TimerSchedulerImpl[K, T] ⇒ Behavior[T]): Behavior[T] = {
+  def withKeyTypedTimers[K, T](factory: KeyTypedTimerSchedulerImpl[K, T] ⇒ Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
-  def sharedScheduler[T](ctx: ActorContext[T]): SharedSchedulerImpl[T] = {
+  def sharedScheduler[T](ctx: ActorContext[T]): TimerSchedulerImpl[T] = {
     ctx match {
       case ctxImpl: ActorContextImpl[T] ⇒ ctxImpl.timer
       case _                            ⇒ throw new IllegalArgumentException(s"timers not supported with [${ctx.getClass}]")
     }
   }
 
-  def wrapWithTimers[T, S <: TimerSchedulerImpl[_, T]](
+  def wrapWithTimers[T, S <: KeyTypedTimerSchedulerImpl[_, T]](
     behaviorFactory: S ⇒ Behavior[T]
   )(ctx: ActorContext[T]): Behavior[T] = {
     val timerScheduler = sharedScheduler(ctx)
@@ -57,7 +57,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] abstract class TimerSchedulerImpl[K, T](ctx: ActorContext[T])
+@InternalApi private[akka] abstract class KeyTypedTimerSchedulerImpl[K, T](ctx: ActorContext[T])
   extends scaladsl.KeyTypedTimerScheduler[K, T] with javadsl.KeyTypedTimerScheduler[K, T] {
   import TimerSchedulerImpl._
 
@@ -166,15 +166,15 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class SharedSchedulerImpl[T](ctx: ActorContext[T])
-  extends TimerSchedulerImpl[Any, T](ctx)
+@InternalApi private[akka] class TimerSchedulerImpl[T](ctx: ActorContext[T])
+  extends KeyTypedTimerSchedulerImpl[Any, T](ctx)
   with scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T]
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private final class TimerInterceptor[K, T](private val timerSchedulerImpl: TimerSchedulerImpl[K, T]) extends BehaviorInterceptor[T, T] {
+private final class TimerInterceptor[K, T](private val timerSchedulerImpl: KeyTypedTimerSchedulerImpl[K, T]) extends BehaviorInterceptor[T, T] {
   import TimerSchedulerImpl._
   import BehaviorInterceptor._
 
