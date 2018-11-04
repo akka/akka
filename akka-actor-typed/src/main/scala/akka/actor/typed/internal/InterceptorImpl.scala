@@ -153,7 +153,7 @@ private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction
   def aroundReceive(ctx: ActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I] = {
     // widen would wrap the TimerMessage, which would be wrong, see issue #25318
     msg match {
-      case t: TimerMsg[_] ⇒ throw new IllegalArgumentException(
+      case t: TimerMsg ⇒ throw new IllegalArgumentException(
         s"Timers and widen can't be used together, [${t.key}]. See issue #25318")
       case _ ⇒ ()
     }
