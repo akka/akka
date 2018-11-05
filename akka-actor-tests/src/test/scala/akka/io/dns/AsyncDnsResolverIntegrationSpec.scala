@@ -35,7 +35,7 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
 
   "Resolver" must {
     if (!dockerAvailable()) {
-      system.log.info("Test not run as docker is not available")
+      system.log.error("Test not run as docker is not available")
       pending
     }
 
