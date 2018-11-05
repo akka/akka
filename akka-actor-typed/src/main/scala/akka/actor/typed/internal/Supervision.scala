@@ -196,7 +196,7 @@ private class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
       msg match {
         case ScheduledRestart ⇒
           blackhole = false
-          ctx.asScala.schedule(b.resetBackoffAfter, ctx.asScala.self, ResetRestartCount(restartCount))
+          ctx.asScala.scheduleOnce(b.resetBackoffAfter, ctx.asScala.self, ResetRestartCount(restartCount))
           try {
             Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[ActorContext[T]]))
           } catch {
@@ -206,7 +206,7 @@ private class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
             case NonFatal(ex: Thr) ⇒
               log(ctx, ex)
               val restartDelay = BackoffSupervisor.calculateDelay(restartCount, b.minBackoff, b.maxBackoff, b.randomFactor)
-              ctx.asScala.schedule(restartDelay, ctx.asScala.self, ScheduledRestart)
+              ctx.asScala.scheduleOnce(restartDelay, ctx.asScala.self, ScheduledRestart)
               restartCount += 1
               blackhole = true
               Behaviors.empty
@@ -256,7 +256,7 @@ private class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
   private def scheduleRestart(ctx: ActorContext[AnyRef], reason: Throwable): Behavior[T] = {
     log(ctx, reason)
     val restartDelay = calculateDelay(restartCount, b.minBackoff, b.maxBackoff, b.randomFactor)
-    ctx.asScala.schedule(restartDelay, ctx.asScala.self, ScheduledRestart)
+    ctx.asScala.scheduleOnce(restartDelay, ctx.asScala.self, ScheduledRestart)
     restartCount += 1
     blackhole = true
     Behaviors.empty

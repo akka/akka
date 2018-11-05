@@ -78,9 +78,9 @@ import scala.compat.java8.FunctionConverters._
     effectQueue.offer(ReceiveTimeoutCancelled)
     super.cancelReceiveTimeout()
   }
-  override def schedule[U](delay: FiniteDuration, target: ActorRef[U], message: U): Cancellable = {
+  override def scheduleOnce[U](delay: FiniteDuration, target: ActorRef[U], message: U): Cancellable = {
     effectQueue.offer(Scheduled(delay, target, message))
-    super.schedule(delay, target, message)
+    super.scheduleOnce(delay, target, message)
   }
 }
 
