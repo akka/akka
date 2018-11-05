@@ -102,3 +102,30 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
   }
 
 }
+class InetAddressDnsResolverConfigSpec extends AkkaSpec(
+  """
+    akka.io.dns.inet-address.positive-ttl = forever
+    akka.io.dns.inet-address.negative-ttl = never
+    akka.actor.serialize-creators = on
+    """) {
+  thisSpecs ⇒
+
+  "The DNS resolver parsed ttl's" must {
+    "use ttl=0 if user provides 'forever' " in {
+      dnsResolver.positiveTtl shouldBe Long.MaxValue
+    }
+
+    "use ttl=-1L if user provides 'never' " in {
+      dnsResolver.negativeTtl shouldBe 0
+    }
+  }
+
+  private def dnsResolver = {
+    val actorRef = TestActorRef[InetAddressDnsResolver](Props(
+      classOf[InetAddressDnsResolver],
+      new SimpleDnsCache(),
+      system.settings.config.getConfig("akka.io.dns.inet-address")
+    ))
+    actorRef.underlyingActor
+  }
+}
