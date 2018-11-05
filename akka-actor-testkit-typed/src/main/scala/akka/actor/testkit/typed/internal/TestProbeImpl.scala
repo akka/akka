@@ -133,9 +133,9 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   private def expectMessage_internal[T <: M](max: Duration, obj: T, hint: Option[String] = None): T = {
     val o = receiveOne(max)
     val hintOrEmptyString = hint.map(": " + _).getOrElse("")
-    assert(o != null, s"timeout ($max) during expectMessage while waiting for $obj" + hintOrEmptyString)
-    assert(obj == o, s"expected $obj, found $o" + hintOrEmptyString)
-    o.asInstanceOf[T]
+    assert(o.isDefined, s"timeout ($max) during expectMessage while waiting for $obj" + hintOrEmptyString)
+    assert(obj == o.get, s"expected $obj, found $o" + hintOrEmptyString)
+    o.get.asInstanceOf[T]
   }
 
   /**
@@ -144,8 +144,8 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
    *
    * This method does NOT automatically scale its Duration parameter!
    */
-  private def receiveOne(max: Duration): M = {
-    val message =
+  private def receiveOne(max: Duration): Option[M] = {
+    val message = Option(
       if (max == Duration.Zero) {
         queue.pollFirst
       } else if (max.isFinite) {
@@ -153,8 +153,9 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
       } else {
         queue.takeFirst
       }
+    )
     lastWasNoMessage = false
-    lastMessage = if (message == null) None else Some(message)
+    lastMessage = message
     message
   }
 
@@ -169,21 +170,21 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   private def expectNoMessage_internal(max: FiniteDuration): Unit = {
     val o = receiveOne(max)
-    assert(o == null, s"received unexpected message $o")
+    assert(o.isEmpty, s"received unexpected message ${o.get}")
     lastWasNoMessage = true
   }
 
   override protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
     val o = receiveOne(max)
-    assert(o != null, s"timeout ($max) during expectMessageClass waiting for $c")
-    assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass} ($o)")
-    o.asInstanceOf[C]
+    assert(o.isDefined, s"timeout ($max) during expectMessageClass waiting for $c")
+    assert(BoxedType(c) isInstance o.get, s"expected $c, found ${o.get.getClass} (${o.get})")
+    o.get.asInstanceOf[C]
   }
 
   override protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): List[M] = {
     @tailrec def loop(timeout: FiniteDuration, seen: List[M]): List[M] = {
       val start = System.nanoTime()
-      val maybeMsg = Option(receiveOne(timeout))
+      val maybeMsg = receiveOne(timeout)
       maybeMsg match {
         case Some(message) ⇒
           val outcome = try fisher(message) catch {
