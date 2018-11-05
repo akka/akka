@@ -12,6 +12,7 @@ import java.util.function
 import java.util.function.BiFunction
 
 import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
@@ -72,8 +73,14 @@ import akka.util.JavaDurationConverters._
   override def setReceiveTimeout(d: java.time.Duration, msg: T): Unit =
     setReceiveTimeout(d.asScala, msg)
 
+  override def scheduleOnce[U](delay: java.time.Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable =
+    scheduleOnce(delay.asScala, target, msg)
+
   override def schedule[U](delay: java.time.Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable =
-    schedule(delay.asScala, target, msg)
+    scheduleOnce(delay.asScala, target, msg)
+
+  override def schedule[U](delay: FiniteDuration, target: ActorRef[U], message: U): akka.actor.Cancellable =
+    scheduleOnce(delay, target, message)
 
   override def spawn[U](behavior: akka.actor.typed.Behavior[U], name: String): akka.actor.typed.ActorRef[U] =
     spawn(behavior, name, Props.empty)
