@@ -134,7 +134,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     val o = receiveOne(max)
     val hintOrEmptyString = hint.map(": " + _).getOrElse("")
     o match {
-      case Some(o) if obj == o ⇒ o.asInstanceOf
+      case Some(o) if obj == o ⇒ o.asInstanceOf[T]
       case Some(o)             ⇒ assertFail(s"expected $obj, found $o$hintOrEmptyString")
       case None ⇒ assertFail(
         s"timeout ($max) during expectMessage while waiting for $obj$hintOrEmptyString")
