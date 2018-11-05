@@ -11,6 +11,7 @@ import akka.io.Dns.Resolved
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.duration.{ FiniteDuration, _ }
 
 private[io] trait PeriodicCacheCleanup {
   def cleanup(): Unit
@@ -36,10 +37,10 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup {
   }
 
   @tailrec
-  private[io] final def put(r: Resolved, ttlMillis: Long): Unit = {
+  private[io] final def put(r: Resolved, ttl: CachePolicy): Unit = {
     val c = cache.get()
-    if (!cache.compareAndSet(c, c.put(r.name, r, ttlMillis)))
-      put(r, ttlMillis)
+    if (!cache.compareAndSet(c, c.put(r.name, r, ttl)))
+      put(r, ttl)
   }
 
   @tailrec
@@ -64,9 +65,12 @@ object SimpleDnsCache {
       } yield e.answer
     }
 
-    def put(name: K, answer: V, ttlMillis: Long): Cache[K, V] = {
-      val until0 = clock() + ttlMillis
-      val until = if (until0 < 0) Long.MaxValue else until0
+    def put(name: K, answer: V, ttl: CachePolicy): Cache[K, V] = {
+      val until = ttl match {
+        case CacheForever     ⇒ Long.MaxValue
+        case NeverCache       ⇒ clock() - 1
+        case FiniteCache(ttl) ⇒ clock() + ttl.toMillis
+      }
 
       new Cache[K, V](
         queue + new ExpiryEntry[K](name, until),
@@ -112,3 +116,23 @@ object SimpleDnsCache {
     }
   }
 }
+
+sealed trait CachePolicy
+case object NeverCache extends CachePolicy
+case object CacheForever extends CachePolicy
+case class FiniteCache(ttl: FiniteDuration) extends CachePolicy {
+  require(ttl.toSeconds > 0)
+  import akka.util.JavaDurationConverters._
+  def getTtl: java.time.Duration = ttl.asJava
+}
+object FiniteCache {
+  // There's places where only a FiniteCache makes sense (DNS RFC says TTL is a positive 32 but integer)
+  // but we know the value can be cached effectively forever (e.g. the Lookup was the actual IP already)
+  val effectivelyForever: FiniteCache = FiniteCache(Int.MaxValue.seconds)
+
+  implicit object FiniteCacheIsOrdered extends Ordering[FiniteCache] {
+    def compare(a: FiniteCache, b: FiniteCache) = a.ttl.toSeconds compare b.ttl.toSeconds
+  }
+
+}
+

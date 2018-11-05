@@ -111,13 +111,14 @@ class InetAddressDnsResolverConfigSpec extends AkkaSpec(
   thisSpecs ⇒
 
   "The DNS resolver parsed ttl's" must {
-    "use ttl=0 if user provides 'forever' " in {
+    "use ttl=Long.MaxValue if user provides 'forever' " in {
       dnsResolver.positiveTtl shouldBe Long.MaxValue
     }
 
-    "use ttl=-1L if user provides 'never' " in {
+    "use ttl=0 if user provides 'never' " in {
       dnsResolver.negativeTtl shouldBe 0
     }
+
   }
 
   private def dnsResolver = {

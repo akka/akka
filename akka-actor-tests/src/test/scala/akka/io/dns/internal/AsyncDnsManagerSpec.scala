@@ -7,7 +7,7 @@ package akka.io.dns.internal
 import java.net.{ Inet6Address, InetAddress }
 
 import scala.collection.immutable.Seq
-import akka.io.Dns
+import akka.io.{ Dns, FiniteCache }
 import akka.io.dns.{ AAAARecord, ResourceRecord }
 import akka.io.dns.DnsProtocol.{ Resolve, Resolved }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
@@ -30,7 +30,7 @@ class AsyncDnsManagerSpec extends AkkaSpec(
 
     "support ipv6" in {
       dns ! Resolve("::1") // ::1 will short circuit the resolution
-      val Resolved("::1", Seq(AAAARecord("::1", Int.MaxValue, _)), Nil) = expectMsgType[Resolved]
+      val Resolved("::1", Seq(AAAARecord("::1", FiniteCache.effectivelyForever, _)), Nil) = expectMsgType[Resolved]
     }
 
     "support ipv6 also using the old protocol" in {
