@@ -219,8 +219,7 @@ object Entity {
    */
   def apply[M](
     typeKey:        EntityTypeKey[M],
-    createBehavior: EntityContext ⇒ Behavior[M],
-    ): Entity[M, ShardingEnvelope[M]] =
+    createBehavior: EntityContext ⇒ Behavior[M]): Entity[M, ShardingEnvelope[M]] =
     new Entity(createBehavior, typeKey, None, Props.empty, None, None, None)
 }
 
@@ -278,7 +277,7 @@ final class Entity[M, E] private[akka] (
   private def copy(
     createBehavior:     EntityContext ⇒ Behavior[M]     = createBehavior,
     typeKey:            EntityTypeKey[M]                = typeKey,
-    stopMessage:        Option[M]                               = stopMessage,
+    stopMessage:        Option[M]                       = stopMessage,
     entityProps:        Props                           = entityProps,
     settings:           Option[ClusterShardingSettings] = settings,
     allocationStrategy: Option[ShardAllocationStrategy] = allocationStrategy
