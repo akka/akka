@@ -188,9 +188,6 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
    */
   def scheduleOnce[U](delay: FiniteDuration, target: ActorRef[U], msg: U): akka.actor.Cancellable
 
-  @deprecated("Use scheduleOnce", since = "2.5.18")
-  def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): akka.actor.Cancellable
-
   /**
    * This Actor’s execution context. It can be used to run asynchronous tasks
    * like [[scala.concurrent.Future]] operators.
