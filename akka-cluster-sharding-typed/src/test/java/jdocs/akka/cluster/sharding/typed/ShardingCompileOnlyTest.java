@@ -89,22 +89,22 @@ public class ShardingCompileOnlyTest {
   }
   //#counter-passivate
 
-  public static void startPassivateExample() {
+  public static void initPassivateExample() {
     ActorSystem system = ActorSystem.create(
         Behaviors.empty(), "ShardingExample"
     );
     ClusterSharding sharding = ClusterSharding.get(system);
 
-    //#counter-passivate-start
+    //#counter-passivate-init
     
     EntityTypeKey<CounterCommand> typeKey = EntityTypeKey.create(CounterCommand.class, "Counter");
 
-    sharding.start(
+    sharding.init(
       Entity.of(
         typeKey,
         ctx -> counter2(ctx.getShard(), ctx.getEntityId()))
         .withStopMessage(new GoodByeCounter()));
-    //#counter-passivate-start
+    //#counter-passivate-init
   }
 
   public static void example() {
@@ -117,14 +117,14 @@ public class ShardingCompileOnlyTest {
     ClusterSharding sharding = ClusterSharding.get(system);
     //#sharding-extension
 
-    //#start
+    //#init
     EntityTypeKey<CounterCommand> typeKey = EntityTypeKey.create(CounterCommand.class, "Counter");
 
-    ActorRef<ShardingEnvelope<CounterCommand>> shardRegion = sharding.start(
+    ActorRef<ShardingEnvelope<CounterCommand>> shardRegion = sharding.init(
       Entity.of(
         typeKey,
         ctx -> counter(ctx.getEntityId(),0)));
-    //#start
+    //#init
 
     //#send
     EntityRef<CounterCommand> counterOne = sharding.entityRefFor(typeKey, "counter-`");
@@ -143,7 +143,7 @@ public class ShardingCompileOnlyTest {
     //#persistence
     EntityTypeKey<BlogCommand> blogTypeKey = EntityTypeKey.create(BlogCommand.class, "BlogPost");
 
-    sharding.start(
+    sharding.init(
       Entity.of(
         blogTypeKey,
         ctx -> BlogBehavior.behavior(ctx.getEntityId())));

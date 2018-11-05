@@ -21,7 +21,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
-import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 
 import static org.junit.Assert.assertEquals;
@@ -135,7 +134,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
 
       ClusterSharding sharding = ClusterSharding.get(testKit.system());
 
-      sharding.start(Entity.ofPersistentEntity(TestPersistentEntity.ENTITY_TYPE_KEY,
+      sharding.init(Entity.ofPersistentEntity(TestPersistentEntity.ENTITY_TYPE_KEY,
         entityContext -> new TestPersistentEntity(entityContext.getEntityId()))
       .withStopMessage(StopPlz.INSTANCE));
 
