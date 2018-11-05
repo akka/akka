@@ -29,7 +29,7 @@ object WatchSpec {
     }
 
   val mutableTerminatorBehavior = new AbstractBehavior[Stop.type] {
-    override def onMessage(msg: Stop.type) = msg match {
+    override def onMessage(message: Stop.type) = message match {
       case Stop ⇒ Behaviors.stopped
     }
   }
@@ -39,7 +39,7 @@ object WatchSpec {
   case object CustomTerminationMessage extends CustomTerminationMessage
   case object CustomTerminationMessage2 extends CustomTerminationMessage
   case class StartWatching(watchee: ActorRef[Stop.type]) extends Message
-  case class StartWatchingWith(watchee: ActorRef[Stop.type], msg: CustomTerminationMessage) extends Message
+  case class StartWatchingWith(watchee: ActorRef[Stop.type], message: CustomTerminationMessage) extends Message
 }
 
 class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpecLike {
@@ -58,8 +58,8 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
     val watcher = spawn(
       Behaviors.supervise(
         Behaviors.receive[StartWatching] {
-          case (ctx, StartWatching(watchee)) ⇒
-            ctx.watch(watchee)
+          case (context, StartWatching(watchee)) ⇒
+            context.watch(watchee)
             watchProbe.ref ! Done
             Behaviors.same
         }.receiveSignal {
@@ -85,14 +85,14 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       case class Failed(t: Terminated) // we need to wrap it as it is handled specially
       val probe = TestProbe[Any]()
       val ex = new TestException("boom")
-      val parent = spawn(Behaviors.setup[Any] { ctx ⇒
-        val child = ctx.spawn(Behaviors.receive[Any]((ctx, msg) ⇒
+      val parent = spawn(Behaviors.setup[Any] { context ⇒
+        val child = context.spawn(Behaviors.receive[Any]((context, message) ⇒
           throw ex
         ), "child")
-        ctx.watch(child)
+        context.watch(child)
 
-        Behaviors.receive[Any] { (ctx, msg) ⇒
-          child ! msg
+        Behaviors.receive[Any] { (context, message) ⇒
+          child ! message
           Behaviors.same
         }.receiveSignal {
           case (_, t: Terminated) ⇒
@@ -111,23 +111,23 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       case class Failed(t: Terminated) // we need to wrap it as it is handled specially
       val probe = TestProbe[Any]()
       val ex = new TestException("boom")
-      val grossoBosso = spawn(Behaviors.setup[Any] { ctx ⇒
-        val middleManagement = ctx.spawn(Behaviors.setup[Any] { ctx ⇒
-          val sixPackJoe = ctx.spawn(Behaviors.receive[Any]((ctx, msg) ⇒
+      val grossoBosso = spawn(Behaviors.setup[Any] { context ⇒
+        val middleManagement = context.spawn(Behaviors.setup[Any] { context ⇒
+          val sixPackJoe = context.spawn(Behaviors.receive[Any]((context, message) ⇒
             throw ex
           ), "joe")
-          ctx.watch(sixPackJoe)
+          context.watch(sixPackJoe)
 
-          Behaviors.receive[Any] { (ctx, msg) ⇒
-            sixPackJoe ! msg
+          Behaviors.receive[Any] { (context, message) ⇒
+            sixPackJoe ! message
             Behaviors.same
           } // no handling of terminated, even though we watched!!!
         }, "middle-management")
 
-        ctx.watch(middleManagement)
+        context.watch(middleManagement)
 
-        Behaviors.receive[Any] { (ctx, msg) ⇒
-          middleManagement ! msg
+        Behaviors.receive[Any] { (context, message) ⇒
+          middleManagement ! message
           Behaviors.same
         }.receiveSignal {
           case (_, t: Terminated) ⇒
@@ -165,12 +165,12 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val watcher = spawn(
         Behaviors.supervise(
           Behaviors.receive[Message] {
-            case (ctx, StartWatchingWith(watchee, msg)) ⇒
-              ctx.watchWith(watchee, msg)
+            case (context, StartWatchingWith(watchee, message)) ⇒
+              context.watchWith(watchee, message)
               watchProbe.ref ! Done
               Behaviors.same
-            case (_, msg) ⇒
-              receivedTerminationSignal.success(msg)
+            case (_, message) ⇒
+              receivedTerminationSignal.success(message)
               Behaviors.stopped
           }).onFailure[Throwable](SupervisorStrategy.stop)
       )
@@ -201,16 +201,16 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val watcher = spawn(
         Behaviors.supervise(
           Behaviors.receive[Message] {
-            case (ctx, StartWatching(watchee)) ⇒
-              ctx.watch(watchee)
+            case (context, StartWatching(watchee)) ⇒
+              context.watch(watchee)
               Behaviors.same
-            case (ctx, StartWatchingWith(watchee, msg)) ⇒
-              ctx.unwatch(watchee)
-              ctx.watchWith(watchee, msg)
+            case (context, StartWatchingWith(watchee, message)) ⇒
+              context.unwatch(watchee)
+              context.watchWith(watchee, message)
               watchProbe.ref ! Done
               Behaviors.same
-            case (_, msg) ⇒
-              receivedTerminationSignal.success(msg)
+            case (_, message) ⇒
+              receivedTerminationSignal.success(message)
               Behaviors.stopped
           }).onFailure[Throwable](SupervisorStrategy.stop)
       )
@@ -231,13 +231,13 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val watcher = spawn(
         Behaviors.supervise(
           Behaviors.receive[Message] {
-            case (ctx, StartWatchingWith(watchee, msg)) ⇒
-              ctx.unwatch(watchee)
-              ctx.watchWith(watchee, msg)
+            case (context, StartWatchingWith(watchee, message)) ⇒
+              context.unwatch(watchee)
+              context.watchWith(watchee, message)
               watchProbe.ref ! Done
               Behaviors.same
-            case (_, msg) ⇒
-              receivedTerminationSignal.success(msg)
+            case (_, message) ⇒
+              receivedTerminationSignal.success(message)
               Behaviors.stopped
           }).onFailure[Throwable](SupervisorStrategy.stop)
       )
@@ -257,13 +257,13 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val watcher = spawn(
         Behaviors.supervise(
           Behaviors.receive[Message] {
-            case (ctx, StartWatchingWith(watchee, msg)) ⇒
-              ctx.watchWith(watchee, msg)
+            case (context, StartWatchingWith(watchee, message)) ⇒
+              context.watchWith(watchee, message)
               Behaviors.same
-            case (ctx, StartWatching(watchee)) ⇒
-              ctx.watch(watchee)
+            case (context, StartWatching(watchee)) ⇒
+              context.watch(watchee)
               Behaviors.same
-            case (_, msg) ⇒
+            case (_, message) ⇒
               Behaviors.stopped
           }.receiveSignal {
             case (_, PostStop) ⇒

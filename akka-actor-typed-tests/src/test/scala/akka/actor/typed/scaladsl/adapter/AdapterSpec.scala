@@ -32,36 +32,36 @@ object AdapterSpec {
 
   def typed1(ref: untyped.ActorRef, probe: ActorRef[String]): Behavior[String] =
     Behaviors.receive[String] {
-      (ctx, msg) ⇒
-        msg match {
+      (context, message) ⇒
+        message match {
           case "send" ⇒
-            val replyTo = ctx.self.toUntyped
+            val replyTo = context.self.toUntyped
             ref.tell("ping", replyTo)
             Behaviors.same
           case "pong" ⇒
             probe ! "ok"
             Behaviors.same
           case "actorOf" ⇒
-            val child = ctx.actorOf(untyped1)
-            child.tell("ping", ctx.self.toUntyped)
+            val child = context.actorOf(untyped1)
+            child.tell("ping", context.self.toUntyped)
             Behaviors.same
           case "watch" ⇒
-            ctx.watch(ref)
+            context.watch(ref)
             Behaviors.same
           case "supervise-stop" ⇒
-            val child = ctx.actorOf(untyped1)
-            ctx.watch(child)
+            val child = context.actorOf(untyped1)
+            context.watch(child)
             child ! ThrowIt3
-            child.tell("ping", ctx.self.toUntyped)
+            child.tell("ping", context.self.toUntyped)
             Behaviors.same
           case "stop-child" ⇒
-            val child = ctx.actorOf(untyped1)
-            ctx.watch(child)
-            ctx.stop(child)
+            val child = context.actorOf(untyped1)
+            context.watch(child)
+            context.stop(child)
             Behaviors.same
         }
     } receiveSignal {
-      case (ctx, Terminated(ref)) ⇒
+      case (context, Terminated(ref)) ⇒
         probe ! "terminated"
         Behaviors.same
     }
@@ -129,8 +129,8 @@ object AdapterSpec {
   }
 
   def typed2: Behavior[Typed2Msg] =
-    Behaviors.receive { (ctx, msg) ⇒
-      msg match {
+    Behaviors.receive { (context, message) ⇒
+      message match {
         case Ping(replyTo) ⇒
           replyTo ! "pong"
           Behaviors.same
@@ -172,9 +172,9 @@ class AdapterSpec extends AkkaSpec(
       for { _ ← 0 to 10 } {
         var system: akka.actor.typed.ActorSystem[Done] = null
         try {
-          system = ActorSystem.create(Behaviors.receive[Done] { (ctx, msg) ⇒
-            ctx.self ! Done
-            msg match {
+          system = ActorSystem.create(Behaviors.receive[Done] { (context, message) ⇒
+            context.self ! Done
+            message match {
               case Done ⇒ Behaviors.stopped
             }
 

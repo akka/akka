@@ -56,12 +56,12 @@ class DeferredSpec extends ScalaTestWithActorTestKit(
 
     "must stop when exception from factory" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors.setup[Command] { ctx ⇒
-        val child = ctx.spawnAnonymous(Behaviors.setup[Command] { _ ⇒
+      val behv = Behaviors.setup[Command] { context ⇒
+        val child = context.spawnAnonymous(Behaviors.setup[Command] { _ ⇒
           probe.ref ! Started
           throw new RuntimeException("simulated exc from factory") with NoStackTrace
         })
-        ctx.watch(child)
+        context.watch(child)
         Behaviors.receive[Command]((_, _) ⇒ Behaviors.same).receiveSignal {
           case (_, Terminated(`child`)) ⇒
             probe.ref ! Pong
@@ -77,9 +77,9 @@ class DeferredSpec extends ScalaTestWithActorTestKit(
 
     "must stop when deferred result it Stopped" in {
       val probe = TestProbe[Event]("evt")
-      val behv = Behaviors.setup[Command] { ctx ⇒
-        val child = ctx.spawnAnonymous(Behaviors.setup[Command](_ ⇒ Behaviors.stopped))
-        ctx.watch(child)
+      val behv = Behaviors.setup[Command] { context ⇒
+        val child = context.spawnAnonymous(Behaviors.setup[Command](_ ⇒ Behaviors.stopped))
+        context.watch(child)
         Behaviors.receive[Command]((_, _) ⇒ Behaviors.same).receiveSignal {
           case (_, Terminated(`child`)) ⇒
             probe.ref ! Pong

@@ -30,18 +30,18 @@ object SyncTestingExampleSpec {
   case class SayHello(who: ActorRef[String]) extends Cmd
 
   val myBehavior = Behaviors.receivePartial[Cmd] {
-    case (ctx, CreateChild(name)) ⇒
-      ctx.spawn(childActor, name)
+    case (context, CreateChild(name)) ⇒
+      context.spawn(childActor, name)
       Behaviors.same
-    case (ctx, CreateAnonymousChild) ⇒
-      ctx.spawnAnonymous(childActor)
+    case (context, CreateAnonymousChild) ⇒
+      context.spawnAnonymous(childActor)
       Behaviors.same
-    case (ctx, SayHelloToChild(childName)) ⇒
-      val child: ActorRef[String] = ctx.spawn(childActor, childName)
+    case (context, SayHelloToChild(childName)) ⇒
+      val child: ActorRef[String] = context.spawn(childActor, childName)
       child ! "hello"
       Behaviors.same
-    case (ctx, SayHelloToAnonymousChild) ⇒
-      val child: ActorRef[String] = ctx.spawnAnonymous(childActor)
+    case (context, SayHelloToAnonymousChild) ⇒
+      val child: ActorRef[String] = context.spawnAnonymous(childActor)
       child ! "hello stranger"
       Behaviors.same
     case (_, SayHello(who)) ⇒

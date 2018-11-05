@@ -29,7 +29,7 @@ object FishingOutcomes {
   /**
    * Fail fishing with a custom error message
    */
-  def fail(msg: String): FishingOutcome = FishingOutcome.Fail(msg)
+  def fail(message: String): FishingOutcome = FishingOutcome.Fail(message)
 }
 
 object TestProbe {

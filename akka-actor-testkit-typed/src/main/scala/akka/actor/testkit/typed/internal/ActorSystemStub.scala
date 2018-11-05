@@ -28,7 +28,7 @@ import akka.actor.typed.internal.InternalRecipientRef
 
   override val settings: Settings = new Settings(getClass.getClassLoader, ConfigFactory.empty, name)
 
-  override def tell(msg: Nothing): Unit = throw new UnsupportedOperationException("must not send message to ActorSystemStub")
+  override def tell(message: Nothing): Unit = throw new UnsupportedOperationException("must not send message to ActorSystemStub")
 
   // impl ActorRefImpl
   override def isLocal: Boolean = true

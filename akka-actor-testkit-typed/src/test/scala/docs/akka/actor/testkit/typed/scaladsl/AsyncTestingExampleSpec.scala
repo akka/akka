@@ -12,11 +12,11 @@ import org.scalatest.WordSpec
 
 object AsyncTestingExampleSpec {
   //#under-test
-  case class Ping(msg: String, response: ActorRef[Pong])
-  case class Pong(msg: String)
+  case class Ping(message: String, response: ActorRef[Pong])
+  case class Pong(message: String)
 
-  val echoActor: Behavior[Ping] = Behaviors.receive { (_, msg) ⇒
-    msg match {
+  val echoActor: Behavior[Ping] = Behaviors.receive { (_, message) ⇒
+    message match {
       case Ping(m, replyTo) ⇒
         replyTo ! Pong(m)
         Behaviors.same

@@ -53,42 +53,42 @@ public class AdapterTest extends JUnitSuite {
     static Behavior<String> create(akka.actor.ActorRef ref, akka.actor.ActorRef probe) {
       Typed1 logic = new Typed1(ref, probe);
       return receive(
-          (ctx, msg) -> logic.onMessage(ctx, msg),
-          (ctx, sig) -> logic.onSignal(ctx, sig));
+          (context, message) -> logic.onMessage(context, message),
+          (context, sig) -> logic.onSignal(context, sig));
     }
 
-    Behavior<String> onMessage(ActorContext<String> ctx, String msg) {
-      if (msg.equals("send")) {
-        akka.actor.ActorRef replyTo = Adapter.toUntyped(ctx.getSelf());
+    Behavior<String> onMessage(ActorContext<String> context, String message) {
+      if (message.equals("send")) {
+        akka.actor.ActorRef replyTo = Adapter.toUntyped(context.getSelf());
         ref.tell("ping", replyTo);
         return same();
-      } else if (msg.equals("pong")) {
+      } else if (message.equals("pong")) {
         probe.tell("ok", akka.actor.ActorRef.noSender());
         return same();
-      } else if (msg.equals("actorOf")) {
-        akka.actor.ActorRef child = Adapter.actorOf(ctx, untyped1());
-        child.tell("ping", Adapter.toUntyped(ctx.getSelf()));
+      } else if (message.equals("actorOf")) {
+        akka.actor.ActorRef child = Adapter.actorOf(context, untyped1());
+        child.tell("ping", Adapter.toUntyped(context.getSelf()));
         return same();
-      } else if (msg.equals("watch")) {
-        Adapter.watch(ctx, ref);
+      } else if (message.equals("watch")) {
+        Adapter.watch(context, ref);
         return same();
-      } else if (msg.equals("supervise-stop")) {
-        akka.actor.ActorRef child = Adapter.actorOf(ctx, untyped1());
-        Adapter.watch(ctx, child);
-        child.tell(new ThrowIt3(), Adapter.toUntyped(ctx.getSelf()));
-        child.tell("ping", Adapter.toUntyped(ctx.getSelf()));
+      } else if (message.equals("supervise-stop")) {
+        akka.actor.ActorRef child = Adapter.actorOf(context, untyped1());
+        Adapter.watch(context, child);
+        child.tell(new ThrowIt3(), Adapter.toUntyped(context.getSelf()));
+        child.tell("ping", Adapter.toUntyped(context.getSelf()));
         return same();
-      } else if (msg.equals("stop-child")) {
-        akka.actor.ActorRef child = Adapter.actorOf(ctx, untyped1());
-        Adapter.watch(ctx, child);
-        Adapter.stop(ctx, child);
+      } else if (message.equals("stop-child")) {
+        akka.actor.ActorRef child = Adapter.actorOf(context, untyped1());
+        Adapter.watch(context, child);
+        Adapter.stop(context, child);
         return same();
       } else {
         return unhandled();
       }
     }
 
-    Behavior<String> onSignal(ActorContext<String> ctx, Signal sig) {
+    Behavior<String> onSignal(ActorContext<String> context, Signal sig) {
       if (sig instanceof Terminated) {
         probe.tell("terminated", akka.actor.ActorRef.noSender());
         return same();
@@ -189,15 +189,15 @@ public class AdapterTest extends JUnitSuite {
   }
 
   static Behavior<Typed2Msg> typed2() {
-      return Behaviors.receive((ctx, msg) -> {
-        if (msg instanceof Ping) {
-          ActorRef<String> replyTo = ((Ping) msg).replyTo;
+      return Behaviors.receive((context, message) -> {
+        if (message instanceof Ping) {
+          ActorRef<String> replyTo = ((Ping) message).replyTo;
           replyTo.tell("pong");
           return same();
-        } else if (msg instanceof StopIt) {
+        } else if (message instanceof StopIt) {
           return stopped();
-        } else if (msg instanceof ThrowIt) {
-          throw (ThrowIt) msg;
+        } else if (message instanceof ThrowIt) {
+          throw (ThrowIt) message;
         } else {
           return unhandled();
         }

@@ -24,7 +24,7 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val sawSignal = Promise[Done]()
       spawn(Behaviors.setup[AnyRef] { _ ⇒
         Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-          case (ctx, PostStop) ⇒
+          case (context, PostStop) ⇒
             sawSignal.success(Done)
             Behaviors.empty
         })
@@ -38,16 +38,16 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val ref = spawn(Behaviors.setup[AnyRef] { _ ⇒
         Behaviors.intercept(
           new BehaviorInterceptor[AnyRef, AnyRef] {
-            override def aroundReceive(ctx: typed.ActorContext[AnyRef], msg: AnyRef, target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
-              target(ctx, msg)
+            override def aroundReceive(context: typed.ActorContext[AnyRef], message: AnyRef, target: ReceiveTarget[AnyRef]): Behavior[AnyRef] = {
+              target(context, message)
             }
 
-            override def aroundSignal(ctx: typed.ActorContext[AnyRef], signal: Signal, target: SignalTarget[AnyRef]): Behavior[AnyRef] = {
-              target(ctx, signal)
+            override def aroundSignal(context: typed.ActorContext[AnyRef], signal: Signal, target: SignalTarget[AnyRef]): Behavior[AnyRef] = {
+              target(context, signal)
             }
           }
         )(Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-            case (ctx, PostStop) ⇒
+            case (context, PostStop) ⇒
               sawSignal.success(Done)
               Behaviors.empty
           }))
@@ -60,7 +60,7 @@ class StopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "execute the post stop early" in {
       val sawSignal = Promise[Done]()
       spawn(Behaviors.stopped[AnyRef](Behaviors.receiveSignal[AnyRef] {
-        case (ctx, PostStop) ⇒
+        case (context, PostStop) ⇒
           sawSignal.success(Done)
           Behaviors.empty
       }))

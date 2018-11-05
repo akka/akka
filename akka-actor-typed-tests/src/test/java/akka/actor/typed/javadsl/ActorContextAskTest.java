@@ -39,8 +39,8 @@ public class ActorContextAskTest extends JUnitSuite {
     final ActorRef<Ping> pingPong = testKit.spawn(pingPongBehavior);
     final TestProbe<Object> probe = testKit.createTestProbe();
 
-    final Behavior<Object> snitch = Behaviors.setup((ActorContext<Object> ctx) -> {
-      ctx.ask(Pong.class,
+    final Behavior<Object> snitch = Behaviors.setup((ActorContext<Object> context) -> {
+      context.ask(Pong.class,
           pingPong,
           new Timeout(3, TimeUnit.SECONDS),
           (ActorRef<Pong> ref) -> new Ping(ref),
@@ -49,7 +49,7 @@ public class ActorContextAskTest extends JUnitSuite {
             else return exception;
           });
 
-      return Behaviors.receive((ActorContext<Object> context, Object message) -> {
+      return Behaviors.receiveMessage((Object message) -> {
         probe.ref().tell(message);
         return Behaviors.same();
       });
