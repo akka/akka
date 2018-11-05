@@ -105,7 +105,7 @@ If a message is already enqueued to the entity when it stops itself the enqueued
 in the mailbox will be dropped. To support graceful passivation without losing such
 messages the entity actor can send `ClusterSharding.Passivate` to to the
 @scala[`ActorRef[ShardCommand]`]@java[`ActorRef<ShardCommand>`] that was passed in to
-the factory method when creating the entity. The specified `handOffStopMessage` message
+the factory method when creating the entity. The specified `stopMessage` message
 will be sent back to the entity, which is then supposed to stop itself. Incoming messages
 will be buffered by the `Shard` between reception of `Passivate` and termination of the
 entity. Such buffered messages are thereafter delivered to a new incarnation of the entity.
@@ -116,3 +116,7 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #counter-messages #counter-passivate #counter-passivate-start }
 
+Note that in the above example the `stopMessage` is specified as `GoodByeCounter`. That message will be sent to
+the entity when it's supposed to stop itself due to rebalance or passivation. If the `stopMessage` is not defined
+it will be stopped automatically without receiving a specific message. It can be useful to define a custom stop
+message if the entity needs to perform some asynchronous cleanup or interactions before stopping.
