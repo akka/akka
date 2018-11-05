@@ -4,7 +4,8 @@
 
 package akka.cluster.sharding.typed
 
-import akka.actor.typed.{ ActorRef, Props }
+import scala.concurrent.duration._
+import akka.actor.typed.ActorRef
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
@@ -75,7 +76,7 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
           NoMore))
       val probe = TestProbe[Pong]
       shardRegion ! ShardingEnvelope(entityId, Ping(probe.ref))
-      probe.expectMessage(Pong(cluster.selfMember.dataCenter))
+      probe.expectMessage(max = 10.seconds, Pong(cluster.selfMember.dataCenter))
       enterBarrier("sharding-started")
     }
 
