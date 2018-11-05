@@ -55,13 +55,11 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       // #request-response-protocol
 
       // #request-response-respond
-      val otherBehavior = Behaviors.receive[Request] { (ctx, msg) ⇒
-        msg match {
-          case Request(query, respondTo) ⇒
-            // ... process query ...
-            respondTo ! Response("Here's your cookies!")
-            Behaviors.same
-        }
+      val otherBehavior = Behaviors.receiveMessage[Request] {
+        case Request(query, respondTo) ⇒
+          // ... process query ...
+          respondTo ! Response("Here's your cookies!")
+          Behaviors.same
       }
       // #request-response-respond
 
@@ -110,25 +108,23 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
             def active(
               inProgress: Map[Int, ActorRef[URI]],
               count:      Int): Behavior[Command] = {
-              Behaviors.receive[Command] { (_, msg) ⇒
-                msg match {
-                  case Translate(site, replyTo) ⇒
-                    val taskId = count + 1
-                    backend ! Backend.StartTranslationJob(taskId, site, backendResponseMapper)
-                    active(inProgress.updated(taskId, replyTo), taskId)
+              Behaviors.receiveMessage[Command] {
+                case Translate(site, replyTo) ⇒
+                  val taskId = count + 1
+                  backend ! Backend.StartTranslationJob(taskId, site, backendResponseMapper)
+                  active(inProgress.updated(taskId, replyTo), taskId)
 
-                  case wrapped: WrappedBackendResponse ⇒ wrapped.response match {
-                    case Backend.JobStarted(taskId) ⇒
-                      ctx.log.info("Started {}", taskId)
-                      Behaviors.same
-                    case Backend.JobProgress(taskId, progress) ⇒
-                      ctx.log.info("Progress {}: {}", taskId, progress)
-                      Behaviors.same
-                    case Backend.JobCompleted(taskId, result) ⇒
-                      ctx.log.info("Completed {}: {}", taskId, result)
-                      inProgress(taskId) ! result
-                      active(inProgress - taskId, count)
-                  }
+                case wrapped: WrappedBackendResponse ⇒ wrapped.response match {
+                  case Backend.JobStarted(taskId) ⇒
+                    ctx.log.info("Started {}", taskId)
+                    Behaviors.same
+                  case Backend.JobProgress(taskId, progress) ⇒
+                    ctx.log.info("Progress {}: {}", taskId, progress)
+                    Behaviors.same
+                  case Backend.JobCompleted(taskId, result) ⇒
+                    ctx.log.info("Completed {}: {}", taskId, result)
+                    inProgress(taskId) ! result
+                    active(inProgress - taskId, count)
                 }
               }
             }
@@ -138,16 +134,14 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       }
       // #adapted-response
 
-      val backend = spawn(Behaviors.receive[Backend.Request] { (_, msg) ⇒
-        msg match {
-          case Backend.StartTranslationJob(taskId, site, replyTo) ⇒
-            replyTo ! Backend.JobStarted(taskId)
-            replyTo ! Backend.JobProgress(taskId, 0.25)
-            replyTo ! Backend.JobProgress(taskId, 0.50)
-            replyTo ! Backend.JobProgress(taskId, 0.75)
-            replyTo ! Backend.JobCompleted(taskId, new URI("https://akka.io/docs/sv/"))
-            Behaviors.same
-        }
+      val backend = spawn(Behaviors.receiveMessage[Backend.Request] {
+        case Backend.StartTranslationJob(taskId, site, replyTo) ⇒
+          replyTo ! Backend.JobStarted(taskId)
+          replyTo ! Backend.JobProgress(taskId, 0.25)
+          replyTo ! Backend.JobProgress(taskId, 0.50)
+          replyTo ! Backend.JobProgress(taskId, 0.75)
+          replyTo ! Backend.JobCompleted(taskId, new URI("https://akka.io/docs/sv/"))
+          Behaviors.same
       })
 
       val frontend = spawn(Frontend.translator(backend))
@@ -174,7 +168,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
 
     def idle(timers: TimerScheduler[Msg], target: ActorRef[Batch],
              after: FiniteDuration, maxSize: Int): Behavior[Msg] = {
-      Behaviors.receive[Msg] { (ctx, msg) ⇒
+      Behaviors.receiveMessage[Msg] { msg ⇒
         timers.startSingleTimer(TimerKey, Timeout, after)
         active(Vector(msg), timers, target, after, maxSize)
       }
@@ -182,20 +176,18 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
 
     def active(buffer: Vector[Msg], timers: TimerScheduler[Msg],
                target: ActorRef[Batch], after: FiniteDuration, maxSize: Int): Behavior[Msg] = {
-      Behaviors.receive[Msg] { (_, msg) ⇒
-        msg match {
-          case Timeout ⇒
-            target ! Batch(buffer)
+      Behaviors.receiveMessage[Msg] {
+        case Timeout ⇒
+          target ! Batch(buffer)
+          idle(timers, target, after, maxSize)
+        case m ⇒
+          val newBuffer = buffer :+ m
+          if (newBuffer.size == maxSize) {
+            timers.cancel(TimerKey)
+            target ! Batch(newBuffer)
             idle(timers, target, after, maxSize)
-          case m ⇒
-            val newBuffer = buffer :+ m
-            if (newBuffer.size == maxSize) {
-              timers.cancel(TimerKey)
-              target ! Batch(newBuffer)
-              idle(timers, target, after, maxSize)
-            } else
-              active(newBuffer, timers, target, after, maxSize)
-        }
+          } else
+            active(newBuffer, timers, target, after, maxSize)
       }
     }
     //#timer
@@ -214,12 +206,10 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     case class OpenThePodBayDoorsPlease(respondTo: ActorRef[HalResponse]) extends HalCommand
     case class HalResponse(message: String)
 
-    val halBehavior = Behaviors.receive[HalCommand] { (ctx, msg) ⇒
-      msg match {
-        case OpenThePodBayDoorsPlease(respondTo) ⇒
-          respondTo ! HalResponse("I'm sorry, Dave. I'm afraid I can't do that.")
-          Behaviors.same
-      }
+    val halBehavior = Behaviors.receiveMessage[HalCommand] {
+      case OpenThePodBayDoorsPlease(respondTo) ⇒
+        respondTo ! HalResponse("I'm sorry, Dave. I'm afraid I can't do that.")
+        Behaviors.same
     }
 
     sealed trait DaveMessage
@@ -251,14 +241,12 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
         case Failure(ex)                   ⇒ AdaptedResponse(s"$requestId: Request failed")
       }
 
-      Behaviors.receive { (ctx, msg) ⇒
-        msg match {
-          // the adapted message ends up being processed like any other
-          // message sent to the actor
-          case AdaptedResponse(msg) ⇒
-            ctx.log.info("Got response from hal: {}", msg)
-            Behaviors.same
-        }
+      Behaviors.receiveMessage {
+        // the adapted message ends up being processed like any other
+        // message sent to the actor
+        case AdaptedResponse(msg) ⇒
+          ctx.log.info("Got response from hal: {}", msg)
+          Behaviors.same
       }
     }
     // #actor-ask
@@ -279,19 +267,15 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
 
     // #per-session-child
 
-    val keyCabinetBehavior: Behavior[GetKeys] = Behaviors.receive { (ctx, msg) ⇒
-      msg match {
-        case GetKeys(_, respondTo) ⇒
-          respondTo ! Keys()
-          Behaviors.same
-      }
+    val keyCabinetBehavior: Behavior[GetKeys] = Behaviors.receiveMessage {
+      case GetKeys(_, respondTo) ⇒
+        respondTo ! Keys()
+        Behaviors.same
     }
-    val drawerBehavior: Behavior[GetWallet] = Behaviors.receive { (ctx, msg) ⇒
-      msg match {
-        case GetWallet(_, respondTo) ⇒
-          respondTo ! Wallet()
-          Behaviors.same
-      }
+    val drawerBehavior: Behavior[GetWallet] = Behaviors.receiveMessage {
+      case GetWallet(_, respondTo) ⇒
+        respondTo ! Wallet()
+        Behaviors.same
     }
 
     // #per-session-child
@@ -342,18 +326,16 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
               Behavior.same
           }
 
-        Behaviors.receive((ctx, msg) ⇒ {
-          msg match {
-            case w: Wallet ⇒
-              wallet = Some(w)
-              nextBehavior
-            case k: Keys ⇒
-              keys = Some(k)
-              nextBehavior
-            case _ ⇒
-              Behaviors.unhandled
-          }
-        })
+        Behaviors.receiveMessage {
+          case w: Wallet ⇒
+            wallet = Some(w)
+            nextBehavior
+          case k: Keys ⇒
+            keys = Some(k)
+            nextBehavior
+          case _ ⇒
+            Behaviors.unhandled
+        }
       }.narrow[NotUsed] // we don't let anyone else know we accept anything
     // #per-session-child
 
@@ -372,7 +354,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     // #standalone-ask
 
     // keep this out of the sample as it uses the testkit spawn
-    val cookieActorRef = spawn(Behaviors.receive[GiveMeCookies] { (ctx, msg) ⇒
+    val cookieActorRef = spawn(Behaviors.receiveMessage[GiveMeCookies] { msg ⇒
       msg.replyTo ! Cookies(5)
       Behaviors.same
     })
