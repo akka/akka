@@ -16,32 +16,11 @@ import scala.annotation.switch
 @ApiMayChange
 sealed abstract class ResourceRecord(val name: String, val ttlInSeconds: Int, val recType: Short, val recClass: Short)
   extends NoSerializationVerificationNeeded {
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[dns] def write(it: ByteStringBuilder): Unit = {
-    DomainName.write(it, name)
-    it.putShort(recType)
-    it.putShort(recClass)
-  }
 }
 
 @ApiMayChange
 final case class ARecord(override val name: String, override val ttlInSeconds: Int,
                          ip: InetAddress) extends ResourceRecord(name, ttlInSeconds, RecordType.A.code, RecordClass.IN.code) {
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[dns] override def write(it: ByteStringBuilder): Unit = {
-    super.write(it)
-    val addr = ip.getAddress
-    it.putShort(addr.length)
-    it.putBytes(addr)
-  }
 }
 
 /**
@@ -59,17 +38,6 @@ private[dns] object ARecord {
 @ApiMayChange
 final case class AAAARecord(override val name: String, override val ttlInSeconds: Int,
                             ip: Inet6Address) extends ResourceRecord(name, ttlInSeconds, RecordType.AAAA.code, RecordClass.IN.code) {
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[dns] override def write(it: ByteStringBuilder): Unit = {
-    super.write(it)
-    val addr = ip.getAddress
-    it.putShort(addr.length)
-    it.putBytes(addr)
-  }
 }
 
 /**
@@ -92,15 +60,6 @@ private[dns] object AAAARecord {
 @ApiMayChange
 final case class CNameRecord(override val name: String, override val ttlInSeconds: Int,
                              canonicalName: String) extends ResourceRecord(name, ttlInSeconds, RecordType.CNAME.code, RecordClass.IN.code) {
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  override def write(it: ByteStringBuilder): Unit = {
-    super.write(it)
-    it.putShort(DomainName.length(name))
-    DomainName.write(it, name)
-  }
 }
 
 @InternalApi
@@ -117,17 +76,6 @@ private[dns] object CNameRecord {
 @ApiMayChange
 final case class SRVRecord(override val name: String, override val ttlInSeconds: Int,
                            priority: Int, weight: Int, port: Int, target: String) extends ResourceRecord(name, ttlInSeconds, RecordType.SRV.code, RecordClass.IN.code) {
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  override def write(it: ByteStringBuilder): Unit = {
-    super.write(it)
-    it.putShort(priority)
-    it.putShort(weight)
-    it.putShort(port)
-    DomainName.write(it, target)
-  }
 }
 
 /**
@@ -140,9 +88,9 @@ private[dns] object SRVRecord {
    */
   @InternalApi
   def parseBody(name: String, ttlInSeconds: Int, length: Short, it: ByteIterator, msg: ByteString): SRVRecord = {
-    val priority = it.getShort
-    val weight = it.getShort
-    val port = it.getShort
+    val priority = it.getShort.toInt & 0xFFFF
+    val weight = it.getShort.toInt & 0xFFFF
+    val port = it.getShort.toInt & 0xFFFF
     SRVRecord(name, ttlInSeconds, priority, weight, port, DomainName.parse(it, msg))
   }
 }
@@ -151,15 +99,6 @@ private[dns] object SRVRecord {
 final case class UnknownRecord(override val name: String, override val ttlInSeconds: Int,
                                override val recType: Short, override val recClass: Short,
                                data: ByteString) extends ResourceRecord(name, ttlInSeconds, recType, recClass) {
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  override def write(it: ByteStringBuilder): Unit = {
-    super.write(it)
-    it.putShort(data.length)
-    it.append(data)
-  }
 }
 
 /**
