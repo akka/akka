@@ -38,7 +38,7 @@ object BehaviorTestKit {
 trait BehaviorTestKit[T] {
 
   // FIXME it is weird that this is public but it is used in BehaviorSpec, could we avoid that?
-  private[akka] def ctx: akka.actor.typed.ActorContext[T]
+  private[akka] def context: akka.actor.typed.ActorContext[T]
 
   /**
    * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.scaladsl.Effects.NoEffects]] if no effects
@@ -64,7 +64,7 @@ trait BehaviorTestKit[T] {
   def childTestKit[U](child: ActorRef[U]): BehaviorTestKit[U]
 
   /**
-   * The self inbox contains messages the behavior sent to `ctx.self`
+   * The self inbox contains messages the behavior sent to `context.self`
    */
   def selfInbox(): TestInbox[T]
 
@@ -119,9 +119,9 @@ trait BehaviorTestKit[T] {
   def isAlive: Boolean
 
   /**
-   * Send the msg to the behavior and record any [[Effect]]s
+   * Send the message to the behavior and record any [[Effect]]s
    */
-  def run(msg: T): Unit
+  def run(message: T): Unit
 
   /**
    * Send the first message in the selfInbox to the behavior and run it, recording [[Effect]]s.

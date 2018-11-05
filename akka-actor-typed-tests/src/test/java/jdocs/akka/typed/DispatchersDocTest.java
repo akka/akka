@@ -13,13 +13,13 @@ public class DispatchersDocTest {
 
     private static Behavior<String> yourBehavior = Behaviors.empty();
 
-    private static Behavior<Object> example = Behaviors.receive((ctx, msg) -> {
+    private static Behavior<Object> example = Behaviors.receive((context, message) -> {
 
         //#spawn-dispatcher
-        ctx.spawn(yourBehavior, "DefaultDispatcher");
-        ctx.spawn(yourBehavior, "ExplicitDefaultDispatcher", DispatcherSelector.defaultDispatcher());
-        ctx.spawn(yourBehavior, "BlockingDispatcher", DispatcherSelector.blocking());
-        ctx.spawn(yourBehavior, "DispatcherFromConfig", DispatcherSelector.fromConfig("your-dispatcher"));
+        context.spawn(yourBehavior, "DefaultDispatcher");
+        context.spawn(yourBehavior, "ExplicitDefaultDispatcher", DispatcherSelector.defaultDispatcher());
+        context.spawn(yourBehavior, "BlockingDispatcher", DispatcherSelector.blocking());
+        context.spawn(yourBehavior, "DispatcherFromConfig", DispatcherSelector.fromConfig("your-dispatcher"));
         //#spawn-dispatcher
 
         return Behaviors.same();

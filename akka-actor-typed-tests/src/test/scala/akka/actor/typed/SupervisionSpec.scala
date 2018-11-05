@@ -36,12 +36,12 @@ object SupervisionSpec {
   case object Started extends Event
   case object StartFailed extends Event
 
-  class Exc1(msg: String = "exc-1") extends RuntimeException(msg) with NoStackTrace
+  class Exc1(message: String = "exc-1") extends RuntimeException(message) with NoStackTrace
   class Exc2 extends Exc1("exc-2")
-  class Exc3(msg: String = "exc-3") extends RuntimeException(msg) with NoStackTrace
+  class Exc3(message: String = "exc-3") extends RuntimeException(message) with NoStackTrace
 
   def targetBehavior(monitor: ActorRef[Event], state: State = State(0, Map.empty)): Behavior[Command] =
-    receive[Command] { (ctx, cmd) ⇒
+    receive[Command] { (context, cmd) ⇒
       cmd match {
         case Ping ⇒
           monitor ! Pong
@@ -49,11 +49,11 @@ object SupervisionSpec {
         case IncrementState ⇒
           targetBehavior(monitor, state.copy(n = state.n + 1))
         case GetState ⇒
-          val reply = state.copy(children = ctx.children.map(c ⇒ c.path.name → c.upcast[Command]).toMap)
+          val reply = state.copy(children = context.children.map(c ⇒ c.path.name → c.upcast[Command]).toMap)
           monitor ! reply
           Behaviors.same
         case CreateChild(childBehv, childName) ⇒
-          ctx.spawn(childBehv, childName)
+          context.spawn(childBehv, childName)
           Behaviors.same
         case Throw(e) ⇒
           throw e
@@ -68,7 +68,7 @@ object SupervisionSpec {
     monitor ! Started
     throw new RuntimeException("simulated exc from constructor") with NoStackTrace
 
-    override def onMessage(msg: Command): Behavior[Command] = {
+    override def onMessage(message: Command): Behavior[Command] = {
       monitor ! Pong
       Behaviors.same
     }
@@ -262,7 +262,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       if (failCounter.getAndIncrement() < failCount) {
         throw TE("simulated exc from constructor")
       }
-      override def onMessage(msg: Command): Behavior[Command] = {
+      override def onMessage(message: Command): Behavior[Command] = {
         monitor ! Pong
         Behaviors.same
       }
@@ -746,8 +746,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
     "work with nested supervisions and defers" in {
       val strategy = SupervisorStrategy.restartWithLimit(3, 1.second)
       val probe = TestProbe[AnyRef]("p")
-      val beh = supervise[String](setup(ctx ⇒
-        supervise[String](setup { ctx ⇒
+      val beh = supervise[String](setup(context ⇒
+        supervise[String](setup { context ⇒
           probe.ref ! Started
           scaladsl.Behaviors.empty[String]
         }).onFailure[RuntimeException](strategy)
@@ -805,18 +805,18 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       // irrelevant for test case but needed to use intercept in the pyramid of doom below
       val whateverInterceptor = new BehaviorInterceptor[String, String] {
         // identity intercept
-        override def aroundReceive(ctx: ActorContext[String], msg: String, target: ReceiveTarget[String]): Behavior[String] =
-          target(ctx, msg)
+        override def aroundReceive(context: ActorContext[String], message: String, target: ReceiveTarget[String]): Behavior[String] =
+          target(context, message)
 
-        override def aroundSignal(ctx: ActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] =
-          target(ctx, signal)
+        override def aroundSignal(context: ActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] =
+          target(context, signal)
       }
 
       val behv = supervise[String](Behaviors.receiveMessage {
         case "boom" ⇒ throw TE("boom indeed")
         case "switch" ⇒
           supervise[String](
-            setup(ctx ⇒
+            setup(context ⇒
               supervise[String](
                 Behaviors.intercept(whateverInterceptor)(
                   supervise[String](
@@ -854,7 +854,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
       val probe = TestProbe[AnyRef]("probeMcProbeFace")
       val restartCount = new AtomicInteger(0)
       val behv = supervise[String](
-        Behaviors.setup { ctx ⇒
+        Behaviors.setup { context ⇒
 
           // a bit superficial, but just to be complete
           if (restartCount.incrementAndGet() == 1) {
@@ -906,15 +906,15 @@ class SupervisionSpec extends ScalaTestWithActorTestKit(
 
     "be able to recover from a DeathPactException" in {
       val probe = TestProbe[AnyRef]()
-      val actor = spawn(Behaviors.supervise(Behaviors.setup[String] { ctx ⇒
-        val child = ctx.spawnAnonymous(Behaviors.receive[String] { (ctx, msg) ⇒
-          msg match {
+      val actor = spawn(Behaviors.supervise(Behaviors.setup[String] { context ⇒
+        val child = context.spawnAnonymous(Behaviors.receive[String] { (context, message) ⇒
+          message match {
             case "boom" ⇒
-              probe.ref ! ctx.self
+              probe.ref ! context.self
               Behaviors.stopped
           }
         })
-        ctx.watch(child)
+        context.watch(child)
 
         Behaviors.receiveMessage {
           case "boom" ⇒

@@ -108,7 +108,7 @@ object Effect {
 
   /**
    * INTERNAL API
-   * The behavior spawned an anonymous adapter, through `ctx.spawnMessageAdapter`
+   * The behavior spawned an anonymous adapter, through `context.spawnMessageAdapter`
    */
   @InternalApi
   private[akka] final class SpawnedAnonymousAdapter[T](val ref: ActorRef[T])
@@ -153,19 +153,19 @@ object Effect {
   final case class Stopped(childName: String) extends Effect
 
   /**
-   * The behavior started watching `other`, through `ctx.watch(other)`
+   * The behavior started watching `other`, through `context.watch(other)`
    */
   final case class Watched[T](other: ActorRef[T]) extends Effect
 
   /**
-   * The behavior started watching `other`, through `ctx.unwatch(other)`
+   * The behavior started watching `other`, through `context.unwatch(other)`
    */
   final case class Unwatched[T](other: ActorRef[T]) extends Effect
 
   /**
-   * The behavior set a new receive timeout, with `msg` as timeout notification
+   * The behavior set a new receive timeout, with `message` as timeout notification
    */
-  final case class ReceiveTimeoutSet[T](d: FiniteDuration, msg: T) extends Effect {
+  final case class ReceiveTimeoutSet[T](d: FiniteDuration, message: T) extends Effect {
     /**
      * Java API
      */
@@ -177,10 +177,10 @@ object Effect {
   sealed abstract class ReceiveTimeoutCancelled extends Effect
 
   /**
-   * The behavior used `ctx.schedule` to schedule `msg` to be sent to `target` after `delay`
+   * The behavior used `context.schedule` to schedule `message` to be sent to `target` after `delay`
    * FIXME what about events scheduled through the scheduler?
    */
-  final case class Scheduled[U](delay: FiniteDuration, target: ActorRef[U], msg: U) extends Effect {
+  final case class Scheduled[U](delay: FiniteDuration, target: ActorRef[U], message: U) extends Effect {
     def duration(): java.time.Duration = delay.asJava
   }
 

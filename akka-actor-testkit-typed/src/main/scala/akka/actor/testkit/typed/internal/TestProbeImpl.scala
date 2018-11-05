@@ -28,9 +28,9 @@ private[akka] object TestProbeImpl {
   private val testActorId = new AtomicInteger(0)
 
   private case class WatchActor[U](actor: ActorRef[U])
-  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] = Behaviors.receive[M] { (ctx, msg) ⇒
-    msg match {
-      case WatchActor(ref) ⇒ ctx.watch(ref)
+  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] = Behaviors.receive[M] { (context, message) ⇒
+    message match {
+      case WatchActor(ref) ⇒ context.watch(ref)
       case other           ⇒ queue.offerLast(other)
     }
     Behaviors.same
@@ -186,10 +186,10 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
       val start = System.nanoTime()
       val maybeMsg = Option(receiveOne(timeout))
       maybeMsg match {
-        case Some(msg) ⇒
+        case Some(message) ⇒
           try {
-            fisher(msg) match {
-              case FishingOutcome.Complete    ⇒ (msg :: seen).reverse
+            fisher(message) match {
+              case FishingOutcome.Complete    ⇒ (message :: seen).reverse
               case FishingOutcome.Fail(error) ⇒ throw new AssertionError(s"$error, hint: $hint")
               case continue ⇒
                 val newTimeout =
@@ -200,7 +200,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
                 } else {
 
                   continue match {
-                    case FishingOutcome.Continue          ⇒ loop(newTimeout, msg :: seen)
+                    case FishingOutcome.Continue          ⇒ loop(newTimeout, message :: seen)
                     case FishingOutcome.ContinueAndIgnore ⇒ loop(newTimeout, seen)
                     case _                                ⇒ ??? // cannot happen
                   }
@@ -209,7 +209,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
             }
           } catch {
             case ex: MatchError ⇒ throw new AssertionError(
-              s"Unexpected message $msg while fishing for messages, " +
+              s"Unexpected message $message while fishing for messages, " +
                 s"seen messages ${seen.reverse}, hint: $hint", ex)
           }
 
