@@ -111,14 +111,12 @@ private[internal] case class Message(
     ret.putShort(id)
       .putShort(flags.flags)
       .putShort(questions.size)
-      .putShort(answerRecs.size)
-      .putShort(authorityRecs.size)
-      .putShort(additionalRecs.size)
+      // We only send questions, never answers with resource records in
+      .putShort(0)
+      .putShort(0)
+      .putShort(0)
 
     questions.foreach(_.write(ret))
-    answerRecs.foreach(_.write(ret))
-    authorityRecs.foreach(_.write(ret))
-    additionalRecs.foreach(_.write(ret))
   }
 }
 
