@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
@@ -62,8 +62,7 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
   }
   """) {
 
-  // FIXME change number of systems to 3 if we keep this test, can be adjusted to higher when investigating
-  private val systems = (1 to 10).map { n ⇒
+  private val systems = (1 to 3).map { n ⇒
     val roleConfig = ConfigFactory.parseString(s"""akka.cluster.roles=[role-${n % 3}]""")
     ActorSystem(system.name, roleConfig.withFallback(system.settings.config))
   }
@@ -105,8 +104,6 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
         val t0 = System.nanoTime()
         val leaveAddress = Cluster(systems(i)).selfAddress
         CoordinatedShutdown(systems(i)).run(CoordinatedShutdown.ClusterLeavingReason)
-        //        Cluster(systems(i)).leave(leaveAddress)
-        //        Cluster(system).leave(leaveAddress)
         probes(i).expectMsg(10.seconds, "stopped")
         val stoppedDuration = (System.nanoTime() - t0).nanos
         val startedProbe = if (i == systems.size - 1) this else probes(i + 1)

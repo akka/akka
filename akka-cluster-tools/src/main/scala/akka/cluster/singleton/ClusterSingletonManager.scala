@@ -288,7 +288,7 @@ object ClusterSingletonManager {
         // ClusterSingletonManagerIsStuck.
         val selfUpNumber = state.members.collectFirst { case m if m.uniqueAddress == cluster.selfUniqueAddress ⇒ m.upNumber }.getOrElse(Int.MaxValue)
         val safeToBeOldest = !state.members.exists { m ⇒
-          m.upNumber <= selfUpNumber && (m.status == MemberStatus.Down || m.status == MemberStatus.Exiting || m.status == MemberStatus.Leaving)
+          m.upNumber <= selfUpNumber && matchingRole(m) && (m.status == MemberStatus.Down || m.status == MemberStatus.Exiting || m.status == MemberStatus.Leaving)
         }
         val initial = InitialOldestState(membersByAge.headOption.map(_.uniqueAddress), safeToBeOldest)
         changes :+= initial
