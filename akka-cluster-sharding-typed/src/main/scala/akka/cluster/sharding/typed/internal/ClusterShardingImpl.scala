@@ -133,7 +133,7 @@ import akka.util.Timeout
   private val shardCommandActors: ConcurrentHashMap[String, ActorRef[scaladsl.ClusterSharding.ShardCommand]] = new ConcurrentHashMap
 
   // scaladsl impl
-  override def start[M, E](entity: scaladsl.Entity[M, E]): ActorRef[E] = {
+  override def init[M, E](entity: scaladsl.Entity[M, E]): ActorRef[E] = {
     val settings = entity.settings match {
       case None    ⇒ ClusterShardingSettings(system)
       case Some(s) ⇒ s
@@ -144,14 +144,14 @@ import akka.util.Timeout
       case Some(e) ⇒ e
     }).asInstanceOf[ShardingMessageExtractor[E, M]]
 
-    internalStart(entity.createBehavior, entity.entityProps, entity.typeKey,
+    internalInit(entity.createBehavior, entity.entityProps, entity.typeKey,
       entity.stopMessage, settings, extractor, entity.allocationStrategy)
   }
 
   // javadsl impl
-  override def start[M, E](entity: javadsl.Entity[M, E]): ActorRef[E] = {
+  override def init[M, E](entity: javadsl.Entity[M, E]): ActorRef[E] = {
     import scala.compat.java8.OptionConverters._
-    start(new scaladsl.Entity(
+    init(new scaladsl.Entity(
       createBehavior = (ctx: EntityContext) ⇒ Behaviors.setup[M] { actorContext ⇒
         entity.createBehavior(
           new javadsl.EntityContext[M](ctx.entityId, ctx.shard, actorContext.asJava))
@@ -165,7 +165,7 @@ import akka.util.Timeout
     ))
   }
 
-  private def internalStart[M, E](
+  private def internalInit[M, E](
     behavior:           EntityContext ⇒ Behavior[M],
     entityProps:        Props,
     typeKey:            scaladsl.EntityTypeKey[M],
@@ -241,7 +241,7 @@ import akka.util.Timeout
 
     typeNames.putIfAbsent(typeKey.name, messageClassName) match {
       case spawnedMessageClassName: String if messageClassName != spawnedMessageClassName ⇒
-        throw new IllegalArgumentException(s"[${typeKey.name}] already started for [$spawnedMessageClassName]")
+        throw new IllegalArgumentException(s"[${typeKey.name}] already initialized for [$spawnedMessageClassName]")
       case _ ⇒ ()
     }
 

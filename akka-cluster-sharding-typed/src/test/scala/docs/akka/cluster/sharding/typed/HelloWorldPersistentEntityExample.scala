@@ -23,7 +23,7 @@ object HelloWorldPersistentEntityExample {
     // registration at startup
     private val sharding = ClusterSharding(system)
 
-    sharding.start(Entity(
+    sharding.init(Entity(
       typeKey = HelloWorld.entityTypeKey,
       createBehavior = entityContext ⇒ HelloWorld.persistentEntity(entityContext.entityId)))
 

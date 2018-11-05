@@ -138,7 +138,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
 
   "Typed cluster sharding with persistent actor" must {
 
-    ClusterSharding(system).start(Entity(
+    ClusterSharding(system).init(Entity(
       typeKey,
       ctx ⇒ persistentEntity(ctx.entityId, ctx.shard)))
 
