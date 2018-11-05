@@ -68,6 +68,21 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
         }
       }
     }
+
+    "use Forever when system Property (or the security property) value is lower than zero" in {
+      withNewSecurityProperty("networkaddress.cache.negative.ttl", "-1") {
+        withNewSystemProperty("sun.net.inetaddr.negative.ttl", "") {
+          dnsResolver.negativeTtl shouldBe Long.MaxValue
+        }
+      }
+    }
+    "use Never when system Property (or the security property) value is zero" in {
+      withNewSecurityProperty("networkaddress.cache.negative.ttl", "0") {
+        withNewSystemProperty("sun.net.inetaddr.negative.ttl", "") {
+          dnsResolver.negativeTtl shouldBe 0
+        }
+      }
+    }
   }
 
   private def secondsToMillis(seconds: Int) = TimeUnit.SECONDS.toMillis(seconds)

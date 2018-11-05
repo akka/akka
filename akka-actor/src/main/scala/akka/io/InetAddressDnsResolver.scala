@@ -45,8 +45,8 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
 
   private def parsePolicy(n: Int): CachePolicy = {
     n match {
-      case 0          ⇒ CacheForever
-      case x if x < 0 ⇒ NeverCache
+      case 0          ⇒ NeverCache
+      case x if x < 0 ⇒ CacheForever
       case x          ⇒ FiniteCache(x.seconds)
     }
   }
