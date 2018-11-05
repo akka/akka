@@ -71,12 +71,6 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
   @deprecated("Use negativeCacheDuration instead", "2.5.17")
   val negativeTtl: Long = toLongTtl(negativeCacheDuration)
 
-  /**
-   * Given a `CachePolicy` returns a L
-   * @param cp
-   * @return a Long representing the `FiniteDuration` in millis, `Long.MaxValue` to
-   *         cache forever or `0` to never cache.
-   */
   private def toLongTtl(cp: CachePolicy): Long = {
     cp match {
       case CacheForever     ⇒ Long.MaxValue
