@@ -133,9 +133,12 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   private def expectMessage_internal[T <: M](max: Duration, obj: T, hint: Option[String] = None): T = {
     val o = receiveOne(max)
     val hintOrEmptyString = hint.map(": " + _).getOrElse("")
-    assert(o.isDefined, s"timeout ($max) during expectMessage while waiting for $obj" + hintOrEmptyString)
-    assert(obj == o.get, s"expected $obj, found $o" + hintOrEmptyString)
-    o.get.asInstanceOf[T]
+    o match {
+      case Some(o) if obj == o ⇒ o.asInstanceOf
+      case Some(o)             ⇒ assertFail(s"expected $obj, found $o$hintOrEmptyString")
+      case None ⇒ assertFail(
+        s"timeout ($max) during expectMessage while waiting for $obj$hintOrEmptyString")
+    }
   }
 
   /**
@@ -170,15 +173,21 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   private def expectNoMessage_internal(max: FiniteDuration): Unit = {
     val o = receiveOne(max)
-    assert(o.isEmpty, s"received unexpected message ${o.get}")
-    lastWasNoMessage = true
+    o match {
+      case None    ⇒ lastWasNoMessage = true
+      case Some(o) ⇒ assertFail(s"received unexpected message $o")
+    }
   }
 
   override protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
     val o = receiveOne(max)
-    assert(o.isDefined, s"timeout ($max) during expectMessageClass waiting for $c")
-    assert(BoxedType(c) isInstance o.get, s"expected $c, found ${o.get.getClass} (${o.get})")
-    o.get.asInstanceOf[C]
+    val bt = BoxedType(c)
+    o match {
+      case Some(o) if bt isInstance o ⇒ o.asInstanceOf[C]
+      case Some(o)                    ⇒ assertFail(s"expected $c, found ${o.getClass} ($o)")
+      case None ⇒ assertFail(
+        s"timeout ($max) during expectMessageClass waiting for $c")
+    }
   }
 
   override protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): List[M] = {
@@ -260,5 +269,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
    * Obtain current time (`System.nanoTime`) as Duration.
    */
   private def now: FiniteDuration = System.nanoTime.nanos
+
+  private def assertFail(msg: String): Nothing = throw new AssertionError(s"assertion failed: $msg")
 
 }
