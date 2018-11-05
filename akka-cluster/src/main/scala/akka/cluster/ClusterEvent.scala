@@ -264,6 +264,14 @@ object ClusterEvent {
   }
 
   /**
+   * Member status changed to `MemberStatus.Down` and will be removed
+   * when all members have seen the `Down` status.
+   */
+  final case class MemberDowned(member: Member) extends MemberEvent {
+    if (member.status != Down) throw new IllegalArgumentException("Expected Down status, got: " + member)
+  }
+
+  /**
    * Member completely removed from the cluster.
    * When `previousStatus` is `MemberStatus.Down` the node was removed
    * after being detected as unreachable and downed.
@@ -449,6 +457,7 @@ object ClusterEvent {
         case m if m.status == Up       ⇒ MemberUp(m)
         case m if m.status == Leaving  ⇒ MemberLeft(m)
         case m if m.status == Exiting  ⇒ MemberExited(m)
+        case m if m.status == Down     ⇒ MemberDowned(m)
         // no events for other transitions
       }
 

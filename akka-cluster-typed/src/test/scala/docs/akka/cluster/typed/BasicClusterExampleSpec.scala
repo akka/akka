@@ -212,6 +212,7 @@ class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually 
 
         system1.log.info("Downing node 3")
         cluster1.manager ! Down(cluster3.selfMember.address)
+        probe1.expectMessageType[MemberDowned].member.address shouldEqual cluster3.selfMember.address
         probe1.expectMessageType[MemberRemoved](10.seconds).member.address shouldEqual cluster3.selfMember.address
 
         probe1.expectNoMessage()
