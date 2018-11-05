@@ -31,13 +31,13 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
 
   private final val DefaultPositive = FiniteCache(30.seconds)
 
-  private lazy val cachePolicy: CachePolicy =
+  private lazy val defaultCachePolicy: CachePolicy =
     Try(Security.getProperty(CachePolicyProp).toInt)
       .orElse(Try(System.getProperty(CachePolicyPropFallback).toInt))
       .map(parsePolicy)
       .getOrElse(DefaultPositive) // default
 
-  private lazy val negativeCachePolicy: CachePolicy =
+  private lazy val defaultNegativeCachePolicy: CachePolicy =
     Try(Security.getProperty(NegativeCachePolicyProp).toInt)
       .orElse(Try(System.getProperty(NegativeCachePolicyPropFallback).toInt))
       .map(parsePolicy)
@@ -53,7 +53,7 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
 
   private def getTtl(path: String, positive: Boolean): CachePolicy =
     config.getString(path) match {
-      case "default" ⇒ if (positive) cachePolicy else negativeCachePolicy
+      case "default" ⇒ if (positive) defaultCachePolicy else defaultNegativeCachePolicy
       case "forever" ⇒ CacheForever
       case "never"   ⇒ NeverCache
       case _ ⇒ {
@@ -64,12 +64,12 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
       }
     }
 
-  val positiveCacheDuration: CachePolicy = getTtl("positive-ttl", positive = true)
-  val negativeCacheDuration: CachePolicy = getTtl("negative-ttl", positive = false)
+  val positiveCachePolicy: CachePolicy = getTtl("positive-ttl", positive = true)
+  val negativeCachePolicy: CachePolicy = getTtl("negative-ttl", positive = false)
   @deprecated("Use positiveCacheDuration instead", "2.5.17")
-  val positiveTtl: Long = toLongTtl(positiveCacheDuration)
+  val positiveTtl: Long = toLongTtl(positiveCachePolicy)
   @deprecated("Use negativeCacheDuration instead", "2.5.17")
-  val negativeTtl: Long = toLongTtl(negativeCacheDuration)
+  val negativeTtl: Long = toLongTtl(negativeCachePolicy)
 
   private def toLongTtl(cp: CachePolicy): Long = {
     cp match {
@@ -86,12 +86,12 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
         case None ⇒
           try {
             val answer = Dns.Resolved(name, InetAddress.getAllByName(name))
-            if (positiveCacheDuration != NeverCache) cache.put(answer, positiveCacheDuration)
+            if (positiveCachePolicy != NeverCache) cache.put(answer, positiveCachePolicy)
             answer
           } catch {
             case e: UnknownHostException ⇒
               val answer = Dns.Resolved(name, immutable.Seq.empty, immutable.Seq.empty)
-              if (negativeCacheDuration != NeverCache) cache.put(answer, negativeCacheDuration)
+              if (negativeCachePolicy != NeverCache) cache.put(answer, negativeCachePolicy)
               answer
           }
       }
