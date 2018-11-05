@@ -35,7 +35,7 @@ class HelloWorldPersistentEntityExampleSpec extends ScalaTestWithActorTestKit(He
     super.beforeAll()
     Cluster(system).manager ! Join(Cluster(system).selfMember.address)
 
-    sharding.start(Entity(
+    sharding.init(Entity(
       HelloWorld.entityTypeKey,
       ctx ⇒ HelloWorld.persistentEntity(ctx.entityId)))
   }

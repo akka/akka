@@ -41,7 +41,7 @@ public class HelloWorldPersistentEntityExampleTest extends JUnitSuite {
       cluster.manager().tell(new Join(cluster.selfMember().address()));
 
       ClusterSharding sharding = ClusterSharding.get(testKit.system());
-      sharding.start(
+      sharding.init(
         Entity.ofPersistentEntity(
           HelloWorld.ENTITY_TYPE_KEY,
           ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
