@@ -314,7 +314,7 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
           .withStopMessage(IdStopPlz()))
       }
 
-      ex.getMessage should include("already started")
+      ex.getMessage should include("already initialized")
     }
 
     "EntityRef - tell" in {
