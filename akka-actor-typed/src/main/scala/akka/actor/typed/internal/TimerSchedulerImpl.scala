@@ -140,7 +140,7 @@ import scala.concurrent.duration.FiniteDuration
     // The scheduled TimerMsg is intercepted to guard against old messages enqueued
     // in mailbox before timer was canceled.
     // Intercept some signals to cancel timers when restarting and stopping.
-    BehaviorImpl.intercept(new TimerInterceptor(this))(behavior).asInstanceOf[Behavior[T]]
+    BehaviorImpl.intercept(new TimerInterceptor(this))(behavior)
   }
 
 }
@@ -149,14 +149,14 @@ import scala.concurrent.duration.FiniteDuration
  * INTERNAL API
  */
 @InternalApi
-private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T]) extends BehaviorInterceptor[AnyRef, T] {
+private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T]) extends BehaviorInterceptor[T, T] {
   import TimerSchedulerImpl._
   import BehaviorInterceptor._
 
-  override def aroundReceive(ctx: typed.ActorContext[AnyRef], msg: AnyRef, target: ReceiveTarget[T]): Behavior[T] = {
+  override def aroundReceive(ctx: typed.ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     val intercepted = msg match {
       case msg: TimerMsg ⇒ timerSchedulerImpl.interceptTimerMsg(ctx.asScala.log, msg)
-      case msg           ⇒ msg.asInstanceOf[T]
+      case msg           ⇒ msg
     }
 
     // null means not applicable
@@ -164,7 +164,7 @@ private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T
     else target(ctx, intercepted)
   }
 
-  override def aroundSignal(ctx: typed.ActorContext[AnyRef], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+  override def aroundSignal(ctx: typed.ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     signal match {
       case PreRestart | PostStop ⇒ timerSchedulerImpl.cancelAll()
       case _                     ⇒ // unhandled
