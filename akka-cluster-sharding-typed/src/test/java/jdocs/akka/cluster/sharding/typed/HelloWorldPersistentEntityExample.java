@@ -42,11 +42,10 @@ public class HelloWorldPersistentEntityExample {
       this.system = system;
       sharding = ClusterSharding.get(system);
 
-      sharding.start(
+      sharding.init(
         Entity.ofPersistentEntity(
           HelloWorld.ENTITY_TYPE_KEY,
-          ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId()),
-          HelloWorld.Passivate.INSTANCE));
+          ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
     }
 
     // usage example
@@ -76,10 +75,6 @@ public class HelloWorldPersistentEntityExample {
         this.whom = whom;
         this.replyTo = replyTo;
       }
-    }
-
-    enum Passivate implements Command {
-      INSTANCE
     }
 
     // Response
@@ -140,12 +135,7 @@ public class HelloWorldPersistentEntityExample {
     public CommandHandler<Command, Greeted, KnownPeople> commandHandler() {
       return commandHandlerBuilder(KnownPeople.class)
         .matchCommand(Greet.class, this::greet)
-        .matchCommand(Greet.class, this::passivate)
         .build();
-    }
-
-    private Effect<Greeted, KnownPeople> passivate(KnownPeople state, Command cmd) {
-      return Effect().stop();
     }
 
     private Effect<Greeted, KnownPeople> greet(KnownPeople state, Greet cmd) {

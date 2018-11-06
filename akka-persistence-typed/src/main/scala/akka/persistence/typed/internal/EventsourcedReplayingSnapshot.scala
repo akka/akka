@@ -7,6 +7,7 @@ package akka.persistence.typed.internal
 import akka.actor.typed.scaladsl.Behaviors.same
 import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
 import akka.actor.typed.Behavior
+import akka.actor.typed.internal.PoisonPill
 import akka.annotation.InternalApi
 import akka.persistence.SnapshotProtocol.{ LoadSnapshotFailed, LoadSnapshotResult }
 import akka.persistence._
@@ -31,8 +32,8 @@ import akka.persistence.typed.internal.EventsourcedBehavior._
 @InternalApi
 private[akka] object EventsourcedReplayingSnapshot {
 
-  def apply[C, E, S](setup: EventsourcedSetup[C, E, S]): Behavior[InternalProtocol] =
-    new EventsourcedReplayingSnapshot(setup.setMdc(MDC.ReplayingSnapshot)).createBehavior()
+  def apply[C, E, S](setup: EventsourcedSetup[C, E, S], receivedPoisonPill: Boolean): Behavior[InternalProtocol] =
+    new EventsourcedReplayingSnapshot(setup.setMdc(MDC.ReplayingSnapshot)).createBehavior(receivedPoisonPill)
 
 }
 
@@ -40,19 +41,26 @@ private[akka] object EventsourcedReplayingSnapshot {
 private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: EventsourcedSetup[C, E, S])
   extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
 
-  def createBehavior(): Behavior[InternalProtocol] = {
+  def createBehavior(receivedPoisonPillInPreviousPhase: Boolean): Behavior[InternalProtocol] = {
     // protect against snapshot stalling forever because of journal overloaded and such
     setup.startRecoveryTimer(snapshot = true)
 
     loadSnapshot(setup.recovery.fromSnapshot, setup.recovery.toSequenceNr)
 
-    Behaviors.receiveMessage[InternalProtocol] {
-      case SnapshotterResponse(r)      ⇒ onSnapshotterResponse(r)
-      case JournalResponse(r)          ⇒ onJournalResponse(r)
-      case RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot)
-      case cmd: IncomingCommand[C]     ⇒ onCommand(cmd)
-      case RecoveryPermitGranted       ⇒ Behaviors.unhandled // should not happen, we already have the permit
-    }.receiveSignal(returnPermitOnStop)
+    def stay(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
+      Behaviors.receiveMessage[InternalProtocol] {
+        case SnapshotterResponse(r)      ⇒ onSnapshotterResponse(r, receivedPoisonPill)
+        case JournalResponse(r)          ⇒ onJournalResponse(r)
+        case RecoveryTickEvent(snapshot) ⇒ onRecoveryTick(snapshot)
+        case cmd: IncomingCommand[C] ⇒
+          if (receivedPoisonPill) Behaviors.unhandled
+          else onCommand(cmd)
+        case RecoveryPermitGranted ⇒ Behaviors.unhandled // should not happen, we already have the permit
+      }.receiveSignal(returnPermitOnStop.orElse {
+        case (_, PoisonPill) ⇒ stay(receivedPoisonPill = true)
+      })
+    }
+    stay(receivedPoisonPillInPreviousPhase)
   }
 
   /**
@@ -94,7 +102,7 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
     Behaviors.unhandled
   }
 
-  def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
+  def onSnapshotterResponse(response: SnapshotProtocol.Response, receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
     response match {
       case LoadSnapshotResult(sso, toSnr) ⇒
         var state: S = setup.emptyState
@@ -106,7 +114,7 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
           case None ⇒ 0 // from the beginning please
         }
 
-        becomeReplayingEvents(state, seqNr, toSnr)
+        becomeReplayingEvents(state, seqNr, toSnr, receivedPoisonPill)
 
       case LoadSnapshotFailed(cause) ⇒
         onRecoveryFailure(cause, event = None)
@@ -116,12 +124,12 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
     }
   }
 
-  private def becomeReplayingEvents(state: S, lastSequenceNr: Long, toSnr: Long): Behavior[InternalProtocol] = {
+  private def becomeReplayingEvents(state: S, lastSequenceNr: Long, toSnr: Long, receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
     setup.cancelRecoveryTimer()
 
     EventsourcedReplayingEvents[C, E, S](
       setup,
-      EventsourcedReplayingEvents.ReplayingState(lastSequenceNr, state, eventSeenInInterval = false, toSnr)
+      EventsourcedReplayingEvents.ReplayingState(lastSequenceNr, state, eventSeenInInterval = false, toSnr, receivedPoisonPill)
     )
   }
 

@@ -7,7 +7,6 @@ package javadsl
 
 import java.util.Optional
 import java.util.concurrent.CompletionStage
-import java.util.function.BiFunction
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -72,7 +71,7 @@ object ClusterSharding {
  * to route the message with the entity id to the final destination.
  *
  * This extension is supposed to be used by first, typically at system startup on each node
- * in the cluster, registering the supported entity types with the [[ClusterSharding#spawn]]
+ * in the cluster, registering the supported entity types with the [[ClusterSharding#init]]
  * method, which returns the `ShardRegion` actor reference for a named entity type.
  * Messages to the entities are always sent via that `ActorRef`, i.e. the local `ShardRegion`.
  * Messages can also be sent via the [[EntityRef]] retrieved with [[ClusterSharding#entityRefFor]],
@@ -176,7 +175,7 @@ abstract class ClusterSharding {
    * @tparam M The type of message the entity accepts
    * @tparam E A possible envelope around the message the entity accepts
    */
-  def start[M, E](entity: Entity[M, E]): ActorRef[E]
+  def init[M, E](entity: Entity[M, E]): ActorRef[E]
 
   /**
    * Create an `ActorRef`-like reference to a specific sharded entity.
@@ -199,7 +198,7 @@ abstract class ClusterSharding {
 object Entity {
 
   /**
-   * Defines how the entity should be created. Used in [[ClusterSharding#start]]. More optional
+   * Defines how the entity should be created. Used in [[ClusterSharding#init]]. More optional
    * settings can be defined using the `with` methods of the returned [[Entity]].
    *
    * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent actors
@@ -212,13 +211,12 @@ object Entity {
    */
   def of[M](
     typeKey:        EntityTypeKey[M],
-    createBehavior: JFunction[EntityContext[M], Behavior[M]],
-    stopMessage:    M): Entity[M, ShardingEnvelope[M]] = {
-    new Entity(createBehavior, typeKey, stopMessage, Props.empty, Optional.empty(), Optional.empty(), Optional.empty())
+    createBehavior: JFunction[EntityContext[M], Behavior[M]]): Entity[M, ShardingEnvelope[M]] = {
+    new Entity(createBehavior, typeKey, Optional.empty(), Props.empty, Optional.empty(), Optional.empty(), Optional.empty())
   }
 
   /**
-   * Defines how the [[PersistentEntity]] should be created. Used in [[ClusterSharding#start]]. Any [[Behavior]] can
+   * Defines how the [[PersistentEntity]] should be created. Used in [[ClusterSharding#init]]. Any [[Behavior]] can
    * be used as a sharded entity actor, but the combination of sharding and persistent actors is very common
    * and therefore this factory is provided as convenience.
    *
@@ -231,8 +229,7 @@ object Entity {
    */
   def ofPersistentEntity[Command, Event, State >: Null](
     typeKey:                EntityTypeKey[Command],
-    createPersistentEntity: JFunction[EntityContext[Command], PersistentEntity[Command, Event, State]],
-    stopMessage:            Command): Entity[Command, ShardingEnvelope[Command]] = {
+    createPersistentEntity: JFunction[EntityContext[Command], PersistentEntity[Command, Event, State]]): Entity[Command, ShardingEnvelope[Command]] = {
 
     of(typeKey, new JFunction[EntityContext[Command], Behavior[Command]] {
       override def apply(ctx: EntityContext[Command]): Behavior[Command] = {
@@ -242,18 +239,18 @@ object Entity {
             s" [${persistentEntity.getClass.getName}] doesn't match expected $typeKey.")
         persistentEntity
       }
-    }, stopMessage)
+    })
   }
 
 }
 
 /**
- * Defines how the entity should be created. Used in [[ClusterSharding#start]].
+ * Defines how the entity should be created. Used in [[ClusterSharding#init]].
  */
 final class Entity[M, E] private[akka] (
   val createBehavior:     JFunction[EntityContext[M], Behavior[M]],
   val typeKey:            EntityTypeKey[M],
-  val stopMessage:        M,
+  val stopMessage:        Optional[M],
   val entityProps:        Props,
   val settings:           Optional[ClusterShardingSettings],
   val messageExtractor:   Optional[ShardingMessageExtractor[E, M]],
@@ -270,6 +267,15 @@ final class Entity[M, E] private[akka] (
    */
   def withSettings(newSettings: ClusterShardingSettings): Entity[M, E] =
     copy(settings = Optional.ofNullable(newSettings))
+
+  /**
+   * Message sent to an entity to tell it to stop, e.g. when rebalanced or passivated.
+   * If this is not defined it will be stopped automatically.
+   * It can be useful to define a custom stop message if the entity needs to perform
+   * some asynchronous cleanup or interactions before stopping.
+   */
+  def withStopMessage(newStopMessage: M): Entity[M, E] =
+    copy(stopMessage = Optional.ofNullable(newStopMessage))
 
   /**
    *
@@ -292,7 +298,7 @@ final class Entity[M, E] private[akka] (
   private def copy(
     createBehavior:     JFunction[EntityContext[M], Behavior[M]] = createBehavior,
     typeKey:            EntityTypeKey[M]                         = typeKey,
-    stopMessage:        M                                        = stopMessage,
+    stopMessage:        Optional[M]                              = stopMessage,
     entityProps:        Props                                    = entityProps,
     settings:           Optional[ClusterShardingSettings]        = settings,
     allocationStrategy: Optional[ShardAllocationStrategy]        = allocationStrategy

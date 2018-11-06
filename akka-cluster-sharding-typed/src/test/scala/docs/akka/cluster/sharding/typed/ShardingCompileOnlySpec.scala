@@ -10,7 +10,7 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.Entity
 import docs.akka.persistence.typed.BlogPostExample
-import docs.akka.persistence.typed.BlogPostExample.{ BlogCommand, PassivatePost }
+import docs.akka.persistence.typed.BlogPostExample.BlogCommand
 
 object ShardingCompileOnlySpec {
 
@@ -29,7 +29,6 @@ object ShardingCompileOnlySpec {
   trait CounterCommand
   case object Increment extends CounterCommand
   final case class GetValue(replyTo: ActorRef[Int]) extends CounterCommand
-  case object GoodByeCounter extends CounterCommand
   //#counter-messages
 
   //#counter
@@ -41,19 +40,16 @@ object ShardingCompileOnlySpec {
       case GetValue(replyTo) ⇒
         replyTo ! value
         Behaviors.same
-      case GoodByeCounter ⇒
-        Behaviors.stopped
     }
   //#counter
 
-  //#start
+  //#init
   val TypeKey = EntityTypeKey[CounterCommand]("Counter")
 
-  val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] = sharding.start(Entity(
+  val shardRegion: ActorRef[ShardingEnvelope[CounterCommand]] = sharding.init(Entity(
     typeKey = TypeKey,
-    createBehavior = ctx ⇒ counter(ctx.entityId, 0),
-    stopMessage = GoodByeCounter))
-  //#start
+    createBehavior = ctx ⇒ counter(ctx.entityId, 0)))
+  //#init
 
   //#send
   // With an EntityRef
@@ -68,15 +64,15 @@ object ShardingCompileOnlySpec {
   //#persistence
   val BlogTypeKey = EntityTypeKey[BlogCommand]("BlogPost")
 
-  ClusterSharding(system).start(Entity(
+  ClusterSharding(system).init(Entity(
     typeKey = BlogTypeKey,
-    createBehavior = ctx ⇒ behavior(ctx.entityId),
-    stopMessage = PassivatePost))
+    createBehavior = ctx ⇒ behavior(ctx.entityId)))
   //#persistence
 
   //#counter-passivate
 
   case object Idle extends CounterCommand
+  case object GoodByeCounter extends CounterCommand
 
   def counter2(shard: ActorRef[ClusterSharding.ShardCommand], entityId: String): Behavior[CounterCommand] = {
     Behaviors.setup { ctx ⇒
@@ -102,10 +98,10 @@ object ShardingCompileOnlySpec {
     }
   }
 
-  sharding.start(Entity(
+  sharding.init(Entity(
     typeKey = TypeKey,
-    createBehavior = ctx ⇒ counter2(ctx.shard, ctx.entityId),
-    stopMessage = GoodByeCounter))
+    createBehavior = ctx ⇒ counter2(ctx.shard, ctx.entityId))
+    .withStopMessage(GoodByeCounter))
   //#counter-passivate
 
 }
