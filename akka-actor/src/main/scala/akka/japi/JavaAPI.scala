@@ -218,7 +218,7 @@ object Option {
 object Util {
 
   /**
-   * Returns `null` cast to `Class[T]`.
+   * Returns `null`, typed to `Class[T]`.
    *
    * <p>Provided for the methods in Akka that have a `Class` parameter used solely for its type
    * parameter, like `Flow.of`.  As such, it is recommended to be used inline, additionally because
@@ -241,7 +241,7 @@ object Util {
    * (From Scala the compiler will replace the call with the correct underlying `Class` value,
    * rather than null).
    */
-  def nullClassValue[T]: Class[T] = null.asInstanceOf[Class[T]]
+  def nullClassValue[T]: Class[T] = null
 
   /**
    * Returns a ClassTag describing the provided Class.
