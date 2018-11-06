@@ -27,18 +27,26 @@ import scala.util.control.NonFatal
 private[akka] object TestProbeImpl {
   private val testActorId = new AtomicInteger(0)
 
-  private case class WatchActor[U](actor: ActorRef[U])
-  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] = Behaviors.receive[M] { (context, message) ⇒
-    message match {
-      case WatchActor(ref) ⇒ context.watch(ref)
-      case other           ⇒ queue.offerLast(other)
+  private final case class WatchActor[U](actor: ActorRef[U])
+  private case object Stop
+
+  private def testActor[M](queue: BlockingDeque[M], terminations: BlockingDeque[Terminated]): Behavior[M] =
+    Behaviors.receive[M] { (context, msg) ⇒
+      msg match {
+        case WatchActor(ref) ⇒
+          context.watch(ref)
+          Behaviors.same
+        case Stop ⇒
+          Behaviors.stopped
+        case other ⇒
+          queue.offerLast(other)
+          Behaviors.same
+      }
+    }.receiveSignal {
+      case (_, t: Terminated) ⇒
+        terminations.offerLast(t)
+        Behaviors.same
     }
-    Behaviors.same
-  }.receiveSignal {
-    case (_, t: Terminated) ⇒
-      terminations.offerLast(t)
-      Behaviors.same
-  }
 }
 
 @InternalApi
@@ -289,5 +297,9 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   private def now: FiniteDuration = System.nanoTime.nanos
 
   private def assertFail(msg: String): Nothing = throw new AssertionError(msg)
+
+  override def stop(): Unit = {
+    testActor.asInstanceOf[ActorRef[AnyRef]] ! Stop
+  }
 
 }
