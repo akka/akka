@@ -207,7 +207,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    * This method is thread-safe and can be called from other threads than the ordinary
    * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
-  def schedule[U](delay: Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable
+  def scheduleOnce[U](delay: Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable
 
   /**
    * This Actor’s execution context. It can be used to run asynchronous tasks
