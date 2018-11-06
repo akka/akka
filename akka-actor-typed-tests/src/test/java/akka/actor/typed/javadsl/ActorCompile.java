@@ -74,7 +74,8 @@ public class ActorCompile {
   }
 
   {
-    Behavior<MyMsg> b = Behaviors.withTimers(timers -> {
+    Behavior<MyMsg> b = Behaviors.withTimers(timers0 -> {
+      final KeyTypedTimerScheduler<String, MyMsg> timers = timers0.withKeyType();
       timers.startPeriodicTimer("key", new MyMsgB("tick"), Duration.ofSeconds(1));
       return Behaviors.ignore();
     });
