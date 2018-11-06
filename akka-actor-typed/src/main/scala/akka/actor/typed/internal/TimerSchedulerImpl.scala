@@ -39,26 +39,26 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class TimerSchedulerImpl[T](ctx: ActorContext[T])
-  extends scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T] {
+@InternalApi private[akka] abstract class KeyTypedTimerSchedulerImpl[-K, T](ctx: ActorContext[T])
+  extends scaladsl.KeyTypedTimerScheduler[K, T] with javadsl.KeyTypedTimerScheduler[K, T] {
   import TimerSchedulerImpl._
 
   private var timers: Map[Any, Timer[T]] = Map.empty
   private val timerGen = Iterator from 1
 
-  override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =
+  override def startPeriodicTimer(key: K, msg: T, interval: FiniteDuration): Unit =
     startTimer(key, msg, interval, repeat = true)
 
-  override def startPeriodicTimer(key: Any, msg: T, interval: java.time.Duration): Unit =
+  override def startPeriodicTimer(key: K, msg: T, interval: java.time.Duration): Unit =
     startPeriodicTimer(key, msg, interval.asScala)
 
-  override def startSingleTimer(key: Any, msg: T, timeout: FiniteDuration): Unit =
+  override def startSingleTimer(key: K, msg: T, timeout: FiniteDuration): Unit =
     startTimer(key, msg, timeout, repeat = false)
 
-  def startSingleTimer(key: Any, msg: T, timeout: java.time.Duration): Unit =
+  def startSingleTimer(key: K, msg: T, timeout: java.time.Duration): Unit =
     startSingleTimer(key, msg, timeout.asScala)
 
-  private def startTimer(key: Any, msg: T, timeout: FiniteDuration, repeat: Boolean): Unit = {
+  private def startTimer(key: K, msg: T, timeout: FiniteDuration, repeat: Boolean): Unit = {
     timers.get(key) match {
       case Some(t) ⇒ cancelTimer(t)
       case None    ⇒
@@ -86,10 +86,10 @@ import scala.concurrent.duration.FiniteDuration
     timers = timers.updated(key, nextTimer)
   }
 
-  override def isTimerActive(key: Any): Boolean =
+  override def isTimerActive(key: K): Boolean =
     timers.contains(key)
 
-  override def cancel(key: Any): Unit = {
+  override def cancel(key: K): Unit = {
     timers.get(key) match {
       case None    ⇒ // already removed/canceled
       case Some(t) ⇒ cancelTimer(t)
@@ -135,6 +135,17 @@ import scala.concurrent.duration.FiniteDuration
         }
     }
   }
+
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] class TimerSchedulerImpl[T](ctx: ActorContext[T])
+  extends KeyTypedTimerSchedulerImpl[Any, T](ctx)
+  with scaladsl.TimerScheduler[T] with javadsl.TimerScheduler[T] {
+
+  override def withKeyType[K]: KeyTypedTimerSchedulerImpl[K, T] = this
 
   def intercept(behavior: Behavior[T]): Behavior[T] = {
     // The scheduled TimerMsg is intercepted to guard against old messages enqueued
