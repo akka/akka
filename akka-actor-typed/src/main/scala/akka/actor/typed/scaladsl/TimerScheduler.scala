@@ -16,6 +16,7 @@ import scala.concurrent.duration.FiniteDuration
  * the actor that owns it.
  */
 trait TimerScheduler[T] {
+  type K = Any
 
   /**
    * Start a periodic timer that will send `msg` to the `self` actor at
@@ -26,7 +27,7 @@ trait TimerScheduler[T] {
    * previous timer is not received, even though it might already be enqueued
    * in the mailbox when the new timer is started.
    */
-  def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit
+  def startPeriodicTimer(key: K, msg: T, interval: FiniteDuration): Unit
 
   /**
    * Start a timer that will send `msg` once to the `self` actor after
@@ -37,12 +38,12 @@ trait TimerScheduler[T] {
    * previous timer is not received, even though it might already be enqueued
    * in the mailbox when the new timer is started.
    */
-  def startSingleTimer(key: Any, msg: T, timeout: FiniteDuration): Unit
+  def startSingleTimer(key: K, msg: T, timeout: FiniteDuration): Unit
 
   /**
    * Check if a timer with a given `key` is active.
    */
-  def isTimerActive(key: Any): Boolean
+  def isTimerActive(key: K): Boolean
 
   /**
    * Cancel a timer with a given `key`.
@@ -53,11 +54,20 @@ trait TimerScheduler[T] {
    * for the same key, will not be received by the actor, even though the message might already
    * be enqueued in the mailbox when cancel is called.
    */
-  def cancel(key: Any): Unit
+  def cancel(key: K): Unit
 
   /**
    * Cancel all timers.
    */
   def cancelAll(): Unit
 
+  /**
+   * Specialises the type of the key to use for the timers.
+   */
+  def withKeyType[K1]: TimerScheduler.KeyTyped[K1, T] = this
+
+}
+
+object TimerScheduler {
+  type KeyTyped[K1, T] = TimerScheduler[T] { type K >: K1 }
 }
