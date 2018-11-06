@@ -110,16 +110,16 @@ import scala.concurrent.duration.FiniteDuration
     timers = Map.empty
   }
 
-  def interceptTimerMsg(ctx: ActorContext[TimerMsg], timerMsg: TimerMsg): T = {
+  def interceptTimerMsg(log: Logger, timerMsg: TimerMsg): T = {
     timers.get(timerMsg.key) match {
       case None ⇒
         // it was from canceled timer that was already enqueued in mailbox
-        ctx.log.debug("Received timer [{}] that has been removed, discarding", timerMsg.key)
+        log.debug("Received timer [{}] that has been removed, discarding", timerMsg.key)
         null.asInstanceOf[T] // message should be ignored
       case Some(t) ⇒
         if (timerMsg.owner ne this) {
           // after restart, it was from an old instance that was enqueued in mailbox before canceled
-          ctx.log.debug("Received timer [{}] from old restarted instance, discarding", timerMsg.key)
+          log.debug("Received timer [{}] from old restarted instance, discarding", timerMsg.key)
           null.asInstanceOf[T] // message should be ignored
         } else if (timerMsg.generation == t.generation) {
           // valid timer
@@ -128,7 +128,7 @@ import scala.concurrent.duration.FiniteDuration
           t.msg
         } else {
           // it was from an old timer that was enqueued in mailbox before canceled
-          ctx.log.debug(
+          log.debug(
             "Received timer [{}] from old generation [{}], expected generation [{}], discarding",
             timerMsg.key, timerMsg.generation, t.generation)
           null.asInstanceOf[T] // message should be ignored
@@ -155,7 +155,7 @@ private final class TimerInterceptor[T](timerSchedulerImpl: TimerSchedulerImpl[T
 
   override def aroundReceive(ctx: typed.ActorContext[AnyRef], msg: AnyRef, target: ReceiveTarget[T]): Behavior[T] = {
     val intercepted = msg match {
-      case msg: TimerMsg ⇒ timerSchedulerImpl.interceptTimerMsg(ctx.asInstanceOf[ActorContext[TimerMsg]], msg)
+      case msg: TimerMsg ⇒ timerSchedulerImpl.interceptTimerMsg(ctx.asScala.log, msg)
       case msg           ⇒ msg.asInstanceOf[T]
     }
 
