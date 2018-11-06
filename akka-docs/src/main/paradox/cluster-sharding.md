@@ -334,6 +334,15 @@ then supposed to stop itself. Incoming messages will be buffered by the `Shard`
 between reception of `Passivate` and termination of the entity. Such buffered messages
 are thereafter delivered to a new incarnation of the entity.
 
+### Automatic Passivation
+
+The entities can be configured to be automatically passivated if they haven't received
+a message for a while using the `akka.cluster.sharding.passivate-idle-entity-after` setting,
+or by explicitly setting `ClusterShardingSettings.passivateIdleEntityAfter` to a suitable
+time to keep the actor alive. Note that only messages sent through sharding are counted, so direct messages
+to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity. 
+By default automatic passivation is disabled. 
+
 <a id="cluster-sharding-remembering"></a>
 ## Remembering Entities
 

@@ -12,6 +12,7 @@ import akka.annotation.InternalApi
 import com.typesafe.config.Config
 import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManagerSettings
+import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {
 
@@ -53,12 +54,17 @@ object ClusterShardingSettings {
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
+    val passivateIdleAfter =
+      if (config.getString("passivate-idle-entity-after").toLowerCase == "off") Duration.Zero
+      else config.getDuration("passivate-idle-entity-after", MILLISECONDS).millis
+
     new ClusterShardingSettings(
       role = roleOption(config.getString("role")),
       rememberEntities = config.getBoolean("remember-entities"),
       journalPluginId = config.getString("journal-plugin-id"),
       snapshotPluginId = config.getString("snapshot-plugin-id"),
       stateStoreMode = config.getString("state-store-mode"),
+      passivateIdleEntityAfter = passivateIdleAfter,
       tuningParameters,
       coordinatorSingletonSettings)
   }
@@ -175,6 +181,7 @@ object ClusterShardingSettings {
         100.milliseconds,
         5)
     }
+
   }
 }
 
@@ -191,6 +198,10 @@ object ClusterShardingSettings {
  *   be used for the internal persistence of ClusterSharding. If not defined the default
  *   snapshot plugin is used. Note that this is not related to persistence used by the entity
  *   actors.
+ * @param passivateIdleEntityAfter Passivate entities that have not received any message in this interval.
+ *   Note that only messages sent through sharding are counted, so direct messages
+ *   to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity.
+ *   Use 0 to disable automatic passivation.
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
  */
 final class ClusterShardingSettings(
@@ -199,8 +210,21 @@ final class ClusterShardingSettings(
   val journalPluginId:              String,
   val snapshotPluginId:             String,
   val stateStoreMode:               String,
+  val passivateIdleEntityAfter:     FiniteDuration,
   val tuningParameters:             ClusterShardingSettings.TuningParameters,
   val coordinatorSingletonSettings: ClusterSingletonManagerSettings) extends NoSerializationVerificationNeeded {
+
+  // included for binary compatibility reasons
+  @deprecated("Use the ClusterShardingSettings factory methods or the constructor including passivateIdleEntityAfter instead", "2.5.18")
+  def this(
+    role:                         Option[String],
+    rememberEntities:             Boolean,
+    journalPluginId:              String,
+    snapshotPluginId:             String,
+    stateStoreMode:               String,
+    tuningParameters:             ClusterShardingSettings.TuningParameters,
+    coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
+    this(role, rememberEntities, journalPluginId, snapshotPluginId, stateStoreMode, Duration.Zero, tuningParameters, coordinatorSingletonSettings)
 
   import ClusterShardingSettings.{ StateStoreModePersistence, StateStoreModeDData }
   require(
@@ -231,6 +255,12 @@ final class ClusterShardingSettings(
   def withStateStoreMode(stateStoreMode: String): ClusterShardingSettings =
     copy(stateStoreMode = stateStoreMode)
 
+  def withPassivateIdleAfter(duration: FiniteDuration): ClusterShardingSettings =
+    copy(passivateIdleAfter = duration)
+
+  def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
+    copy(passivateIdleAfter = duration.asScala)
+
   /**
    * The `role` of the `ClusterSingletonManagerSettings` is not used. The `role` of the
    * coordinator singleton will be the same as the `role` of `ClusterShardingSettings`.
@@ -244,14 +274,17 @@ final class ClusterShardingSettings(
     journalPluginId:              String                                   = journalPluginId,
     snapshotPluginId:             String                                   = snapshotPluginId,
     stateStoreMode:               String                                   = stateStoreMode,
+    passivateIdleAfter:           FiniteDuration                           = passivateIdleEntityAfter,
     tuningParameters:             ClusterShardingSettings.TuningParameters = tuningParameters,
     coordinatorSingletonSettings: ClusterSingletonManagerSettings          = coordinatorSingletonSettings): ClusterShardingSettings =
+
     new ClusterShardingSettings(
       role,
       rememberEntities,
       journalPluginId,
       snapshotPluginId,
       stateStoreMode,
+      passivateIdleAfter,
       tuningParameters,
       coordinatorSingletonSettings)
 }
