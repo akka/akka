@@ -13,7 +13,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
 import akka.annotation.InternalApi
 import akka.actor.testkit.typed.javadsl.{ TestProbe ⇒ JavaTestProbe }
-import akka.actor.testkit.typed.scaladsl.{ TestDuration, TestProbe ⇒ ScalaTestProbe }
+import akka.actor.testkit.typed.scaladsl.{ FishingOutcomes, TestDuration, TestProbe ⇒ ScalaTestProbe }
 import akka.actor.testkit.typed.{ FishingOutcome, TestKitSettings }
 import akka.util.PrettyDuration._
 import akka.util.{ BoxedType, Timeout }
@@ -196,10 +196,12 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
       val maybeMsg = receiveOne(timeout)
       maybeMsg match {
         case Some(message) ⇒
-          val outcome = try fisher(message) catch {
-            case ex: MatchError ⇒ throw new AssertionError(
-              s"Unexpected message $message while fishing for messages, " +
-                s"seen messages ${seen.reverse}, hint: $hint", ex)
+          val outcome = fisher match {
+            // if you pass in a PartialFunction, fish will conveniently handle it as a fail outcome
+            case pf: PartialFunction[M, FishingOutcome] ⇒ pf.applyOrElse(message, (message: M) ⇒
+              FishingOutcomes.fail(s"Unexpected message $message while fishing for messages, " +
+                s"seen messages ${seen.reverse}"))
+            case _ ⇒ fisher(message)
           }
           outcome match {
             case FishingOutcome.Complete    ⇒ (message :: seen).reverse
