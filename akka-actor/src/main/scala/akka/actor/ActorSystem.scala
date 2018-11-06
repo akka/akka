@@ -468,6 +468,11 @@ abstract class ActorSystem extends ActorRefFactory {
   def eventStream: EventStream
 
   /**
+   * Java API: Main event bus of this actor system, used for example for logging.
+   */
+  def getEventStream: EventStream = eventStream
+
+  /**
    * Convenient logging adapter for logging to the [[ActorSystem#eventStream]].
    */
   def log: LoggingAdapter
