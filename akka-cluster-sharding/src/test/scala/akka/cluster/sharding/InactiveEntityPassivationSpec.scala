@@ -88,7 +88,7 @@ class InactiveEntityPassivationSpec extends AkkaSpec(InactiveEntityPassivationSp
       val timeSinceOneSawAMessage = (System.nanoTime() - timeOneSawMessage).nanos
       probe.expectNoMessage(3.seconds - timeSinceOneSawAMessage)
       probe.expectMsg("1 passivating")
-      
+
       // but it can be re activated just fine:
       region ! 1
       region ! 2
