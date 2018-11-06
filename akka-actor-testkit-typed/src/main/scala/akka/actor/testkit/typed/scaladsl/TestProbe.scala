@@ -162,9 +162,10 @@ object TestProbe {
    *  * [[FishingOutcomes.complete]] - successfully complete and return the message
    *  * [[FishingOutcomes.fail]] - fail the test with a custom message
    *
-   * Additionally failures includes the list of messages consumed.  If the `fisher` function is a
-   * partial function (e.g defined with `{ case ... }`) and the message received isn't defined for
-   * it then this will also fail the test, with the error decorated with some fishing details.
+   * Additionally failures includes the list of messages consumed.
+   * If the `fisher` function throws a match error the error
+   * is decorated with some fishing details and the test is failed (making it convenient to use this method with a
+   * partial function).
    *
    * @param max Max total time without the fisher function returning `CompleteFishing` before failing
    *            The timeout is dilated.
