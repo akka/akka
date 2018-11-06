@@ -18,16 +18,8 @@ import scala.concurrent.duration.FiniteDuration
  * INTERNAL API
  */
 @InternalApi private[akka] object TimerSchedulerImpl {
-  sealed trait TimerMsg {
-    def key: Any
-    def generation: Int
-    def owner: AnyRef
-  }
-
   final case class Timer[T](key: Any, msg: T, repeat: Boolean, generation: Int, task: Cancellable)
-  final case class InfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: AnyRef) extends TimerMsg
-  final case class NotInfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: AnyRef)
-    extends TimerMsg with NotInfluenceReceiveTimeout
+  sealed case class TimerMsg(key: Any, generation: Int, owner: AnyRef)
 
   def withTimers[T](factory: TimerSchedulerImpl[T] ⇒ Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
@@ -75,9 +67,9 @@ import scala.concurrent.duration.FiniteDuration
 
     val timerMsg =
       if (msg.isInstanceOf[NotInfluenceReceiveTimeout])
-        NotInfluenceReceiveTimeoutTimerMsg(key, nextGen, this)
+        new TimerMsg(key, nextGen, this) with NotInfluenceReceiveTimeout
       else
-        InfluenceReceiveTimeoutTimerMsg(key, nextGen, this)
+        TimerMsg(key, nextGen, this)
 
     val task =
       if (repeat)
