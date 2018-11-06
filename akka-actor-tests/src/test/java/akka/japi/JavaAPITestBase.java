@@ -11,6 +11,7 @@ import akka.serialization.JavaSerializer;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 import static org.junit.Assert.*;
@@ -75,4 +76,41 @@ public class JavaAPITestBase extends JUnitSuite {
           }
       }));
   }
+
+  @SuppressWarnings("unused") // compilation tests
+  public void mustCompileUtilNullClassValueCases() {
+    // this is the syntax that doesn't compile
+    // final Flow<Optional<String>> f0 = Flow.of(Optional.class);
+    //   incompatible types: inferred type does not conform to equality constraint(s)
+    //     inferred: java.util.Optional<java.lang.String>
+    //     equality constraints(s): java.util.Optional<java.lang.String>,java.util.Optional
+
+    // first test the Java-only alternative
+    @SuppressWarnings("unchecked")
+    final Flow<Optional<String>> f1 = Flow.of((Class<Optional<String>>) (Class<?>) Optional.class);
+
+    // now test our method, for a trivial non-generic type
+    final Flow<String> f2 = Flow.of(Util.nullClassValue());
+
+    // and now with a generic type
+    final Flow<Optional<String>> f3 = Flow.of(Util.nullClassValue());
+
+    // and test the syntax for specifying the type parameter
+    Flow.of(Util.<Optional<String>>nullClassValue());
+  }
+
+  /**
+   * A copy of akka.stream.javadsl.Flow used by
+   * {@link JavaAPITestBase#mustCompileUtilNullClassValueCases()} to test the API usage.
+   */
+  private static final class Flow<T> {
+    static <T> Flow<T> of(@SuppressWarnings("unused") final Class<T> clazz) { return new Flow<>(); }
+  }
+
+  @Test
+  public void shouldReturnNullClassValue() {
+    final Class<Optional<String>> c = Util.nullClassValue();
+    assertNull(c);
+  }
+
 }

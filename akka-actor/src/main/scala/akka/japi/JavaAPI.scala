@@ -218,6 +218,32 @@ object Option {
 object Util {
 
   /**
+   * Returns `null` cast to `Class[T]`.
+   *
+   * <p>Provided for the methods in Akka that have a `Class` parameter used solely for its type
+   * parameter, like `Flow.of`.  As such, it is recommended to be used inline, additionally because
+   * it will allow the type parameter will be inferred, like so:
+   * {{{ Flow.of(Util.nullClassValue()) }}}
+   * but, if necessary, the type parameter can also be specified:
+   * {{{ Flow.of(Util.<Optional<String>>nullClassValue()) }}}
+   *
+   * <p>The motivation for such a method is the fact that Java's `.class` syntax only supports
+   * non-generic types, for example `String.class` to obtain a `Class<String>` value, and cannot
+   * directly return, for instance, a value of type `Class<Optional<String>`.
+   *
+   * <p>The workaround in Java is:
+   * {{{
+   * @SuppressWarnings("unchecked")
+   * Flow.of((Class<Optional<String>>) (Class<?>) Optional.class)
+   * }}}
+   *
+   * <p>This is method is equivalent to calling scala.Predef.classOf from Java.
+   * (From Scala the compiler will replace the call with the correct underlying `Class` value,
+   * rather than null).
+   */
+  def nullClassValue[T]: Class[T] = null.asInstanceOf[Class[T]]
+
+  /**
    * Returns a ClassTag describing the provided Class.
    */
   def classTag[T](clazz: Class[T]): ClassTag[T] = ClassTag(clazz)
