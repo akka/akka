@@ -83,6 +83,19 @@ final class EventHandlerBuilder[State >: Null, Event]() {
   }
 
   /**
+   * Match any event.
+   *
+   * Use this when then `State` is not needed in the `handler`, otherwise there is an overloaded method that pass
+   * the state in a `BiFunction`.
+   */
+  def matchAny(f: JFunction[Event, State]): EventHandler[State, Event] = {
+    matchAny(new BiFunction[State, Event, State] {
+      override def apply(state: State, event: Event): State = f(event)
+    })
+    build()
+  }
+
+  /**
    * Compose this builder with another builder. The handlers in this builder will be tried first followed
    * by the handlers in `other`.
    */

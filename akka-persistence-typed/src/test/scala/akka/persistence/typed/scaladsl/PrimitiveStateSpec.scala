@@ -30,7 +30,7 @@ class PrimitiveStateSpec extends ScalaTestWithActorTestKit(PrimitiveStateSpec.co
       emptyState = 0,
       commandHandler = (_, command) ⇒ {
         if (command < 0)
-          Effect.stop
+          Effect.stop()
         else
           Effect.persist(command)
       },
