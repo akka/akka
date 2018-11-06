@@ -13,7 +13,7 @@ import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.ReplyEffectImpl
 
 /**
- * Factories for effects - how a persistent actor reacts on a command
+ * Factory methods for creating [[Effect]] directives - how a persistent actor reacts on a command.
  */
 object Effect {
 
@@ -58,7 +58,7 @@ object Effect {
    * Stop this persistent actor
    * Side effects can be chained with `andThen`
    */
-  def stop[Event, State]: Effect[Event, State] = none.andThenStop()
+  def stop[Event, State](): Effect[Event, State] = none.thenStop()
 
   /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
@@ -113,9 +113,7 @@ trait Effect[+Event, State] {
     CompositeEffect(this, chainedEffects)
 
   /** The side effect is to stop the actor */
-  def andThenStop(): Effect[Event, State] = {
-    CompositeEffect(this, Stop.asInstanceOf[SideEffect[State]])
-  }
+  def thenStop(): Effect[Event, State]
 
   /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the

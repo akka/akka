@@ -127,7 +127,7 @@ public class NullBlogState {
           .matchCommand(AddPost.class, cmd -> {
             PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
             return Effect().persist(event)
-                .andThen(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
+                .thenRun(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
           })
           .matchCommand(PassivatePost.class, cmd -> Effect().stop());
     }
@@ -136,10 +136,10 @@ public class NullBlogState {
       return commandHandlerBuilder(Objects::nonNull)
           .matchCommand(ChangeBody.class, (state, cmd) -> {
             BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
-            return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
+            return Effect().persist(event).thenRun(() -> cmd.replyTo.tell(Done.getInstance()));
           })
           .matchCommand(Publish.class, (state, cmd) -> Effect()
-              .persist(new Published(state.postId())).andThen(() -> {
+              .persist(new Published(state.postId())).thenRun(() -> {
                 System.out.println("Blog post published: " + state.postId());
                 cmd.replyTo.tell(Done.getInstance());
               }))

@@ -48,7 +48,7 @@ object RecoveryPermitterSpec {
       persistenceId = PersistenceId(name),
       emptyState = EmptyState,
       commandHandler = CommandHandler.command {
-        case StopActor ⇒ Effect.stop
+        case StopActor ⇒ Effect.stop()
         case command   ⇒ commandProbe.ref ! command; Effect.none
       },
       eventHandler = { (state, event) ⇒ eventProbe.ref ! event; state }

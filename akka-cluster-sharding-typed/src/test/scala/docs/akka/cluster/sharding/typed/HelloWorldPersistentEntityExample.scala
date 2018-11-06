@@ -77,7 +77,7 @@ object HelloWorldPersistentEntityExample {
         .thenRun(state ⇒ cmd.replyTo ! Greeting(cmd.whom, state.numberOfPeople))
 
     private def passivate(): Effect[Greeted, KnownPeople] =
-      Effect.stop
+      Effect.stop()
 
     private val eventHandler: (KnownPeople, Greeted) ⇒ KnownPeople = {
       (state, evt) ⇒ state.add(evt.whom)

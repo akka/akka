@@ -176,7 +176,7 @@ public class PersistentActorCompileOnlyTest {
      //#commonChainedEffects
      return commandHandlerBuilder(ExampleState.class)
        .matchCommand(Cmd.class, (state, cmd) -> Effect().persist(new Evt(cmd.data))
-         .andThen(() -> cmd.sender.tell(new Ack()))
+         .thenRun(() -> cmd.sender.tell(new Ack()))
          .andThen(commonChainedEffect)
        )
        .build();
@@ -303,7 +303,7 @@ public class PersistentActorCompileOnlyTest {
         return commandHandlerBuilder(EventsInFlight.class)
           .matchCommand(DoSideEffect.class,
             (state, cmd) -> Effect().persist(new IntentRecord(state.nextCorrelationId, cmd.data))
-              .andThen(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data, ctx.getSystem().scheduler())))
+              .thenRun(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data, ctx.getSystem().scheduler())))
           .matchCommand(AcknowledgeSideEffect.class, (state, command) -> Effect().persist(new SideEffectAcknowledged(command.correlationId)))
           .build();
       }
