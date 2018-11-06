@@ -8,7 +8,7 @@ import java.net.{ Inet6Address, InetAddress }
 
 import akka.actor.Status.Failure
 import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
-import akka.io.FiniteCache
+import akka.io.Ttl
 import akka.io.dns.{ AAAARecord, ARecord, DnsSettings, SRVRecord }
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import com.typesafe.config.ConfigFactory
@@ -67,7 +67,7 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       val r = resolver(List(dnsClient1.ref))
       r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = true))
       dnsClient1.expectMsg(Question4(1, "cats.com"))
-      val ttl = FiniteCache(100.seconds)
+      val ttl = Ttl(100.seconds)
       val ipv4Record = ARecord("cats.com", ttl, InetAddress.getByName("127.0.0.1"))
       dnsClient1.reply(Answer(1, im.Seq(ipv4Record)))
       dnsClient1.expectMsg(Question6(2, "cats.com"))
@@ -105,7 +105,7 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       dnsClient1.expectNoMessage(50.millis)
       val answer = expectMsgType[Resolved]
       answer.records.collect { case r: ARecord ⇒ r }.toSet shouldEqual Set(
-        ARecord("127.0.0.1", FiniteCache.effectivelyForever, InetAddress.getByName("127.0.0.1"))
+        ARecord("127.0.0.1", Ttl.effectivelyForever, InetAddress.getByName("127.0.0.1"))
       )
     }
 
@@ -116,7 +116,7 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       r ! Resolve(name)
       dnsClient1.expectNoMessage(50.millis)
       val answer = expectMsgType[Resolved]
-      val Seq(AAAARecord("1:2:3:0:0:0:0:0", FiniteCache.effectivelyForever, _)) = answer.records.collect { case r: AAAARecord ⇒ r }
+      val Seq(AAAARecord("1:2:3:0:0:0:0:0", Ttl.effectivelyForever, _)) = answer.records.collect { case r: AAAARecord ⇒ r }
     }
 
     "return additional records for SRV requests" in {
@@ -125,8 +125,8 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       val r = resolver(List(dnsClient1.ref, dnsClient2.ref))
       r ! Resolve("cats.com", Srv)
       dnsClient1.expectMsg(SrvQuestion(1, "cats.com"))
-      val srvRecs = im.Seq(SRVRecord("cats.com", FiniteCache(5000.seconds), 1, 1, 1, "a.cats.com"))
-      val aRecs = im.Seq(ARecord("a.cats.com", FiniteCache(1.seconds), InetAddress.getByName("127.0.0.1")))
+      val srvRecs = im.Seq(SRVRecord("cats.com", Ttl(5000.seconds), 1, 1, 1, "a.cats.com"))
+      val aRecs = im.Seq(ARecord("a.cats.com", Ttl(1.seconds), InetAddress.getByName("127.0.0.1")))
       dnsClient1.reply(Answer(1, srvRecs, aRecs))
       dnsClient2.expectNoMessage(50.millis)
       expectMsg(Resolved("cats.com", srvRecs, aRecs))

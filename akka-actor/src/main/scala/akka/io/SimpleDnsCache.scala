@@ -67,9 +67,9 @@ object SimpleDnsCache {
 
     def put(name: K, answer: V, ttl: CachePolicy): Cache[K, V] = {
       val until = ttl match {
-        case CacheForever     ⇒ Long.MaxValue
-        case NeverCache       ⇒ clock() - 1
-        case FiniteCache(ttl) ⇒ clock() + ttl.toMillis
+        case Forever  ⇒ Long.MaxValue
+        case Never    ⇒ clock() - 1
+        case Ttl(ttl) ⇒ clock() + ttl.toMillis
       }
 
       new Cache[K, V](
@@ -118,21 +118,20 @@ object SimpleDnsCache {
 }
 
 sealed trait CachePolicy
-case object NeverCache extends CachePolicy
-case object CacheForever extends CachePolicy
-case class FiniteCache(ttl: FiniteDuration) extends CachePolicy {
-  require(ttl.toSeconds > 0)
+case object Never extends CachePolicy
+case object Forever extends CachePolicy
+case class Ttl(value: FiniteDuration) extends CachePolicy {
+  require(value.toSeconds > 0)
   import akka.util.JavaDurationConverters._
-  def getTtl: java.time.Duration = ttl.asJava
+  def getValue: java.time.Duration = value.asJava
 }
-object FiniteCache {
-  // There's places where only a FiniteCache makes sense (DNS RFC says TTL is a positive 32 but integer)
-  // but we know the value can be cached effectively forever (e.g. the Lookup was the actual IP already)
-  val effectivelyForever: FiniteCache = FiniteCache(Int.MaxValue.seconds)
+object Ttl {
+  // There's places where only a Ttl makes sense (DNS RFC says TTL is a positive 32 but integer)
+  // but we know the value can be cached effectively forever (e.g. the Lookup name was the actual IP already)
+  val effectivelyForever: Ttl = Ttl(Int.MaxValue.seconds)
 
-  implicit object FiniteCacheIsOrdered extends Ordering[FiniteCache] {
-    def compare(a: FiniteCache, b: FiniteCache) = a.ttl.toSeconds compare b.ttl.toSeconds
+  implicit object TtlIsOrdered extends Ordering[Ttl] {
+    def compare(a: Ttl, b: Ttl) = a.value.toSeconds compare b.value.toSeconds
   }
-
 }
 

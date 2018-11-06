@@ -18,7 +18,7 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
         override protected def clock() = localClock.get
       }
       val cacheEntry = Dns.Resolved("test.local", Seq(InetAddress.getByName("127.0.0.1")))
-      cache.put(cacheEntry, FiniteCache(5000.millis))
+      cache.put(cacheEntry, Ttl(5000.millis))
 
       cache.cached("test.local") should ===(Some(cacheEntry))
       localClock.set(4999)
@@ -33,7 +33,7 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
         override protected def clock() = localClock.get
       }
       val cacheEntry = Dns.Resolved("test.local", Seq(InetAddress.getByName("127.0.0.1")))
-      cache.put(cacheEntry, FiniteCache(5000.millis))
+      cache.put(cacheEntry, Ttl(5000.millis))
 
       cache.cached("test.local") should ===(Some(cacheEntry))
       localClock.set(5000)

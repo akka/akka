@@ -8,7 +8,7 @@ import java.net.{ Inet4Address, Inet6Address, InetAddress, InetSocketAddress }
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory }
 import akka.annotation.InternalApi
-import akka.io.FiniteCache
+import akka.io.Ttl
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.dns.internal.DnsClient._
 import akka.io.dns._
@@ -59,8 +59,8 @@ private[io] final class AsyncDnsResolver(
         Try {
           val address = InetAddress.getByName(name) // only checks validity, since known to be IP address
           val record = address match {
-            case _: Inet4Address           ⇒ ARecord(name, FiniteCache.effectivelyForever, address)
-            case ipv6address: Inet6Address ⇒ AAAARecord(name, FiniteCache.effectivelyForever, ipv6address)
+            case _: Inet4Address           ⇒ ARecord(name, Ttl.effectivelyForever, address)
+            case ipv6address: Inet6Address ⇒ AAAARecord(name, Ttl.effectivelyForever, ipv6address)
           }
           DnsProtocol.Resolved(name, record :: Nil)
         }
