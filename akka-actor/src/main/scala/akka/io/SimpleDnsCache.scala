@@ -137,7 +137,7 @@ case object Forever extends CachePolicy
   */
 @InternalApi
 case class Ttl(value: FiniteDuration) extends CachePolicy {
-  require(value > 0)
+  require(value > Duration.Zero)
   import akka.util.JavaDurationConverters._
   def getValue: java.time.Duration = value.asJava
 }
