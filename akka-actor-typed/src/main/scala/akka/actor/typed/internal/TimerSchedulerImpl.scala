@@ -137,7 +137,7 @@ import scala.concurrent.duration.FiniteDuration
         } else {
           // it was from an old timer that was enqueued in mailbox before canceled
           ctx.log.debug(
-            "Received timer [{}] from from old generation [{}], expected generation [{}], discarding",
+            "Received timer [{}] from old generation [{}], expected generation [{}], discarding",
             timerMsg.key, timerMsg.generation, t.generation)
           null.asInstanceOf[T] // message should be ignored
         }
@@ -147,7 +147,7 @@ import scala.concurrent.duration.FiniteDuration
   def intercept(behavior: Behavior[T]): Behavior[T] = {
     // The scheduled TimerMsg is intercepted to guard against old messages enqueued
     // in mailbox before timer was canceled.
-    // Intercept some signals to cancel timers when when restarting and stopping.
+    // Intercept some signals to cancel timers when restarting and stopping.
     BehaviorImpl.intercept(new TimerInterceptor(this))(behavior).asInstanceOf[Behavior[T]]
   }
 
