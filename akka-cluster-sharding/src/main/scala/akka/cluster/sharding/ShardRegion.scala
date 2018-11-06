@@ -7,7 +7,7 @@ package akka.cluster.sharding
 import java.net.URLEncoder
 
 import akka.pattern.AskTimeoutException
-import akka.util.{ MessageBufferMap, Timeout }
+import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
 import akka.pattern.{ ask, pipe }
 import akka.actor._
 import akka.cluster.Cluster
@@ -418,6 +418,8 @@ private[akka] class ShardRegion(
   // subscribe to MemberEvent, re-subscribe when restart
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
+    if (settings.passivateIdleEntityAfter > Duration.Zero)
+      log.info("Idle entities will be passivated after [{}]", PrettyDuration.format(settings.passivateIdleEntityAfter))
   }
 
   override def postStop(): Unit = {
