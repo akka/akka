@@ -273,8 +273,6 @@ private[akka] class Shard(
   def passivate(entity: ActorRef, stopMessage: Any): Unit = {
     idByRef.get(entity) match {
       case Some(id) ⇒ if (!messageBuffers.contains(id)) {
-        log.debug("Passivating started on entity {}", id)
-
         passivating = passivating + entity
         messageBuffers.add(id)
         entity ! stopMessage
@@ -327,21 +325,22 @@ private[akka] class Shard(
       log.warning("Id must not be empty, dropping message [{}]", msg.getClass.getName)
       context.system.deadLetters ! msg
     } else {
-      if (payload.isInstanceOf[ShardRegion.StartEntity]) {
-        // in case it was wrapped, used in Typed
-        receiveStartEntity(payload.asInstanceOf[ShardRegion.StartEntity])
-      } else {
-        messageBuffers.contains(id) match {
-          case false ⇒ deliverTo(id, msg, payload, snd)
+      payload match {
+        case start: ShardRegion.StartEntity ⇒
+          // in case it was wrapped, used in Typed
+          receiveStartEntity(start)
+        case _ ⇒
+          messageBuffers.contains(id) match {
+            case false ⇒ deliverTo(id, msg, payload, snd)
 
-          case true if messageBuffers.totalSize >= bufferSize ⇒
-            log.debug("Buffer is full, dropping message for entity [{}]", id)
-            context.system.deadLetters ! msg
+            case true if messageBuffers.totalSize >= bufferSize ⇒
+              log.debug("Buffer is full, dropping message for entity [{}]", id)
+              context.system.deadLetters ! msg
 
-          case true ⇒
-            log.debug("Message for entity [{}] buffered", id)
-            messageBuffers.append(id, msg, snd)
-        }
+            case true ⇒
+              log.debug("Message for entity [{}] buffered", id)
+              messageBuffers.append(id, msg, snd)
+          }
       }
     }
   }
