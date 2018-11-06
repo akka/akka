@@ -194,7 +194,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
   override def setReceiveTimeout(d: FiniteDuration, message: T): Unit = ()
   override def cancelReceiveTimeout(): Unit = ()
 
-  override def schedule[U](delay: FiniteDuration, target: ActorRef[U], message: U): untyped.Cancellable = new untyped.Cancellable {
+  override def scheduleOnce[U](delay: FiniteDuration, target: ActorRef[U], message: U): untyped.Cancellable = new untyped.Cancellable {
     override def cancel() = false
     override def isCancelled = true
   }

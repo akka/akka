@@ -529,7 +529,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       val probe = TestProbe[String]()
       val actor = spawn(Behaviors.receivePartial[String] {
         case (context, "schedule") ⇒
-          context.schedule(1.second, probe.ref, "scheduled")
+          context.scheduleOnce(1.second, probe.ref, "scheduled")
           Behaviors.same
         case (_, "ping") ⇒
           probe.ref ! "pong"
@@ -554,7 +554,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit(
       val probe = TestProbe[Event]()
       val actor = spawn(Behaviors.receivePartial[Command] {
         case (context, Ping) ⇒
-          context.schedule(1.nano, probe.ref, Pong)
+          context.scheduleOnce(1.nano, probe.ref, Pong)
           Behaviors.same
       }.decorate)
       actor ! Ping

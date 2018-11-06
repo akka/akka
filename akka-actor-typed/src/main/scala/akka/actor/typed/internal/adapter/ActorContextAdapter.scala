@@ -66,7 +66,7 @@ import scala.concurrent.duration._
     untyped.setReceiveTimeout(Duration.Undefined)
   }
   override def executionContext: ExecutionContextExecutor = untyped.dispatcher
-  override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): a.Cancellable = {
+  override def scheduleOnce[U](delay: FiniteDuration, target: ActorRef[U], msg: U): a.Cancellable = {
     import untyped.dispatcher
     untyped.system.scheduler.scheduleOnce(delay, toUntyped(target), msg)
   }

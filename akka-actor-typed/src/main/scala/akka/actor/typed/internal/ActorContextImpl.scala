@@ -72,8 +72,8 @@ import akka.util.JavaDurationConverters._
   override def setReceiveTimeout(d: java.time.Duration, msg: T): Unit =
     setReceiveTimeout(d.asScala, msg)
 
-  override def schedule[U](delay: java.time.Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable =
-    schedule(delay.asScala, target, msg)
+  override def scheduleOnce[U](delay: java.time.Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable =
+    scheduleOnce(delay.asScala, target, msg)
 
   override def spawn[U](behavior: akka.actor.typed.Behavior[U], name: String): akka.actor.typed.ActorRef[U] =
     spawn(behavior, name, Props.empty)

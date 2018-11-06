@@ -177,7 +177,7 @@ object Effect {
   sealed abstract class ReceiveTimeoutCancelled extends Effect
 
   /**
-   * The behavior used `context.schedule` to schedule `message` to be sent to `target` after `delay`
+   * The behavior used `context.scheduleOnce` to schedule `message` to be sent to `target` after `delay`
    * FIXME what about events scheduled through the scheduler?
    */
   final case class Scheduled[U](delay: FiniteDuration, target: ActorRef[U], message: U) extends Effect {
