@@ -67,17 +67,14 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
       formCluster(first, second, third, fourth)
     }
 
-    "start sharding" in {
+    "init sharding" in {
       val sharding = ClusterSharding(typedSystem)
-      val shardRegion: ActorRef[ShardingEnvelope[PingProtocol]] = sharding.start(
-        Entity(
-          typeKey,
-          _ ⇒ multiDcPinger,
-          NoMore))
+      val shardRegion: ActorRef[ShardingEnvelope[PingProtocol]] = sharding.init(
+        Entity(typeKey, _ ⇒ multiDcPinger))
       val probe = TestProbe[Pong]
       shardRegion ! ShardingEnvelope(entityId, Ping(probe.ref))
       probe.expectMessage(max = 10.seconds, Pong(cluster.selfMember.dataCenter))
-      enterBarrier("sharding-started")
+      enterBarrier("sharding-initialized")
     }
 
     "be able to message via entity ref" in {
@@ -99,11 +96,10 @@ abstract class MultiDcClusterShardingSpec extends MultiNodeSpec(MultiDcClusterSh
 
   "be able to message cross dc via proxy" in {
     runOn(first, second) {
-      val proxy: ActorRef[ShardingEnvelope[PingProtocol]] = ClusterSharding(typedSystem).start(
+      val proxy: ActorRef[ShardingEnvelope[PingProtocol]] = ClusterSharding(typedSystem).init(
         Entity(
           typeKey,
-          _ ⇒ multiDcPinger,
-          NoMore)
+          _ ⇒ multiDcPinger)
           .withSettings(ClusterShardingSettings(typedSystem).withDataCenter("dc2")))
       val probe = TestProbe[Pong]
       proxy ! ShardingEnvelope(entityId, Ping(probe.ref))

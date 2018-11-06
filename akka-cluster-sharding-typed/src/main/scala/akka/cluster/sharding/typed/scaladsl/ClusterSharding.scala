@@ -19,7 +19,6 @@ import akka.actor.typed.ExtensionSetup
 import akka.actor.typed.RecipientRef
 import akka.actor.typed.Props
 import akka.actor.typed.internal.InternalRecipientRef
-import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
@@ -27,7 +26,6 @@ import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.cluster.sharding.ShardRegion.{ StartEntity ⇒ UntypedStartEntity }
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.scaladsl.PersistentBehavior
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
 
@@ -74,7 +72,7 @@ object ClusterSharding extends ExtensionId[ClusterSharding] {
  * to route the message with the entity id to the final destination.
  *
  * This extension is supposed to be used by first, typically at system startup on each node
- * in the cluster, registering the supported entity types with the [[ClusterSharding#spawn]]
+ * in the cluster, registering the supported entity types with the [[ClusterSharding#init]]
  * method, which returns the `ShardRegion` actor reference for a named entity type.
  * Messages to the entities are always sent via that `ActorRef`, i.e. the local `ShardRegion`.
  * Messages can also be sent via the [[EntityRef]] retrieved with [[ClusterSharding#entityRefFor]],
@@ -178,7 +176,7 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding �
    * @tparam M The type of message the entity accepts
    * @tparam E A possible envelope around the message the entity accepts
    */
-  def start[M, E](entity: Entity[M, E]): ActorRef[E]
+  def init[M, E](entity: Entity[M, E]): ActorRef[E]
 
   /**
    * Create an `ActorRef`-like reference to a specific sharded entity.
@@ -206,32 +204,30 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding �
 object Entity {
 
   /**
-   * Defines how the entity should be created. Used in [[ClusterSharding#start]]. More optional
+   * Defines how the entity should be created. Used in [[ClusterSharding#init]]. More optional
    * settings can be defined using the `with` methods of the returned [[Entity]].
    *
    * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent actors
    * is very common and therefore [[PersistentEntity]] is provided as a convenience for creating such
-   * [[PersistentBehavior]].
+   * `PersistentBehavior`.
    *
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param createBehavior Create the behavior for an entity given a [[EntityContext]] (includes entityId)
-   * @param stopMessage Message sent to an entity to tell it to stop, e.g. when rebalanced or passivated.
    * @tparam M The type of message the entity accepts
    */
   def apply[M](
     typeKey:        EntityTypeKey[M],
-    createBehavior: EntityContext ⇒ Behavior[M],
-    stopMessage:    M): Entity[M, ShardingEnvelope[M]] =
-    new Entity(createBehavior, typeKey, stopMessage, Props.empty, None, None, None)
+    createBehavior: EntityContext ⇒ Behavior[M]): Entity[M, ShardingEnvelope[M]] =
+    new Entity(createBehavior, typeKey, None, Props.empty, None, None, None)
 }
 
 /**
- * Defines how the entity should be created. Used in [[ClusterSharding#start]].
+ * Defines how the entity should be created. Used in [[ClusterSharding#init]].
  */
 final class Entity[M, E] private[akka] (
   val createBehavior:     EntityContext ⇒ Behavior[M],
   val typeKey:            EntityTypeKey[M],
-  val stopMessage:        M,
+  val stopMessage:        Option[M],
   val entityProps:        Props,
   val settings:           Option[ClusterShardingSettings],
   val messageExtractor:   Option[ShardingMessageExtractor[E, M]],
@@ -248,6 +244,15 @@ final class Entity[M, E] private[akka] (
    */
   def withSettings(newSettings: ClusterShardingSettings): Entity[M, E] =
     copy(settings = Option(newSettings))
+
+  /**
+   * Message sent to an entity to tell it to stop, e.g. when rebalanced or passivated.
+   * If this is not defined it will be stopped automatically.
+   * It can be useful to define a custom stop message if the entity needs to perform
+   * some asynchronous cleanup or interactions before stopping.
+   */
+  def withStopMessage(newStopMessage: M): Entity[M, E] =
+    copy(stopMessage = Option(newStopMessage))
 
   /**
    *
@@ -270,7 +275,7 @@ final class Entity[M, E] private[akka] (
   private def copy(
     createBehavior:     EntityContext ⇒ Behavior[M]     = createBehavior,
     typeKey:            EntityTypeKey[M]                = typeKey,
-    stopMessage:        M                               = stopMessage,
+    stopMessage:        Option[M]                       = stopMessage,
     entityProps:        Props                           = entityProps,
     settings:           Option[ClusterShardingSettings] = settings,
     allocationStrategy: Option[ShardAllocationStrategy] = allocationStrategy
