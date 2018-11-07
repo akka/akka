@@ -12,6 +12,12 @@ import sbt._
 import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
 
+/*
+ * Tools for discovering different Java versions,
+ * will be in sbt 1.3.0 (https://github.com/sbt/sbt/pull/4139 et al)
+ * but until that time replicated here
+ */
+
 case class JavaVersion(numbers: Vector[Long], vendor: Option[String]) {
   def numberStr: String = numbers.mkString(".")
 
@@ -29,8 +35,6 @@ object JavaVersion {
 }
 
 
-/** Tools for discovering different Java versions,
-  * will be in sbt 1.1.7 (https://github.com/sbt/sbt/pull/4139) but until that time replicated here */
 object CrossJava {
   object Keys {
     val discoveredJavaHomes = settingKey[Map[String, File]]("Discovered Java home directories")
