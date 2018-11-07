@@ -1,0 +1,10 @@
+# JsonObjectParser (which is Internal API)'s own internals
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.Comma")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.Backslash")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.DoubleQuote")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.CurlyBraceEnd")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.SquareBraceEnd")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.CurlyBraceStart")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.SquareBraceStart")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.JsonObjectParser.isWhitespace")
+

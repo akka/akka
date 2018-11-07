@@ -1,4 +1,3 @@
-# #25949 adding loglevel for overflow strategy
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.DelayOverflowStrategy.isBackpressure")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.OverflowStrategy.withLogLevel")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.OverflowStrategy.logLevel")
@@ -50,3 +49,4 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.OverflowStrategi
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.OverflowStrategies#DropNew.productIterator")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.OverflowStrategies#DropNew.productPrefix")
 ProblemFilters.exclude[FinalMethodProblem]("akka.stream.OverflowStrategies#DropNew.toString")
+
