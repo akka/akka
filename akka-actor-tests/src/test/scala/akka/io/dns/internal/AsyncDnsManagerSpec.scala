@@ -4,13 +4,15 @@
 
 package akka.io.dns.internal
 
-import java.net.{ Inet6Address, InetAddress }
+import java.net.InetAddress
+
+import akka.io.Dns
+import akka.io.dns.AAAARecord
+import akka.io.dns.DnsProtocol.{ Resolve, Resolved }
+import akka.io.dns.internal.CachePolicy.Ttl
+import akka.testkit.{ AkkaSpec, ImplicitSender }
 
 import scala.collection.immutable.Seq
-import akka.io.{ Dns, Ttl }
-import akka.io.dns.{ AAAARecord, ResourceRecord }
-import akka.io.dns.DnsProtocol.{ Resolve, Resolved }
-import akka.testkit.{ AkkaSpec, ImplicitSender }
 
 class AsyncDnsManagerSpec extends AkkaSpec(
   """

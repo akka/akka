@@ -6,9 +6,11 @@ package akka.io
 
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicLong
-import scala.concurrent.duration._
 
+import akka.io.dns.internal.CachePolicy.Ttl
 import org.scalatest.{ Matchers, WordSpec }
+
+import scala.concurrent.duration._
 
 class SimpleDnsCacheSpec extends WordSpec with Matchers {
   "Cache" should {

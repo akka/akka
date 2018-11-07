@@ -7,7 +7,8 @@ package akka.io.dns.internal
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.annotation.InternalApi
-import akka.io.{ CachePolicy, Dns, PeriodicCacheCleanup }
+import akka.io.{ Dns, PeriodicCacheCleanup }
+import akka.io.dns.internal.CachePolicy.CachePolicy
 
 import scala.collection.immutable
 import akka.io.SimpleDnsCache._

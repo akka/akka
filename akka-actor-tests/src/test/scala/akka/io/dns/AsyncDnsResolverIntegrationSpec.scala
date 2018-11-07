@@ -7,7 +7,8 @@ package akka.io.dns
 import java.net.InetAddress
 
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
-import akka.io.{ Dns, Ttl, IO }
+import akka.io.{ Dns, IO }
+import akka.io.dns.internal.CachePolicy.Ttl
 import akka.pattern.ask
 import akka.testkit.{ AkkaSpec, SocketUtil }
 import akka.util.Timeout

@@ -8,7 +8,7 @@ import java.net.{ Inet4Address, Inet6Address, InetAddress, InetSocketAddress }
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory }
 import akka.annotation.InternalApi
-import akka.io.Ttl
+import akka.io.dns.internal.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.dns.internal.DnsClient._
 import akka.io.dns._

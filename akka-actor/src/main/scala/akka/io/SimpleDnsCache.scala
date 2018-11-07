@@ -8,10 +8,10 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.annotation.InternalApi
 import akka.io.Dns.Resolved
+import akka.io.dns.internal.CachePolicy._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.duration.{ FiniteDuration, _ }
 
 private[io] trait PeriodicCacheCleanup {
   def cleanup(): Unit
@@ -116,42 +116,3 @@ object SimpleDnsCache {
     }
   }
 }
-
-/**
-  * INTERNAL API
-  */
-@InternalApi
-sealed trait CachePolicy
-/**
-  * INTERNAL API
-  */
-@InternalApi
-case object Never extends CachePolicy
-/**
-  * INTERNAL API
-  */
-@InternalApi
-case object Forever extends CachePolicy
-/**
-  * INTERNAL API
-  */
-@InternalApi
-case class Ttl(value: FiniteDuration) extends CachePolicy {
-  require(value > Duration.Zero)
-  import akka.util.JavaDurationConverters._
-  def getValue: java.time.Duration = value.asJava
-}
-/**
-  * INTERNAL API
-  */
-@InternalApi
-object Ttl {
-  // There's places where only a Ttl makes sense (DNS RFC says TTL is a positive 32 but integer)
-  // but we know the value can be cached effectively forever (e.g. the Lookup name was the actual IP already)
-  val effectivelyForever: Ttl = Ttl(Int.MaxValue.seconds)
-
-  implicit object TtlIsOrdered extends Ordering[Ttl] {
-    def compare(a: Ttl, b: Ttl) = a.value.compare(b.value)
-  }
-}
-

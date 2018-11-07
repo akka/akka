@@ -8,8 +8,7 @@ import java.net.{ Inet4Address, Inet6Address, InetAddress }
 
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.{ ApiMayChange, InternalApi }
-import akka.io
-import akka.io.Ttl
+import akka.io.dns.internal.CachePolicy._
 import akka.io.dns.internal.{ DomainName, _ }
 import akka.util.{ ByteIterator, ByteString }
 
@@ -131,7 +130,7 @@ private[dns] object ResourceRecord {
     val recType = it.getShort
     val recClass = it.getShort
     // According to https://www.ietf.org/rfc/rfc1035.txt: "TTL: positive values of a signed 32 bit number."
-    val ttl = io.Ttl(it.getInt.seconds)
+    val ttl = Ttl(it.getInt.seconds)
     val rdLength = it.getShort
     val data = it.clone().take(rdLength)
     it.drop(rdLength)

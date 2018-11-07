@@ -7,6 +7,7 @@ package akka.io
 import java.net.{ InetAddress, UnknownHostException }
 import java.security.Security
 import java.util.concurrent.TimeUnit
+import akka.io.dns.internal.CachePolicy._
 
 import akka.actor.Actor
 import akka.util.Helpers.Requiring
