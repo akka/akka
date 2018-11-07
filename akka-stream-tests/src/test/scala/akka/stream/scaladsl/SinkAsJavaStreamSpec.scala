@@ -24,7 +24,7 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "work in happy case" in {
       val javaSource = Source(1 to 100).runWith(StreamConverters.asJavaStream())
-      javaSource.count() should ===(100)
+      javaSource.count() should ===(100L)
     }
 
     "fail if parent stream is failed" in {
@@ -41,12 +41,12 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "work with empty stream" in {
       val javaSource = Source.empty.runWith(StreamConverters.asJavaStream())
-      javaSource.count() should ===(0)
+      javaSource.count() should ===(0L)
     }
 
     "work with endless stream" in assertAllStagesStopped {
       val javaSource = Source.repeat(1).runWith(StreamConverters.asJavaStream())
-      javaSource.limit(10).count() should ===(10)
+      javaSource.limit(10).count() should ===(10L)
       javaSource.close()
     }
 

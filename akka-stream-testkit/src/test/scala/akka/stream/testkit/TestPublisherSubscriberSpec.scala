@@ -31,7 +31,7 @@ class TestPublisherSubscriberSpec extends AkkaSpec {
 
       upstreamSubscription.sendNext(1)
       downstreamSubscription.request(1)
-      upstream.expectEventPF { case RequestMore(_, e) ⇒ e } should ===(1)
+      upstream.expectEventPF { case RequestMore(_, e) ⇒ e } should ===(1L)
       downstream.expectEventPF { case OnNext(e) ⇒ e } should ===(1)
 
       upstreamSubscription.sendNext(1)
@@ -70,7 +70,7 @@ class TestPublisherSubscriberSpec extends AkkaSpec {
         .expectSubscription()
         .request(10)
 
-      upstream.expectRequest() should ===(10)
+      upstream.expectRequest() should ===(10L)
       upstream.sendNext(1)
       downstream.expectNext(1)
     }
