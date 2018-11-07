@@ -18,7 +18,7 @@ addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.4")
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.3.5")
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.3.4")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.12")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.14")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.12")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "1.0.0")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.1") // for advanced PR validation features
