@@ -74,7 +74,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   override def remaining: FiniteDuration = end match {
     case f: FiniteDuration ⇒ f - now
-    case _                 ⇒ throw new AssertionError("`remaining` may not be called outside of `within`")
+    case _                 ⇒ assertFail("`remaining` may not be called outside of `within`")
   }
 
   override def getRemaining: java.time.Duration = remaining.asJava
@@ -203,7 +203,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
           }
           outcome match {
             case FishingOutcome.Complete    ⇒ (message :: seen).reverse
-            case FishingOutcome.Fail(error) ⇒ throw new AssertionError(s"$error, hint: $hint")
+            case FishingOutcome.Fail(error) ⇒ assertFail(s"$error, hint: $hint")
             case continue: FishingOutcome.ContinueOutcome ⇒
               val newTimeout = timeout - (System.nanoTime() - start).nanos
               continue match {
@@ -213,7 +213,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
           }
 
         case None ⇒
-          throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
+          assertFail(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
       }
     }
 
@@ -270,6 +270,6 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
    */
   private def now: FiniteDuration = System.nanoTime.nanos
 
-  private def assertFail(msg: String): Nothing = throw new AssertionError(s"assertion failed: $msg")
+  private def assertFail(msg: String): Nothing = throw new AssertionError(msg)
 
 }
