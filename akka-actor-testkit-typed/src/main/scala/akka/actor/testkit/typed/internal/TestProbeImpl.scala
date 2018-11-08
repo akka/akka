@@ -134,9 +134,9 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     val o = receiveOne(max)
     val hintOrEmptyString = hint.map(": " + _).getOrElse("")
     o match {
-      case Some(o) if obj == o ⇒ o.asInstanceOf[T]
-      case Some(o)             ⇒ assertFail(s"expected $obj, found $o$hintOrEmptyString")
-      case None ⇒ assertFail(
+      case Some(m) if obj == m ⇒ m.asInstanceOf[T]
+      case Some(m)             ⇒ assertFail(s"expected $obj, found $m$hintOrEmptyString")
+      case None                ⇒ assertFail(
         s"timeout ($max) during expectMessage while waiting for $obj$hintOrEmptyString")
     }
   }
@@ -175,7 +175,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     val o = receiveOne(max)
     o match {
       case None    ⇒ lastWasNoMessage = true
-      case Some(o) ⇒ assertFail(s"received unexpected message $o")
+      case Some(m) ⇒ assertFail(s"received unexpected message $m")
     }
   }
 
@@ -183,9 +183,9 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     val o = receiveOne(max)
     val bt = BoxedType(c)
     o match {
-      case Some(o) if bt isInstance o ⇒ o.asInstanceOf[C]
-      case Some(o)                    ⇒ assertFail(s"expected $c, found ${o.getClass} ($o)")
-      case None ⇒ assertFail(
+      case Some(m) if bt isInstance m ⇒ m.asInstanceOf[C]
+      case Some(m)                    ⇒ assertFail(s"expected $c, found ${m.getClass} ($m)")
+      case None                       ⇒ assertFail(
         s"timeout ($max) during expectMessageClass waiting for $c")
     }
   }
