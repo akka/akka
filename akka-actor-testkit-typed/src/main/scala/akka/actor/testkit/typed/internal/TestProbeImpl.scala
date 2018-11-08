@@ -136,8 +136,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     o match {
       case Some(m) if obj == m ⇒ m.asInstanceOf[T]
       case Some(m)             ⇒ assertFail(s"expected $obj, found $m$hintOrEmptyString")
-      case None                ⇒ assertFail(
-        s"timeout ($max) during expectMessage while waiting for $obj$hintOrEmptyString")
+      case None                ⇒ assertFail(s"timeout ($max) during expectMessage while waiting for $obj$hintOrEmptyString")
     }
   }
 
@@ -185,8 +184,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     o match {
       case Some(m) if bt isInstance m ⇒ m.asInstanceOf[C]
       case Some(m)                    ⇒ assertFail(s"expected $c, found ${m.getClass} ($m)")
-      case None                       ⇒ assertFail(
-        s"timeout ($max) during expectMessageClass waiting for $c")
+      case None                       ⇒ assertFail(s"timeout ($max) during expectMessageClass waiting for $c")
     }
   }
 
