@@ -36,7 +36,7 @@ public class LoggingAdapterTest extends JUnitSuite {
     );
 
     @Rule
-    public AkkaJUnitActorSystemResource actorSystemResource = 
+    public AkkaJUnitActorSystemResource actorSystemResource =
         new AkkaJUnitActorSystemResource("LoggingAdapterTest", config);
 
     private ActorSystem system = null;
@@ -50,7 +50,7 @@ public class LoggingAdapterTest extends JUnitSuite {
     public void mustFormatMessage() {
         final LoggingAdapter log = Logging.getLogger(system, this);
         new LogJavaTestKit(system) {{
-            system.eventStream().subscribe(getRef(), LogEvent.class);
+            system.getEventStream().subscribe(getRef(), LogEvent.class);
             log.error("One arg message: {}", "the arg");
             expectLog(ErrorLevel(), "One arg message: the arg");
 
@@ -82,7 +82,7 @@ public class LoggingAdapterTest extends JUnitSuite {
     @Test
     public void mustCallMdcForEveryLog() throws Exception {
         new LogJavaTestKit(system) {{
-            system.eventStream().subscribe(getRef(), LogEvent.class);
+            system.getEventStream().subscribe(getRef(), LogEvent.class);
             ActorRef ref = system.actorOf(Props.create(ActorWithMDC.class));
 
             ref.tell(new Log(ErrorLevel(), "An Error"), system.deadLetters());
@@ -101,7 +101,7 @@ public class LoggingAdapterTest extends JUnitSuite {
     @Test
     public void mustSupportMdcNull() throws Exception {
         new LogJavaTestKit(system) {{
-            system.eventStream().subscribe(getRef(), LogEvent.class);
+            system.getEventStream().subscribe(getRef(), LogEvent.class);
             ActorRef ref = system.actorOf(Props.create(ActorWithMDC.class));
 
             ref.tell(new Log(InfoLevel(), "Null MDC"), system.deadLetters());
