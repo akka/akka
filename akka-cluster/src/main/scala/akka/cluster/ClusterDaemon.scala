@@ -992,7 +992,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         // ExitingCompleted will be received via CoordinatedShutdown to continue
         // the leaving process. Meanwhile the gossip state is not marked as seen.
         exitingTasksInProgress = true
-        logInfo("Exiting, starting coordinated shutdown")
+        if (coordShutdown.shutdownReason().isEmpty)
+          logInfo("Exiting, starting coordinated shutdown")
         selfExiting.trySuccess(Done)
         coordShutdown.run(CoordinatedShutdown.ClusterLeavingReason)
       }
@@ -1192,7 +1193,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           // ExitingCompleted will be received via CoordinatedShutdown to continue
           // the leaving process. Meanwhile the gossip state is not marked as seen.
           exitingTasksInProgress = true
-          logInfo("Exiting (leader), starting coordinated shutdown")
+          if (coordShutdown.shutdownReason().isEmpty)
+            logInfo("Exiting (leader), starting coordinated shutdown")
           selfExiting.trySuccess(Done)
           coordShutdown.run(CoordinatedShutdown.ClusterLeavingReason)
         }
@@ -1221,6 +1223,23 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     if (pruned ne latestGossip) {
       updateLatestGossip(pruned)
       publishMembershipState()
+      gossipExitingMembersToOldest(changedMembers.filter(_.status == Exiting))
+    }
+  }
+
+  /**
+   * Gossip the Exiting change to the two oldest nodes for quick dissemination to potential Singleton nodes
+   */
+  private def gossipExitingMembersToOldest(exitingMembers: Set[Member]): Unit = {
+    val targets = membershipState.gossipTargetsForExitingMembers(exitingMembers)
+    if (targets.nonEmpty) {
+
+      if (log.isDebugEnabled)
+        log.debug(
+          "Cluster Node [{}] - Gossip exiting members [{}] to the two oldest (per role) [{}] (singleton optimization).",
+          selfAddress, exitingMembers.mkString(", "), targets.mkString(", "))
+
+      targets.foreach(m ⇒ gossipTo(m.uniqueAddress))
     }
   }
 
