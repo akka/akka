@@ -334,7 +334,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
           nextElementValue = elem
         }
       } else {
-        if (activeSubstreamsMap.size == maxSubstreams)
+        if (activeSubstreamsMap.size + closedSubstreams.size == maxSubstreams)
           throw tooManySubstreamsOpenException
         else if (closedSubstreams.contains(key) && !hasBeenPulled(in))
           pull(in)
