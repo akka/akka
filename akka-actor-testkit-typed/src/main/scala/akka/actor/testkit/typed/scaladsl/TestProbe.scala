@@ -154,6 +154,19 @@ object TestProbe {
   protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C
 
   /**
+   * Same as `receiveN(n, remaining)` but correctly taking into account
+   * the timeFactor.
+   */
+  def receiveN(n: Int): immutable.Seq[M] = receiveN_internal(n, remainingOrDefault)
+
+  /**
+   * Receive `n` messages in a row before the given deadline.
+   */
+  def receiveN(n: Int, max: FiniteDuration): immutable.Seq[M] = receiveN_internal(n, max.dilated)
+
+  protected def receiveN_internal(n: Int, max: FiniteDuration): immutable.Seq[M]
+
+  /**
    * Allows for flexible matching of multiple messages within a timeout, the fisher function is fed each incoming
    * message, and returns one of the following effects to decide on what happens next:
    *

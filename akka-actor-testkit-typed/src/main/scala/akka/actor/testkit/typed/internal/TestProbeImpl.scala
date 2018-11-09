@@ -19,6 +19,7 @@ import akka.util.PrettyDuration._
 import akka.util.{ BoxedType, Timeout }
 import akka.util.JavaDurationConverters._
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -178,6 +179,16 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     assert(o != null, s"timeout ($max) during expectMessageClass waiting for $c")
     assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass} ($o)")
     o.asInstanceOf[C]
+  }
+
+  override protected def receiveN_internal(n: Int, max: FiniteDuration): immutable.Seq[M] = {
+    val stop = max + now
+    for (x ← 1 to n) yield {
+      val timeout = stop - now
+      val o = receiveOne(timeout)
+      assert(o != null, s"timeout ($max) while expecting $n messages (got ${x - 1})")
+      o
+    }
   }
 
   override protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): List[M] = {
