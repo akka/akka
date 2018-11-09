@@ -8,6 +8,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 
 import java.time.Duration;
+import java.util.List;
 
 public class TestProbeTest {
 
@@ -46,6 +47,9 @@ public class TestProbeTest {
       // ... something ...
       return "result";
     });
+
+    List<String> messages1 = probe.receiveMessages(3);
+    List<String> messages2 = probe.receiveMessages(3, Duration.ofSeconds(5));
 
   }
 }
