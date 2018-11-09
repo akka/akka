@@ -159,7 +159,7 @@ public class FaultHandlingTest extends AbstractJavaTest {
     EventFilter ex3 = new ErrorFilter(IllegalArgumentException.class);
     EventFilter ex4 = new ErrorFilter(Exception.class);
     EventFilter[] ignoreExceptions = { ex1, ex2, ex3, ex4 };
-    system.eventStream().publish(new TestEvent.Mute(immutableSeq(ignoreExceptions)));
+    system.getEventStream().publish(new TestEvent.Mute(immutableSeq(ignoreExceptions)));
 
     //#create
     Props superprops = Props.create(Supervisor.class);

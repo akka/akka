@@ -99,7 +99,7 @@ class ExamplePersistentActor extends AbstractPersistentActor {
               final Evt evt = new Evt(data + "-" + getNumEvents());
               persist(evt, (Evt e) -> {
                   state.update(e);
-                  getContext().getSystem().eventStream().publish(e);
+                  getContext().getSystem().getEventStream().publish(e);
                   if (lastSequenceNr() % snapShotInterval == 0 && lastSequenceNr() != 0)
                       // IMPORTANT: create a copy of snapshot because ExampleState is mutable
                       saveSnapshot(state.copy());

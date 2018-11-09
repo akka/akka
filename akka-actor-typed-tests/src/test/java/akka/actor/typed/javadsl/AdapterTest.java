@@ -307,16 +307,16 @@ public class AdapterTest extends JUnitSuite {
     akka.actor.ActorRef ignore = system.actorOf(akka.actor.Props.empty());
     ActorRef<String> typedRef = Adapter.spawnAnonymous(system, Typed1.create(ignore, probe.getRef()));
 
-    int originalLogLevel = system.eventStream().logLevel();
+    int originalLogLevel = system.getEventStream().logLevel();
     try {
       // suppress the logging with stack trace
-      system.eventStream().setLogLevel(Integer.MIN_VALUE); // OFF
+      system.getEventStream().setLogLevel(Integer.MIN_VALUE); // OFF
 
       // only stop supervisorStrategy
       typedRef.tell("supervise-stop");
       probe.expectMsg("terminated");
     } finally {
-      system.eventStream().setLogLevel(originalLogLevel);
+      system.getEventStream().setLogLevel(originalLogLevel);
     }
     probe.expectNoMessage(Duration.ofMillis(100)); // no pong
   }
