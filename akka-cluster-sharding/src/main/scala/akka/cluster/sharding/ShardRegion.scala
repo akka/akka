@@ -346,8 +346,8 @@ object ShardRegion {
 
     def receive = {
       case ReceiveTimeout ⇒
-        log.warning("HandOffStopMessage[{}] is not handled by some of the entites of the `{}` shard, " +
-          "force stopping the remaining entities.", stopMessage.getClass.getName, shard)
+        log.warning("HandOffStopMessage[{}] is not handled by some of the entities of the `{}` shard, " +
+          "stopping the remaining entities.", stopMessage.getClass.getName, shard)
 
         remaining.foreach {
           ref ⇒
