@@ -82,7 +82,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         val completion2 = write(lastWrite)
         val result = Await.result(completion2, 3.seconds)
 
-        result.count should ===(lastWrite.flatten.length)
+        result.count should ===(lastWrite.flatten.length.toLong)
         checkFileContents(f, lastWrite.mkString("") + TestLines.mkString("").drop(100))
       }
     }
@@ -101,7 +101,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         val completion2 = write(lastWrite)
         val result = Await.result(completion2, 3.seconds)
 
-        result.count should ===(lastWrite.flatten.length)
+        result.count should ===(lastWrite.flatten.length.toLong)
         checkFileContents(f, lastWrite.mkString(""))
       }
     }

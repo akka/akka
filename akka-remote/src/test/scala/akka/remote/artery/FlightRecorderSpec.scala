@@ -37,19 +37,19 @@ class FlightRecorderSpec extends AkkaSpec {
 
       def checkLogInitialized(log: reader.RollingLog): Unit = {
         log.logs(0).state should ===(Live)
-        log.logs(0).head should ===(0)
+        log.logs(0).head should ===(0L)
         log.logs(0).richEntries.toSeq should ===(Nil)
 
         log.logs(1).state should ===(Empty)
-        log.logs(1).head should ===(0)
+        log.logs(1).head should ===(0L)
         log.logs(1).richEntries.toSeq should ===(Nil)
 
         log.logs(2).state should ===(Empty)
-        log.logs(2).head should ===(0)
+        log.logs(2).head should ===(0L)
         log.logs(2).richEntries.toSeq should ===(Nil)
 
         log.logs(3).state should ===(Empty)
-        log.logs(3).head should ===(0)
+        log.logs(3).head should ===(0L)
         log.logs(3).richEntries.toSeq should ===(Nil)
       }
 
