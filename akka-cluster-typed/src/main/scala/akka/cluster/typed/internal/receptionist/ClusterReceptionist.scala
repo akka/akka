@@ -256,7 +256,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               val tombstonedButReAdded =
                 newRegistry.actorRefsFor(serviceKey).filter(newRegistry.hasTombstone)
               tombstonedButReAdded.foreach { actorRef ⇒
-                ctx.log.info("Saw actorref that was tomstoned {}, re-removing.", actorRef)
+                ctx.log.debug("Saw actorref that was tomstoned {}, re-removing.", actorRef)
                 replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry ⇒
                   ServiceRegistry(registry).removeBinding(serviceKey, Entry(actorRef, setup.selfSystemUid)).toORMultiMap
                 }

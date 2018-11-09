@@ -60,7 +60,7 @@ object RemoteContextAskSpec {
         }
       }
       remote.netty.tcp.port = 0
-      remote.netty.tcp.host = 0
+      remote.netty.tcp.host = 127.0.0.1
       remote.artery {
         canonical {
           hostname = 127.0.0.1
