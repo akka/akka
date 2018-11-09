@@ -13,7 +13,7 @@ class CompressionTableSpec extends AkkaSpec {
       val decomp = CompressionTable(17L, 1, Map("0" → 0, "1" → 1, "2" → 2, "3" → 3)).invert
       decomp.table should ===(Array("0", "1", "2", "3"))
       decomp.originUid should ===(17L)
-      decomp.version should ===(1)
+      decomp.version should ===(1.toByte)
     }
 
     "enforce to start allocating from 0th index" in {
