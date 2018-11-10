@@ -227,7 +227,7 @@ private class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
       scheduleRestart(ctx, t)
   }
 
-  protected def handleReceiveException(ctx: akka.actor.typed.ActorContext[AnyRef], target: BehaviorInterceptor.ReceiveTarget[T]): util.control.Exception.Catcher[akka.actor.typed.Behavior[T]] = {
+  protected def handleReceiveException(ctx: ActorContext[AnyRef], target: BehaviorInterceptor.ReceiveTarget[T]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       try {
         target.signalRestart(ctx)
@@ -237,7 +237,7 @@ private class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
       scheduleRestart(ctx, t)
   }
 
-  protected def handleSignalException(ctx: ActorContext[AnyRef], target: BehaviorInterceptor.SignalTarget[T]): Catcher[akka.actor.typed.Behavior[T]] = {
+  protected def handleSignalException(ctx: ActorContext[AnyRef], target: BehaviorInterceptor.SignalTarget[T]): Catcher[Behavior[T]] = {
     case NonFatal(t: Thr) ⇒
       try {
         target(ctx, PreRestart)
