@@ -203,13 +203,7 @@ private class BackoffSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
             case NonFatal(ex: Thr) if b.maxRestarts > 0 && restartCount >= b.maxRestarts ⇒
               log(ctx, ex)
               Behaviors.stopped
-            case NonFatal(ex: Thr) ⇒
-              log(ctx, ex)
-              val restartDelay = BackoffSupervisor.calculateDelay(restartCount, b.minBackoff, b.maxBackoff, b.randomFactor)
-              ctx.asScala.scheduleOnce(restartDelay, ctx.asScala.self, ScheduledRestart)
-              restartCount += 1
-              blackhole = true
-              Behaviors.empty
+            case NonFatal(ex: Thr) ⇒ scheduleRestart(ctx, ex)
           }
         case ResetRestartCount(current) ⇒
           if (current == restartCount) {
