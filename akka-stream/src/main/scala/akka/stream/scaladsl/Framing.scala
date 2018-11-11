@@ -5,6 +5,7 @@
 package akka.stream.scaladsl
 
 import java.nio.ByteOrder
+import java.util
 
 import akka.NotUsed
 import akka.stream.impl.Stages.DefaultAttributes
@@ -223,40 +224,71 @@ object Framing {
         } else pull(in)
       }
 
-      @tailrec
       private def doParse(): Unit = {
         val possibleMatchPos = buffer.indexOf(firstSeparatorByte, from = nextPossibleMatch)
-        if (possibleMatchPos > maximumLineBytes)
+        if (possibleMatchPos > maximumLineBytes) {
           failStage(new FramingException(s"Read ${buffer.size} bytes " +
             s"which is more than $maximumLineBytes without seeing a line terminator"))
-        else if (possibleMatchPos == -1) {
-          if (buffer.size > maximumLineBytes)
+        } else if (possibleMatchPos == -1) {
+          if (buffer.size > maximumLineBytes) {
             failStage(new FramingException(s"Read ${buffer.size} bytes " +
               s"which is more than $maximumLineBytes without seeing a line terminator"))
-          else {
+          } else {
+            doSubParse(new util.ArrayDeque[ByteString](), possibleMatchPos)
+          }
+        } else {
+          doSubParse(new util.ArrayDeque[ByteString](), possibleMatchPos)
+        }
+      }
+
+      @tailrec
+      private def doSubParse(results: util.ArrayDeque[ByteString], pos: Int = -2): Unit = {
+        val possibleMatchPos = {
+          if (pos > -2) {
+            pos
+          } else {
+            buffer.indexOf(firstSeparatorByte, from = nextPossibleMatch)
+          }
+        }
+
+        // No match but we can release previous results if exists
+        if (possibleMatchPos == -1) {
+          nextPossibleMatch = buffer.size
+          if (results.isEmpty) {
             // No matching character, we need to accumulate more bytes into the buffer
-            nextPossibleMatch = buffer.size
             tryPull()
+          } else {
+            buffer = buffer.compact
+            emitMultiple(out, results.iterator())
           }
         } else if (possibleMatchPos + separatorBytes.size > buffer.size) {
           // We have found a possible match (we found the first character of the terminator
           // sequence) but we don't have yet enough bytes. We remember the position to
           // retry from next time.
           nextPossibleMatch = possibleMatchPos
-          tryPull()
+
+          if (results.isEmpty) {
+            // No matching character, we need to accumulate more bytes into the buffer
+            tryPull()
+          } else {
+            buffer = buffer.compact
+            emitMultiple(out, results.iterator())
+          }
         } else if (buffer.slice(possibleMatchPos, possibleMatchPos + separatorBytes.size) == separatorBytes) {
           // Found a match
-          val parsedFrame = buffer.slice(0, possibleMatchPos).compact
-          buffer = buffer.drop(possibleMatchPos + separatorBytes.size).compact
+          results.add(buffer.slice(0, possibleMatchPos).compact)
+          buffer = buffer.drop(possibleMatchPos + separatorBytes.size)
           nextPossibleMatch = 0
           if (isClosed(in) && buffer.isEmpty) {
-            push(out, parsedFrame)
+            emitMultiple(out, results.iterator())
             completeStage()
-          } else push(out, parsedFrame)
+          } else {
+            doSubParse(results)
+          }
         } else {
           // possibleMatchPos was not actually a match
           nextPossibleMatch += 1
-          doParse()
+          doSubParse(results)
         }
       }
       setHandlers(in, out, this)
