@@ -382,6 +382,7 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
   .dependsOn(actor)
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
+  .settings(OSGi.actorTyped)
   .settings(
     initialCommands := """
       import akka.actor.typed._
@@ -405,6 +406,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .settings(Dependencies.persistenceShared)
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
+  .settings(OSGi.persistenceTyped)
   .disablePlugins(MimaPlugin)
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
