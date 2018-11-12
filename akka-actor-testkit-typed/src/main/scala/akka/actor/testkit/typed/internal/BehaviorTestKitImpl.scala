@@ -7,10 +7,9 @@ package akka.actor.testkit.typed.internal
 import java.util
 
 import akka.actor.ActorPath
-
-import akka.actor.typed.{ Behavior, PostStop, Signal, ActorRef }
+import akka.actor.typed.{ ActorRef, Behavior, PostStop, Signal }
 import akka.annotation.InternalApi
-import akka.actor.testkit.typed.Effect
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
 
 import scala.annotation.tailrec
@@ -138,4 +137,10 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
   }
 
   override def hasEffects(): Boolean = !context.effectQueue.isEmpty
+
+  override def getAllLogEntries(): util.List[CapturedLogEvent] = logEntries().asJava
+
+  override def logEntries(): Seq[CapturedLogEvent] = context.logEntries
+
+  override def clearLog(): Unit = context.clearLog()
 }
