@@ -4,15 +4,15 @@
 
 package akka.stream
 
-import java.util.concurrent.{Semaphore, TimeUnit}
+import java.util.concurrent.{ Semaphore, TimeUnit }
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Framing, Sink, Source}
+import akka.stream.scaladsl.{ Framing, Sink, Source }
 import akka.util.ByteString
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.openjdk.jmh.annotations._
-import org.reactivestreams.{Publisher, Subscriber, Subscription}
+import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -62,7 +62,7 @@ class FramingBenchmark {
   def setup(): Unit = {
     materializer = ActorMaterializer()
 
-    val frame = ByteString(List.range(0, framePerSeq, 1).map(_ => "a" * 128 + "\n").mkString)
+    val frame = ByteString(List.range(0, framePerSeq, 1).map(_ ⇒ "a" * 128 + "\n").mkString)
 
     // Important to use a synchronous, zero overhead source, otherwise the slowness of the source
     // might bias the benchmark, since the stream always adjusts the rate to the slowest stage.
