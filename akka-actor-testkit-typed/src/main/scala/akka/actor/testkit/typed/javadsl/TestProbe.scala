@@ -207,14 +207,14 @@ abstract class TestProbe[M] {
    * Same as `expectMessageType(clazz, remainingOrDefault)`,but using the
    * default timeout as deadline.
    */
-  def expectMessageClass[T](clazz: Class[T]): T =
+  def expectMessageClass[T <: M](clazz: Class[T]): T =
     expectMessageClass_internal(getRemainingOrDefault.asScala, clazz)
 
   /**
    * Wait for a message of type M and return it when it arrives, or fail if the `max` timeout is hit.
    * The timeout is dilated.
    */
-  def expectMessageClass[T](clazz: Class[T], max: Duration): T =
+  def expectMessageClass[T <: M](clazz: Class[T], max: Duration): T =
     expectMessageClass_internal(max.asScala.dilated, clazz)
 
   /**
