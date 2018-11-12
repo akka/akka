@@ -269,7 +269,7 @@ abstract class TestProbe[M] {
     fishForMessage(max, "", fisher)
 
   /**
-   * Same as the other `fishForMessageJava` but includes the provided hint in all error messages
+   * Same as the other `fishForMessage` but includes the provided hint in all error messages
    */
   def fishForMessage(max: Duration, hint: String, fisher: java.util.function.Function[M, FishingOutcome]): java.util.List[M] =
     fishForMessage_internal(max.asScala, hint, fisher.apply).asJava
