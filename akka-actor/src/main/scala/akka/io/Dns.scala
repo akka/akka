@@ -87,21 +87,29 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): DnsExt = super.get(system)
 }
 
-class DnsExt(val system: ExtendedActorSystem) extends IO.Extension {
+/**
+ * Load the resolver from akka.io.dns.<resolverName> with the given <managerName>
+ */
+class DnsExt(val system: ExtendedActorSystem, resolverName: String, managerName: String) extends IO.Extension {
 
-  val Settings = new Settings(system.settings.config.getConfig("akka.io.dns"))
+  /**
+   * Load DNS resolver configured at akka.io.dns.resolver
+   */
+  def this(system: ExtendedActorSystem) = this(system, system.settings.config.getConfig("akka.io.dns").getString("resolver"), "IO-DNS")
 
-  class Settings private[DnsExt] (_config: Config) {
-
-    import _config._
-
-    val Dispatcher: String = getString("dispatcher")
-    val Resolver: String = getString("resolver")
-    val ResolverConfig: Config = getConfig(Resolver)
+  class Settings private[DnsExt] (config: Config, resolverName: String) {
+    def this(config: Config) = this(config, config.getString("resolver"))
+    val Dispatcher: String = config.getString("dispatcher")
+    val Resolver: String = resolverName
+    val ResolverConfig: Config = config.getConfig(Resolver)
     val ProviderObjectName: String = ResolverConfig.getString("provider-object")
 
     override def toString = s"Settings($Dispatcher, $Resolver, $ResolverConfig, $ProviderObjectName)"
   }
+
+  val Settings: Settings = new Settings(system.settings.config.getConfig("akka.io.dns"), resolverName)
+
+  system.log.debug("Using settings: {}", Settings)
 
   val provider: DnsProvider = system.dynamicAccess.getClassFor[DnsProvider](Settings.ProviderObjectName).get.newInstance()
   val cache: Dns = provider.cache
@@ -109,7 +117,7 @@ class DnsExt(val system: ExtendedActorSystem) extends IO.Extension {
   val manager: ActorRef = {
     system.systemActorOf(
       props = Props(provider.managerClass, this).withDeploy(Deploy.local).withDispatcher(Settings.Dispatcher),
-      name = "IO-DNS")
+      name = managerName)
   }
 
   def getResolver: ActorRef = manager
