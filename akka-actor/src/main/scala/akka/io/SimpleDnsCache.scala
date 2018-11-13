@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.annotation.InternalApi
 import akka.io.Dns.Resolved
-import akka.io.dns.internal.CachePolicy._
+import akka.io.dns.CachePolicy._
 
 import scala.annotation.tailrec
 import scala.collection.immutable

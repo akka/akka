@@ -8,7 +8,7 @@ import java.net.{ Inet4Address, Inet6Address, InetAddress }
 
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.{ ApiMayChange, InternalApi }
-import akka.io.dns.internal.CachePolicy._
+import CachePolicy._
 import akka.io.dns.internal.{ DomainName, _ }
 import akka.util.{ ByteIterator, ByteString }
 

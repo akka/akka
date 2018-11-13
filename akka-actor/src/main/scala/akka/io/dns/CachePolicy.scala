@@ -1,43 +1,23 @@
-/*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
- */
+package akka.io.dns
 
-package akka.io.dns.internal
+import akka.annotation.ApiMayChange
 
-import akka.annotation.InternalApi
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.concurrent.duration._
+import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
 
 object CachePolicy {
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
+  @ApiMayChange
   sealed trait CachePolicy
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
+  @ApiMayChange
   case object Never extends CachePolicy
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
+  @ApiMayChange
   case object Forever extends CachePolicy
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
+  @ApiMayChange
   sealed abstract case class Ttl(value: FiniteDuration) extends CachePolicy {
     import akka.util.JavaDurationConverters._
     def getValue: java.time.Duration = value.asJava
   }
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
+  @ApiMayChange
   object Ttl {
     def fromPositive(value: FiniteDuration): Ttl = {
       if (value <= Duration.Zero) throw new IllegalArgumentException(s"TTL values must be a positive.")

@@ -10,7 +10,7 @@ import akka.actor.Status.Failure
 import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
 import akka.io.dns.DnsProtocol._
 import akka.io.dns.internal.AsyncDnsResolver.ResolveFailedException
-import akka.io.dns.internal.CachePolicy.Ttl
+import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.internal.DnsClient.{ Answer, Question4, Question6, SrvQuestion }
 import akka.io.dns.{ AAAARecord, ARecord, DnsSettings, SRVRecord }
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }

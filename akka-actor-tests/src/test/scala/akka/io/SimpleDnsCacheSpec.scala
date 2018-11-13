@@ -7,7 +7,7 @@ package akka.io
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicLong
 
-import akka.io.dns.internal.CachePolicy.Ttl
+import akka.io.dns.CachePolicy.Ttl
 import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.duration._
