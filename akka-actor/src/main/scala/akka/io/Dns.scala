@@ -95,7 +95,7 @@ class DnsExt(val system: ExtendedActorSystem, resolverName: String, managerName:
   /**
    * Load DNS resolver configured at akka.io.dns.resolver
    */
-  def this(system: ExtendedActorSystem) = this(system, system.settings.config.getConfig("akka.io.dns").getString("resolver"), "IO-DNS")
+  def this(system: ExtendedActorSystem) = this(system, system.settings.config.getString("akka.io.dns.resolver"), "IO-DNS")
 
   class Settings private[DnsExt] (config: Config, resolverName: String) {
     def this(config: Config) = this(config, config.getString("resolver"))
@@ -108,8 +108,6 @@ class DnsExt(val system: ExtendedActorSystem, resolverName: String, managerName:
   }
 
   val Settings: Settings = new Settings(system.settings.config.getConfig("akka.io.dns"), resolverName)
-
-  system.log.debug("Using settings: {}", Settings)
 
   val provider: DnsProvider = system.dynamicAccess.getClassFor[DnsProvider](Settings.ProviderObjectName).get.newInstance()
   val cache: Dns = provider.cache
