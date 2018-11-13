@@ -4,7 +4,8 @@
 
 package akka.io.dns
 
-import java.net.InetAddress
+import java.net.{ DatagramSocket, InetAddress, InetSocketAddress }
+import java.nio.channels.DatagramChannel
 
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.{ Dns, IO }
@@ -13,6 +14,7 @@ import akka.testkit.{ AkkaSpec, SocketUtil }
 import akka.util.Timeout
 
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 /*
 These tests rely on a DNS server with 2 zones configured, foo.test and bar.example.
@@ -152,6 +154,24 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
 
   }
 }
+
 object AsyncDnsResolverIntegrationSpec {
-  lazy val dockerDnsServerPort = SocketUtil.temporaryLocalPort()
+  lazy val dockerDnsServerPort: Int = {
+    def freePort(tries: Int): Int = {
+      if (tries == 0) {
+        throw new RuntimeException("Unable to find a port that is free for tcp and udp")
+      }
+      val tcpPort = SocketUtil.temporaryLocalPort()
+      val ds: DatagramSocket = DatagramChannel.open().socket()
+      try {
+        ds.bind(new InetSocketAddress("localhost", tcpPort))
+        tcpPort
+      } catch {
+        case NonFatal(_) ⇒ freePort(tries - 1)
+      } finally {
+        ds.close()
+      }
+    }
+    freePort(5)
+  }
 }
