@@ -140,7 +140,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
 
   override def getAllLogEntries(): util.List[CapturedLogEvent] = logEntries().asJava
 
-  override def logEntries(): Seq[CapturedLogEvent] = context.logEntries
+  override def logEntries(): immutable.Seq[CapturedLogEvent] = context.logEntries
 
   override def clearLog(): Unit = context.clearLog()
 }

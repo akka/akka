@@ -136,7 +136,7 @@ trait BehaviorTestKit[T] {
   /**
    * Returns all the [[CapturedLogEvent]] issued by this behavior(s)
    */
-  def logEntries(): Seq[CapturedLogEvent]
+  def logEntries(): immutable.Seq[CapturedLogEvent]
 
   /**
    * Clear the log entries
