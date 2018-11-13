@@ -6,7 +6,7 @@ about: Create a report to help us improve
 
 <!--
 Please report issues regarding specific projects in their respective issue trackers, e.g.:
- - Akka-HTTP: https://github.com/akka/akka-http/issues
+ - Akka HTTP: https://github.com/akka/akka-http/issues
  - Alpakka:   https://github.com/akka/alpakka/issues
  - Akka Persistence Cassandra Plugin: https://github.com/akka/akka-persistence-cassandra/issues
  - ...
