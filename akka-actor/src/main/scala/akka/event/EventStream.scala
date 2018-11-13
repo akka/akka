@@ -23,7 +23,7 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
 
   def this(sys: ActorSystem) = this(sys, debug = false)
 
-  type Event = AnyRef
+  type Event = Any
   type Classifier = Class[_]
 
   /** Either the list of subscribed actors, or a ref to an [[akka.event.EventStreamUnsubscriber]] */
@@ -34,9 +34,9 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
     def isSubclass(x: Class[_], y: Class[_]) = y isAssignableFrom x
   }
 
-  protected def classify(event: AnyRef): Class[_] = event.getClass
+  protected def classify(event: Any): Class[_] = event.getClass
 
-  protected def publish(event: AnyRef, subscriber: ActorRef) = {
+  protected def publish(event: Any, subscriber: ActorRef) = {
     if (sys == null && subscriber.isTerminated) unsubscribe(subscriber)
     else subscriber ! event
   }
