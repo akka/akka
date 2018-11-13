@@ -35,6 +35,8 @@ object OSGi {
     // dynamicImportPackage needed for loading classes defined in configuration
     OsgiKeys.dynamicImportPackage := Seq("*"))
 
+  val actorTyped = exports(Seq("akka.actor.typed.*"))
+
   val agent = exports(Seq("akka.agent.*"))
 
   val camel = exports(Seq("akka.camel.*"))
@@ -91,8 +93,16 @@ object OSGi {
     exports(
       packages = Seq(
         "akka.stream.*",
-        "com.typesafe.sslconfig.akka.*"),
-      imports = Seq(scalaJava8CompatImport(), scalaParsingCombinatorImport(), sslConfigCoreImport(), sslConfigCoreSslImport(), sslConfigCoreUtilImport()))
+        "com.typesafe.sslconfig.akka.*"
+      ),
+      imports = Seq(
+        scalaJava8CompatImport(),
+        scalaParsingCombinatorImport(),
+        sslConfigCoreImport("com.typesafe.sslconfig.ssl.*"),
+        sslConfigCoreImport("com.typesafe.sslconfig.util.*"),
+        "!com.typesafe.sslconfig.akka.*"
+      )
+    )
 
   val streamTestkit = exports(Seq("akka.stream.testkit.*"))
 
@@ -100,7 +110,13 @@ object OSGi {
 
   val persistence = exports(
     Seq("akka.persistence.*"),
-    imports = Seq(optionalResolution("org.fusesource.leveldbjni.*"), optionalResolution("org.iq80.leveldb.*")))
+    imports = Seq(
+      optionalResolution("org.fusesource.leveldbjni.*"), 
+      optionalResolution("org.iq80.leveldb.*")
+    )
+  )
+
+  val persistenceTyped = exports(Seq("akka.persistence.typed.*"))
 
   val persistenceQuery = exports(Seq("akka.persistence.query.*"))
 
