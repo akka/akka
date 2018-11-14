@@ -7,9 +7,9 @@ package akka.io
 import java.net.{ InetAddress, UnknownHostException }
 import java.security.Security
 import java.util.concurrent.TimeUnit
-import akka.io.dns.CachePolicy._
 
-import akka.actor.Actor
+import akka.io.dns.CachePolicy._
+import akka.actor.{ Actor, ActorLogging }
 import akka.util.Helpers.Requiring
 import com.typesafe.config.Config
 
@@ -18,7 +18,7 @@ import scala.concurrent.duration._
 import scala.util.Try
 
 /** Respects the settings that can be set on the Java runtime via parameters. */
-class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Actor {
+class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Actor with ActorLogging {
 
   // Controls the cache policy for successful lookups only
   private final val CachePolicyProp = "networkaddress.cache.ttl"
@@ -36,13 +36,19 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
     Try(Security.getProperty(CachePolicyProp).toInt)
       .orElse(Try(System.getProperty(CachePolicyPropFallback).toInt))
       .map(parsePolicy)
-      .getOrElse(DefaultPositive) // default
+      .getOrElse {
+        log.warning("Using default value {} for address cache.", DefaultPositive)
+        DefaultPositive
+      }
 
   private lazy val defaultNegativeCachePolicy: CachePolicy =
     Try(Security.getProperty(NegativeCachePolicyProp).toInt)
       .orElse(Try(System.getProperty(NegativeCachePolicyPropFallback).toInt))
       .map(parsePolicy)
-      .getOrElse(Never) // default
+      .getOrElse {
+        log.warning("Using default value {} for negative caching of addresses.", Never)
+        Never
+      }
 
   private def parsePolicy(n: Int): CachePolicy = {
     n match {
@@ -59,7 +65,7 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
       case "never"   ⇒ Never
       case _ ⇒ {
         val finiteTtl = config
-          .getDuration(path, TimeUnit.MILLISECONDS)
+          .getDuration(path, TimeUnit.SECONDS)
           .requiring(_ > 0, s"akka.io.dns.$path must be 'default', 'forever', 'never' or positive duration")
         Ttl.fromPositive(finiteTtl.seconds)
       }
