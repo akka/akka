@@ -31,6 +31,10 @@ abstract class ClusterLogSpec(config: Config) extends AkkaSpec(config) with Impl
 
   protected val selfAddress: Address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 
+  protected val upLogMessage = " - event MemberUp"
+
+  protected val downLogMessage = " - event MemberDowned"
+
   protected val cluster = Cluster(system)
 
   protected def clusterView: ClusterReadView = cluster.readView
@@ -60,6 +64,8 @@ class ClusterLogDefaultSpec extends ClusterLogSpec(ClusterLogSpec.config) {
   "A Cluster" must {
 
     "Log a message when becoming and stopping being a leader" in {
+      cluster.settings.LogInfo should ===(true)
+      cluster.settings.LogInfoVerbose should ===(false)
       join("is the new leader")
       awaitUp()
       down("is no longer the leader")
@@ -67,14 +73,7 @@ class ClusterLogDefaultSpec extends ClusterLogSpec(ClusterLogSpec.config) {
   }
 }
 
-abstract class ClusterLogVerboseSpec(config: Config) extends ClusterLogSpec(config) {
-
-  protected val upLogMessage = " - event MemberUp"
-
-  protected val downLogMessage = " - event MemberDowned"
-}
-
-class ClusterLogVerboseDefaultSpec extends ClusterLogVerboseSpec(
+class ClusterLogVerboseDefaultSpec extends ClusterLogSpec(
   ConfigFactory.parseString(ClusterLogSpec.config)) {
 
   "A Cluster" must {
@@ -88,7 +87,7 @@ class ClusterLogVerboseDefaultSpec extends ClusterLogVerboseSpec(
   }
 }
 
-class ClusterLogVerboseEnabledSpec extends ClusterLogVerboseSpec(
+class ClusterLogVerboseEnabledSpec extends ClusterLogSpec(
   ConfigFactory.parseString("akka.cluster.log-info-verbose = on").
     withFallback(ConfigFactory.parseString(ClusterLogSpec.config))) {
 
@@ -102,4 +101,3 @@ class ClusterLogVerboseEnabledSpec extends ClusterLogVerboseSpec(
     }
   }
 }
-
