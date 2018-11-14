@@ -145,7 +145,7 @@ class FutureDocSpec extends AkkaSpec {
 
     // Then shut your ExecutionContext down at some
     // appropriate place in your program/application
-    ec.shutdown()
+    yourExecutorServiceGoesHere.shutdown()
     //#diy-execution-context
   }
 
