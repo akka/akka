@@ -130,7 +130,7 @@ private[dns] object ResourceRecord {
     val recType = it.getShort
     val recClass = it.getShort
     // According to https://www.ietf.org/rfc/rfc1035.txt: "TTL: positive values of a signed 32 bit number."
-    val ttl = Ttl.fromPositive(it.getInt.seconds)
+    val ttl = Ttl(it.getInt.seconds)
     val rdLength = it.getShort
     val data = it.clone().take(rdLength)
     it.drop(rdLength)
