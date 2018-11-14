@@ -39,6 +39,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   private val cc = config.getConfig("akka.cluster")
 
   val LogInfo: Boolean = cc.getBoolean("log-info")
+  val LogInfoVerbose: Boolean = cc.getBoolean("log-info-verbose")
   val FailureDetectorConfig: Config = cc.getConfig("failure-detector")
   val FailureDetectorImplementationClass: String = FailureDetectorConfig.getString("implementation-class")
   val HeartbeatInterval: FiniteDuration = {
