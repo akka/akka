@@ -22,18 +22,13 @@ object CachePolicy {
     import akka.util.JavaDurationConverters._
     def getValue: java.time.Duration = value.asJava
 
-    def canEqual(other: Any): Boolean = other.isInstanceOf[Ttl]
-
     override def equals(other: Any): Boolean = other match {
-      case that: Ttl ⇒
-        (that canEqual this) &&
-          value == that.value
-      case _ ⇒ false
+      case that: Ttl ⇒ value == that.value
+      case _         ⇒ false
     }
 
     override def hashCode(): Int = {
-      val state = Seq(value)
-      state.map(_.hashCode()).foldLeft(0)((a, b) ⇒ 31 * a + b)
+      java.util.Objects.hash(value)
     }
 
     override def toString = s"Ttl($value)"
