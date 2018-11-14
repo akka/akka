@@ -19,6 +19,7 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.testkit.{ EventFilter, TestKit, TestLatch, TestProbe }
 import akka.testkit.SocketUtil.temporaryServerAddress
+import akka.testkit.WithLogCapturing
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.typesafe.config.ConfigFactory
@@ -31,9 +32,11 @@ import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.util.control.NonFatal
 
 class TcpSpec extends StreamSpec("""
-    akka.loglevel = info
+    akka.loglevel = debug
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    akka.io.tcp.trace-logging = true
     akka.stream.materializer.subscription-timeout.timeout = 2s
-  """) with TcpHelper {
+  """) with TcpHelper with WithLogCapturing {
 
   "Outgoing TCP stream" must {
 

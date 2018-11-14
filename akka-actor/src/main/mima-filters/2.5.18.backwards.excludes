@@ -46,4 +46,12 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.UnknownRecord
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.UnknownRecord.ttlInSeconds")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.UnknownRecord.ttl")
 
+# Changes to internal implementation classes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.TcpConnection.stopWith")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.TcpConnection.closedMessage_=")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.TcpConnection.closedMessage")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.TcpConnection.abort")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.ChannelRegistration.cancel")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancelAndClose")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.SelectionHandler#ChannelRegistryImpl.this")
 
