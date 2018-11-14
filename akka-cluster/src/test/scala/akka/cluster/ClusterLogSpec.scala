@@ -5,8 +5,8 @@
 package akka.cluster
 
 import akka.actor.{ Address, ExtendedActorSystem }
-import akka.cluster.InternalClusterAction.LeaderActionsTick
 import akka.testkit.{ AkkaSpec, EventFilter, ImplicitSender }
+import com.typesafe.config.{ Config, ConfigFactory }
 
 object ClusterLogSpec {
   val config = """
@@ -25,33 +25,82 @@ object ClusterLogSpec {
 
 }
 
-class ClusterLogSpec extends AkkaSpec(ClusterLogSpec.config) with ImplicitSender {
+abstract class ClusterLogSpec(config: Config) extends AkkaSpec(config) with ImplicitSender {
 
-  val selfAddress: Address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  def this(s: String) = this(ConfigFactory.parseString(s))
 
-  val cluster = Cluster(system)
-  def clusterView: ClusterReadView = cluster.readView
+  protected val selfAddress: Address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+
+  protected val cluster = Cluster(system)
+
+  protected def clusterView: ClusterReadView = cluster.readView
+
+  protected def awaitUp(): Unit = {
+    awaitCond(clusterView.isSingletonCluster)
+    clusterView.self.address should ===(selfAddress)
+    clusterView.members.map(_.address) should ===(Set(selfAddress))
+    awaitAssert(clusterView.status should ===(MemberStatus.Up))
+  }
+
+  /** The expected log info pattern to intercept after a `cluster.join`. */
+  protected def join(expected: String): Unit =
+    EventFilter.
+      info(occurrences = 1, pattern = expected).
+      intercept(cluster.join(selfAddress))
+
+  /** The expected log info pattern to intercept after a `cluster.down`. */
+  protected def down(expected: String): Unit =
+    EventFilter.
+      info(occurrences = 1, pattern = expected).
+      intercept(cluster.down(selfAddress))
+}
+
+class ClusterLogDefaultSpec extends ClusterLogSpec(ClusterLogSpec.config) {
 
   "A Cluster" must {
 
     "Log a message when becoming and stopping being a leader" in {
-      EventFilter
-        .info(occurrences = 1, pattern = "is the new leader")
-        .intercept {
-          cluster.join(selfAddress)
-        }
-
-      awaitCond(clusterView.isSingletonCluster)
-      clusterView.self.address should ===(selfAddress)
-      clusterView.members.map(_.address) should ===(Set(selfAddress))
-      awaitAssert(clusterView.status should ===(MemberStatus.Up))
-
-      EventFilter
-        .info(occurrences = 1, pattern = "is no longer the leader")
-        .intercept {
-          cluster.down(selfAddress)
-        }
+      join("is the new leader")
+      awaitUp()
+      down("is no longer the leader")
     }
-
   }
 }
+
+abstract class ClusterLogVerboseSpec(config: Config) extends ClusterLogSpec(config) {
+
+  def this(s: String) = this(ConfigFactory.parseString(s))
+
+  protected val upLogMessage = " - event MemberUp"
+
+  protected val downLogMessage = " - event MemberDowned"
+}
+
+class ClusterLogVerboseDefaultSpec extends ClusterLogVerboseSpec(ClusterLogSpec.config) {
+
+  "A Cluster" must {
+
+    "not log verbose cluster events by default" in {
+      cluster.settings.LogInfoVerbose should ===(false)
+      intercept[AssertionError](join(upLogMessage))
+      awaitUp()
+      intercept[AssertionError](down(downLogMessage))
+    }
+  }
+}
+
+class ClusterLogVerboseEnabledSpec extends ClusterLogVerboseSpec(
+  ConfigFactory.parseString("akka.cluster.log-info-verbose = on").
+    withFallback(ConfigFactory.parseString(ClusterLogSpec.config))) {
+
+  "A Cluster" must {
+
+    "log verbose cluster events when 'log-info-verbose = on'" in {
+      cluster.settings.LogInfoVerbose should ===(true)
+      join(upLogMessage)
+      awaitUp()
+      down(downLogMessage)
+    }
+  }
+}
+
