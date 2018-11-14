@@ -36,13 +36,13 @@ object CachePolicy {
   @ApiMayChange
   object Ttl {
     def unapply(ttl: Ttl): Option[FiniteDuration] = Some(ttl.value)
-    def apply(value: FiniteDuration): Ttl = {
+    def fromPositive(value: FiniteDuration): Ttl = {
       new Ttl(value)
     }
 
     // There's places where only a Ttl makes sense (DNS RFC says TTL is a positive 32 bit integer)
     // but we know the value can be cached effectively forever (e.g. the Lookup name was the actual IP already)
-    val effectivelyForever: Ttl = Ttl(Int.MaxValue.seconds)
+    val effectivelyForever: Ttl = fromPositive(Int.MaxValue.seconds)
 
     implicit object TtlIsOrdered extends Ordering[Ttl] {
       def compare(a: Ttl, b: Ttl) = a.value.compare(b.value)
