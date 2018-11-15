@@ -105,7 +105,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
             case _: SeenChanged ⇒ // ignore
             case event ⇒
               if (cluster.settings.LogInfoVerbose)
-                logInfo("Cluster Node [{}] - event {}", selfAddress, event)
+                logInfo(" - event {}", selfAddress, event)
           }
 
         case s: CurrentClusterState ⇒ _state = s
