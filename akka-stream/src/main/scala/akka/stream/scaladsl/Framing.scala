@@ -229,13 +229,9 @@ object Framing {
         if (possibleMatchPos > maximumLineBytes) {
           failStage(new FramingException(s"Read ${buffer.size} bytes " +
             s"which is more than $maximumLineBytes without seeing a line terminator"))
-        } else if (possibleMatchPos == -1) {
-          if (buffer.size > maximumLineBytes) {
-            failStage(new FramingException(s"Read ${buffer.size} bytes " +
-              s"which is more than $maximumLineBytes without seeing a line terminator"))
-          } else {
-            doSubParse(new util.ArrayDeque[ByteString](), possibleMatchPos)
-          }
+        } else if (possibleMatchPos == -1 && buffer.size > maximumLineBytes) {
+          failStage(new FramingException(s"Read ${buffer.size} bytes " +
+            s"which is more than $maximumLineBytes without seeing a line terminator"))
         } else {
           doSubParse(new util.ArrayDeque[ByteString](), possibleMatchPos)
         }
@@ -244,11 +240,9 @@ object Framing {
       @tailrec
       private def doSubParse(results: util.ArrayDeque[ByteString], pos: Int = -2): Unit = {
         val possibleMatchPos = {
-          if (pos > -2) {
-            pos
-          } else {
-            buffer.indexOf(firstSeparatorByte, from = nextPossibleMatch)
-          }
+          // Avoid to recompute when pos > -2 because we already compute a pos earlier.
+          if (pos > -2) pos
+          else buffer.indexOf(firstSeparatorByte, from = nextPossibleMatch)
         }
 
         // No match but we can release previous results if exists

@@ -12,10 +12,10 @@ import akka.stream.scaladsl.{ Framing, Sink, Source }
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.openjdk.jmh.annotations._
-import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.Random
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -55,43 +55,18 @@ class FramingBenchmark {
   // Safe to be benchmark scoped because the flows we construct in this bench are stateless
   var flow: Source[ByteString, NotUsed] = _
 
-  @Param(Array("32", "64", "128"))
+  @Param(Array("32", "64", "128", "256", "512", "1024"))
+  var messageSize = 0
+
+  @Param(Array("1", "8", "16", "32", "64", "128"))
   var framePerSeq = 0
 
   @Setup
   def setup(): Unit = {
     materializer = ActorMaterializer()
 
-    val frame = ByteString(List.range(0, framePerSeq, 1).map(_ ⇒ "a" * 128 + "\n").mkString)
-
-    // Important to use a synchronous, zero overhead source, otherwise the slowness of the source
-    // might bias the benchmark, since the stream always adjusts the rate to the slowest stage.
-    val syncTestPublisher = new Publisher[ByteString] {
-      override def subscribe(s: Subscriber[_ >: ByteString]): Unit = {
-        val sub: Subscription = new Subscription {
-          var counter = 0 // Piggyback on caller thread, no need for volatile
-
-          override def request(n: Long): Unit = {
-            var i = n
-            while (i > 0) {
-              s.onNext(frame)
-              counter += 1
-              if (counter == 100000) {
-                s.onComplete()
-                return
-              }
-              i -= 1
-            }
-          }
-
-          override def cancel(): Unit = ()
-        }
-
-        s.onSubscribe(sub)
-      }
-    }
-
-    flow = Source.fromPublisher(syncTestPublisher)
+    val frame = List.range(0, messageSize, 1).map(_ ⇒ Random.nextPrintableChar()).mkString + "\n"
+    flow = Source.repeat(ByteString(List.range(0, framePerSeq, 1).map(_ ⇒ frame).mkString)).take(100000)
       .via(Framing.delimiter(ByteString("\n"), Int.MaxValue))
   }
 
