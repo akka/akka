@@ -6,7 +6,7 @@
 package docs.tutorial_1
 
 //#print-refs
-package com.lightbend.akka.sample
+package com.example
 
 import akka.actor.{ Actor, Props, ActorSystem }
 import scala.io.StdIn

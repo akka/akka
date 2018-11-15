@@ -3,7 +3,7 @@
  */
 
 //#iot-app
-package com.lightbend.akka.sample;
+package com.example;
 
 import java.io.IOException;
 
