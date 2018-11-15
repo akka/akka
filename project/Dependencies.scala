@@ -148,6 +148,8 @@ object Dependencies {
 
   val actor = l ++= Seq(config, java8Compat.value)
 
+  val discovery = l ++= Seq(Test.junit, Test.scalatest.value)
+
   val testkit = l ++= Seq(Test.junit, Test.scalatest.value) ++ Test.metricsAll
 
   val actorTests = l ++= Seq(

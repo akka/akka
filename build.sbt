@@ -474,6 +474,14 @@ lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
 
+lazy val discovery = akkaModule("akka-discovery")
+  .dependsOn(
+    actor,
+    testkit % "test->test"
+  )
+  .settings(Dependencies.discovery)
+  .settings(AkkaBuild.mayChangeSettings)
+  .settings(AutomaticModuleName.settings("akka.discovery"))
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
