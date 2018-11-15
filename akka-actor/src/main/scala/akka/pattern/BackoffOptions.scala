@@ -4,9 +4,9 @@
 
 package akka.pattern
 
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import akka.util.JavaDurationConverters._
-import akka.actor.{ Props, OneForOneStrategy, SupervisorStrategy }
+import akka.actor.{ActorContext, ActorRef, OneForOneStrategy, Props, SupervisorStrategy}
 
 /**
  * Builds back-off options for creating a back-off supervisor.
@@ -555,6 +555,8 @@ trait BackoffOptions {
    */
   def withReplyWhileStopped(replyWhileStopped: Any): BackoffOptions
 
+  def withActionWhileStopped(action: (ActorRef, ActorContext) => Unit): BackoffOptions
+
   /**
    * Returns a new BackoffOptions with a maximum number of retries to restart the child actor.
    * By default, the supervisor will retry infinitely.
@@ -571,15 +573,17 @@ trait BackoffOptions {
 }
 
 private final case class BackoffOptionsImpl(
-  backoffType:        BackoffType          = RestartImpliesFailure,
-  childProps:         Props,
-  childName:          String,
-  minBackoff:         FiniteDuration,
-  maxBackoff:         FiniteDuration,
-  randomFactor:       Double,
-  reset:              Option[BackoffReset] = None,
-  supervisorStrategy: OneForOneStrategy    = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
-  replyWhileStopped:  Option[Any]          = None) extends BackoffOptions {
+                                             backoffType:        BackoffType          = RestartImpliesFailure,
+                                             childProps:         Props,
+                                             childName:          String,
+                                             minBackoff:         FiniteDuration,
+                                             maxBackoff:         FiniteDuration,
+                                             randomFactor:       Double,
+                                             reset:              Option[BackoffReset] = None,
+                                             supervisorStrategy: OneForOneStrategy    = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
+                                             replyWhileStopped:  Option[Any]          = None,
+                                             actionWhileStopped:  Option[(ActorRef, ActorContext) => Unit]          = None,
+                                           ) extends BackoffOptions {
 
   val backoffReset = reset.getOrElse(AutoReset(minBackoff))
 
@@ -589,6 +593,7 @@ private final case class BackoffOptionsImpl(
   def withDefaultStoppingStrategy = copy(supervisorStrategy = OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
   def withReplyWhileStopped(replyWhileStopped: Any) = copy(replyWhileStopped = Some(replyWhileStopped))
   def withMaxNrOfRetries(maxNrOfRetries: Int) = copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))
+  def withActionWhileStopped(action: (ActorRef, ActorContext) => Unit) = copy(actionWhileStopped = Some(action))
 
   def props = {
     require(minBackoff > Duration.Zero, "minBackoff must be > 0")
@@ -603,10 +608,10 @@ private final case class BackoffOptionsImpl(
     backoffType match {
       //onFailure method in companion object
       case RestartImpliesFailure ⇒
-        Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped))
+        Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped, actionWhileStopped))
       //onStop method in companion object
       case StopImpliesFailure ⇒
-        Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped))
+        Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped, actionWhileStopped))
     }
   }
 }

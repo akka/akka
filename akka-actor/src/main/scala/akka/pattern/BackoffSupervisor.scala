@@ -7,7 +7,7 @@ package akka.pattern
 import java.util.concurrent.ThreadLocalRandom
 import java.util.Optional
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, DeadLetterSuppression, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
+import akka.actor.{ Actor, ActorContext, ActorLogging, ActorRef, DeadLetterSuppression, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
 import akka.actor.SupervisorStrategy.{ Directive, Escalate, Restart, Stop }
 import akka.util.JavaDurationConverters._
 
@@ -284,14 +284,15 @@ object BackoffSupervisor {
  * with `Backoff.onStop`.
  */
 final class BackoffSupervisor(
-  val childProps:        Props,
-  val childName:         String,
-  minBackoff:            FiniteDuration,
-  maxBackoff:            FiniteDuration,
-  val reset:             BackoffReset,
-  randomFactor:          Double,
-  strategy:              SupervisorStrategy,
-  val replyWhileStopped: Option[Any])
+  val childProps:         Props,
+  val childName:          String,
+  minBackoff:             FiniteDuration,
+  maxBackoff:             FiniteDuration,
+  val reset:              BackoffReset,
+  randomFactor:           Double,
+  strategy:               SupervisorStrategy,
+  val replyWhileStopped:  Option[Any],
+  val actionWhileStopped: Option[(ActorRef, ActorContext) ⇒ Unit])
   extends Actor with HandleBackoff
   with ActorLogging {
 
@@ -319,7 +320,7 @@ final class BackoffSupervisor(
     maxBackoff:         FiniteDuration,
     randomFactor:       Double,
     supervisorStrategy: SupervisorStrategy) =
-    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, supervisorStrategy, None)
+    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, supervisorStrategy, None, None)
 
   // for binary compatibility with 2.4.0
   def this(
@@ -358,6 +359,7 @@ private[akka] trait HandleBackoff { this: Actor ⇒
   def childName: String
   def reset: BackoffReset
   def replyWhileStopped: Option[Any]
+  def actionWhileStopped: Option[(ActorRef, ActorContext) ⇒ Unit]
 
   var child: Option[ActorRef] = None
   var restartCount = 0
@@ -405,10 +407,12 @@ private[akka] trait HandleBackoff { this: Actor ⇒
 
     case msg ⇒ child match {
       case Some(c) ⇒ c.forward(msg)
-      case None ⇒ replyWhileStopped match {
-        case Some(r) ⇒ sender ! r
-        case None    ⇒ context.system.deadLetters.forward(msg)
-      }
+      case None ⇒
+        replyWhileStopped match {
+          case Some(r) ⇒ sender ! r
+          case None    ⇒ context.system.deadLetters.forward(msg)
+        }
+        actionWhileStopped.foreach(a ⇒ a(sender, context))
     }
   }
 }
