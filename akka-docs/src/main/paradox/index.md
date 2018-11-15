@@ -18,5 +18,6 @@
 * [howto](howto.md)
 * [project/index](project/index.md)
 * [additional/index](additional/index.md)
+* [discovery](discovery/index.md)
 
 @@@
