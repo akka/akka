@@ -874,6 +874,12 @@ You can silence the logging of cluster events at info level with configuration p
 akka.cluster.log-info = off
 ```
 
+You can enable verbose logging of cluster events at info level, e.g. for temporary troubleshooting, with configuration property:
+
+```
+akka.cluster.log-info-verbose = on
+```
+
 <a id="cluster-dispatcher"></a>
 ### Cluster Dispatcher
 
