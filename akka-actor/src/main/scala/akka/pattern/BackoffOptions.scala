@@ -7,6 +7,7 @@ package akka.pattern
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import akka.util.JavaDurationConverters._
 import akka.actor.{ActorContext, ActorRef, OneForOneStrategy, Props, SupervisorStrategy}
+import akka.annotation.DoNotInherit
 
 /**
  * Builds back-off options for creating a back-off supervisor.
@@ -516,6 +517,7 @@ object Backoff {
  * context.actorOf(BackoffSupervisor.props(options), name)
  * }}}
  */
+@DoNotInherit
 trait BackoffOptions {
   /**
    * Returns a new BackoffOptions with automatic back-off reset.

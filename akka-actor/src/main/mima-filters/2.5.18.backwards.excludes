@@ -1,0 +1,13 @@
+# Excludes for adding an option for backoff supervisor
+# private
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.pattern.BackoffOptionsImpl$")
+# private
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOnRestartSupervisor.this")
+# DoNotInherit (should have been) new method
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withActionWhileStopped")
+# private[akka]
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.actionWhileStopped")
+
