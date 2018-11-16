@@ -312,6 +312,17 @@ final class BackoffSupervisor(
     case s ⇒ s
   }
 
+  // for binary compatibility with 2.5.18
+  def this(
+    childProps:        Props,
+    childName:         String,
+    minBackoff:        FiniteDuration,
+    maxBackoff:        FiniteDuration,
+    reset:             BackoffReset,
+    randomFactor:      Double,
+    strategy:          SupervisorStrategy,
+    replyWhileStopped: Option[Any]) = this(childProps, childName, minBackoff, maxBackoff, reset, randomFactor, strategy, replyWhileStopped, None)
+
   // for binary compatibility with 2.4.1
   def this(
     childProps:         Props,
