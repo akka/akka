@@ -7,19 +7,19 @@ package akka.discovery.dns
 import java.net.InetAddress
 
 import akka.AkkaVersion
-import akka.actor.ActorSystem
-import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
+import akka.actor.{ActorSystem, ExtendedActorSystem}
+import akka.discovery.ServiceDiscovery.{Resolved, ResolvedTarget}
 import akka.event.Logging
-import akka.io.{ Dns, IO }
+import akka.io.{Dns, IO}
 import akka.pattern.ask
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import akka.discovery._
-import akka.io.dns.DnsProtocol.{ Ip, Srv }
-import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, SRVRecord }
+import akka.io.dns.DnsProtocol.{Ip, Srv}
+import akka.io.dns.{AAAARecord, ARecord, DnsProtocol, SRVRecord}
 
-import scala.collection.{ immutable ⇒ im }
+import scala.collection.{immutable => im}
 
 object DnsServiceDiscovery {
   def srvRecordsToResolved(srvRequest: String, resolved: DnsProtocol.Resolved): Resolved = {
@@ -52,20 +52,18 @@ object DnsServiceDiscovery {
 /**
  * Looks for A records for a given service.
  */
-class DnsServiceDiscovery(system: ActorSystem) extends ServiceDiscovery {
+class DnsServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 
   import DnsServiceDiscovery._
-
-  // TODO: Switch to creating an async resolver directly
-  // Required for async dns, 15 for additional records
-  require(
-    system.settings.config.getString("akka.io.dns.resolver") == "async-dns",
-    "Akka discovery DNS requires akka.io.dns.resolver to be set to async-dns")
 
   import ServiceDiscovery._
 
   private val log = Logging(system, getClass)
-  private val dns = IO(Dns)(system)
+  private val dns = if (system.settings.config.getString("akka.io.dns.resolver") == "async-dns") {
+    IO(Dns)(system)
+  } else {
+    Dns.loadDnsResolver(system, "async-dns", "SD-DNS").manager
+  }
 
   import system.dispatcher
 

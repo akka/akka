@@ -477,7 +477,8 @@ lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
 lazy val discovery = akkaModule("akka-discovery")
   .dependsOn(
     actor,
-    testkit % "test->test"
+    testkit % "test->test",
+    actorTests % "test->test"
   )
   .settings(Dependencies.discovery)
   .settings(AkkaBuild.mayChangeSettings)

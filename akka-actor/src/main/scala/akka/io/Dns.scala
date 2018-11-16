@@ -5,11 +5,13 @@
 package akka.io
 
 import java.net.{ Inet4Address, Inet6Address, InetAddress, UnknownHostException }
+import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.typesafe.config.Config
-
+import java.util.function.{ Function ⇒ JFunction }
 import scala.collection.{ breakOut, immutable }
 
 abstract class Dns {
@@ -33,6 +35,19 @@ abstract class Dns {
 }
 
 object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
+
+  private val implementations = new ConcurrentHashMap[String, DnsExt]
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def loadDnsResolver(system: ExtendedActorSystem, resolver: String, managerName: String): DnsExt = {
+    implementations.computeIfAbsent(resolver, new JFunction[String, DnsExt] {
+      override def apply(method: String): DnsExt = new DnsExt(system, resolver, managerName)
+    })
+  }
+
   sealed trait Command
 
   case class Resolve(name: String) extends Command with ConsistentHashable {
@@ -79,7 +94,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
 
   override def lookup() = Dns
 
-  override def createExtension(system: ExtendedActorSystem): DnsExt = new DnsExt(system)
+  override def createExtension(system: ExtendedActorSystem): DnsExt = loadDnsResolver(system, system.settings.config.getString("akka.io.dns.resolver"), "IO-DNS")
 
   /**
    * Java API: retrieve the Udp extension for the given system.
@@ -87,21 +102,40 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): DnsExt = super.get(system)
 }
 
-class DnsExt(val system: ExtendedActorSystem) extends IO.Extension {
+/**
+ * INTERNAL API
+ *
+ * Use IO(DNS) or Dns(system). Do not instantiate directly.
+ *
+ */
+@InternalApi
+class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: String, managerName: String) extends IO.Extension {
 
-  val Settings = new Settings(system.settings.config.getConfig("akka.io.dns"))
+  /**
+   * INTERNAL API
+   *
+   * Use IO(DNS) or Dns(system). Do not instantiate directly
+   *
+   * For binary compat as DnsExt constructor didn't used to have internal API on
+   */
+  @InternalApi
+  def this(system: ExtendedActorSystem) = this(system, system.settings.config.getString("akka.io.dns.resolver"), "IO-DNS")
 
-  class Settings private[DnsExt] (_config: Config) {
+  class Settings private[DnsExt] (config: Config, resolverName: String) {
+    /**
+     * Load the default resolver
+     */
+    def this(config: Config) = this(config, config.getString("resolver"))
 
-    import _config._
-
-    val Dispatcher: String = getString("dispatcher")
-    val Resolver: String = getString("resolver")
-    val ResolverConfig: Config = getConfig(Resolver)
+    val Dispatcher: String = config.getString("dispatcher")
+    val Resolver: String = resolverName
+    val ResolverConfig: Config = config.getConfig(Resolver)
     val ProviderObjectName: String = ResolverConfig.getString("provider-object")
 
     override def toString = s"Settings($Dispatcher, $Resolver, $ResolverConfig, $ProviderObjectName)"
   }
+
+  val Settings: Settings = new Settings(system.settings.config.getConfig("akka.io.dns"), resolverName)
 
   val provider: DnsProvider = system.dynamicAccess.getClassFor[DnsProvider](Settings.ProviderObjectName).get.newInstance()
   val cache: Dns = provider.cache
@@ -109,7 +143,7 @@ class DnsExt(val system: ExtendedActorSystem) extends IO.Extension {
   val manager: ActorRef = {
     system.systemActorOf(
       props = Props(provider.managerClass, this).withDeploy(Deploy.local).withDispatcher(Settings.Dispatcher),
-      name = "IO-DNS")
+      name = managerName)
   }
 
   def getResolver: ActorRef = manager
