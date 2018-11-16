@@ -592,7 +592,7 @@ private final case class BackoffOptionsImpl(
                                              reset:              Option[BackoffReset] = None,
                                              supervisorStrategy: OneForOneStrategy    = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
                                              replyWhileStopped:  Option[Any]          = None,
-                                             actionWhileStopped:  Option[(ActorRef, Any, ActorContext) => Unit]          = Some((sender, msg, ctx) => ctx.system.deadLetters.forward(msg)(ctx)),
+                                             actionWhileStopped:  Option[(ActorRef, Any, ActorContext) => Unit]          = None
                                            ) extends BackoffOptions {
 
   val backoffReset = reset.getOrElse(AutoReset(minBackoff))
