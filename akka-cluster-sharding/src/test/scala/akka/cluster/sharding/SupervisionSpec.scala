@@ -79,7 +79,8 @@ class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSend
           (_, msg, context) ⇒ msg match {
             case StopMessage ⇒
               context.stop(context.self)
-            case _ ⇒ // ignore
+            case _ ⇒
+              context.system.deadLetters.forward(msg)(context)
           }
         ))
 
