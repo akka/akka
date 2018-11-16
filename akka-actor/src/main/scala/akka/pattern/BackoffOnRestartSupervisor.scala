@@ -23,8 +23,7 @@ private class BackoffOnRestartSupervisor(
   val reset:              BackoffReset,
   randomFactor:           Double,
   strategy:               OneForOneStrategy,
-  val replyWhileStopped:  Option[Any],
-  val actionWhileStopped: Option[(ActorRef, ActorContext) ⇒ Unit])
+  val actionWhileStopped: Option[(ActorRef, Any, ActorContext) ⇒ Unit])
   extends Actor with HandleBackoff
   with ActorLogging {
 

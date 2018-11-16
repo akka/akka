@@ -553,9 +553,11 @@ trait BackoffOptions {
    * @param replyWhileStopped The message that the supervisor will send in response to all messages while
    *   its child is stopped.
    */
+  // FIXME, document that this is a convenience for withActionWhileStopped / wipes it out
   def withReplyWhileStopped(replyWhileStopped: Any): BackoffOptions
 
-  def withActionWhileStopped(action: (ActorRef, ActorContext) => Unit): BackoffOptions
+  // FIXME, document
+  def withActionWhileStopped(action: (ActorRef, Any, ActorContext) => Unit): BackoffOptions
 
   /**
    * Returns a new BackoffOptions with a maximum number of retries to restart the child actor.
@@ -581,8 +583,7 @@ private final case class BackoffOptionsImpl(
                                              randomFactor:       Double,
                                              reset:              Option[BackoffReset] = None,
                                              supervisorStrategy: OneForOneStrategy    = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
-                                             replyWhileStopped:  Option[Any]          = None,
-                                             actionWhileStopped:  Option[(ActorRef, ActorContext) => Unit]          = None,
+                                             actionWhileStopped:  Option[(ActorRef, Any, ActorContext) => Unit]          = Some((sender, msg, ctx) => ctx.system.deadLetters.forward(msg)(ctx)),
                                            ) extends BackoffOptions {
 
   val backoffReset = reset.getOrElse(AutoReset(minBackoff))
@@ -591,9 +592,10 @@ private final case class BackoffOptionsImpl(
   def withManualReset = copy(reset = Some(ManualReset))
   def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy) = copy(supervisorStrategy = supervisorStrategy)
   def withDefaultStoppingStrategy = copy(supervisorStrategy = OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
-  def withReplyWhileStopped(replyWhileStopped: Any) = copy(replyWhileStopped = Some(replyWhileStopped))
+  def withReplyWhileStopped(replyWhileStopped: Any) =
+    copy(actionWhileStopped = Some((sender, _, _) => sender ! replyWhileStopped))
   def withMaxNrOfRetries(maxNrOfRetries: Int) = copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))
-  def withActionWhileStopped(action: (ActorRef, ActorContext) => Unit) = copy(actionWhileStopped = Some(action))
+  def withActionWhileStopped(action: (ActorRef, Any, ActorContext) => Unit) = copy(actionWhileStopped = Some(action))
 
   def props = {
     require(minBackoff > Duration.Zero, "minBackoff must be > 0")
@@ -608,10 +610,10 @@ private final case class BackoffOptionsImpl(
     backoffType match {
       //onFailure method in companion object
       case RestartImpliesFailure ⇒
-        Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped, actionWhileStopped))
+        Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, actionWhileStopped))
       //onStop method in companion object
       case StopImpliesFailure ⇒
-        Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped, actionWhileStopped))
+        Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, actionWhileStopped))
     }
   }
 }

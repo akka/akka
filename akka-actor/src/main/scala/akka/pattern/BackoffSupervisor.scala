@@ -291,8 +291,7 @@ final class BackoffSupervisor(
   val reset:              BackoffReset,
   randomFactor:           Double,
   strategy:               SupervisorStrategy,
-  val replyWhileStopped:  Option[Any],
-  val actionWhileStopped: Option[(ActorRef, ActorContext) ⇒ Unit])
+  val actionWhileStopped: Option[(ActorRef, Any, ActorContext) ⇒ Unit])
   extends Actor with HandleBackoff
   with ActorLogging {
 
@@ -320,7 +319,7 @@ final class BackoffSupervisor(
     maxBackoff:         FiniteDuration,
     randomFactor:       Double,
     supervisorStrategy: SupervisorStrategy) =
-    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, supervisorStrategy, None, None)
+    this(childProps, childName, minBackoff, maxBackoff, AutoReset(minBackoff), randomFactor, supervisorStrategy, None)
 
   // for binary compatibility with 2.4.0
   def this(
@@ -358,8 +357,7 @@ private[akka] trait HandleBackoff { this: Actor ⇒
   def childProps: Props
   def childName: String
   def reset: BackoffReset
-  def replyWhileStopped: Option[Any]
-  def actionWhileStopped: Option[(ActorRef, ActorContext) ⇒ Unit]
+  def actionWhileStopped: Option[(ActorRef, Any, ActorContext) ⇒ Unit]
 
   var child: Option[ActorRef] = None
   var restartCount = 0
@@ -406,13 +404,10 @@ private[akka] trait HandleBackoff { this: Actor ⇒
       context.parent ! msg
 
     case msg ⇒ child match {
-      case Some(c) ⇒ c.forward(msg)
+      case Some(c) ⇒
+        c.forward(msg)
       case None ⇒
-        replyWhileStopped match {
-          case Some(r) ⇒ sender ! r
-          case None    ⇒ context.system.deadLetters.forward(msg)
-        }
-        actionWhileStopped.foreach(a ⇒ a(sender, context))
+        actionWhileStopped.foreach(a ⇒ a(sender(), msg, context))
     }
   }
 }
