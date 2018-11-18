@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
@@ -22,7 +22,7 @@ import scala.concurrent.duration._
  * structure should be valid regardless. Extracting the information often will have an impact on the performance
  * of the running streams.
  */
-object MaterializerSnapshot {
+object MaterializerState {
 
   def streamSnapshots(mat: Materializer): Future[Seq[StreamSnapshot]] = {
     mat match {
@@ -54,30 +54,72 @@ object MaterializerSnapshot {
 
 }
 
+/**
+ * A snapshot of the materializer state
+ * @param streams The streams that was materialized with the materializer and were running when the snapshot was taken.
+ */
 @ApiMayChange
-final case class MaterializerSnapshot(streams: Seq[StreamSnapshot])
+final case class MaterializerState(streams: Seq[StreamSnapshot])
 
-@ApiMayChange
-final case class StreamSnapshot(
-  // FIXME too easy to abuse if we make it this easy to interact with the stream actors?
+/**
+ * A snapshot of one running stream
+ */
+@DoNotInherit @ApiMayChange
+sealed trait StreamSnapshot {
+  /**
+   * Running interpreters
+   */
+  // FIXME why doesn't this then contain only RunningIterpreters ?
+  def activeInterpreters: Seq[RunningInterpreter]
+
+  /**
+   * Interpreters that has been created but not yet initialized
+   *
+   */
+  // FIXME why doesn't this then contain only UnitializedInterpreters ?
+  def newShells: Seq[UninitializedInterpreter]
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+final private[akka] case class StreamSnapshotImpl(
   self:               ActorPath,
-  activeInterpreters: Seq[GraphInterpreterShellSnapshot],
-  newShells:          Seq[GraphInterpreterShellSnapshot])
+  activeInterpreters: Seq[RunningInterpreter],
+  newShells:          Seq[UninitializedInterpreter]) extends StreamSnapshot
 
-final case class GraphInterpreterShellSnapshot(
-  logics:      Seq[LogicSnapshot],
-  interpreter: Option[InterpreterSnapshot])
+/**
+ * A snapshot of one interpreter - contains a set of logics running in the same underlying actor. Note that
+ * multiple interpreters may be running in the same actor (because of submaterialization)
+ */
+@DoNotInherit @ApiMayChange
+sealed trait InterpreterSnapshot {
+  def logics: Seq[LogicSnapshot]
+}
 
-@ApiMayChange
-final case class InterpreterSnapshot(
-  logics:      Seq[LogicSnapshot],
-  connections: Seq[ConnectionSnapshot],
-  // FIXME better type?
-  queueStatus:   String,
-  runningLogics: Int,
-  stoppedLogics: List[Int])
+/**
+ * A stream interpreter that was not yet initialized when the snapshot was taken
+ */
+final case class UninitializedInterpreter(
+  logics: Seq[LogicSnapshot]) extends InterpreterSnapshot
 
-// do we need both of these
+@DoNotInherit @ApiMayChange
+sealed trait RunningInterpreter extends InterpreterSnapshot {
+  def logics: Seq[LogicSnapshot]
+  def connections: Seq[ConnectionSnapshot]
+  def runningLogicsCount: Int
+  def stoppedLogics: Seq[LogicSnapshot]
+}
+
+@InternalApi
+private[akka] final case class RunningInterpreterImpl(
+  logics:             Seq[LogicSnapshot],
+  connections:        Seq[ConnectionSnapshot],
+  queueStatus:        String,
+  runningLogicsCount: Int,
+  stoppedLogics:      Seq[LogicSnapshot]) extends RunningInterpreter
+
 @ApiMayChange
 final case class LogicSnapshot(index: Int, label: String, attributes: Attributes)
 

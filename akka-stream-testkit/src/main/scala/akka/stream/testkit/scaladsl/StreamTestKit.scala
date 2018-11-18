@@ -9,7 +9,6 @@ import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.testkit.TestProbe
-import akka.util.Timeout
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext }
@@ -60,28 +59,23 @@ object StreamTestKit {
   }
 
   /** INTERNAL API */
-  @InternalApi private[testkit] def printDebugDump(streamSupervisor: ActorRef)(implicit ec: ExecutionContext): Unit = {
-    // FIXME arbitrary timeouts here
-    implicit val timeout: Timeout = 3.seconds
-    val doneDumping = MaterializerSnapshot.requestFromSupervisor(streamSupervisor)
+  @InternalApi private[akka] def printDebugDump(streamSupervisor: ActorRef)(implicit ec: ExecutionContext): Unit = {
+    val doneDumping = MaterializerState.requestFromSupervisor(streamSupervisor)
       .map(snapshots ⇒
-        snapshots.foreach(s ⇒ println(snapshotString(s))
+        snapshots.foreach(s ⇒ println(snapshotString(s.asInstanceOf[StreamSnapshotImpl]))
         ))
     Await.result(doneDumping, 5.seconds)
   }
 
   /** INTERNAL API */
-  @InternalApi private[testkit] def snapshotString(snapshot: StreamSnapshot): String = {
+  @InternalApi private[testkit] def snapshotString(snapshot: StreamSnapshotImpl): String = {
     val builder = StringBuilder.newBuilder
     builder.append(s"activeShells (actor: ${snapshot.self}):\n")
     snapshot.activeInterpreters.foreach { shell ⇒
       builder.append("  ")
       appendShellSnapshot(builder, shell)
       builder.append("\n")
-      shell.interpreter match {
-        case Some(interpreter) ⇒ appendInterpreterSnapshot(builder, interpreter)
-        case None              ⇒ builder.append("    Not initialized")
-      }
+      appendInterpreterSnapshot(builder, shell.asInstanceOf[RunningInterpreterImpl])
       builder.append("\n")
     }
     builder.append(s"newShells:\n")
@@ -89,21 +83,15 @@ object StreamTestKit {
       builder.append("  ")
       appendShellSnapshot(builder, shell)
       builder.append("\n")
-      shell.interpreter match {
-        case Some(interpreter) ⇒ appendInterpreterSnapshot(builder, interpreter)
-        case None              ⇒ builder.append("    Not initialized")
-      }
+      builder.append("    Not initialized")
       builder.append("\n")
     }
     builder.toString
   }
 
-  private def appendShellSnapshot(builder: StringBuilder, shell: GraphInterpreterShellSnapshot): Unit = {
+  private def appendShellSnapshot(builder: StringBuilder, shell: InterpreterSnapshot): Unit = {
     builder.append("GraphInterpreterShell(\n  logics: [\n")
-    val logicsToPrint = shell.interpreter match {
-      case Some(interpreter) ⇒ interpreter.logics
-      case None              ⇒ shell.logics
-    }
+    val logicsToPrint = shell.logics
     logicsToPrint.foreach { logic ⇒
       builder.append("    ")
         .append(logic.label)
@@ -112,10 +100,10 @@ object StreamTestKit {
         .append("],\n")
     }
     builder.setLength(builder.length - 2)
-    shell.interpreter match {
-      case Some(interpreter) ⇒
+    shell match {
+      case running: RunningInterpreter ⇒
         builder.append("\n  ],\n  connections: [\n")
-        interpreter.connections.foreach { connection ⇒
+        running.connections.foreach { connection ⇒
           builder.append("    ")
             .append("Connection(")
             .append(connection.id)
@@ -129,13 +117,13 @@ object StreamTestKit {
         }
         builder.setLength(builder.length - 2)
 
-      case None ⇒
+      case _ ⇒
     }
     builder.append("\n  ]\n)")
     builder.toString()
   }
 
-  private def appendInterpreterSnapshot(builder: StringBuilder, snapshot: InterpreterSnapshot): Unit = {
+  private def appendInterpreterSnapshot(builder: StringBuilder, snapshot: RunningInterpreterImpl): Unit = {
     try {
       builder.append("\ndot format graph for deadlock analysis:\n")
       builder.append("================================================================\n")
@@ -164,10 +152,10 @@ object StreamTestKit {
       }
 
       builder.append("}\n================================================================\n")
-      builder.append(s"// ${snapshot.queueStatus} (running=${snapshot.runningLogics}, shutdown=${snapshot.stoppedLogics.mkString(",")})")
+      builder.append(s"// ${snapshot.queueStatus} (running=${snapshot.runningLogicsCount}, shutdown=${snapshot.stoppedLogics.mkString(",")})")
       builder.toString()
     } catch {
-      case _: NoSuchElementException ⇒ "Not all logics has a stage listed, cannot create graph"
+      case _: NoSuchElementException ⇒ builder.append("Not all logics has a stage listed, cannot create graph")
     }
   }
 

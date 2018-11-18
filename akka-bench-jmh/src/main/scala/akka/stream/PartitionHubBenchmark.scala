@@ -4,22 +4,18 @@
 
 package akka.stream
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
+
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl._
+import akka.remote.artery.{ BenchTestSource, FixedSizePartitionHub, LatchSink }
+import akka.stream.scaladsl.{ PartitionHub, _ }
+import akka.stream.testkit.scaladsl.StreamTestKit
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.remote.artery.BenchTestSource
-import java.util.concurrent.CountDownLatch
-import akka.remote.artery.LatchSink
-import akka.stream.impl.PhasedFusingActorMaterializer
-import akka.testkit.TestProbe
-import akka.stream.impl.StreamSupervisor
-import akka.stream.scaladsl.PartitionHub
-import akka.remote.artery.FixedSizePartitionHub
 
 object PartitionHubBenchmark {
   final val OperationsPerInvocation = 100000
@@ -112,13 +108,8 @@ class PartitionHubBenchmark {
   }
 
   private def dumpMaterializer(): Unit = {
-    materializer match {
-      case impl: PhasedFusingActorMaterializer ⇒
-        val probe = TestProbe()(system)
-        impl.supervisor.tell(StreamSupervisor.GetChildren, probe.ref)
-        val children = probe.expectMsgType[StreamSupervisor.Children].children
-        children.foreach(_ ! StreamSupervisor.PrintDebugDump)
-    }
+    implicit val ec = materializer.system.dispatcher
+    StreamTestKit.printDebugDump(materializer.supervisor)
   }
 
 }

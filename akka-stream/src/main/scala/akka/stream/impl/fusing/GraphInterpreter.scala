@@ -85,10 +85,6 @@ import akka.stream.Attributes.LogLevels
     var outHandler: OutHandler) {
     var portState: Int = InReady
     var slot: Any = Empty
-
-    override def toString =
-      if (GraphInterpreter.Debug) s"Connection($id, $inOwner, $outOwner, $inHandler, $outHandler, $portState, $slot)"
-      else s"Connection($id, $portState, $slot, $inHandler, $outHandler)"
   }
 
   private val _currentInterpreter = new ThreadLocal[Array[AnyRef]] {
@@ -646,7 +642,7 @@ import akka.stream.Attributes.LogLevels
    * Only invoke this after the interpreter completely settled, otherwise the results might be off. This is a very
    * simplistic tool, make sure you are understanding what you are doing and then it will serve you well.
    */
-  def toSnapshot: InterpreterSnapshot = {
+  def toSnapshot: RunningInterpreter = {
 
     val logicSnapshots = logics.zipWithIndex.map {
       case (logic, idx) ⇒
@@ -668,12 +664,12 @@ import akka.stream.Attributes.LogLevels
         )
       }
 
-    InterpreterSnapshot(
+    RunningInterpreterImpl(
       logicSnapshots,
       connectionSnapshots,
       queueStatus,
       runningStages,
-      shutdownCounter.toList)
+      shutdownCounter.toList.map(n ⇒ logicSnapshots(n)))
   }
 
 }

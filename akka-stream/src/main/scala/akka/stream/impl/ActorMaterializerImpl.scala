@@ -12,11 +12,11 @@ import akka.dispatch.Dispatchers
 import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.stream._
-import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphInterpreterShell }
-import akka.util.{ OptionVal, Timeout }
+import akka.stream.impl.fusing.GraphInterpreterShell
+import akka.util.OptionVal
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
+import scala.concurrent.{ Await, ExecutionContextExecutor }
 
 /**
  * ExtendedActorMaterializer used by subtypes which delegates in-island wiring to [[akka.stream.impl.PhaseIsland]]s

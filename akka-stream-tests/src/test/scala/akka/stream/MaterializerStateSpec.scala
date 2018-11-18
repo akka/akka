@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
@@ -9,7 +9,7 @@ import akka.stream.testkit.StreamSpec
 
 import scala.concurrent.duration._
 
-class MaterializerSnapshotSpec extends StreamSpec {
+class MaterializerStateSpec extends StreamSpec {
 
   "The MaterializerSnapshotting" must {
 
@@ -21,7 +21,7 @@ class MaterializerSnapshotSpec extends StreamSpec {
         .runWith(Sink.seq)
 
       awaitAssert({
-        val snapshot = MaterializerSnapshot.streamSnapshots(mat).futureValue
+        val snapshot = MaterializerState.streamSnapshots(mat).futureValue
 
         snapshot should have size (1)
         snapshot.head.activeInterpreters should have size (1)

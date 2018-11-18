@@ -636,16 +636,15 @@ import scala.util.control.NonFatal
     }
   }
 
-  def toSnapshot: GraphInterpreterShellSnapshot = {
-    val logicsToPrint = if (isInitialized) interpreter.logics else logics
-    GraphInterpreterShellSnapshot(
-      logicsToPrint.zipWithIndex.map {
-        case (logic, idx) ⇒
-          LogicSnapshot(idx, logic.originalStage.getOrElse(logic).toString, logic.attributes)
-      },
-      if (isInitialized) Some(interpreter.toSnapshot)
-      else None
-    )
+  def toSnapshot: InterpreterSnapshot = {
+    if (!isInitialized)
+      UninitializedInterpreter(
+        logics.zipWithIndex.map {
+          case (logic, idx) ⇒
+            LogicSnapshot(idx, logic.originalStage.getOrElse(logic).toString, logic.attributes)
+        }
+      )
+    else interpreter.toSnapshot
   }
 }
 
@@ -750,10 +749,10 @@ import scala.util.control.NonFatal
       if (shortCircuitBuffer != null) shortCircuitBatch()
 
     case Snapshot ⇒
-      sender() ! StreamSnapshot(
+      sender() ! StreamSnapshotImpl(
         self.path,
-        activeInterpreters.map(shell ⇒ shell.toSnapshot).toSeq,
-        newShells.map(shell ⇒ shell.toSnapshot)
+        activeInterpreters.map(shell ⇒ shell.toSnapshot.asInstanceOf[RunningInterpreter]).toSeq,
+        newShells.map(shell ⇒ shell.toSnapshot.asInstanceOf[UninitializedInterpreter])
       )
   }
 

@@ -5,7 +5,7 @@
 package akka.stream.testkit
 
 import akka.actor.{ ActorRef, ActorSystem }
-import akka.stream.MaterializerSnapshot
+import akka.stream.{ MaterializerState, StreamSnapshotImpl }
 import akka.stream.impl.StreamSupervisor
 import akka.testkit.{ AkkaSpec, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -42,9 +42,10 @@ class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
         if (children.isEmpty) println("Stream is completed. No debug information is available")
         else {
           println("Stream actors alive: " + children)
-          Future.sequence(children.map(MaterializerSnapshot.requestFromChild))
+          Future.sequence(children.map(MaterializerState.requestFromChild))
             .foreach(snapshots ⇒
-              snapshots.foreach(akka.stream.testkit.scaladsl.StreamTestKit.snapshotString)
+              snapshots.foreach(s ⇒
+                akka.stream.testkit.scaladsl.StreamTestKit.snapshotString(s.asInstanceOf[StreamSnapshotImpl]))
             )
         }
         failed
