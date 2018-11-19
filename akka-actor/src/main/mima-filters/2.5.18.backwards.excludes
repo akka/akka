@@ -7,7 +7,9 @@ ProblemFilters.exclude[MissingTypesProblem]("akka.pattern.BackoffOptionsImpl$")
 # private
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOnRestartSupervisor.this")
 # DoNotInherit (should have been) new method
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withActionWhileStopped")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withFinalStopMessage")
 # private[akka]
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.actionWhileStopped")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.finalStopMessageReceived")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.finalStopMessageReceived_=")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.finalStopMessage")
 
