@@ -14,15 +14,15 @@ or using configuration or key-value stores like zookeeper, consul. The built in 
 * DNS
 * Aggregate
 
-In addition `akka-management` contains methods for:
+In addition [Akka Management](https://developer.lightbend.com/docs/akka-management/current/) contains methods for:
 
 * Kubernetes API
 * AWS
 * Consul
 * Marathon API
 
-Discovery used to be part of `akka-management` but has become an Akka module as of 2.5.19 of Akka and version 0.20
-of `akka-management`.
+Discovery used to be part of Akka Management but has become an Akka module as of 2.5.19 of Akka and version 0.20
+of Akka Management.
 
 ## Dependency
 
@@ -78,7 +78,7 @@ The mapping between Akka service discovery terminology and SRV terminology:
 * SRV name = serviceName
 * SRV protocol = protocol
 
-Configure `akka-dns` to be used as discovery implementation in your `application.conf`:
+Configure `akka-dns` to be used as the discovery implementation in your `application.conf`:
 
 @@snip[application.conf](/akka-discovery/src/test/scala/akka/discovery/dns/DnsDiscoverySpec.scala){ #configure-dns }
 
