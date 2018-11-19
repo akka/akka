@@ -18,7 +18,7 @@ object SupervisionSpec {
     ConfigFactory.parseString(
       """
     akka.actor.provider = "cluster"
-    akka.loglevel = DEBUG
+    akka.loglevel = INFO
     """)
 
   case class Msg(id: Long, msg: Any)
@@ -75,14 +75,7 @@ class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSend
         maxBackoff = 30.seconds,
         randomFactor = 0.2,
         maxNrOfRetries = -1
-      ).withActionWhileStopped(
-          (_, msg, context) ⇒ msg match {
-            case StopMessage ⇒
-              context.stop(context.self)
-            case _ ⇒
-              context.system.deadLetters.forward(msg)(context)
-          }
-        ))
+      ).withFinalStopMessage(_ == StopMessage))
 
       Cluster(system).join(Cluster(system).selfAddress)
       val region = ClusterSharding(system).start(

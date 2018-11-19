@@ -553,19 +553,18 @@ trait BackoffOptions {
    * child is stopped.
    * With this option, the supervisor will reply to the sender instead.
    *
-   * If both this and withActionWhileStopped are not set, a message received while the child is stopped is forwarded to `deadLetters`.
    * @param replyWhileStopped The message that the supervisor will send in response to all messages while
    *   its child is stopped.
    */
   def withReplyWhileStopped(replyWhileStopped: Any): BackoffOptions
 
   /**
-   * Execute an action for a message received while the child is stopped.
-   *
-   * If both this and withReplyWhileStopped are not set, a message received while the child is stopped is forwarded to `deadLetters`.
-   * @param action action taking in (sender, message, context)
+   * Predicate evaluated for each message, if it returns true and the supervised actor is
+   * stopped then the supervisor will stop its self. If it returns true while
+   * the supervised actor is running then it will be forwarded to the supervised actor and
+   * when the supervised actor stops its self the supervisor will stop its self.
    */
-  def withActionWhileStopped(action: (ActorRef, Any, ActorContext) ⇒ Unit): BackoffOptions
+  def withFinalStopMessage(action: Any ⇒ Boolean): BackoffOptions
 
   /**
    * Returns a new BackoffOptions with a maximum number of retries to restart the child actor.
@@ -583,16 +582,16 @@ trait BackoffOptions {
 }
 
 private final case class BackoffOptionsImpl(
-  backoffType:        BackoffType                                  = RestartImpliesFailure,
+  backoffType:        BackoffType           = RestartImpliesFailure,
   childProps:         Props,
   childName:          String,
   minBackoff:         FiniteDuration,
   maxBackoff:         FiniteDuration,
   randomFactor:       Double,
-  reset:              Option[BackoffReset]                         = None,
-  supervisorStrategy: OneForOneStrategy                            = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
-  replyWhileStopped:  Option[Any]                                  = None,
-  actionWhileStopped: Option[(ActorRef, Any, ActorContext) ⇒ Unit] = None
+  reset:              Option[BackoffReset]  = None,
+  supervisorStrategy: OneForOneStrategy     = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
+  replyWhileStopped:  Option[Any]           = None,
+  finalStopMessage:   Option[Any ⇒ Boolean] = None
 ) extends BackoffOptions {
 
   val backoffReset = reset.getOrElse(AutoReset(minBackoff))
@@ -603,7 +602,7 @@ private final case class BackoffOptionsImpl(
   def withDefaultStoppingStrategy = copy(supervisorStrategy = OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
   def withReplyWhileStopped(replyWhileStopped: Any) = copy(replyWhileStopped = Some(replyWhileStopped))
   def withMaxNrOfRetries(maxNrOfRetries: Int) = copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))
-  def withActionWhileStopped(action: (ActorRef, Any, ActorContext) ⇒ Unit) = copy(actionWhileStopped = Some(action))
+  def withFinalStopMessage(action: Any ⇒ Boolean) = copy(finalStopMessage = Some(action))
 
   def props = {
     require(minBackoff > Duration.Zero, "minBackoff must be > 0")
@@ -618,10 +617,10 @@ private final case class BackoffOptionsImpl(
     backoffType match {
       //onFailure method in companion object
       case RestartImpliesFailure ⇒
-        Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped, actionWhileStopped))
+        Props(new BackoffOnRestartSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped, finalStopMessage))
       //onStop method in companion object
       case StopImpliesFailure ⇒
-        Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped, actionWhileStopped))
+        Props(new BackoffSupervisor(childProps, childName, minBackoff, maxBackoff, backoffReset, randomFactor, supervisorStrategy, replyWhileStopped, finalStopMessage))
     }
   }
 }

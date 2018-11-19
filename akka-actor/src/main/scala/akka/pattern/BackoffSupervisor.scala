@@ -284,15 +284,15 @@ object BackoffSupervisor {
  * with `Backoff.onStop`.
  */
 final class BackoffSupervisor(
-  val childProps:         Props,
-  val childName:          String,
-  minBackoff:             FiniteDuration,
-  maxBackoff:             FiniteDuration,
-  val reset:              BackoffReset,
-  randomFactor:           Double,
-  strategy:               SupervisorStrategy,
-  val replyWhileStopped:  Option[Any],
-  val actionWhileStopped: Option[(ActorRef, Any, ActorContext) ⇒ Unit])
+  val childProps:        Props,
+  val childName:         String,
+  minBackoff:            FiniteDuration,
+  maxBackoff:            FiniteDuration,
+  val reset:             BackoffReset,
+  randomFactor:          Double,
+  strategy:              SupervisorStrategy,
+  val replyWhileStopped: Option[Any],
+  val finalStopMessage:  Option[Any ⇒ Boolean])
   extends Actor with HandleBackoff
   with ActorLogging {
 
@@ -345,21 +345,26 @@ final class BackoffSupervisor(
   def onTerminated: Receive = {
     case Terminated(ref) if child.contains(ref) ⇒
       child = None
-      val maxNrOfRetries = strategy match {
-        case oneForOne: OneForOneStrategy ⇒ oneForOne.maxNrOfRetries
-        case _                            ⇒ -1
-      }
-
-      val nextRestartCount = restartCount + 1
-
-      if (maxNrOfRetries == -1 || nextRestartCount <= maxNrOfRetries) {
-        val restartDelay = calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
-        context.system.scheduler.scheduleOnce(restartDelay, self, StartChild)
-        restartCount = nextRestartCount
-      } else {
-        log.debug(s"Terminating on restart #{} which exceeds max allowed restarts ({})", nextRestartCount, maxNrOfRetries)
+      if (finalStopMessageReceived) {
         context.stop(self)
+      } else {
+        val maxNrOfRetries = strategy match {
+          case oneForOne: OneForOneStrategy ⇒ oneForOne.maxNrOfRetries
+          case _                            ⇒ -1
+        }
+
+        val nextRestartCount = restartCount + 1
+
+        if (maxNrOfRetries == -1 || nextRestartCount <= maxNrOfRetries) {
+          val restartDelay = calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
+          context.system.scheduler.scheduleOnce(restartDelay, self, StartChild)
+          restartCount = nextRestartCount
+        } else {
+          log.debug(s"Terminating on restart #{} which exceeds max allowed restarts ({})", nextRestartCount, maxNrOfRetries)
+          context.stop(self)
+        }
       }
+
   }
 
   def receive = onTerminated orElse handleBackoff
@@ -370,10 +375,11 @@ private[akka] trait HandleBackoff { this: Actor ⇒
   def childName: String
   def reset: BackoffReset
   def replyWhileStopped: Option[Any]
-  def actionWhileStopped: Option[(ActorRef, Any, ActorContext) ⇒ Unit]
+  def finalStopMessage: Option[Any ⇒ Boolean]
 
   var child: Option[ActorRef] = None
   var restartCount = 0
+  var finalStopMessageReceived = false
 
   import BackoffSupervisor._
   import context.dispatcher
@@ -419,13 +425,20 @@ private[akka] trait HandleBackoff { this: Actor ⇒
     case msg ⇒ child match {
       case Some(c) ⇒
         c.forward(msg)
-      case None ⇒
-        (replyWhileStopped, actionWhileStopped) match {
-          case (None, None) ⇒ context.system.deadLetters.forward(msg)
-          case _ ⇒
-            actionWhileStopped.foreach(a ⇒ a(sender(), msg, context))
-            replyWhileStopped.foreach(a ⇒ sender() ! a)
+        if (!finalStopMessageReceived && finalStopMessage.isDefined) {
+          finalStopMessageReceived = finalStopMessage.get.apply(msg)
         }
+      case None ⇒
+        replyWhileStopped match {
+          case None ⇒ context.system.deadLetters.forward(msg)
+          case _    ⇒ replyWhileStopped.foreach(a ⇒ sender() ! a)
+        }
+        if (finalStopMessage.isDefined) {
+          if (finalStopMessage.get.apply(msg)) {
+            context.stop(self)
+          }
+        }
+
     }
   }
 }
