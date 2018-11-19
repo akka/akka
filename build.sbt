@@ -483,6 +483,7 @@ lazy val discovery = akkaModule("akka-discovery")
   .settings(Dependencies.discovery)
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.discovery"))
+  .settings(OSGi.discovery)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
