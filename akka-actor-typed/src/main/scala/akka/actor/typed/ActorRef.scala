@@ -5,11 +5,8 @@
 package akka.actor.typed
 
 import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
 import akka.{ actor ⇒ a }
 import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.Future
-import scala.util.Success
 
 import akka.actor.typed.internal.InternalRecipientRef
 
