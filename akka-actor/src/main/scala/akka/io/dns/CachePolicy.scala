@@ -17,7 +17,7 @@ object CachePolicy {
   @ApiMayChange
   case object Forever extends CachePolicy
   @ApiMayChange
-  final class Ttl(val value: FiniteDuration) extends CachePolicy {
+  final class Ttl private (val value: FiniteDuration) extends CachePolicy {
     if (value <= Duration.Zero) throw new IllegalArgumentException(s"TTL values must be a positive value.")
     import akka.util.JavaDurationConverters._
     def getValue: java.time.Duration = value.asJava
@@ -27,9 +27,7 @@ object CachePolicy {
       case _         ⇒ false
     }
 
-    override def hashCode(): Int = {
-      java.util.Objects.hash(value)
-    }
+    override def hashCode(): Int = value.hashCode()
 
     override def toString = s"Ttl($value)"
   }
