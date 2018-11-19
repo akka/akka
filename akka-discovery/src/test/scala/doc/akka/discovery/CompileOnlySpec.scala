@@ -16,11 +16,11 @@ object CompileOnlySpec {
   val serviceDiscovery = Discovery(system).discovery
   //#loading
 
-  //#simple
+  //#basic
   serviceDiscovery.lookup(Lookup("akka.io"), 1.second)
   // Convenience for a Lookup with only a serviceName
   serviceDiscovery.lookup("akka.io", 1.second)
-  //#simple
+  //#basic
 
   //#full
   serviceDiscovery.lookup(Lookup("akka.io").withPortName("remoting").withProtocol("tcp"), 1.second)

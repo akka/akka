@@ -47,7 +47,7 @@ akka {
 }
 
 class ConfigServiceDiscoverySpec
-  extends TestKit(ActorSystem("ConfigSimpleDiscoverySpec", ConfigServiceDiscoverySpec.config))
+  extends TestKit(ActorSystem("ConfigDiscoverySpec", ConfigServiceDiscoverySpec.config))
   with WordSpecLike
   with Matchers
   with BeforeAndAfterAll

@@ -17,7 +17,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
-final class AggregateSimpleServiceDiscoverySettings(config: Config) {
+final class AggregateServiceDiscoverySettings(config: Config) {
 
   val discoveryMechanisms = config
     .getStringList("discovery-mechanisms")
@@ -36,7 +36,7 @@ final class AggregateServiceDiscovery(system: ExtendedActorSystem) extends Servi
   private val log = Logging(system, getClass)
 
   private val settings =
-    new AggregateSimpleServiceDiscoverySettings(system.settings.config.getConfig("akka.discovery.aggregate"))
+    new AggregateServiceDiscoverySettings(system.settings.config.getConfig("akka.discovery.aggregate"))
 
   private val mechanisms = {
     val serviceDiscovery = Discovery(system)

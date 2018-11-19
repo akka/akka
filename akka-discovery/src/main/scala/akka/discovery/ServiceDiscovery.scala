@@ -97,7 +97,7 @@ case class Lookup(serviceName: String, portName: Option[String], protocol: Optio
 case object Lookup {
 
   /**
-   * Create a simple service Lookup with only a serviceName.
+   * Create a service Lookup with only a serviceName.
    * Use withPortName and withProtocol to provide optional portName
    * and protocol
    */
@@ -106,7 +106,7 @@ case object Lookup {
   /**
    * Java API
    *
-   * Create a simple service Lookup with only a serviceName.
+   * Create a service Lookup with only a serviceName.
    * Use withPortName and withProtocol to provide optional portName
    * and protocol
    */
@@ -116,7 +116,6 @@ case object Lookup {
 /**
  * Implement to provide basic service discovery mechanism.
  *
- * "Simple" because it's only the basic "lookup" methods, no ability to "keep monitoring a namespace for changes" etc.
  */
 @ApiMayChange
 abstract class ServiceDiscovery {

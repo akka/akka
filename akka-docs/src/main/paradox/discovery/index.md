@@ -51,10 +51,10 @@ A `Lookup` contains a mandatory `serviceName` and an optional `portName` and `pr
 method dependent e.g.DNS does an A/AAAA record query if any of the fields are missing and an SRV query for a full look up:
 
 Scala
-:  @@snip [CompileOnlySpec.scala](/akka-discovery/src/test/scala/doc/akka/discovery/CompileOnlySpec.scala) { #simple }
+:  @@snip [CompileOnlySpec.scala](/akka-discovery/src/test/scala/doc/akka/discovery/CompileOnlySpec.scala) { #basic }
 
 Java
-:  @@snip [CompileOnlyTest.java](/akka-discovery/src/test/java/jdoc/akka/discovery/CompileOnlyTest.java) { #simple }
+:  @@snip [CompileOnlyTest.java](/akka-discovery/src/test/java/jdoc/akka/discovery/CompileOnlyTest.java) { #basic }
 
 
 `portName` and `protocol` are optional and their meaning is interpreted by the method.
@@ -80,8 +80,7 @@ The mapping between Akka service discovery terminology and SRV terminology:
 * SRV name = serviceName
 * SRV protocol = protocol
 
-Configure it to be used as discovery implementation in your `application.conf` and `async-dns` to be uses
-as the Akka DNS resolver:
+Configure `akka-dns` to be used as discovery implementation in your `application.conf`:
 
 @@snip[application.conf](/akka-discovery/src/test/scala/akka/discovery/dns/DnsDiscoverySpec.scala){ #configure-dns }
 

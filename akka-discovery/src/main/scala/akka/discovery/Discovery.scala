@@ -28,13 +28,13 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
       case method ⇒ method
     }
 
-  private lazy val _simpleImpl = loadServiceDiscovery(_defaultImplMethod)
+  private lazy val defaultImpl = loadServiceDiscovery(_defaultImplMethod)
 
   /**
    * Default [[ServiceDiscovery]] as configured in `akka.discovery.method`.
    */
   @throws[IllegalArgumentException]
-  def discovery: ServiceDiscovery = _simpleImpl
+  def discovery: ServiceDiscovery = defaultImpl
 
   /**
    * Create a [[ServiceDiscovery]] from configuration property.
@@ -42,7 +42,7 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
    * "akka.discovery.[method].class" or "[method].class". `method` can also
    * be a fully class name.
    *
-   * The `SimpleServiceDiscovery` instance for a given `method` will be created
+   * The `ServiceDiscovery` instance for a given `method` will be created
    * once and subsequent requests for the same `method` will return the same instance.
    */
   def loadServiceDiscovery(method: String): ServiceDiscovery = {
@@ -83,7 +83,7 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
       case Failure(e @ (_: ClassNotFoundException | _: NoSuchMethodException)) ⇒
         throw new IllegalArgumentException(
           s"Illegal [$configName] value or incompatible class! " +
-            "The implementation class MUST extend akka.discovery.SimpleServiceDiscovery and take an " +
+            "The implementation class MUST extend akka.discovery.ServiceDiscovery and take an " +
             "ExtendedActorSystem as constructor argument.", e)
       case Failure(e)        ⇒ throw e
       case Success(instance) ⇒ instance

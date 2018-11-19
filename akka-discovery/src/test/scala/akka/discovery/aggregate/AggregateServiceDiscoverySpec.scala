@@ -75,7 +75,7 @@ object AggregateServiceDiscoverySpec {
 }
 
 class AggregateServiceDiscoverySpec
-  extends TestKit(ActorSystem("AggregateSimpleDiscoverySpec", AggregateServiceDiscoverySpec.config))
+  extends TestKit(ActorSystem("AggregateDiscoverySpec", AggregateServiceDiscoverySpec.config))
   with WordSpecLike
   with Matchers
   with BeforeAndAfterAll

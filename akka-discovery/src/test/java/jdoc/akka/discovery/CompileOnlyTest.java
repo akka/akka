@@ -18,11 +18,11 @@ public class CompileOnlyTest {
         ServiceDiscovery serviceDiscovery = Discovery.get(as).discovery();
         //#loading
 
-        //#simple
+        //#basic
         serviceDiscovery.lookup(Lookup.create("akka.io"), Duration.ofSeconds(1));
         // convenience for a Lookup with only a serviceName
         serviceDiscovery.lookup("akka.io", Duration.ofSeconds(1));
-        //#simple
+        //#basic
 
         //#full
         serviceDiscovery.lookup(Lookup.create("akka.io").withPortName("remoting").withProtocol("tcp"), Duration.ofSeconds(1));
