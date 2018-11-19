@@ -3,9 +3,7 @@
 @@@ warning
 
 This module is currently marked as @ref:[may change](../common/may-change.md)
-This means that API or semantics can
-change without warning or deprecation period and it is not recommended to use
-this module in production.
+This means that API or semantics can change without warning or deprecation period.
 
 @@@
 
