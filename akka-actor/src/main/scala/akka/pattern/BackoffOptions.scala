@@ -550,9 +550,8 @@ trait BackoffOptions {
 
   /**
    * Returns a new BackoffOptions with a constant reply to messages that the supervisor receives while its
-   * child is stopped.
+   * child is stopped. By default, a message received while the child is stopped is forwarded to `deadLetters`.
    * With this option, the supervisor will reply to the sender instead.
-   *
    * @param replyWhileStopped The message that the supervisor will send in response to all messages while
    *   its child is stopped.
    */
