@@ -5,9 +5,11 @@
 package doc.akka.discovery
 
 import akka.actor.ActorSystem
-import akka.discovery.{ Lookup, Discovery }
+import akka.discovery.{Discovery, Lookup, ServiceDiscovery}
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object CompileOnlySpec {
 
@@ -23,7 +25,10 @@ object CompileOnlySpec {
   //#basic
 
   //#full
-  serviceDiscovery.lookup(Lookup("akka.io").withPortName("remoting").withProtocol("tcp"), 1.second)
+  val lookup: Future[ServiceDiscovery.Resolved] = serviceDiscovery.lookup(Lookup("akka.io").withPortName("remoting").withProtocol("tcp"), 1.second)
   //#full
+
+  // compiler
+  lookup.foreach(println)
 
 }

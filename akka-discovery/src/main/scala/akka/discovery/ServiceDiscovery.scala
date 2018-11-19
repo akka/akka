@@ -79,7 +79,7 @@ object ServiceDiscovery {
  *
  */
 @ApiMayChange
-case class Lookup(serviceName: String, portName: Option[String], protocol: Option[String]) {
+final case class Lookup(serviceName: String, portName: Option[String], protocol: Option[String]) {
 
   /**
    * Which port for a service e.g. Akka remoting or HTTP.

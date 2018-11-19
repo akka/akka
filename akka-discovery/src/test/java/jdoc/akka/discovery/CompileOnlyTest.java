@@ -10,6 +10,7 @@ import akka.discovery.Discovery;
 import akka.discovery.ServiceDiscovery;
 
 import java.time.Duration;
+import java.util.concurrent.CompletionStage;
 
 public class CompileOnlyTest {
     public static void example() {
@@ -25,8 +26,11 @@ public class CompileOnlyTest {
         //#basic
 
         //#full
-        serviceDiscovery.lookup(Lookup.create("akka.io").withPortName("remoting").withProtocol("tcp"), Duration.ofSeconds(1));
+        CompletionStage<ServiceDiscovery.Resolved> lookup = serviceDiscovery.lookup(Lookup.create("akka.io").withPortName("remoting").withProtocol("tcp"), Duration.ofSeconds(1));
         //#full
+
+        // not-used warning
+        lookup.thenAccept(System.out::println);
 
     }
 }
