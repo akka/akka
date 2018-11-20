@@ -13,10 +13,10 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.Done
 import akka.actor.CoordinatedShutdown.Reason
 import akka.pattern.ask
+import akka.remote.OtherHasQuarantinedThisActorSystemEvent
 import akka.remote.QuarantinedEvent
 import akka.util.Timeout
 import com.typesafe.config.Config
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
@@ -386,6 +386,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   override def preStart(): Unit = {
     context.system.eventStream.subscribe(self, classOf[QuarantinedEvent])
+    context.system.eventStream.subscribe(self, classOf[OtherHasQuarantinedThisActorSystemEvent])
 
     cluster.downingProvider.downingActorProps.foreach { props ⇒
       val propsWithDispatcher =
@@ -507,6 +508,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     case SendGossipTo(address)            ⇒ sendGossipTo(address)
     case msg: SubscriptionMessage         ⇒ publisher forward msg
     case QuarantinedEvent(address, uid)   ⇒ quarantined(UniqueAddress(address, uid))
+    case OtherHasQuarantinedThisActorSystemEvent(local, remote) ⇒
+      // convert between remote.UniqueAddress and cluster.UniqueAddress
+      otherHasQuarantinedThisNode(UniqueAddress(local.address, local.uid), UniqueAddress(remote.address, remote.uid))
     case ClusterUserAction.JoinTo(address) ⇒
       logInfo("Trying to join [{}] when already part of a cluster, ignoring", address)
     case JoinSeedNodes(nodes) ⇒
@@ -539,7 +543,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     // When joiningNodeConfig is empty the joining node has version 2.5.9 or earlier.
     val configCheckUnsupportedByJoiningNode = joiningNodeConfig.isEmpty
 
-    val selfStatus = latestGossip.member(selfUniqueAddress).status
+    val selfStatus = membershipState.selfMember.status
 
     if (removeUnreachableWithMemberStatus.contains(selfStatus)) {
       // prevents a Down and Exiting node from being used for joining
@@ -664,7 +668,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    * current gossip state, including the new joining member.
    */
   def joining(joiningNode: UniqueAddress, roles: Set[String]): Unit = {
-    val selfStatus = latestGossip.member(selfUniqueAddress).status
+    val selfStatus = membershipState.selfMember.status
     if (joiningNode.address.protocol != selfAddress.protocol)
       log.warning(
         "Member with wrong protocol tried to join, but was ignored, expected [{}] but was [{}]",
@@ -862,6 +866,18 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
   }
 
+  def otherHasQuarantinedThisNode(localAddress: UniqueAddress, remoteAddress: UniqueAddress): Unit = {
+    val selfStatus = membershipState.selfMember.status
+    if (localAddress == selfUniqueAddress && selfStatus != Down && selfStatus != Exiting &&
+      membershipState.members.exists(m ⇒ m.uniqueAddress == remoteAddress &&
+        m.status != Down && m.status != Exiting && m.status != Leaving)) {
+      log.warning(
+        "Cluster Node [{}] - Another node [{}] has quarantined (downed/removed) this node, downing myself.",
+        selfAddress, remoteAddress)
+      downing(selfAddress)
+    }
+  }
+
   def receiveGossipStatus(status: GossipStatus): Unit = {
     val from = status.from
     if (!latestGossip.hasMember(from))
@@ -987,7 +1003,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
       publishMembershipState()
 
-      val selfStatus = latestGossip.member(selfUniqueAddress).status
+      val selfStatus = membershipState.selfMember.status
       if (selfStatus == Exiting && !exitingTasksInProgress) {
         // ExitingCompleted will be received via CoordinatedShutdown to continue
         // the leaving process. Meanwhile the gossip state is not marked as seen.
@@ -1093,7 +1109,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   }
 
   def shutdownSelfWhenDown(): Unit = {
-    if (latestGossip.member(selfUniqueAddress).status == Down) {
+    if (membershipState.selfMember.status == Down) {
       // When all reachable have seen the state this member will shutdown itself when it has
       // status Down. The down commands should spread before we shutdown.
       val unreachable = membershipState.dcReachability.allUnreachableOrTerminated

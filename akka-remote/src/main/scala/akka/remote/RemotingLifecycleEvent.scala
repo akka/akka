@@ -121,10 +121,22 @@ final case class GracefulShutdownQuarantinedEvent(uniqueAddress: UniqueAddress, 
       s"messages to this UID will be delivered to dead letters. Reason: $reason "
 }
 
+/**
+ * Used in Classic remoting, in Artery remoting [[OtherHasQuarantinedThisActorSystemEvent]] is used instead.
+ */
 @SerialVersionUID(1L)
 final case class ThisActorSystemQuarantinedEvent(localAddress: Address, remoteAddress: Address) extends RemotingLifecycleEvent {
   override def logLevel: LogLevel = Logging.WarningLevel
-  override val toString: String = s"The remote system ${remoteAddress} has quarantined this system ${localAddress}."
+  override val toString: String = s"The remote system [$remoteAddress] has quarantined this system [$localAddress]."
+}
+
+/**
+ * Used in Artery remoting instead of [[ThisActorSystemQuarantinedEvent]] to include full unique addresses.
+ */
+@SerialVersionUID(1L)
+final case class OtherHasQuarantinedThisActorSystemEvent(localAddress: UniqueAddress, remoteAddress: UniqueAddress) extends RemotingLifecycleEvent {
+  override def logLevel: LogLevel = Logging.WarningLevel
+  override val toString: String = s"The remote system [$remoteAddress] has quarantined this system [$localAddress]."
 }
 
 /**

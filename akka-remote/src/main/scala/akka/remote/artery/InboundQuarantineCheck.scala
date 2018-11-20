@@ -12,8 +12,6 @@ import akka.stream.stage._
 import akka.remote.UniqueAddress
 import akka.util.OptionVal
 import akka.event.Logging
-import akka.remote.HeartbeatMessage
-import akka.actor.ActorSelectionMessage
 
 /**
  * INTERNAL API
@@ -41,8 +39,7 @@ private[remote] class InboundQuarantineCheck(inboundContext: InboundContext) ext
                 log.debug(
                   "Dropping message [{}] from [{}#{}] because the system is quarantined",
                   Logging.messageClassName(env.message), association.remoteAddress, env.originUid)
-              // avoid starting outbound stream for heartbeats
-              if (!env.message.isInstanceOf[Quarantined] && !isHeartbeat(env.message))
+              if (!env.message.isInstanceOf[Quarantined])
                 inboundContext.sendControl(
                   association.remoteAddress,
                   Quarantined(inboundContext.localAddress, UniqueAddress(association.remoteAddress, env.originUid)))
@@ -50,12 +47,6 @@ private[remote] class InboundQuarantineCheck(inboundContext: InboundContext) ext
             } else
               push(out, env)
         }
-      }
-
-      private def isHeartbeat(msg: Any): Boolean = msg match {
-        case _: HeartbeatMessage ⇒ true
-        case ActorSelectionMessage(_: HeartbeatMessage, _, _) ⇒ true
-        case _ ⇒ false
       }
 
       // OutHandler

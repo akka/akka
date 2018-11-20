@@ -10,10 +10,11 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec, ThisActorSystemQuarantinedEvent }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
+
+import akka.remote.OtherHasQuarantinedThisActorSystemEvent
 
 object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   val first = role("first")
@@ -42,7 +43,7 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
 
   import RemoteRestartedQuarantinedSpec._
 
-  override def initialParticipants = 2
+  override def initialParticipants = roles.size
 
   def identifyWithUid(role: RoleName, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
     within(timeout) {
@@ -84,7 +85,7 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
       runOn(second) {
         val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         val firstAddress = node(first).address
-        system.eventStream.subscribe(testActor, classOf[ThisActorSystemQuarantinedEvent])
+        system.eventStream.subscribe(testActor, classOf[OtherHasQuarantinedThisActorSystemEvent])
 
         val (firstUid, ref) = identifyWithUid(first, "subject", 5.seconds)
 
@@ -92,7 +93,7 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
         enterBarrier("quarantined")
 
         expectMsgPF(10 seconds) {
-          case ThisActorSystemQuarantinedEvent(local, remote) ⇒
+          case OtherHasQuarantinedThisActorSystemEvent(_, _) ⇒
         }
 
         // check that we quarantine back

@@ -58,7 +58,7 @@ abstract class RemoteRestartedQuarantinedSpec
 
   import RemoteRestartedQuarantinedSpec._
 
-  override def initialParticipants = 2
+  override def initialParticipants = roles.size
 
   def identifyWithUid(role: RoleName, actorName: String): (Int, ActorRef) = {
     system.actorSelection(node(role) / "user" / actorName) ! "identify"
@@ -113,7 +113,7 @@ abstract class RemoteRestartedQuarantinedSpec
         }
 
         expectMsgPF(10 seconds) {
-          case ThisActorSystemQuarantinedEvent(local, remote) ⇒
+          case ThisActorSystemQuarantinedEvent(_, _) ⇒
         }
 
         enterBarrier("still-quarantined")

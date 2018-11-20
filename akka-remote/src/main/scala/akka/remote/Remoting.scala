@@ -517,6 +517,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         }
         disassiciationInfo.foreach {
           case AssociationHandle.Quarantined ⇒
+            println(s"# publish ThisActorSystemQuarantinedEvent") // FIXME
             context.system.eventStream.publish(ThisActorSystemQuarantinedEvent(localAddress, remoteAddress))
           case _ ⇒ // do nothing
         }
