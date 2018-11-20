@@ -13,6 +13,8 @@ import scala.util.{ Failure, Success }
 
 final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
 
+  Discovery.checkClassPathForOldDiscovery()
+
   private val implementations = new ConcurrentHashMap[String, ServiceDiscovery]
   private val factory = new JFunction[String, ServiceDiscovery] {
     override def apply(method: String): ServiceDiscovery = createServiceDiscovery(method)
@@ -101,5 +103,14 @@ object Discovery extends ExtensionId[Discovery] with ExtensionIdProvider {
   override def get(system: ActorSystem): Discovery = super.get(system)
 
   override def createExtension(system: ExtendedActorSystem): Discovery = new Discovery()(system)
+
+  def checkClassPathForOldDiscovery(): Unit = {
+    try {
+      Class.forName("akka.discovery.SimpleServiceDiscovery")
+      throw new RuntimeException("Old version of Akka Discovery from Akka Management found on the classpath. Remove `com.lightbend.akka.discovery:akka-discovery` from the classpath..")
+    } catch {
+      case cnf: ClassNotFoundException => // all good
+    }
+  }
 
 }
