@@ -35,7 +35,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       for {
         chunks ← Gen.choose(0, s)
         bytes ← Gen.listOfN(chunks, genSimpleByteString(1, 1 max (s / (chunks max 1))))
-      } yield (ByteString.empty /: bytes)(_ ++ _)
+      } yield bytes.foldLeft(ByteString.empty)(_ ++ _)
     }
   }
 

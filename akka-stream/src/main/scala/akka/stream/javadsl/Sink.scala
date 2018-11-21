@@ -18,7 +18,7 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 import java.util.concurrent.CompletionStage
-
+import scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 
@@ -262,7 +262,7 @@ object Sink {
    */
   def combine[T, U](output1: Sink[U, _], output2: Sink[U, _], rest: java.util.List[Sink[U, _]], strategy: function.Function[java.lang.Integer, Graph[UniformFanOutShape[T, U], NotUsed]]): Sink[T, NotUsed] = {
     import scala.collection.JavaConverters._
-    val seq = if (rest != null) rest.asScala.map(_.asScala) else Seq()
+    val seq = if (rest != null) rest.asScala.map(_.asScala).toSeq else immutable.Seq()
     new Sink(scaladsl.Sink.combine(output1.asScala, output2.asScala, seq: _*)(num ⇒ strategy.apply(num)))
   }
 

@@ -21,7 +21,7 @@ private[io] class TcpIncomingConnection(
   _channel:       SocketChannel,
   registry:       ChannelRegistry,
   bindHandler:    ActorRef,
-  options:        immutable.Iterable[SocketOption],
+  options:        immutable.Traversable[SocketOption],
   readThrottling: Boolean)
   extends TcpConnection(_tcp, _channel, readThrottling) {
 

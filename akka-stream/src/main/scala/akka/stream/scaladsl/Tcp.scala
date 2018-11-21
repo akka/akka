@@ -25,6 +25,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.Try
 import scala.util.control.NoStackTrace
+import scala.collection.immutable
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 

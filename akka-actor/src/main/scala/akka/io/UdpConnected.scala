@@ -90,8 +90,8 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
   final case class Connect(
     handler:       ActorRef,
     remoteAddress: InetSocketAddress,
-    localAddress:  Option[InetSocketAddress]        = None,
-    options:       immutable.Iterable[SocketOption] = Nil) extends Command
+    localAddress:  Option[InetSocketAddress]           = None,
+    options:       immutable.Traversable[SocketOption] = Nil) extends Command
 
   /**
    * Send this message to a connection actor (which had previously sent the

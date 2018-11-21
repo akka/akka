@@ -26,6 +26,7 @@ import akka.util.ByteString
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ Future, Promise }
+import scala.collection.immutable
 
 /**
  * INTERNAL API

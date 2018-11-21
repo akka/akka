@@ -68,7 +68,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
       }
 
       val retried = retry(
-        attempt,
+        () ⇒ attempt,
         10,
         100 milliseconds
       )
@@ -89,7 +89,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
       }
 
       val retried = retry(
-        attempt,
+        () ⇒ attempt,
         5,
         100 milliseconds
       )
