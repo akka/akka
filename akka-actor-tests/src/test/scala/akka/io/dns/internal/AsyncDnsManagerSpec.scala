@@ -17,6 +17,16 @@ class AsyncDnsManagerSpec extends AkkaSpec(
     akka.loglevel = DEBUG
     akka.io.dns.resolver = async-dns
     akka.io.dns.async-dns.nameservers = default
+    akka {
+     log-dead-letters = 10
+     actor {
+       debug {
+         # enable DEBUG logging of unhandled messages
+         unhandled = on
+       }
+     }
+ }
+
   """) with ImplicitSender {
 
   val dns = Dns(system).manager

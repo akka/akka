@@ -44,7 +44,10 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   @InternalApi
   private[akka] def loadDnsResolver(system: ExtendedActorSystem, resolver: String, managerName: String): DnsExt = {
     implementations.computeIfAbsent(resolver, new JFunction[String, DnsExt] {
-      override def apply(method: String): DnsExt = new DnsExt(system, resolver, managerName)
+      override def apply(r: String): DnsExt = {
+        system.log.info("Creating resolver for resolver: {}. ManagerName: {}", r, managerName)
+        new DnsExt(system, r, managerName)
+      }
     })
   }
 
