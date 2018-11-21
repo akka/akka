@@ -177,7 +177,7 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   /**
    * Recursively create a descendant’s path by appending all child names.
    */
-  def /(child: Iterable[String]): ActorPath = (this /: child)((path, elem) ⇒ if (elem.isEmpty) path else path / elem)
+  def /(child: Iterable[String]): ActorPath = child.foldLeft(this)((path, elem) ⇒ if (elem.isEmpty) path else path / elem)
 
   /**
    * Java API: Recursively create a descendant’s path by appending all child names.

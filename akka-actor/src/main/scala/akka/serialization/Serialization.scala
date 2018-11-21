@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import java.util.NoSuchElementException
 import akka.annotation.InternalApi
+import scala.collection.compat._
 
 object Serialization {
 
@@ -400,7 +401,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   private val serializers: Map[String, Serializer] = {
     val fromConfig = for ((k: String, v: String) ← settings.Serializers) yield k → serializerOf(v).get
     val result = fromConfig ++ serializerDetails.map(d ⇒ d.alias → d.serializer)
-    ensureOnlyAllowedSerializers(result.map { case (_, ser) ⇒ ser }(collection.breakOut))
+    ensureOnlyAllowedSerializers(result.iterator.map { case (_, ser) ⇒ ser })
     result
   }
 
@@ -419,7 +420,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     }
 
     val result = sort(fromConfig ++ fromSettings)
-    ensureOnlyAllowedSerializers(result.map { case (_, ser) ⇒ ser }(collection.breakOut))
+    ensureOnlyAllowedSerializers(result.iterator.map { case (_, ser) ⇒ ser })
     result
   }
 
@@ -441,20 +442,20 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
    * obeying any order between unrelated subtypes (insert sort).
    */
   private def sort(in: Iterable[ClassSerializer]): immutable.Seq[ClassSerializer] =
-    ((new ArrayBuffer[ClassSerializer](in.size) /: in) { (buf, ca) ⇒
+    (in.foldLeft(new ArrayBuffer[ClassSerializer](in.size)) { (buf, ca) ⇒
       buf.indexWhere(_._1 isAssignableFrom ca._1) match {
         case -1 ⇒ buf append ca
         case x  ⇒ buf insert (x, ca)
       }
       buf
-    }).to[immutable.Seq]
+    }).to(immutable.Seq)
 
   /**
    * serializerMap is a Map whose keys is the class that is serializable and values is the serializer
    * to be used for that class.
    */
   private val serializerMap: ConcurrentHashMap[Class[_], Serializer] =
-    (new ConcurrentHashMap[Class[_], Serializer] /: bindings) { case (map, (c, s)) ⇒ map.put(c, s); map }
+    bindings.foldLeft(new ConcurrentHashMap[Class[_], Serializer]) { case (map, (c, s)) ⇒ map.put(c, s); map }
 
   /**
    * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)
