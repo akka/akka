@@ -26,6 +26,7 @@ import akka.util.ByteString
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ Future, Promise }
+import scala.collection.immutable
 
 /**
  * INTERNAL API
@@ -34,7 +35,7 @@ import scala.concurrent.{ Future, Promise }
   val tcpManager:          ActorRef,
   val endpoint:            InetSocketAddress,
   val backlog:             Int,
-  val options:             immutable.Traversable[SocketOption],
+  val options:             immutable.Iterable[SocketOption],
   val halfClose:           Boolean,
   val idleTimeout:         Duration,
   val bindShutdownTimeout: FiniteDuration,
@@ -400,10 +401,10 @@ private[stream] object ConnectionSourceStage {
 @InternalApi private[stream] class OutgoingConnectionStage(
   manager:        ActorRef,
   remoteAddress:  InetSocketAddress,
-  localAddress:   Option[InetSocketAddress]           = None,
-  options:        immutable.Traversable[SocketOption] = Nil,
-  halfClose:      Boolean                             = true,
-  connectTimeout: Duration                            = Duration.Inf,
+  localAddress:   Option[InetSocketAddress]        = None,
+  options:        immutable.Iterable[SocketOption] = Nil,
+  halfClose:      Boolean                          = true,
+  connectTimeout: Duration                         = Duration.Inf,
   ioSettings:     IOSettings)
 
   extends GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Future[StreamTcp.OutgoingConnection]] {

@@ -25,6 +25,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.Try
 import scala.util.control.NoStackTrace
+import scala.collection.immutable
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -118,10 +119,10 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   def bind(
     interface:   String,
     port:        Int,
-    backlog:     Int                                 = 100,
-    options:     immutable.Traversable[SocketOption] = Nil,
-    halfClose:   Boolean                             = false,
-    idleTimeout: Duration                            = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] =
+    backlog:     Int                              = 100,
+    options:     immutable.Iterable[SocketOption] = Nil,
+    halfClose:   Boolean                          = false,
+    idleTimeout: Duration                         = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] =
     Source.fromGraph(new ConnectionSourceStage(
       IO(IoTcp)(system),
       new InetSocketAddress(interface, port),
@@ -159,10 +160,10 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     handler:     Flow[ByteString, ByteString, _],
     interface:   String,
     port:        Int,
-    backlog:     Int                                 = 100,
-    options:     immutable.Traversable[SocketOption] = Nil,
-    halfClose:   Boolean                             = false,
-    idleTimeout: Duration                            = Duration.Inf)(implicit m: Materializer): Future[ServerBinding] = {
+    backlog:     Int                              = 100,
+    options:     immutable.Iterable[SocketOption] = Nil,
+    halfClose:   Boolean                          = false,
+    idleTimeout: Duration                         = Duration.Inf)(implicit m: Materializer): Future[ServerBinding] = {
     bind(interface, port, backlog, options, halfClose, idleTimeout).to(Sink.foreach { conn: IncomingConnection ⇒
       conn.flow.join(handler).run()
     }).run()
@@ -190,11 +191,11 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def outgoingConnection(
     remoteAddress:  InetSocketAddress,
-    localAddress:   Option[InetSocketAddress]           = None,
-    options:        immutable.Traversable[SocketOption] = Nil,
-    halfClose:      Boolean                             = true,
-    connectTimeout: Duration                            = Duration.Inf,
-    idleTimeout:    Duration                            = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
+    localAddress:   Option[InetSocketAddress]        = None,
+    options:        immutable.Iterable[SocketOption] = Nil,
+    halfClose:      Boolean                          = true,
+    connectTimeout: Duration                         = Duration.Inf,
+    idleTimeout:    Duration                         = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
     val tcpFlow = Flow.fromGraph(new OutgoingConnectionStage(
       IO(IoTcp)(system),
@@ -258,10 +259,10 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     remoteAddress:       InetSocketAddress,
     sslContext:          SSLContext,
     negotiateNewSession: NegotiateNewSession,
-    localAddress:        Option[InetSocketAddress]           = None,
-    options:             immutable.Traversable[SocketOption] = Nil,
-    connectTimeout:      Duration                            = Duration.Inf,
-    idleTimeout:         Duration                            = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
+    localAddress:        Option[InetSocketAddress]        = None,
+    options:             immutable.Iterable[SocketOption] = Nil,
+    connectTimeout:      Duration                         = Duration.Inf,
+    idleTimeout:         Duration                         = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
     val connection = outgoingConnection(remoteAddress, localAddress, options, true, connectTimeout, idleTimeout)
     val tls = TLS(sslContext, negotiateNewSession, TLSRole.client)
@@ -274,12 +275,12 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   @InternalApi private[akka] def outgoingTlsConnectionWithSSLEngine(
     remoteAddress:   InetSocketAddress,
     createSSLEngine: () ⇒ SSLEngine,
-    localAddress:    Option[InetSocketAddress]           = None,
-    options:         immutable.Traversable[SocketOption] = Nil,
-    connectTimeout:  Duration                            = Duration.Inf,
-    idleTimeout:     Duration                            = Duration.Inf,
+    localAddress:    Option[InetSocketAddress]        = None,
+    options:         immutable.Iterable[SocketOption] = Nil,
+    connectTimeout:  Duration                         = Duration.Inf,
+    idleTimeout:     Duration                         = Duration.Inf,
     verifySession:   SSLSession ⇒ Try[Unit],
-    closing:         TLSClosing                          = IgnoreComplete): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
+    closing:         TLSClosing                       = IgnoreComplete): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
     val connection = outgoingConnection(remoteAddress, localAddress, options, true, connectTimeout, idleTimeout)
     val tls = TLS(createSSLEngine, verifySession, closing)
@@ -302,9 +303,9 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     port:                Int,
     sslContext:          SSLContext,
     negotiateNewSession: NegotiateNewSession,
-    backlog:             Int                                 = 100,
-    options:             immutable.Traversable[SocketOption] = Nil,
-    idleTimeout:         Duration                            = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
+    backlog:             Int                              = 100,
+    options:             immutable.Iterable[SocketOption] = Nil,
+    idleTimeout:         Duration                         = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
 
     val tls = tlsWrapping.atop(TLS(sslContext, negotiateNewSession, TLSRole.server)).reversed
 
@@ -322,11 +323,11 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     interface:       String,
     port:            Int,
     createSSLEngine: () ⇒ SSLEngine,
-    backlog:         Int                                 = 100,
-    options:         immutable.Traversable[SocketOption] = Nil,
-    idleTimeout:     Duration                            = Duration.Inf,
+    backlog:         Int                              = 100,
+    options:         immutable.Iterable[SocketOption] = Nil,
+    idleTimeout:     Duration                         = Duration.Inf,
     verifySession:   SSLSession ⇒ Try[Unit],
-    closing:         TLSClosing                          = IgnoreComplete): Source[IncomingConnection, Future[ServerBinding]] = {
+    closing:         TLSClosing                       = IgnoreComplete): Source[IncomingConnection, Future[ServerBinding]] = {
 
     val tls = tlsWrapping.atop(TLS(createSSLEngine, verifySession, closing)).reversed
 
@@ -354,9 +355,9 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     port:                Int,
     sslContext:          SSLContext,
     negotiateNewSession: NegotiateNewSession,
-    backlog:             Int                                 = 100,
-    options:             immutable.Traversable[SocketOption] = Nil,
-    idleTimeout:         Duration                            = Duration.Inf)(implicit m: Materializer): Future[ServerBinding] = {
+    backlog:             Int                              = 100,
+    options:             immutable.Iterable[SocketOption] = Nil,
+    idleTimeout:         Duration                         = Duration.Inf)(implicit m: Materializer): Future[ServerBinding] = {
     bindTls(interface, port, sslContext, negotiateNewSession, backlog, options, idleTimeout)
       .to(Sink.foreach { conn: IncomingConnection ⇒
         conn.handleWith(handler)

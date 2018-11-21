@@ -589,7 +589,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
         val inlets = module.shape.inlets
         if (inlets.isEmpty) Map.empty
         else if (Shape.hasOnePort(inlets)) new Map1(inlets.head, inlets.head.id)
-        else inlets.map(in ⇒ in.asInstanceOf[InPort] → in.id)(collection.breakOut)
+        else inlets.iterator.map(in ⇒ in.asInstanceOf[InPort] → in.id).toMap
       }
       CompletedTraversalBuilder(
         traversalSoFar = MaterializeAtomic(module, newOutToSlot),

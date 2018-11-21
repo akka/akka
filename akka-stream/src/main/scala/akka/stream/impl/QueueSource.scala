@@ -186,7 +186,10 @@ import scala.util.control.NonFatal
       override def offer(element: T): Future[QueueOfferResult] = {
         val p = Promise[QueueOfferResult]
         callback.invokeWithFeedback(Offer(element, p))
-          .onFailure { case NonFatal(e) ⇒ p.tryFailure(e) }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+          .onComplete {
+            case scala.util.Failure(NonFatal(e)) ⇒ p.tryFailure(e)
+            case _                               ⇒ ()
+          }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         p.future
       }
       override def complete(): Unit = callback.invoke(Completion)
