@@ -35,7 +35,7 @@ import scala.collection.immutable
   val tcpManager:          ActorRef,
   val endpoint:            InetSocketAddress,
   val backlog:             Int,
-  val options:             immutable.Iterable[SocketOption],
+  val options:             immutable.Traversable[SocketOption],
   val halfClose:           Boolean,
   val idleTimeout:         Duration,
   val bindShutdownTimeout: FiniteDuration,
@@ -401,10 +401,10 @@ private[stream] object ConnectionSourceStage {
 @InternalApi private[stream] class OutgoingConnectionStage(
   manager:        ActorRef,
   remoteAddress:  InetSocketAddress,
-  localAddress:   Option[InetSocketAddress]        = None,
-  options:        immutable.Iterable[SocketOption] = Nil,
-  halfClose:      Boolean                          = true,
-  connectTimeout: Duration                         = Duration.Inf,
+  localAddress:   Option[InetSocketAddress]           = None,
+  options:        immutable.Traversable[SocketOption] = Nil,
+  halfClose:      Boolean                             = true,
+  connectTimeout: Duration                            = Duration.Inf,
   ioSettings:     IOSettings)
 
   extends GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Future[StreamTcp.OutgoingConnection]] {
