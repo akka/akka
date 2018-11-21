@@ -21,6 +21,8 @@ class AsyncDnsManagerSpec extends AkkaSpec(
 
   val dns = Dns(system).manager
 
+  log.debug("Dns manager: {}", dns)
+
   "Async DNS Manager" must {
     "adapt reply back to old protocol when old protocol Dns.Resolve is received" in {
       dns ! akka.io.Dns.Resolve("127.0.0.1") // 127.0.0.1 will short circuit the resolution
