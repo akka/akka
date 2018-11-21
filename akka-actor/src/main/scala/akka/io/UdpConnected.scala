@@ -11,6 +11,8 @@ import akka.io.Inet.SocketOption
 import akka.io.Udp.UdpSettings
 import akka.util.ByteString
 import akka.actor._
+import scala.collection.immutable
+import scala.collection.compat._
 
 /**
  * UDP Extension for Akka’s IO layer.
@@ -88,8 +90,8 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
   final case class Connect(
     handler:       ActorRef,
     remoteAddress: InetSocketAddress,
-    localAddress:  Option[InetSocketAddress]           = None,
-    options:       immutable.Traversable[SocketOption] = Nil) extends Command
+    localAddress:  Option[InetSocketAddress]        = None,
+    options:       immutable.Iterable[SocketOption] = Nil) extends Command
 
   /**
    * Send this message to a connection actor (which had previously sent the
@@ -246,8 +248,8 @@ object UdpConnectedMessage {
    */
   def resumeReading: Command = ResumeReading
 
-  implicit private def fromJava[T](coll: JIterable[T]): immutable.Traversable[T] = {
+  implicit private def fromJava[T](coll: JIterable[T]): immutable.Iterable[T] = {
     import scala.collection.JavaConverters._
-    coll.asScala.to[immutable.Traversable]
+    coll.asScala.to(immutable.Iterable)
   }
 }

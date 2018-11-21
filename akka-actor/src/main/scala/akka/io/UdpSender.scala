@@ -11,6 +11,7 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.Inet.SocketOption
 import akka.io.Udp._
 import akka.actor._
+import scala.collection.immutable
 
 /**
  * INTERNAL API
@@ -19,7 +20,7 @@ private[io] class UdpSender(
   val udp:         UdpExt,
   channelRegistry: ChannelRegistry,
   commander:       ActorRef,
-  options:         immutable.Traversable[SocketOption])
+  options:         immutable.Iterable[SocketOption])
   extends Actor with ActorLogging with WithUdpSend with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
   val channel = {

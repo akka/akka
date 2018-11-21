@@ -8,6 +8,7 @@ import java.nio.channels.SocketChannel
 import scala.collection.immutable
 import akka.actor.ActorRef
 import akka.io.Inet.SocketOption
+import scala.collection.immutable
 
 /**
  * An actor handling the connection state machine for an incoming, already connected
@@ -20,7 +21,7 @@ private[io] class TcpIncomingConnection(
   _channel:       SocketChannel,
   registry:       ChannelRegistry,
   bindHandler:    ActorRef,
-  options:        immutable.Traversable[SocketOption],
+  options:        immutable.Iterable[SocketOption],
   readThrottling: Boolean)
   extends TcpConnection(_tcp, _channel, readThrottling) {
 
