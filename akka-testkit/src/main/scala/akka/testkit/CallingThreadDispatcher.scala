@@ -50,7 +50,7 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
 
   // we have to forget about long-gone threads sometime
   private def gc(): Unit = {
-    queues = (Map.newBuilder[CallingThreadMailbox, Set[WeakReference[MessageQueue]]] /: queues) {
+    queues = queues.foldLeft(Map.newBuilder[CallingThreadMailbox, Set[WeakReference[MessageQueue]]]) {
       case (m, (k, v)) ⇒
         val nv = v filter (_.get ne null)
         if (nv.isEmpty) m else m += (k → nv)
