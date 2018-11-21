@@ -5,13 +5,14 @@
 package akka.remote
 
 import akka.actor._
+import akka.actor.dungeon.DeathWatch
 import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.event.AddressTerminatedTopic
 import akka.remote.artery.ArteryMessage
+
 import scala.collection.mutable
 import scala.concurrent.duration._
-
 import akka.remote.artery.ArteryTransport
 
 /**
@@ -245,12 +246,15 @@ private[akka] class RemoteWatcher(
 
     // When watchee is stopped it sends DeathWatchNotification to this RemoteWatcher,
     // which will propagate it to all watchers of this watchee.
-    // addressTerminated case is already handled by the watcher itself in DeathWatch trait
-    if (!addressTerminated)
-      for {
-        watchers ← watching.get(watchee)
-        watcher ← watchers
-      } watcher.sendSystemMessage(DeathWatchNotification(watchee, existenceConfirmed, addressTerminated))
+    for {
+      watchers ← watching.get(watchee)
+      watcher ← watchers
+    } watcher match {
+      case _: DeathWatch if addressTerminated ⇒
+      // addressTerminated case is already handled by the watcher itself in DeathWatch trait
+      case _ ⇒
+        watcher.sendSystemMessage(DeathWatchNotification(watchee, existenceConfirmed, addressTerminated))
+    }
 
     removeWatchee(watchee)
   }
