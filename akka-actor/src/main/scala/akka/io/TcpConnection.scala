@@ -22,6 +22,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.control.{ NoStackTrace, NonFatal }
+import scala.collection.immutable
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.
@@ -200,7 +201,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   /** used in subclasses to start the common machinery above once a channel is connected */
   def completeConnect(registration: ChannelRegistration, commander: ActorRef,
-                      options: immutable.Traversable[SocketOption]): Unit = {
+                      options: immutable.Iterable[SocketOption]): Unit = {
     this.registration = Some(registration)
 
     // Turn off Nagle's algorithm by default

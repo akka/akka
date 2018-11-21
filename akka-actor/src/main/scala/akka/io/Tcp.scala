@@ -21,6 +21,7 @@ import java.lang.{ Iterable ⇒ JIterable }
 import java.nio.file.Path
 
 import akka.annotation.InternalApi
+import scala.collection.immutable
 
 /**
  * TCP Extension for Akka’s IO layer.
@@ -118,10 +119,10 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    */
   final case class Connect(
     remoteAddress: InetSocketAddress,
-    localAddress:  Option[InetSocketAddress]           = None,
-    options:       immutable.Traversable[SocketOption] = Nil,
-    timeout:       Option[FiniteDuration]              = None,
-    pullMode:      Boolean                             = false) extends Command
+    localAddress:  Option[InetSocketAddress]        = None,
+    options:       immutable.Iterable[SocketOption] = Nil,
+    timeout:       Option[FiniteDuration]           = None,
+    pullMode:      Boolean                          = false) extends Command
 
   /**
    * The Bind message is send to the TCP manager actor, which is obtained via
@@ -145,9 +146,9 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
   final case class Bind(
     handler:      ActorRef,
     localAddress: InetSocketAddress,
-    backlog:      Int                                 = 100,
-    options:      immutable.Traversable[SocketOption] = Nil,
-    pullMode:     Boolean                             = false) extends Command
+    backlog:      Int                              = 100,
+    options:      immutable.Iterable[SocketOption] = Nil,
+    pullMode:     Boolean                          = false) extends Command
 
   /**
    * This message must be sent to a TCP connection actor after receiving the
@@ -870,7 +871,7 @@ object TcpMessage {
    */
   def resumeAccepting(batchSize: Int): Command = ResumeAccepting(batchSize)
 
-  implicit private def fromJava[T](coll: JIterable[T]): immutable.Traversable[T] = {
+  implicit private def fromJava[T](coll: JIterable[T]): immutable.Iterable[T] = {
     akka.japi.Util.immutableSeq(coll)
   }
 }

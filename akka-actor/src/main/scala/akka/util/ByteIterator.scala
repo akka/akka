@@ -10,6 +10,7 @@ import scala.annotation.tailrec
 import scala.collection.LinearSeq
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
+import scala.collection.compat._
 
 object ByteIterator {
   object ByteArrayIterator {
@@ -41,7 +42,7 @@ object ByteIterator {
 
     final override def length: Int = { val l = len; clear(); l }
 
-    final override def ++(that: TraversableOnce[Byte]): ByteIterator = that match {
+    final override def ++(that: IterableOnce[Byte]): ByteIterator = that match {
       case that: ByteIterator ⇒
         if (that.isEmpty) this
         else if (this.isEmpty) that
@@ -209,7 +210,7 @@ object ByteIterator {
       this
     }
 
-    final override def ++(that: TraversableOnce[Byte]): ByteIterator = that match {
+    final override def ++(that: IterableOnce[Byte]): ByteIterator = that match {
       case that: ByteIterator ⇒
         if (that.isEmpty) this
         else if (this.isEmpty) that
@@ -229,7 +230,7 @@ object ByteIterator {
     }
 
     final override def clone: MultiByteArrayIterator = {
-      val clonedIterators: List[ByteArrayIterator] = iterators.map(_.clone)(collection.breakOut)
+      val clonedIterators: List[ByteArrayIterator] = iterators.iterator.map(_.clone).to(scala.collection.immutable.List)
       new MultiByteArrayIterator(clonedIterators)
     }
 
@@ -395,7 +396,7 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
 
   protected def clear(): Unit
 
-  def ++(that: TraversableOnce[Byte]): ByteIterator = if (that.isEmpty) this else ByteIterator.ByteArrayIterator(that.toArray)
+  def ++(that: IterableOnce[Byte]): ByteIterator = if (that.isEmpty) this else ByteIterator.ByteArrayIterator(that.toArray)
 
   // *must* be overridden by derived classes. This construction is necessary
   // to specialize the return type, as the method is already implemented in
