@@ -205,7 +205,7 @@ import scala.collection.compat._
       }
 
       override def onUpstreamFinish(): Unit = {
-        val elements = buffer.result().toList
+        val elements = buffer.toList
         buffer.clear()
         p.trySuccess(elements)
         completeStage()
