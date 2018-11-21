@@ -4,13 +4,14 @@
 
 package akka.util
 
+import akka.util.Collections.EmptyImmutableSeq
+
 import java.nio.{ ByteBuffer, ByteOrder }
 
 import scala.annotation.tailrec
 import scala.collection.LinearSeq
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
-import scala.collection.compat._
 
 object ByteIterator {
   object ByteArrayIterator {
@@ -33,9 +34,8 @@ object ByteIterator {
 
     @inline final def head: Byte = array(from)
 
-    @throws[NoSuchElementException]
     final def next(): Byte = {
-      if (!hasNext) throw new NoSuchElementException("next on empty iterator")
+      if (!hasNext) EmptyImmutableSeq.iterator.next()
       else { val i = from; from = from + 1; array(i) }
     }
 
@@ -43,7 +43,7 @@ object ByteIterator {
 
     final override def length: Int = { val l = len; clear(); l }
 
-    final override def ++(that: IterableOnce[Byte]): ByteIterator = that match {
+    final override def ++(that: TraversableOnce[Byte]): ByteIterator = that match {
       case that: ByteIterator ⇒
         if (that.isEmpty) this
         else if (this.isEmpty) that
@@ -104,12 +104,11 @@ object ByteIterator {
       result
     }
 
-    @throws[NoSuchElementException]
     def getBytes(xs: Array[Byte], offset: Int, n: Int): this.type = {
       if (n <= this.len) {
         Array.copy(this.array, this.from, xs, offset, n)
         this.drop(n)
-      } else throw new NoSuchElementException("next on empty iterator")
+      } else EmptyImmutableSeq.iterator.next()
     }
 
     private def wrappedByteBuffer: ByteBuffer = ByteBuffer.wrap(array, from, len).asReadOnlyBuffer
@@ -212,7 +211,7 @@ object ByteIterator {
       this
     }
 
-    final override def ++(that: IterableOnce[Byte]): ByteIterator = that match {
+    final override def ++(that: TraversableOnce[Byte]): ByteIterator = that match {
       case that: ByteIterator ⇒
         if (that.isEmpty) this
         else if (this.isEmpty) that
@@ -232,7 +231,7 @@ object ByteIterator {
     }
 
     final override def clone: MultiByteArrayIterator = {
-      val clonedIterators: List[ByteArrayIterator] = iterators.iterator.map(_.clone).to(scala.collection.immutable.List)
+      val clonedIterators: List[ByteArrayIterator] = iterators.map(_.clone)(collection.breakOut)
       new MultiByteArrayIterator(clonedIterators)
     }
 
@@ -316,7 +315,7 @@ object ByteIterator {
 
     @tailrec protected final def getToArray[A](xs: Array[A], offset: Int, n: Int, elemSize: Int)(getSingle: ⇒ A)(getMult: (Array[A], Int, Int) ⇒ Unit): this.type =
       if (n <= 0) this else {
-        if (isEmpty) Iterator.empty.next
+        if (isEmpty) EmptyImmutableSeq.iterator.next()
         val nDone = if (current.len >= elemSize) {
           val nCurrent = math.min(n, current.len / elemSize)
           getMult(xs, offset, nCurrent)
@@ -398,7 +397,7 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
 
   protected def clear(): Unit
 
-  def ++(that: IterableOnce[Byte]): ByteIterator = if (that.isEmpty) this else ByteIterator.ByteArrayIterator(that.toArray)
+  def ++(that: TraversableOnce[Byte]): ByteIterator = if (that.isEmpty) this else ByteIterator.ByteArrayIterator(that.toArray)
 
   // *must* be overridden by derived classes. This construction is necessary
   // to specialize the return type, as the method is already implemented in
@@ -439,16 +438,19 @@ abstract class ByteIterator extends BufferedIterator[Byte] {
     (this, that)
   }
 
-  override def indexWhere(p: Byte ⇒ Boolean, from: Int = 0): Int = {
+  override def indexWhere(p: Byte ⇒ Boolean): Int = indexWhere(p, 0)
+  def indexWhere(p: Byte ⇒ Boolean, from: Int): Int = {
     var index = from
     var found = false
     while (!found && hasNext) if (p(next())) { found = true } else { index += 1 }
     if (found) index else -1
   }
 
-  override def indexOf(elem: Byte, from: Int = 0): Int = indexWhere(_ == elem, from)
+  def indexOf(elem: Byte): Int = indexOf(elem, 0)
+  def indexOf(elem: Byte, from: Int): Int = indexWhere(_ == elem, 0)
 
-  override def indexOf[B >: Byte](elem: B, from: Int = 0): Int = indexWhere(_ == elem, from)
+  override def indexOf[B >: Byte](elem: B): Int = indexOf[B](elem, 0)
+  def indexOf[B >: Byte](elem: B, from: Int): Int = indexWhere(_ == elem, from)
 
   def toByteString: ByteString
 
