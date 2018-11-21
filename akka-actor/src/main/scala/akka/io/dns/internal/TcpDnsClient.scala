@@ -9,7 +9,6 @@ import java.net.InetSocketAddress
 import akka.AkkaException
 import akka.actor.{ Actor, ActorLogging, ActorRef, Stash }
 import akka.annotation.InternalApi
-import akka.io.Tcp._
 import akka.io.dns.internal.DnsClient.Answer
 import akka.io.Tcp
 import akka.util.ByteString
@@ -31,13 +30,13 @@ import akka.util.ByteString
   }
 
   val connecting: Receive = {
-    case failure @ CommandFailed(_: Connect) ⇒
+    case failure @ Tcp.CommandFailed(_: Tcp.Connect) ⇒
       throwFailure(s"Failed to connect to TCP DNS server at [$ns]", failure.cause)
     case _: Tcp.Connected ⇒
       log.debug("Connected to TCP address [{}]", ns)
       val connection = sender()
       context.become(ready(connection))
-      connection ! Register(self)
+      connection ! Tcp.Register(self)
       unstashAll()
     case _: Message ⇒
       stash()
@@ -47,9 +46,9 @@ import akka.util.ByteString
     case msg: Message ⇒
       val bytes = msg.write()
       connection ! Tcp.Write(encodeLength(bytes.length) ++ bytes)
-    case failure @ CommandFailed(_: Write) ⇒
+    case failure @ Tcp.CommandFailed(_: Tcp.Write) ⇒
       throwFailure("Write failed", failure.cause)
-    case Received(newData) ⇒
+    case Tcp.Received(newData) ⇒
       val data = buffer ++ newData
       // TCP DNS responses are prefixed by 2 bytes encoding the length of the response
       val prefixSize = 2
@@ -63,11 +62,11 @@ import akka.util.ByteString
           answerRecipient ! parseResponse(data.drop(prefixSize))
           context.become(ready(connection))
           if (data.length > prefixSize + expectedPayloadLength) {
-            self ! Received(data.drop(prefixSize + expectedPayloadLength))
+            self ! Tcp.Received(data.drop(prefixSize + expectedPayloadLength))
           }
         }
       }
-    case PeerClosed ⇒
+    case Tcp.PeerClosed ⇒
       context.become(idle)
   }
 
