@@ -235,5 +235,17 @@ class ReachabilitySpec extends WordSpec with Matchers {
       r2.versions.keySet should ===(Set(nodeD))
     }
 
+    "be able to filter records" in {
+      val r = Reachability.empty
+        .unreachable(nodeC, nodeB)
+        .unreachable(nodeB, nodeA)
+        .unreachable(nodeB, nodeC)
+
+      val filtered1 = r.filterRecords(record ⇒ record.observer != nodeC)
+      filtered1.isReachable(nodeB) should ===(true)
+      filtered1.isReachable(nodeA) should ===(false)
+      filtered1.allObservers should ===(Set(nodeB))
+    }
+
   }
 }
