@@ -19,7 +19,7 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{ Failure, Success, Try }
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /** INTERNAL API */
 @InternalApi
@@ -39,7 +39,7 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
             parseNameserverAddress(other) :: Nil
         }
       case ConfigValueType.LIST ⇒
-        val userAddresses = c.getStringList("nameservers").asScala.iterator.map(parseNameserverAddress).to(scala.collection.immutable.IndexedSeq)
+        val userAddresses = c.getStringList("nameservers").asScala.iterator.map(parseNameserverAddress).to(immutable.IndexedSeq)
         require(userAddresses.nonEmpty, "nameservers can not be empty")
         userAddresses.toList
       case _ ⇒ throw new IllegalArgumentException("Invalid type for nameservers. Must be a string or string list")

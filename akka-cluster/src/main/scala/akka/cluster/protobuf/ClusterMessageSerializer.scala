@@ -21,6 +21,8 @@ import akka.annotation.InternalApi
 import akka.cluster.InternalClusterAction._
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
 import akka.routing.Pool
+import akka.util.ccompat._
+import akka.util.ccompat.imm._
 import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
 
 /**
@@ -370,9 +372,9 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
     val allMembers = gossip.members.toVector
     val allAddresses: Vector[UniqueAddress] = allMembers.map(_.uniqueAddress) ++ gossip.tombstones.keys
     val addressMapping = allAddresses.zipWithIndex.toMap
-    val allRoles = allMembers.foldLeft(Set.empty[String])((acc, m) ⇒ acc union m.roles).to[Vector]
+    val allRoles = allMembers.foldLeft(Set.empty[String])((acc, m) ⇒ acc union m.roles).to(Vector)
     val roleMapping = allRoles.zipWithIndex.toMap
-    val allHashes = gossip.version.versions.keys.to[Vector]
+    val allHashes = gossip.version.versions.keys.to(Vector)
     val hashMapping = allHashes.zipWithIndex.toMap
 
     def mapUniqueAddress(uniqueAddress: UniqueAddress): Integer = mapWithErrorMessage(addressMapping, uniqueAddress, "address")
@@ -403,7 +405,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
         .build()
 
     val reachability = reachabilityToProto(gossip.overview.reachability)
-    val members = (gossip.members: Set[Member] /* 2.13.0-M5 change cast to .unsorted */ ).map(memberToProto _)
+    val members = gossip.members.unsorted.map(memberToProto _)
     val seen = gossip.overview.seen.map(mapUniqueAddress)
 
     val overview = cm.GossipOverview.newBuilder.addAllSeen(seen.asJava).
@@ -447,11 +449,10 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
     gossipStatusFromProto(cm.GossipStatus.parseFrom(bytes))
 
   private def gossipFromProto(gossip: cm.Gossip): Gossip = {
-    import scala.collection.breakOut
     val addressMapping: Vector[UniqueAddress] =
-      gossip.getAllAddressesList.asScala.map(uniqueAddressFromProto)(breakOut)
-    val roleMapping: Vector[String] = gossip.getAllRolesList.asScala.map(identity)(breakOut)
-    val hashMapping: Vector[String] = gossip.getAllHashesList.asScala.map(identity)(breakOut)
+      gossip.getAllAddressesList.asScala.iterator.map(uniqueAddressFromProto).to(immutable.Vector)
+    val roleMapping: Vector[String] = gossip.getAllRolesList.asScala.iterator.map(identity).to(immutable.Vector)
+    val hashMapping: Vector[String] = gossip.getAllHashesList.asScala.iterator.map(identity).to(immutable.Vector)
 
     def reachabilityFromProto(observerReachability: Iterable[cm.ObserverReachability]): Reachability = {
       val recordBuilder = new immutable.VectorBuilder[Reachability.Record]
@@ -492,20 +493,19 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
     def tombstoneFromProto(tombstone: cm.Tombstone): (UniqueAddress, Long) =
       (addressMapping(tombstone.getAddressIndex), tombstone.getTimestamp)
 
-    val members: immutable.SortedSet[Member] = gossip.getMembersList.asScala.map(memberFromProto)(breakOut)
+    val members: immutable.SortedSet[Member] = gossip.getMembersList.asScala.iterator.map(memberFromProto).to(immutable.SortedSet)
 
     val reachability = reachabilityFromProto(gossip.getOverview.getObserverReachabilityList.asScala)
-    val seen: Set[UniqueAddress] = gossip.getOverview.getSeenList.asScala.map(addressMapping(_))(breakOut)
+    val seen: Set[UniqueAddress] = gossip.getOverview.getSeenList.asScala.iterator.map(addressMapping(_)).to(immutable.Set)
     val overview = GossipOverview(seen, reachability)
-    val tombstones: Map[UniqueAddress, Long] = gossip.getTombstonesList.asScala.map(tombstoneFromProto)(breakOut)
+    val tombstones: Map[UniqueAddress, Long] = gossip.getTombstonesList.asScala.iterator.map(tombstoneFromProto).toMap
 
     Gossip(members, overview, vectorClockFromProto(gossip.getVersion, hashMapping), tombstones)
   }
 
   private def vectorClockFromProto(version: cm.VectorClock, hashMapping: immutable.Seq[String]) = {
-    import scala.collection.breakOut
-    VectorClock(version.getVersionsList.asScala.map(
-      v ⇒ (VectorClock.Node.fromHash(hashMapping(v.getHashIndex)), v.getTimestamp))(breakOut))
+    VectorClock(scala.collection.immutable.TreeMap.from(version.getVersionsList.asScala.iterator.map(
+      v ⇒ (VectorClock.Node.fromHash(hashMapping(v.getHashIndex)), v.getTimestamp))))
   }
 
   private def gossipEnvelopeFromProto(envelope: cm.GossipEnvelope): GossipEnvelope = {

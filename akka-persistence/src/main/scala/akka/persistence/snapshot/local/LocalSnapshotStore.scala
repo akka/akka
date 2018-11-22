@@ -13,6 +13,7 @@ import akka.persistence.serialization._
 import akka.persistence.snapshot._
 import akka.serialization.SerializationExtension
 import akka.util.ByteString.UTF_8
+import akka.util.ccompat._
 import com.typesafe.config.Config
 
 import scala.collection.immutable
@@ -76,7 +77,7 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
     val metadatas = snapshotMetadatas(persistenceId, criteria)
     Future.sequence {
       metadatas.map(deleteAsync)
-    }(collection.breakOut, streamDispatcher).map(_ ⇒ ())(streamDispatcher)
+    }(scala.collection.immutable.IndexedSeq, streamDispatcher).map(_ ⇒ ())(streamDispatcher)
   }
 
   override def receivePluginInternal: Receive = {

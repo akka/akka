@@ -21,7 +21,7 @@
 package akka.routing
 
 import java.lang.Integer.{ rotateLeft ⇒ rotl }
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * An object designed to generate well-distributed non-cryptographic

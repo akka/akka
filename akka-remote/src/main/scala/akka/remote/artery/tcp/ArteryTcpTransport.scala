@@ -7,6 +7,7 @@ package tcp
 
 import java.net.InetSocketAddress
 
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
@@ -43,6 +44,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Tcp
 import akka.stream.scaladsl.Tcp.ServerBinding
 import akka.util.{ ByteString, OptionVal }
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -361,9 +363,9 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
 
         val lane = inboundSink(envelopeBufferPool)
         val completedValues: Vector[Future[Done]] =
-          (0 until inboundLanes).map { _ ⇒
+          (0 until inboundLanes).iterator.map { _ ⇒
             laneHub.toMat(lane)(Keep.right).run()(materializer)
-          }(collection.breakOut)
+          }.to(immutable.Vector)
 
         import system.dispatcher
 

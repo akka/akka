@@ -5,7 +5,7 @@
 package akka.util
 
 import scala.collection.immutable
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * Typeclass which describes a classification hierarchy. Observe the contract between `isEqual` and `isSubclass`!

@@ -23,7 +23,7 @@ object Dependencies {
   val Versions = Seq(
     crossScalaVersions := Seq("2.12.8", "2.11.12", "2.13.0-M5"),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
-    scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.8"),
+    scalaStmVersion := sys.props.get("akka.build.scalaStmVersion").getOrElse("0.9"),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse(
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 12 ⇒ "1.14.0" // does not work for 2.11
@@ -42,8 +42,6 @@ object Dependencies {
     // Compile
 
     val camelCore = "org.apache.camel" % "camel-core" % "2.17.7" exclude ("org.slf4j", "slf4j-api") // ApacheV2
-
-    val collectionCompat = "org.scala-lang.modules" %% "scala-collection-compat" % "0.2.1" // New BSD
 
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config = "com.typesafe" % "config" % "1.3.3" // ApacheV2
@@ -148,7 +146,7 @@ object Dependencies {
   // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
 
-  val actor = l ++= Seq(config, java8Compat.value, collectionCompat)
+  val actor = l ++= Seq(config, java8Compat.value)
 
   val discovery = l ++= Seq(Test.junit, Test.scalatest.value)
 

@@ -29,7 +29,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 import scala.collection.immutable
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -396,9 +396,9 @@ import scala.collection.compat._
       override def pull(): Future[Option[T]] = {
         val p = Promise[Option[T]]
         callback.invokeWithFeedback(Pull(p))
-          .onComplete {
-            case scala.util.Failure(NonFatal(e)) ⇒ p.tryFailure(e)
-            case _                               ⇒ ()
+          .failed.foreach {
+            case NonFatal(e) ⇒ p.tryFailure(e)
+            case _           ⇒ ()
           }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         p.future
       }

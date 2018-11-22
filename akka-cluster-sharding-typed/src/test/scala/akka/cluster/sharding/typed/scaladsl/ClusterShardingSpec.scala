@@ -31,6 +31,7 @@ import akka.serialization.SerializerWithStringManifest
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
+import akka.util.ccompat.imm._
 
 object ClusterShardingSpec {
   val config = ConfigFactory.parseString(
@@ -236,11 +237,11 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       Cluster(system2).manager ! Join(Cluster(system).selfMember.address)
 
       eventually {
-        Cluster(system).state.members.map(_.status) should ===(Set[MemberStatus](MemberStatus.Up))
+        Cluster(system).state.members.unsorted.map(_.status) should ===(Set[MemberStatus](MemberStatus.Up))
         Cluster(system).state.members.size should ===(2)
       }
       eventually {
-        Cluster(system2).state.members.map(_.status) should ===(Set[MemberStatus](MemberStatus.Up))
+        Cluster(system2).state.members.unsorted.map(_.status) should ===(Set[MemberStatus](MemberStatus.Up))
         Cluster(system2).state.members.size should ===(2)
       }
 

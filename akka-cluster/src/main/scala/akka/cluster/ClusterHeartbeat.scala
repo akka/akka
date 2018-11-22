@@ -14,6 +14,7 @@ import akka.cluster.ClusterEvent._
 import akka.remote.FailureDetectorRegistry
 import akka.remote.HeartbeatMessage
 import akka.annotation.InternalApi
+import akka.util.ccompat._
 
 /**
  * INTERNAL API.
@@ -338,13 +339,13 @@ private[cluster] final case class HeartbeatNodeRing(
             take(n - 1, iter, acc + next) // include the reachable
         }
 
-      val (remaining, slice1) = take(monitoredByNrOfMembers, nodeRing.from(sender).tail.iterator, Set.empty)
+      val (remaining, slice1) = take(monitoredByNrOfMembers, nodeRing.rangeFrom(sender).tail.iterator, Set.empty)
       val slice =
         if (remaining == 0)
           slice1
         else {
           // wrap around
-          val (_, slice2) = take(remaining, nodeRing.to(sender).iterator.filterNot(_ == sender), slice1)
+          val (_, slice2) = take(remaining, nodeRing.rangeTo(sender).iterator.filterNot(_ == sender), slice1)
           slice2
         }
 

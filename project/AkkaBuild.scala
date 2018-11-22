@@ -93,6 +93,12 @@ object AkkaBuild {
     Protobuf.settings ++ Seq[Setting[_]](
       // compile options
       scalacOptions in Compile ++= DefaultScalacOptions,
+      // On 2.13, adding -Ywarn-unused breaks 'sbt ++2.13.0-M5 akka-actor/doc'
+      // https://github.com/akka/akka/issues/26119
+      scalacOptions in Compile --= (CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 13)) => Seq("-Ywarn-unused")
+        case _             => Seq.empty
+      }),
       // Makes sure that, even when compiling with a jdk version greater than 8, the resulting jar will not refer to
       // methods not found in jdk8. To test whether this has the desired effect, compile akka-remote and check the
       // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to

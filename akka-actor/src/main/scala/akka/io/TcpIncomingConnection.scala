@@ -8,7 +8,6 @@ import java.nio.channels.SocketChannel
 import scala.collection.immutable
 import akka.actor.ActorRef
 import akka.io.Inet.SocketOption
-import scala.collection.immutable
 
 /**
  * An actor handling the connection state machine for an incoming, already connected

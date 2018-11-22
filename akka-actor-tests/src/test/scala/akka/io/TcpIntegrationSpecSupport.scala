@@ -9,11 +9,10 @@ import scala.collection.immutable
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.actor.ActorRef
 import akka.io.Inet.SocketOption
-import akka.testkit.SocketUtil._
+import akka.testkit.SocketUtil.temporaryServerAddress
 import Tcp._
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
-import scala.collection.immutable
 
 trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
 

@@ -37,6 +37,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
   val ignore: Set[String] =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
       Set("productArity", "canEqual", "productPrefix", "copy", "productIterator", "productElement") ++
+      Set("productElementName", "productElementNames") ++
       Set("create", "apply", "ops", "appendJava", "andThen", "andThenMat", "isIdentity", "withAttributes", "transformMaterializing") ++
       Set("asScala", "asJava", "deprecatedAndThen", "deprecatedAndThenMat")
 

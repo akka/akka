@@ -7,6 +7,7 @@ package akka.remote
 import akka.testkit._
 import scala.concurrent.duration._
 import akka.actor.{ Address, ActorSystem }
+import akka.util.ccompat._
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 
@@ -16,7 +17,7 @@ class DaemonicSpec extends AkkaSpec {
 
     "shut down correctly after getting connection refused" in {
       // get all threads running before actor system is started
-      val origThreads: Set[Thread] = Thread.getAllStackTraces.keySet().asScala.to[Set]
+      val origThreads: Set[Thread] = Thread.getAllStackTraces.keySet().asScala.to(Set)
       // create a separate actor system that we can check the threads for
       val daemonicSystem = ActorSystem("daemonic", ConfigFactory.parseString("""
         akka.daemonic = on
@@ -36,7 +37,7 @@ class DaemonicSpec extends AkkaSpec {
         // get new non daemonic threads running
         awaitAssert({
           val newNonDaemons: Set[Thread] = Thread.getAllStackTraces.keySet().asScala.seq.
-            filter(t ⇒ !origThreads(t) && !t.isDaemon).to[Set]
+            filter(t ⇒ !origThreads(t) && !t.isDaemon).to(Set)
           newNonDaemons should ===(Set.empty[Thread])
         }, 4.seconds)
 

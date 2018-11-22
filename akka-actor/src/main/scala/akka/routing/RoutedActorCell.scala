@@ -20,7 +20,7 @@ import akka.dispatch.MessageDispatcher
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -110,7 +110,7 @@ private[akka] class RoutedActorCell(
       case group: Group ⇒
         val paths = group.paths(system)
         if (paths.nonEmpty)
-          addRoutees(paths.iterator.map(p ⇒ group.routeeFor(p, this)).to(scala.collection.immutable.IndexedSeq))
+          addRoutees(paths.iterator.map(p ⇒ group.routeeFor(p, this)).to(immutable.IndexedSeq))
       case _ ⇒
     }
     preSuperStart()

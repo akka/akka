@@ -368,7 +368,8 @@ abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMe
   override def capacity(nodeMetrics: Set[NodeMetrics]): Map[Address, Double] = {
     val combined: immutable.IndexedSeq[(Address, Double)] = selectors.flatMap(_.capacity(nodeMetrics).toSeq)
     // aggregated average of the capacities by address
-    combined.foldLeft(Map.empty[Address, (Double, Int)].withDefaultValue((0.0, 0))) {
+    val init: Map[Address, (Double, Int)] = Map.empty.withDefaultValue((0.0, 0))
+    combined.foldLeft(init) {
       case (acc, (address, capacity)) ⇒
         val (sum, count) = acc(address)
         acc + (address → ((sum + capacity, count + 1)))

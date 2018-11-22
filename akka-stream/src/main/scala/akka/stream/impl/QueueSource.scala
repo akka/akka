@@ -187,8 +187,8 @@ import scala.util.control.NonFatal
         val p = Promise[QueueOfferResult]
         callback.invokeWithFeedback(Offer(element, p))
           .onComplete {
-            case scala.util.Failure(NonFatal(e)) ⇒ p.tryFailure(e)
-            case _                               ⇒ ()
+            case scala.util.Success(_) ⇒
+            case scala.util.Failure(e) ⇒ p.tryFailure(e)
           }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
         p.future
       }

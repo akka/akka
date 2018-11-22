@@ -16,7 +16,7 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.japi.Util.immutableSeq
 import java.lang.{ Iterable ⇒ JIterable }
 import akka.util.BoxedType
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * Implementation helpers of the EventFilter facilities: send `Mute`

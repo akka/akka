@@ -17,7 +17,7 @@ import akka.event.Logging.LogEvent
 import akka.event.Logging.Error
 import akka.event.Logging.Warning
 import scala.util.control.NonFatal
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API

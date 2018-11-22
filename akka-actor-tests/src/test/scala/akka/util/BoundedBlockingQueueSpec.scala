@@ -136,7 +136,7 @@ class BoundedBlockingQueueSpec
       }
 
       mustBlockFor(100 milliseconds, f)
-      events should containInSequence(offer("a"), awaitNotFull, signalNotFull, getSize, awaitNotFull)
+      events.toList should containInSequence(offer("a"), awaitNotFull, signalNotFull, getSize, awaitNotFull)
       events shouldNot contain(offer("b"))
     }
   }
@@ -196,7 +196,7 @@ class BoundedBlockingQueueSpec
 
       // `f` should still block since the queue is still empty
       mustBlockFor(100 milliseconds, f)
-      events should containInSequence(getSize, awaitNotEmpty, signalNotEmpty, getSize, awaitNotEmpty)
+      events.toList should containInSequence(getSize, awaitNotEmpty, signalNotEmpty, getSize, awaitNotEmpty)
       events shouldNot contain(poll)
     }
   }
@@ -297,7 +297,7 @@ class BoundedBlockingQueueSpec
 
       // `f` should still block since the queue is still empty
       mustBlockFor(100 milliseconds, f)
-      events should containInSequence(getSize, awaitNotFull, signalNotFull, getSize, awaitNotFull)
+      events.toList should containInSequence(getSize, awaitNotFull, signalNotFull, getSize, awaitNotFull)
       events shouldNot contain(offer("World"))
     }
   }
@@ -706,12 +706,12 @@ trait QueueSetupHelper {
 
   import akka.util.QueueTestEvents._
 
-  case class TestContext(queue: BoundedBlockingQueue[String], events: mutable.MutableList[QueueEvent], notEmpty: TestCondition, notFull: TestCondition, lock: ReentrantLock, backingQueue: util.Queue[String])
+  case class TestContext(queue: BoundedBlockingQueue[String], events: mutable.Buffer[QueueEvent], notEmpty: TestCondition, notFull: TestCondition, lock: ReentrantLock, backingQueue: util.Queue[String])
 
   /**
    * Backing queue that records all poll and offer calls in `events`
    */
-  class TestBackingQueue(events: mutable.MutableList[QueueEvent])
+  class TestBackingQueue(events: mutable.Buffer[QueueEvent])
     extends util.LinkedList[String] {
 
     override def poll(): String = {
@@ -733,7 +733,7 @@ trait QueueSetupHelper {
   /**
    * Reentrant lock condition that records when the condition is signaled or `await`ed.
    */
-  class TestCondition(events: mutable.MutableList[QueueEvent], condition: Condition, signalEvent: QueueEvent, awaitEvent: QueueEvent)
+  class TestCondition(events: mutable.Buffer[QueueEvent], condition: Condition, signalEvent: QueueEvent, awaitEvent: QueueEvent)
     extends Condition {
 
     case class Manual(waitTime: Long = 0, waitingThread: Option[Thread] = None)
@@ -798,7 +798,7 @@ trait QueueSetupHelper {
   }
 
   def newBoundedBlockingQueue(maxCapacity: Int): TestContext = {
-    val events: mutable.MutableList[QueueEvent] = new mutable.MutableList()
+    val events: mutable.Buffer[QueueEvent] = new mutable.ArrayBuffer()
 
     val realLock = new ReentrantLock(false)
     val wrappedNotEmpty = new TestCondition(events, realLock.newCondition(), signalNotEmpty, awaitNotEmpty)
