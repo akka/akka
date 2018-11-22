@@ -7,7 +7,7 @@ package akka.cluster.ddata.protobuf
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
 import scala.collection.JavaConverters._
-import scala.collection.breakOut
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import akka.actor.ExtendedActorSystem
 import akka.cluster.Member
@@ -32,6 +32,7 @@ import akka.actor.Address
 import akka.cluster.ddata.VersionVector
 import akka.annotation.InternalApi
 import akka.cluster.ddata.PruningState.PruningPerformed
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -268,8 +269,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   private def statusFromBinary(bytes: Array[Byte]): Status = {
     val status = dm.Status.parseFrom(bytes)
     Status(
-      status.getEntriesList.asScala.map(e ⇒
-        e.getKey → AkkaByteString(e.getDigest.toByteArray()))(breakOut),
+      status.getEntriesList.asScala.iterator.map(e ⇒
+        e.getKey → AkkaByteString(e.getDigest.toByteArray())).toMap,
       status.getChunk, status.getTotChunks)
   }
 
@@ -287,8 +288,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   private def gossipFromBinary(bytes: Array[Byte]): Gossip = {
     val gossip = dm.Gossip.parseFrom(decompress(bytes))
     Gossip(
-      gossip.getEntriesList.asScala.map(e ⇒
-        e.getKey → dataEnvelopeFromProto(e.getEnvelope))(breakOut),
+      gossip.getEntriesList.asScala.iterator.map(e ⇒
+        e.getKey → dataEnvelopeFromProto(e.getEnvelope)).toMap,
       sendBack = gossip.getSendBack)
   }
 
@@ -316,11 +317,11 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     DeltaPropagation(
       uniqueAddressFromProto(deltaPropagation.getFromNode),
       reply,
-      deltaPropagation.getEntriesList.asScala.map { e ⇒
+      deltaPropagation.getEntriesList.asScala.iterator.map { e ⇒
         val fromSeqNr = e.getFromSeqNr
         val toSeqNr = if (e.hasToSeqNr) e.getToSeqNr else fromSeqNr
         e.getKey → Delta(dataEnvelopeFromProto(e.getEnvelope), fromSeqNr, toSeqNr)
-      }(breakOut))
+      }.toMap)
   }
 
   private def getToProto(get: Get[_]): dm.Get = {
@@ -482,7 +483,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     if (pruningEntries.isEmpty)
       Map.empty
     else
-      pruningEntries.asScala.map { pruningEntry ⇒
+      pruningEntries.asScala.iterator.map { pruningEntry ⇒
         val state =
           if (pruningEntry.getPerformed) {
             // for wire compatibility with Akka 2.4.x
@@ -491,10 +492,10 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
           } else
             PruningState.PruningInitialized(
               uniqueAddressFromProto(pruningEntry.getOwnerAddress),
-              pruningEntry.getSeenList.asScala.map(addressFromProto)(breakOut))
+              pruningEntry.getSeenList.asScala.iterator.map(addressFromProto).to(immutable.Set))
         val removed = uniqueAddressFromProto(pruningEntry.getRemovedAddress)
         removed → state
-      }(breakOut)
+      }.toMap
   }
 
   private def writeToProto(write: Write): dm.Write =

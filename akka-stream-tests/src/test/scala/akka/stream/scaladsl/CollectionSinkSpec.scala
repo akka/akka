@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
+import akka.util.ccompat._
 
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
@@ -36,7 +37,7 @@ class CollectionSinkSpec extends StreamSpec {
       "fail the future on abrupt termination" in {
         val mat = ActorMaterializer()
         val probe = TestPublisher.probe()
-        val future = Source.fromPublisher(probe).runWith(Sink.collection[Nothing, Seq[Nothing]])(mat)
+        val future = Source.fromPublisher(probe).runWith(Sink.collection[Unit, Seq[Unit]])(mat)
         mat.shutdown()
         future.failed.futureValue shouldBe an[AbruptTerminationException]
       }
@@ -59,7 +60,7 @@ class CollectionSinkSpec extends StreamSpec {
       "fail the future on abrupt termination" in {
         val mat = ActorMaterializer()
         val probe = TestPublisher.probe()
-        val future = Source.fromPublisher(probe).runWith(Sink.collection[Nothing, Seq[Nothing]])(mat)
+        val future = Source.fromPublisher(probe).runWith(Sink.collection[Unit, Seq[Unit]])(mat)
         mat.shutdown()
         future.failed.futureValue shouldBe an[AbruptTerminationException]
       }

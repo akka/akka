@@ -22,7 +22,7 @@ import akka.util.{ Helpers, JavaDurationConverters, Timeout }
 import akka.dispatch.ExecutionContexts
 
 import scala.compat.java8.FutureConverters
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * An ActorSelection is a logical view of a section of an ActorSystem's tree of Actors,
@@ -209,7 +209,7 @@ object ActorSelection {
         if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
         else if (x == "..") SelectParent
         else SelectChildName(x)
-    }).to(scala.collection.immutable.IndexedSeq)
+    }).to(immutable.IndexedSeq)
     new ActorSelection with ScalaActorSelection {
       override val anchor = anchorRef
       override val path = compiled

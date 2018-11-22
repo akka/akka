@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 import scala.collection.LinearSeq
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
-import scala.collection.compat._
+import akka.util.ccompat._
 
 object ByteIterator {
   object ByteArrayIterator {
@@ -234,7 +234,7 @@ object ByteIterator {
     }
 
     final override def clone: MultiByteArrayIterator = {
-      val clonedIterators: List[ByteArrayIterator] = iterators.iterator.map(_.clone).to(scala.collection.immutable.List)
+      val clonedIterators: List[ByteArrayIterator] = iterators.iterator.map(_.clone).to(List)
       new MultiByteArrayIterator(clonedIterators)
     }
 
@@ -391,7 +391,6 @@ object ByteIterator {
 /**
  * An iterator over a ByteString.
  */
-
 abstract class ByteIterator extends BufferedIterator[Byte] {
   def len: Int
 

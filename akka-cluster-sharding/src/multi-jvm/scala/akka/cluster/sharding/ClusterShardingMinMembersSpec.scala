@@ -19,6 +19,7 @@ import org.apache.commons.io.FileUtils
 import scala.concurrent.duration._
 import akka.cluster.sharding.ShardRegion.GetClusterShardingStats
 import akka.cluster.sharding.ShardRegion.ClusterShardingStats
+import akka.util.ccompat.imm._
 
 object ClusterShardingMinMembersSpec {
   case object StopEntity
@@ -154,7 +155,7 @@ abstract class ClusterShardingMinMembersSpec(config: ClusterShardingMinMembersSp
       within(remaining) {
         awaitAssert {
           cluster.state.members.size should ===(3)
-          cluster.state.members.map(_.status) should ===(Set(MemberStatus.Up))
+          cluster.state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
         }
       }
       enterBarrier("all-up")

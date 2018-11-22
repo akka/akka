@@ -21,7 +21,6 @@ import java.lang.{ Iterable ⇒ JIterable }
 import java.nio.file.Path
 
 import akka.annotation.InternalApi
-import scala.collection.immutable
 
 /**
  * TCP Extension for Akka’s IO layer.

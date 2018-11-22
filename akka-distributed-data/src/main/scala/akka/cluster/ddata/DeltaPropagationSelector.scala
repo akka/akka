@@ -11,6 +11,7 @@ import akka.annotation.InternalApi
 import akka.cluster.ddata.Key.KeyId
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation.NoDeltaPlaceholder
+import akka.util.ccompat._
 
 /**
  * INTERNAL API: Used by the Replicator actor.
@@ -144,7 +145,7 @@ import akka.cluster.ddata.Replicator.Internal.DeltaPropagation.NoDeltaPlaceholde
   }
 
   private def deltaEntriesAfter(entries: TreeMap[Long, ReplicatedData], version: Long): TreeMap[Long, ReplicatedData] =
-    entries.from(version) match {
+    entries.rangeFrom(version) match {
       case ntrs if ntrs.isEmpty             ⇒ ntrs
       case ntrs if ntrs.firstKey == version ⇒ ntrs.tail // exclude first, i.e. version j that was already sent
       case ntrs                             ⇒ ntrs

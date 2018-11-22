@@ -5,7 +5,6 @@
 package akka.cluster.pubsub.protobuf
 
 import akka.serialization._
-import scala.collection.breakOut
 import akka.actor.{ Address, ExtendedActorSystem }
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import akka.protobuf.{ ByteString, MessageLite }
@@ -17,6 +16,7 @@ import scala.collection.JavaConverters._
 import akka.cluster.pubsub.DistributedPubSubMediator._
 import akka.cluster.pubsub.DistributedPubSubMediator.Internal._
 import akka.actor.ActorRef
+import akka.util.ccompat._
 import scala.collection.immutable.TreeMap
 import java.io.NotSerializableException
 
@@ -127,8 +127,8 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
 
   private def statusFromProto(status: dm.Status): Status = {
     val isReplyToStatus = if (status.hasReplyToStatus) status.getReplyToStatus else false
-    Status(status.getVersionsList.asScala.map(v ⇒
-      addressFromProto(v.getAddress) → v.getTimestamp)(breakOut), isReplyToStatus)
+    Status(status.getVersionsList.asScala.iterator.map(v ⇒
+      addressFromProto(v.getAddress) → v.getTimestamp).toMap, isReplyToStatus)
   }
 
   private def deltaToProto(delta: Delta): dm.Delta = {
@@ -154,9 +154,9 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
 
   private def deltaFromProto(delta: dm.Delta): Delta =
     Delta(delta.getBucketsList.asScala.toVector.map { b ⇒
-      val content: TreeMap[String, ValueHolder] = b.getContentList.asScala.map { entry ⇒
+      val content: TreeMap[String, ValueHolder] = scala.collection.immutable.TreeMap.from(b.getContentList.asScala.iterator.map { entry ⇒
         entry.getKey → ValueHolder(entry.getVersion, if (entry.hasRef) Some(resolveActorRef(entry.getRef)) else None)
-      }(breakOut)
+      })
       Bucket(addressFromProto(b.getOwner), b.getVersion, content)
     })
 

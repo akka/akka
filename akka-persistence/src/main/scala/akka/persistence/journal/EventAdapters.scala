@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor.ExtendedActorSystem
 import akka.event.{ Logging, LoggingAdapter }
+import akka.util.ccompat._
 import com.typesafe.config.Config
 
 import scala.collection.immutable
@@ -97,7 +98,7 @@ private[akka] object EventAdapters {
       sort(bs)
     }
 
-    val backing = (new ConcurrentHashMap[Class[_], EventAdapter] /: bindings) { case (map, (c, s)) ⇒ map.put(c, s); map }
+    val backing = bindings.foldLeft(new ConcurrentHashMap[Class[_], EventAdapter]) { case (map, (c, s)) ⇒ map.put(c, s); map }
 
     new EventAdapters(backing, bindings, system.log)
   }
@@ -141,13 +142,13 @@ private[akka] object EventAdapters {
    * obeying any order between unrelated subtypes (insert sort).
    */
   private def sort[T](in: Iterable[(Class[_], T)]): immutable.Seq[(Class[_], T)] =
-    (new ArrayBuffer[(Class[_], T)](in.size) /: in) { (buf, ca) ⇒
+    in.foldLeft(new ArrayBuffer[(Class[_], T)](in.size)) { (buf, ca) ⇒
       buf.indexWhere(_._1 isAssignableFrom ca._1) match {
         case -1 ⇒ buf append ca
         case x  ⇒ buf insert (x, ca)
       }
       buf
-    }.to[immutable.Seq]
+    }.to(immutable.Seq)
 
   private final def configToMap(config: Config, path: String): Map[String, String] = {
     import scala.collection.JavaConverters._

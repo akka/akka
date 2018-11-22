@@ -449,40 +449,17 @@ class FutureDocSpec extends AkkaSpec {
     Await.result(future4, 3 seconds) should be("foo")
   }
 
-  "demonstrate usage of onSuccess & onFailure & onComplete" in {
-    {
-      val future = Future { "foo" }
-      //#onSuccess
-      future onSuccess {
-        case "bar"     ⇒ println("Got my bar alright!")
-        case x: String ⇒ println("Got some random string: " + x)
-      }
-      //#onSuccess
-      Await.result(future, 3 seconds) should be("foo")
+  "demonstrate usage of onComplete" in {
+    val future = Future { "foo" }
+    def doSomethingOnSuccess(r: String) = ()
+    def doSomethingOnFailure(t: Throwable) = ()
+    //#onComplete
+    future onComplete {
+      case Success(result)  ⇒ doSomethingOnSuccess(result)
+      case Failure(failure) ⇒ doSomethingOnFailure(failure)
     }
-    {
-      val future = Future.failed[String](new IllegalStateException("OHNOES"))
-      //#onFailure
-      future onFailure {
-        case ise: IllegalStateException if ise.getMessage == "OHNOES" ⇒
-        //OHNOES! We are in deep trouble, do something!
-        case e: Exception ⇒
-        //Do something else
-      }
-      //#onFailure
-    }
-    {
-      val future = Future { "foo" }
-      def doSomethingOnSuccess(r: String) = ()
-      def doSomethingOnFailure(t: Throwable) = ()
-      //#onComplete
-      future onComplete {
-        case Success(result)  ⇒ doSomethingOnSuccess(result)
-        case Failure(failure) ⇒ doSomethingOnFailure(failure)
-      }
-      //#onComplete
-      Await.result(future, 3 seconds) should be("foo")
-    }
+    //#onComplete
+    Await.result(future, 3 seconds) should be("foo")
   }
 
   "demonstrate usage of Future.successful & Future.failed & Future.promise" in {
@@ -528,7 +505,7 @@ class FutureDocSpec extends AkkaSpec {
     }
     //Return a new future that will retry up to 10 times
     val retried = akka.pattern.retry(
-      attempt,
+      () ⇒ attempt(),
       10,
       100 milliseconds)
     //#retry

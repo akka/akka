@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -11,14 +11,13 @@ import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable ⇒ JIterable }
 
 import scala.annotation.{ tailrec, varargs }
-import scala.collection.StrictOptimizedSeqOps
-import scala.collection.compat._
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.{ mutable, immutable }
-import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, VectorBuilder }
+import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, StrictOptimizedSeqOps, VectorBuilder }
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
 import java.nio.charset.{ Charset, StandardCharsets }
+import akka.util.ccompat._
 
 object ByteString {
 
@@ -669,6 +668,10 @@ sealed abstract class ByteString
   override protected def fromSpecific(coll: IterableOnce[Byte]): ByteString = ByteString(coll)
   override protected def newSpecificBuilder: mutable.Builder[Byte, ByteString] = ByteString.newBuilder
 
+  // FIXME this is a workaround for
+  //  https://github.com/scala/bug/issues/11192#issuecomment-436926231
+  protected[this] override def writeReplace(): AnyRef = this
+
   def apply(idx: Int): Byte
   private[akka] def byteStringCompanion: ByteString.Companion
   // override so that toString will also be `ByteString(...)` for the concrete subclasses
@@ -833,9 +836,7 @@ sealed abstract class ByteString
    */
   final def mapI(f: Byte ⇒ Int): ByteString = map(f andThen (_.toByte))
 
-  def map[A](f: Byte ⇒ Byte): ByteString = {
-    ???
-  }
+  def map[A](f: Byte ⇒ Byte): ByteString = fromSpecific(super.map(f))
 }
 
 object CompactByteString {

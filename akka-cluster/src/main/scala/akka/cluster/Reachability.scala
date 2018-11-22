@@ -7,7 +7,7 @@ package akka.cluster
 import akka.annotation.InternalApi
 
 import scala.collection.immutable
-import scala.collection.breakOut
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -72,9 +72,8 @@ private[cluster] class Reachability private (
         (observerRowsMap, allUnreachable, allTerminated)
       } else {
         val mapBuilder = scala.collection.mutable.Map.empty[UniqueAddress, Map[UniqueAddress, Reachability.Record]]
-        import scala.collection.mutable.SetBuilder
-        val terminatedBuilder = new SetBuilder[UniqueAddress, Set[UniqueAddress]](Set.empty)
-        val unreachableBuilder = new SetBuilder[UniqueAddress, Set[UniqueAddress]](Set.empty)
+        var allTerminated = Set.empty[UniqueAddress]
+        var allUnreachable = Set.empty[UniqueAddress]
 
         records foreach { r ⇒
           val m = mapBuilder.get(r.observer) match {
@@ -83,15 +82,13 @@ private[cluster] class Reachability private (
           }
           mapBuilder += (r.observer → m)
 
-          if (r.status == Unreachable) unreachableBuilder += r.subject
-          else if (r.status == Terminated) terminatedBuilder += r.subject
+          if (r.status == Unreachable) allUnreachable += r.subject
+          else if (r.status == Terminated) allTerminated += r.subject
         }
 
         val observerRowsMap: Map[UniqueAddress, Map[UniqueAddress, Reachability.Record]] = mapBuilder.toMap
-        val allTerminated: Set[UniqueAddress] = terminatedBuilder.result()
-        val allUnreachable: Set[UniqueAddress] = unreachableBuilder.result() diff allTerminated
 
-        (observerRowsMap, allUnreachable, allTerminated)
+        (observerRowsMap, allUnreachable diff allTerminated, allTerminated)
       }
     }
 
@@ -195,7 +192,7 @@ private[cluster] class Reachability private (
   }
 
   def remove(nodes: Iterable[UniqueAddress]): Reachability = {
-    val nodesSet = nodes.to[immutable.HashSet]
+    val nodesSet = nodes.to(immutable.HashSet)
     val newRecords = records.filterNot(r ⇒ nodesSet(r.observer) || nodesSet(r.subject))
     val newVersions = versions -- nodes
     Reachability(newRecords, newVersions)
@@ -265,16 +262,16 @@ private[cluster] class Reachability private (
     observerRows(observer) match {
       case None ⇒ Set.empty
       case Some(observerRows) ⇒
-        observerRows.collect {
+        observerRows.iterator.collect {
           case (subject, record) if record.status == Unreachable ⇒ subject
-        }(breakOut)
+        }.to(immutable.Set)
     }
 
   def observersGroupedByUnreachable: Map[UniqueAddress, Set[UniqueAddress]] = {
     records.groupBy(_.subject).collect {
       case (subject, records) if records.exists(_.status == Unreachable) ⇒
         val observers: Set[UniqueAddress] =
-          records.collect { case r if r.status == Unreachable ⇒ r.observer }(breakOut)
+          records.iterator.collect { case r if r.status == Unreachable ⇒ r.observer }.to(immutable.Set)
         (subject → observers)
     }
   }

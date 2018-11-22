@@ -5,11 +5,11 @@
 package akka
 
 import akka.actor.ActorSystem
+import akka.util.ccompat._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.reflect.ClassTag
 import scala.collection.immutable
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import scala.collection.compat._
 
 package object testkit {
   def filterEvents[T](eventFilters: Iterable[EventFilter])(block: ⇒ T)(implicit system: ActorSystem): T = {

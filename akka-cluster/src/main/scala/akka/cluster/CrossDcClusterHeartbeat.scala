@@ -10,8 +10,10 @@ import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterSettings.DataCenter
 import akka.remote.FailureDetectorRegistry
 import akka.util.ConstantFun
+import akka.util.ccompat._
 
-import scala.collection.{ SortedSet, breakOut }
+import scala.collection.SortedSet
+import scala.collection.immutable
 
 /**
  * INTERNAL API
@@ -270,8 +272,8 @@ private[cluster] final case class CrossDcHeartbeatingState(
     val allOtherNodes = otherDcs.values
 
     allOtherNodes.flatMap(
-      _.take(nrOfMonitoredNodesPerDc)
-        .map(_.uniqueAddress)(breakOut)).toSet
+      _.take(nrOfMonitoredNodesPerDc).iterator
+        .map(_.uniqueAddress).to(immutable.IndexedSeq)).toSet
   }
 
   /** Lists addresses in diven DataCenter that this node should send heartbeats to */
@@ -280,8 +282,8 @@ private[cluster] final case class CrossDcHeartbeatingState(
     else {
       val otherNodes = state.getOrElse(dc, emptyMembersSortedSet)
       otherNodes
-        .take(nrOfMonitoredNodesPerDc)
-        .map(_.uniqueAddress)(breakOut)
+        .take(nrOfMonitoredNodesPerDc).iterator
+        .map(_.uniqueAddress).to(immutable.Set)
     }
 
   def allMembers: Iterable[Member] =
