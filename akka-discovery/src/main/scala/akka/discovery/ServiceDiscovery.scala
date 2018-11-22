@@ -17,9 +17,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
-/**
- * Implement to provide basic service discovery method.
- */
 @ApiMayChange
 object ServiceDiscovery {
 
@@ -27,6 +24,9 @@ object ServiceDiscovery {
   final case class Resolved(serviceName: String, addresses: immutable.Seq[ResolvedTarget])
     extends DeadLetterSuppression {
 
+    /**
+     * Java API
+     */
     def getAddresses: java.util.List[ResolvedTarget] = {
       import scala.collection.JavaConverters._
       addresses.asJava
@@ -58,11 +58,18 @@ object ServiceDiscovery {
     port:    Option[Int],
     address: Option[InetAddress]
   ) {
+
+    /**
+     * Java API
+     */
     def getPort: Optional[Int] = {
       import scala.compat.java8.OptionConverters._
       port.asJava
     }
 
+    /**
+     * Java API
+     */
     def getAddress: Optional[InetAddress] = {
       import scala.compat.java8.OptionConverters._
       address.asJava
@@ -94,6 +101,7 @@ final case class Lookup(serviceName: String, portName: Option[String], protocol:
   def withProtocol(value: String): Lookup = copy(protocol = Some(value))
 }
 
+@ApiMayChange
 case object Lookup {
 
   /**

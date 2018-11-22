@@ -6,8 +6,8 @@ package akka.discovery.dns
 
 import java.net.InetAddress
 
-import akka.AkkaVersion
-import akka.actor.{ ActorSystem, ExtendedActorSystem }
+import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
 import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
 import akka.event.Logging
 import akka.io.{ Dns, IO }
@@ -21,7 +21,7 @@ import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, SRVRecord }
 
 import scala.collection.{ immutable ⇒ im }
 
-object DnsServiceDiscovery {
+private object DnsServiceDiscovery {
   def srvRecordsToResolved(srvRequest: String, resolved: DnsProtocol.Resolved): Resolved = {
     val ips: Map[String, im.Seq[InetAddress]] =
       resolved.additionalRecords.foldLeft(Map.empty[String, im.Seq[InetAddress]]) {
@@ -50,8 +50,9 @@ object DnsServiceDiscovery {
 }
 
 /**
- * Looks for A records for a given service.
+ * INTERNAL API
  */
+@InternalApi
 class DnsServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 
   import DnsServiceDiscovery._

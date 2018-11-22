@@ -5,6 +5,7 @@
 package akka.discovery.config
 
 import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
 import akka.discovery.{ Lookup, ServiceDiscovery }
 import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
 import akka.event.Logging
@@ -15,7 +16,7 @@ import scala.collection.{ breakOut, immutable }
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-object ConfigServicesParser {
+private object ConfigServicesParser {
   def parse(config: Config): Map[String, Resolved] = {
     val byService = config
       .root()
@@ -39,6 +40,10 @@ object ConfigServicesParser {
   }
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 class ConfigServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 
   private val log = Logging(system, getClass)
@@ -50,9 +55,7 @@ class ConfigServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscove
   log.debug("Config discovery serving: {}", resolvedServices)
 
   override def lookup(lookup: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = {
-    // TODO or fail or change the Resolved type to an ADT?
-    Future
-      .successful(resolvedServices.getOrElse(lookup.serviceName, Resolved(lookup.serviceName, immutable.Seq.empty)))
+    Future.successful(resolvedServices.getOrElse(lookup.serviceName, Resolved(lookup.serviceName, immutable.Seq.empty)))
   }
 
 }
