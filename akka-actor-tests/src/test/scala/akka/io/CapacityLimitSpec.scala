@@ -5,7 +5,7 @@
 package akka.io
 
 import akka.testkit.{ TestProbe, AkkaSpec }
-import akka.testkit.SocketUtil._
+import akka.testkit.SocketUtil.temporaryServerAddresses
 import Tcp._
 
 class CapacityLimitSpec extends AkkaSpec("""

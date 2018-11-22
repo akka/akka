@@ -11,7 +11,7 @@ import akka.util.ByteString
 import akka.actor.ActorRef
 import akka.io.Udp._
 import akka.io.Inet._
-import akka.testkit.SocketUtil._
+import akka.testkit.SocketUtil.temporaryServerAddresses
 import java.net.DatagramSocket
 
 class UdpIntegrationSpec extends AkkaSpec("""

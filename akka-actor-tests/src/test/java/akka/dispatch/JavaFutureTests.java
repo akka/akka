@@ -10,6 +10,7 @@ import akka.actor.ActorSystem;
 import akka.japi.*;
 import org.junit.ClassRule;
 import org.scalatest.junit.JUnitSuite;
+import scala.Function1;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.Promise;
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import static akka.japi.Util.classTag;
 
 import akka.testkit.AkkaSpec;
+import scala.util.Try;
 
 public class JavaFutureTests extends JUnitSuite {
 
@@ -59,9 +61,9 @@ public class JavaFutureTests extends JUnitSuite {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise();
     Future<String> f = cf.future();
-    f.onSuccess(new OnSuccess<String>() {
-      public void onSuccess(String result) {
-        if (result.equals("foo"))
+    f.onComplete(new OnComplete<String>() {
+      public void onComplete(Throwable t, String r) {
+        if ("foo".equals(r))
           latch.countDown();
       }
     }, system.dispatcher());
@@ -76,8 +78,9 @@ public class JavaFutureTests extends JUnitSuite {
     final CountDownLatch latch = new CountDownLatch(1);
     Promise<String> cf = Futures.promise();
     Future<String> f = cf.future();
-    f.onFailure(new OnFailure() {
-      public void onFailure(Throwable t) {
+    f.onComplete(new OnComplete<String>() {
+      public void onComplete(Throwable t, String r) {
+        // 'null instanceof ...' is always false
         if (t instanceof NullPointerException)
           latch.countDown();
       }

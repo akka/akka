@@ -8,7 +8,7 @@ import language.postfixOps
 import java.io.Closeable
 import java.util.concurrent._
 import atomic.{ AtomicReference, AtomicInteger }
-import scala.concurrent.{ future, Await, ExecutionContext }
+import scala.concurrent.{ Future, Await, ExecutionContext }
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 import scala.util.Try
@@ -378,7 +378,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         import driver._
         import system.dispatcher
         val counter = new AtomicInteger
-        val terminated = future {
+        val terminated = Future {
           var rounds = 0
           while (Try(sched.scheduleOnce(Duration.Zero)(())(localEC)).isSuccess) {
             Thread.sleep(1)
@@ -511,7 +511,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
       withScheduler() { (sched, driver) ⇒
         import system.dispatcher
         val counter = new AtomicInteger
-        future { Thread.sleep(5); driver.close(); sched.close() }
+        Future { Thread.sleep(5); driver.close(); sched.close() }
         val headroom = 200
         var overrun = headroom
         val cap = 1000000
