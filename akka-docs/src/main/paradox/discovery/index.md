@@ -7,8 +7,7 @@ This means that API or semantics can change without warning or deprecation perio
 
 @@@
 
-Akka Discovery provides an interface around various ways of locating services, such as DNS
-or using configuration or key-value stores like zookeeper, consul. The built in methods are:
+Akka Discovery provides an interface around various ways of locating services. The built in methods are:
 
 * Configuration
 * DNS
@@ -21,8 +20,9 @@ In addition [Akka Management](https://developer.lightbend.com/docs/akka-manageme
 * Consul
 * Marathon API
 
-Discovery used to be part of Akka Management but has become an Akka module as of 2.5.19 of Akka and version 0.20
-of Akka Management.
+Discovery used to be part of Akka Management but has become an Akka module as of `2.5.19` of Akka and version `0.21.0`
+of Akka Management. If you're also using Akka Management for other service discovery methods or bootstrap make
+sure you are using at least version 
 
 ## Dependency
 
@@ -32,12 +32,9 @@ of Akka Management.
   version="$akka.version$"
 }
 
-## What is Service Discovery
+## How it works
 
-Akka's Discovery talks specifically about discovering hosts and ports that relate to some
-logical name.
-
-Discovery is done in a method agnostic way:
+Loading the extension:
 
 Scala
 :  @@snip [CompileOnlySpec.scala](/akka-discovery/src/test/scala/doc/akka/discovery/CompileOnlySpec.scala) { #loading }
@@ -168,7 +165,7 @@ Configuration currently ignores all fields apart from service name.
 
 For simple use cases configuration can be used for service discovery. The advantage of using Akka Discovery with
 configuration rather than your own configuration values is that applications can be migrated to a more
-sophisticated discovery mechanism without any code changes.
+sophisticated discovery method without any code changes.
 
 
 Configure it to be used as discovery method in your `application.conf`
@@ -203,4 +200,46 @@ akka.discovery.config.services = {
 
 Where the above block defines two services, `service1` and `service2`.
 Each service can have multiple endpoints.
+
+## Discovery Method: Aggregate multiple discovery methods
+
+Aggregate discovery allows multiple discovery methods to be aggregated e.g. try and resolve
+via DNS and fall back to configuration.
+
+To use aggregate discovery add its dependency as well as all of the discovery that you
+want to aggregate.
+
+Configure `aggregate` as `akka.discovery.method` and which discovery methods are tried and in which order.
+
+```
+akka {
+  discovery {
+    method = aggregate
+    aggregate {
+      discovery-methods = ["akka-dns", "config"]
+    }
+    config {
+      services {
+        service1 {
+          endpoints [
+            {
+              host = "host1"
+              port = 1233
+            },
+            {
+              host = "host2"
+              port = 1234
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+
+```
+
+The above configuration will result in `akka-dns` first being checked and if it fails or returns no
+targets for the given service name then `config` is queried which i configured with one service called
+`service1` which two hosts `host1` and `host2`.
 

@@ -1,24 +1,28 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.discovery.dns
 
 import akka.actor.ActorSystem
 import akka.discovery.ServiceDiscovery.ResolvedTarget
-import akka.discovery.{Discovery, Lookup}
-import akka.testkit.{AkkaSpec, SocketUtil, TestKit}
+import akka.discovery.{ Discovery, Lookup }
+import akka.testkit.{ AkkaSpec, SocketUtil, TestKit }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
 import scala.concurrent.duration._
 import java.net.InetAddress
 
 import akka.actor.ActorSystem
-import akka.discovery.{Lookup, ServiceDiscovery}
+import akka.discovery.{ Lookup, ServiceDiscovery }
 import akka.event.LoggingAdapter
 import akka.io.dns.DockerBindDnsService
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Millis, Seconds, Span}
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.time.{ Millis, Seconds, Span }
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
 import scala.concurrent.duration._
 
@@ -47,7 +51,7 @@ object DnsDiscoverySpec {
 }
 
 class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config)
-    with DockerBindDnsService {
+  with DockerBindDnsService {
 
   import DnsDiscoverySpec._
 

@@ -5,7 +5,7 @@
 package doc.akka.discovery
 
 import akka.actor.ActorSystem
-import akka.discovery.{Discovery, Lookup, ServiceDiscovery}
+import akka.discovery.{ Discovery, Lookup, ServiceDiscovery }
 
 import scala.concurrent.Future
 import scala.concurrent.duration._

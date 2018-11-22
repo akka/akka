@@ -41,7 +41,7 @@ object AggregateServiceDiscoverySpec {
           method = aggregate
 
           aggregate {
-            discovery-mechanisms = ["stubbed1", "config"]
+            discovery-methods = ["stubbed1", "config"]
           }
         }
       }

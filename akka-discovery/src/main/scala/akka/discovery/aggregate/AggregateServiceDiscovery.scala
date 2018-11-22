@@ -5,9 +5,10 @@
 package akka.discovery.aggregate
 
 import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
 import akka.discovery.ServiceDiscovery.Resolved
-import akka.discovery.aggregate.AggregateServiceDiscovery.Mechanisms
-import akka.discovery.{ Lookup, Discovery, ServiceDiscovery }
+import akka.discovery.aggregate.AggregateServiceDiscovery.Methods
+import akka.discovery.{ Discovery, Lookup, ServiceDiscovery }
 import akka.event.Logging
 import akka.util.Helpers.Requiring
 import com.typesafe.config.Config
@@ -17,64 +18,67 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
-final class AggregateServiceDiscoverySettings(config: Config) {
+private final class AggregateServiceDiscoverySettings(config: Config) {
 
-  val discoveryMechanisms = config
-    .getStringList("discovery-mechanisms")
+  val discoveryMethods = config
+    .getStringList("discovery-methods")
     .asScala
     .toList
-    .requiring(_.nonEmpty, "At least one discovery mechanism should be specified")
+    .requiring(_.nonEmpty, "At least one discovery method should be specified")
 
 }
 
-object AggregateServiceDiscovery {
-  type Mechanisms = List[(String, ServiceDiscovery)]
+private object AggregateServiceDiscovery {
+  type Methods = List[(String, ServiceDiscovery)]
 }
 
-final class AggregateServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
+/**
+ * INTERNAL API
+ */
+@InternalApi final class AggregateServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 
   private val log = Logging(system, getClass)
 
   private val settings =
     new AggregateServiceDiscoverySettings(system.settings.config.getConfig("akka.discovery.aggregate"))
 
-  private val mechanisms = {
+  private val methods = {
     val serviceDiscovery = Discovery(system)
-    settings.discoveryMechanisms.map(mech ⇒ (mech, serviceDiscovery.loadServiceDiscovery(mech)))
+    settings.discoveryMethods.map(mech ⇒ (mech, serviceDiscovery.loadServiceDiscovery(mech)))
   }
   private implicit val ec = system.dispatcher
 
   /**
-   * Each discovery mechanism is given the resolveTimeout rather than reducing it each time between mechanisms.
+   * Each discovery method is given the resolveTimeout rather than reducing it each time between methods.
    */
   override def lookup(lookup: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] =
-    resolve(mechanisms, lookup, resolveTimeout)
+    resolve(methods, lookup, resolveTimeout)
 
-  private def resolve(sds: Mechanisms, query: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = {
+  private def resolve(sds: Methods, query: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = {
     sds match {
-      case (mechanism, next) :: Nil ⇒
-        log.debug("Looking up [{}] with [{}]", query, mechanism)
+      case (method, next) :: Nil ⇒
+        log.debug("Looking up [{}] with [{}]", query, method)
         next.lookup(query, resolveTimeout)
-      case (mechanism, next) :: tail ⇒
-        log.debug("Looking up [{}] with [{}]", query, mechanism)
+      case (method, next) :: tail ⇒
+        log.debug("Looking up [{}] with [{}]", query, method)
         // If nothing comes back then try the next one
         next
           .lookup(query, resolveTimeout)
           .flatMap { resolved ⇒
             if (resolved.addresses.isEmpty) {
-              log.debug("Mechanism [{}] returned no ResolvedTargets, trying next", query)
+              log.debug("Method[{}] returned no ResolvedTargets, trying next", query)
               resolve(tail, query, resolveTimeout)
             } else
               Future.successful(resolved)
           }
           .recoverWith {
             case NonFatal(t) ⇒
-              log.error(t, "[{}] Service discovery failed. Trying next discovery mechanism", mechanism)
+              log.error(t, "[{}] Service discovery failed. Trying next discovery method", method)
               resolve(tail, query, resolveTimeout)
           }
       case Nil ⇒
-        // this is checked in `discoveryMechanisms`, but silence compiler warning
-        throw new IllegalStateException("At least one discovery mechanism should be specified")
+        // this is checked in `discoveryMethods`, but silence compiler warning
+        throw new IllegalStateException("At least one discovery method should be specified")
     }
   }
 }

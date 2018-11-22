@@ -18,7 +18,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
 /**
- * Implement to provide basic service discovery mechanism.
+ * Implement to provide basic service discovery method.
  */
 @ApiMayChange
 object ServiceDiscovery {
@@ -72,7 +72,7 @@ object ServiceDiscovery {
 }
 
 /**
- * A service lookup. It is up to each mechanism to decide
+ * A service lookup. It is up to each method to decide
  * what to do with the optional portName and protocol fields.
  * For example `portName` could be used to distinguish between
  * Akka remoting ports and HTTP ports.
@@ -114,12 +114,11 @@ case object Lookup {
 }
 
 /**
- * Implement to provide basic service discovery mechanism.
+ * Implement to provide a service discovery method
  *
  */
 @ApiMayChange
 abstract class ServiceDiscovery {
-
 
   import ServiceDiscovery._
 
@@ -127,7 +126,7 @@ abstract class ServiceDiscovery {
    * Scala API: Perform lookup using underlying discovery implementation.
    *
    * @param lookup       A service discovery lookup.
-   * @param resolveTimeout Timeout. Up to the discovery-mechanism to adhere to his
+   * @param resolveTimeout Timeout. Up to the discovery-method to adhere to his
    */
   def lookup(lookup: Lookup, resolveTimeout: FiniteDuration): Future[Resolved]
 
@@ -157,8 +156,8 @@ abstract class ServiceDiscovery {
   /**
    * Java API
    *
-   * @param serviceName           A name, see discovery-mechanism's docs for how this is interpreted
-   * @param resolveTimeout Timeout. Up to the discovery-mechanism to adhere to his
+   * @param serviceName           A name, see discovery-method's docs for how this is interpreted
+   * @param resolveTimeout Timeout. Up to the discovery-methodto adhere to his
    */
   def lookup(serviceName: String, resolveTimeout: java.time.Duration): CompletionStage[Resolved] =
     lookup(Lookup(serviceName), resolveTimeout)

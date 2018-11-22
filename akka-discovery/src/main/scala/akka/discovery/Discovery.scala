@@ -109,7 +109,7 @@ object Discovery extends ExtensionId[Discovery] with ExtensionIdProvider {
       Class.forName("akka.discovery.SimpleServiceDiscovery")
       throw new RuntimeException("Old version of Akka Discovery from Akka Management found on the classpath. Remove `com.lightbend.akka.discovery:akka-discovery` from the classpath..")
     } catch {
-      case cnf: ClassNotFoundException => // all good
+      case cnf: ClassNotFoundException ⇒ // all good
     }
   }
 
