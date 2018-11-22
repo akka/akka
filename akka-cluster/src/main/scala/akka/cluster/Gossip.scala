@@ -71,19 +71,31 @@ private[cluster] final case class Gossip(
 
   private def assertInvariants(): Unit = {
 
-    if (members.exists(_.status == Removed))
-      throw new IllegalArgumentException(s"Live members must not have status [${Removed}], " +
-        s"got [${members.filter(_.status == Removed)}]")
+    def ifTrueThrow(func: ⇒ Boolean, expected: String, actual: String): Unit =
+      if (func) throw new IllegalArgumentException(s"$expected, but found [$actual]")
+
+    ifTrueThrow(
+      members.exists(_.status == Removed),
+      expected = s"Live members must not have status [$Removed]",
+      actual = s"${members.filter(_.status == Removed)}")
 
     val inReachabilityButNotMember = overview.reachability.allObservers diff members.map(_.uniqueAddress)
-    if (inReachabilityButNotMember.nonEmpty)
-      throw new IllegalArgumentException("Nodes not part of cluster in reachability table, got [%s]"
-        format inReachabilityButNotMember.mkString(", "))
+    ifTrueThrow(
+      inReachabilityButNotMember.nonEmpty,
+      expected = "Nodes not part of cluster in reachability table",
+      actual = inReachabilityButNotMember.mkString(", "))
+
+    val inReachabilityVersionsButNotMember = overview.reachability.versions.keySet diff members.map(_.uniqueAddress)
+    ifTrueThrow(
+      inReachabilityVersionsButNotMember.nonEmpty,
+      expected = "Nodes not part of cluster in reachability versions table",
+      actual = inReachabilityVersionsButNotMember.mkString(", "))
 
     val seenButNotMember = overview.seen diff members.map(_.uniqueAddress)
-    if (seenButNotMember.nonEmpty)
-      throw new IllegalArgumentException("Nodes not part of cluster have marked the Gossip as seen, got [%s]"
-        format seenButNotMember.mkString(", "))
+    ifTrueThrow(
+      seenButNotMember.nonEmpty,
+      expected = "Nodes not part of cluster have marked the Gossip as seen",
+      actual = seenButNotMember.mkString(", "))
   }
 
   @transient private lazy val membersMap: Map[UniqueAddress, Member] =
