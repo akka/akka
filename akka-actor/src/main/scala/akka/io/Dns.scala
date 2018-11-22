@@ -35,22 +35,6 @@ abstract class Dns {
 }
 
 object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
-
-  private val implementations = new ConcurrentHashMap[String, DnsExt]
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[akka] def loadDnsResolver(system: ExtendedActorSystem, resolver: String, managerName: String): DnsExt = {
-    implementations.computeIfAbsent(resolver, new JFunction[String, DnsExt] {
-      override def apply(r: String): DnsExt = {
-        system.log.info("Creating resolver for resolver: {}. ManagerName: {}", r, managerName)
-        new DnsExt(system, r, managerName)
-      }
-    })
-  }
-
   sealed trait Command
 
   case class Resolve(name: String) extends Command with ConsistentHashable {
@@ -97,7 +81,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
 
   override def lookup() = Dns
 
-  override def createExtension(system: ExtendedActorSystem): DnsExt = loadDnsResolver(system, system.settings.config.getString("akka.io.dns.resolver"), "IO-DNS")
+  override def createExtension(system: ExtendedActorSystem): DnsExt = new DnsExt(system)
 
   /**
    * Java API: retrieve the Udp extension for the given system.
@@ -105,14 +89,33 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): DnsExt = super.get(system)
 }
 
-/**
- * INTERNAL API
- *
- * Use IO(DNS) or Dns(system). Do not instantiate directly.
- *
- */
-@InternalApi
 class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: String, managerName: String) extends IO.Extension {
+
+  private val asyncDns = new ConcurrentHashMap[String, ActorRef]
+
+  /**
+   * INTERNAL API
+   *
+   * Load an additional async-dns resolver. Can be used to use async-dns even if inet-resolver is the configuerd
+   * default.
+   * Intentionally chosen not to support loading an arbitrary resolver as it required a specific constructor
+   * for the manager actor. The expected constructor for DNS plugins is just to take in a DnsExt which can't
+   * be used in this case
+   */
+  @InternalApi
+  private[akka] def loadAsyncDns(managerName: String): ActorRef = {
+    // This can't pass in `this` as then AsyncDns would pick up the system settings
+    asyncDns.computeIfAbsent(managerName, new JFunction[String, ActorRef] {
+      override def apply(r: String): ActorRef = {
+        val settings = new Settings(system.settings.config.getConfig("akka.io.dns"), "async-dns")
+        val provider = system.dynamicAccess.getClassFor[DnsProvider](settings.ProviderObjectName).get.newInstance()
+        system.log.info("Creating async dns resolver {} with manger name {}", settings.Resolver, managerName)
+        system.systemActorOf(
+          props = Props(provider.managerClass, settings.Resolver, system, settings.ResolverConfig, provider.cache, settings.Dispatcher, provider).withDeploy(Deploy.local).withDispatcher(settings.Dispatcher),
+          name = managerName)
+      }
+    })
+  }
 
   /**
    * INTERNAL API
@@ -138,18 +141,25 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
     override def toString = s"Settings($Dispatcher, $Resolver, $ResolverConfig, $ProviderObjectName)"
   }
 
+  // Settings for the system resolver
   val Settings: Settings = new Settings(system.settings.config.getConfig("akka.io.dns"), resolverName)
 
+  // System DNS resolver
   val provider: DnsProvider = system.dynamicAccess.getClassFor[DnsProvider](Settings.ProviderObjectName).get.newInstance()
+
+  // System DNS cache
   val cache: Dns = provider.cache
 
+  // System DNS manager
   val manager: ActorRef = {
     system.systemActorOf(
       props = Props(provider.managerClass, this).withDeploy(Deploy.local).withDispatcher(Settings.Dispatcher),
       name = managerName)
   }
 
+  // System DNS manager
   def getResolver: ActorRef = manager
+
 }
 
 object IpVersionSelector {

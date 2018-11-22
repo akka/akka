@@ -60,9 +60,11 @@ class DnsServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery 
 
   private val log = Logging(system, getClass)
   private val dns = if (system.settings.config.getString("akka.io.dns.resolver") == "async-dns") {
+    log.debug("using system resolver as it is set to async-dns")
     IO(Dns)(system)
   } else {
-    Dns.loadDnsResolver(system, "async-dns", "SD-DNS").manager
+    log.debug("system resolver is not async-dns. Loading isolated resolver")
+    Dns(system).loadAsyncDns("SD-DNS")
   }
 
   import system.dispatcher
