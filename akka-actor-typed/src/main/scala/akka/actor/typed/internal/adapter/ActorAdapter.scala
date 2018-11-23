@@ -34,7 +34,7 @@ import akka.util.OptionVal
    */
   private var failures: Map[a.ActorRef, Throwable] = Map.empty
 
-  def receive = running
+  def receive: Receive = running
 
   def running: Receive = {
     case a.Terminated(ref) ⇒
@@ -47,8 +47,6 @@ import akka.util.OptionVal
       next(Behavior.interpretSignal(behavior, ctx, msg), msg)
     case a.ReceiveTimeout ⇒
       next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
-    case wrapped: AskResponse[Any, T] @unchecked ⇒
-      withSafelyAdapted(() ⇒ wrapped.adapt())(handleMessage)
     case wrapped: AdaptMessage[Any, T] @unchecked ⇒
       withSafelyAdapted(() ⇒ wrapped.adapt()) {
         case AdaptWithRegisteredMessageAdapter(msg) ⇒
