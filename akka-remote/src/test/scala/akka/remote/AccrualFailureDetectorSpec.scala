@@ -197,7 +197,7 @@ class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
 
     "calculate correct mean and variance" in {
       val samples = Seq(100, 200, 125, 340, 130)
-      val stats = (HeartbeatHistory(maxSampleSize = 20) /: samples) {
+      val stats = samples.foldLeft(HeartbeatHistory(maxSampleSize = 20)) {
         (stats, value) ⇒ stats :+ value
       }
       stats.mean should ===(179.0 +- 0.00001)
