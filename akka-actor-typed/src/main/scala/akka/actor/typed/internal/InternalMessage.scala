@@ -19,7 +19,7 @@ import akka.annotation.InternalApi
 
 /**
  * INTERNAL API: Wrapping of messages that should be adapted by the included
- * function. Used by `ActorContext.spawnMessageAdapter` so that the function is
+ * function. Used by `ActorContext.spawnMessageAdapter` and `ActorContext.ask` so that the function is
  * applied in the "parent" actor (for better thread safety)..
  */
 @InternalApi private[akka] final case class AdaptMessage[U, T](msg: U, adapter: U ⇒ T) extends InternalMessage {
