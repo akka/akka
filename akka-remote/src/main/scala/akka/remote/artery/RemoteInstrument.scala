@@ -10,6 +10,7 @@ import akka.util.OptionVal
 import java.nio.ByteBuffer
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+import scala.collection.compat._
 
 /**
  * INTERNAL API
@@ -291,11 +292,11 @@ private[remote] object RemoteInstruments {
     val c = system.settings.config
     val path = "akka.remote.artery.advanced.instruments"
     import scala.collection.JavaConverters._
-    c.getStringList(path).asScala.map { fqcn ⇒
+    c.getStringList(path).asScala.iterator.map { fqcn ⇒
       system
         .dynamicAccess.createInstanceFor[RemoteInstrument](fqcn, Nil)
         .orElse(system.dynamicAccess.createInstanceFor[RemoteInstrument](fqcn, List(classOf[ExtendedActorSystem] → system)))
         .get
-    }(collection.breakOut)
+    }.to(scala.collection.immutable.Vector)
   }
 }

@@ -14,6 +14,7 @@ import akka.routing.{ NoRouter, RouterConfig }
 
 import scala.reflect.ClassTag
 import util.{ Failure, Success }
+import scala.collection.compat._
 
 /**
  * Serializes Akka's internal DaemonMsgCreate using protobuf
@@ -164,8 +165,8 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
         } else {
           // message from an older node, which only provides data and class name
           // and never any serializer ids
-          (proto.getProps.getArgsList.asScala zip proto.getProps.getManifestsList.asScala)
-            .map(oldDeserialize)(collection.breakOut)
+          (proto.getProps.getArgsList.asScala zip proto.getProps.getManifestsList.asScala).iterator
+            .map(oldDeserialize).to(scala.collection.immutable.Vector)
         }
       Props(deploy(proto.getProps.getDeploy), actorClass, args)
     }
