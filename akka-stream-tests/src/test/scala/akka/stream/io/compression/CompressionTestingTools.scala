@@ -12,6 +12,7 @@ import scala.annotation.tailrec
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success }
+import scala.collection.compat._
 
 // a few useful helpers copied over from akka-http
 object CompressionTestingTools {
@@ -25,7 +26,7 @@ object CompressionTestingTools {
       }
     }
   }
-  implicit class EnhancedByteStringTraversableOnce(val byteStrings: TraversableOnce[ByteString]) extends AnyVal {
+  implicit class EnhancedByteStringTraversableOnce(val byteStrings: IterableOnce[ByteString]) extends AnyVal {
     def join: ByteString = byteStrings.foldLeft(ByteString.empty)(_ ++ _)
   }
   implicit class EnhancedByteStringSource[Mat](val byteStringStream: Source[ByteString, Mat]) extends AnyVal {
