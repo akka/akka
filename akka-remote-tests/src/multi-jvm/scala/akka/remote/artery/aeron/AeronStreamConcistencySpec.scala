@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
 
 import akka.Done
 import akka.actor.ExtendedActorSystem
@@ -136,8 +137,9 @@ abstract class AeronStreamConsistencySpec
                 done.countDown()
             }
             pool.release(envelope)
-          }.onFailure {
-            case e ⇒ e.printStackTrace
+          }.onComplete {
+            case Failure(e) ⇒ e.printStackTrace
+            case Success(_) ⇒
           }
 
         within(10.seconds) {
