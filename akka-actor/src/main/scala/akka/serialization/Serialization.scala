@@ -376,6 +376,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     system.dynamicAccess.createInstanceFor[Serializer](fqn, List(classOf[ExtendedActorSystem] → system)) recoverWith {
       case _: NoSuchMethodException ⇒
         system.dynamicAccess.createInstanceFor[Serializer](fqn, Nil)
+      // FIXME only needed on 2.13.0-M5 due to https://github.com/scala/bug/issues/11242
+      case t ⇒ Failure(t)
     }
   }
 

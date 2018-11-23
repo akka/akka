@@ -11,11 +11,10 @@ import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable ⇒ JIterable }
 
 import scala.annotation.{ tailrec, varargs }
-import scala.collection.StrictOptimizedSeqOps
 import scala.collection.compat._
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.{ mutable, immutable }
-import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, VectorBuilder }
+import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, StrictOptimizedSeqOps, VectorBuilder }
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
 import java.nio.charset.{ Charset, StandardCharsets }
@@ -668,6 +667,10 @@ sealed abstract class ByteString
 
   override protected def fromSpecific(coll: IterableOnce[Byte]): ByteString = ByteString(coll)
   override protected def newSpecificBuilder: mutable.Builder[Byte, ByteString] = ByteString.newBuilder
+
+  // FIXME this is a workaround for
+  //  https://github.com/scala/bug/issues/11192#issuecomment-436926231
+  protected[this] override def writeReplace(): AnyRef = this
 
   def apply(idx: Int): Byte
   private[akka] def byteStringCompanion: ByteString.Companion
