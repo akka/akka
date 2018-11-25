@@ -82,11 +82,11 @@ import scala.concurrent.duration.FiniteDuration
     val task =
       if (repeat)
         ctx.system.scheduler.schedule(timeout, timeout) {
-          ctx.self.upcast ! timerMsg
+          ctx.self.unsafeUpcast ! timerMsg
         }(ExecutionContexts.sameThreadExecutionContext)
       else
         ctx.system.scheduler.scheduleOnce(timeout) {
-          ctx.self.upcast ! timerMsg
+          ctx.self.unsafeUpcast ! timerMsg
         }(ExecutionContexts.sameThreadExecutionContext)
 
     val nextTimer = Timer(key, msg, repeat, nextGen, task)

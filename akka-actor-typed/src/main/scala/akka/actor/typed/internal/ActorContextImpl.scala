@@ -46,7 +46,7 @@ import akka.util.JavaDurationConverters._
 
   override def getChild(name: String): Optional[ActorRef[Void]] =
     child(name) match {
-      case Some(c) ⇒ Optional.of(c.upcast[Void])
+      case Some(c) ⇒ Optional.of(c.unsafeUpcast[Void])
       case None    ⇒ Optional.empty()
     }
 
@@ -54,7 +54,7 @@ import akka.util.JavaDurationConverters._
     val c = children
     val a = new ArrayList[ActorRef[Void]](c.size)
     val i = c.iterator
-    while (i.hasNext) a.add(i.next().upcast[Void])
+    while (i.hasNext) a.add(i.next().unsafeUpcast[Void])
     a
   }
 

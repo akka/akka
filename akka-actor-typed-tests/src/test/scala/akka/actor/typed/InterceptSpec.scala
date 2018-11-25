@@ -304,7 +304,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
     ref ! Msg("hello", probe.ref)
     probe.expectMessage("hello-1")
 
-    ref.upcast[Any] ! MyPoisonPill
+    ref.unsafeUpcast[Any] ! MyPoisonPill
 
     probe.expectTerminated(ref, probe.remainingOrDefault)
   }
