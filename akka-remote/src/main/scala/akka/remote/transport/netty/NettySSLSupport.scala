@@ -7,7 +7,6 @@ package akka.remote.transport.netty
 import java.security._
 
 import akka.japi.Util._
-import akka.remote.security.provider.DeprecatedAkkaProvider
 import com.typesafe.config.Config
 import org.jboss.netty.handler.ssl.SslHandler
 
@@ -44,9 +43,6 @@ private[akka] class SSLSettings(config: Config) {
  * The `SSLEngine` is created via the configured [[SSLEngineProvider]].
  */
 private[akka] object NettySSLSupport {
-
-  // TODO is this needed in Artery TLS?
-  Security addProvider DeprecatedAkkaProvider
 
   /**
    * Construct a SSLHandler which can be inserted into a Netty server/client pipeline
