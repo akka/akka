@@ -1690,7 +1690,7 @@ private[stream] object Collect {
     }
 
     def pullCondition: Boolean =
-      !strategy.isInstanceOf[Backpressure] || buffer.used < size
+      !strategy.isBackpressure || buffer.used < size
 
     def grabAndPull(): Unit = {
       buffer.enqueue((System.nanoTime(), grab(in)))

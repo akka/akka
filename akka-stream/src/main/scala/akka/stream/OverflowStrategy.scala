@@ -14,7 +14,9 @@ import akka.event.Logging.LogLevel
  * that is full but is about to receive a new element.
  */
 @DoNotInherit
-sealed abstract class DelayOverflowStrategy extends Serializable
+sealed abstract class DelayOverflowStrategy extends Serializable {
+  private[akka] def isBackpressure: Boolean
+}
 
 final case class BufferOverflowException(msg: String) extends RuntimeException(msg)
 
@@ -33,41 +35,49 @@ private[akka] object OverflowStrategies {
    */
   private[akka] case class DropHead(logLevel: LogLevel) extends OverflowStrategy {
     override def withLogLevel(logLevel: LogLevel): DropHead = DropHead(logLevel)
+    private[akka] override def isBackpressure: Boolean = false
   }
   /**
    * INTERNAL API
    */
   private[akka] case class DropTail(logLevel: LogLevel) extends OverflowStrategy {
     override def withLogLevel(logLevel: LogLevel): DropTail = DropTail(logLevel)
+    private[akka] override def isBackpressure: Boolean = false
   }
   /**
    * INTERNAL API
    */
   private[akka] case class DropBuffer(logLevel: LogLevel) extends OverflowStrategy {
     override def withLogLevel(logLevel: LogLevel): DropBuffer = DropBuffer(logLevel)
+    private[akka] override def isBackpressure: Boolean = false
   }
   /**
    * INTERNAL API
    */
   private[akka] case class DropNew(logLevel: LogLevel) extends OverflowStrategy {
     override def withLogLevel(logLevel: LogLevel): DropNew = DropNew(logLevel)
+    private[akka] override def isBackpressure: Boolean = false
   }
   /**
    * INTERNAL API
    */
   private[akka] case class Backpressure(logLevel: LogLevel) extends OverflowStrategy {
     override def withLogLevel(logLevel: LogLevel): Backpressure = Backpressure(logLevel)
+    private[akka] override def isBackpressure: Boolean = true
   }
   /**
    * INTERNAL API
    */
   private[akka] case class Fail(logLevel: LogLevel) extends OverflowStrategy {
     override def withLogLevel(logLevel: LogLevel): Fail = Fail(logLevel)
+    private[akka] override def isBackpressure: Boolean = false
   }
   /**
    * INTERNAL API
    */
-  private[akka] case object EmitEarly extends DelayOverflowStrategy
+  private[akka] case object EmitEarly extends DelayOverflowStrategy {
+    private[akka] override def isBackpressure: Boolean = false
+  }
 }
 
 object OverflowStrategy {
