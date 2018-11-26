@@ -13,11 +13,10 @@ import akka.persistence.typed.EventAdapter;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.SideEffect;
-import akka.util.Timeout;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 import static akka.actor.typed.javadsl.AskPattern.ask;
 
@@ -266,7 +265,7 @@ public class PersistentActorCompileOnlyTest {
     }
 
     static ActorRef<Request> sideEffectProcessor = TestInbox.<Request>create().getRef();
-    static Timeout timeout = new Timeout(1, TimeUnit.SECONDS);
+    static Duration timeout = Duration.ofSeconds(1);
 
     private static void performSideEffect(ActorRef<AcknowledgeSideEffect> sender, int correlationId, String data, Scheduler scheduler) {
       CompletionStage<Response> what = ask(sideEffectProcessor, (ActorRef<Response> ar) -> new Request(correlationId, data, ar), timeout, scheduler);

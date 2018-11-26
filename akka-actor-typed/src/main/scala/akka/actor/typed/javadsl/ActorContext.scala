@@ -275,7 +275,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
   def ask[Req, Res](
     resClass:        Class[Res],
     target:          RecipientRef[Req],
-    responseTimeout: Timeout,
+    responseTimeout: Duration,
     createRequest:   java.util.function.Function[ActorRef[Res], Req],
     applyToResponse: BiFunction[Res, Throwable, T]): Unit
 
