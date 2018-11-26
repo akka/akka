@@ -26,6 +26,7 @@ final case class BufferOverflowException(msg: String) extends RuntimeException(m
  */
 @DoNotInherit
 sealed abstract class OverflowStrategy extends DelayOverflowStrategy {
+  private[akka] def logLevel: LogLevel
   def withLogLevel(logLevel: Logging.LogLevel): OverflowStrategy
 }
 

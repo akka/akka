@@ -868,33 +868,46 @@ private[stream] object Collect {
  */
 @InternalApi private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy) extends SimpleLinearGraphStage[T] {
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
 
     private var buffer: BufferImpl[T] = _
 
     val enqueueAction: T ⇒ Unit =
       overflowStrategy match {
-        case _: DropHead ⇒ elem ⇒
-          if (buffer.isFull) buffer.dropHead()
+        case s: DropHead ⇒ elem ⇒
+          if (buffer.isFull) {
+            log.log(s.logLevel, "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
+            buffer.dropHead()
+          }
           buffer.enqueue(elem)
           pull(in)
-        case _: DropTail ⇒ elem ⇒
-          if (buffer.isFull) buffer.dropTail()
+        case s: DropTail ⇒ elem ⇒
+          if (buffer.isFull) {
+            log.log(s.logLevel, "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
+            buffer.dropTail()
+          }
           buffer.enqueue(elem)
           pull(in)
-        case _: DropBuffer ⇒ elem ⇒
-          if (buffer.isFull) buffer.clear()
+        case s: DropBuffer ⇒ elem ⇒
+          if (buffer.isFull) {
+            log.log(s.logLevel, "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
+            buffer.clear()
+          }
           buffer.enqueue(elem)
           pull(in)
-        case _: DropNew ⇒ elem ⇒
+        case s: DropNew ⇒ elem ⇒
           if (!buffer.isFull) buffer.enqueue(elem)
+          else log.log(s.logLevel, "Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
           pull(in)
-        case _: Backpressure ⇒ elem ⇒
+        case s: Backpressure ⇒ elem ⇒
           buffer.enqueue(elem)
           if (!buffer.isFull) pull(in)
-        case _: Fail ⇒ elem ⇒
-          if (buffer.isFull) failStage(BufferOverflowException(s"Buffer overflow (max capacity was: $size)!"))
-          else {
+          else log.log(s.logLevel, "Backpressuring because buffer is full and overflowStrategy is: [Backpressure]")
+        case s: Fail ⇒ elem ⇒
+          if (buffer.isFull) {
+            log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Fail]")
+            failStage(BufferOverflowException(s"Buffer overflow (max capacity was: $size)!"))
+          } else {
             buffer.enqueue(elem)
             pull(in)
           }
