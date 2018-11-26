@@ -23,33 +23,47 @@ final case class BufferOverflowException(msg: String) extends RuntimeException(m
  * about to receive a new element.
  */
 @DoNotInherit
-sealed abstract class OverflowStrategy extends DelayOverflowStrategy
+sealed abstract class OverflowStrategy extends DelayOverflowStrategy {
+  def withLogLevel(logLevel: Logging.LogLevel): OverflowStrategy
+}
 
 private[akka] object OverflowStrategies {
   /**
    * INTERNAL API
    */
-  private[akka] case class DropHead(logLevel: LogLevel) extends OverflowStrategy
+  private[akka] case class DropHead(logLevel: LogLevel) extends OverflowStrategy {
+    override def withLogLevel(logLevel: LogLevel): DropHead = DropHead(logLevel)
+  }
   /**
    * INTERNAL API
    */
-  private[akka] case class DropTail(logLevel: LogLevel) extends OverflowStrategy
+  private[akka] case class DropTail(logLevel: LogLevel) extends OverflowStrategy {
+    override def withLogLevel(logLevel: LogLevel): DropTail = DropTail(logLevel)
+  }
   /**
    * INTERNAL API
    */
-  private[akka] case class DropBuffer(logLevel: LogLevel) extends OverflowStrategy
+  private[akka] case class DropBuffer(logLevel: LogLevel) extends OverflowStrategy {
+    override def withLogLevel(logLevel: LogLevel): DropBuffer = DropBuffer(logLevel)
+  }
   /**
    * INTERNAL API
    */
-  private[akka] case class DropNew(logLevel: LogLevel) extends OverflowStrategy
+  private[akka] case class DropNew(logLevel: LogLevel) extends OverflowStrategy {
+    override def withLogLevel(logLevel: LogLevel): DropNew = DropNew(logLevel)
+  }
   /**
    * INTERNAL API
    */
-  private[akka] case class Backpressure(logLevel: LogLevel) extends OverflowStrategy
+  private[akka] case class Backpressure(logLevel: LogLevel) extends OverflowStrategy {
+    override def withLogLevel(logLevel: LogLevel): Backpressure = Backpressure(logLevel)
+  }
   /**
    * INTERNAL API
    */
-  private[akka] case class Fail(logLevel: LogLevel) extends OverflowStrategy
+  private[akka] case class Fail(logLevel: LogLevel) extends OverflowStrategy {
+    override def withLogLevel(logLevel: LogLevel): Fail = Fail(logLevel)
+  }
   /**
    * INTERNAL API
    */
@@ -64,22 +78,10 @@ object OverflowStrategy {
   def dropHead: OverflowStrategy = DropHead(Logging.DebugLevel)
 
   /**
-   * If the buffer is full when a new element arrives, drops the oldest element from the buffer to make space for
-   * the new element.
-   */
-  def dropHead(logLevel: LogLevel): OverflowStrategy = DropHead(logLevel)
-
-  /**
    * If the buffer is full when a new element arrives, drops the youngest element from the buffer to make space for
    * the new element.
    */
   def dropTail: OverflowStrategy = DropTail(Logging.DebugLevel)
-
-  /**
-   * If the buffer is full when a new element arrives, drops the youngest element from the buffer to make space for
-   * the new element.
-   */
-  def dropTail(logLevel: LogLevel): OverflowStrategy = DropTail(logLevel)
 
   /**
    * If the buffer is full when a new element arrives, drops all the buffered elements to make space for the new element.
@@ -87,19 +89,9 @@ object OverflowStrategy {
   def dropBuffer: OverflowStrategy = DropBuffer(Logging.DebugLevel)
 
   /**
-   * If the buffer is full when a new element arrives, drops all the buffered elements to make space for the new element.
-   */
-  def dropBuffer(logLevel: LogLevel): OverflowStrategy = DropBuffer(logLevel)
-
-  /**
    * If the buffer is full when a new element arrives, drops the new element.
    */
   def dropNew: OverflowStrategy = DropNew(Logging.DebugLevel)
-
-  /**
-   * If the buffer is full when a new element arrives, drops the new element.
-   */
-  def dropNew(logLevel: LogLevel = Logging.DebugLevel): OverflowStrategy = DropNew(logLevel)
 
   /**
    * If the buffer is full when a new element is available this strategy backpressures the upstream publisher until
@@ -108,20 +100,9 @@ object OverflowStrategy {
   def backpressure: OverflowStrategy = Backpressure(Logging.DebugLevel)
 
   /**
-   * If the buffer is full when a new element is available this strategy backpressures the upstream publisher until
-   * space becomes available in the buffer.
-   */
-  def backpressure(logLevel: LogLevel): OverflowStrategy = Backpressure(logLevel)
-
-  /**
    * If the buffer is full when a new element is available this strategy completes the stream with failure.
    */
   def fail: OverflowStrategy = Fail(Logging.ErrorLevel)
-
-  /**
-   * If the buffer is full when a new element is available this strategy completes the stream with failure.
-   */
-  def fail(logLevel: LogLevel): OverflowStrategy = Fail(logLevel)
 }
 
 object DelayOverflowStrategy {
