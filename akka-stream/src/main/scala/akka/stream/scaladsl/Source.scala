@@ -496,7 +496,7 @@ object Source {
     failureMatcher:    PartialFunction[Any, Throwable],
     bufferSize:        Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] = {
     require(bufferSize >= 0, "bufferSize must be greater than or equal to 0")
-    require(overflowStrategy != OverflowStrategies.Backpressure, "Backpressure overflowStrategy not supported")
+    require(!overflowStrategy.isInstanceOf[OverflowStrategies.Backpressure], "Backpressure overflowStrategy not supported")
     fromGraph(new ActorRefSource(completionMatcher, failureMatcher, bufferSize, overflowStrategy, DefaultAttributes.actorRefSource, shape("ActorRefSource")))
   }
 

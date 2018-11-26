@@ -62,23 +62,23 @@ import scala.util.control.NonFatal
         if (!buffer.isFull) {
           enqueueAndSuccess(offer)
         } else overflowStrategy match {
-          case DropHead ⇒
+          case _: DropHead ⇒
             buffer.dropHead()
             enqueueAndSuccess(offer)
-          case DropTail ⇒
+          case _: DropTail ⇒
             buffer.dropTail()
             enqueueAndSuccess(offer)
-          case DropBuffer ⇒
+          case _: DropBuffer ⇒
             buffer.clear()
             enqueueAndSuccess(offer)
-          case DropNew ⇒
+          case _: DropNew ⇒
             offer.promise.success(QueueOfferResult.Dropped)
-          case Fail ⇒
+          case _: Fail ⇒
             val bufferOverflowException = BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
             offer.promise.success(QueueOfferResult.Failure(bufferOverflowException))
             completion.failure(bufferOverflowException)
             failStage(bufferOverflowException)
-          case Backpressure ⇒
+          case _: Backpressure ⇒
             pendingOffer match {
               case Some(_) ⇒
                 offer.promise.failure(new IllegalStateException("You have to wait for previous offer to be resolved to send another request"))
@@ -102,17 +102,17 @@ import scala.util.control.NonFatal
           } else if (pendingOffer.isEmpty)
             pendingOffer = Some(offer)
           else overflowStrategy match {
-            case DropHead | DropBuffer ⇒
+            case _: DropHead | _: DropBuffer ⇒
               pendingOffer.get.promise.success(QueueOfferResult.Dropped)
               pendingOffer = Some(offer)
-            case DropTail | DropNew ⇒
+            case _: DropTail | _: DropNew ⇒
               promise.success(QueueOfferResult.Dropped)
-            case Fail ⇒
+            case _: Fail ⇒
               val bufferOverflowException = BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
               promise.success(QueueOfferResult.Failure(bufferOverflowException))
               completion.failure(bufferOverflowException)
               failStage(bufferOverflowException)
-            case Backpressure ⇒
+            case _: Backpressure ⇒
               promise.failure(new IllegalStateException("You have to wait for previous offer to be resolved to send another request"))
           }
 

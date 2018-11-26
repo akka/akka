@@ -874,26 +874,26 @@ private[stream] object Collect {
 
     val enqueueAction: T ⇒ Unit =
       overflowStrategy match {
-        case DropHead ⇒ elem ⇒
+        case _: DropHead ⇒ elem ⇒
           if (buffer.isFull) buffer.dropHead()
           buffer.enqueue(elem)
           pull(in)
-        case DropTail ⇒ elem ⇒
+        case _: DropTail ⇒ elem ⇒
           if (buffer.isFull) buffer.dropTail()
           buffer.enqueue(elem)
           pull(in)
-        case DropBuffer ⇒ elem ⇒
+        case _: DropBuffer ⇒ elem ⇒
           if (buffer.isFull) buffer.clear()
           buffer.enqueue(elem)
           pull(in)
-        case DropNew ⇒ elem ⇒
+        case _: DropNew ⇒ elem ⇒
           if (!buffer.isFull) buffer.enqueue(elem)
           pull(in)
-        case Backpressure ⇒ elem ⇒
+        case _: Backpressure ⇒ elem ⇒
           buffer.enqueue(elem)
           if (!buffer.isFull) pull(in)
-        case Fail ⇒ elem ⇒
-          if (buffer.isFull) failStage(new BufferOverflowException(s"Buffer overflow (max capacity was: $size)!"))
+        case _: Fail ⇒ elem ⇒
+          if (buffer.isFull) failStage(BufferOverflowException(s"Buffer overflow (max capacity was: $size)!"))
           else {
             buffer.enqueue(elem)
             pull(in)
@@ -1648,31 +1648,31 @@ private[stream] object Collect {
           }
           grabAndPull()
         }
-      case DropHead ⇒
+      case _: DropHead ⇒
         () ⇒ {
           buffer.dropHead()
           grabAndPull()
         }
-      case DropTail ⇒
+      case _: DropTail ⇒
         () ⇒ {
           buffer.dropTail()
           grabAndPull()
         }
-      case DropNew ⇒
+      case _: DropNew ⇒
         () ⇒ {
           grab(in)
           if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
         }
-      case DropBuffer ⇒
+      case _: DropBuffer ⇒
         () ⇒ {
           buffer.clear()
           grabAndPull()
         }
-      case Fail ⇒
+      case _: Fail ⇒
         () ⇒ {
-          failStage(new BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
+          failStage(BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
         }
-      case Backpressure ⇒
+      case _: Backpressure ⇒
         () ⇒ {
           throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
         }
@@ -1690,7 +1690,7 @@ private[stream] object Collect {
     }
 
     def pullCondition: Boolean =
-      strategy != Backpressure || buffer.used < size
+      !strategy.isInstanceOf[Backpressure] || buffer.used < size
 
     def grabAndPull(): Unit = {
       buffer.enqueue((System.nanoTime(), grab(in)))
