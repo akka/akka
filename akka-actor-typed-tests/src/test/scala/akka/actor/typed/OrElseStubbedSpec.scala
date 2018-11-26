@@ -11,10 +11,15 @@ import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 object OrElseStubbedSpec {
 
   sealed trait Ping
+
   case class Ping1(replyTo: ActorRef[Pong]) extends Ping
+
   case class Ping2(replyTo: ActorRef[Pong]) extends Ping
+
   case class Ping3(replyTo: ActorRef[Pong]) extends Ping
+
   case class PingInfinite(replyTo: ActorRef[Pong]) extends Ping
+
   case class Pong(counter: Int)
 
   def ping(counters: Map[String, Int]): Behavior[Ping] = {
@@ -93,6 +98,7 @@ class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val probe = TestProbe[Pong]
       p ! Ping1(probe.ref)
       probe.expectMessage(Pong(1))
+
     }
 
     "work for deferred behavior on the right" in {
@@ -109,6 +115,50 @@ class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       p ! PingInfinite(probe.ref)
       probe.expectMessage(Pong(-1))
     }
+  }
+
+  "handle nested OrElse" in {
+
+    sealed trait Parent
+    case class Add(o: Any) extends Parent
+    case class Remove(o: Any) extends Parent
+    case class Stack(s: ActorRef[Array[StackTraceElement]]) extends Parent
+    case class Get(s: ActorRef[Set[Any]]) extends Parent
+
+    def dealer(set: Set[Any]): Behavior[Parent] = {
+      val add = Behaviors.receiveMessage[Parent] {
+        case Add(o) ⇒ dealer(set + o)
+        case _      ⇒ Behaviors.unhandled
+      }
+      val remove = Behaviors.receiveMessage[Parent] {
+        case Remove(o) ⇒ dealer(set - o)
+        case _         ⇒ Behaviors.unhandled
+      }
+      val getStack = Behaviors.receiveMessagePartial[Parent] {
+        case Stack(sender) ⇒
+          sender ! Thread.currentThread().getStackTrace
+          Behaviors.same
+      }
+      val getSet = Behaviors.receiveMessagePartial[Parent] {
+        case Get(sender) ⇒
+          sender ! set
+          Behaviors.same
+      }
+      add.orElse(remove).orElse(getStack).orElse(getSet)
+    }
+
+    val y = spawn(dealer(Set.empty))
+
+    (0 to 10000) foreach { i ⇒
+      y ! Add(i)
+    }
+    (0 to 9999) foreach { i ⇒
+      y ! Remove(i)
+    }
+    val probe = TestProbe[Set[Any]]
+    y ! Get(probe.ref)
+    probe.expectMessage(Set[Any](10000))
+
   }
 
 }

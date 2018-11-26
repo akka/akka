@@ -64,25 +64,22 @@ import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
   def intercept[O, I](interceptor: BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
     InterceptorImpl(interceptor, behavior)
 
-  class OrElseInterceptor[T](next: Behavior[T]) extends BehaviorInterceptor[T, T] {
+  class OrElseBehavior[T](first: Behavior[T], second: Behavior[T]) extends ExtensibleBehavior[T] {
 
-    var startedNext: Behavior[T] = _
-
-    override def aroundStart(ctx: AC[T], target: BehaviorInterceptor.PreStartTarget[T]): Behavior[T] = {
-      startedNext = Behavior.start(next, ctx)
-      target.start(ctx)
+    def start(ctx: ActorContext[T]): Behavior[T] = {
+      new OrElseBehavior[T](Behavior.start(first, ctx), Behavior.start(second, ctx))
     }
 
-    override def aroundReceive(ctx: AC[T], msg: T, target: BehaviorInterceptor.ReceiveTarget[T]): Behavior[T] = {
-      target(ctx, msg) match {
-        case _: UnhandledBehavior.type ⇒ Behavior.interpretMessage(startedNext, ctx, msg)
-        case handled ⇒ handled
+    override def receive(ctx: AC[T], msg: T): Behavior[T] = {
+      Behavior.interpretMessage(first, ctx, msg) match {
+        case _: UnhandledBehavior.type ⇒ Behavior.interpretMessage(second, ctx, msg)
+        case handled                   ⇒ handled
       }
     }
 
-    override def aroundSignal(ctx: AC[T], signal: Signal, target: BehaviorInterceptor.SignalTarget[T]): Behavior[T] = {
-      target(ctx, signal) match {
-        case _: UnhandledBehavior.type ⇒ Behavior.interpretSignal(startedNext, ctx, signal)
+    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = {
+      Behavior.interpretSignal(first, ctx, msg) match {
+        case _: UnhandledBehavior.type ⇒ Behavior.interpretSignal(second, ctx, msg)
         case handled                   ⇒ handled
       }
     }
