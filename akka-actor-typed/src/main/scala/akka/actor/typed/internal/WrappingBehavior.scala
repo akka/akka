@@ -4,7 +4,7 @@
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ Behavior, BehaviorTag }
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 
@@ -20,7 +20,10 @@ import akka.annotation.InternalApi
  */
 @DoNotInherit
 @InternalApi
-private[akka] trait WrappingBehavior[O, I] {
+private[akka] trait WrappingBehavior[O, I] extends BehaviorTag {
+
+  override private[akka] def tag: Int = Behavior.Tags.WrappingBehavior
+
   /**
    * @return The behavior that is wrapped by this behavior
    */

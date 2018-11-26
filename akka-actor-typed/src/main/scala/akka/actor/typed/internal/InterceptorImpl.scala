@@ -35,6 +35,7 @@ private[akka] object InterceptorImpl {
 @InternalApi
 private[akka] final class InterceptorImpl[O, I](val interceptor: BehaviorInterceptor[O, I], val nestedBehavior: Behavior[I])
   extends ExtensibleBehavior[O] with WrappingBehavior[O, I] {
+  override private[akka] def tag: Int = Behavior.Tags.InterceptorImpl
 
   import BehaviorInterceptor._
 
