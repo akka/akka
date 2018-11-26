@@ -11,7 +11,7 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
-import akka.util.{ ByteIterator, ByteString }
+import akka.util.{ ByteIterator, ByteString, OptionVal }
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
@@ -197,6 +197,12 @@ object Framing {
       private val firstSeparatorByte = separatorBytes.head
       private var buffer = ByteString.empty
       private var nextPossibleMatch = 0
+
+      // We use an efficient unsafe array implementation and must be use with caution.
+      // It contains all indices computed during search phase.
+      // The capacity is fixed at 256 to preserve fairness and prevent uneccessary allocation during parsing phase.
+      // This array provide a way to check remaining capacity and must be use to prevent out of bounds exception.
+      // In this use case, we compute all possibles indices up to 256 and then parse everything.
       private val indices = new LightArray[(Int, Int)](256)
 
       override def onPush(): Unit = {
@@ -231,7 +237,11 @@ object Framing {
         val possibleMatchPos = buffer.indexOf(firstSeparatorByte, from = nextPossibleMatch)
 
         // Retrive previous position
-        val previous = indices.lastOption.map(_._2 + separatorBytes.size).getOrElse(0)
+        val previous = indices.lastOption match {
+          case OptionVal.Some((_, i)) ⇒ i + separatorBytes.size
+          case OptionVal.None         ⇒ 0
+        }
+
         if (possibleMatchPos - previous > maximumLineBytes) {
           failStage(new FramingException(s"Read ${possibleMatchPos - previous} bytes " +
             s"which is more than $maximumLineBytes without seeing a line terminator"))
@@ -283,7 +293,12 @@ object Framing {
         }
 
       private def reset(): Unit = {
-        buffer = buffer.drop(indices.lastOption.map(_._2 + separatorBytes.size).getOrElse(0)).compact
+        val previous = indices.lastOption match {
+          case OptionVal.Some((_, i)) ⇒ i + separatorBytes.size
+          case OptionVal.None         ⇒ 0
+        }
+
+        buffer = buffer.drop(previous).compact
         indices.setLength(0)
         nextPossibleMatch = 0
       }
@@ -319,9 +334,9 @@ object Framing {
 
         def length: Int = index
 
-        def lastOption: Option[T] =
-          if (index > 0) Some(underlying(index - 1))
-          else None
+        def lastOption: OptionVal[T] =
+          if (index > 0) OptionVal.Some(underlying(index - 1))
+          else OptionVal.none
       }
       setHandlers(in, out, this)
     }
