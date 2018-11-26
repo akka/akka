@@ -11,6 +11,7 @@ import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
 import sbt._
 import scala.collection.breakOut
+import scalafix.sbt.ScalafixPlugin.autoImport.{scalafixDependencies, scalafixSemanticdb, scalafix}
 
 object AkkaBuild {
 
@@ -83,7 +84,14 @@ object AkkaBuild {
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint")
+  final val DefaultScalacOptions = Seq(
+    "-encoding", "UTF-8",
+    "-feature", "-unchecked",
+    "-Xlog-reflective-calls",
+    "-Xlint",
+    "-Yrangepos",
+    "-P:semanticdb:synthetics:on",
+  )
 
   // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
@@ -122,6 +130,9 @@ object AkkaBuild {
       ),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
+
+      scalafixDependencies in ThisBuild += "org.scala-lang.modules" %% "scala-collection-migrations" % "0.2.1",
+      addCompilerPlugin(scalafixSemanticdb),
 
       crossVersion := CrossVersion.binary,
 
