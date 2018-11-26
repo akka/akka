@@ -155,7 +155,7 @@ object StreamRefsSpec {
   final case class BulkSinkMsg(dataSink: SinkRef[ByteString])
 
   def config(): Config = {
-    val address = SocketUtil.temporaryServerAddress()
+    val address = SocketUtil.temporaryServerAddress(udp = true)
     ConfigFactory.parseString(
       s"""
     akka {
