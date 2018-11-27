@@ -6,7 +6,8 @@ package docs.akka.typed.coexistence
 
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.testkit.TestKit
+import akka.testkit.{ AkkaSpec, TestKit }
+import docs.akka.typed.coexistence.TypedWatchingUntypedSpec.Typed
 //#adapter-import
 // adds support for typed actors to an untyped actor system and context
 import akka.actor.typed.scaladsl.adapter._
@@ -17,6 +18,7 @@ import akka.{ actor ⇒ untyped }
 //#import-alias
 import org.scalatest.WordSpec
 import scala.concurrent.duration._
+import TypedWatchingUntypedSpec.Typed._
 
 object TypedWatchingUntypedSpec {
 
@@ -37,8 +39,8 @@ object TypedWatchingUntypedSpec {
         // illustrating how to pass sender, toUntyped is an implicit extension method
         untyped.tell(Typed.Ping(context.self), context.self.toUntyped)
 
-        Behaviors.receivePartial[Command] {
-          case (context, Pong) ⇒
+        Behaviors.receiveMessagePartial[Command] {
+          case Pong ⇒
             // it's not possible to get the sender, that must be sent in message
             // context.stop is an implicit extension method
             context.stop(untyped)
@@ -81,3 +83,4 @@ class TypedWatchingUntypedSpec extends WordSpec {
     }
   }
 }
+

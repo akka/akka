@@ -38,11 +38,22 @@ package object adapter {
    */
   implicit class UntypedActorSystemOps(val sys: akka.actor.ActorSystem) extends AnyVal {
 
+    /**
+     *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+     *  As this actor's parent is an untyped actor the supervision strategy will default
+     *  to restarting the actor on failure rather than stopping it.
+     */
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] = {
       ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props)))
     }
 
+    /**
+     *  Spawn the given behavior as a child of the user actor in an untyped ActorSystem.
+     *  As this actor's parent is an untyped actor the supervision strategy will default
+     *  to restarting the actor on failure rather than stopping it.
+     */
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] = {
+      SupervisorStrategy.stop
       ActorRefAdapter(sys.actorOf(PropsAdapter(Behavior.validateAsInitial(behavior), props), name))
     }
 
@@ -67,8 +78,19 @@ package object adapter {
    * Extension methods added to [[akka.actor.ActorContext]].
    */
   implicit class UntypedActorContextOps(val ctx: akka.actor.ActorContext) extends AnyVal {
+    /**
+     *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+     *  As this actor's parent is an untyped actor the supervision strategy will default
+     *  to restarting the actor on failure rather than stopping it.
+     */
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] =
       ActorContextAdapter.spawnAnonymous(ctx, behavior, props)
+
+    /**
+     *  Spawn the given behavior as a child of the user actor in an untyped ActorContext.
+     *  As this actor's parent is an untyped actor the supervision strategy will default
+     *  to restarting the actor on failure rather than stopping it.
+     */
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] =
       ActorContextAdapter.spawn(ctx, behavior, name, props)
 
