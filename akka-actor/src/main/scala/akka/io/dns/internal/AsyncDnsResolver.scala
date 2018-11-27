@@ -38,7 +38,7 @@ private[io] final class AsyncDnsResolver(
 
   val nameServers = settings.NameServers
 
-  log.debug("Using name servers [{}]", nameServers)
+  log.debug("Using name servers [{}] and search domains [{}] with ndots={}", nameServers, settings.SearchDomains, settings.NDots)
 
   private var requestId: Short = 0
   private def nextId(): Short = {
@@ -50,10 +50,10 @@ private[io] final class AsyncDnsResolver(
 
   override def receive: Receive = {
     case DnsProtocol.Resolve(name, mode) ⇒
-      resolve(name, mode, resolvers) pipeTo sender()
+      resolveWithResolvers(name, mode, resolvers) pipeTo sender()
   }
 
-  private def resolve(name: String, requestType: RequestType, resolvers: List[ActorRef]): Future[DnsProtocol.Resolved] =
+  private def resolveWithResolvers(name: String, requestType: RequestType, resolvers: List[ActorRef]): Future[DnsProtocol.Resolved] =
     if (isInetAddress(name)) {
       Future.fromTry {
         Try {
@@ -69,10 +69,10 @@ private[io] final class AsyncDnsResolver(
       resolvers match {
         case Nil ⇒
           Future.failed(ResolveFailedException(s"Timed out resolving $name with nameservers: $nameServers"))
-        case head :: tail ⇒ resolve(name, requestType, head).recoverWith {
+        case head :: tail ⇒ resolveWithSearch(name, requestType, head).recoverWith {
           case NonFatal(t) ⇒
             log.error(t, "Resolve failed. Trying next name server")
-            resolve(name, requestType, tail)
+            resolveWithResolvers(name, requestType, tail)
         }
       }
     }
@@ -83,6 +83,40 @@ private[io] final class AsyncDnsResolver(
       case NonFatal(_) ⇒ resolver ! DropRequest(message.id)
     }
     result
+  }
+
+  private def resolveWithSearch(name: String, requestType: RequestType, resolver: ActorRef): Future[DnsProtocol.Resolved] = {
+    if (settings.SearchDomains.nonEmpty) {
+      val nameWithSearch = settings.SearchDomains.map(sd ⇒ name + "." + sd)
+      // ndots is a heuristic used to try and work out whether the name passed in is a fully qualified domain name,
+      // or a name relative to one of the search names. The idea is to prevent the cost of doing a lookup that is
+      // obviously not going to resolve. So, if a host has less than ndots dots in it, then we don't try and resolve it,
+      // instead, we go directly to the search domains, or at least that's what the man page for resolv.conf says. In
+      // practice, Linux appears to implement something slightly different, if the name being searched contains less
+      // than ndots dots, then it should be searched last, rather than first. This means if the heuristic wrongly
+      // identifies a domain as being relative to the search domains, it will still be looked up if it doesn't resolve
+      // at any of the search domains, albeit with the latency of having to have done all the searches first.
+      val toResolve = if (name.count(_ == '.') >= settings.NDots) {
+        name :: nameWithSearch
+      } else {
+        nameWithSearch :+ name
+      }
+      resolveFirst(toResolve, requestType, resolver)
+    } else {
+      resolve(name, requestType, resolver)
+    }
+  }
+
+  private def resolveFirst(names: List[String], requestType: RequestType, resolver: ActorRef): Future[DnsProtocol.Resolved] = {
+    names match {
+      case name :: Nil ⇒
+        resolve(name, requestType, resolver)
+      case name :: remaining ⇒
+        resolve(name, requestType, resolver).flatMap { resolved ⇒
+          if (resolved.records.isEmpty) resolveFirst(remaining, requestType, resolver)
+          else Future.successful(resolved)
+        }
+    }
   }
 
   private def resolve(name: String, requestType: RequestType, resolver: ActorRef): Future[DnsProtocol.Resolved] = {
