@@ -6,7 +6,7 @@ package akka.actor.typed.scaladsl.adapter
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Terminated }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, PostStop, Terminated }
 import akka.actor.InvalidMessageException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.{ Done, NotUsed, actor ⇒ untyped }

@@ -59,7 +59,7 @@ import akka.actor.typed.internal.InternalRecipientRef
 
   private val terminationPromise = Promise[Terminated]
   override def terminate(): Future[akka.actor.typed.Terminated] = {
-    terminationPromise.trySuccess(Terminated(this)(null))
+    terminationPromise.trySuccess(Terminated(this))
     terminationPromise.future
   }
   override def whenTerminated: Future[akka.actor.typed.Terminated] = terminationPromise.future

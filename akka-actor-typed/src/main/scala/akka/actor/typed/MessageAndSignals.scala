@@ -71,20 +71,7 @@ case object PostStop extends PostStop {
  *
  * @param ref Scala API: the `ActorRef` for the terminated actor
  */
-final case class Terminated(ref: ActorRef[Nothing])(failed: Throwable) extends Signal {
-  /**
-   * Scala API: If the watched actor is a direct child, and was stopped because it failed, this will contain the
-   * Exception it failed with, for all other cases it will be `None`.
-   */
-  def failure: Option[Throwable] = Option(failed)
-
+final case class Terminated(ref: ActorRef[Nothing]) extends Signal {
   /** Java API: The actor that was watched and got terminated */
   def getRef(): ActorRef[Void] = ref.asInstanceOf[ActorRef[Void]]
-
-  /**
-   * Java API: If the watched actor is a direct child, and was stopped because it failed, this will contain the
-   * Exception it failed with, for all other cases it will be an empty `Optional`.
-   */
-  def getFailure: Optional[Throwable] = Optional.ofNullable(failed)
-
 }

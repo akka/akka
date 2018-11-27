@@ -24,26 +24,16 @@ import akka.util.OptionVal
   protected var behavior: Behavior[T] = _initialBehavior
 
   private var _ctx: ActorContextAdapter[T] = _
+
   def ctx: ActorContextAdapter[T] =
     if (_ctx ne null) _ctx
     else throw new IllegalStateException("Context was accessed before typed actor was started.")
-
-  /**
-   * Failures from failed children, that were stopped through untyped supervision, this is what allows us to pass
-   * child exception in Terminated for direct children.
-   */
-  private var failures: Map[a.ActorRef, Throwable] = Map.empty
 
   def receive = running
 
   def running: Receive = {
     case a.Terminated(ref) ⇒
-      val msg =
-        if (failures contains ref) {
-          val ex = failures(ref)
-          failures -= ref
-          Terminated(ActorRefAdapter(ref))(ex)
-        } else Terminated(ActorRefAdapter(ref))(null)
+      val msg = Terminated(ActorRefAdapter(ref))
       next(Behavior.interpretSignal(behavior, ctx, msg), msg)
     case a.ReceiveTimeout ⇒
       next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
@@ -121,12 +111,7 @@ import akka.util.OptionVal
     case other               ⇒ super.unhandled(other)
   }
 
-  override val supervisorStrategy = a.OneForOneStrategy() {
-    case ex ⇒
-      val ref = sender()
-      if (context.asInstanceOf[a.ActorCell].isWatching(ref)) failures = failures.updated(ref, ex)
-      a.SupervisorStrategy.Stop
-  }
+  override val supervisorStrategy = a.SupervisorStrategy.stoppingStrategy
 
   override def preStart(): Unit =
     if (!isAlive(behavior)) {

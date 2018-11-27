@@ -43,8 +43,6 @@ object WatchSpec {
 }
 
 class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpecLike {
-  // FIXME why systemActor? spawn?
-  import testKit.systemActor
 
   implicit def untypedSystem = system.toUntyped
 
@@ -79,8 +77,8 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
 
       val termination = receivedTerminationSignal.future.futureValue
       termination.ref shouldEqual terminator
-      termination.failure shouldBe empty
     }
+
     "notify a parent of child termination because of failure" in {
       case class Failed(t: Terminated) // we need to wrap it as it is handled specially
       val probe = TestProbe[Any]()
@@ -104,8 +102,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       EventFilter[TestException](occurrences = 1).intercept {
         parent ! "boom"
       }
-      val terminated = probe.expectMessageType[Failed].t
-      terminated.failure should ===(Some(ex)) // here we get the exception from the child
+      probe.expectMessageType[Failed].t
     }
     "fail the actor itself with DeathPact if it does not accept Terminated" in {
       case class Failed(t: Terminated) // we need to wrap it as it is handled specially
@@ -142,9 +139,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
           grossoBosso ! "boom"
         }
       }
-      val terminated = probe.expectMessageType[Failed].t
-      terminated.failure.isDefined should ===(true)
-      terminated.failure.get shouldBe a[DeathPactException]
+      probe.expectMessageType[Failed]
     }
 
     "allow idempotent invocations of watch" in new WatchSetup {
@@ -263,7 +258,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
             case (context, StartWatching(watchee)) ⇒
               context.watch(watchee)
               Behaviors.same
-            case (_, message) ⇒
+            case (_, _) ⇒
               Behaviors.stopped
           }.receiveSignal {
             case (_, PostStop) ⇒
