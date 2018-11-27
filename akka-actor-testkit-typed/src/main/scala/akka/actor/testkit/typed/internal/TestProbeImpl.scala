@@ -4,7 +4,6 @@
 
 package akka.actor.testkit.typed.internal
 
-import java.time
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ BlockingDeque, LinkedBlockingDeque }
 import java.util.function.Supplier
@@ -132,11 +131,21 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     expectMessage(max.asScala, hint, obj)
 
   private def expectMessage_internal[T <: M](max: Duration, obj: T, hint: Option[String] = None): T = {
-    val o = receiveOne(max)
+    val o = receiveOne_internal(max)
     val hintOrEmptyString = hint.map(": " + _).getOrElse("")
     assert(o != null, s"timeout ($max) during expectMessage while waiting for $obj" + hintOrEmptyString)
     assert(obj == o, s"expected $obj, found $o" + hintOrEmptyString)
     o.asInstanceOf[T]
+  }
+
+  /**
+   * Receive one message of type `M` within `remainingOrDefault` as the `TestTimeFactor`.
+   */
+  override def receiveOne: M = {
+    val o = receiveOne_internal(remainingOrDefault)
+    assert(Option(o).nonEmpty, s"Timeout ($remainingOrDefault) during receiveOne while waiting for message.")
+    assert(o.isInstanceOf[M], s"Received unexpected message type, found $o")
+    o.asInstanceOf[M]
   }
 
   /**
@@ -145,7 +154,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
    *
    * This method does NOT automatically scale its Duration parameter!
    */
-  private def receiveOne(max: Duration): M = {
+  private def receiveOne_internal(max: Duration): M = {
     val message =
       if (max == Duration.Zero) {
         queue.pollFirst
@@ -169,13 +178,13 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     expectNoMessage_internal(settings.ExpectNoMessageDefaultTimeout.dilated)
 
   private def expectNoMessage_internal(max: FiniteDuration): Unit = {
-    val o = receiveOne(max)
+    val o = receiveOne_internal(max)
     assert(o == null, s"received unexpected message $o")
     lastWasNoMessage = true
   }
 
   override protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
-    val o = receiveOne(max)
+    val o = receiveOne_internal(max)
     assert(o != null, s"timeout ($max) during expectMessageClass waiting for $c")
     assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass} ($o)")
     o.asInstanceOf[C]
@@ -185,7 +194,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     val stop = max + now
     for (x ← 1 to n) yield {
       val timeout = stop - now
-      val o = receiveOne(timeout)
+      val o = receiveOne_internal(timeout)
       assert(o != null, s"timeout ($max) while expecting $n messages (got ${x - 1})")
       o
     }
@@ -195,7 +204,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     // not tailrec but that should be ok
     def loop(timeout: FiniteDuration, seen: List[M]): List[M] = {
       val start = System.nanoTime()
-      val maybeMsg = Option(receiveOne(timeout))
+      val maybeMsg = Option(receiveOne_internal(timeout))
       maybeMsg match {
         case Some(message) ⇒
           try {

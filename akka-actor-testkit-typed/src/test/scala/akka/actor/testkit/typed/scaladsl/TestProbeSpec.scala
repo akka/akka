@@ -10,6 +10,8 @@ import org.scalatest.WordSpecLike
 
 class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
+  import TestProbeSpec._
+
   def compileOnlyApiTest(): Unit = {
     val probe = TestProbe[AnyRef]()
     probe.fishForMessage(100.millis) {
@@ -31,7 +33,6 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   "The test probe" must {
 
     "allow probing for actor stop when actor already stopped" in {
-      case object Stop
       val probe = TestProbe()
       val ref = spawn(Behaviors.stopped)
       probe.expectTerminated(ref, 100.millis)
@@ -142,6 +143,28 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       }
     }
 
-  }
+    "allow receiving one message of type TestProbe[M]" in {
+      val probe = createTestProbe[EventT]()
+      eventsT(10) forall { e ⇒
+        probe.ref ! e
+        probe.receiveOne == e
+      } should ===(true)
 
+      probe.expectNoMessage()
+    }
+
+    "timeout if expected single message is not received" in {
+      intercept[AssertionError](createTestProbe[EventT]().receiveOne)
+    }
+  }
+}
+
+object TestProbeSpec {
+
+  /** Helper events for tests. */
+  final case class EventT(id: Long)
+
+  /** Creates the `expected` number of events to test. */
+  def eventsT(expected: Int): Seq[EventT] =
+    for (n ← 1 to expected) yield EventT(n)
 }

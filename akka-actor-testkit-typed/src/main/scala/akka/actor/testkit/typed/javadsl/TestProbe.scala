@@ -221,6 +221,11 @@ abstract class TestProbe[M] {
   @InternalApi protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C
 
   /**
+   * Receive one message of type `M` within `remainingOrDefault` as the `TestTimeFactor`.
+   */
+  def receiveOne: M
+
+  /**
    * Same as `receiveN(n, remaining)` but correctly taking into account
    * the timeFactor.
    */
