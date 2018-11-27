@@ -152,6 +152,13 @@ multi-jvm:testOnly akka.cluster.SunnyWeather
 Akka has not been compiled or tested with `-optimize` Scala compiler flag. (In sbt, you can specify compiler options in the `scalacOptions` key.)
 Strange behavior has been reported by users that have tried it.
 
+### Compiling with Graal JIT
+
+Akka, like most Scala projects, compiles faster with the Graal JIT enabled. The easiest way to use it for compiling Akka is to:
+
+* Use a JDK > 10
+* Use the following JVM options for SBT e.g. by adding them to the `SBT_OPTS` environment variable: `-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseJVMCICompiler`
+
 ## The `validatePullRequest` task
 
 The Akka build includes a special task called `validatePullRequest` which investigates the changes made as well as dirty
