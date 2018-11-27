@@ -7,24 +7,25 @@ package akka.persistence.typed.scaladsl
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy }
+import akka.actor.typed.{ ActorRef, SupervisorStrategy }
 import akka.actor.testkit.typed.TE
 import akka.persistence.AtomicWrite
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.EventRejectedException
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Try
-
 import akka.persistence.typed.PersistenceId
 
 class ChaosJournal extends InmemJournal {
   var count = 0
   var failRecovery = true
   var reject = true
+
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
     val pid = messages.head.persistenceId
     if (pid == "fail-first-2" && count < 2) {
@@ -67,7 +68,7 @@ class PersistentBehaviorFailureSpec extends ScalaTestWithActorTestKit(Persistent
 
   implicit val testSettings = TestKitSettings(system)
 
-  def failingPersistentActor(pid: PersistenceId, probe: ActorRef[String]): Behavior[String] = PersistentBehavior[String, String, String](
+  def failingPersistentActor(pid: PersistenceId, probe: ActorRef[String] = TestProbe[String].ref): PersistentBehavior[String, String, String] = PersistentBehavior[String, String, String](
     pid, "",
     (_, cmd) ⇒ {
       probe.tell("persisting")
@@ -77,11 +78,20 @@ class PersistentBehaviorFailureSpec extends ScalaTestWithActorTestKit(Persistent
       probe.tell(event)
       state + event
     }
-  ).onRecoveryCompleted { state ⇒
+  ).onRecoveryCompleted { _ ⇒
       probe.tell("starting")
     }.onPersistFailure(SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1))
 
   "A typed persistent actor (failures)" must {
+
+    "onRecoveryFailure when replay fails" in {
+      val probe = TestProbe[Throwable]()
+      spawn(failingPersistentActor(PersistenceId("fail-recovery-once"))
+        .onRecoveryFailure(t ⇒ probe.ref ! t))
+
+      probe.expectMessageType[TE].message shouldEqual "Nah"
+    }
+
     "restart with backoff" in {
       val probe = TestProbe[String]()
       val behav = failingPersistentActor(PersistenceId("fail-first-2"), probe.ref)
