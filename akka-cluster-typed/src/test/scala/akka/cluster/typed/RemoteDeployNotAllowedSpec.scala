@@ -24,8 +24,8 @@ object RemoteDeployNotAllowedSpec {
         warn-about-java-serializer-usage = off
         serialize-creators = off
       }
+      remote.netty.tcp.port = 0
       remote.artery {
-        enabled = on
         canonical {
           hostname = 127.0.0.1
           port = 0

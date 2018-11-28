@@ -3,7 +3,7 @@
  */
 
 //#iot-supervisor
-package com.lightbend.akka.sample;
+package com.example;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorLogging;

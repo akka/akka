@@ -149,7 +149,7 @@ class FlowGroupBySpec extends StreamSpec {
     }
 
     "accept cancellation of substreams" in assertAllStagesStopped {
-      new SubstreamsSupport(groupCount = 2) {
+      new SubstreamsSupport(groupCount = 2, maxSubstreams = 3) {
         StreamPuppet(getSubFlow(1).runWith(Sink.asPublisher(false))).cancel()
 
         val substream = StreamPuppet(getSubFlow(0).runWith(Sink.asPublisher(false)))

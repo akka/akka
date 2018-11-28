@@ -60,7 +60,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
 
     client.startContainer(creation.id())
 
-    eventually(timeout(5.seconds)) {
+    eventually(timeout(25.seconds)) {
       client.logs(creation.id(), LogsParam.stderr()).readFully() should include("all zones loaded")
     }
   }

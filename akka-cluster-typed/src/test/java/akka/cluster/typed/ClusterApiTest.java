@@ -20,7 +20,6 @@ public class ClusterApiTest extends JUnitSuite {
   public void joinLeaveAndObserve() throws Exception {
     Config config = ConfigFactory.parseString(
         "akka.actor.provider = cluster \n" +
-        "akka.remote.artery.enabled = true \n"+
         "akka.remote.netty.tcp.port = 0 \n"+
         "akka.remote.artery.canonical.port = 0 \n"+
         "akka.remote.artery.canonical.hostname = 127.0.0.1 \n" +
