@@ -132,7 +132,8 @@ abstract class TestProbe[M] {
   @InternalApi protected def within_internal[T](min: FiniteDuration, max: FiniteDuration, f: ⇒ T): T
 
   /**
-   * Same as `expectMessage(remainingOrDefault, obj)`, but correctly treating the timeFactor.
+   * Same as `expectMessage(remainingOrDefault, obj)`, but using the
+   * default timeout as deadline.
    */
   def expectMessage[T <: M](obj: T): T
 
@@ -203,7 +204,8 @@ abstract class TestProbe[M] {
   // FIXME awaitAssert(Procedure): Unit would be nice for java people to not have to return null
 
   /**
-   * Same as `expectMessageType(clazz, remainingOrDefault)`, but correctly treating the timeFactor.
+   * Same as `expectMessageType(clazz, remainingOrDefault)`,but using the
+   * default timeout as deadline.
    */
   def expectMessageClass[T](clazz: Class[T]): T =
     expectMessageClass_internal(getRemainingOrDefault.asScala, clazz)
@@ -221,7 +223,7 @@ abstract class TestProbe[M] {
   @InternalApi protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C
 
   /**
-   * Receive one message of type `M` within `remainingOrDefault` as the `TestTimeFactor`.
+   * Receive one message of type `M` within the default timeout as deadline.
    */
   def receiveOne(): M
 
@@ -232,8 +234,7 @@ abstract class TestProbe[M] {
   def receiveOne(max: Duration): M
 
   /**
-   * Same as `receiveN(n, remaining)` but correctly taking into account
-   * the timeFactor.
+   * Same as `receiveN(n, remaining)` but using the default timeout as deadline.
    */
   def receiveMessages(n: Int): JList[M] = receiveN_internal(n, getRemainingOrDefault.asScala).asJava
 

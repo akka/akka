@@ -145,7 +145,7 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "allow receiving one message of type TestProbe[M]" in {
       val probe = createTestProbe[EventT]()
-      eventsT(10) forall { e ⇒
+      eventsT(10).forall { e ⇒
         probe.ref ! e
         probe.receiveOne == e
       } should ===(true)
