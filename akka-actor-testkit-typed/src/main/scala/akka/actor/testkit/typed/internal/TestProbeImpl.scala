@@ -138,18 +138,10 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     o.asInstanceOf[T]
   }
 
-  /**
-   * Receive one message of type `M` within `remainingOrDefault` as the `TestTimeFactor`.
-   */
   override def receiveOne(): M = receiveOne(remainingOrDefault)
 
-  /** Java API */
   override def receiveOne(max: java.time.Duration): M = receiveOne(max.asScala)
 
-  /**
-   * Receive one message of type `M`. Wait time is bounded by the `max` duration,
-   * with an [[AssertionError]] raised in case of timeout.
-   */
   def receiveOne(max: Duration): M = {
     val o = receiveOne_internal(remainingOrDefault)
     assert(Option(o).nonEmpty, s"Timeout ($remainingOrDefault) during receiveOne while waiting for message.")

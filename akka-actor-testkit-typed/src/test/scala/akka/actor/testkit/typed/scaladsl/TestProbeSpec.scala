@@ -5,6 +5,8 @@
 package akka.actor.testkit.typed.scaladsl
 
 import akka.actor.typed.scaladsl.Behaviors
+import com.typesafe.config.ConfigFactory
+
 import scala.concurrent.duration._
 import org.scalatest.WordSpecLike
 
@@ -153,17 +155,17 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       probe.expectNoMessage()
     }
 
-    "timeout if expected single message is not received by the default timeout" in {
-      intercept[AssertionError](createTestProbe[EventT]().receiveOne)
-    }
-
     "timeout if expected single message is not received by a provided timeout" in {
-      intercept[AssertionError](createTestProbe[EventT]().receiveOne(2.seconds))
+      intercept[AssertionError](createTestProbe[EventT]().receiveOne(100.millis))
     }
   }
 }
 
 object TestProbeSpec {
+
+  val timeoutConfig = ConfigFactory.parseString("""
+      akka.actor.testkit.typed.default-timeout = 100ms
+      akka.test.default-timeout = 100ms""")
 
   /** Helper events for tests. */
   final case class EventT(id: Long)
@@ -171,4 +173,16 @@ object TestProbeSpec {
   /** Creates the `expected` number of events to test. */
   def eventsT(expected: Int): Seq[EventT] =
     for (n ← 1 to expected) yield EventT(n)
+}
+
+class TestProbeTimeoutSpec extends ScalaTestWithActorTestKit(TestProbeSpec.timeoutConfig) with WordSpecLike {
+
+  import TestProbeSpec._
+
+  "The test probe" must {
+
+    "timeout if expected single message is not received by the default timeout" in {
+      intercept[AssertionError](createTestProbe[EventT]().receiveOne())
+    }
+  }
 }

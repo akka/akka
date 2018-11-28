@@ -51,5 +51,7 @@ public class TestProbeTest {
     List<String> messages1 = probe.receiveMessages(3);
     List<String> messages2 = probe.receiveMessages(3, Duration.ofSeconds(5));
 
+    probe.receiveOne();
+    probe.receiveOne(Duration.ofMillis(100));
   }
 }
