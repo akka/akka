@@ -223,7 +223,7 @@ abstract class TestProbe[M] {
   /**
    * Receive one message of type `M` within `remainingOrDefault` as the `TestTimeFactor`.
    */
-  def receiveOne: M
+  def receiveOne(): M
 
   /**
    * Same as `receiveN(n, remaining)` but correctly taking into account
