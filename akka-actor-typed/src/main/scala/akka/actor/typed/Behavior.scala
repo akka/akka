@@ -52,8 +52,7 @@ sealed abstract class Behavior[T] { behavior ⇒
    *  @param that the fallback `Behavior`
    */
   final def orElse(that: Behavior[T]): Behavior[T] = Behavior.DeferredBehavior[T] { ctx ⇒
-    val orElse = new OrElseBehavior[T](this, that)
-    orElse.start(ctx)
+    new OrElseBehavior[T](Behavior.start(this, ctx), Behavior.start(that, ctx))
   }
 }
 
