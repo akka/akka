@@ -5,14 +5,18 @@
 package akka.pattern
 
 import akka.actor.Scheduler
+import akka.annotation.DoNotInherit
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal
 
 /**
- * This trait provides the retry utility function
+ * This trait provides the retry utility function.
+ *
+ * Not intended for user extension.
  */
+@DoNotInherit
 trait RetrySupport {
 
   /**
@@ -36,12 +40,43 @@ trait RetrySupport {
    * }}}
    */
   def retry[T](attempt: () ⇒ Future[T], attempts: Int, delay: FiniteDuration)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
+    retry(attempt, attempts, delay, (_, initialDelay, _) ⇒ initialDelay)
+  }
+
+  def retry[T](
+    attempt:           () ⇒ Future[T],
+    attempts:          Int,
+    initialDelay:      FiniteDuration,
+    nextDelayFunction: (Int, FiniteDuration, FiniteDuration) ⇒ FiniteDuration)(
+    implicit
+    ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
+    RetrySupport.retry(
+      attempts, attempt, attempted = 0, initialDelay, initialDelay, nextDelayFunction, isFirst = true)
+  }
+
+}
+
+object RetrySupport extends RetrySupport {
+
+  private def retry[T](
+    maxAttempts:       Int,
+    attempt:           () ⇒ Future[T],
+    attempted:         Int,
+    initialDelay:      FiniteDuration,
+    currentDelay:      FiniteDuration,
+    nextDelayFunction: (Int, FiniteDuration, FiniteDuration) ⇒ FiniteDuration,
+    isFirst:           Boolean)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
     try {
-      if (attempts > 0) {
+      if (maxAttempts - attempted > 0) {
         attempt() recoverWith {
-          case NonFatal(_) ⇒ after(delay, scheduler) {
-            retry(attempt, attempts - 1, delay)
-          }
+          case NonFatal(_) ⇒
+            val nextDelay = if (isFirst) currentDelay else nextDelayFunction(attempted, initialDelay, currentDelay)
+            after(nextDelay, scheduler) {
+              retry(
+                maxAttempts,
+                attempt,
+                attempted + 1, initialDelay, nextDelay, nextDelayFunction, isFirst = false)
+            }
         }
       } else {
         attempt()
@@ -51,5 +86,3 @@ trait RetrySupport {
     }
   }
 }
-
-object RetrySupport extends RetrySupport

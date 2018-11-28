@@ -1,0 +1,2 @@
+# +act Add retry with new delay calculation support. #25999
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.RetrySupport.retry")
