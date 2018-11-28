@@ -79,8 +79,10 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       termination.ref shouldEqual terminator
     }
 
+    case class Failed(t: Terminated) // we need to wrap it as it is handled specially
+    case class ChildFailed(t: ChildTerminated) // we need to wrap it as it is handled specially
+
     "notify a parent of child termination because of failure" in {
-      case class Failed(t: Terminated) // we need to wrap it as it is handled specially
       val probe = TestProbe[Any]()
       val ex = new TestException("boom")
       val parent = spawn(Behaviors.setup[Any] { context ⇒
@@ -93,17 +95,51 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
           child ! message
           Behaviors.same
         }.receiveSignal {
+          case (_, t: ChildTerminated) ⇒
+            probe.ref ! ChildFailed(t)
+            Behaviors.same
           case (_, t: Terminated) ⇒
             probe.ref ! Failed(t)
             Behaviors.same
         }
-      }, "parent")
+      }, "supervised-child-parent")
 
       EventFilter[TestException](occurrences = 1).intercept {
         parent ! "boom"
       }
-      probe.expectMessageType[Failed].t
+      probe.expectMessageType[ChildFailed].t.cause shouldEqual Some(ex)
     }
+
+    "notify a parent of child termination because of failure with a supervisor" in {
+      val probe = TestProbe[Any]()
+      val ex = new TestException("boom")
+      val behavior = Behaviors.setup[Any] { context ⇒
+        val child = context.spawn(Behaviors.supervise(Behaviors.receive[Any]((context, message) ⇒ {
+          println("Throwing")
+          throw ex
+        })).onFailure[Throwable](SupervisorStrategy.stop.withLoggingEnabled(false)), "child")
+        context.watch(child)
+
+        Behaviors.receive[Any] { (context, message) ⇒
+          child ! message
+          Behaviors.same
+        }.receiveSignal {
+          case (_, t: ChildTerminated) ⇒
+            probe.ref ! ChildFailed(t)
+            Behaviors.same
+          case (_, t: Terminated) ⇒
+            probe.ref ! Failed(t)
+            Behaviors.same
+        }
+      }
+      val parent = spawn(behavior, "parent")
+
+      EventFilter[TestException](occurrences = 1).intercept {
+        parent ! "boom"
+      }
+      probe.expectMessageType[ChildFailed].t.cause shouldEqual Some(ex)
+    }
+
     "fail the actor itself with DeathPact if it does not accept Terminated" in {
       case class Failed(t: Terminated) // we need to wrap it as it is handled specially
       val probe = TestProbe[Any]()
@@ -264,7 +300,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
             case (_, PostStop) ⇒
               Behaviors.stopped
           }
-        ).onFailure[Throwable](SupervisorStrategy.stop)
+        ).onFailure[Throwable](SupervisorStrategy.stop.withLoggingEnabled(false))
       )
 
       def expectStopped(): Unit = stopProbe.expectTerminated(watcher, 1.second)
