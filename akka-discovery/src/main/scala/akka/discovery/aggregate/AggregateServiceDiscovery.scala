@@ -18,6 +18,10 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private final class AggregateServiceDiscoverySettings(config: Config) {
 
   val discoveryMethods = config
@@ -28,6 +32,10 @@ private final class AggregateServiceDiscoverySettings(config: Config) {
 
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private object AggregateServiceDiscovery {
   type Methods = List[(String, ServiceDiscovery)]
 }
@@ -35,7 +43,8 @@ private object AggregateServiceDiscovery {
 /**
  * INTERNAL API
  */
-@InternalApi final class AggregateServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
+@InternalApi
+private[akka] final class AggregateServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 
   private val log = Logging(system, getClass)
 

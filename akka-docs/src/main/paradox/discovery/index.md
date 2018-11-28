@@ -13,7 +13,7 @@ Akka Discovery provides an interface around various ways of locating services. T
 * DNS
 * Aggregate
 
-In addition [Akka Management](https://developer.lightbend.com/docs/akka-management/current/) contains methods for:
+In addition [Akka Management](https://developer.lightbend.com/docs/akka-management/current/) contains methods such as:
 
 * Kubernetes API
 * AWS
@@ -22,7 +22,7 @@ In addition [Akka Management](https://developer.lightbend.com/docs/akka-manageme
 
 Discovery used to be part of Akka Management but has become an Akka module as of `2.5.19` of Akka and version `0.21.0`
 of Akka Management. If you're also using Akka Management for other service discovery methods or bootstrap make
-sure you are using at least version 
+sure you are using at least version `0.21.0`.
 
 ## Dependency
 

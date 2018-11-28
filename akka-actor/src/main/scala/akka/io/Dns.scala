@@ -109,7 +109,7 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
       override def apply(r: String): ActorRef = {
         val settings = new Settings(system.settings.config.getConfig("akka.io.dns"), "async-dns")
         val provider = system.dynamicAccess.getClassFor[DnsProvider](settings.ProviderObjectName).get.newInstance()
-        system.log.info("Creating async dns resolver {} with manger name {}", settings.Resolver, managerName)
+        system.log.info("Creating async dns resolver {} with manager name {}", settings.Resolver, managerName)
         system.systemActorOf(
           props = Props(provider.managerClass, settings.Resolver, system, settings.ResolverConfig, provider.cache, settings.Dispatcher, provider).withDeploy(Deploy.local).withDispatcher(settings.Dispatcher),
           name = managerName)

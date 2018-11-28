@@ -16,6 +16,10 @@ import scala.collection.{ breakOut, immutable }
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private object ConfigServicesParser {
   def parse(config: Config): Map[String, Resolved] = {
     val byService = config
@@ -29,12 +33,12 @@ private object ConfigServicesParser {
 
     byService.map {
       case (serviceName, full) ⇒
-        val endpoints = full.getConfigList("endpoints").asScala
-        val resolvedTargets: immutable.Seq[ResolvedTarget] = endpoints.map { c ⇒
+        val endpoints = full.getConfigList("endpoints").asScala.toList
+        val resolvedTargets = endpoints.map { c ⇒
           val host = c.getString("host")
           val port = if (c.hasPath("port")) Some(c.getInt("port")) else None
           ResolvedTarget(host = host, port = port, address = None)
-        }(breakOut)
+        }
         (serviceName, Resolved(serviceName, resolvedTargets))
     }
   }
@@ -44,7 +48,7 @@ private object ConfigServicesParser {
  * INTERNAL API
  */
 @InternalApi
-class ConfigServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
+private[akka] class ConfigServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 
   private val log = Logging(system, getClass)
 
@@ -55,7 +59,7 @@ class ConfigServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscove
   log.debug("Config discovery serving: {}", resolvedServices)
 
   override def lookup(lookup: Lookup, resolveTimeout: FiniteDuration): Future[Resolved] = {
-    Future.successful(resolvedServices.getOrElse(lookup.serviceName, Resolved(lookup.serviceName, immutable.Seq.empty)))
+    Future.successful(resolvedServices.getOrElse(lookup.serviceName, Resolved(lookup.serviceName, Nil)))
   }
 
 }

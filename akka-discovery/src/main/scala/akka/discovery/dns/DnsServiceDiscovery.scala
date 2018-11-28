@@ -21,6 +21,10 @@ import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, SRVRecord }
 
 import scala.collection.{ immutable ⇒ im }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private object DnsServiceDiscovery {
   def srvRecordsToResolved(srvRequest: String, resolved: DnsProtocol.Resolved): Resolved = {
     val ips: Map[String, im.Seq[InetAddress]] =
@@ -53,7 +57,7 @@ private object DnsServiceDiscovery {
  * INTERNAL API
  */
 @InternalApi
-class DnsServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
+private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 
   import DnsServiceDiscovery._
 
