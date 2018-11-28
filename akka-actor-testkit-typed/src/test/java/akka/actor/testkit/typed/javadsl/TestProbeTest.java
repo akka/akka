@@ -4,54 +4,54 @@
 
 package akka.actor.testkit.typed.javadsl;
 
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.ActorSystem;
-
 import java.time.Duration;
 import java.util.List;
 
-public class TestProbeTest {
+import akka.actor.testkit.typed.scaladsl.TestProbeSpec;
+import akka.actor.testkit.typed.scaladsl.TestProbeSpec.*;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.scalatest.junit.JUnitSuite;
 
-  public static void compileOnlyApiTest() {
-    ActorSystem<Object> system = null;
-    TestProbe<String> probe = TestProbe.create(system);
-    probe.ref();
-    probe.awaitAssert(() -> {
-      // ... something ...
-      return null;
+import static org.junit.Assert.*;
+
+public class TestProbeTest extends JUnitSuite {
+
+  @ClassRule
+  public static TestKitJunitResource testKit = new TestKitJunitResource();
+
+  @Test
+  public void testReceiveOne() {
+    TestProbe<EventT> probe = TestProbe.create(testKit.system());
+
+    List<EventT> eventsT = akka.japi.Util.javaArrayList(TestProbeSpec.eventsT(10));
+
+    eventsT.forEach(e->{
+      probe.getRef().tell(e);
+      assertEquals(probe.receiveOne(), e);
     });
-    probe.awaitAssert(Duration.ofSeconds(3), () -> {
-      // ... something ...
-      return null;
-    });
-    String awaitAssertResult =
-      probe.awaitAssert(Duration.ofSeconds(3), Duration.ofMillis(100), () -> {
-        // ... something ...
-        return "some result";
-      });
-    String messageResult = probe.expectMessage("message");
-    String expectClassResult = probe.expectMessageClass(String.class);
+
     probe.expectNoMessage();
+  }
 
-    ActorRef<String> ref = null;
-    probe.expectTerminated(ref, Duration.ofSeconds(1));
+  @Test
+  public void testReceiveOneMaxDuration() {
+    TestProbe<EventT> probe = TestProbe.create(testKit.system());
 
-    Duration remaining = probe.getRemaining();
-    probe.fishForMessage(Duration.ofSeconds(3), "hint", (message) -> {
-      if (message.equals("one")) return FishingOutcomes.continueAndIgnore();
-      else if (message.equals("two")) return FishingOutcomes.complete();
-      else return FishingOutcomes.fail("error");
+    List<EventT> eventsT = akka.japi.Util.javaArrayList(TestProbeSpec.eventsT(2));
+
+    eventsT.forEach(e->{
+      probe.getRef().tell(e);
+      assertEquals(probe.receiveOne(Duration.ofMillis(100)), e);
     });
 
-    String withinResult = probe.within(Duration.ofSeconds(3), () -> {
-      // ... something ...
-      return "result";
-    });
+    probe.expectNoMessage();
+  }
 
-    List<String> messages1 = probe.receiveMessages(3);
-    List<String> messages2 = probe.receiveMessages(3, Duration.ofSeconds(5));
-
-    probe.receiveOne();
+  @Test(expected = AssertionError.class)
+  public void testReceiveOneFailOnTimeout() {
+    TestProbe<EventT> probe = TestProbe.create(testKit.system());
     probe.receiveOne(Duration.ofMillis(100));
   }
+
 }
