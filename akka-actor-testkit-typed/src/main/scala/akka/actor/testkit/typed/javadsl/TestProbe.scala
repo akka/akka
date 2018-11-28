@@ -226,6 +226,12 @@ abstract class TestProbe[M] {
   def receiveOne(): M
 
   /**
+   * Receive one message of type `M`. Wait time is bounded by the `max` duration,
+   * with an [[AssertionError]] raised in case of timeout.
+   */
+  def receiveOne(max: Duration): M
+
+  /**
    * Same as `receiveN(n, remaining)` but correctly taking into account
    * the timeFactor.
    */
