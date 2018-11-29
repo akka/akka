@@ -6,14 +6,32 @@ package akka.actor.typed
 package internal
 package adapter
 
+import java.lang.reflect.InvocationTargetException
+
+import akka.actor.ActorInitializationException
+import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
+
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
 import akka.{ actor ⇒ a }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[typed] object ActorAdapter {
+
+  /**
+   * Thrown to indicate that a Behavior has failed so that the parent gets
+   * the cause and can fill in the cause in the `ChildTerminated` signal
+   * Wrapped to avoid it being logged as the typed supervision will already
+   * have logged it.
+   */
+  final case class TypedActorFailedException(cause: Throwable) extends RuntimeException
+}
 
 /**
  * INTERNAL API
@@ -42,7 +60,7 @@ import akka.util.OptionVal
         if (failures contains ref) {
           val ex = failures(ref)
           failures -= ref
-          ChildTerminated(ActorRefAdapter(ref), Some(ex))
+          ChildFailed(ActorRefAdapter(ref), ex)
         } else Terminated(ActorRefAdapter(ref))
       next(Behavior.interpretSignal(behavior, ctx, msg), msg)
     case a.ReceiveTimeout ⇒
@@ -85,7 +103,7 @@ import akka.util.OptionVal
           context.stop(self)
         case f: FailedBehavior ⇒
           // For the parent untyped supervisor to pick up the exception
-          throw f.cause
+          throw new TypedActorFailedException(f.cause)
         case _ ⇒
           behavior = Behavior.canonicalize(b, behavior, ctx)
       }
@@ -124,14 +142,31 @@ import akka.util.OptionVal
     case other               ⇒ super.unhandled(other)
   }
 
-  override val supervisorStrategy = a.OneForOneStrategy() {
-    case ex ⇒
-      val ref = sender()
-      if (context.asInstanceOf[a.ActorCell].isWatching(ref)) {
-
-        failures = failures.updated(ref, ex)
-      }
+  override val supervisorStrategy = a.OneForOneStrategy(loggingEnabled = false) {
+    case TypedActorFailedException(cause) ⇒
+      // These have already been optionally logged by typed supervision
+      recordChildFailure(cause)
       a.SupervisorStrategy.Stop
+    case ex ⇒
+      recordChildFailure(ex)
+      val logMessage = ex match {
+        case e: ActorInitializationException if e.getCause ne null ⇒ e.getCause match {
+          case ex: InvocationTargetException if ex.getCause ne null ⇒ ex.getCause.getMessage
+          case ex ⇒ ex.getMessage
+        }
+        case e ⇒ e.getMessage
+      }
+      // log at Error as that is what the supervision strategy would have done.
+      // TODO Config to turn this off? or just recommend users wrap in typed supervision
+      log.error(ex, logMessage)
+      a.SupervisorStrategy.Stop
+  }
+
+  private def recordChildFailure(ex: Throwable): Unit = {
+    val ref = sender()
+    if (context.asInstanceOf[a.ActorCell].isWatching(ref)) {
+      failures = failures.updated(ref, ex)
+    }
   }
 
   override def preStart(): Unit =

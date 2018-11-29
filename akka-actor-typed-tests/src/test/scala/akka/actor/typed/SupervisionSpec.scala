@@ -15,7 +15,6 @@ import akka.actor.testkit.typed.scaladsl._
 import akka.actor.testkit.typed._
 import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
-import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import scala.concurrent.duration._
 import akka.actor.typed.SupervisorStrategy.Resume

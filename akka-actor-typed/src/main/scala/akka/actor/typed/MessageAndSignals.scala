@@ -86,20 +86,18 @@ sealed class Terminated(val ref: ActorRef[Nothing]) extends Signal {
   def getRef(): ActorRef[Void] = ref.asInstanceOf[ActorRef[Void]]
 }
 
-object ChildTerminated {
-  def apply(ref: ActorRef[Nothing], cause: Option[Throwable]): ChildTerminated = new ChildTerminated(ref, cause)
-  def unapply(t: ChildTerminated): Option[(ActorRef[Nothing], Option[Throwable])] = Some((t.ref, t.cause))
+object ChildFailed {
+  def apply(ref: ActorRef[Nothing], cause: Throwable): ChildFailed = new ChildFailed(ref, cause)
+  def unapply(t: ChildFailed): Option[(ActorRef[Nothing], Throwable)] = Some((t.ref, t.cause))
 }
 
 /**
- * If the child stopped gracefully `cause` will be None
- * If the child stopped due to throwing an exception then `cause` will be set to the exception
- * As Children can only be local for typed this is never serialized
+ * Child has failed due an uncaught exception
  */
-final class ChildTerminated(ref: ActorRef[Nothing], val cause: Option[Throwable]) extends Terminated(ref) {
+final class ChildFailed(ref: ActorRef[Nothing], val cause: Throwable) extends Terminated(ref) {
 
   /**
    * Java API
    */
-  def getCause(): Optional[Throwable] = cause.asJava
+  def getCause(): Throwable = cause
 }
