@@ -200,8 +200,11 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     val stop = max + now
     for (x ← 1 to n) yield {
       val timeout = stop - now
-      receiveOne_internal(timeout).
-        getOrElse(assertFail(s"Timeout ($max) while expecting $n messages (received ${x - 1})"))
+      val o = receiveOne_internal(timeout)
+      o match {
+        case Some(m) ⇒ m
+        case None    ⇒ assertFail(s"timeout ($max) while expecting $n messages (got ${x - 1})")
+      }
     }
   }
 
