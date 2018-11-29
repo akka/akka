@@ -145,7 +145,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   override def receiveOne(max: java.time.Duration): M = receiveOne(max.asScala)
 
   def receiveOne(max: FiniteDuration): M =
-    receiveOne_internal(max).
+    receiveOne_internal(max.dilated).
       getOrElse(assertFail(s"Timeout ($max) during receiveOne while waiting for message."))
 
   /**
