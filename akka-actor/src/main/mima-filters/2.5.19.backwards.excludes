@@ -1,0 +1,5 @@
+# !act Remove pipe and pipeToSelection from Java API. #26006
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PipeToSupport#PipeableCompletionStage.pipeToSelection$default$2")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PipeToSupport#PipeableCompletionStage.pipeTo")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PipeToSupport#PipeableCompletionStage.pipeToSelection")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PipeToSupport#PipeableCompletionStage.pipeTo$default$2")
