@@ -869,6 +869,7 @@ private[stream] object Collect {
 @InternalApi private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy) extends SimpleLinearGraphStage[T] {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+    override protected def logSource: Class[_] = classOf[Buffer[_]]
 
     private var buffer: BufferImpl[T] = _
 

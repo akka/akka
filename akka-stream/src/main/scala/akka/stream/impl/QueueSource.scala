@@ -41,6 +41,8 @@ import scala.util.control.NonFatal
     val completion = Promise[Done]
 
     val stageLogic = new GraphStageLogic(shape) with OutHandler with SourceQueueWithComplete[T] with StageLogging {
+      override protected def logSource: Class[_] = classOf[QueueSource[_]]
+
       var buffer: Buffer[T] = _
       var pendingOffer: Option[Offer[T]] = None
       var terminating = false
