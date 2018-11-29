@@ -5,7 +5,7 @@
 package akka.stream
 
 import OverflowStrategies._
-import akka.annotation.DoNotInherit
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.event.Logging
 import akka.event.Logging.LogLevel
 
@@ -15,7 +15,8 @@ import akka.event.Logging.LogLevel
  */
 @DoNotInherit
 sealed abstract class DelayOverflowStrategy extends Serializable {
-  private[akka] def isBackpressure: Boolean
+  /** INTERNAL API */
+  @InternalApi private[akka] def isBackpressure: Boolean
 }
 
 final case class BufferOverflowException(msg: String) extends RuntimeException(msg)
@@ -26,7 +27,8 @@ final case class BufferOverflowException(msg: String) extends RuntimeException(m
  */
 @DoNotInherit
 sealed abstract class OverflowStrategy extends DelayOverflowStrategy {
-  private[akka] def logLevel: LogLevel
+  /** INTERNAL API */
+  @InternalApi private[akka] def logLevel: LogLevel
   def withLogLevel(logLevel: Logging.LogLevel): OverflowStrategy
 }
 
