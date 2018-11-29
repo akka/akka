@@ -6,7 +6,6 @@ package akka.japi.pf;
 
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
-import akka.actor.AbstractActor;
 import akka.actor.AbstractActor.Receive;
 
 /**
@@ -99,16 +98,7 @@ public class ReceiveBuilder {
    */
   @SuppressWarnings("unchecked")
   public ReceiveBuilder matchUnchecked(final Class<?> type, final FI.UnitApply<?> apply) {
-
-    FI.Predicate predicate = new FI.Predicate() {
-      @Override
-      public boolean defined(Object o) {
-        return type.isInstance(o);
-      }
-    };
-
-    addStatement(new UnitCaseStatement<Object, Object>(predicate, (FI.UnitApply<Object>) apply));
-
+    addStatement(new UnitCaseStatement<Object, Object>(type::isInstance, (FI.UnitApply<Object>) apply));
     return this;
   }
 
@@ -167,15 +157,12 @@ public class ReceiveBuilder {
     @SuppressWarnings("unchecked")
     public <P> ReceiveBuilder matchUnchecked(final Class<?> type, final FI.TypedPredicate<?> predicate,
         final FI.UnitApply<P> apply) {
-      FI.Predicate fiPredicate = new FI.Predicate() {
-      @Override
-      public boolean defined(Object o) {
+      FI.Predicate fiPredicate = o -> {
         if (!type.isInstance(o))
           return false;
         else
           return ((FI.TypedPredicate<Object>) predicate).defined(o);
-      }
-    };
+      };
 
     addStatement(new UnitCaseStatement<Object, Object>(fiPredicate, (FI.UnitApply<Object>) apply));
 
@@ -201,13 +188,8 @@ public class ReceiveBuilder {
     public <P> ReceiveBuilder matchUnchecked(final Class<?> type,
                                              final java.util.function.BooleanSupplier externalPredicate,
                                              final FI.UnitApply<P> apply) {
-        FI.Predicate fiPredicate = new FI.Predicate() {
-            @Override
-            public boolean defined(Object o) {
-                return type.isInstance(o) &&
-                        externalPredicate.getAsBoolean();
-            }
-        };
+        FI.Predicate fiPredicate = o -> type.isInstance(o) &&
+                externalPredicate.getAsBoolean();
 
         addStatement(new UnitCaseStatement<Object, Object>(fiPredicate, (FI.UnitApply<Object>) apply));
 
@@ -224,13 +206,22 @@ public class ReceiveBuilder {
    * @return a builder with the case statement added
    */
   public <P> ReceiveBuilder matchEquals(final P object, final FI.UnitApply<P> apply) {
-    addStatement(new UnitCaseStatement<Object, P>(new FI.Predicate() {
-      @Override
-      public boolean defined(Object o) {
-        return object.equals(o);
-      }
-    }, apply));
+    addStatement(new UnitCaseStatement<Object, P>(object::equals, apply));
     return this;
+  }
+
+  /**
+   * Add a new case statement to this builder.
+   *
+   * @param object
+   *          the object to compare equals with
+   * @param runnable
+   *          a {@link Runnable} to run if the object compares equal
+   * @return a builder with the case statement added
+   */
+  public <P> ReceiveBuilder matchEquals(final P object, final Runnable runnable) {
+    return matchEquals(object,
+                       p -> runnable.run());
   }
 
   /**
@@ -247,19 +238,35 @@ public class ReceiveBuilder {
    */
   public <P> ReceiveBuilder matchEquals(final P object, final FI.TypedPredicate<P> predicate,
       final FI.UnitApply<P> apply) {
-    addStatement(new UnitCaseStatement<Object, P>(new FI.Predicate() {
-      @Override
-      public boolean defined(Object o) {
-        if (!object.equals(o))
-          return false;
-        else {
-          @SuppressWarnings("unchecked")
-          P p = (P) o;
-          return predicate.defined(p);
-        }
+    addStatement(new UnitCaseStatement<Object, P>(o -> {
+      if (!object.equals(o))
+        return false;
+      else {
+        @SuppressWarnings("unchecked")
+        P p = (P) o;
+        return predicate.defined(p);
       }
     }, apply));
     return this;
+  }
+
+  /**
+   * Add a new case statement to this builder.
+   *
+   * @param object
+   *          the object to compare equals with
+   * @param predicate
+   *          a predicate that will be evaluated on the argument if the object
+   *          compares equal
+   * @param runnable
+   *          a {@link Runnable} to run if the object compares equal
+   * @return a builder with the case statement added
+   */
+  public <P> ReceiveBuilder matchEquals(final P object, final FI.TypedPredicate<P> predicate,
+      final Runnable runnable){
+    return matchEquals(object,
+                       predicate,
+                       p -> runnable.run());
   }
 
   /**
@@ -270,13 +277,18 @@ public class ReceiveBuilder {
    * @return a builder with the case statement added
    */
   public ReceiveBuilder matchAny(final FI.UnitApply<Object> apply) {
-    addStatement(new UnitCaseStatement<Object, Object>(new FI.Predicate() {
-      @Override
-      public boolean defined(Object o) {
-        return true;
-      }
-    }, apply));
+    addStatement(new UnitCaseStatement<Object, Object>(o -> true, apply));
     return this;
   }
 
+  /**
+   * Add a new case statement to this builder, that matches any argument.
+   *
+   * @param runnable
+   *          a {@link Runnable} to run
+   * @return a builder with the case statement added
+   */
+  public ReceiveBuilder matchAny(final Runnable runnable) {
+    return matchAny(p -> runnable.run());
+  }
 }

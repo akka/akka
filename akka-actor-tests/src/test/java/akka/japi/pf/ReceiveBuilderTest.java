@@ -209,10 +209,15 @@ public class ReceiveBuilderTest extends JUnitSuite {
   @Test
   public void shouldMatchEquals() {
     Msg2 msg2 = new Msg2("foo");
+    final FI.TypedPredicate<Integer> greaterThanOrEqual18 = anyInt -> anyInt >= 18;
+    final FI.TypedPredicate<Integer> greaterThanOrEqual16 = anyInt -> anyInt >= 16;
     Receive rcv = ReceiveBuilder.create()
         .matchEquals(msg2, m -> result("match msg2"))
         .matchEquals("foo", m -> result("match foo"))
+        .matchEquals("bar", () -> result("match bar"))
         .matchEquals(17, m -> result("match 17"))
+        .matchEquals(20,greaterThanOrEqual18,m -> result("match 20"))
+        .matchEquals(16,greaterThanOrEqual16,() -> result("match 16"))
         .build();
     assertTrue(rcv.onMessage().isDefinedAt(new Msg2("foo")));
     rcv.onMessage().apply(new Msg2("foo"));
@@ -222,9 +227,21 @@ public class ReceiveBuilderTest extends JUnitSuite {
     rcv.onMessage().apply("foo");
     assertEquals("match foo", result());
 
+    assertTrue(rcv.onMessage().isDefinedAt("bar"));
+    rcv.onMessage().apply("bar");
+    assertEquals("match bar", result());
+
     assertTrue(rcv.onMessage().isDefinedAt(17));
     rcv.onMessage().apply(17);
     assertEquals("match 17", result());
+
+    assertTrue(rcv.onMessage().isDefinedAt(20));
+    rcv.onMessage().apply(20);
+    assertEquals("match 20", result());
+
+    assertTrue(rcv.onMessage().isDefinedAt(16));
+    rcv.onMessage().apply(16);
+    assertEquals("match 16", result());
 
     assertFalse(rcv.onMessage().isDefinedAt(new Msg2("bar")));
     assertFalse(rcv.onMessage().isDefinedAt("hello"));
@@ -240,6 +257,20 @@ public class ReceiveBuilderTest extends JUnitSuite {
     assertTrue(rcv.onMessage().isDefinedAt(new Msg1()));
     rcv.onMessage().apply(new Msg1());
     assertEquals("match Msg1", result());
+
+    assertTrue(rcv.onMessage().isDefinedAt(new Msg2("foo")));
+    rcv.onMessage().apply(new Msg2("foo"));
+    assertEquals("match any", result());
+
+    assertTrue(rcv.onMessage().isDefinedAt("hello"));
+    assertTrue(rcv.onMessage().isDefinedAt(42));
+  }
+
+  @Test
+  public void shouldMatchAnyWithRunnable() {
+    Receive rcv = ReceiveBuilder.create()
+      .matchAny(() -> result("match any"))
+      .build();
 
     assertTrue(rcv.onMessage().isDefinedAt(new Msg2("foo")));
     rcv.onMessage().apply(new Msg2("foo"));
