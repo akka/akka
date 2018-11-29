@@ -10,7 +10,6 @@ import com.spotify.docker.client.DefaultDockerClient
 import com.spotify.docker.client.DockerClient.LogsParam
 import com.spotify.docker.client.messages.{ ContainerConfig, HostConfig, PortBinding }
 import org.scalatest.concurrent.Eventually
-import org.scalatest.time.{ Millis, Span }
 
 import scala.concurrent.duration._
 import scala.util.Try

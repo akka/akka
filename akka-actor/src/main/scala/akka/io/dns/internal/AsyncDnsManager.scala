@@ -4,7 +4,7 @@
 
 package akka.io.dns.internal
 
-import java.net.{ InetAddress, InetSocketAddress }
+import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, Props, Timers }
@@ -16,7 +16,6 @@ import akka.io.{ Dns, DnsExt, PeriodicCacheCleanup }
 import akka.routing.FromConfig
 import akka.util.Timeout
 
-import scala.collection.immutable
 import scala.concurrent.duration.Duration
 
 /**
