@@ -13,7 +13,7 @@ import akka.annotation.InternalApi
 import akka.actor.testkit.typed.Effect
 import akka.actor.testkit.typed.Effect._
 
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.compat.java8.FunctionConverters._
 

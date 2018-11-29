@@ -234,7 +234,7 @@ abstract class TestProbe[M] {
   def receiveOne(max: Duration): M
 
   /**
-   * Same as `receiveN(n, remaining)` but using the default timeout as deadline.
+   * Same as `receiveMessages(n, remaining)` but using the default timeout as deadline.
    */
   def receiveMessages(n: Int): JList[M] = receiveN_internal(n, getRemainingOrDefault.asScala).asJava
 
