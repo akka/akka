@@ -175,8 +175,8 @@ object TestProbe {
    *  * [[FishingOutcomes.complete]] - successfully complete and return the message
    *  * [[FishingOutcomes.fail]] - fail the test with a custom message
    *
-   * Additionally failures includes the list of messages consumed. If a message of type `M` but not of type `T` is
-   * received this will also fail the test, additionally if the `fisher` function throws a match error the error
+   * Additionally failures includes the list of messages consumed.
+   * If the `fisher` function throws a match error the error
    * is decorated with some fishing details and the test is failed (making it convenient to use this method with a
    * partial function).
    *
