@@ -11,12 +11,14 @@ import akka.actor.AbstractActor;
 import akka.util.Timeout;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.time.Duration;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 public class SupervisedAskSpec {
 
   public Object execute(Class<? extends AbstractActor> someActor,
-      Object message, Timeout timeout, ActorRefFactory actorSystem)
+      Object message, Duration timeout, ActorRefFactory actorSystem)
       throws Exception {
     // example usage
     try {
@@ -24,8 +26,7 @@ public class SupervisedAskSpec {
           .createSupervisorCreator(actorSystem);
       CompletionStage<Object> finished = SupervisedAsk.askOf(supervisorCreator,
           Props.create(someActor), message, timeout);
-      FiniteDuration d = timeout.duration();
-      return finished.toCompletableFuture().get(d.length(), d.unit());
+      return finished.toCompletableFuture().get(timeout.toMillis(), TimeUnit.MILLISECONDS);
     } catch (Exception e) {
       // exception propagated by supervision
       throw e;
