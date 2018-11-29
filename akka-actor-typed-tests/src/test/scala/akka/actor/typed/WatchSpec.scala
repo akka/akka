@@ -115,7 +115,6 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       val ex = new TestException("boom")
       val behavior = Behaviors.setup[Any] { context ⇒
         val child = context.spawn(Behaviors.supervise(Behaviors.receive[Any]((context, message) ⇒ {
-          println("Throwing")
           throw ex
         })).onFailure[Throwable](SupervisorStrategy.stop.withLoggingEnabled(false)), "child")
         context.watch(child)

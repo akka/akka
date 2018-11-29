@@ -235,7 +235,7 @@ object Behavior {
   }
 
   private[akka] class FailedBehavior(val cause: Throwable) extends Behavior[Nothing] {
-    override def toString: String = s"Failed(${cause.getMessage})"
+    override def toString: String = s"Failed(${cause})"
   }
 
   /**

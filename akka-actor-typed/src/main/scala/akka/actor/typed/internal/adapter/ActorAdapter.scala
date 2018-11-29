@@ -67,7 +67,6 @@ import akka.util.OptionVal
   }
 
   private def next(b: Behavior[T], msg: Any): Unit = {
-    println("Next behavior is " + b)
     if (Behavior.isUnhandled(b)) unhandled(msg)
     else {
       b match {

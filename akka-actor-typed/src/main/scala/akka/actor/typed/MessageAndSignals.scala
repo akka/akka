@@ -5,6 +5,9 @@
 package akka.actor.typed
 
 import java.util.Optional
+
+import akka.annotation.DoNotInherit
+
 import scala.compat.java8.OptionConverters._
 
 /**
@@ -77,20 +80,20 @@ object Terminated {
  *
  * @param ref Scala API: the `ActorRef` for the terminated actor
  */
+@DoNotInherit
 sealed class Terminated(val ref: ActorRef[Nothing]) extends Signal {
   /** Java API: The actor that was watched and got terminated */
   def getRef(): ActorRef[Void] = ref.asInstanceOf[ActorRef[Void]]
 }
 
-// TODO perhaps ChildFailed? and leave normal child stopping as Terminated? This would remove the Option
 object ChildTerminated {
   def apply(ref: ActorRef[Nothing], cause: Option[Throwable]): ChildTerminated = new ChildTerminated(ref, cause)
   def unapply(t: ChildTerminated): Option[(ActorRef[Nothing], Option[Throwable])] = Some((t.ref, t.cause))
 }
 
 /**
- * If the client stopped gracefully `cause` will be None
- * If the client stopped due to throwing an exception then `cause` will be set to the exception
+ * If the child stopped gracefully `cause` will be None
+ * If the child stopped due to throwing an exception then `cause` will be set to the exception
  * As Children can only be local for typed this is never serialized
  */
 final class ChildTerminated(ref: ActorRef[Nothing], val cause: Option[Throwable]) extends Terminated(ref) {
