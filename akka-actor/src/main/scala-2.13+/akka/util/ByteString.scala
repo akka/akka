@@ -836,9 +836,7 @@ sealed abstract class ByteString
    */
   final def mapI(f: Byte ⇒ Int): ByteString = map(f andThen (_.toByte))
 
-  def map[A](f: Byte ⇒ Byte): ByteString = {
-    ???
-  }
+  def map[A](f: Byte ⇒ Byte): ByteString = fromSpecific(super.map(f))
 }
 
 object CompactByteString {
