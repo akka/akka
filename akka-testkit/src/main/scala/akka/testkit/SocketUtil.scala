@@ -38,9 +38,9 @@ object SocketUtil {
   def temporaryLocalPort(udp: Boolean = false): Int = temporaryServerAddress("localhost", udp).getPort
 
   /**
-    * Find a free local post on 'localhost' that is available on the given protocol
-    * If both UDP and TCP need to be free specify `Both`
-    */
+   * Find a free local post on 'localhost' that is available on the given protocol
+   * If both UDP and TCP need to be free specify `Both`
+   */
   def temporaryLocalPort(protocol: Protocol): Int = {
     def findBoth(tries: Int): Int = {
       if (tries == 0) {
