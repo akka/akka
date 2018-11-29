@@ -75,7 +75,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   override def remaining: FiniteDuration = end match {
     case f: FiniteDuration ⇒ f - now
-    case _                 ⇒ throw new AssertionError("`remaining` may not be called outside of `within`")
+    case _                 ⇒ assertFail("`remaining` may not be called outside of `within`")
   }
 
   override def getRemaining: java.time.Duration = remaining.asJava
@@ -134,9 +134,11 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   private def expectMessage_internal[T <: M](max: Duration, obj: T, hint: Option[String] = None): T = {
     val o = receiveOne(max)
     val hintOrEmptyString = hint.map(": " + _).getOrElse("")
-    assert(o != null, s"timeout ($max) during expectMessage while waiting for $obj" + hintOrEmptyString)
-    assert(obj == o, s"expected $obj, found $o" + hintOrEmptyString)
-    o.asInstanceOf[T]
+    o match {
+      case Some(m) if obj == m ⇒ m.asInstanceOf[T]
+      case Some(m)             ⇒ assertFail(s"expected $obj, found $m$hintOrEmptyString")
+      case None                ⇒ assertFail(s"timeout ($max) during expectMessage while waiting for $obj$hintOrEmptyString")
+    }
   }
 
   /**
@@ -145,8 +147,8 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
    *
    * This method does NOT automatically scale its Duration parameter!
    */
-  private def receiveOne(max: Duration): M = {
-    val message =
+  private def receiveOne(max: Duration): Option[M] = {
+    val message = Option(
       if (max == Duration.Zero) {
         queue.pollFirst
       } else if (max.isFinite) {
@@ -154,8 +156,9 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
       } else {
         queue.takeFirst
       }
+    )
     lastWasNoMessage = false
-    lastMessage = if (message == null) None else Some(message)
+    lastMessage = message
     message
   }
 
@@ -170,15 +173,20 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   private def expectNoMessage_internal(max: FiniteDuration): Unit = {
     val o = receiveOne(max)
-    assert(o == null, s"received unexpected message $o")
-    lastWasNoMessage = true
+    o match {
+      case None    ⇒ lastWasNoMessage = true
+      case Some(m) ⇒ assertFail(s"received unexpected message $m")
+    }
   }
 
   override protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
     val o = receiveOne(max)
-    assert(o != null, s"timeout ($max) during expectMessageClass waiting for $c")
-    assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass} ($o)")
-    o.asInstanceOf[C]
+    val bt = BoxedType(c)
+    o match {
+      case Some(m) if bt isInstance m ⇒ m.asInstanceOf[C]
+      case Some(m)                    ⇒ assertFail(s"expected $c, found ${m.getClass} ($m)")
+      case None                       ⇒ assertFail(s"timeout ($max) during expectMessageClass waiting for $c")
+    }
   }
 
   override protected def receiveN_internal(n: Int, max: FiniteDuration): immutable.Seq[M] = {
@@ -186,46 +194,37 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     for (x ← 1 to n) yield {
       val timeout = stop - now
       val o = receiveOne(timeout)
-      assert(o != null, s"timeout ($max) while expecting $n messages (got ${x - 1})")
-      o
+      o match {
+        case Some(m) ⇒ m
+        case None    ⇒ assertFail(s"timeout ($max) while expecting $n messages (got ${x - 1})")
+      }
     }
   }
 
   override protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): List[M] = {
-    // not tailrec but that should be ok
-    def loop(timeout: FiniteDuration, seen: List[M]): List[M] = {
+    @tailrec def loop(timeout: FiniteDuration, seen: List[M]): List[M] = {
       val start = System.nanoTime()
-      val maybeMsg = Option(receiveOne(timeout))
+      val maybeMsg = receiveOne(timeout)
       maybeMsg match {
         case Some(message) ⇒
-          try {
-            fisher(message) match {
-              case FishingOutcome.Complete    ⇒ (message :: seen).reverse
-              case FishingOutcome.Fail(error) ⇒ throw new AssertionError(s"$error, hint: $hint")
-              case continue ⇒
-                val newTimeout =
-                  if (timeout.isFinite()) timeout - (System.nanoTime() - start).nanos
-                  else timeout
-                if (newTimeout.toMillis <= 0) {
-                  throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
-                } else {
-
-                  continue match {
-                    case FishingOutcome.Continue          ⇒ loop(newTimeout, message :: seen)
-                    case FishingOutcome.ContinueAndIgnore ⇒ loop(newTimeout, seen)
-                    case _                                ⇒ ??? // cannot happen
-                  }
-
-                }
-            }
-          } catch {
+          val outcome = try fisher(message) catch {
             case ex: MatchError ⇒ throw new AssertionError(
               s"Unexpected message $message while fishing for messages, " +
                 s"seen messages ${seen.reverse}, hint: $hint", ex)
           }
+          outcome match {
+            case FishingOutcome.Complete    ⇒ (message :: seen).reverse
+            case FishingOutcome.Fail(error) ⇒ assertFail(s"$error, hint: $hint")
+            case continue: FishingOutcome.ContinueOutcome ⇒
+              val newTimeout = timeout - (System.nanoTime() - start).nanos
+              continue match {
+                case FishingOutcome.Continue          ⇒ loop(newTimeout, message :: seen)
+                case FishingOutcome.ContinueAndIgnore ⇒ loop(newTimeout, seen)
+              }
+          }
 
         case None ⇒
-          throw new AssertionError(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
+          assertFail(s"timeout ($max) during fishForMessage, seen messages ${seen.reverse}, hint: $hint")
       }
     }
 
@@ -281,5 +280,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
    * Obtain current time (`System.nanoTime`) as Duration.
    */
   private def now: FiniteDuration = System.nanoTime.nanos
+
+  private def assertFail(msg: String): Nothing = throw new AssertionError(msg)
 
 }

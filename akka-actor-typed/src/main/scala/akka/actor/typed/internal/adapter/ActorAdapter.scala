@@ -26,7 +26,7 @@ import akka.util.OptionVal
 
   /**
    * Thrown to indicate that a Behavior has failed so that the parent gets
-   * the cause and can fill in the cause in the `ChildTerminated` signal
+   * the cause and can fill in the cause in the `ChildFailed` signal
    * Wrapped to avoid it being logged as the typed supervision will already
    * have logged it.
    */
