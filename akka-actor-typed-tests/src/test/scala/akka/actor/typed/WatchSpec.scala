@@ -107,7 +107,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       EventFilter[TestException](occurrences = 1).intercept {
         parent ! "boom"
       }
-      probe.expectMessageType[ChildHasFailed].t.cause shouldEqual Some(ex)
+      probe.expectMessageType[ChildHasFailed].t.cause shouldEqual ex
     }
 
     "notify a parent of child termination because of failure with a supervisor" in {
@@ -136,7 +136,7 @@ class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpe
       EventFilter[TestException](occurrences = 1).intercept {
         parent ! "boom"
       }
-      probe.expectMessageType[ChildHasFailed].t.cause shouldEqual Some(ex)
+      probe.expectMessageType[ChildHasFailed].t.cause shouldEqual ex
     }
 
     "fail the actor itself with DeathPact if it does not accept Terminated" in {
