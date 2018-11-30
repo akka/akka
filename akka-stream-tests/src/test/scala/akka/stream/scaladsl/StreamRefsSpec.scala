@@ -155,7 +155,6 @@ object StreamRefsSpec {
   final case class BulkSinkMsg(dataSink: SinkRef[ByteString])
 
   def config(): Config = {
-    val address = SocketUtil.temporaryServerAddress()
     ConfigFactory.parseString(
       s"""
     akka {
@@ -167,16 +166,9 @@ object StreamRefsSpec {
 
         default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"
       }
-
       remote {
-        artery {
-          enabled = on
-          transport = aeron-udp
-          canonical.hostname = "${address.getHostName}"
-          canonical.port =  ${address.getPort}
-          log-received-messages = on
-          log-sent-messages = on
-        }
+        artery.canonical.port = 0
+        netty.tcp.port = 0
       }
     }
   """).withFallback(ConfigFactory.load())
