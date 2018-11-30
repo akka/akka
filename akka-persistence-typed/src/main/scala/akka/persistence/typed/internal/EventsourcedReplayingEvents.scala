@@ -149,7 +149,11 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
    * @param message the message that was being processed when the exception was thrown
    */
   protected def onRecoveryFailure(cause: Throwable, sequenceNr: Long, message: Option[Any]): Behavior[InternalProtocol] = {
-    setup.onRecoveryFailure(cause)
+    try {
+      setup.onRecoveryFailure(cause)
+    } catch {
+      case NonFatal(t) ⇒ setup.log.error(t, "onRecoveryFailure threw exception")
+    }
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
 
