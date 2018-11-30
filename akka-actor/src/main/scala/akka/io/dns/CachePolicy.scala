@@ -5,6 +5,7 @@
 package akka.io.dns
 
 import akka.annotation.ApiMayChange
+import akka.util.JavaDurationConverters._
 
 import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
 
@@ -37,6 +38,7 @@ object CachePolicy {
     def fromPositive(value: FiniteDuration): Ttl = {
       new Ttl(value)
     }
+    def fromPositive(value: java.time.Duration): Ttl = fromPositive(value.asScala)
 
     // There's places where only a Ttl makes sense (DNS RFC says TTL is a positive 32 bit integer)
     // but we know the value can be cached effectively forever (e.g. the Lookup name was the actual IP already)
