@@ -36,7 +36,7 @@ object ReceptionistApiSpec {
       case scala.util.Success(key.Registered(ref)) ⇒
         // ref is the right type here
         ref ! "woho"
-      case _ => ()
+      case _ ⇒ ()
     }
 
     // one-off ask outside of actor, should be uncommon but not rare
@@ -45,7 +45,7 @@ object ReceptionistApiSpec {
     found.onComplete {
       case scala.util.Success(key.Listing(instances)) ⇒
         instances.foreach(_ ! "woho")
-      case _ => ()
+      case _ ⇒ ()
     }
 
     Behaviors.setup[Any] { context ⇒
