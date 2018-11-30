@@ -4,13 +4,14 @@
 
 package akka.persistence.typed.javadsl
 
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.japi.function
-import akka.persistence.typed.internal._
-import akka.persistence.typed.SideEffect
-import akka.persistence.typed.ExpectingReply
-
 import scala.collection.JavaConverters._
+
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.japi.function
+import akka.persistence.typed.ExpectingReply
+import akka.persistence.typed.SideEffect
+import akka.persistence.typed.internal._
 
 /**
  * INTERNAL API: see `class EffectFactories`
@@ -52,13 +53,42 @@ import scala.collection.JavaConverters._
   def unhandled(): Effect[Event, State] = Unhandled.asInstanceOf[Effect[Event, State]]
 
   /**
+   * Stash the current command. Can be unstashed later with `Effect.thenUnstashAll`
+   * or `EffectFactories.unstashAll`.
+   *
+   * Note that the stashed commands are kept in an in-memory buffer, so in case of a crash they will not be
+   * processed. They will also be discarded if the actor is restarted (or stopped) due to that an exception was
+   * thrown from processing a command or side effect after persisting. The stash buffer is preserved for persist
+   * failures if an `onPersistFailure` backoff supervisor strategy is defined.
+   *
+   * Side effects can be chained with `andThen`.
+   */
+  def stash(): ReplyEffect[Event, State] =
+    Stash.asInstanceOf[Effect[Event, State]].thenNoReply()
+
+  /**
+   * Unstash the commands that were stashed with `EffectFactories.stash`.
+   *
+   * It's allowed to stash messages while unstashing. Those newly added
+   * commands will not be processed by this `unstashAll` effect and have to be unstashed
+   * by another `unstashAll`.
+   *
+   * Side effects can be chained with `andThen`, but note that the side effect is run immediately and not after
+   * processing all unstashed commands.
+   *
+   * @see [[Effect.thenUnstashAll]]
+   */
+  def unstashAll(): Effect[Event, State] =
+    none().andThen(SideEffect.unstashAll())
+
+  /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
    * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
    *
    * This has the same semantics as `cmd.replyTo.tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
-   * when the `PersistentBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When
+   * when the `EventSourcedBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When
    * `withEnforcedReplies` is used there will be compilation errors if the returned effect isn't a [[ReplyEffect]].
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
@@ -109,13 +139,22 @@ import scala.collection.JavaConverters._
   def thenStop(): Effect[Event, State]
 
   /**
+   * Unstash the commands that were stashed with `EffectFactories.stash`.
+   *
+   * It's allowed to stash messages while unstashing. Those newly added
+   * commands will not be processed by this `unstashAll` effect and have to be unstashed
+   * by another `unstashAll`.
+   */
+  def thenUnstashAll(): Effect[Event, State]
+
+  /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
    * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
    *
    * This has the same semantics as `cmd.replyTo().tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
-   * when the `PersistentBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When
+   * when the `EventSourcedBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When
    * `withEnforcedReplies` is used there will be compilation errors if the returned effect isn't a [[ReplyEffect]].
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.

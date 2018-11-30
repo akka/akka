@@ -7,27 +7,38 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.Done
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy, Terminated }
-import akka.persistence.query.{ EventEnvelope, PersistenceQuery, Sequence }
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.snapshot.SnapshotStore
-import akka.persistence.typed.EventAdapter
-import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
-import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.scaladsl._
-import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.util.{ Success, Try }
+import scala.util.Success
+import scala.util.Try
 
+import akka.Done
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl._
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.SupervisorStrategy
+import akka.actor.typed.Terminated
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.SelectedSnapshot
+import akka.persistence.SnapshotMetadata
+import akka.persistence.SnapshotSelectionCriteria
 import akka.persistence.journal.inmem.InmemJournal
+import akka.persistence.query.EventEnvelope
+import akka.persistence.query.PersistenceQuery
+import akka.persistence.query.Sequence
+import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
+import akka.persistence.snapshot.SnapshotStore
+import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Sink
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object EventSourcedBehaviorSpec {
@@ -61,7 +72,7 @@ object EventSourcedBehaviorSpec {
   def conf: Config = ConfigFactory.parseString(
     s"""
     akka.loglevel = INFO
-    # akka.persistence.typed.log-stashing = INFO
+    # akka.persistence.typed.log-stashing = on
     akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
@@ -229,7 +240,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
   import EventSourcedBehaviorSpec._
 
-  implicit val testSettings = TestKitSettings(system)
+  private implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
   import akka.actor.typed.scaladsl.adapter._
 

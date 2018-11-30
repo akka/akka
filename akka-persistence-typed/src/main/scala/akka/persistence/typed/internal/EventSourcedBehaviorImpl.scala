@@ -7,18 +7,27 @@ package akka.persistence.typed.internal
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
 import akka.Done
 import akka.actor.typed
-import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, BehaviorInterceptor, PostStop, Signal, SupervisorStrategy }
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.actor.typed.BackoffSupervisorStrategy
+import akka.actor.typed.Behavior
+import akka.actor.typed.BehaviorInterceptor
+import akka.actor.typed.PostStop
+import akka.actor.typed.Signal
+import akka.actor.typed.SupervisorStrategy
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.persistence._
-import akka.persistence.typed.{ EventAdapter, NoOpEventAdapter }
-import akka.persistence.typed.scaladsl._
+import akka.persistence.typed.EventAdapter
+import akka.persistence.typed.NoOpEventAdapter
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.scaladsl._
 import akka.util.ConstantFun
-
-import scala.util.{ Failure, Success, Try }
 
 @InternalApi
 private[akka] object EventSourcedBehaviorImpl {
@@ -63,16 +72,19 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   supervisionStrategy: SupervisorStrategy                                         = SupervisorStrategy.stop,
   onSnapshot:          (SnapshotMetadata, Try[Done]) ⇒ Unit                       = ConstantFun.scalaAnyTwoToUnit,
   onRecoveryFailure:   Throwable ⇒ Unit                                           = ConstantFun.scalaAnyToUnit
-) extends EventSourcedBehavior[Command, Event, State] with StashReferenceManagement {
+) extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
 
   override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
-    Behaviors.supervise {
-      Behaviors.setup[Command] { ctx ⇒
-        val settings = EventSourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
+    val ctx = context.asScala
+    val settings = EventSourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
 
-        val internalStash = stashBuffer(settings)
+    // stashState outside supervise because StashState should survive restarts due to persist failures
+    val stashState = new StashState(settings)
+
+    Behaviors.supervise {
+      Behaviors.setup[Command] { _ ⇒
 
         // the default impl needs context which isn't available until here, so we
         // use the anyTwoToUnit as a marker to use the default
@@ -96,12 +108,13 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
           recovery,
           holdingRecoveryPermit = false,
           settings = settings,
-          internalStash = internalStash
+          stashState = stashState
         )
 
         // needs to accept Any since we also can get messages from the journal
         // not part of the protocol
         val onStopInterceptor = new BehaviorInterceptor[Any, Any] {
+
           import BehaviorInterceptor._
           def aroundReceive(ctx: typed.TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any]): Behavior[Any] = {
             target(ctx, msg)
@@ -110,7 +123,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
           def aroundSignal(ctx: typed.TypedActorContext[Any], signal: Signal, target: SignalTarget[Any]): Behavior[Any] = {
             if (signal == PostStop) {
               eventsourcedSetup.cancelRecoveryTimer()
-              clearStashBuffer()
+              // clear stash to be GC friendly
+              stashState.clearStashBuffers()
             }
             target(ctx, signal)
           }
@@ -124,6 +138,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
         }
         Behaviors.intercept(onStopInterceptor)(widened).narrow[Command]
       }
+
     }.onFailure[JournalFailureException](supervisionStrategy)
   }
 
@@ -221,8 +236,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 }
 
 /** Protocol used internally by the eventsourced behaviors. */
-private[akka] sealed trait InternalProtocol
-private[akka] object InternalProtocol {
+@InternalApi private[akka] sealed trait InternalProtocol
+@InternalApi private[akka] object InternalProtocol {
   case object RecoveryPermitGranted extends InternalProtocol
   final case class JournalResponse(msg: akka.persistence.JournalProtocol.Response) extends InternalProtocol
   final case class SnapshotterResponse(msg: akka.persistence.SnapshotProtocol.Response) extends InternalProtocol

@@ -4,13 +4,13 @@
 
 package akka.persistence.typed.scaladsl
 
+import scala.collection.{ immutable ⇒ im }
+
 import akka.annotation.DoNotInherit
-import akka.persistence.typed.SideEffect
-import akka.persistence.typed.internal._
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.ReplyEffectImpl
-
-import scala.collection.{ immutable ⇒ im }
+import akka.persistence.typed.SideEffect
+import akka.persistence.typed.internal._
 
 /**
  * Factory methods for creating [[Effect]] directives - how a persistent actor reacts on a command.
@@ -61,13 +61,41 @@ object Effect {
   def stop[Event, State](): Effect[Event, State] = none.thenStop()
 
   /**
+   * Stash the current command. Can be unstashed later with [[Effect.unstashAll]].
+   *
+   * Note that the stashed commands are kept in an in-memory buffer, so in case of a crash they will not be
+   * processed. They will also be discarded if the actor is restarted (or stopped) due to that an exception was
+   * thrown from processing a command or side effect after persisting. The stash buffer is preserved for persist
+   * failures if a backoff supervisor strategy is defined with [[EventSourcedBehavior.onPersistFailure]].
+   *
+   * Side effects can be chained with `andThen`
+   */
+  def stash[Event, State](): ReplyEffect[Event, State] =
+    Stash.asInstanceOf[Effect[Event, State]].thenNoReply()
+
+  /**
+   * Unstash the commands that were stashed with [[Effect.stash]].
+   *
+   * It's allowed to stash messages while unstashing. Those newly added
+   * commands will not be processed by this `unstashAll` effect and have to be unstashed
+   * by another `unstashAll`.
+   *
+   * Side effects can be chained with `andThen`, but note that the side effect is run immediately and not after
+   * processing all unstashed commands.
+   *
+   * @see [[Effect.thenUnstashAll]]
+   */
+  def unstashAll[Event, State](): Effect[Event, State] =
+    none.andThen(SideEffect.unstashAll[State]())
+
+  /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
    * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
    *
    * This has the same semantics as `cmd.replyTo.tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
-   * when the `PersistentBehavior` is created with [[EventSourcedBehavior.withEnforcedReplies]]. When
+   * when the `EventSourcedBehavior` is created with [[EventSourcedBehavior.withEnforcedReplies]]. When
    * `withEnforcedReplies` is used there will be compilation errors if the returned effect isn't a [[ReplyEffect]].
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
@@ -116,13 +144,22 @@ trait Effect[+Event, State] {
   def thenStop(): Effect[Event, State]
 
   /**
+   * Unstash the commands that were stashed with [[Effect.stash]].
+   *
+   * It's allowed to stash messages while unstashing. Those newly added
+   * commands will not be processed by this `unstashAll` effect and have to be unstashed
+   * by another `unstashAll`.
+   */
+  def thenUnstashAll(): Effect[Event, State]
+
+  /**
    * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
    * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
    *
    * This has the same semantics as `cmd.replyTo.tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
-   * when the `PersistentBehavior` is created with [[EventSourcedBehavior.withEnforcedReplies]]. When
+   * when the `EventSourcedBehavior` is created with [[EventSourcedBehavior.withEnforcedReplies]]. When
    * `withEnforcedReplies` is used there will be compilation errors if the returned effect isn't a [[ReplyEffect]].
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.

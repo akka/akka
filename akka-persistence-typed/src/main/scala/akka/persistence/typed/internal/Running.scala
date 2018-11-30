@@ -6,19 +6,25 @@ package akka.persistence.typed.internal
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.util.{ Failure, Success }
+import scala.util.Failure
+import scala.util.Success
 
 import akka.Done
+import akka.actor.UnhandledMessage
 import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.Signal
 import akka.actor.typed.internal.PoisonPill
+import akka.actor.typed.scaladsl.AbstractBehavior
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.journal.Tagged
-import akka.persistence.typed.{ Callback, EventRejectedException, SideEffect, Stop }
+import akka.persistence.typed.Callback
+import akka.persistence.typed.EventRejectedException
+import akka.persistence.typed.SideEffect
+import akka.persistence.typed.Stop
+import akka.persistence.typed.UnstashAll
 import akka.persistence.typed.scaladsl.Effect
 
 /**
@@ -42,25 +48,25 @@ import akka.persistence.typed.scaladsl.Effect
 @InternalApi
 private[akka] object Running {
 
-  final case class EventsourcedState[State](
+  final case class RunningState[State](
     seqNr:              Long,
     state:              State,
     receivedPoisonPill: Boolean
   ) {
 
-    def nextSequenceNr(): EventsourcedState[State] =
+    def nextSequenceNr(): RunningState[State] =
       copy(seqNr = seqNr + 1)
 
-    def updateLastSequenceNr(persistent: PersistentRepr): EventsourcedState[State] =
+    def updateLastSequenceNr(persistent: PersistentRepr): RunningState[State] =
       if (persistent.sequenceNr > seqNr) copy(seqNr = persistent.sequenceNr) else this
 
-    def applyEvent[C, E](setup: BehaviorSetup[C, E, State], event: E): EventsourcedState[State] = {
+    def applyEvent[C, E](setup: BehaviorSetup[C, E, State], event: E): RunningState[State] = {
       val updated = setup.eventHandler(state, event)
       copy(state = updated)
     }
   }
 
-  def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: EventsourcedState[S]): Behavior[InternalProtocol] =
+  def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] =
     new Running(setup.setMdc(MDC.RunningCmds)).handlingCommands(state)
 }
 
@@ -70,26 +76,26 @@ private[akka] object Running {
 @InternalApi private[akka] class Running[C, E, S](
   override val setup: BehaviorSetup[C, E, S])
   extends JournalInteractions[C, E, S] with StashManagement[C, E, S] {
-  import Running.EventsourcedState
   import InternalProtocol._
+  import Running.RunningState
 
   private val runningCmdsMdc = MDC.create(setup.persistenceId, MDC.RunningCmds)
   private val persistingEventsMdc = MDC.create(setup.persistenceId, MDC.PersistingEvents)
 
-  def handlingCommands(state: EventsourcedState[S]): Behavior[InternalProtocol] = {
+  def handlingCommands(state: RunningState[S]): Behavior[InternalProtocol] = {
 
-    def onCommand(state: EventsourcedState[S], cmd: C): Behavior[InternalProtocol] = {
+    def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       val effect = setup.commandHandler(state.state, cmd)
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
     }
 
     @tailrec def applyEffects(
       msg:         Any,
-      state:       EventsourcedState[S],
+      state:       RunningState[S],
       effect:      Effect[E, S],
       sideEffects: immutable.Seq[SideEffect[S]] = Nil
     ): Behavior[InternalProtocol] = {
-      if (setup.log.isDebugEnabled)
+      if (setup.log.isDebugEnabled && !effect.isInstanceOf[CompositeEffect[_, _]])
         setup.log.debug(
           s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
           msg.getClass.getName, effect, sideEffects.size)
@@ -134,15 +140,21 @@ private[akka] object Running {
 
           } else {
             // run side-effects even when no events are emitted
-            tryUnstash(applySideEffects(sideEffects, state))
+            tryUnstashOne(applySideEffects(sideEffects, state))
           }
 
         case _: PersistNothing.type ⇒
-          tryUnstash(applySideEffects(sideEffects, state))
+          tryUnstashOne(applySideEffects(sideEffects, state))
 
         case _: Unhandled.type ⇒
-          applySideEffects(sideEffects, state)
-          Behavior.unhandled
+          import akka.actor.typed.scaladsl.adapter._
+          setup.context.system.toUntyped.eventStream.publish(
+            UnhandledMessage(msg, setup.context.system.toUntyped.deadLetters, setup.context.self.toUntyped))
+          tryUnstashOne(applySideEffects(sideEffects, state))
+
+        case _: Stash.type ⇒
+          stashUser(IncomingCommand(msg))
+          tryUnstashOne(applySideEffects(sideEffects, state))
       }
     }
 
@@ -163,7 +175,7 @@ private[akka] object Running {
       case _                                ⇒ Behaviors.unhandled
     }.receiveSignal {
       case (_, PoisonPill) ⇒
-        if (isStashEmpty) Behaviors.stopped
+        if (isInternalStashEmpty && !isUnstashAllInProgress) Behaviors.stopped
         else handlingCommands(state.copy(receivedPoisonPill = true))
     }
 
@@ -172,7 +184,7 @@ private[akka] object Running {
   // ===============================================
 
   def persistingEvents(
-    state:                      EventsourcedState[S],
+    state:                      RunningState[S],
     numberOfEvents:             Int,
     shouldSnapshotAfterPersist: Boolean,
     sideEffects:                immutable.Seq[SideEffect[S]]
@@ -181,8 +193,9 @@ private[akka] object Running {
     new PersistingEvents(state, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
   }
 
-  class PersistingEvents(
-    var state:                  EventsourcedState[S],
+  /** INTERNAL API */
+  @InternalApi private[akka] class PersistingEvents(
+    var state:                  RunningState[S],
     numberOfEvents:             Int,
     shouldSnapshotAfterPersist: Boolean,
     var sideEffects:            immutable.Seq[SideEffect[S]])
@@ -192,9 +205,9 @@ private[akka] object Running {
 
     override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
       msg match {
+        case in: IncomingCommand[C @unchecked] ⇒ onCommand(in)
         case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r, this)
         case JournalResponse(r)                ⇒ onJournalResponse(r)
-        case in: IncomingCommand[C @unchecked] ⇒ onCommand(in)
         case RecoveryTickEvent(_)              ⇒ Behaviors.unhandled
         case RecoveryPermitGranted             ⇒ Behaviors.unhandled
       }
@@ -206,7 +219,7 @@ private[akka] object Running {
           "Discarding message [{}], because actor is to be stopped", cmd)
         Behaviors.unhandled
       } else {
-        stash(cmd)
+        stashInternal(cmd)
         this
       }
     }
@@ -225,7 +238,7 @@ private[akka] object Running {
           if (shouldSnapshotAfterPersist)
             internalSaveSnapshot(state)
 
-          tryUnstash(applySideEffects(sideEffects, state))
+          tryUnstashOne(applySideEffects(sideEffects, state))
         }
       }
 
@@ -293,34 +306,42 @@ private[akka] object Running {
 
   // --------------------------
 
-  def applySideEffects(effects: immutable.Seq[SideEffect[S]], state: EventsourcedState[S]): Behavior[InternalProtocol] = {
-    var res: Behavior[InternalProtocol] = handlingCommands(state)
+  def applySideEffects(effects: immutable.Seq[SideEffect[S]], state: RunningState[S]): Behavior[InternalProtocol] = {
+    var behavior: Behavior[InternalProtocol] = handlingCommands(state)
     val it = effects.iterator
 
     // if at least one effect results in a `stop`, we need to stop
     // manual loop implementation to avoid allocations and multiple scans
     while (it.hasNext) {
       val effect = it.next()
-      val stopped = !Behavior.isAlive(applySideEffect(effect, state))
-      if (stopped) res = Behaviors.stopped
+      behavior = applySideEffect(effect, state, behavior)
     }
 
-    if (state.receivedPoisonPill && isStashEmpty)
+    if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
       Behaviors.stopped
     else
-      res
+      behavior
   }
 
-  def applySideEffect(effect: SideEffect[S], state: EventsourcedState[S]): Behavior[InternalProtocol] = effect match {
-    case _: Stop.type @unchecked ⇒
-      Behaviors.stopped
+  def applySideEffect(
+    effect:   SideEffect[S],
+    state:    RunningState[S],
+    behavior: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
+    effect match {
+      case _: Stop.type @unchecked ⇒
+        Behaviors.stopped
 
-    case callback: Callback[_] ⇒
-      callback.sideEffect(state.state)
-      Behaviors.same
+      case _: UnstashAll.type @unchecked ⇒
+        unstashAll()
+        behavior
 
-    case _ ⇒
-      throw new IllegalArgumentException(s"Not supported side effect detected [${effect.getClass.getName}]!")
+      case callback: Callback[_] ⇒
+        callback.sideEffect(state.state)
+        behavior
+
+      case _ ⇒
+        throw new IllegalArgumentException(s"Unsupported side effect detected [${effect.getClass.getName}]")
+    }
   }
 
 }

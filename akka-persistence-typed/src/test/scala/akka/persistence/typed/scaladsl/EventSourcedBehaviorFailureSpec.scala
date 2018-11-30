@@ -4,36 +4,40 @@
 
 package akka.persistence.typed.scaladsl
 
-import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.scaladsl._
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, SupervisorStrategy }
-import akka.persistence.AtomicWrite
-import akka.persistence.journal.inmem.InmemJournal
-import akka.persistence.typed.EventRejectedException
-import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Try
 
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl._
+import akka.actor.typed.ActorRef
+import akka.actor.typed.SupervisorStrategy
+import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.AtomicWrite
+import akka.persistence.journal.inmem.InmemJournal
+import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.PersistenceId
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.WordSpecLike
 
 class ChaosJournal extends InmemJournal {
-  var count = 0
+  var counts = Map.empty[String, Int]
   var failRecovery = true
   var reject = true
 
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
     val pid = messages.head.persistenceId
-    if (pid == "fail-first-2" && count < 2) {
-      count += 1
+    counts = counts.updated(pid, counts.getOrElse(pid, 0) + 1)
+    if (pid == "fail-first-2" && counts(pid) <= 2) {
+      Future.failed(TestException("database says no"))
+    } else if (pid.startsWith("fail-fifth") && counts(pid) == 5) {
       Future.failed(TestException("database says no"))
     } else if (pid == "reject-first" && reject) {
       reject = false
-      Future.successful(messages.map(aw ⇒ Try {
+      Future.successful(messages.map(_ ⇒ Try {
         throw TestException("I don't like it")
       }))
     } else {
@@ -55,7 +59,7 @@ class ChaosJournal extends InmemJournal {
 
 object EventSourcedBehaviorFailureSpec {
 
-  val conf = ConfigFactory.parseString(
+  val conf: Config = ConfigFactory.parseString(
     s"""
       akka.loglevel = DEBUG
       akka.persistence.journal.plugin = "failure-journal"
@@ -63,16 +67,15 @@ object EventSourcedBehaviorFailureSpec {
       failure-journal {
         class = "akka.persistence.typed.scaladsl.ChaosJournal"
       }
-    """).withFallback(ConfigFactory.load("reference.conf")).resolve()
+    """).withFallback(ConfigFactory.defaultReference()).resolve()
 }
 
 class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorFailureSpec.conf) with WordSpecLike {
 
-  implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
-  def failingPersistentActor(pid: PersistenceId, probe: ActorRef[String] = TestProbe[String].ref): EventSourcedBehavior[String, String, String] =
+  def failingPersistentActor(pid: PersistenceId, probe: ActorRef[String]): EventSourcedBehavior[String, String, String] =
     EventSourcedBehavior[String, String, String](
-
       pid, "",
       (_, cmd) ⇒ {
         probe.tell("persisting")
@@ -84,13 +87,15 @@ class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSou
       }
     ).onRecoveryCompleted { _ ⇒
         probe.tell("starting")
-      }.onPersistFailure(SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1))
+      }.onPersistFailure(SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1)
+        .withLoggingEnabled(enabled = false))
 
   "A typed persistent actor (failures)" must {
 
     "call onRecoveryFailure when replay fails" in {
+      val notUsedProbe = TestProbe[String]()
       val probe = TestProbe[Throwable]()
-      spawn(failingPersistentActor(PersistenceId("fail-recovery"))
+      spawn(failingPersistentActor(PersistenceId("fail-recovery"), notUsedProbe.ref)
         .onRecoveryFailure(t ⇒ probe.ref ! t))
 
       probe.expectMessageType[TestException].message shouldEqual "Nope"
@@ -99,7 +104,7 @@ class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSou
     "handle exceptions in onRecoveryFailure" in {
       val probe = TestProbe[String]()
       val pa = spawn(failingPersistentActor(PersistenceId("fail-recovery-twice"), probe.ref)
-        .onRecoveryFailure(t ⇒ throw TestException("recovery call back failure")))
+        .onRecoveryFailure(_ ⇒ throw TestException("recovery call back failure")))
       pa ! "one"
       probe.expectMessage("starting")
       probe.expectMessage("persisting")
@@ -143,7 +148,8 @@ class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSou
       val behav =
         Behaviors.supervise(
           failingPersistentActor(PersistenceId("reject-first"), probe.ref)).onFailure[EventRejectedException](
-            SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1))
+            SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1)
+              .withLoggingEnabled(enabled = false))
       val c = spawn(behav)
       // First time fails, second time should work and call onRecoveryComplete
       probe.expectMessage("starting")

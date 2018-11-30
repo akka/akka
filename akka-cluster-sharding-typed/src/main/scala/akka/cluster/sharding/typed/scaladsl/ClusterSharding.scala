@@ -214,7 +214,7 @@ object Entity {
    *
    * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent actors
    * is very common and therefore [[EventSourcedEntity]] is provided as a convenience for creating such
-   * `PersistentBehavior`.
+   * `EventSourcedBehavior`.
    *
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param createBehavior Create the behavior for an entity given a [[EntityContext]] (includes entityId)
