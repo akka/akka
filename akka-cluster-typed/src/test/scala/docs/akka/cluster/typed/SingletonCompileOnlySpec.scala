@@ -46,7 +46,6 @@ object SingletonCompileOnlySpec {
   proxy ! Increment
   //#singleton
 
-
   //#stop-message
   val singletonActor = SingletonActor(counter(0), "GlobalCounter").withStopMessage(GoodByeCounter)
   singletonManager.init(singletonActor)
@@ -54,7 +53,7 @@ object SingletonCompileOnlySpec {
 
   //#backoff
   val proxyBackOff: ActorRef[CounterCommand] = singletonManager.init(
-    SingletonActor(Behaviors.supervise(counter("TheCounter", 0))
+    SingletonActor(Behaviors.supervise(counter(0))
       .onFailure[Exception](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.2)), "GlobalCounter")
   )
   //#backoff
