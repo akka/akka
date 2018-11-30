@@ -6,16 +6,17 @@ package akka.persistence.typed.scaladsl
 
 import java.util.UUID
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, SupervisorStrategy }
-import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.ActorRef
+import akka.actor.typed.SupervisorStrategy
+import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
+import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object PerformanceSpec {
@@ -24,16 +25,22 @@ object PerformanceSpec {
     """
       akka.persistence.performance.cycles.load = 100
       # more accurate throughput measurements
-      #akka.persistence.performance.cycles.load = 200000
+      #akka.persistence.performance.cycles.load = 10000
+      # no stash capacity limit
+      akka.persistence.typed.stash-capacity = 1000000
     """
 
   sealed trait Command
 
-  case object StopMeasure extends Command
+  case object StopMeasure extends Command with Reply
 
   case class FailAt(sequence: Long) extends Command
 
   case class CommandWithEvent(evt: String) extends Command
+
+  sealed trait Reply
+
+  case object ExpectedFail extends Reply
 
   class Measure(numberOfMessages: Int) {
     private val NanoToSecond = 1000.0 * 1000 * 1000
@@ -54,12 +61,13 @@ object PerformanceSpec {
   case class Parameters(var persistCalls: Long = 0L, var failAt: Long = -1) {
     def every(num: Long): Boolean = persistCalls % num == 0
 
-    def shouldFail: Boolean = persistCalls == failAt
+    def shouldFail: Boolean =
+      failAt != -1 && persistCalls % failAt == 0
 
     def failureWasDefined: Boolean = failAt != -1L
   }
 
-  def behavior(name: String, probe: TestProbe[Command])(other: (Command, Parameters) ⇒ Effect[String, String]) = {
+  def behavior(name: String, probe: TestProbe[Reply])(other: (Command, Parameters) ⇒ Effect[String, String]) = {
     Behaviors.supervise({
       val parameters = Parameters()
       EventSourcedBehavior[Command, String, String](
@@ -79,13 +87,16 @@ object PerformanceSpec {
     }).onFailure(SupervisorStrategy.restart)
   }
 
-  def eventSourcedTestPersistenceBehavior(name: String, probe: TestProbe[Command]) =
+  def eventSourcedTestPersistenceBehavior(name: String, probe: TestProbe[Reply]) =
     behavior(name, probe) {
       case (CommandWithEvent(evt), parameters) ⇒
         Effect.persist(evt).thenRun(_ ⇒ {
           parameters.persistCalls += 1
           if (parameters.every(1000)) print(".")
-          if (parameters.shouldFail) throw TestException("boom")
+          if (parameters.shouldFail) {
+            probe.ref ! ExpectedFail
+            throw TestException("boom")
+          }
         })
       case _ ⇒ Effect.none
     }
@@ -107,19 +118,26 @@ class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseStrin
 
   val loadCycles = system.settings.config.getInt("akka.persistence.performance.cycles.load")
 
-  def stressPersistentActor(persistentActor: ActorRef[Command], probe: TestProbe[Command],
+  def stressPersistentActor(persistentActor: ActorRef[Command], probe: TestProbe[Reply],
                             failAt: Option[Long], description: String): Unit = {
     failAt foreach { persistentActor ! FailAt(_) }
     val m = new Measure(loadCycles)
     m.startMeasure()
-    1 to loadCycles foreach { i ⇒ persistentActor ! CommandWithEvent(s"msg$i") }
+    val parameters = Parameters(0, failAt = failAt.getOrElse(-1))
+    (1 to loadCycles).foreach { n ⇒
+      parameters.persistCalls += 1
+      persistentActor ! CommandWithEvent(s"msg$n")
+      // stash is cleared when exception is thrown so have to wait before sending more commands
+      if (parameters.shouldFail)
+        probe.expectMessage(ExpectedFail)
+    }
     persistentActor ! StopMeasure
     probe.expectMessage(100.seconds, StopMeasure)
     println(f"\nthroughput = ${m.stopMeasure()}%.2f $description per second")
   }
 
   def stressEventSourcedPersistentActor(failAt: Option[Long]): Unit = {
-    val probe = TestProbe[Command]
+    val probe = TestProbe[Reply]
     val name = s"${this.getClass.getSimpleName}-${UUID.randomUUID().toString}"
     val persistentActor = spawn(eventSourcedTestPersistenceBehavior(name, probe), name)
     stressPersistentActor(persistentActor, probe, failAt, "persistent events")

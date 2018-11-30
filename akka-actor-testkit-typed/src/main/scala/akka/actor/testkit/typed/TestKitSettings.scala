@@ -11,8 +11,6 @@ import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 import akka.actor.typed.ActorSystem
 
-import scala.util.control.NoStackTrace
-
 object TestKitSettings {
   /**
    * Reads configuration settings from `akka.actor.testkit.typed` section.

@@ -49,7 +49,7 @@ private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: Behavi
               "Discarding message [{}], because actor is to be stopped", other)
             Behaviors.unhandled
           } else {
-            stash(other)
+            stashInternal(other)
             Behaviors.same
           }
 

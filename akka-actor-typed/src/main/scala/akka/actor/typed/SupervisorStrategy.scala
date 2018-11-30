@@ -116,8 +116,8 @@ object SupervisorStrategy {
    * INTERNAL API
    */
   @InternalApi private[akka] case class Stop(loggingEnabled: Boolean) extends SupervisorStrategy {
-    override def withLoggingEnabled(on: Boolean) =
-      copy(loggingEnabled = on)
+    override def withLoggingEnabled(enabled: Boolean) =
+      copy(loggingEnabled = enabled)
   }
 
   /**
@@ -197,7 +197,7 @@ object SupervisorStrategy {
 sealed abstract class SupervisorStrategy {
   def loggingEnabled: Boolean
 
-  def withLoggingEnabled(on: Boolean): SupervisorStrategy
+  def withLoggingEnabled(enabled: Boolean): SupervisorStrategy
 }
 
 sealed abstract class RestartSupervisorStrategy extends SupervisorStrategy {

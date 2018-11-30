@@ -91,7 +91,7 @@ object AccountExampleWithEventHandlersInState {
     }
 
     // Note that after defining command, event and state classes you would probably start here when writing this.
-    // When filling in the parameters of PersistentBehaviors.apply you can use IntelliJ alt+Enter > createValue
+    // When filling in the parameters of EventSourcedBehavior.apply you can use IntelliJ alt+Enter > createValue
     // to generate the stub with types for the command and event handlers.
 
     //#withEnforcedReplies
