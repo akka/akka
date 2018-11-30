@@ -19,7 +19,7 @@ private[akka] trait ActorRefImpl[-T] extends ActorRef[T] { this: InternalRecipie
 
   final override def narrow[U <: T]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
 
-  final override def upcast[U >: T @uncheckedVariance]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
+  final override def unsafeUpcast[U >: T @uncheckedVariance]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
 
   /**
    * Comparison takes path and the unique id of the actor cell into account.
