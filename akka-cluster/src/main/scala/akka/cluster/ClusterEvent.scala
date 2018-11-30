@@ -451,7 +451,8 @@ object ClusterEvent {
         case (_, newMember :: oldMember :: Nil) if newMember.status != oldMember.status || newMember.upNumber != oldMember.upNumber ⇒
           newMember
       }
-      val memberEvents = (newMembers ++ changedMembers) collect {
+      import akka.util.ccompat.imm._
+      val memberEvents = (newMembers ++ changedMembers).unsorted collect {
         case m if m.status == Joining  ⇒ MemberJoined(m)
         case m if m.status == WeaklyUp ⇒ MemberWeaklyUp(m)
         case m if m.status == Up       ⇒ MemberUp(m)
@@ -462,7 +463,7 @@ object ClusterEvent {
       }
 
       val removedMembers = oldGossip.members diff newGossip.members
-      val removedEvents = removedMembers.map(m ⇒ MemberRemoved(m.copy(status = Removed), m.status))
+      val removedEvents = removedMembers.unsorted.map(m ⇒ MemberRemoved(m.copy(status = Removed), m.status))
 
       (new VectorBuilder[MemberEvent]() ++= removedEvents ++= memberEvents).result()
     }

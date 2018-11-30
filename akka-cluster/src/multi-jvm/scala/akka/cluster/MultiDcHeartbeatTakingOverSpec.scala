@@ -14,6 +14,7 @@ import com.typesafe.config.ConfigFactory
 import scala.collection.immutable
 import scala.collection.immutable.SortedSet
 import scala.concurrent.duration._
+import akka.util.ccompat.imm._
 
 object MultiDcHeartbeatTakingOverSpecMultiJvmSpec extends MultiNodeConfig {
   val first = role("first") //   alpha
@@ -77,10 +78,10 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
 
     // these will be filled in during the initial phase of the test -----------
     var expectedAlphaHeartbeaterNodes: SortedSet[Member] = SortedSet.empty
-    var expectedAlphaHeartbeaterRoles: SortedSet[RoleName] = SortedSet.empty
+    var expectedAlphaHeartbeaterRoles: List[RoleName] = List.empty
 
     var expectedBetaHeartbeaterNodes: SortedSet[Member] = SortedSet.empty
-    var expectedBetaHeartbeaterRoles: SortedSet[RoleName] = SortedSet.empty
+    var expectedBetaHeartbeaterRoles: List[RoleName] = List.empty
 
     var expectedNoActiveHeartbeatSenderRoles: Set[RoleName] = Set.empty
     // end of these will be filled in during the initial phase of the test -----------
@@ -191,8 +192,8 @@ abstract class MultiDcHeartbeatTakingOverSpec extends MultiNodeSpec(MultiDcHeart
   private[cluster] def takeNOldestMembers(dataCenter: ClusterSettings.DataCenter, n: Int): immutable.SortedSet[Member] =
     membersByAge(dataCenter).take(n)
 
-  private def membersAsRoles(ms: SortedSet[Member]): SortedSet[RoleName] = {
-    val res = ms.flatMap(m ⇒ roleName(m.address))
+  private def membersAsRoles(ms: SortedSet[Member]): List[RoleName] = {
+    val res = ms.toList.flatMap(m ⇒ roleName(m.address))
     require(res.size == ms.size, s"Not all members were converted to roles! Got: ${ms}, found ${res}")
     res
   }

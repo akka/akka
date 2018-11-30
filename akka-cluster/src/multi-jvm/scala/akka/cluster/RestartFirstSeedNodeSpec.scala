@@ -19,6 +19,7 @@ import akka.actor.Actor
 import akka.actor.RootActorPath
 import akka.cluster.MemberStatus._
 import akka.actor.Deploy
+import akka.util.ccompat.imm._
 
 object RestartFirstSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")
@@ -97,7 +98,7 @@ abstract class RestartFirstSeedNodeSpec
       runOn(seed1) {
         Cluster(seed1System).joinSeedNodes(seedNodes)
         awaitAssert(Cluster(seed1System).readView.members.size should ===(3))
-        awaitAssert(Cluster(seed1System).readView.members.map(_.status) should ===(Set(Up)))
+        awaitAssert(Cluster(seed1System).readView.members.unsorted.map(_.status) should ===(Set(Up)))
       }
       runOn(seed2, seed3) {
         cluster.joinSeedNodes(seedNodes)
@@ -116,7 +117,7 @@ abstract class RestartFirstSeedNodeSpec
         Cluster(restartedSeed1System).joinSeedNodes(seedNodes)
         within(20.seconds) {
           awaitAssert(Cluster(restartedSeed1System).readView.members.size should ===(3))
-          awaitAssert(Cluster(restartedSeed1System).readView.members.map(_.status) should ===(Set(Up)))
+          awaitAssert(Cluster(restartedSeed1System).readView.members.unsorted.map(_.status) should ===(Set(Up)))
         }
       }
       runOn(seed2, seed3) {

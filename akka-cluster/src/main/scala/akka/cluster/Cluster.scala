@@ -16,7 +16,7 @@ import akka.dispatch.MonitorableThreadFactory
 import akka.event.{ Logging, LoggingAdapter }
 import akka.japi.Util
 import akka.pattern._
-import akka.remote.{ DefaultFailureDetectorRegistry, _ }
+import akka.remote.{ UniqueAddress ⇒ _, _ }
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.annotation.varargs

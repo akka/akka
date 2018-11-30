@@ -72,9 +72,8 @@ private[cluster] class Reachability private (
         (observerRowsMap, allUnreachable, allTerminated)
       } else {
         val mapBuilder = scala.collection.mutable.Map.empty[UniqueAddress, Map[UniqueAddress, Reachability.Record]]
-        import scala.collection.mutable.SetBuilder
-        val terminatedBuilder = new SetBuilder[UniqueAddress, Set[UniqueAddress]](Set.empty)
-        val unreachableBuilder = new SetBuilder[UniqueAddress, Set[UniqueAddress]](Set.empty)
+        var allTerminated = Set.empty[UniqueAddress]
+        var allUnreachable = Set.empty[UniqueAddress]
 
         records foreach { r ⇒
           val m = mapBuilder.get(r.observer) match {
@@ -83,15 +82,13 @@ private[cluster] class Reachability private (
           }
           mapBuilder += (r.observer → m)
 
-          if (r.status == Unreachable) unreachableBuilder += r.subject
-          else if (r.status == Terminated) terminatedBuilder += r.subject
+          if (r.status == Unreachable) allUnreachable += r.subject
+          else if (r.status == Terminated) allTerminated += r.subject
         }
 
         val observerRowsMap: Map[UniqueAddress, Map[UniqueAddress, Reachability.Record]] = mapBuilder.toMap
-        val allTerminated: Set[UniqueAddress] = terminatedBuilder.result()
-        val allUnreachable: Set[UniqueAddress] = unreachableBuilder.result() diff allTerminated
 
-        (observerRowsMap, allUnreachable, allTerminated)
+        (observerRowsMap, allUnreachable diff allTerminated, allTerminated)
       }
     }
 
