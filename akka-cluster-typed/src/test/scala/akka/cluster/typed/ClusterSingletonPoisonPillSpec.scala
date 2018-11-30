@@ -35,7 +35,7 @@ class ClusterSingletonPoisonPillSpec extends ScalaTestWithActorTestKit(ClusterSi
 
     "support using PoisonPill to stop" in {
       val probe = TestProbe[ActorRef[Any]]
-      val singleton = ClusterSingleton(system).init(Singleton("sneaky", ClusterSingletonPoisonPillSpec.sneakyBehavior))
+      val singleton = ClusterSingleton(system).init(SingletonActor(ClusterSingletonPoisonPillSpec.sneakyBehavior, "sneaky"))
       singleton ! GetSelf(probe.ref)
       val singletonRef = probe.expectMessageType[ActorRef[Any]]
       singletonRef ! PoisonPill

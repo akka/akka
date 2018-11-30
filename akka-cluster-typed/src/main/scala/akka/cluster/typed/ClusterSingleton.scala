@@ -124,12 +124,12 @@ private[akka] object ClusterSingletonImpl {
   def managerNameFor(singletonName: String) = s"singletonManager$singletonName"
 }
 
-object Singleton {
+object SingletonActor {
   /**
    * @param name Unique name for the singleton
    * @param behavior Behavior for the singleton
    */
-  def apply[M](name: String, behavior: Behavior[M]): Singleton[M] = new Singleton[M](behavior, name, Props.empty, None, None)
+  def apply[M](behavior: Behavior[M], name: String): SingletonActor[M] = new SingletonActor[M](behavior, name, Props.empty, None, None)
 
   /**
    * Java API
@@ -137,10 +137,10 @@ object Singleton {
    * @param name Unique name for the singleton
    * @param behavior Behavior for the singleton
    */
-  def of[M](name: String, behavior: Behavior[M]): Singleton[M] = apply(name, behavior)
+  def of[M](behavior: Behavior[M], name: String): SingletonActor[M] = apply(behavior, name)
 }
 
-final class Singleton[M] private (
+final class SingletonActor[M] private (
   val behavior:    Behavior[M],
   val name:        String,
   val props:       Props,
@@ -151,27 +151,27 @@ final class Singleton[M] private (
   /**
    * [[akka.actor.typed.Props]] of the singleton actor, such as dispatcher settings.
    */
-  def withProps(props: Props): Singleton[M] = copy(props = props)
+  def withProps(props: Props): SingletonActor[M] = copy(props = props)
 
- /**
+  /**
    * Message sent to the singleton to tell it to stop, e.g. when being migrated.
    * If this is not defined it will be stopped automatically.
    * It can be useful to define a custom stop message if the singleton needs to perform
    * some asynchronous cleanup or interactions before stopping.
    */
-  def withStopMessage(msg: M): Singleton[M] = copy(stopMessage = Option(msg))
+  def withStopMessage(msg: M): SingletonActor[M] = copy(stopMessage = Option(msg))
 
   /**
    * Additional settings, typically loaded from configuration.
    */
-  def withSettings(settings: ClusterSingletonSettings): Singleton[M] = copy(settings = Option(settings))
+  def withSettings(settings: ClusterSingletonSettings): SingletonActor[M] = copy(settings = Option(settings))
 
   private def copy(
     behavior:    Behavior[M]                      = behavior,
     props:       Props                            = props,
     stopMessage: Option[M]                        = stopMessage,
     settings:    Option[ClusterSingletonSettings] = settings
-  ): Singleton[M] = new Singleton[M](behavior, name, props, stopMessage, settings)
+  ): SingletonActor[M] = new SingletonActor[M](behavior, name, props, stopMessage, settings)
 }
 
 /**
@@ -190,7 +190,7 @@ abstract class ClusterSingleton extends Extension {
    *
    * @return A proxy actor that can be used to communicate with the singleton in the cluster
    */
-  def init[M](singleton: Singleton[M]): ActorRef[M]
+  def init[M](singleton: SingletonActor[M]): ActorRef[M]
 }
 
 object ClusterSingletonManagerSettings {

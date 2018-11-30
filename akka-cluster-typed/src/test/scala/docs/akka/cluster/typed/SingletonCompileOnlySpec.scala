@@ -4,9 +4,9 @@
 
 package docs.akka.cluster.typed
 
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Props, SupervisorStrategy}
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.typed.Singleton
+import akka.cluster.typed.SingletonActor
 
 import scala.concurrent.duration._
 
@@ -20,14 +20,15 @@ object SingletonCompileOnlySpec {
   final case class GetValue(replyTo: ActorRef[Int]) extends CounterCommand
   case object GoodByeCounter extends CounterCommand
 
-  def counter(entityId: String, value: Int): Behavior[CounterCommand] =
+  def counter(value: Int): Behavior[CounterCommand] =
     Behaviors.receiveMessage[CounterCommand] {
       case Increment ⇒
-        counter(entityId, value + 1)
+        counter(value + 1)
       case GetValue(replyTo) ⇒
         replyTo ! value
         Behaviors.same
       case GoodByeCounter ⇒
+        // Do async action then stop
         Behaviors.stopped
     }
   //#counter
@@ -38,21 +39,23 @@ object SingletonCompileOnlySpec {
   val singletonManager = ClusterSingleton(system)
   // Start if needed and provide a proxy to a named singleton
   val proxy: ActorRef[CounterCommand] = singletonManager.init(
-    Singleton("GlobalCounter",
-    Behaviors.supervise(counter("TheCounter", 0))
-      .onFailure[Exception](SupervisorStrategy.restart),
-    ).withStopMessage(GoodByeCounter)
+    SingletonActor(Behaviors.supervise(counter(0))
+      .onFailure[Exception](SupervisorStrategy.restart), "GlobalCounter")
   )
 
   proxy ! Increment
   //#singleton
 
+
+  //#stop-message
+  val singletonActor = SingletonActor(counter(0), "GlobalCounter").withStopMessage(GoodByeCounter)
+  singletonManager.init(singletonActor)
+  //#stop-message
+
   //#backoff
   val proxyBackOff: ActorRef[CounterCommand] = singletonManager.init(
-    Singleton("GlobalCounter",
-    Behaviors.supervise(counter("TheCounter", 0))
-      .onFailure[Exception](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.2)))
-        .withStopMessage(GoodByeCounter)
+    SingletonActor(Behaviors.supervise(counter("TheCounter", 0))
+      .onFailure[Exception](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.2)), "GlobalCounter")
   )
   //#backoff
 }

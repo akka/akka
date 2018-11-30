@@ -123,7 +123,7 @@ class ClusterSingletonApiSpec extends ScalaTestWithActorTestKit(ClusterSingleton
       val cs2 = ClusterSingleton(adaptedSystem2)
 
       val settings = ClusterSingletonSettings(system).withRole("singleton")
-      val singleton = Singleton("ping-poing", pingPong).withStopMessage(Perish).withSettings(settings)
+      val singleton = SingletonActor(pingPong, "ping-poing").withStopMessage(Perish).withSettings(settings)
       val node1ref = cs1.init(singleton)
       val node2ref = cs2.init(singleton)
 

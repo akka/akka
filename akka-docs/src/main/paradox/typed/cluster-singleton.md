@@ -74,6 +74,19 @@ Be aware that this means there will be times when the singleton won't be running
 See @ref[Fault Tolerance](./fault-tolerance.md) for a full list of supervision options.
 
 
+## Custom stop message
+
+Singleton's are migrated to a new node if the node they are running on is shut down. If asynchronous shutdown logic needs to be executed
+then a custom stop message can be used. Upon receiving the stop message it is then the responsibility of the actor to shutdown. 
+If the shutdown logic does not include any asynchronous actions it can be executed in the `PostStop` signal handler.
+
+Scala
+:  @@snip [SingletonCompileOnlySpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/SingletonCompileOnlySpec.scala) { #stop-message }
+
+Java
+:  @@snip [SingletonCompileOnlyTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/SingletonCompileOnlyTest.java) { #stop-message }
+
+
 ## Accessing singleton of another data centre
 
 TODO

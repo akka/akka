@@ -33,7 +33,7 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
 
   private val proxies = new ConcurrentHashMap[(String, Option[DataCenter]), ActorRef[_]]()
 
-  override def init[M](singleton: typed.Singleton[M]): ActorRef[M] = {
+  override def init[M](singleton: typed.SingletonActor[M]): ActorRef[M] = {
     val settings = singleton.settings match {
       case None    ⇒ ClusterSingletonSettings(system)
       case Some(s) ⇒ s
