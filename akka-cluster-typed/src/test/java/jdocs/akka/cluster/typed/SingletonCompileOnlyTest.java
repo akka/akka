@@ -10,6 +10,7 @@ import akka.actor.typed.javadsl.Behaviors;
 //#import
 import akka.cluster.typed.ClusterSingleton;
 import akka.cluster.typed.ClusterSingletonSettings;
+import akka.cluster.typed.Singleton;
 
 import java.time.Duration;
 
@@ -31,16 +32,12 @@ public class SingletonCompileOnlyTest {
 
   public static Behavior<CounterCommand> counter(String entityId, Integer value) {
     return Behaviors.receive(CounterCommand.class)
-      .onMessage(Increment.class, (ctx, msg) -> {
-        return counter(entityId,value + 1);
-      })
+      .onMessage(Increment.class, (ctx, msg) -> counter(entityId,value + 1))
       .onMessage(GetValue.class, (ctx, msg) -> {
         msg.replyTo.tell(value);
         return Behaviors.same();
       })
-      .onMessage(GoodByeCounter.class, (ctx, msg) -> {
-        return Behaviors.stopped();
-      })
+      .onMessage(GoodByeCounter.class, (ctx, msg) -> Behaviors.stopped())
       .build();
   }
   //#counter
@@ -54,12 +51,8 @@ public class SingletonCompileOnlyTest {
     //#singleton
     ClusterSingleton singleton = ClusterSingleton.get(system);
     // Start if needed and provide a proxy to a named singleton
-    ActorRef<CounterCommand> proxy = singleton.spawn(
-            counter("TheCounter", 0),
-            "GlobalCounter",
-            Props.empty(),
-            ClusterSingletonSettings.create(system),
-            new GoodByeCounter()
+    ActorRef<CounterCommand> proxy = singleton.init(
+            Singleton.of("GlobalCounter",counter("TheCounter", 0)).withStopMessage(new GoodByeCounter())
     );
 
     proxy.tell(new Increment());
@@ -75,13 +68,10 @@ public class SingletonCompileOnlyTest {
 
     //#backoff
     ClusterSingleton singleton = ClusterSingleton.get(system);
-    ActorRef<CounterCommand> proxy = singleton.spawn(
+    ActorRef<CounterCommand> proxy = singleton.init(
+            Singleton.of("GlobalCounter",
       Behaviors.supervise(counter("TheCounter", 0))
-              .onFailure(SupervisorStrategy.restartWithBackoff(Duration.ofSeconds(1), Duration.ofSeconds(10), 0.2)),
-      "GlobalCounter",
-      Props.empty(),
-      ClusterSingletonSettings.create(system),
-      new GoodByeCounter()
+              .onFailure(SupervisorStrategy.restartWithBackoff(Duration.ofSeconds(1), Duration.ofSeconds(10), 0.2))).withStopMessage(new GoodByeCounter())
     );
     //#backoff
   }

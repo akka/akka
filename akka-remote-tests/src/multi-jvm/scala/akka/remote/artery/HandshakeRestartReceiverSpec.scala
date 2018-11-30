@@ -10,7 +10,6 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.remote.AddressUidExtension
 import akka.remote.RARP
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec

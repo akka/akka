@@ -7,13 +7,16 @@ package akka.cluster.typed.internal
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.{ Function ⇒ JFunction }
 
+import akka.actor.typed.internal.{ PoisonPill, PoisonPillInterceptor }
 import akka.actor.{ ExtendedActorSystem, InvalidActorNameException }
 import akka.annotation.InternalApi
 import akka.cluster.singleton.{ ClusterSingletonProxy, ClusterSingletonManager ⇒ OldSingletonManager }
 import akka.cluster.typed.{ Cluster, ClusterSingleton, ClusterSingletonImpl, ClusterSingletonSettings }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.typed
 
 /**
  * INTERNAL API:
@@ -30,20 +33,35 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
 
   private val proxies = new ConcurrentHashMap[(String, Option[DataCenter]), ActorRef[_]]()
 
-  override def spawn[A](
-    behavior:           Behavior[A],
-    singletonName:      String,
-    props:              Props,
-    settings:           ClusterSingletonSettings,
-    terminationMessage: A): ActorRef[A] = {
+  override def init[M](singleton: typed.Singleton[M]): ActorRef[M] = {
+    val settings = singleton.settings match {
+      case None    ⇒ ClusterSingletonSettings(system)
+      case Some(s) ⇒ s
+    }
+    initInternal(singleton.behavior, singleton.name, singleton.props, settings, singleton.stopMessage)
+  }
+
+  private def initInternal[M](
+    behavior:      Behavior[M],
+    singletonName: String,
+    props:         Props,
+    settings:      ClusterSingletonSettings,
+    stopMessage:   Option[M]): ActorRef[M] = {
+
+    def poisonPillInterceptor(behv: Behavior[M]): Behavior[M] = {
+      stopMessage match {
+        case Some(_) ⇒ behv
+        case None    ⇒ Behaviors.intercept(new PoisonPillInterceptor[M])(behv)
+      }
+    }
 
     if (settings.shouldRunManager(cluster)) {
       val managerName = managerNameFor(singletonName)
       // start singleton on this node
-      val untypedProps = PropsAdapter(behavior, props)
+      val untypedProps = PropsAdapter(poisonPillInterceptor(behavior), props)
       try {
         untypedSystem.systemActorOf(
-          OldSingletonManager.props(untypedProps, terminationMessage, settings.toManagerSettings(singletonName)),
+          OldSingletonManager.props(untypedProps, stopMessage.getOrElse(PoisonPill), settings.toManagerSettings(singletonName)),
           managerName)
       } catch {
         case ex: InvalidActorNameException if ex.getMessage.endsWith("is not unique!") ⇒
@@ -66,4 +84,5 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
     }
     proxies.computeIfAbsent((name, settings.dataCenter), proxyCreator).asInstanceOf[ActorRef[T]]
   }
+
 }

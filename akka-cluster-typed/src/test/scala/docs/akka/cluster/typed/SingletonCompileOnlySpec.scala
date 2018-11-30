@@ -4,8 +4,10 @@
 
 package docs.akka.cluster.typed
 
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props, SupervisorStrategy }
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior, Props, SupervisorStrategy}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.cluster.typed.Singleton
+
 import scala.concurrent.duration._
 
 object SingletonCompileOnlySpec {
@@ -32,30 +34,25 @@ object SingletonCompileOnlySpec {
 
   //#singleton
   import akka.cluster.typed.ClusterSingleton
-  import akka.cluster.typed.ClusterSingletonSettings
 
   val singletonManager = ClusterSingleton(system)
   // Start if needed and provide a proxy to a named singleton
-  val proxy: ActorRef[CounterCommand] = singletonManager.spawn(
-    behavior = Behaviors.supervise(counter("TheCounter", 0))
+  val proxy: ActorRef[CounterCommand] = singletonManager.init(
+    Singleton("GlobalCounter",
+    Behaviors.supervise(counter("TheCounter", 0))
       .onFailure[Exception](SupervisorStrategy.restart),
-    "GlobalCounter",
-    Props.empty,
-    ClusterSingletonSettings(system),
-    terminationMessage = GoodByeCounter
+    ).withStopMessage(GoodByeCounter)
   )
 
   proxy ! Increment
   //#singleton
 
   //#backoff
-  val proxyBackOff: ActorRef[CounterCommand] = singletonManager.spawn(
-    behavior = Behaviors.supervise(counter("TheCounter", 0))
-      .onFailure[Exception](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.2)),
-    "GlobalCounter",
-    Props.empty,
-    ClusterSingletonSettings(system),
-    terminationMessage = GoodByeCounter
+  val proxyBackOff: ActorRef[CounterCommand] = singletonManager.init(
+    Singleton("GlobalCounter",
+    Behaviors.supervise(counter("TheCounter", 0))
+      .onFailure[Exception](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.2)))
+        .withStopMessage(GoodByeCounter)
   )
   //#backoff
 }

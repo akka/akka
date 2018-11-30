@@ -206,7 +206,6 @@ object Entity {
    *
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param createBehavior Create the behavior for an entity given a [[EntityContext]] (includes entityId)
-   * @param stopMessage Message sent to an entity to tell it to stop, e.g. when rebalanced or passivated.
    * @tparam M The type of message the entity accepts
    */
   def of[M](
@@ -224,7 +223,6 @@ object Entity {
    *
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param createPersistentEntity Create the `PersistentEntity` for an entity given a [[EntityContext]] (includes entityId)
-   * @param stopMessage Message sent to an entity to tell it to stop, e.g. when rebalanced or passivated.
    * @tparam Command The type of message the entity accepts
    */
   def ofPersistentEntity[Command, Event, State >: Null](
@@ -247,7 +245,7 @@ object Entity {
 /**
  * Defines how the entity should be created. Used in [[ClusterSharding#init]].
  */
-final class Entity[M, E] private[akka] (
+final class Entity[M, E] private (
   val createBehavior:     JFunction[EntityContext[M], Behavior[M]],
   val typeKey:            EntityTypeKey[M],
   val stopMessage:        Optional[M],

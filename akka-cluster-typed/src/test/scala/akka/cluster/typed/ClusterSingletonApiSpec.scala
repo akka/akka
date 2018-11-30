@@ -11,7 +11,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.typed.{ ActorRef, ActorRefResolver, Props }
+import akka.actor.typed.{ ActorRef, ActorRefResolver }
 import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
 
@@ -123,12 +123,13 @@ class ClusterSingletonApiSpec extends ScalaTestWithActorTestKit(ClusterSingleton
       val cs2 = ClusterSingleton(adaptedSystem2)
 
       val settings = ClusterSingletonSettings(system).withRole("singleton")
-      val node1ref = cs1.spawn(pingPong, "ping-pong", Props.empty, settings, Perish)
-      val node2ref = cs2.spawn(pingPong, "ping-pong", Props.empty, settings, Perish)
+      val singleton = Singleton("ping-poing", pingPong).withStopMessage(Perish).withSettings(settings)
+      val node1ref = cs1.init(singleton)
+      val node2ref = cs2.init(singleton)
 
       // subsequent spawning returns the same refs
-      cs1.spawn(pingPong, "ping-pong", Props.empty, settings, Perish) should ===(node1ref)
-      cs2.spawn(pingPong, "ping-pong", Props.empty, settings, Perish) should ===(node2ref)
+      cs1.init(singleton) should ===(node1ref)
+      cs2.init(singleton) should ===(node2ref)
 
       val node1PongProbe = TestProbe[Pong.type]()(system)
       val node2PongProbe = TestProbe[Pong.type]()(adaptedSystem2)
