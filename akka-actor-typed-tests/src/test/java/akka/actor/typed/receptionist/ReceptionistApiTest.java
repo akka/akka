@@ -8,17 +8,16 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.javadsl.AskPattern;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.util.Timeout;
 
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 public class ReceptionistApiTest {
 
   public void compileOnlyApiTest() {
     // some dummy prerequisites
-    final Timeout timeout = Timeout.apply(3, TimeUnit.SECONDS);
+    final Duration timeout = Duration.ofSeconds(3);
     final ActorRef<String> service = null;
     final ServiceKey<String> key = ServiceKey.create(String.class, "id");
     final ActorSystem<Void> system = null;

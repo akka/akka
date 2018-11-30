@@ -5,6 +5,7 @@
 package akka.actor.typed
 package internal
 
+import java.time.Duration
 import java.util.function.{ Function ⇒ JFunction }
 import java.util.ArrayList
 import java.util.Optional
@@ -16,7 +17,6 @@ import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 import akka.util.Timeout
@@ -90,11 +90,11 @@ import akka.util.JavaDurationConverters._
   }
 
   // Java API impl
-  def ask[Req, Res](resClass: Class[Res], target: RecipientRef[Req], responseTimeout: Timeout, createRequest: function.Function[ActorRef[Res], Req], applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
+  def ask[Req, Res](resClass: Class[Res], target: RecipientRef[Req], responseTimeout: Duration, createRequest: function.Function[ActorRef[Res], Req], applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
     this.ask(target)(createRequest.apply) {
       case Success(message) ⇒ applyToResponse.apply(message, null)
       case Failure(ex)      ⇒ applyToResponse.apply(null.asInstanceOf[Res], ex)
-    }(responseTimeout, ClassTag[Res](resClass))
+    }(responseTimeout.asScala, ClassTag[Res](resClass))
   }
 
   private[akka] override def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] =
