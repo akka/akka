@@ -217,7 +217,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
     test.run(new Log(what));
     final List<CapturedLogEvent> allLogEntries = test.getAllLogEntries();
     assertEquals(1, allLogEntries.size());
-    assertEquals(new CapturedLogEvent(Logging.InfoLevel(), what, Optional.empty(), Optional.empty(), new HashMap<>()), allLogEntries.get(0));
+    assertEquals(new CapturedLogEvent(Logging.InfoLevel(), what), allLogEntries.get(0));
   }
 
   @Test
