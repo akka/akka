@@ -18,7 +18,7 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
   val node = Address("akka.tcp", "sys", "a", 2552)
 
   private def createReachabilityOfSize(base: Reachability, size: Int): Reachability =
-    (base /: (1 to size)) {
+    (1 to size).foldLeft(base) {
       case (r, i) ⇒
         val observer = UniqueAddress(address.copy(host = Some("node-" + i)), i.toLong)
         val j = if (i == size) 1 else i + 1
@@ -29,9 +29,9 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
   private def addUnreachable(base: Reachability, count: Int): Reachability = {
     val observers = base.allObservers.take(count)
     val subjects = Stream.continually(base.allObservers).flatten.iterator
-    (base /: observers) {
+    observers.foldLeft(base) {
       case (r, o) ⇒
-        (r /: (1 to 5)) { case (r, _) ⇒ r.unreachable(o, subjects.next()) }
+        (1 to 5).foldLeft(r) { case (r, _) ⇒ r.unreachable(o, subjects.next()) }
     }
   }
 

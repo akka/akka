@@ -87,7 +87,7 @@ private[cluster] final case class Gossip(
   }
 
   @transient private lazy val membersMap: Map[UniqueAddress, Member] =
-    members.map(m ⇒ m.uniqueAddress → m)(collection.breakOut)
+    members.iterator.map(m ⇒ m.uniqueAddress → m).toMap
 
   @transient lazy val isMultiDc =
     if (members.size <= 1) false
