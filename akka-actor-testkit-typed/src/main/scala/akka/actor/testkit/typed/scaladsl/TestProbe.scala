@@ -105,7 +105,7 @@ object TestProbe {
   protected def within_internal[T](min: FiniteDuration, max: FiniteDuration, f: ⇒ T): T
 
   /**
-   * Same as `expectMessage(remainingOrDefault, obj)`, but correctly treating the timeFactor.
+   * Same as `expectMessage(remainingOrDefault, obj)`, but using the default timeout as deadline.
    */
   def expectMessage[T <: M](obj: T): T
 
@@ -140,7 +140,7 @@ object TestProbe {
   def expectNoMessage(): Unit
 
   /**
-   * Same as `expectMessageType[T](remainingOrDefault)`, but correctly treating the timeFactor.
+   * Same as `expectMessageType[T](remainingOrDefault)`, but using the default timeout as deadline.
    */
   def expectMessageType[T <: M](implicit t: ClassTag[T]): T =
     expectMessageClass_internal(remainingOrDefault, t.runtimeClass.asInstanceOf[Class[T]])
@@ -154,8 +154,18 @@ object TestProbe {
   protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C
 
   /**
-   * Same as `receiveN(n, remaining)` but correctly taking into account
-   * the timeFactor.
+   * Receive one message of type `M` within the default timeout as deadline.
+   */
+  def receiveOne(): M
+
+  /**
+   * Receive one message of type `M`. Wait time is bounded by the `max` duration,
+   * with an [[AssertionError]] raised in case of timeout.
+   */
+  def receiveOne(max: FiniteDuration): M
+
+  /**
+   * Same as `receiveN(n, remaining)` but using the default timeout as deadline.
    */
   def receiveN(n: Int): immutable.Seq[M] = receiveN_internal(n, remainingOrDefault)
 

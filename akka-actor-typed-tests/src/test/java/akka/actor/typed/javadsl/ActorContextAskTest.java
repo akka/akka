@@ -14,6 +14,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 public class ActorContextAskTest extends JUnitSuite {
@@ -42,7 +43,7 @@ public class ActorContextAskTest extends JUnitSuite {
     final Behavior<Object> snitch = Behaviors.setup((ActorContext<Object> context) -> {
       context.ask(Pong.class,
           pingPong,
-          new Timeout(3, TimeUnit.SECONDS),
+          Duration.ofSeconds(3),
           (ActorRef<Pong> ref) -> new Ping(ref),
           (pong, exception) -> {
             if (pong != null) return pong;

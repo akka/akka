@@ -4,10 +4,10 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.typed.{ Behavior, Signal, ActorRef }
-import akka.annotation.DoNotInherit
-import akka.actor.testkit.typed.Effect
 import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.typed.{ ActorRef, Behavior, Signal }
+import akka.annotation.DoNotInherit
 
 import java.util.concurrent.ThreadLocalRandom
 
@@ -41,7 +41,7 @@ trait BehaviorTestKit[T] {
   private[akka] def context: akka.actor.typed.ActorContext[T]
 
   /**
-   * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.scaladsl.Effects.NoEffects]] if no effects
+   * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.Effect.NoEffects]] if no effects
    * have taken place. The effect is consumed, subsequent calls won't
    * will not include this effect.
    */
@@ -129,7 +129,17 @@ trait BehaviorTestKit[T] {
   def runOne(): Unit
 
   /**
-   * Send the signal to the beheavior and record any [[Effect]]s
+   * Send the signal to the behavior and record any [[Effect]]s
    */
   def signal(signal: Signal): Unit
+
+  /**
+   * Returns all the [[CapturedLogEvent]] issued by this behavior(s)
+   */
+  def logEntries(): immutable.Seq[CapturedLogEvent]
+
+  /**
+   * Clear the log entries
+   */
+  def clearLog(): Unit
 }
