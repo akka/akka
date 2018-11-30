@@ -95,7 +95,7 @@ class CamelSettings private[camel] (config: Config, dynamicAccess: DynamicAccess
       val section = config.getConfig("akka.camel.conversions")
       section.entrySet.asScala.map(e ⇒ (e.getKey, section.getString(e.getKey)))
     }
-    val conversions = (Map[String, Class[_ <: AnyRef]]() /: specifiedConversions) {
+    val conversions = specifiedConversions.foldLeft(Map[String, Class[_ <: AnyRef]]()) {
       case (m, (key, fqcn)) ⇒
         m.updated(key, dynamicAccess.getClassFor[AnyRef](fqcn).recover {
           case e ⇒ throw new ConfigurationException("Could not find/load Camel Converter class [" + fqcn + "]", e)
