@@ -20,7 +20,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.serialization.SerializerWithStringManifest
 import akka.testkit.SocketUtil.temporaryServerAddress
 
 object RemotingSpec {

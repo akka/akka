@@ -14,7 +14,6 @@ import com.typesafe.config.ConfigFactory
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object NodeChurnMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")

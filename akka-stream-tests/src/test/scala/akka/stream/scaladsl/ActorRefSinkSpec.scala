@@ -6,7 +6,6 @@ package akka.stream.scaladsl
 
 import akka.stream.ActorMaterializer
 import akka.stream.testkit._
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl._
 import akka.actor.Actor

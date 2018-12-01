@@ -13,7 +13,7 @@ import akka.util.JavaDurationConverters._
 import com.typesafe.config.{ Config, ConfigValueType }
 
 import scala.collection.JavaConverters._
-import scala.collection.{ breakOut, immutable }
+import scala.collection.breakOut
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 

@@ -8,7 +8,6 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.{ Attributes, Inlet, Outlet, UniformFanInShape }
 
 import scala.collection.immutable
-import scala.language.higherKinds
 
 /**
  * MergeLatest joins elements from N input streams into stream of lists of size N.

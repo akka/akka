@@ -9,6 +9,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
 //#sbt-multi-jvm
 
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.2")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.1")
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.4")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.3.0")
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.2")

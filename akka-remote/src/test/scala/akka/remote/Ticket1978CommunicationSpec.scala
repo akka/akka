@@ -12,7 +12,7 @@ import akka.actor._
 import akka.event.NoMarkerLogging
 import akka.pattern.ask
 import akka.remote.Configuration.{ CipherConfig, getCipherConfig }
-import akka.remote.transport.netty.{ NettySSLSupport, SSLSettings }
+import akka.remote.transport.netty.SSLSettings
 import akka.testkit._
 import akka.util.Timeout
 import com.typesafe.config._
@@ -20,7 +20,6 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.reflect.classTag
 
-import akka.event.Logging
 import akka.remote.transport.netty.ConfigSSLEngineProvider
 
 object Configuration {

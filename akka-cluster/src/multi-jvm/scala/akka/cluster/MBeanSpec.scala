@@ -13,7 +13,6 @@ import javax.management.ObjectName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.util.Try
 
 object MBeanMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -38,7 +37,6 @@ abstract class MBeanSpec
   with MultiNodeClusterSpec {
 
   import MBeanMultiJvmSpec._
-  import ClusterEvent._
 
   val mbeanName = new ObjectName("akka:type=Cluster")
   lazy val mbeanServer = ManagementFactory.getPlatformMBeanServer

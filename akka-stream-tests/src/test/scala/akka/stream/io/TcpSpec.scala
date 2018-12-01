@@ -14,7 +14,6 @@ import akka.io.Tcp._
 import akka.stream._
 import akka.stream.scaladsl.Tcp.{ IncomingConnection, ServerBinding }
 import akka.stream.scaladsl.{ Flow, _ }
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.testkit.{ EventFilter, TestKit, TestLatch, TestProbe }
@@ -28,7 +27,6 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
-import scala.util.control.NonFatal
 
 class TcpSpec extends StreamSpec("""
     akka.loglevel = info

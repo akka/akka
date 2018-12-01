@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadLocalRandom
 import java.util.Optional
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, DeadLetterSuppression, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
-import akka.actor.SupervisorStrategy.{ Directive, Escalate, Restart, Stop }
+import akka.actor.SupervisorStrategy.{ Directive, Escalate }
 import akka.util.JavaDurationConverters._
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }

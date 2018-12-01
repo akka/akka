@@ -6,7 +6,6 @@ package akka.cluster.ddata.typed.internal
 
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
-import scala.concurrent.duration.Duration
 
 import akka.annotation.InternalApi
 import akka.cluster.{ ddata ⇒ dd }

@@ -7,7 +7,6 @@ package akka.remote
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 import akka.actor.Actor
 import akka.actor.ActorIdentity

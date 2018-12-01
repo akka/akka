@@ -7,8 +7,6 @@ package akka.cluster.ddata
 import scala.concurrent.duration._
 
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent.InitialStateAsEvents
-import akka.cluster.ClusterEvent.MemberUp
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
