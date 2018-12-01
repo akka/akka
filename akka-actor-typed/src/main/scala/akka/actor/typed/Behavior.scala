@@ -114,7 +114,7 @@ object Behavior {
     final val StoppedBehavior = 5
     final val ExtensibleBehavior = 6
     final val WrappingBehavior = 7
-    final val InterceptorImpl = 1000
+    final val InterceptorImpl = -1
   }
 
   final implicit class BehaviorDecorators[T](val behavior: Behavior[T]) extends AnyVal {
