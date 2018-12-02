@@ -6,11 +6,14 @@ package akka.actor.typed
 package internal
 
 import java.time.Duration
+import java.util
 import java.util.function.{ Function ⇒ JFunction }
 import java.util.ArrayList
 import java.util.Optional
 import java.util.function
 import java.util.function.BiFunction
+
+import akka.NotDefined
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.reflect.ClassTag
@@ -44,17 +47,17 @@ import akka.util.JavaDurationConverters._
 
   override def asScala: scaladsl.ActorContext[T] = this
 
-  override def getChild(name: String): Optional[ActorRef[Void]] =
+  override def getChild(name: String): Optional[ActorRef[NotDefined]] =
     child(name) match {
-      case Some(c) ⇒ Optional.of(c.unsafeUpcast[Void])
+      case Some(c) ⇒ Optional.of(c)
       case None    ⇒ Optional.empty()
     }
 
-  override def getChildren: java.util.List[ActorRef[Void]] = {
+  override def getChildren: java.util.List[ActorRef[NotDefined]] = {
     val c = children
-    val a = new ArrayList[ActorRef[Void]](c.size)
+    val a = new util.ArrayList[ActorRef[NotDefined]](c.size)
     val i = c.iterator
-    while (i.hasNext) a.add(i.next().unsafeUpcast[Void])
+    while (i.hasNext) a.add(i.next())
     a
   }
 
@@ -64,8 +67,7 @@ import akka.util.JavaDurationConverters._
   override def getSelf: akka.actor.typed.ActorRef[T] =
     self
 
-  override def getSystem: akka.actor.typed.ActorSystem[Void] =
-    system.asInstanceOf[ActorSystem[Void]]
+  override def getSystem: akka.actor.typed.ActorSystem[NotDefined] = system
 
   override def getLog: Logger = log
 

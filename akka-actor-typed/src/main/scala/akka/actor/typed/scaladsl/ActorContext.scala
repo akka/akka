@@ -4,6 +4,7 @@
 
 package akka.actor.typed.scaladsl
 
+import akka.NotDefined
 import akka.actor.typed._
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.util.Timeout
@@ -62,7 +63,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
    * This field is thread-safe and can be called from other threads than the ordinary
    * actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
-  def system: ActorSystem[Nothing]
+  def system: ActorSystem[NotDefined]
 
   /**
    * An actor specific logger
@@ -79,7 +80,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
-  def children: Iterable[ActorRef[Nothing]]
+  def children: Iterable[ActorRef[NotDefined]]
 
   /**
    * The named child Actor if it is alive.
@@ -87,7 +88,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
-  def child(name: String): Option[ActorRef[Nothing]]
+  def child(name: String): Option[ActorRef[NotDefined]]
 
   /**
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] under a randomly chosen name.

@@ -4,10 +4,10 @@
 
 package akka.actor.typed
 
-import akka.annotation.DoNotInherit
-import akka.{ actor ⇒ a }
-import scala.annotation.unchecked.uncheckedVariance
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.{ NotDefined, actor ⇒ a }
 
+import scala.annotation.unchecked.uncheckedVariance
 import akka.actor.typed.internal.InternalRecipientRef
 
 /**
@@ -41,6 +41,10 @@ trait ActorRef[-T] extends RecipientRef[T] with java.lang.Comparable[ActorRef[_]
    * to the widened [[ActorRef[U]]].
    */
   def unsafeUpcast[U >: T @uncheckedVariance]: ActorRef[U]
+
+  def unsafeCast[U](clazz: Class[U]): ActorRef[U]
+
+  private[akka] def unsafeCast[U](implicit ev: T @uncheckedVariance <:< NotDefined): ActorRef[U]
 
   /**
    * The hierarchical path name of the referenced Actor. The lifecycle of the

@@ -5,6 +5,9 @@
 package akka.actor.typed
 package internal
 
+import akka.NotDefined
+import akka.annotation.InternalApi
+
 import scala.annotation.unchecked.uncheckedVariance
 
 /**
@@ -21,10 +24,15 @@ private[akka] trait ActorRefImpl[-T] extends ActorRef[T] { this: InternalRecipie
 
   final override def unsafeUpcast[U >: T @uncheckedVariance]: ActorRef[U] = this.asInstanceOf[ActorRef[U]]
 
+  final override def unsafeCast[U](clazz: Class[U]): ActorRef[U] = this.asInstanceOf[ActorRef[U]]
+
+  final override private[akka] def unsafeCast[U](implicit ev: T @uncheckedVariance <:< NotDefined @uncheckedVariance): ActorRef[U] =
+    this.asInstanceOf[ActorRef[U]]
+
   /**
    * Comparison takes path and the unique id of the actor cell into account.
    */
-  final override def compareTo(other: ActorRef[_]) = {
+  final override def compareTo(other: ActorRef[_]): Int = {
     val x = this.path compareTo other.path
     if (x == 0) if (this.path.uid < other.path.uid) -1 else if (this.path.uid == other.path.uid) 0 else 1
     else x

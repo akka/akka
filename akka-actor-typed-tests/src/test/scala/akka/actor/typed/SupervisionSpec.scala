@@ -49,7 +49,8 @@ object SupervisionSpec {
         case IncrementState ⇒
           targetBehavior(monitor, state.copy(n = state.n + 1))
         case GetState ⇒
-          val reply = state.copy(children = context.children.map(c ⇒ c.path.name → c.unsafeUpcast[Command]).toMap)
+          val reply = state.copy(children = context.children.map(c ⇒
+            c.path.name → c.unsafeCast[Command]).toMap)
           monitor ! reply
           Behaviors.same
         case CreateChild(childBehv, childName) ⇒

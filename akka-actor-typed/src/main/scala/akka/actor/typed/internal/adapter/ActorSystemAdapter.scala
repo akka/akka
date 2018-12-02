@@ -8,18 +8,17 @@ package adapter
 
 import java.util.concurrent.CompletionStage
 
-import akka.actor
+import akka.{ NotDefined, actor ⇒ a }
 import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
-import akka.{ actor ⇒ a }
+
 import scala.concurrent.ExecutionContextExecutor
-
 import akka.util.Timeout
+
 import scala.concurrent.Future
-
 import akka.annotation.InternalApi
-import scala.compat.java8.FutureConverters
 
+import scala.compat.java8.FutureConverters
 import akka.actor.ActorRefProvider
 
 /**
@@ -95,7 +94,7 @@ import akka.actor.ActorRefProvider
 }
 
 private[akka] object ActorSystemAdapter {
-  def apply(untyped: a.ActorSystem): ActorSystem[Nothing] = AdapterExtension(untyped).adapter
+  def apply(untyped: a.ActorSystem): ActorSystem[NotDefined] = AdapterExtension(untyped).adapter
 
   // to make sure we do never create more than one adapter for the same actor system
   class AdapterExtension(system: a.ExtendedActorSystem) extends a.Extension {
@@ -121,7 +120,7 @@ private[akka] object ActorSystemAdapter {
   }
 
   object LoadTypedExtensions extends a.ExtensionId[LoadTypedExtensions] with a.ExtensionIdProvider {
-    override def lookup(): actor.ExtensionId[_ <: actor.Extension] = this
+    override def lookup(): a.ExtensionId[_ <: a.Extension] = this
     override def createExtension(system: ExtendedActorSystem): LoadTypedExtensions =
       new LoadTypedExtensions(system)
   }

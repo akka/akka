@@ -13,13 +13,12 @@ import akka.actor.{ ActorPath, InvalidMessageException }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.util.{ Helpers, OptionVal }
-import akka.{ actor ⇒ untyped }
+import akka.{ NotDefined, actor ⇒ untyped }
 import java.util.concurrent.ThreadLocalRandom.{ current ⇒ rnd }
 
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.ActorRefProvider
 
 /**
@@ -148,10 +147,10 @@ private[akka] final class FunctionRef[-T](
   private val childName = Iterator from 0 map (Helpers.base64(_))
   private val loggingAdapter = new StubbedLogger
 
-  override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.context.self)
+  override def children: Iterable[ActorRef[NotDefined]] = _children.values map (_.context.self.asInstanceOf[ActorRef[NotDefined]])
   def childrenNames: Iterable[String] = _children.keys
 
-  override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.context.self)
+  override def child(name: String): Option[ActorRef[NotDefined]] = _children get name map (_.context.self.asInstanceOf[ActorRef[NotDefined]])
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
     val btk = new BehaviorTestKitImpl[U](path / childName.next() withUid rnd().nextInt(), behavior)

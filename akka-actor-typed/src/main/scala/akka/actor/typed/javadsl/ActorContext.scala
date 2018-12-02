@@ -12,7 +12,9 @@ import akka.annotation.ApiMayChange
 import akka.actor.typed._
 import java.util.Optional
 
+import akka.NotDefined
 import akka.util.Timeout
+
 import scala.concurrent.ExecutionContextExecutor
 
 /**
@@ -64,7 +66,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    * This method is thread-safe and can be called from other threads than the ordinary
    * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
-  def getSystem: ActorSystem[Void]
+  def getSystem: ActorSystem[NotDefined]
 
   /**
    * An actor specific logger
@@ -81,7 +83,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
-  def getChildren: java.util.List[ActorRef[Void]]
+  def getChildren: java.util.List[ActorRef[NotDefined]]
 
   /**
    * The named child Actor if it is alive.
@@ -89,7 +91,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
-  def getChild(name: String): Optional[ActorRef[Void]]
+  def getChild(name: String): Optional[ActorRef[NotDefined]]
 
   /**
    * Create a child Actor from the given [[akka.actor.typed.Behavior]] under a randomly chosen name.
