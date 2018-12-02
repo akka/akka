@@ -12,7 +12,16 @@ import akka.annotation.DoNotInherit
  * but there is no actual value completed. More clearly signals intent
  * than `Unit` and is available both from Scala and Java (which `Unit` is not).
  */
-@DoNotInherit sealed abstract class Done extends Serializable
+@DoNotInherit sealed abstract class Done extends Serializable {
+  /**
+   * Discard the value of Done.
+   * <p>
+   * <p>This is useful when using the -Ywarn-value-discard option of the scala compiler.
+   *
+   * @see https://docs.scala-lang.org/overviews/compiler-options/index.html#Warning_Settings
+   */
+  def discard(): Unit = ()
+}
 
 case object Done extends Done {
   /**

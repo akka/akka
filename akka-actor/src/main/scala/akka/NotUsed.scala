@@ -10,7 +10,16 @@ package akka
  * used from the other language. An example use-case is the materialized value of an Akka Stream for cases
  * where no result shall be returned from materialization.
  */
-sealed abstract class NotUsed
+sealed abstract class NotUsed {
+  /**
+   * Discard the value of NotUsed.
+   * <p>
+   * <p>This is useful when using the -Ywarn-value-discard option of the scala compiler.
+   *
+   * @see https://docs.scala-lang.org/overviews/compiler-options/index.html#Warning_Settings
+   */
+  def discard(): Unit = ()
+}
 
 case object NotUsed extends NotUsed {
   /**
