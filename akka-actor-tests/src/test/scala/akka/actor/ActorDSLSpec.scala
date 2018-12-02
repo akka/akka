@@ -35,6 +35,8 @@ class ActorDSLSpec extends AkkaSpec {
 
     "function as implicit sender" in {
       //#inbox
+      import akka.actor.ActorDSL._
+      
       implicit val i = inbox()
       echo ! "hello"
       i.receive() should ===("hello")
