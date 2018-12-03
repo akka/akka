@@ -15,6 +15,7 @@ import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
+import akka.util.ccompat.imm._
 
 import scala.concurrent.duration._
 
@@ -175,7 +176,7 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
         within(remaining) {
           awaitAssert {
             cluster.state.members.size should ===(2)
-            cluster.state.members.map(_.status) should ===(Set(MemberStatus.Up))
+            cluster.state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
           }
         }
       }
