@@ -26,17 +26,6 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
       } finally TestKit.shutdownActorSystem(sys)
     }
 
-    "select implementation from config by classname" in {
-      val className = classOf[FakeTestDiscovery].getCanonicalName
-
-      val sys = ActorSystem("DiscoveryConfigurationSpec", ConfigFactory.parseString(s"""
-          akka.discovery.method = $className
-        """).withFallback(ConfigFactory.load()))
-
-      try Discovery(sys).discovery.getClass.getCanonicalName should ===(className)
-      finally TestKit.shutdownActorSystem(sys)
-    }
-
     "select implementation from config by config name (inside akka.discovery namespace)" in {
       val className = classOf[FakeTestDiscovery].getCanonicalName
 
@@ -47,36 +36,6 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
               akka-mock-inside {
                 class = $className
               }
-            }
-        """).withFallback(ConfigFactory.load()))
-
-      try Discovery(sys).discovery.getClass.getCanonicalName should ===(className)
-      finally TestKit.shutdownActorSystem(sys)
-    }
-
-    "select implementation from config by config name (outside akka.discovery namespace)" in {
-      val className = classOf[FakeTestDiscovery].getCanonicalName
-
-      val sys = ActorSystem("DiscoveryConfigurationSpec", ConfigFactory.parseString(s"""
-            akka.discovery {
-              method = com.akka-mock-outside
-            }
-
-            com.akka-mock-outside {
-              class = $className
-            }
-        """).withFallback(ConfigFactory.load()))
-
-      try Discovery(sys).discovery.getClass.getCanonicalName should ===(className)
-      finally TestKit.shutdownActorSystem(sys)
-    }
-
-    "select implementation from full class name" in {
-      val className = classOf[FakeTestDiscovery].getCanonicalName
-
-      val sys = ActorSystem("DiscoveryConfigurationSpec", ConfigFactory.parseString(s"""
-            akka.discovery {
-              method = "$className"
             }
         """).withFallback(ConfigFactory.load()))
 
@@ -137,7 +96,10 @@ class DiscoveryConfigurationSpec extends WordSpec with Matchers {
 
       val sys = ActorSystem("DiscoveryConfigurationSpec", ConfigFactory.parseString(s"""
             akka.discovery {
-              method = "$className"
+              method = "mock1"
+               mock1 {
+                class = $className
+              }
             }
         """).withFallback(ConfigFactory.load()))
 

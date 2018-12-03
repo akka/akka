@@ -10,7 +10,7 @@ import java.util.function.{ Function ⇒ JFunction }
 import akka.actor._
 import akka.annotation.InternalApi
 
-import scala.util.{ Failure, Success }
+import scala.util.{ Failure, Success, Try }
 
 final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
 
@@ -62,9 +62,9 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
 
     def classNameFromConfig(path: String): String =
       if (config.hasPath(path)) config.getString(path)
-      else "<nope>"
+      else throw new IllegalArgumentException(s"$path must contain field `class` that is a FQN of a `akka.discovery.ServiceDiscovery` implementation")
 
-    def create(clazzName: String) = {
+    def create(clazzName: String): Try[ServiceDiscovery] = {
       dynamic
         .createInstanceFor[ServiceDiscovery](clazzName, (classOf[ExtendedActorSystem] → system) :: Nil)
         .recoverWith {
@@ -78,13 +78,7 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
     }
 
     val configName = "akka.discovery." + method + ".class"
-    val instanceTry = create(classNameFromConfig(configName)).recoverWith {
-      case _: ClassNotFoundException | _: NoSuchMethodException ⇒
-        create(classNameFromConfig(method + ".class"))
-    }.recoverWith {
-      case _: ClassNotFoundException | _: NoSuchMethodException ⇒
-        create(method) // so perhaps, it is a classname?
-    }
+    val instanceTry = create(classNameFromConfig(configName))
 
     instanceTry match {
       case Failure(e @ (_: ClassNotFoundException | _: NoSuchMethodException)) ⇒
@@ -115,7 +109,7 @@ object Discovery extends ExtensionId[Discovery] with ExtensionIdProvider {
   @InternalApi
   private[akka] def checkClassPathForOldDiscovery(system: ExtendedActorSystem): Unit = {
     try {
-      system.dynamicAccess.getClassFor("akka.discovery.SimpleServiceDiscovery")
+      system.dynamicAccess.getClassFor("akka.discovery.SimpleServiceDiscovery").get
       throw new RuntimeException("Old version of Akka Discovery from Akka Management found on the classpath. Remove `com.lightbend.akka.discovery:akka-discovery` from the classpath..")
     } catch {
       case _: ClassNotFoundException ⇒ // all good
