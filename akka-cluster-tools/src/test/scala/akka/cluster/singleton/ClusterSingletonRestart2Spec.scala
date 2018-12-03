@@ -62,10 +62,11 @@ class ClusterSingletonRestart2Spec extends AkkaSpec("""
         name = "echo")
 
     within(45.seconds) {
+      import akka.util.ccompat.imm._
       awaitAssert {
         Cluster(from) join Cluster(to).selfAddress
         Cluster(from).state.members.map(_.uniqueAddress) should contain(Cluster(from).selfUniqueAddress)
-        Cluster(from).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        Cluster(from).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
       }
     }
   }

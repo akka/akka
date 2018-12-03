@@ -70,6 +70,7 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
   override def expectedTestDuration: FiniteDuration = 10.minutes
 
   def join(from: ActorSystem, to: ActorSystem, probe: ActorRef): Unit = {
+
     from.actorOf(
       ClusterSingletonManager.props(
         singletonProps = TheSingleton.props(probe),
@@ -79,9 +80,10 @@ class ClusterSingletonLeavingSpeedSpec extends AkkaSpec("""
 
     Cluster(from).join(Cluster(to).selfAddress)
     within(15.seconds) {
+      import akka.util.ccompat.imm._
       awaitAssert {
         Cluster(from).state.members.map(_.uniqueAddress) should contain(Cluster(from).selfUniqueAddress)
-        Cluster(from).state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        Cluster(from).state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
       }
     }
   }
