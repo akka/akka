@@ -31,7 +31,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
   val barrierTimeout = 5.minutes
 
   val cfg = ConfigFactory.parseString(s"""
-     # for serious measurements you should increase the totalMessagesFactor (20)
+     # for serious measurements you should increase the totalMessagesFactor (80)
      akka.test.MaxThroughputSpec.totalMessagesFactor = 10.0
      akka.test.MaxThroughputSpec.real-message = off
      akka.test.MaxThroughputSpec.actor-selection = off
@@ -62,7 +62,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
          # it is recommended to use external media driver
          # See akka-remote/src/test/resources/aeron.properties
          # advanced.embedded-media-driver = off
-         # advanced.aeron-dir = "target/aeron"
+         # advanced.aeron-dir = "akka-remote/target/aeron"
          # on linux, use directory on ram disk, instead
          # advanced.aeron-dir = "/dev/shm/aeron"
 
