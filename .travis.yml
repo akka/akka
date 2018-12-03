@@ -25,7 +25,7 @@ cache:
 
 script:
   # need to override as the default is to test
-  - sbt -J-XX:ReservedCodeCacheSize=256m ++$TRAVIS_SCALA_VERSION update mimaReportBinaryIssues
+  - sbt -J-XX:ReservedCodeCacheSize=256m ++$TRAVIS_SCALA_VERSION update mimaReportBinaryIssues test:compile
   # make 'git branch' work again
   - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
   # check policies, if on master also upload
