@@ -9,7 +9,6 @@ import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, SupervisorStrategy }
 import akka.actor.testkit.typed.TE
-import akka.actor.typed.SupervisorStrategy.Backoff
 import akka.persistence.AtomicWrite
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.EventRejectedException
@@ -46,6 +45,8 @@ class ChaosJournal extends InmemJournal {
     if (persistenceId == "fail-recovery-once" && failRecovery) {
       failRecovery = false
       Future.failed(TE("Nah"))
+    } else if (persistenceId == "fail-recovery") {
+      Future.failed(TE("Nope"))
     } else {
       super.asyncReadHighestSequenceNr(persistenceId, fromSequenceNr)
     }
@@ -87,15 +88,15 @@ class PersistentBehaviorFailureSpec extends ScalaTestWithActorTestKit(Persistent
 
     "call onRecoveryFailure when replay fails" in {
       val probe = TestProbe[Throwable]()
-      spawn(failingPersistentActor(PersistenceId("fail-recovery-once"))
+      spawn(failingPersistentActor(PersistenceId("fail-recovery"))
         .onRecoveryFailure(t ⇒ probe.ref ! t))
 
-      probe.expectMessageType[TE].message shouldEqual "Nah"
+      probe.expectMessageType[TE].message shouldEqual "Nope"
     }
 
     "handle exceptions in onRecoveryFailure" in {
       val probe = TestProbe[String]()
-      val pa = spawn(failingPersistentActor(PersistenceId("fail-recovery-once"), probe.ref)
+      val pa = spawn(failingPersistentActor(PersistenceId("fail-recovery-twice"), probe.ref)
         .onRecoveryFailure(t ⇒ throw TE("recovery call back failure")))
       pa ! "one"
       probe.expectMessage("starting")
