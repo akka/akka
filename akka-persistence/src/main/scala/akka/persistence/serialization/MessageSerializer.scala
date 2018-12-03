@@ -16,6 +16,7 @@ import scala.concurrent.duration
 import akka.actor.Actor
 import scala.concurrent.duration.Duration
 import java.io.NotSerializableException
+import scala.collection.compat._
 
 /**
  * Marker trait for all protobuf-serializable messages in `akka.persistence`.
@@ -194,7 +195,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
 
   private def atomicWrite(atomicWrite: mf.AtomicWrite): AtomicWrite = {
     import scala.collection.JavaConverters._
-    AtomicWrite(atomicWrite.getPayloadList.asScala.map(persistent)(collection.breakOut))
+    AtomicWrite(atomicWrite.getPayloadList.asScala.iterator.map(persistent).to(scala.collection.immutable.IndexedSeq))
   }
 
   private def payload(persistentPayload: mf.PersistentPayload): Any = {
