@@ -50,11 +50,8 @@ object CapturedLogEvent {
 
   def apply(
     logLevel: LogLevel,
-    message:  String,
-    cause:    Option[Throwable] = None,
-    marker:   Option[LogMarker] = None,
-    mdc:      Map[String, Any]  = Map.empty): CapturedLogEvent = {
-    new CapturedLogEvent(logLevel, message, cause, marker, mdc)
+    message:  String): CapturedLogEvent = {
+    CapturedLogEvent(logLevel, message, None, None, Map.empty[String, Any])
   }
 
   /**
