@@ -12,7 +12,6 @@ import java.util.TreeSet
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.collection.breakOut
 
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata._
@@ -28,6 +27,7 @@ import java.io.NotSerializableException
 import akka.actor.ActorRef
 import akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage
 import akka.serialization.Serialization
+import scala.collection.compat._
 
 private object ReplicatedDataSerializer {
   /*
@@ -472,7 +472,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
   private def orsetDeltaGroupFromBinary(bytes: Array[Byte]): ORSet.DeltaGroup[Any] = {
     val deltaGroup = rd.ORSetDeltaGroup.parseFrom(bytes)
     val ops: Vector[ORSet.DeltaOp] =
-      deltaGroup.getEntriesList.asScala.map { entry ⇒
+      deltaGroup.getEntriesList.asScala.iterator.map { entry ⇒
         if (entry.getOperation == rd.ORSetDeltaOp.Add)
           ORSet.AddDeltaOp(orsetFromProto(entry.getUnderlying))
         else if (entry.getOperation == rd.ORSetDeltaOp.Remove)
@@ -481,7 +481,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
           ORSet.FullStateDeltaOp(orsetFromProto(entry.getUnderlying))
         else
           throw new NotSerializableException(s"Unknow ORSet delta operation ${entry.getOperation}")
-      }(collection.breakOut)
+      }.to(scala.collection.immutable.Vector)
     ORSet.DeltaGroup(ops)
   }
 
@@ -538,8 +538,8 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
     gcounterFromProto(rd.GCounter.parseFrom(bytes))
 
   def gcounterFromProto(gcounter: rd.GCounter): GCounter = {
-    new GCounter(state = gcounter.getEntriesList.asScala.map(entry ⇒
-      uniqueAddressFromProto(entry.getNode) → BigInt(entry.getValue.toByteArray))(breakOut))
+    new GCounter(state = gcounter.getEntriesList.asScala.iterator.map(entry ⇒
+      uniqueAddressFromProto(entry.getNode) → BigInt(entry.getValue.toByteArray)).toMap)
   }
 
   def pncounterToProto(pncounter: PNCounter): rd.PNCounter =
@@ -670,7 +670,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
   private def ormapDeltaGroupOpsFromBinary(bytes: Array[Byte]): scala.collection.immutable.IndexedSeq[ORMap.DeltaOp] = {
     val deltaGroup = rd.ORMapDeltaGroup.parseFrom(bytes)
     val ops: Vector[ORMap.DeltaOp] =
-      deltaGroup.getEntriesList.asScala.map { entry ⇒
+      deltaGroup.getEntriesList.asScala.iterator.map { entry ⇒
         if (entry.getOperation == rd.ORMapDeltaOp.ORMapPut) {
           val map = singleMapEntryFromProto(entry.getEntryDataList, (v: dm.OtherMessage) ⇒ otherMessageFromProto(v).asInstanceOf[ReplicatedData])
           ORMap.PutDeltaOp(ORSet.AddDeltaOp(orsetFromProto(entry.getUnderlying)), map.head, zeroTagFromCode(entry.getZeroTag))
@@ -684,7 +684,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
           ORMap.UpdateDeltaOp(ORSet.AddDeltaOp(orsetFromProto(entry.getUnderlying)), map, zeroTagFromCode(entry.getZeroTag))
         } else
           throw new NotSerializableException(s"Unknown ORMap delta operation ${entry.getOperation}")
-      }(collection.breakOut)
+      }.to(scala.collection.immutable.Vector)
     ops
   }
 
