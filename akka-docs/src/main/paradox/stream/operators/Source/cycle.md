@@ -14,10 +14,10 @@ Stream iterator in cycled manner.
 
 ## Description
 
-Stream iterator in cycled manner. Internally new iterator is being created to cycle the one provided via argument meaning
-when original iterator runs out of elements process will start all over again from the beginning of the iterator
-provided by the evaluation of provided parameter. If method argument provides empty iterator stream will be terminated with
-exception.
+Stream iterator in cycled manner. Internally a new iterator is being created to cycle the one provided via argument meaning
+when original the iterator runs out of elements process will start all over again from the beginning of the iterator
+provided by the evaluation of provided parameter. If the method argument provides an empty iterator the stream will be 
+terminated with an exception.
 
 
 @@@div { .callout }
