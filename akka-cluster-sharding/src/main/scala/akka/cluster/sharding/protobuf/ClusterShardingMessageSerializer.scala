@@ -10,7 +10,6 @@ import java.util.zip.GZIPOutputStream
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scala.collection.breakOut
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.cluster.sharding.Shard
@@ -23,6 +22,7 @@ import akka.protobuf.MessageLite
 import java.io.NotSerializableException
 
 import akka.cluster.sharding.ShardRegion._
+import scala.collection.compat._
 
 /**
  * INTERNAL API: Protobuf serializer of ClusterSharding messages.
@@ -214,16 +214,16 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
 
   private def coordinatorStateFromProto(state: sm.CoordinatorState): State = {
     val shards: Map[String, ActorRef] =
-      state.getShardsList.asScala.toVector.map { entry ⇒
+      state.getShardsList.asScala.toVector.iterator.map { entry ⇒
         entry.getShardId → resolveActorRef(entry.getRegionRef)
-      }(breakOut)
+      }.toMap
 
     val regionsZero: Map[ActorRef, Vector[String]] =
-      state.getRegionsList.asScala.toVector.map(resolveActorRef(_) → Vector.empty[String])(breakOut)
+      state.getRegionsList.asScala.toVector.iterator.map(resolveActorRef(_) → Vector.empty[String]).toMap
     val regions: Map[ActorRef, Vector[String]] =
       shards.foldLeft(regionsZero) { case (acc, (shardId, regionRef)) ⇒ acc.updated(regionRef, acc(regionRef) :+ shardId) }
 
-    val proxies: Set[ActorRef] = state.getRegionProxiesList.asScala.map { resolveActorRef }(breakOut)
+    val proxies: Set[ActorRef] = state.getRegionProxiesList.asScala.iterator.map { resolveActorRef }.to(scala.collection.immutable.Set)
     val unallocatedShards: Set[String] = state.getUnallocatedShardsList.asScala.toSet
 
     State(shards, regions, proxies, unallocatedShards)
@@ -299,7 +299,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
 
   private def shardRegionStatsFromBinary(bytes: Array[Byte]): ShardRegionStats = {
     val parsed = sm.ShardRegionStats.parseFrom(bytes)
-    val stats: Map[String, Int] = parsed.getStatsList.asScala.map(e ⇒ e.getKey -> e.getValue)(breakOut)
+    val stats: Map[String, Int] = parsed.getStatsList.asScala.iterator.map(e ⇒ e.getKey -> e.getValue).toMap
     ShardRegionStats(stats)
   }
 
