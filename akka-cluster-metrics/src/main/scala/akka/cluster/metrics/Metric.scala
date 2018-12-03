@@ -282,8 +282,8 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
     require(address == that.address, s"merge only allowed for same address, [$address] != [$that.address]")
     if (timestamp >= that.timestamp) this // that is older
     else {
-      // equality is based on the name of the Metric and Set doesn't replace existing element
-      copy(metrics = that.metrics union metrics, timestamp = that.timestamp)
+      // equality is based on the name of the Metric
+      copy(metrics = that.metrics union (metrics diff that.metrics), timestamp = that.timestamp)
     }
   }
 
@@ -303,8 +303,8 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
       current :+ latest
     }
     // Append metrics missing from either latest or current.
-    // Equality is based on the [[Metric.name]] and [[Set]] doesn't replace existing elements.
-    val merged = updated union latestNode.metrics union currentNode.metrics
+    // Equality is based on the [[Metric.name]]
+    val merged = updated union (latestNode.metrics diff updated) union (currentNode.metrics diff updated diff latestNode.metrics)
     copy(metrics = merged, timestamp = latestNode.timestamp)
   }
 
