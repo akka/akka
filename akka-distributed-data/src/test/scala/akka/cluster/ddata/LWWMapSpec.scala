@@ -24,8 +24,8 @@ class LWWMapSpec extends WordSpec with Matchers {
     }
 
     "be able to have its entries correctly merged with another LWWMap with other entries" in {
-      val m1 = LWWMap.empty.put(node1, "a", 1, defaultClock[Int]).put(node1, "b", 2, defaultClock[Int])
-      val m2 = LWWMap.empty.put(node2, "c", 3, defaultClock[Int])
+      val m1 = LWWMap.empty[String, Int].put(node1, "a", 1, defaultClock[Int]).put(node1, "b", 2, defaultClock[Int])
+      val m2 = LWWMap.empty[String, Int].put(node2, "c", 3, defaultClock[Int])
 
       // merge both ways
       val expected = Map("a" → 1, "b" → 2, "c" → 3)
@@ -34,8 +34,8 @@ class LWWMapSpec extends WordSpec with Matchers {
     }
 
     "be able to remove entry" in {
-      val m1 = LWWMap.empty.put(node1, "a", 1, defaultClock[Int]).put(node1, "b", 2, defaultClock[Int])
-      val m2 = LWWMap.empty.put(node2, "c", 3, defaultClock[Int])
+      val m1 = LWWMap.empty[String, Int].put(node1, "a", 1, defaultClock[Int]).put(node1, "b", 2, defaultClock[Int])
+      val m2 = LWWMap.empty[String, Int].put(node2, "c", 3, defaultClock[Int])
 
       val merged1 = m1 merge m2
 
@@ -48,8 +48,8 @@ class LWWMapSpec extends WordSpec with Matchers {
     }
 
     "be able to work with deltas" in {
-      val m1 = LWWMap.empty.put(node1, "a", 1, defaultClock[Int]).put(node1, "b", 2, defaultClock[Int])
-      val m2 = LWWMap.empty.put(node2, "c", 3, defaultClock[Int])
+      val m1 = LWWMap.empty[String, Int].put(node1, "a", 1, defaultClock[Int]).put(node1, "b", 2, defaultClock[Int])
+      val m2 = LWWMap.empty[String, Int].put(node2, "c", 3, defaultClock[Int])
 
       val expected = Map("a" → 1, "b" → 2, "c" → 3)
       (m1 merge m2).entries should be(expected)
@@ -69,7 +69,7 @@ class LWWMapSpec extends WordSpec with Matchers {
     }
 
     "have unapply extractor" in {
-      val m1 = LWWMap.empty.put(node1, "a", 1L, defaultClock[Long])
+      val m1 = LWWMap.empty[String, Long].put(node1, "a", 1L, defaultClock[Long])
       val LWWMap(entries1) = m1
       val entries2: Map[String, Long] = entries1
       Changed(LWWMapKey[String, Long]("key"))(m1) match {
