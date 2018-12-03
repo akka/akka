@@ -68,6 +68,21 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
         }
       }
     }
+
+    "use Forever when system Property (or the security property) value is lower than zero" in {
+      withNewSecurityProperty("networkaddress.cache.negative.ttl", "-1") {
+        withNewSystemProperty("sun.net.inetaddr.negative.ttl", "") {
+          dnsResolver.negativeTtl shouldBe Long.MaxValue
+        }
+      }
+    }
+    "use Never when system Property (or the security property) value is zero" in {
+      withNewSecurityProperty("networkaddress.cache.negative.ttl", "0") {
+        withNewSystemProperty("sun.net.inetaddr.negative.ttl", "") {
+          dnsResolver.negativeTtl shouldBe 0
+        }
+      }
+    }
   }
 
   private def secondsToMillis(seconds: Int) = TimeUnit.SECONDS.toMillis(seconds)
@@ -101,4 +116,32 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
     }
   }
 
+}
+class InetAddressDnsResolverConfigSpec extends AkkaSpec(
+  """
+    akka.io.dns.inet-address.positive-ttl = forever
+    akka.io.dns.inet-address.negative-ttl = never
+    akka.actor.serialize-creators = on
+    """) {
+  thisSpecs ⇒
+
+  "The DNS resolver parsed ttl's" must {
+    "use ttl=Long.MaxValue if user provides 'forever' " in {
+      dnsResolver.positiveTtl shouldBe Long.MaxValue
+    }
+
+    "use ttl=0 if user provides 'never' " in {
+      dnsResolver.negativeTtl shouldBe 0
+    }
+
+  }
+
+  private def dnsResolver = {
+    val actorRef = TestActorRef[InetAddressDnsResolver](Props(
+      classOf[InetAddressDnsResolver],
+      new SimpleDnsCache(),
+      system.settings.config.getConfig("akka.io.dns.inet-address")
+    ))
+    actorRef.underlyingActor
+  }
 }

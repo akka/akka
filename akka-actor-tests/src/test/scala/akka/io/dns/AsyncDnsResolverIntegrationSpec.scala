@@ -8,6 +8,7 @@ import java.net.InetAddress
 
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.{ Dns, IO }
+import CachePolicy.Ttl
 import akka.pattern.ask
 import akka.testkit.{ AkkaSpec, SocketUtil }
 import akka.util.Timeout
@@ -124,8 +125,8 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
 
       answer.name shouldEqual name
       answer.records.collect { case r: SRVRecord ⇒ r }.toSet shouldEqual Set(
-        SRVRecord("service.tcp.foo.test", 86400, 10, 65534, 5060, "a-single.foo.test"),
-        SRVRecord("service.tcp.foo.test", 86400, 65533, 40, 65535, "a-double.foo.test")
+        SRVRecord("service.tcp.foo.test", Ttl.fromPositive(86400.seconds), 10, 65534, 5060, "a-single.foo.test"),
+        SRVRecord("service.tcp.foo.test", Ttl.fromPositive(86400.seconds), 65533, 40, 65535, "a-double.foo.test")
       )
     }
 
