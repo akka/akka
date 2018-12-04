@@ -20,9 +20,9 @@ import scala.util.control.NonFatal
 trait RetrySupport {
 
   /**
-   * Given a function from Unit to Future, returns an internally retrying Future
-   * The first attempt will be made immediately, each subsequent attempt will be made after 'delay'
-   * A scheduler (eg context.system.scheduler) must be provided to delay each retry
+   * Given a function from Unit to Future, returns an internally retrying Future.
+   * The first attempt will be made immediately, each subsequent attempt will be made after 'delay'.
+   * A scheduler (eg context.system.scheduler) must be provided to delay each retry.
    * If attempts are exhausted the returned future is simply the result of invoking attempt.
    * Note that the attempt function will be invoked on the given execution context for subsequent
    * tries and therefore must be thread safe (not touch unsafe mutable state).
@@ -43,6 +43,30 @@ trait RetrySupport {
     retry(attempt, attempts, delay, (_, initialDelay, _) ⇒ initialDelay)
   }
 
+  /**
+   * Given a function from Unit to Future, returns an internally retrying Future.
+   * The first attempt will be made immediately, each subsequent attempt will be made after 'delay'.
+   * A scheduler (eg context.system.scheduler) must be provided to delay each retry.
+   * You could provide a function to generate the next delay duration after first attempt,
+   * this function should never return `null`, otherwise an [[IllegalArgumentException]] will be through.
+   * If attempts are exhausted the returned future is simply the result of invoking attempt.
+   * Note that the attempt function will be invoked on the given execution context for subsequent
+   * tries and therefore must be thread safe (not touch unsafe mutable state).
+   *
+   * <b>Example usage:</b>
+   *
+   * //retry with back off
+   * {{{
+   * protected val sendAndReceive: HttpRequest => Future[HttpResponse]
+   * private val sendReceiveRetry: HttpRequest => Future[HttpResponse] = (req: HttpRequest) => retry[HttpResponse](
+   *   attempt = () => sendAndReceive(req),
+   *   attempts = 10,
+   *   initialDelay = 2 seconds,
+   *   nextDelayFunction = (attempted, initialDelay, currentDelay) => initialDelay * attempted
+   *   scheduler = context.system.scheduler
+   * )
+   * }}}
+   */
   def retry[T](
     attempt:           () ⇒ Future[T],
     attempts:          Int,
@@ -70,7 +94,13 @@ object RetrySupport extends RetrySupport {
       if (maxAttempts - attempted > 0) {
         attempt() recoverWith {
           case NonFatal(_) ⇒
-            val nextDelay = if (isFirst) currentDelay else nextDelayFunction(attempted, initialDelay, currentDelay)
+            val nextDelay = if (isFirst) currentDelay else {
+              val delay = nextDelayFunction(attempted, initialDelay, currentDelay)
+              require(
+                delay ne null,
+                s"nextDelayFunction should never return null for arguments:[$attempted,$initialDelay,$currentDelay]")
+              delay
+            }
             after(nextDelay, scheduler) {
               retry(
                 maxAttempts,

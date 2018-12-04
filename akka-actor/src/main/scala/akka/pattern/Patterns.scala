@@ -451,6 +451,51 @@ object Patterns {
    */
   def retry[T](attempt: Callable[CompletionStage[T]], attempts: Int, delay: java.time.Duration, scheduler: Scheduler, ec: ExecutionContext): CompletionStage[T] =
     scalaRetry(() ⇒ attempt.call().toScala, attempts, delay.asScala)(ec, scheduler).toJava
+
+  /**
+   * Returns an internally retrying [[scala.concurrent.Future]]
+   * The first attempt will be made immediately, and each subsequent attempt will be made after 'delay'.
+   * A scheduler (eg context.system.scheduler) must be provided to delay each retry
+   * You could provide a function to generate the next delay duration after first attempt,
+   * this function should never return `null`, otherwise an [[IllegalArgumentException]] will be through.
+   * If attempts are exhausted the returned future is simply the result of invoking attempt.
+   * Note that the attempt function will be invoked on the given execution context for subsequent tries and
+   * therefore must be thread safe (not touch unsafe mutable state).
+   */
+  def retry[T](
+    attempt:           Callable[Future[T]],
+    attempts:          Int,
+    initialDelay:      FiniteDuration,
+    nextDelayFunction: akka.japi.function.Function3[Int, FiniteDuration, FiniteDuration, FiniteDuration],
+    scheduler:         Scheduler,
+    context:           ExecutionContext): Future[T] =
+    scalaRetry(() ⇒ attempt.call, attempts, initialDelay,
+      (attempted, initialDelay, currentDelay) ⇒
+        nextDelayFunction.apply(attempted, initialDelay, currentDelay))(context, scheduler)
+
+  /**
+   * Returns an internally retrying [[java.util.concurrent.CompletionStage]]
+   * The first attempt will be made immediately, and each subsequent attempt will be made after 'delay'.
+   * A scheduler (eg context.system.scheduler) must be provided to delay each retry
+   * You could provide a function to generate the next delay duration after first attempt,
+   * this function should never return `null`, otherwise an [[IllegalArgumentException]] will be through.
+   * If attempts are exhausted the returned future is simply the result of invoking attempt.
+   * Note that the attempt function will be invoked on the given execution context for subsequent tries and
+   * therefore must be thread safe (not touch unsafe mutable state).
+   */
+  def retry[T](
+    attempt:           Callable[CompletionStage[T]],
+    attempts:          Int,
+    initialDelay:      java.time.Duration,
+    nextDelayFunction: akka.japi.function.Function3[Int, java.time.Duration, java.time.Duration, java.time.Duration],
+    scheduler:         Scheduler,
+    context:           ExecutionContext): CompletionStage[T] =
+    scalaRetry(() ⇒ attempt.call().toScala, attempts, initialDelay.asScala,
+      (attempted, _, currentDelay) ⇒
+        nextDelayFunction.apply(
+          attempted,
+          initialDelay,
+          currentDelay.asJava).asScala)(context, scheduler).toJava
 }
 
 /**
