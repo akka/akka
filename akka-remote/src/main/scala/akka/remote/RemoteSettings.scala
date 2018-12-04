@@ -28,7 +28,7 @@ final class RemoteSettings(val config: Config) {
 
   val LogFrameSizeExceeding: Option[Int] = {
     if (config.getString("akka.remote.log-frame-size-exceeding").toLowerCase == "off") None
-    else Some(getInt("akka.remote.log-frame-size-exceeding"))
+    else Some(getBytes("akka.remote.log-frame-size-exceeding").toInt)
   }
 
   val UntrustedMode: Boolean = getBoolean("akka.remote.untrusted-mode")
