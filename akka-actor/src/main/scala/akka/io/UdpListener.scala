@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.util.{ ByteString, Helpers }
+import akka.util.ByteString
 import akka.io.Inet.DatagramChannelCreator
 import akka.io.SelectionHandler._
 import akka.io.Udp._
@@ -75,12 +75,15 @@ private[io] class UdpListener(
 
     case Unbind ⇒
       log.debug("Unbinding endpoint [{}]", bind.localAddress)
-      try {
-        channel.close()
-        if (Helpers.isWindows) registration.enableInterest(OP_READ)
-        sender() ! Unbound
-        log.debug("Unbound endpoint [{}], stopping listener", bind.localAddress)
-      } finally context.stop(self)
+      registration.cancelAndClose(() ⇒ self ! Unbound)
+      context.become(unregistering(sender()))
+  }
+
+  def unregistering(requester: ActorRef): Receive = {
+    case Unbound ⇒
+      log.debug("Unbound endpoint [{}], stopping listener", bind.localAddress)
+      requester ! Unbound
+      context.stop(self)
   }
 
   def doReceive(registration: ChannelRegistration, handler: ActorRef): Unit = {
