@@ -72,10 +72,7 @@ object Configuration {
       val rng = sslEngineProvider.createSecureRandom()
 
       rng.nextInt() // Has to work
-      val sRng = settings.SSLRandomNumberGenerator match {
-        case "AES128CounterSecureRNG" | "AES256CounterSecureRNG" ⇒ ""
-        case other ⇒ other
-      }
+      val sRng = settings.SSLRandomNumberGenerator
       if (rng.getAlgorithm != sRng && sRng != "")
         throw new NoSuchAlgorithmException(sRng)
 
@@ -96,14 +93,6 @@ object Configuration {
 }
 
 class Ticket1978SHA1PRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("SHA1PRNG", "TLS_RSA_WITH_AES_128_CBC_SHA"))
-
-class Ticket1978AES128CounterSecureRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterSecureRNG", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"))
-
-class Ticket1978DeprecatedAES128CounterSecureRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("DeprecatedAES128CounterSecureRNG", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"))
-
-class Ticket1978AES256CounterSecureRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES256CounterSecureRNG", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"))
-
-class Ticket1978DeprecatedAES256CounterSecureRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("DeprecatedAES256CounterSecureRNG", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"))
 
 class Ticket1978DefaultRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("", "TLS_RSA_WITH_AES_128_CBC_SHA"))
 
