@@ -4,6 +4,9 @@
 
 package akka.persistence.typed.internal
 
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.Done
 import akka.actor.typed
 import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, BehaviorInterceptor, PostStop, Signal, SupervisorStrategy }
@@ -11,7 +14,6 @@ import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.{ EventAdapter, NoOpEventAdapter }
-import akka.persistence.typed.internal.InternalBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.PersistenceId
 import akka.util.ConstantFun
@@ -29,6 +31,20 @@ private[akka] object EventSourcedBehaviorImpl {
         ctx.log.error(t, "Save snapshot failed, snapshot metadata: [{}]", meta)
     }
   }
+
+  object WriterIdentity {
+
+    // ok to wrap around (2*Int.MaxValue restarts will not happen within a journal roundtrip)
+    private[akka] val instanceIdCounter = new AtomicInteger(1)
+
+    def newIdentity(): WriterIdentity = {
+      val instanceId: Int = WriterIdentity.instanceIdCounter.getAndIncrement()
+      val writerUuid: String = UUID.randomUUID.toString
+      WriterIdentity(instanceId, writerUuid)
+    }
+  }
+  final case class WriterIdentity(instanceId: Int, writerUuid: String)
+
 }
 
 @InternalApi
@@ -48,6 +64,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   onSnapshot:          (SnapshotMetadata, Try[Done]) ⇒ Unit                       = ConstantFun.scalaAnyTwoToUnit,
   onRecoveryFailure:   Throwable ⇒ Unit                                           = ConstantFun.scalaAnyToUnit
 ) extends EventSourcedBehavior[Command, Event, State] with StashReferenceManagement {
+
+  import EventSourcedBehaviorImpl.WriterIdentity
 
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
     Behaviors.supervise {

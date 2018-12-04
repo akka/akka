@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -71,7 +70,7 @@ object ClusterShardingPersistenceSpec {
         case promise ⇒ promise.trySuccess(ctx.self.unsafeUpcast)
       }
 
-      PersistentEntity[Command, String, String](
+      EventSourcedEntity[Command, String, String](
         entityTypeKey = typeKey,
         entityId = entityId,
         emptyState = "",
@@ -109,6 +108,16 @@ object ClusterShardingPersistenceSpec {
         }
     }
   }
+
+
+  private val canBindOnAlternativeLoopbackAddresses: Boolean = {
+    try {
+      throw new Exception("")
+      true
+    } catch {
+      case _: java.net.BindException ⇒
+        false
+    }
 
 }
 

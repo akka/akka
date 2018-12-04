@@ -15,7 +15,6 @@ import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer }
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
-import akka.persistence.typed.internal.InternalBehavior._
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.PersistenceId
 import akka.util.Collections.EmptyImmutableSeq
@@ -31,7 +30,7 @@ private[persistence] final class BehaviorSetup[C, E, S](
   val emptyState:            S,
   val commandHandler:        EventSourcedBehavior.CommandHandler[C, E, S],
   val eventHandler:          EventSourcedBehavior.EventHandler[S, E],
-  val writerIdentity:        WriterIdentity,
+  val writerIdentity:        EventSourcedBehaviorImpl.WriterIdentity,
   val recoveryCompleted:     S ⇒ Unit,
   val onRecoveryFailure:     Throwable ⇒ Unit,
   val onSnapshot:            (SnapshotMetadata, Try[Done]) ⇒ Unit,
@@ -109,3 +108,19 @@ private[persistence] final class BehaviorSetup[C, E, S](
 
 }
 
+object MDC {
+  // format: OFF
+  val AwaitingPermit    = "get-permit"
+  val ReplayingSnapshot = "replay-snap"
+  val ReplayingEvents   = "replay-evts"
+  val RunningCmds       = "running-cmnds"
+  val PersistingEvents  = "persist-evts"
+  // format: ON
+
+  def create(persistenceId: PersistenceId, phaseName: String): Map[String, Any] = {
+    Map(
+      "persistenceId" → persistenceId.id,
+      "phase" → phaseName
+    )
+  }
+}

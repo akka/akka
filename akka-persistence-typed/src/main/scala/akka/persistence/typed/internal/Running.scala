@@ -33,15 +33,14 @@ import akka.persistence.typed.scaladsl.Effect
  * - HandlingCommands - where the command handler is invoked for incoming commands
  * - PersistingEvents - where incoming commands are stashed until persistence completes
  *
- * This is implemented as such to avoid creating many EventsourcedRunning instances,
+ * This is implemented as such to avoid creating many EventSourced Running instances,
  * which perform the Persistence extension lookup on creation and similar things (config lookup)
  *
  * See previous [[ReplayingEvents]].
  * TODO rename
  */
 @InternalApi
-private[akka] object EventsourcedRunning {
-  import InternalBehavior._
+private[akka] object Running {
 
   final case class EventsourcedState[State](
     seqNr:              Long,
@@ -62,17 +61,17 @@ private[akka] object EventsourcedRunning {
   }
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: EventsourcedState[S]): Behavior[InternalProtocol] =
-    new EventsourcedRunning(setup.setMdc(MDC.RunningCmds)).handlingCommands(state)
+    new Running(setup.setMdc(MDC.RunningCmds)).handlingCommands(state)
 }
 
 // ===============================================
 
 /** INTERNAL API */
-@InternalApi private[akka] class EventsourcedRunning[C, E, S](
+@InternalApi private[akka] class Running[C, E, S](
   override val setup: BehaviorSetup[C, E, S])
   extends JournalInteractions[C, E, S] with StashManagement[C, E, S] {
-  import EventsourcedRunning.EventsourcedState
-  import InternalBehavior._, InternalProtocol._
+  import Running.EventsourcedState
+  import InternalProtocol._
 
   private val runningCmdsMdc = MDC.create(setup.persistenceId, MDC.RunningCmds)
   private val persistingEventsMdc = MDC.create(setup.persistenceId, MDC.PersistingEvents)
@@ -158,7 +157,7 @@ private[akka] object EventsourcedRunning {
 
     setup.setMdc(runningCmdsMdc)
 
-    Behaviors.receiveMessage[InternalBehavior.InternalProtocol] {
+    Behaviors.receiveMessage[InternalProtocol] {
       case IncomingCommand(c: C @unchecked) ⇒ onCommand(state, c)
       case SnapshotterResponse(r)           ⇒ onSnapshotterResponse(r, Behaviors.same)
       case _                                ⇒ Behaviors.unhandled
@@ -187,11 +186,11 @@ private[akka] object EventsourcedRunning {
     numberOfEvents:             Int,
     shouldSnapshotAfterPersist: Boolean,
     var sideEffects:            immutable.Seq[SideEffect[S]])
-    extends AbstractBehavior[InternalBehavior.InternalProtocol] {
+    extends AbstractBehavior[InternalProtocol] {
 
     private var eventCounter = 0
 
-    override def onMessage(msg: InternalBehavior.InternalProtocol): Behavior[InternalBehavior.InternalProtocol] = {
+    override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
       msg match {
         case SnapshotterResponse(r)            ⇒ onSnapshotterResponse(r, this)
         case JournalResponse(r)                ⇒ onJournalResponse(r)

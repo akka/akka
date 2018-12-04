@@ -8,8 +8,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.persistence.typed.internal.InternalBehavior.InternalProtocol
-import akka.persistence.typed.internal.InternalBehavior.MDC
 
 /**
  * INTERNAL API

@@ -10,8 +10,6 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
 import akka.persistence._
-import akka.persistence.typed.internal.InternalBehavior.InternalProtocol._
-import akka.persistence.typed.internal.InternalBehavior._
 import akka.actor.typed.internal.PoisonPill
 
 import scala.util.control.NonFatal
@@ -24,10 +22,10 @@ import scala.util.control.NonFatal
  * In this behavior we finally start replaying events, beginning from the last applied sequence number
  * (i.e. the one up-until-which the snapshot recovery has brought us).
  *
- * Once recovery is completed, the actor becomes [[EventsourcedRunning]], stashed messages are flushed
+ * Once recovery is completed, the actor becomes [[Running]], stashed messages are flushed
  * and control is given to the user's handlers to drive the actors behavior from there.
  *
- * See next behavior [[EventsourcedRunning]].
+ * See next behavior [[Running]].
  * See previous behavior [[ReplayingSnapshot]].
  */
 @InternalApi
@@ -54,6 +52,7 @@ private[persistence] object ReplayingEvents {
 private[persistence] class ReplayingEvents[C, E, S](override val setup: BehaviorSetup[C, E, S])
   extends JournalInteractions[C, E, S] with StashManagement[C, E, S] {
   import ReplayingEvents.ReplayingState
+  import InternalProtocol._
 
   def createBehavior(state: ReplayingState[S]): Behavior[InternalProtocol] = {
     Behaviors.setup { _ ⇒
@@ -175,9 +174,9 @@ private[persistence] class ReplayingEvents[C, E, S](override val setup: Behavior
     if (state.receivedPoisonPill && isStashEmpty)
       Behaviors.stopped
     else {
-      val running = EventsourcedRunning[C, E, S](
+      val running = Running[C, E, S](
         setup,
-        EventsourcedRunning.EventsourcedState[S](state.seqNr, state.state, state.receivedPoisonPill)
+        Running.EventsourcedState[S](state.seqNr, state.state, state.receivedPoisonPill)
       )
 
       tryUnstash(running)

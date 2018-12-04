@@ -11,7 +11,6 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
 import akka.persistence._
-import akka.persistence.typed.internal.InternalBehavior.InternalProtocol
 
 import scala.collection.immutable
 
@@ -26,8 +25,8 @@ private[akka] trait JournalInteractions[C, E, S] {
   // ---------- journal interactions ---------
 
   protected def internalPersist(
-    state: EventsourcedRunning.EventsourcedState[S],
-    event: EventOrTagged): EventsourcedRunning.EventsourcedState[S] = {
+    state: Running.EventsourcedState[S],
+    event: EventOrTagged): Running.EventsourcedState[S] = {
 
     val newState = state.nextSequenceNr()
 
@@ -48,7 +47,7 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   protected def internalPersistAll(
     events: immutable.Seq[EventOrTagged],
-    state:  EventsourcedRunning.EventsourcedState[S]): EventsourcedRunning.EventsourcedState[S] = {
+    state:  Running.EventsourcedState[S]): Running.EventsourcedState[S] = {
     if (events.nonEmpty) {
       var newState = state
 
@@ -107,7 +106,7 @@ private[akka] trait JournalInteractions[C, E, S] {
     setup.snapshotStore.tell(LoadSnapshot(setup.persistenceId.id, criteria, toSequenceNr), setup.selfUntyped)
   }
 
-  protected def internalSaveSnapshot(state: EventsourcedRunning.EventsourcedState[S]): Unit = {
+  protected def internalSaveSnapshot(state: Running.EventsourcedState[S]): Unit = {
     // don't store null state
     if (state.state != null)
       setup.snapshotStore.tell(SnapshotProtocol.SaveSnapshot(

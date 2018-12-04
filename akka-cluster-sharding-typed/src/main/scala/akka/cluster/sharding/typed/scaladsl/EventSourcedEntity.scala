@@ -8,7 +8,7 @@ import akka.actor.typed.Behavior
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 
-object PersistentEntity {
+object EventSourcedEntity {
 
   /**
    * Create a `Behavior` for a persistent actor that is used with Cluster Sharding.

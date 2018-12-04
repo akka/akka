@@ -9,7 +9,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer }
 import akka.actor.{ DeadLetter, StashOverflowException }
 import akka.annotation.InternalApi
-import akka.persistence.typed.internal.InternalBehavior.InternalProtocol
 import akka.persistence._
 import akka.util.ConstantFun
 import akka.util.OptionVal

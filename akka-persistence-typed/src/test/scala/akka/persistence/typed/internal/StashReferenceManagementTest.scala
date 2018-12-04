@@ -6,8 +6,6 @@ package akka.persistence.typed.internal
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ Behavior, Signal }
-import akka.persistence.typed.internal.InternalBehavior.InternalProtocol
-import akka.persistence.typed.internal.InternalBehavior.InternalProtocol.{ IncomingCommand, RecoveryPermitGranted }
 import akka.actor.testkit.typed.scaladsl.TestProbe
 
 import scala.concurrent.duration._
@@ -15,6 +13,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 
 class StashReferenceManagementTest extends ScalaTestWithActorTestKit with WordSpecLike {
+  import InternalProtocol._
 
   case class Impl() extends StashReferenceManagement
 

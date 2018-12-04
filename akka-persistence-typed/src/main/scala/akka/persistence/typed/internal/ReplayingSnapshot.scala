@@ -10,8 +10,6 @@ import akka.actor.typed.internal.PoisonPill
 import akka.annotation.InternalApi
 import akka.persistence.SnapshotProtocol.{ LoadSnapshotFailed, LoadSnapshotResult }
 import akka.persistence._
-import akka.persistence.typed.internal.InternalBehavior.InternalProtocol._
-import akka.persistence.typed.internal.InternalBehavior._
 
 /**
  * INTERNAL API
@@ -39,6 +37,8 @@ private[akka] object ReplayingSnapshot {
 @InternalApi
 private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup[C, E, S])
   extends JournalInteractions[C, E, S] with StashManagement[C, E, S] {
+
+  import InternalProtocol._
 
   def createBehavior(receivedPoisonPillInPreviousPhase: Boolean): Behavior[InternalProtocol] = {
     // protect against snapshot stalling forever because of journal overloaded and such
