@@ -9,7 +9,7 @@ import akka.remote.transport.netty.SSLSettings
 
 class Ticket1978ConfigSpec extends AkkaSpec("""
     akka.remote.netty.ssl.security {
-      random-number-generator = "AES128CounterSecureRNG"
+      random-number-generator = "SecureRandom"
     }
     """) with ImplicitSender with DefaultTimeout {
 
@@ -24,7 +24,7 @@ class Ticket1978ConfigSpec extends AkkaSpec("""
       settings.SSLTrustStorePassword should ===("changeme")
       settings.SSLProtocol should ===("TLSv1.2")
       settings.SSLEnabledAlgorithms should ===(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
-      settings.SSLRandomNumberGenerator should ===("AES128CounterSecureRNG")
+      settings.SSLRandomNumberGenerator should ===("SecureRandom")
     }
   }
 }
