@@ -29,7 +29,10 @@ import java.util.Random
 import java.net.SocketTimeoutException
 import java.nio.file.Files
 
+import akka.testkit.WithLogCapturing
 import com.google.common.jimfs.{ Configuration, Jimfs }
+
+import scala.util.Try
 
 object TcpConnectionSpec {
   case class Ack(i: Int) extends Event
@@ -38,9 +41,12 @@ object TcpConnectionSpec {
 }
 
 class TcpConnectionSpec extends AkkaSpec("""
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    akka.io.tcp.trace-logging = on
     akka.io.tcp.register-timeout = 500ms
     akka.actor.serialize-creators = on
-    """) { thisSpecs ⇒
+    """) with WithLogCapturing { thisSpecs ⇒
   import TcpConnectionSpec._
 
   // Helper to avoid Windows localization specific differences
@@ -153,6 +159,8 @@ class TcpConnectionSpec extends AkkaSpec("""
         userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
 
         userHandler.send(connectionActor, Register(userHandler.ref))
+        interestCallReceiver.expectMsg(OP_READ)
+        selector.send(connectionActor, ChannelReadable)
         userHandler.expectMsgType[Received].data.decodeString("ASCII") should ===("immediatedata")
         ignoreWindowsWorkaroundForTicket15766()
         interestCallReceiver.expectMsg(OP_READ)
@@ -915,8 +923,10 @@ class TcpConnectionSpec extends AkkaSpec("""
       new ChannelRegistration {
         def enableInterest(op: Int): Unit = interestCallReceiver.ref ! op
         def disableInterest(op: Int): Unit = interestCallReceiver.ref ! -op
-        def cancel(): Unit = ()
+        def cancelAndClose(andThen: () ⇒ Unit): Unit = onCancelAndClose(andThen)
       }
+
+    protected def onCancelAndClose(andThen: () ⇒ Unit): Unit = andThen()
 
     def createConnectionActorWithoutRegistration(
       serverAddress: InetSocketAddress           = serverAddress,
@@ -1029,6 +1039,15 @@ class TcpConnectionSpec extends AkkaSpec("""
       (sel, key)
     }
 
+    override protected def onCancelAndClose(andThen: () ⇒ Unit): Unit =
+      try {
+        if (clientSideChannel.isOpen) clientSideChannel.close()
+        if (nioSelector.isOpen) {
+          nioSelector.selectNow()
+          nioSelector.selectedKeys().clear()
+        }
+      } finally Try(andThen())
+
     /**
      * Tries to simultaneously act on client and server side to read from the server all pending data from the client.
      */
@@ -1105,7 +1124,8 @@ class TcpConnectionSpec extends AkkaSpec("""
           log.debug("setSoLinger(true, 0) failed with {}", e)
       }
       channel.close()
-      if (Helpers.isWindows) nioSelector.select(10) // Windows needs this
+      nioSelector.selectNow()
+      nioSelector.selectedKeys().clear()
     }
   }
 
