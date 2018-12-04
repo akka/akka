@@ -28,7 +28,7 @@ sure you are using at least version `0.21.0`.
 
 @@dependency[sbt,Gradle,Maven] {
   group="com.typesafe.akka"
-  artifact="akka-discovery_2.12"
+  artifact="akka-discovery_$scala.binary_version$"
   version="$akka.version$"
 }
 
@@ -109,7 +109,7 @@ The advantage of SRV records is that they can include a port.
 Lookups with all the fields set become SRV queries. For example:
 
 ```
-dig srv service.tcp.akka.test
+dig srv _service._tcp.akka.test
 
 ; <<>> DiG 9.11.3-RedHat-9.11.3-6.fc28 <<>> srv service.tcp.akka.test
 ;; global options: +cmd
@@ -124,8 +124,8 @@ dig srv service.tcp.akka.test
 ;service.tcp.akka.test.         IN      SRV
 
 ;; ANSWER SECTION:
-service.tcp.akka.test.  86400   IN      SRV     10 60 5060 a-single.akka.test.
-service.tcp.akka.test.  86400   IN      SRV     10 40 5070 a-double.akka.test.
+_service._tcp.akka.test.  86400   IN      SRV     10 60 5060 a-single.akka.test.
+_service._tcp.akka.test.  86400   IN      SRV     10 40 5070 a-double.akka.test.
 
 ```
 
