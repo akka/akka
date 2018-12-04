@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -108,16 +109,6 @@ object ClusterShardingPersistenceSpec {
         }
     }
   }
-
-
-  private val canBindOnAlternativeLoopbackAddresses: Boolean = {
-    try {
-      throw new Exception("")
-      true
-    } catch {
-      case _: java.net.BindException ⇒
-        false
-    }
 
 }
 
