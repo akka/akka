@@ -292,6 +292,20 @@ object Patterns {
     extended.ask(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis)).asInstanceOf[Future[AnyRef]]
 
   /**
+   * A variation of ask which allows to implement "replyTo" pattern by including
+   * sender reference in message.
+   *
+   * {{{
+   * final CompletionStage<Object> f = Patterns.askWithReplyTo(
+   *   selection,
+   *   replyTo -> new Request(replyTo),
+   *   timeout);
+   * }}}
+   */
+  def askWithReplyTo(selection: ActorSelection, messageFactory: japi.Function[ActorRef, Any], timeout: java.time.Duration): CompletionStage[AnyRef] =
+    extended.ask(selection, messageFactory.apply _)(timeout.asScala).toJava.asInstanceOf[CompletionStage[AnyRef]]
+
+  /**
    * Register an onComplete callback on this [[scala.concurrent.Future]] to send
    * the result to the given [[akka.actor.ActorRef]] or [[akka.actor.ActorSelection]].
    * Returns the original Future to allow method chaining.
@@ -444,6 +458,7 @@ object Patterns {
  *
  * For working with Scala [[scala.concurrent.Future]] from Java you may want to use [[akka.pattern.Patterns]] instead.
  */
+@deprecated("Use Patterns instead.", since = "2.5.19")
 object PatternsCS {
   import akka.actor.ActorRef
   import akka.japi
@@ -579,6 +594,7 @@ object PatternsCS {
    *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
+  @deprecated("Use Pattens.ask which accepts java.time.Duration instead.", since = "2.5.19")
   def ask(actor: ActorRef, message: Any, timeoutMillis: Long): CompletionStage[AnyRef] =
     scalaAsk(actor, message)(new Timeout(timeoutMillis, TimeUnit.MILLISECONDS)).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
@@ -597,6 +613,7 @@ object PatternsCS {
    * @param messageFactory function taking an actor ref to reply to and returning the message to be sent
    * @param timeoutMillis  the timeout for the response before failing the returned completion operator
    */
+  @deprecated("Use Pattens.askWithReplyTo which accepts java.time.Duration instead.", since = "2.5.19")
   def askWithReplyTo(actor: ActorRef, messageFactory: japi.function.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
     askWithReplyTo(actor, messageFactory, Timeout(timeoutMillis.millis))
 
@@ -689,6 +706,7 @@ object PatternsCS {
    *   f.thenRun(result -> nextActor.tell(new EnrichedResult(request, result)));
    * }}}
    */
+  @deprecated("Use Pattens.ask which accepts java.time.Duration instead.", since = "2.5.19")
   def ask(selection: ActorSelection, message: Any, timeoutMillis: Long): CompletionStage[AnyRef] =
     scalaAsk(selection, message)(new Timeout(timeoutMillis, TimeUnit.MILLISECONDS)).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
@@ -703,6 +721,7 @@ object PatternsCS {
    *   timeout);
    * }}}
    */
+  @deprecated("Use Pattens.askWithReplyTo which accepts java.time.Duration instead.", since = "2.5.19")
   def askWithReplyTo(selection: ActorSelection, messageFactory: japi.Function[ActorRef, Any], timeoutMillis: Long): CompletionStage[AnyRef] =
     extended.ask(selection, messageFactory.apply _)(Timeout(timeoutMillis.millis)).toJava.asInstanceOf[CompletionStage[AnyRef]]
 

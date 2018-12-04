@@ -6,7 +6,7 @@ package jdocs.testkit;
 
 import static org.junit.Assert.*;
 
-import akka.pattern.PatternsCS;
+import akka.pattern.Patterns;
 import jdocs.AbstractJavaTest;
 import org.junit.Assert;
 import akka.japi.JavaPartialFunction;
@@ -99,7 +99,7 @@ public class TestKitDocTest extends AbstractJavaTest {
     //#test-behavior
     final Props props = Props.create(MyActor.class);
     final TestActorRef<MyActor> ref = TestActorRef.create(system, props, "testB");
-    final CompletableFuture<Object> future = PatternsCS.ask(ref, "say42", 3000).toCompletableFuture();
+    final CompletableFuture<Object> future = Patterns.ask(ref, "say42", Duration.ofMillis(3000)).toCompletableFuture();
     assertTrue(future.isDone());
     assertEquals(42, future.get());
     //#test-behavior
