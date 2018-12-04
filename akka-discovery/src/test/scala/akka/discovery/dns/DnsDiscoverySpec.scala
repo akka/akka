@@ -4,31 +4,21 @@
 
 package akka.discovery.dns
 
-import akka.actor.ActorSystem
-import akka.discovery.ServiceDiscovery.ResolvedTarget
-import akka.discovery.{ Discovery, Lookup }
-import akka.testkit.{ AkkaSpec, SocketUtil, TestKit }
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
-
-import scala.concurrent.duration._
 import java.net.InetAddress
 
 import akka.actor.ActorSystem
-import akka.discovery.{ Lookup, ServiceDiscovery }
-import akka.event.LoggingAdapter
+import akka.discovery.{ Discovery, Lookup }
+import akka.discovery.ServiceDiscovery.ResolvedTarget
 import akka.io.dns.DockerBindDnsService
+import akka.testkit.{ AkkaSpec, SocketUtil, TestKit }
 import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{ Millis, Seconds, Span }
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
 import scala.concurrent.duration._
 
 object DnsDiscoverySpec {
 
-  val config = ConfigFactory.parseString(s"""
+  val config = ConfigFactory.parseString(
+    s"""
      //#configure-dns
      akka {
        discovery {
@@ -44,7 +34,8 @@ object DnsDiscoverySpec {
 
   lazy val dockerDnsServerPort = SocketUtil.temporaryLocalPort()
 
-  val configWithAsyncDnsResolverAsDefault = ConfigFactory.parseString("""
+  val configWithAsyncDnsResolverAsDefault = ConfigFactory.parseString(
+    """
       akka.io.dns.resolver = "async-dns"
     """).withFallback(config)
 
@@ -60,6 +51,11 @@ class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config)
   val systemWithAsyncDnsAsResolver = ActorSystem("AsyncDnsSystem", configWithAsyncDnsResolverAsDefault)
 
   "Dns Discovery with isolated resolver" must {
+
+    if (!dockerAvailable()) {
+      system.log.error("Test not run as docker is not available")
+      pending
+    }
 
     "work with SRV records" in {
       val discovery = Discovery(system).discovery
