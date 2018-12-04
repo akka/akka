@@ -23,11 +23,9 @@ import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit._
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.util.ByteString
+import akka.util.{ ByteString, JavaVersion }
 import javax.net.ssl._
-
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.testkit.WithLogCapturing
 
@@ -410,7 +408,11 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
         .join(Tcp().outgoingConnection(Await.result(server, 1.second).localAddress)).run()
 
       Await.result(serverErr, 1.second).getMessage should include("certificate_unknown")
-      Await.result(clientErr, 1.second).getMessage should equal("General SSLEngine problem")
+      val clientErrText = Await.result(clientErr, 1.second).getMessage
+      if (JavaVersion.majorVersion >= 11)
+        clientErrText should include("unable to find valid certification path to requested target")
+      else
+        clientErrText should equal("General SSLEngine problem")
     }
 
     "reliably cancel subscriptions when TransportIn fails early" in assertAllStagesStopped {

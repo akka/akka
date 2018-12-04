@@ -36,6 +36,7 @@ private[persistence] final class EventsourcedSetup[C, E, S](
   val eventHandler:          PersistentBehavior.EventHandler[S, E],
   val writerIdentity:        WriterIdentity,
   val recoveryCompleted:     S ⇒ Unit,
+  val onRecoveryFailure:     Throwable ⇒ Unit,
   val onSnapshot:            (SnapshotMetadata, Try[Done]) ⇒ Unit,
   val tagger:                E ⇒ Set[String],
   val eventAdapter:          EventAdapter[E, _],
