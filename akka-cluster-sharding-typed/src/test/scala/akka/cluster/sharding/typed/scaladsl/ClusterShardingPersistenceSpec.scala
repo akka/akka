@@ -183,7 +183,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       (1 to 10).foreach { n ⇒
         ref ! PassivateAndPersist(n.toString)(p1.ref)
         // recoveryCompleted each time, verifies that it was actually stopped
-        recoveryProbe.expectMessage("recoveryCompleted:" + (1 until n).map(_.toString).mkString("|"))
+        recoveryProbe.expectMessage(max = 10.seconds, "recoveryCompleted:" + (1 until n).map(_.toString).mkString("|"))
         p1.expectMessage(Done)
       }
 
