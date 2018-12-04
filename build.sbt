@@ -1,9 +1,10 @@
-import akka.{ParadoxSupport, AutomaticModuleName}
+import akka.{AutomaticModuleName, ParadoxSupport, ScalafixIgnoreFilePlugin}
 
-enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr)
+enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr,
+  ScalafixIgnoreFilePlugin)
 disablePlugins(MimaPlugin)
 addCommandAlias(
-  name  ="fix", 
+  name  ="fix",
   value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile")
 
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
@@ -485,4 +486,3 @@ def akkaModule(name: String): Project =
     .settings(akka.AkkaBuild.defaultSettings)
     .settings(akka.Formatting.formatSettings)
     .enablePlugins(BootstrapGenjavadoc)
-

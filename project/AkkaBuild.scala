@@ -4,12 +4,12 @@
 
 package akka
 
-import java.io.{ FileInputStream, InputStreamReader }
+import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
 
-import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
 import sbt._
+
 import scala.collection.breakOut
 
 object AkkaBuild {

@@ -5,6 +5,8 @@
 package akka.stream.scaladsl
 
 //#prepend
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.Sink
 
 //#prepend
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }

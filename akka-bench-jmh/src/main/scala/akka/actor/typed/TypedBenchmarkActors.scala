@@ -6,8 +6,6 @@ package akka.actor.typed
 
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.{ ActorContext ⇒ _ }
-
 import scala.concurrent.duration._
 
 object TypedBenchmarkActors {

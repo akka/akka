@@ -5,6 +5,8 @@
 package akka.stream.scaladsl
 
 //#zip-with-index
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.Sink
 
 //#zip-with-index
 import akka.stream.testkit.scaladsl.StreamTestKit._
