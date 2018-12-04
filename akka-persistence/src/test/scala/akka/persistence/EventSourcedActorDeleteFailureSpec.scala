@@ -46,7 +46,7 @@ object EventSourcedActorDeleteFailureSpec {
 
 class EventSourcedActorDeleteFailureSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotFailureRobustnessSpec", extraConfig = Some(
   """
-  akka.persistence.journal.inmem.class = "akka.persistence.PersistentActorDeleteFailureSpec$DeleteFailingInmemJournal"
+  akka.persistence.journal.inmem.class = "akka.persistence.EventSourcedActorDeleteFailureSpec$DeleteFailingInmemJournal"
   """))) with ImplicitSender {
   import EventSourcedActorDeleteFailureSpec._
 
