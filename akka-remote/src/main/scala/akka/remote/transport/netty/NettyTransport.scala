@@ -186,6 +186,25 @@ class NettyTransportSettings(config: Config) {
       config.getDouble("pool-size-factor"),
       config.getInt("pool-size-max"))
 
+  // Check Netty version >= 3.10.6
+  {
+    val nettyVersion = org.jboss.netty.util.Version.ID
+    def throwInvalidNettyVersion(): Nothing = {
+      throw new IllegalArgumentException("akka-remote with the Netty transport requires Netty version 3.10.6 or " +
+        s"later. Version [$nettyVersion] is on the class path. Issue https://github.com/netty/netty/pull/4739 " +
+        "may cause messages to not be delivered.")
+    }
+
+    try {
+      val segments: Array[String] = nettyVersion.split("[.-]")
+      if (segments.length < 3 || segments(0).toInt != 3 || segments(1).toInt != 10 || segments(2).toInt < 6)
+        throwInvalidNettyVersion()
+    } catch {
+      case _: NumberFormatException ⇒
+        throwInvalidNettyVersion()
+    }
+  }
+
 }
 
 /**
