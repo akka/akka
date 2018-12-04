@@ -10,11 +10,9 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
 import akka.persistence._
-import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
-import akka.persistence.typed.internal.EventsourcedBehavior._
-import scala.util.control.NonFatal
-
 import akka.actor.typed.internal.PoisonPill
+
+import scala.util.control.NonFatal
 
 /***
  * INTERNAL API
@@ -24,14 +22,14 @@ import akka.actor.typed.internal.PoisonPill
  * In this behavior we finally start replaying events, beginning from the last applied sequence number
  * (i.e. the one up-until-which the snapshot recovery has brought us).
  *
- * Once recovery is completed, the actor becomes [[EventsourcedRunning]], stashed messages are flushed
+ * Once recovery is completed, the actor becomes [[Running]], stashed messages are flushed
  * and control is given to the user's handlers to drive the actors behavior from there.
  *
- * See next behavior [[EventsourcedRunning]].
- * See previous behavior [[EventsourcedReplayingSnapshot]].
+ * See next behavior [[Running]].
+ * See previous behavior [[ReplayingSnapshot]].
  */
 @InternalApi
-private[persistence] object EventsourcedReplayingEvents {
+private[persistence] object ReplayingEvents {
 
   @InternalApi
   private[persistence] final case class ReplayingState[State](
@@ -43,17 +41,18 @@ private[persistence] object EventsourcedReplayingEvents {
   )
 
   def apply[C, E, S](
-    setup: EventsourcedSetup[C, E, S],
+    setup: BehaviorSetup[C, E, S],
     state: ReplayingState[S]
   ): Behavior[InternalProtocol] =
-    new EventsourcedReplayingEvents(setup.setMdc(MDC.ReplayingEvents)).createBehavior(state)
+    new ReplayingEvents(setup.setMdc(MDC.ReplayingEvents)).createBehavior(state)
 
 }
 
 @InternalApi
-private[persistence] class EventsourcedReplayingEvents[C, E, S](override val setup: EventsourcedSetup[C, E, S])
-  extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
-  import EventsourcedReplayingEvents.ReplayingState
+private[persistence] class ReplayingEvents[C, E, S](override val setup: BehaviorSetup[C, E, S])
+  extends JournalInteractions[C, E, S] with StashManagement[C, E, S] {
+  import ReplayingEvents.ReplayingState
+  import InternalProtocol._
 
   def createBehavior(state: ReplayingState[S]): Behavior[InternalProtocol] = {
     Behaviors.setup { _ ⇒
@@ -175,9 +174,9 @@ private[persistence] class EventsourcedReplayingEvents[C, E, S](override val set
     if (state.receivedPoisonPill && isStashEmpty)
       Behaviors.stopped
     else {
-      val running = EventsourcedRunning[C, E, S](
+      val running = Running[C, E, S](
         setup,
-        EventsourcedRunning.EventsourcedState[S](state.seqNr, state.state, state.receivedPoisonPill)
+        Running.EventsourcedState[S](state.seqNr, state.state, state.receivedPoisonPill)
       )
 
       tryUnstash(running)

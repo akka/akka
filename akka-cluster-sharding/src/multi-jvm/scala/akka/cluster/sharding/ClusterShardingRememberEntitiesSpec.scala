@@ -4,12 +4,10 @@
 
 package akka.cluster.sharding
 
-import scala.concurrent.duration._
 import java.io.File
 
 import akka.actor._
 import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
-import akka.cluster.sharding.ShardRegion.GracefulShutdown
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testconductor.RoleName
@@ -19,8 +17,6 @@ import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
 
 import scala.concurrent.duration._
-import akka.cluster.sharding.ShardRegion.GetClusterShardingStats
-import akka.cluster.sharding.ShardRegion.ClusterShardingStats
 
 object ClusterShardingRememberEntitiesSpec {
 

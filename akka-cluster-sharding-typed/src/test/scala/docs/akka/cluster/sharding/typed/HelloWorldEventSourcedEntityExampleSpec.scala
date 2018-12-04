@@ -12,7 +12,7 @@ import akka.cluster.typed.Join
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
-object HelloWorldPersistentEntityExampleSpec {
+object HelloWorldEventSourcedEntityExampleSpec {
   val config = ConfigFactory.parseString(
     """
       akka.actor.provider = cluster
@@ -25,7 +25,7 @@ object HelloWorldPersistentEntityExampleSpec {
     """)
 }
 
-class HelloWorldPersistentEntityExampleSpec extends ScalaTestWithActorTestKit(HelloWorldPersistentEntityExampleSpec.config) with WordSpecLike {
+class HelloWorldEventSourcedEntityExampleSpec extends ScalaTestWithActorTestKit(HelloWorldEventSourcedEntityExampleSpec.config) with WordSpecLike {
   import HelloWorldPersistentEntityExample.HelloWorld
   import HelloWorldPersistentEntityExample.HelloWorld._
 

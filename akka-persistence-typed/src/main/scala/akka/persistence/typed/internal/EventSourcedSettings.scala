@@ -16,12 +16,12 @@ import scala.concurrent.duration._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object EventsourcedSettings {
+@InternalApi private[akka] object EventSourcedSettings {
 
-  def apply(system: ActorSystem[_], journalPluginId: String, snapshotPluginId: String): EventsourcedSettings =
+  def apply(system: ActorSystem[_], journalPluginId: String, snapshotPluginId: String): EventSourcedSettings =
     apply(system.settings.config, journalPluginId, snapshotPluginId)
 
-  def apply(config: Config, journalPluginId: String, snapshotPluginId: String): EventsourcedSettings = {
+  def apply(config: Config, journalPluginId: String, snapshotPluginId: String): EventSourcedSettings = {
     val typedConfig = config.getConfig("akka.persistence.typed")
 
     // StashOverflowStrategy
@@ -36,7 +36,7 @@ import scala.concurrent.duration._
     val recoveryEventTimeout: FiniteDuration =
       journalConfig.getDuration("recovery-event-timeout", TimeUnit.MILLISECONDS).millis
 
-    EventsourcedSettings(
+    EventSourcedSettings(
       stashCapacity = stashCapacity,
       stashOverflowStrategyConfigurator,
       logOnStashing = logOnStashing,
@@ -59,7 +59,7 @@ import scala.concurrent.duration._
 }
 
 @InternalApi
-private[akka] final case class EventsourcedSettings(
+private[akka] final case class EventSourcedSettings(
   stashCapacity:                     Int,
   stashOverflowStrategyConfigurator: String,
   logOnStashing:                     Boolean,

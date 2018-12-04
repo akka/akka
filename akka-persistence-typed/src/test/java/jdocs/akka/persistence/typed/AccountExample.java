@@ -11,9 +11,9 @@ import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.CommandHandlerBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.PersistentBehavior;
+import akka.persistence.typed.javadsl.EventSourcedBehavior;
 
-public class AccountExample extends PersistentBehavior<AccountExample.AccountCommand, AccountExample.AccountEvent, AccountExample.Account> {
+public class AccountExample extends EventSourcedBehavior<AccountExample.AccountCommand, AccountExample.AccountEvent, AccountExample.Account> {
 
   interface AccountCommand {}
   public static class CreateAccount implements AccountCommand {}
