@@ -10,6 +10,7 @@ import akka.io.Dns
 import akka.io.dns.AAAARecord
 import akka.io.dns.DnsProtocol.{ Resolve, Resolved }
 import akka.io.dns.CachePolicy.Ttl
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 
 import scala.collection.immutable.Seq
@@ -17,9 +18,10 @@ import scala.collection.immutable.Seq
 class AsyncDnsManagerSpec extends AkkaSpec(
   """
     akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.dns.resolver = async-dns
     akka.io.dns.async-dns.nameservers = default
-  """) with ImplicitSender {
+  """) with ImplicitSender with WithLogCapturing {
 
   val dns = Dns(system).manager
 

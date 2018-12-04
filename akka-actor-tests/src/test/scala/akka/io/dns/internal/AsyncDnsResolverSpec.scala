@@ -15,14 +15,17 @@ import akka.io.dns.internal.DnsClient.{ Answer, Question4, Question6, SrvQuestio
 import akka.io.dns.{ AAAARecord, ARecord, DnsSettings, SRVRecord }
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import com.typesafe.config.ConfigFactory
+import akka.testkit.WithLogCapturing
 
+import scala.concurrent.duration._
 import scala.collection.{ immutable ⇒ im }
 import scala.concurrent.duration._
 
 class AsyncDnsResolverSpec extends AkkaSpec(
   """
-    akka.loglevel = INFO
-  """) with ImplicitSender {
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+  """) with ImplicitSender with WithLogCapturing {
 
   "Async DNS Resolver" must {
 
