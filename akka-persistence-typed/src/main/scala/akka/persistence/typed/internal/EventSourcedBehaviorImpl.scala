@@ -219,3 +219,13 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   def onRecoveryFailure(callback: Throwable ⇒ Unit): EventSourcedBehavior[Command, Event, State] =
     copy(onRecoveryFailure = callback)
 }
+
+/** Protocol used internally by the eventsourced behaviors. */
+private[akka] sealed trait InternalProtocol
+private[akka] object InternalProtocol {
+  case object RecoveryPermitGranted extends InternalProtocol
+  final case class JournalResponse(msg: akka.persistence.JournalProtocol.Response) extends InternalProtocol
+  final case class SnapshotterResponse(msg: akka.persistence.SnapshotProtocol.Response) extends InternalProtocol
+  final case class RecoveryTickEvent(snapshot: Boolean) extends InternalProtocol
+  final case class IncomingCommand[C](c: C) extends InternalProtocol
+}
