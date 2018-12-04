@@ -92,6 +92,12 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private[akka] (
   def onRecoveryCompleted(state: State): Unit = ()
 
   /**
+   * The `callback` function is called to notify the actor that the recovery process
+   * has failed
+   */
+  def onRecoveryFailure(failure: Throwable): Unit = ()
+
+  /**
    * Override to get notified when a snapshot is finished.
    *
    * @param result None if successful otherwise contains the exception thrown when snapshotting
@@ -167,7 +173,9 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private[akka] (
           case Success(_) ⇒ Optional.empty()
           case Failure(t) ⇒ Optional.of(t)
         })
-      }).eventAdapter(eventAdapter())
+      })
+      .eventAdapter(eventAdapter())
+      .onRecoveryFailure(onRecoveryFailure)
 
     if (supervisorStrategy.isPresent)
       behavior.onPersistFailure(supervisorStrategy.get)

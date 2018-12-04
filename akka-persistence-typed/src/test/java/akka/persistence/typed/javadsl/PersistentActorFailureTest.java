@@ -4,12 +4,12 @@
 
 package akka.persistence.typed.javadsl;
 
+import akka.actor.testkit.typed.TE;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
-import akka.actor.typed.javadsl.ActorContext;
 import akka.persistence.typed.PersistenceId;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -24,15 +24,22 @@ import static akka.persistence.typed.scaladsl.PersistentBehaviorFailureSpec.conf
 class FailingPersistentActor extends PersistentBehavior<String, String, String> {
 
     private final ActorRef<String> probe;
+    private final ActorRef<Throwable> recoveryFailureProbe;
 
-    FailingPersistentActor(PersistenceId persistenceId, ActorRef<String> probe) {
+    FailingPersistentActor(PersistenceId persistenceId, ActorRef<String> probe, ActorRef<Throwable> recoveryFailureProbe) {
         super(persistenceId, SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1));
         this.probe = probe;
+        this.recoveryFailureProbe = recoveryFailureProbe;
     }
 
     @Override
     public void onRecoveryCompleted(String s) {
         probe.tell("starting");
+    }
+
+    @Override
+    public void onRecoveryFailure(Throwable failure) {
+        recoveryFailureProbe.tell(failure);
     }
 
     @Override
@@ -64,8 +71,20 @@ public class PersistentActorFailureTest extends JUnitSuite {
     @ClassRule
     public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
+    public static Behavior<String> fail(PersistenceId pid, ActorRef<String> probe, ActorRef<Throwable> recoveryFailureProbe) {
+        return new FailingPersistentActor(pid, probe, recoveryFailureProbe);
+    }
     public static Behavior<String> fail(PersistenceId pid, ActorRef<String> probe) {
-        return new FailingPersistentActor(pid, probe);
+        return fail(pid, probe, testKit.<Throwable>createTestProbe().ref());
+    }
+
+    @Test
+    public void notifyRecoveryFailure() {
+        TestProbe<String> probe = testKit.createTestProbe();
+        TestProbe<Throwable> recoveryFailureProbe = testKit.createTestProbe();
+        Behavior<String> p1 = fail(new PersistenceId("fail-recovery-once"), probe.ref(), recoveryFailureProbe.ref());
+        testKit.spawn(p1);
+        recoveryFailureProbe.expectMessageClass(TE.class);
     }
 
     @Test
