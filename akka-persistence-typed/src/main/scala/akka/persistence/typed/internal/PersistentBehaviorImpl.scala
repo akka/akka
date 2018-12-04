@@ -45,7 +45,8 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   snapshotWhen:        (State, Event, Long) ⇒ Boolean                           = ConstantFun.scalaAnyThreeToFalse,
   recovery:            Recovery                                                 = Recovery(),
   supervisionStrategy: SupervisorStrategy                                       = SupervisorStrategy.stop,
-  onSnapshot:          (SnapshotMetadata, Try[Done]) ⇒ Unit                     = ConstantFun.scalaAnyTwoToUnit
+  onSnapshot:          (SnapshotMetadata, Try[Done]) ⇒ Unit                     = ConstantFun.scalaAnyTwoToUnit,
+  onRecoveryFailure:   Throwable ⇒ Unit                                         = ConstantFun.scalaAnyToUnit
 ) extends PersistentBehavior[Command, Event, State] with EventsourcedStashReferenceManagement {
 
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
@@ -69,6 +70,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
           eventHandler,
           WriterIdentity.newIdentity(),
           recoveryCompleted,
+          onRecoveryFailure,
           actualOnSnapshot,
           tagger,
           eventAdapter,
@@ -191,4 +193,11 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
    */
   def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): PersistentBehavior[Command, Event, State] =
     copy(supervisionStrategy = backoffStrategy)
+
+  /**
+   * The `callback` function is called to notify that recovery has failed. For setting a supervision
+   * strategy `onPersistFailure`
+   */
+  def onRecoveryFailure(callback: Throwable ⇒ Unit): PersistentBehavior[Command, Event, State] =
+    copy(onRecoveryFailure = callback)
 }
