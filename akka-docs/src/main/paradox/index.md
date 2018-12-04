@@ -12,12 +12,12 @@
 * [index-cluster](index-cluster.md)
 * [stream/index](stream/index.md)
 * [index-network](index-network.md)
+* [discovery](discovery/index.md)
 * [index-futures](index-futures.md)
 * [index-utilities](index-utilities.md)
 * [common/other-modules](common/other-modules.md)
 * [howto](howto.md)
 * [project/index](project/index.md)
 * [additional/index](additional/index.md)
-* [discovery](discovery/index.md)
 
 @@@
