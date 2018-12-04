@@ -10,6 +10,7 @@ import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.{ Dns, IO }
 import CachePolicy.Ttl
 import akka.pattern.ask
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, SocketUtil }
 import akka.util.Timeout
 
@@ -25,10 +26,11 @@ test starts and tear it down when it finishes.
 class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
   s"""
     akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.dns.resolver = async-dns
     akka.io.dns.async-dns.nameservers = ["localhost:${AsyncDnsResolverIntegrationSpec.dockerDnsServerPort}"]
 //    akka.io.dns.async-dns.nameservers = default
-  """) with DockerBindDnsService {
+  """) with DockerBindDnsService with WithLogCapturing {
   val duration = 10.seconds
   implicit val timeout = Timeout(duration)
 

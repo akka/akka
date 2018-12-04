@@ -153,7 +153,7 @@ object Dependencies {
   val actorTests = l ++= Seq(
     Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath,
     Test.mockito, Test.scalacheck.value, Test.jimfs,
-    Test.dockerClient
+    Test.dockerClient, Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
   )
 
   val actorTestkitTyped = l ++= Seq(Provided.junit, Provided.scalatest.value)
