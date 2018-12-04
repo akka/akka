@@ -98,9 +98,7 @@ class TcpSpec extends StreamSpec("""
         .toMat(Sink.ignore)(Keep.left)
         .run()
 
-      whenReady(future.failed) { ex ⇒
-        ex.getMessage should ===("Connection failed.")
-      }
+      future.failed.futureValue shouldBe a[StreamTcpException]
     }
 
     "work when client closes write, then remote closes write" in assertAllStagesStopped {
@@ -456,6 +454,19 @@ class TcpSpec extends StreamSpec("""
       }
     }
 
+    "provide full exceptions when connection attempt fails because name cannot be resolved" in {
+      val unknownHostName = "abcdefghijklmnopkuh"
+
+      val test =
+        Source.maybe
+          .viaMat(Tcp().outgoingConnection(unknownHostName, 12345))(Keep.right)
+          .to(Sink.ignore)
+          .run()
+          .failed
+          .futureValue
+
+      test.getCause shouldBe a[UnknownHostException]
+    }
   }
 
   "TCP listen stream" must {
