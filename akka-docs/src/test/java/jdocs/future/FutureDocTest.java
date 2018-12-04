@@ -18,13 +18,14 @@ import akka.util.Timeout;
 
 //#imports2
 import java.time.Duration;
-import akka.japi.Function;
-
 import java.util.concurrent.*;
+
+import scala.util.Try;
+
+import akka.japi.Function;
 
 import static akka.dispatch.Futures.future;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 
 //#imports2
 
@@ -283,7 +284,7 @@ public class FutureDocTest extends AbstractJavaTest {
       }
     }, system.dispatcher());
 
-    f.onSuccess(new PrintResult<String>(), system.dispatcher());
+    f.onComplete(new PrintResult<Try<String>>(), system.dispatcher());
     //#future-eval
     Timeout timeout = Timeout.create(Duration.ofSeconds(5));
     String result = (String) Await.result(f, timeout.duration());
@@ -307,7 +308,7 @@ public class FutureDocTest extends AbstractJavaTest {
       }
     }, ec);
 
-    f2.onSuccess(new PrintResult<Integer>(), system.dispatcher());
+    f2.onComplete(new PrintResult<Try<Integer>>(), system.dispatcher());
     //#map
     Timeout timeout = Timeout.create(Duration.ofSeconds(5));
     int result = Await.result(f2, timeout.duration());
@@ -335,7 +336,7 @@ public class FutureDocTest extends AbstractJavaTest {
       }
     }, ec);
 
-    f2.onSuccess(new PrintResult<Integer>(), system.dispatcher());
+    f2.onComplete(new PrintResult<Try<Integer>>(), system.dispatcher());
     //#flat-map
     Timeout timeout = Timeout.create(Duration.ofSeconds(5));
     int result = Await.result(f2, timeout.duration());
@@ -367,7 +368,7 @@ public class FutureDocTest extends AbstractJavaTest {
         }
       }, ec);
 
-    futureSum.onSuccess(new PrintResult<Long>(), system.dispatcher());
+    futureSum.onComplete(new PrintResult<Try<Long>>(), system.dispatcher());
     //#sequence
     Timeout timeout = Timeout.create(Duration.ofSeconds(5));
     long result = Await.result(futureSum, timeout.duration());
@@ -393,7 +394,7 @@ public class FutureDocTest extends AbstractJavaTest {
       }, ec);
 
     //Returns the sequence of strings as upper case
-    futureResult.onSuccess(new PrintResult<Iterable<String>>(), system.dispatcher());
+    futureResult.onComplete(new PrintResult<Try<Iterable<String>>>(), system.dispatcher());
     //#traverse
     Timeout timeout = Timeout.create(Duration.ofSeconds(5));
     Iterable<String> result = Await.result(futureResult, timeout.duration());
@@ -420,7 +421,7 @@ public class FutureDocTest extends AbstractJavaTest {
         }
       }, ec);
 
-    resultFuture.onSuccess(new PrintResult<String>(), system.dispatcher());
+    resultFuture.onComplete(new PrintResult<Try<String>>(), system.dispatcher());
     //#fold
     Timeout timeout = Timeout.create(Duration.ofSeconds(5));
     String result = Await.result(resultFuture, timeout.duration());
@@ -445,7 +446,7 @@ public class FutureDocTest extends AbstractJavaTest {
         }
       }, ec);
 
-    resultFuture.onSuccess(new PrintResult<Object>(), system.dispatcher());
+    resultFuture.onComplete(new PrintResult<Try<Object>>(), system.dispatcher());
     //#reduce
     Timeout timeout = Timeout.create(Duration.ofSeconds(5));
     Object result = Await.result(resultFuture, timeout.duration());
@@ -545,7 +546,7 @@ public class FutureDocTest extends AbstractJavaTest {
       }
     }, ec);
 
-    future.onSuccess(new PrintResult<Integer>(), system.dispatcher());
+    future.onComplete(new PrintResult<Try<Integer>>(), system.dispatcher());
     //#recover
     Timeout timeout = Timeout.create(Duration.ofSeconds(5));
     int result = Await.result(future, timeout.duration());
@@ -574,7 +575,7 @@ public class FutureDocTest extends AbstractJavaTest {
       }
     }, ec);
 
-    future.onSuccess(new PrintResult<Integer>(), system.dispatcher());
+    future.onComplete(new PrintResult<Try<Integer>>(), system.dispatcher());
     //#try-recover
     Timeout timeout = Timeout.create(Duration.ofSeconds(5));
     int result = Await.result(future,  timeout.duration());
@@ -582,42 +583,10 @@ public class FutureDocTest extends AbstractJavaTest {
   }
 
   @Test
-  public void useOnSuccessOnFailureAndOnComplete() throws Exception {
+  public void useOnOnComplete() throws Exception {
     {
       Future<String> future = Futures.successful("foo");
 
-      //#onSuccess
-      final ExecutionContext ec = system.dispatcher();
-
-      future.onSuccess(new OnSuccess<String>() {
-        public void onSuccess(String result) {
-          if ("bar" == result) {
-            //Do something if it resulted in "bar"
-          } else {
-            //Do something if it was some other String
-          }
-        }
-      }, ec);
-      //#onSuccess
-    }
-    {
-      Future<String> future = Futures.failed(new IllegalStateException("OHNOES"));
-      //#onFailure
-      final ExecutionContext ec = system.dispatcher();
-
-      future.onFailure(new OnFailure() {
-        public void onFailure(Throwable failure) {
-          if (failure instanceof IllegalStateException) {
-            //Do something if it was this particular failure
-          } else {
-            //Do something if it was some other failure
-          }
-        }
-      }, ec);
-      //#onFailure
-    }
-    {
-      Future<String> future = Futures.successful("foo");
       //#onComplete
       final ExecutionContext ec = system.dispatcher();
 
@@ -648,7 +617,7 @@ public class FutureDocTest extends AbstractJavaTest {
           }
         }, ec);
 
-      future3.onSuccess(new PrintResult<String>(), system.dispatcher());
+      future3.onComplete(new PrintResult<Try<String>>(), system.dispatcher());
       //#zip
       Timeout timeout = Timeout.create(Duration.ofSeconds(5));
       String result = Await.result(future3, timeout.duration());
@@ -662,7 +631,7 @@ public class FutureDocTest extends AbstractJavaTest {
       Future<String> future3 = Futures.successful("bar");
       // Will have "bar" in this case
       Future<String> future4 = future1.fallbackTo(future2).fallbackTo(future3);
-      future4.onSuccess(new PrintResult<String>(), system.dispatcher());
+      future4.onComplete(new PrintResult<Try<String>>(), system.dispatcher());
       //#fallback-to
       Timeout timeout = Timeout.create(Duration.ofSeconds(5));
       String result = Await.result(future4, timeout.duration());

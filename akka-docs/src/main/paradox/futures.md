@@ -368,21 +368,7 @@ you can also parallelize it by chunking your futures into sub-sequences and redu
 ## Callbacks
 
 Sometimes you just want to listen to a `Future` being completed, and react to that not by creating a new `Future`, but by side-effecting.
-For this `Future` supports `onComplete`, `onSuccess` and `onFailure`, of which the last two are specializations of the first.
-
-Scala
-:  @@snip [FutureDocSpec.scala](/akka-docs/src/test/scala/docs/future/FutureDocSpec.scala) { #onSuccess }
-
-Java
-:  @@snip [FutureDocTest.java](/akka-docs/src/test/java/jdocs/future/FutureDocTest.java) { #onSuccess }
-
-
-Scala
-:  @@snip [FutureDocSpec.scala](/akka-docs/src/test/scala/docs/future/FutureDocSpec.scala) { #onFailure }
-
-Java
-:  @@snip [FutureDocTest.java](/akka-docs/src/test/java/jdocs/future/FutureDocTest.java) { #onFailure }
-
+For this, `Future` supports `onComplete`:
 
 Scala
 :  @@snip [FutureDocSpec.scala](/akka-docs/src/test/scala/docs/future/FutureDocSpec.scala) { #onComplete }
