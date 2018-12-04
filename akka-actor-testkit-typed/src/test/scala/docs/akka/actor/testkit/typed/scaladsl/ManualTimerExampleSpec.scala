@@ -48,7 +48,7 @@ class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config
       val probe = TestProbe[Tock.type]()
       val behavior = Behaviors.withTimers[Tick.type] { timer ⇒
         timer.startPeriodicTimer("T", Tick, 10.millis)
-        Behaviors.receive { (ctx, Tick) ⇒
+        Behaviors.receive { (context, Tick) ⇒
           probe.ref ! Tock
           Behaviors.same
         }
@@ -77,7 +77,7 @@ class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config
 
       val behavior = Behaviors.withTimers[Command] { timer ⇒
         timer.startPeriodicTimer("T", Tick(1), interval)
-        Behaviors.receive { (ctx, cmd) ⇒
+        Behaviors.receive { (context, cmd) ⇒
           cmd match {
             case Tick(n) ⇒
               probe.ref ! Tock(n)

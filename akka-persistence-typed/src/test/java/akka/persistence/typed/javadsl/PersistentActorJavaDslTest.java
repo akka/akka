@@ -292,14 +292,14 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
               .matchCommand(Timeout.class,
                   (state, msg) -> Effect().persist(timeoutEvent))
               .matchCommand(EmptyEventsListAndThenLog.class, (state, msg) -> Effect().persist(Collections.emptyList())
-                  .andThen(s -> loggingProbe.tell(loggingOne)))
+                  .thenRun(s -> loggingProbe.tell(loggingOne)))
               .matchCommand(StopThenLog.class,
                   (state, msg) -> Effect().stop()
-                      .andThen(s -> loggingProbe.tell(loggingOne)))
+                      .thenRun(s -> loggingProbe.tell(loggingOne)))
               .matchCommand(IncrementTwiceAndLog.class,
                   (state, msg) -> Effect().persist(
                       Arrays.asList(new Incremented(1), new Incremented(1)))
-                      .andThen(s -> loggingProbe.tell(loggingOne)))
+                      .thenRun(s -> loggingProbe.tell(loggingOne)))
               .build();
 
         }

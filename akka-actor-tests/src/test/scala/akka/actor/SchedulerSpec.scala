@@ -105,12 +105,12 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
 
       // should not be run immediately
       assert(countDownLatch.await(100, TimeUnit.MILLISECONDS) == false)
-      countDownLatch.getCount should ===(3)
+      countDownLatch.getCount should ===(3L)
 
       // after 1 second the wait should fail
       assert(countDownLatch.await(2, TimeUnit.SECONDS) == false)
       // should still be 1 left
-      countDownLatch.getCount should ===(1)
+      countDownLatch.getCount should ===(1L)
     }
 
     /**

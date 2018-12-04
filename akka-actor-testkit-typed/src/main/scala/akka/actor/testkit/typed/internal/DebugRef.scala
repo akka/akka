@@ -23,7 +23,7 @@ import akka.actor.typed.internal.InternalRecipientRef
 
   private val q = new ConcurrentLinkedQueue[Either[SystemMessage, T]]
 
-  override def tell(msg: T): Unit = q.add(Right(msg))
+  override def tell(message: T): Unit = q.add(Right(message))
   override def sendSystem(signal: SystemMessage): Unit = q.add(Left(signal))
 
   def hasMessage: Boolean = q.peek match {
@@ -41,15 +41,15 @@ import akka.actor.typed.internal.InternalRecipientRef
   def hasSomething: Boolean = q.peek != null
 
   def receiveMessage(): T = q.poll match {
-    case null         ⇒ throw new NoSuchElementException("empty DebugRef")
-    case Left(signal) ⇒ throw new IllegalStateException(s"expected message but found signal $signal")
-    case Right(msg)   ⇒ msg
+    case null           ⇒ throw new NoSuchElementException("empty DebugRef")
+    case Left(signal)   ⇒ throw new IllegalStateException(s"expected message but found signal $signal")
+    case Right(message) ⇒ message
   }
 
   def receiveSignal(): SystemMessage = q.poll match {
-    case null         ⇒ throw new NoSuchElementException("empty DebugRef")
-    case Left(signal) ⇒ signal
-    case Right(msg)   ⇒ throw new IllegalStateException(s"expected signal but found message $msg")
+    case null           ⇒ throw new NoSuchElementException("empty DebugRef")
+    case Left(signal)   ⇒ signal
+    case Right(message) ⇒ throw new IllegalStateException(s"expected signal but found message $message")
   }
 
   def receiveAll(): List[Either[SystemMessage, T]] = {

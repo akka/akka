@@ -18,7 +18,7 @@ object Dependencies {
   val sslConfigVersion = "0.3.6"
   val slf4jVersion = "1.7.25"
   val scalaXmlVersion = "1.0.6"
-  val aeronVersion = "1.11.2"
+  val aeronVersion = "1.12.0"
 
   val Versions = Seq(
     crossScalaVersions := Seq("2.12.7", "2.11.12"),
@@ -153,7 +153,7 @@ object Dependencies {
   val actorTests = l ++= Seq(
     Test.junit, Test.scalatest.value, Test.commonsCodec, Test.commonsMath,
     Test.mockito, Test.scalacheck.value, Test.jimfs,
-    Test.dockerClient
+    Test.dockerClient, Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
   )
 
   val actorTestkitTyped = l ++= Seq(Provided.junit, Provided.scalatest.value)

@@ -707,6 +707,12 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings) extends Act
         registry -= m.address
       }
 
+    case MemberDowned(m) ⇒
+      if (matchingRole(m)) {
+        nodes -= m.address
+        registry -= m.address
+      }
+
     case MemberRemoved(m, _) ⇒
       if (m.address == selfAddress)
         context stop self

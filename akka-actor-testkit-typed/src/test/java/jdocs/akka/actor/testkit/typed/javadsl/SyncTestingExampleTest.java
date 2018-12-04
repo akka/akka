@@ -5,19 +5,26 @@
 package jdocs.akka.actor.testkit.typed.javadsl;
 
 //#imports
+import akka.actor.testkit.typed.CapturedLogEvent;
 import akka.actor.testkit.typed.javadsl.BehaviorTestKit;
 import akka.actor.testkit.typed.javadsl.Effects;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
+import akka.event.Logging;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 //#imports
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 import org.scalatest.junit.JUnitSuite;
+
 
 public class SyncTestingExampleTest extends JUnitSuite {
 
   //#child
-  public static Behavior<String> childActor = Behaviors.receive((ctx, msg) -> Behaviors.same());
+  public static Behavior<String> childActor = Behaviors.receive((context, message) -> Behaviors.same());
   //#child
 
   //#under-test
@@ -43,29 +50,43 @@ public class SyncTestingExampleTest extends JUnitSuite {
       this.who = who;
     }
   }
+  public static class LogAndSayHello implements Command {
+    private final ActorRef<String> who;
+
+    public LogAndSayHello(ActorRef<String> who) {
+      this.who = who;
+    }
+  }
 
   public static Behavior<Command> myBehavior = Behaviors.receive(Command.class)
-    .onMessage(CreateAChild.class, (ctx, msg) -> {
-      ctx.spawn(childActor, msg.childName);
+    .onMessage(CreateAChild.class, (context, message) -> {
+      context.spawn(childActor, message.childName);
       return Behaviors.same();
     })
-    .onMessage(CreateAnAnonymousChild.class, (ctx, msg) -> {
-      ctx.spawnAnonymous(childActor);
+    .onMessage(CreateAnAnonymousChild.class, (context, message) -> {
+      context.spawnAnonymous(childActor);
       return Behaviors.same();
     })
-    .onMessage(SayHelloToChild.class, (ctx, msg) -> {
-      ActorRef<String> child = ctx.spawn(childActor, msg.childName);
+    .onMessage(SayHelloToChild.class, (context, message) -> {
+      ActorRef<String> child = context.spawn(childActor, message.childName);
       child.tell("hello");
       return Behaviors.same();
     })
-    .onMessage(SayHelloToAnonymousChild.class, (ctx, msg) -> {
-      ActorRef<String> child = ctx.spawnAnonymous(childActor);
+    .onMessage(SayHelloToAnonymousChild.class, (context, message) -> {
+      ActorRef<String> child = context.spawnAnonymous(childActor);
       child.tell("hello stranger");
       return Behaviors.same();
-    }).onMessage(SayHello.class, (ctx, msg) -> {
-      msg.who.tell("hello");
+    })
+    .onMessage(SayHello.class, (context, message) -> {
+      message.who.tell("hello");
       return Behaviors.same();
-    }).build();
+    })
+    .onMessage(LogAndSayHello.class, (context, message) -> {
+      context.getLog().info("Saying hello to {}", message.who.path().name());
+      message.who.tell("hello");
+      return Behaviors.same();
+    })
+    .build();
   //#under-test
 
 
@@ -116,5 +137,20 @@ public class SyncTestingExampleTest extends JUnitSuite {
      TestInbox<String> childInbox = testKit.childInbox("$a");
      childInbox.expectMessage("hello stranger");
      //#test-child-message-anonymous
+  }
+
+  @Test
+  public void testCheckLogging() {
+    //#test-check-logging
+    BehaviorTestKit<Command> test = BehaviorTestKit.create(myBehavior);
+    TestInbox<String> inbox = TestInbox.create("Inboxer");
+    test.run(new LogAndSayHello(inbox.getRef()));
+
+    List<CapturedLogEvent> allLogEntries = test.getAllLogEntries();
+    assertEquals(1, allLogEntries.size());
+    CapturedLogEvent expectedLogEvent = new CapturedLogEvent(Logging.InfoLevel(),"Saying hello to Inboxer",
+            Optional.empty(), Optional.empty(), new HashMap<>());
+    assertEquals(expectedLogEvent, allLogEntries.get(0));
+    //#test-check-logging
   }
 }

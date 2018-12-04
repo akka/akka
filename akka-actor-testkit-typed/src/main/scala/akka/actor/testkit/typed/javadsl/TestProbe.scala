@@ -6,6 +6,7 @@ package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 import java.util.function.Supplier
+import java.util.{ List ⇒ JList }
 
 import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.annotation.DoNotInherit
@@ -13,6 +14,7 @@ import akka.actor.testkit.typed.internal.TestProbeImpl
 import akka.actor.testkit.typed.{ FishingOutcome, TestKitSettings }
 import akka.actor.testkit.typed.scaladsl.TestDuration
 import akka.util.JavaDurationConverters._
+import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
 
@@ -130,7 +132,8 @@ abstract class TestProbe[M] {
   @InternalApi protected def within_internal[T](min: FiniteDuration, max: FiniteDuration, f: ⇒ T): T
 
   /**
-   * Same as `expectMessage(remainingOrDefault, obj)`, but correctly treating the timeFactor.
+   * Same as `expectMessage(remainingOrDefault, obj)`, but using the
+   * default timeout as deadline.
    */
   def expectMessage[T <: M](obj: T): T
 
@@ -201,7 +204,8 @@ abstract class TestProbe[M] {
   // FIXME awaitAssert(Procedure): Unit would be nice for java people to not have to return null
 
   /**
-   * Same as `expectMessageType(clazz, remainingOrDefault)`, but correctly treating the timeFactor.
+   * Same as `expectMessageType(clazz, remainingOrDefault)`,but using the
+   * default timeout as deadline.
    */
   def expectMessageClass[T](clazz: Class[T]): T =
     expectMessageClass_internal(getRemainingOrDefault.asScala, clazz)
@@ -217,6 +221,32 @@ abstract class TestProbe[M] {
    * INTERNAL API
    */
   @InternalApi protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C
+
+  /**
+   * Receive one message of type `M` within the default timeout as deadline.
+   */
+  def receiveOne(): M
+
+  /**
+   * Receive one message of type `M`. Wait time is bounded by the `max` duration,
+   * with an [[AssertionError]] raised in case of timeout.
+   */
+  def receiveOne(max: Duration): M
+
+  /**
+   * Same as `receiveMessages(n, remaining)` but using the default timeout as deadline.
+   */
+  def receiveMessages(n: Int): JList[M] = receiveN_internal(n, getRemainingOrDefault.asScala).asJava
+
+  /**
+   * Receive `n` messages in a row before the given deadline.
+   */
+  def receiveMessages(n: Int, max: Duration): JList[M] = receiveN_internal(n, max.asScala.dilated).asJava
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi protected def receiveN_internal(n: Int, max: FiniteDuration): immutable.Seq[M]
 
   /**
    * Java API: Allows for flexible matching of multiple messages within a timeout, the fisher function is fed each incoming

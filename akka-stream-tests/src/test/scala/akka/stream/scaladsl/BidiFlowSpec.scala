@@ -50,7 +50,7 @@ class BidiFlowSpec extends StreamSpec {
         ClosedShape
       }).run()
 
-      Await.result(top, 1.second) should ===(3)
+      Await.result(top, 1.second) should ===(3L)
       Await.result(bottom, 1.second) should ===(str)
     }
 

@@ -11,6 +11,7 @@ import com.spotify.docker.client.DockerClient.LogsParam
 import com.spotify.docker.client.messages.{ ContainerConfig, HostConfig, PortBinding }
 import org.scalatest.concurrent.Eventually
 
+import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NonFatal
 
@@ -56,7 +57,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
 
     client.startContainer(creation.id())
 
-    eventually {
+    eventually(timeout(25.seconds)) {
       client.logs(creation.id(), LogsParam.stderr()).readFully() should include("all zones loaded")
     }
   }

@@ -89,13 +89,13 @@ public class StashDocTest extends JUnitSuite {
     }
 
     Behavior<Command> behavior() {
-      return Behaviors.setup(ctx -> {
+      return Behaviors.setup(context -> {
         db.load(id)
             .whenComplete((value, cause) -> {
             if (cause == null)
-              ctx.getSelf().tell(new InitialState(value));
+              context.getSelf().tell(new InitialState(value));
             else
-              ctx.getSelf().tell(new DBError(asRuntimeException(cause)));
+              context.getSelf().tell(new DBError(asRuntimeException(cause)));
         });
 
         return init();
@@ -104,16 +104,16 @@ public class StashDocTest extends JUnitSuite {
 
     private Behavior<Command> init() {
       return Behaviors.receive(Command.class)
-          .onMessage(InitialState.class, (ctx, msg) -> {
+          .onMessage(InitialState.class, (context, message) -> {
             // now we are ready to handle stashed messages if any
-            return buffer.unstashAll(ctx, active(msg.value));
+            return buffer.unstashAll(context, active(message.value));
           })
-          .onMessage(DBError.class, (ctx, msg) -> {
-            throw msg.cause;
+          .onMessage(DBError.class, (context, message) -> {
+            throw message.cause;
           })
-          .onMessage(Command.class, (ctx, msg) -> {
+          .onMessage(Command.class, (context, message) -> {
             // stash all other messages for later processing
-            buffer.stash(msg);
+            buffer.stash(message);
             return Behaviors.same();
           })
           .build();
@@ -121,34 +121,34 @@ public class StashDocTest extends JUnitSuite {
 
     private Behavior<Command> active(String state) {
       return Behaviors.receive(Command.class)
-          .onMessage(Get.class, (ctx, msg) -> {
-            msg.replyTo.tell(state);
+          .onMessage(Get.class, (context, message) -> {
+            message.replyTo.tell(state);
             return Behaviors.same();
           })
-          .onMessage(Save.class, (ctx, msg) -> {
-            db.save(id, msg.payload)
+          .onMessage(Save.class, (context, message) -> {
+            db.save(id, message.payload)
               .whenComplete((value, cause) -> {
                 if (cause == null)
-                  ctx.getSelf().tell(SaveSuccess.instance);
+                  context.getSelf().tell(SaveSuccess.instance);
                 else
-                  ctx.getSelf().tell(new DBError(asRuntimeException(cause)));
+                  context.getSelf().tell(new DBError(asRuntimeException(cause)));
               });
-            return saving(msg.payload, msg.replyTo);
+            return saving(message.payload, message.replyTo);
           })
           .build();
     }
 
     private Behavior<Command> saving(String state, ActorRef<Done> replyTo) {
       return Behaviors.receive(Command.class)
-          .onMessageEquals(SaveSuccess.instance, ctx -> {
+          .onMessageEquals(SaveSuccess.instance, context -> {
             replyTo.tell(Done.getInstance());
-            return buffer.unstashAll(ctx, active(state));
+            return buffer.unstashAll(context, active(state));
           })
-          .onMessage(DBError.class, (ctx, msg) -> {
-            throw msg.cause;
+          .onMessage(DBError.class, (context, message) -> {
+            throw message.cause;
           })
-          .onMessage(Command.class, (ctx, msg) -> {
-            buffer.stash(msg);
+          .onMessage(Command.class, (context, message) -> {
+            buffer.stash(message);
             return Behaviors.same();
           })
           .build();

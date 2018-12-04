@@ -32,7 +32,8 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private[akka] (
    *
    * Return effects from your handlers in order to instruct persistence on how to act on the incoming message (i.e. persist events).
    */
-  protected final def Effect: EffectFactories[Command, Event, State] = EffectFactory.asInstanceOf[EffectFactories[Command, Event, State]]
+  protected final def Effect: EffectFactories[Command, Event, State] =
+    EffectFactories.asInstanceOf[EffectFactories[Command, Event, State]]
 
   /**
    * Implement by returning the initial empty state object.
@@ -89,6 +90,12 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private[akka] (
    * is finished.
    */
   def onRecoveryCompleted(state: State): Unit = ()
+
+  /**
+   * The `callback` function is called to notify the actor that the recovery process
+   * has failed
+   */
+  def onRecoveryFailure(failure: Throwable): Unit = ()
 
   /**
    * Override to get notified when a snapshot is finished.
@@ -166,7 +173,9 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private[akka] (
           case Success(_) ⇒ Optional.empty()
           case Failure(t) ⇒ Optional.of(t)
         })
-      }).eventAdapter(eventAdapter())
+      })
+      .eventAdapter(eventAdapter())
+      .onRecoveryFailure(onRecoveryFailure)
 
     if (supervisorStrategy.isPresent)
       behavior.onPersistFailure(supervisorStrategy.get)

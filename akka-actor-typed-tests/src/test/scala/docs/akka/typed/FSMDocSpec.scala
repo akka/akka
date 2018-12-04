@@ -31,8 +31,8 @@ object FSMDocSpec {
 
   //#simple-state
   // states of the FSM represented as behaviors
-  def idle(data: Data): Behavior[Event] = Behaviors.receiveMessage[Event] { msg: Event ⇒
-    (msg, data) match {
+  def idle(data: Data): Behavior[Event] = Behaviors.receiveMessage[Event] { message: Event ⇒
+    (message, data) match {
       case (SetTarget(ref), Uninitialized) ⇒
         idle(Todo(ref, Vector.empty))
       case (Queue(obj), t @ Todo(_, v)) ⇒

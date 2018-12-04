@@ -152,6 +152,7 @@ private[akka] class SubFusingActorMaterializerImpl(val delegate: ExtendedActorMa
 @InternalApi private[akka] object StreamSupervisor {
   def props(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean): Props =
     Props(new StreamSupervisor(settings, haveShutDown)).withDeploy(Deploy.local)
+      .withDispatcher(settings.dispatcher)
   private[stream] val baseName = "StreamSupervisor"
   private val actorName = SeqActorName(baseName)
   def nextName(): String = actorName.next()

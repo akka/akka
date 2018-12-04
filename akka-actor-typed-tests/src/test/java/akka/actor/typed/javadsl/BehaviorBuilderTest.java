@@ -34,16 +34,16 @@ public class BehaviorBuilderTest extends JUnitSuite {
     @Test
     public void shouldCompile() {
       Behavior<Message> b = Behaviors.receive(Message.class)
-        .onMessage(One.class, (ctx, o) -> {
+        .onMessage(One.class, (context, o) -> {
           o.foo();
           return same();
         })
-        .onMessage(One.class, o -> o.foo().startsWith("a"), (ctx, o) -> same())
-        .onMessageUnchecked(MyList.class, (ActorContext<Message> ctx, MyList<String> l) -> {
+        .onMessage(One.class, o -> o.foo().startsWith("a"), (context, o) -> same())
+        .onMessageUnchecked(MyList.class, (ActorContext<Message> context, MyList<String> l) -> {
           String first = l.get(0);
           return Behaviors.<Message>same();
         })
-        .onSignal(Terminated.class, (ctx, t) -> {
+        .onSignal(Terminated.class, (context, t) -> {
           System.out.println("Terminating along with " + t.getRef());
           return stopped();
         })
@@ -67,10 +67,10 @@ public class BehaviorBuilderTest extends JUnitSuite {
 
     public Behavior<CounterMessage> immutableCounter(int currentValue) {
       return Behaviors.receive(CounterMessage.class)
-          .onMessage(Increase.class, (ctx, o) -> {
+          .onMessage(Increase.class, (context, o) -> {
             return immutableCounter(currentValue + 1);
           })
-          .onMessage(Get.class, (ctx, o) -> {
+          .onMessage(Get.class, (context, o) -> {
             o.sender.tell(new Got(currentValue));
             return same();
           })

@@ -4,10 +4,10 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.typed.{ Behavior, Signal, ActorRef }
-import akka.annotation.DoNotInherit
-import akka.actor.testkit.typed.Effect
 import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.typed.{ ActorRef, Behavior, Signal }
+import akka.annotation.DoNotInherit
 
 import java.util.concurrent.ThreadLocalRandom
 
@@ -38,10 +38,10 @@ object BehaviorTestKit {
 trait BehaviorTestKit[T] {
 
   // FIXME it is weird that this is public but it is used in BehaviorSpec, could we avoid that?
-  private[akka] def ctx: akka.actor.typed.ActorContext[T]
+  private[akka] def context: akka.actor.typed.ActorContext[T]
 
   /**
-   * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.scaladsl.Effects.NoEffects]] if no effects
+   * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.Effect.NoEffects]] if no effects
    * have taken place. The effect is consumed, subsequent calls won't
    * will not include this effect.
    */
@@ -64,7 +64,7 @@ trait BehaviorTestKit[T] {
   def childTestKit[U](child: ActorRef[U]): BehaviorTestKit[U]
 
   /**
-   * The self inbox contains messages the behavior sent to `ctx.self`
+   * The self inbox contains messages the behavior sent to `context.self`
    */
   def selfInbox(): TestInbox[T]
 
@@ -119,9 +119,9 @@ trait BehaviorTestKit[T] {
   def isAlive: Boolean
 
   /**
-   * Send the msg to the behavior and record any [[Effect]]s
+   * Send the message to the behavior and record any [[Effect]]s
    */
-  def run(msg: T): Unit
+  def run(message: T): Unit
 
   /**
    * Send the first message in the selfInbox to the behavior and run it, recording [[Effect]]s.
@@ -129,7 +129,17 @@ trait BehaviorTestKit[T] {
   def runOne(): Unit
 
   /**
-   * Send the signal to the beheavior and record any [[Effect]]s
+   * Send the signal to the behavior and record any [[Effect]]s
    */
   def signal(signal: Signal): Unit
+
+  /**
+   * Returns all the [[CapturedLogEvent]] issued by this behavior(s)
+   */
+  def logEntries(): immutable.Seq[CapturedLogEvent]
+
+  /**
+   * Clear the log entries
+   */
+  def clearLog(): Unit
 }

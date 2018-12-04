@@ -67,14 +67,13 @@ object ActorMaterializer {
       FlowNames(system).name.copy(namePrefix))
   }
 
-  private def actorOfStreamSupervisor(materializerSettings: ActorMaterializerSettings, context: ActorRefFactory, haveShutDown: AtomicBoolean) =
+  private def actorOfStreamSupervisor(materializerSettings: ActorMaterializerSettings, context: ActorRefFactory, haveShutDown: AtomicBoolean) = {
+    val props = StreamSupervisor.props(materializerSettings, haveShutDown)
     context match {
-      case s: ExtendedActorSystem ⇒
-        s.systemActorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName())
-
-      case a: ActorContext ⇒
-        a.actorOf(StreamSupervisor.props(materializerSettings, haveShutDown).withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName())
+      case s: ExtendedActorSystem ⇒ s.systemActorOf(props, StreamSupervisor.nextName())
+      case a: ActorContext        ⇒ a.actorOf(props, StreamSupervisor.nextName())
     }
+  }
 
   /**
    * Scala API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
@@ -101,8 +100,9 @@ object ActorMaterializer {
       system,
       materializerSettings,
       system.dispatchers,
-      system.systemActorOf(StreamSupervisor.props(materializerSettings, haveShutDown)
-        .withDispatcher(materializerSettings.dispatcher), StreamSupervisor.nextName()),
+      system.systemActorOf(
+        StreamSupervisor.props(materializerSettings, haveShutDown),
+        StreamSupervisor.nextName()),
       haveShutDown,
       FlowNames(system).name.copy(namePrefix))
   }

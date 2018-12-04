@@ -24,8 +24,8 @@ class WidenSpec extends ScalaTestWithActorTestKit(
   implicit val untypedSystem = system.toUntyped
 
   def intToString(probe: ActorRef[String]): Behavior[Int] = {
-    Behaviors.receiveMessage[String] { msg ⇒
-      probe ! msg
+    Behaviors.receiveMessage[String] { message ⇒
+      probe ! message
       Behaviors.same
     }.widen[Int] {
       case n if n != 13 ⇒ n.toString
@@ -72,8 +72,8 @@ class WidenSpec extends ScalaTestWithActorTestKit(
       val beh =
         widen(
           widen(
-            Behaviors.receiveMessage[String] { msg ⇒
-              probe.ref ! msg
+            Behaviors.receiveMessage[String] { message ⇒
+              probe.ref ! message
               Behaviors.same
             }
           )
@@ -101,8 +101,8 @@ class WidenSpec extends ScalaTestWithActorTestKit(
 
       def next: Behavior[String] =
         widen(
-          Behaviors.receiveMessage[String] { msg ⇒
-            probe.ref ! msg
+          Behaviors.receiveMessage[String] { message ⇒
+            probe.ref ! message
             next
           }
         )
@@ -131,7 +131,7 @@ class WidenSpec extends ScalaTestWithActorTestKit(
         val ref = spawn(
           widen(
             widen(
-              Behaviors.receiveMessage[String] { msg ⇒
+              Behaviors.receiveMessage[String] { message ⇒
                 Behaviors.same
               }
             )

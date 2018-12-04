@@ -77,7 +77,7 @@ object AccountExampleWithEventHandlersInState {
           case Deposited(amount) ⇒ copy(balance = balance + amount)
           case Withdrawn(amount) ⇒ copy(balance = balance - amount)
           case AccountClosed     ⇒ ClosedAccount
-          case _                 ⇒ throw new IllegalStateException(s"unexpected event [$event] in state [OpenedAccount]")
+          case AccountCreated    ⇒ throw new IllegalStateException(s"unexpected event [$event] in state [OpenedAccount]")
         }
 
       def canWithdraw(amount: BigDecimal): Boolean = {

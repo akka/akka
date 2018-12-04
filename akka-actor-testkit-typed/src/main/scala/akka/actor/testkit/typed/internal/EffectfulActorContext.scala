@@ -13,7 +13,7 @@ import akka.annotation.InternalApi
 import akka.actor.testkit.typed.Effect
 import akka.actor.testkit.typed.Effect._
 
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.compat.java8.FunctionConverters._
 
@@ -62,25 +62,25 @@ import scala.compat.java8.FunctionConverters._
     effectQueue.offer(Watched(other))
     super.watch(other)
   }
-  override def watchWith[U](other: ActorRef[U], msg: T): Unit = {
+  override def watchWith[U](other: ActorRef[U], message: T): Unit = {
     effectQueue.offer(Watched(other))
-    super.watchWith(other, msg)
+    super.watchWith(other, message)
   }
   override def unwatch[U](other: ActorRef[U]): Unit = {
     effectQueue.offer(Unwatched(other))
     super.unwatch(other)
   }
-  override def setReceiveTimeout(d: FiniteDuration, msg: T): Unit = {
-    effectQueue.offer(ReceiveTimeoutSet(d, msg))
-    super.setReceiveTimeout(d, msg)
+  override def setReceiveTimeout(d: FiniteDuration, message: T): Unit = {
+    effectQueue.offer(ReceiveTimeoutSet(d, message))
+    super.setReceiveTimeout(d, message)
   }
   override def cancelReceiveTimeout(): Unit = {
     effectQueue.offer(ReceiveTimeoutCancelled)
     super.cancelReceiveTimeout()
   }
-  override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): Cancellable = {
-    effectQueue.offer(Scheduled(delay, target, msg))
-    super.schedule(delay, target, msg)
+  override def scheduleOnce[U](delay: FiniteDuration, target: ActorRef[U], message: U): Cancellable = {
+    effectQueue.offer(Scheduled(delay, target, message))
+    super.scheduleOnce(delay, target, message)
   }
 }
 

@@ -3,7 +3,7 @@
  */
 
 //#print-refs
-package com.lightbend.akka.sample;
+package com.example;
 
 //#print-refs
 

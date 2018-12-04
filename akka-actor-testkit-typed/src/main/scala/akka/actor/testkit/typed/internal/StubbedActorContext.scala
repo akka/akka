@@ -7,16 +7,15 @@ package akka.actor.testkit.typed.internal
 import akka.actor.typed._
 import akka.actor.typed.internal._
 import akka.actor.typed.internal.adapter.AbstractLogger
+import akka.actor.testkit.typed.CapturedLogEvent
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.{ ActorPath, InvalidMessageException }
 import akka.annotation.InternalApi
 import akka.event.Logging
-import akka.event.Logging.LogLevel
 import akka.util.{ Helpers, OptionVal }
 import akka.{ actor ⇒ untyped }
 import java.util.concurrent.ThreadLocalRandom.{ current ⇒ rnd }
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
@@ -35,9 +34,9 @@ private[akka] final class FunctionRef[-T](
   send:              (T, FunctionRef[T]) ⇒ Unit)
   extends ActorRef[T] with ActorRefImpl[T] with InternalRecipientRef[T] {
 
-  override def tell(msg: T): Unit = {
-    if (msg == null) throw InvalidMessageException("[null] is not an allowed message")
-    send(msg, this)
+  override def tell(message: T): Unit = {
+    if (message == null) throw InvalidMessageException("[null] is not an allowed message")
+    send(message, this)
   }
 
   // impl ActorRefImpl
@@ -49,13 +48,6 @@ private[akka] final class FunctionRef[-T](
   override def provider: ActorRefProvider = throw new UnsupportedOperationException("no provider")
   // impl InternalRecipientRef
   def isTerminated: Boolean = false
-}
-
-final case class CapturedLogEvent(logLevel: LogLevel, message: String,
-                                  cause:  OptionVal[Throwable],
-                                  marker: OptionVal[LogMarker],
-                                  mdc:    Map[String, Any]) {
-  def getMdc: java.util.Map[String, Any] = mdc.asJava
 }
 
 /**
@@ -156,15 +148,15 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
   private val childName = Iterator from 0 map (Helpers.base64(_))
   private val loggingAdapter = new StubbedLogger
 
-  override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.ctx.self)
+  override def children: Iterable[ActorRef[Nothing]] = _children.values map (_.context.self)
   def childrenNames: Iterable[String] = _children.keys
 
-  override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.ctx.self)
+  override def child(name: String): Option[ActorRef[Nothing]] = _children get name map (_.context.self)
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
     val btk = new BehaviorTestKitImpl[U](path / childName.next() withUid rnd().nextInt(), behavior)
-    _children += btk.ctx.self.path.name → btk
-    btk.ctx.self
+    _children += btk.context.self.path.name → btk
+    btk.context.self
   }
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] =
     _children get name match {
@@ -172,7 +164,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
       case None ⇒
         val btk = new BehaviorTestKitImpl[U](path / name withUid rnd().nextInt(), behavior)
         _children += name → btk
-        btk.ctx.self
+        btk.context.self
     }
 
   /**
@@ -189,12 +181,12 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
     }
   }
   override def watch[U](other: ActorRef[U]): Unit = ()
-  override def watchWith[U](other: ActorRef[U], msg: T): Unit = ()
+  override def watchWith[U](other: ActorRef[U], message: T): Unit = ()
   override def unwatch[U](other: ActorRef[U]): Unit = ()
-  override def setReceiveTimeout(d: FiniteDuration, msg: T): Unit = ()
+  override def setReceiveTimeout(d: FiniteDuration, message: T): Unit = ()
   override def cancelReceiveTimeout(): Unit = ()
 
-  override def schedule[U](delay: FiniteDuration, target: ActorRef[U], msg: U): untyped.Cancellable = new untyped.Cancellable {
+  override def scheduleOnce[U](delay: FiniteDuration, target: ActorRef[U], message: U): untyped.Cancellable = new untyped.Cancellable {
     override def cancel() = false
     override def isCancelled = true
   }
@@ -214,7 +206,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
 
     new FunctionRef[U](
       p,
-      (msg, _) ⇒ { val m = f(msg); if (m != null) { selfInbox.ref ! m; i.selfInbox.ref ! msg } })
+      (message, _) ⇒ { val m = f(message); if (m != null) { selfInbox.ref ! m; i.selfInbox.ref ! message } })
   }
 
   /**
@@ -223,8 +215,8 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
    */
   def childInbox[U](child: ActorRef[U]): TestInboxImpl[U] = {
     val btk = _children(child.path.name)
-    if (btk.ctx.self != child) throw new IllegalArgumentException(s"$child is not a child of $this")
-    btk.ctx.selfInbox.as[U]
+    if (btk.context.self != child) throw new IllegalArgumentException(s"$child is not a child of $this")
+    btk.context.selfInbox.as[U]
   }
 
   /**
@@ -233,14 +225,14 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
    */
   def childTestKit[U](child: ActorRef[U]): BehaviorTestKitImpl[U] = {
     val btk = _children(child.path.name)
-    if (btk.ctx.self != child) throw new IllegalArgumentException(s"$child is not a child of $this")
+    if (btk.context.self != child) throw new IllegalArgumentException(s"$child is not a child of $this")
     btk.as
   }
 
   /**
    * Retrieve the inbox representing the child actor with the given name.
    */
-  def childInbox[U](name: String): Option[TestInboxImpl[U]] = _children.get(name).map(_.ctx.selfInbox.as[U])
+  def childInbox[U](name: String): Option[TestInboxImpl[U]] = _children.get(name).map(_.context.selfInbox.as[U])
 
   /**
    * Remove the given inbox from the list of children, for example after
@@ -253,7 +245,7 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
   override def log: Logger = loggingAdapter
 
   /**
-   * The log entries logged through ctx.log.{debug, info, warn, error} are captured and can be inspected through
+   * The log entries logged through context.log.{debug, info, warn, error} are captured and can be inspected through
    * this method.
    */
   def logEntries: List[CapturedLogEvent] = loggingAdapter.logEntries

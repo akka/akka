@@ -57,7 +57,7 @@ case we don't need to update any state, so we return `same`, which means
 the next behavior is "the same as the current one".
 
 The type of the messages handled by this behavior is declared to be of class
-`Greet`, meaning that `msg` argument is
+`Greet`, meaning that `message` argument is
 also typed as such. This is why we can access the `whom` and `replyTo`
 members without needing to use a pattern match.
 
@@ -208,7 +208,7 @@ If we did not care about securing the correspondence between a session and a
 screen name then we could change the protocol such that `PostMessage` is
 removed and all clients just get an @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] to
 send to. In this case no session actor would be needed and we could use
-@scala[`ctx.self`]@java[`ctx.getSelf()`]. The type-checks work out in that case because
+@scala[`context.self`]@java[`context.getSelf()`]. The type-checks work out in that case because
 @scala[`ActorRef[-T]`]@java[`ActorRef<T>`] is contravariant in its type parameter, meaning that we
 can use a @scala[`ActorRef[RoomCommand]`]@java[`ActorRef<RoomCommand>`] wherever an
 @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] is needed—this makes sense because the
@@ -270,7 +270,7 @@ that creates the behavior instance immediately before the actor is running. The 
 `setup` is passed the `ActorContext` as parameter and that can for example be used for spawning child actors.
 This `main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
 gabbler is finished we will receive the `Terminated` event due to having
-called `ctx.watch` for it. This allows us to shut down the Actor system: when
+called `context.watch` for it. This allows us to shut down the Actor system: when
 the main Actor terminates there is nothing more to do.
 
 Therefore after creating the Actor system with the `main` Actor’s
@@ -388,7 +388,7 @@ If we did not care about securing the correspondence between a session and a
 screen name then we could change the protocol such that `PostMessage` is
 removed and all clients just get an @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] to
 send to. In this case no session actor would be needed and we could use
-@scala[`ctx.self`]@java[`ctx.getSelf()`]. The type-checks work out in that case because
+@scala[`context.self`]@java[`context.getSelf()`]. The type-checks work out in that case because
 @scala[`ActorRef[-T]`]@java[`ActorRef<T>`] is contravariant in its type parameter, meaning that we
 can use a @scala[`ActorRef[RoomCommand]`]@java[`ActorRef<RoomCommand>`] wherever an
 @scala[`ActorRef[PublishSessionMessage]`]@java[`ActorRef<PublishSessionMessage>`] is needed—this makes sense because the
@@ -438,7 +438,7 @@ that creates the behavior instance immediately before the actor is running. The 
 `setup` is passed the `ActorContext` as parameter and that can for example be used for spawning child actors.
 This `main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
 gabbler is finished we will receive the `Terminated` event due to having
-called `ctx.watch` for it. This allows us to shut down the Actor system: when
+called `context.watch` for it. This allows us to shut down the Actor system: when
 the main Actor terminates there is nothing more to do.
 
 Therefore after creating the Actor system with the `main` Actor’s

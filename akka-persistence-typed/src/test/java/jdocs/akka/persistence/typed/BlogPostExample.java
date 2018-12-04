@@ -15,8 +15,6 @@ import akka.persistence.typed.javadsl.CommandHandlerBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.PersistentBehavior;
 
-import java.util.Optional;
-
 public class BlogPostExample {
 
   //#event
@@ -135,8 +133,6 @@ public class BlogPostExample {
       this.replyTo = replyTo;
     }
   }
-  public static class PassivatePost implements BlogCommand {
-  }
   public static class PostContent implements BlogCommand {
     final String postId;
     final String title;
@@ -168,7 +164,7 @@ public class BlogPostExample {
             //#reply
             PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
             return Effect().persist(event)
-                .andThen(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
+                .thenRun(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
             //#reply
           });
     }
@@ -179,10 +175,10 @@ public class BlogPostExample {
       return commandHandlerBuilder(DraftState.class)
           .matchCommand(ChangeBody.class, (state, cmd) -> {
             BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
-            return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
+            return Effect().persist(event).thenRun(() -> cmd.replyTo.tell(Done.getInstance()));
           })
           .matchCommand(Publish.class, (state, cmd) -> Effect()
-              .persist(new Published(state.postId())).andThen(() -> {
+              .persist(new Published(state.postId())).thenRun(() -> {
                 System.out.println("Blog post published: " + state.postId());
                 cmd.replyTo.tell(Done.getInstance());
               }))
@@ -196,7 +192,7 @@ public class BlogPostExample {
       return commandHandlerBuilder(PublishedState.class)
           .matchCommand(ChangeBody.class, (state, cmd) -> {
             BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
-            return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
+            return Effect().persist(event).thenRun(() -> cmd.replyTo.tell(Done.getInstance()));
           })
           .matchCommand(GetPost.class, (state, cmd) -> {
             cmd.replyTo.tell(state.postContent);
@@ -206,8 +202,7 @@ public class BlogPostExample {
 
     private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState> commonCommandHandler() {
       return commandHandlerBuilder(BlogState.class)
-          .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled())
-          .matchCommand(PassivatePost.class, (state, cmd) -> Effect().stop());
+          .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled());
     }
     //#post-added-command-handler
 

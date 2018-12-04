@@ -5,6 +5,7 @@
 package akka.actor.typed
 package internal
 
+import java.time.Duration
 import java.util.function.{ Function ⇒ JFunction }
 import java.util.ArrayList
 import java.util.Optional
@@ -16,7 +17,6 @@ import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 import akka.util.Timeout
@@ -46,7 +46,7 @@ import akka.util.JavaDurationConverters._
 
   override def getChild(name: String): Optional[ActorRef[Void]] =
     child(name) match {
-      case Some(c) ⇒ Optional.of(c.upcast[Void])
+      case Some(c) ⇒ Optional.of(c.unsafeUpcast[Void])
       case None    ⇒ Optional.empty()
     }
 
@@ -54,7 +54,7 @@ import akka.util.JavaDurationConverters._
     val c = children
     val a = new ArrayList[ActorRef[Void]](c.size)
     val i = c.iterator
-    while (i.hasNext) a.add(i.next().upcast[Void])
+    while (i.hasNext) a.add(i.next().unsafeUpcast[Void])
     a
   }
 
@@ -72,8 +72,8 @@ import akka.util.JavaDurationConverters._
   override def setReceiveTimeout(d: java.time.Duration, msg: T): Unit =
     setReceiveTimeout(d.asScala, msg)
 
-  override def schedule[U](delay: java.time.Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable =
-    schedule(delay.asScala, target, msg)
+  override def scheduleOnce[U](delay: java.time.Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable =
+    scheduleOnce(delay.asScala, target, msg)
 
   override def spawn[U](behavior: akka.actor.typed.Behavior[U], name: String): akka.actor.typed.ActorRef[U] =
     spawn(behavior, name, Props.empty)
@@ -90,11 +90,11 @@ import akka.util.JavaDurationConverters._
   }
 
   // Java API impl
-  def ask[Req, Res](resClass: Class[Res], target: RecipientRef[Req], responseTimeout: Timeout, createRequest: function.Function[ActorRef[Res], Req], applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
+  def ask[Req, Res](resClass: Class[Res], target: RecipientRef[Req], responseTimeout: Duration, createRequest: function.Function[ActorRef[Res], Req], applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
     this.ask(target)(createRequest.apply) {
       case Success(message) ⇒ applyToResponse.apply(message, null)
       case Failure(ex)      ⇒ applyToResponse.apply(null.asInstanceOf[Res], ex)
-    }(responseTimeout, ClassTag[Res](resClass))
+    }(responseTimeout.asScala, ClassTag[Res](resClass))
   }
 
   private[akka] override def spawnMessageAdapter[U](f: U ⇒ T, name: String): ActorRef[U] =

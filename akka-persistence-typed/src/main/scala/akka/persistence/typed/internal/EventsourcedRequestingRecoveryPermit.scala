@@ -5,6 +5,7 @@
 package akka.persistence.typed.internal
 
 import akka.actor.typed.Behavior
+import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
@@ -36,21 +37,36 @@ private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](override val s
     // request a permit, as only once we obtain one we can start replaying
     requestRecoveryPermit()
 
-    Behaviors.receiveMessage[InternalProtocol] {
-      case InternalProtocol.RecoveryPermitGranted ⇒
-        becomeReplaying()
+    def stay(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
+      Behaviors.receiveMessage[InternalProtocol] {
+        case InternalProtocol.RecoveryPermitGranted ⇒
+          becomeReplaying(receivedPoisonPill)
 
-      case other ⇒
-        stash(other)
-        Behaviors.same
+        case _ if receivedPoisonPill ⇒
+          Behaviors.unhandled
+
+        case other ⇒
+          if (receivedPoisonPill) {
+            if (setup.settings.logOnStashing) setup.log.debug(
+              "Discarding message [{}], because actor is to be stopped", other)
+            Behaviors.unhandled
+          } else {
+            stash(other)
+            Behaviors.same
+          }
+
+      }.receiveSignal {
+        case (_, PoisonPill) ⇒ stay(receivedPoisonPill = true)
+      }
     }
+    stay(receivedPoisonPill = false)
   }
 
-  private def becomeReplaying(): Behavior[InternalProtocol] = {
+  private def becomeReplaying(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
     setup.log.debug(s"Initializing snapshot recovery: {}", setup.recovery)
 
     setup.holdingRecoveryPermit = true
-    EventsourcedReplayingSnapshot(setup)
+    EventsourcedReplayingSnapshot(setup, receivedPoisonPill)
   }
 
 }

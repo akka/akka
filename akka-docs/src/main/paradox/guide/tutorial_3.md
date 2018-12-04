@@ -146,8 +146,11 @@ Note in the code that:
 
 ## Testing the actor
 
-Based on the simple actor above, we could write a simple test. In the `com.lightbend.akka.sample` package in the test tree of your project, add the following code to a @scala[`DeviceSpec.scala`]@java[`DeviceTest.java`] file.
-@scala[(We use ScalaTest but any other test framework can be used with the Akka Testkit)].
+Based on the simple actor above, we could write a simple test. You can check a full example of an Actor test in the Quickstart guide here @scala[[Quickstart Guide Testing example](https://developer.lightbend.com/guides/akka-quickstart-scala/testing-actors.html)] @java[[Quickstart Guide Testing example](https://developer.lightbend.com/guides/akka-quickstart-java/testing-actors.html)].
+You'll find there an example on how you can fully setup an Actor test, so that you can run it properly.
+
+In the test tree of your project, add the following code to a @scala[`DeviceSpec.scala`]@java[`DeviceTest.java`] file.
+@scala[(We use [ScalaTest](http://www.scalatest.org) but any other testing framework can be used with the Akka Testkit)].
 
 You can run this test @java[by running `mvn test` or] by running `test` at the sbt prompt.
 

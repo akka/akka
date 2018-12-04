@@ -59,7 +59,7 @@ public class LoggingDocTest extends AbstractJavaTest {
     //#deadletters
     final ActorSystem system = ActorSystem.create("DeadLetters");
     final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
-    system.eventStream().subscribe(actor, DeadLetter.class);
+    system.getEventStream().subscribe(actor, DeadLetter.class);
     //#deadletters
     TestKit.shutdownActorSystem(system);
   }
@@ -84,10 +84,10 @@ public class LoggingDocTest extends AbstractJavaTest {
     @Override
       public Receive createReceive() {
         return receiveBuilder()
-          .match(Jazz.class, msg -> 
+          .match(Jazz.class, msg ->
             System.out.printf("%s is listening to: %s%n", getSelf().path().name(), msg)
           )
-          .match(Electronic.class, msg -> 
+          .match(Electronic.class, msg ->
             System.out.printf("%s is listening to: %s%n", getSelf().path().name(), msg)
           )
           .build();
@@ -100,18 +100,18 @@ public class LoggingDocTest extends AbstractJavaTest {
     final ActorSystem system = ActorSystem.create("DeadLetters");
     //#superclass-subscription-eventstream
     final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
-    system.eventStream().subscribe(actor, DeadLetter.class);
+    system.getEventStream().subscribe(actor, DeadLetter.class);
 
     final ActorRef jazzListener = system.actorOf(Props.create(Listener.class));
     final ActorRef musicListener = system.actorOf(Props.create(Listener.class));
-    system.eventStream().subscribe(jazzListener, Jazz.class);
-    system.eventStream().subscribe(musicListener, AllKindsOfMusic.class);
+    system.getEventStream().subscribe(jazzListener, Jazz.class);
+    system.getEventStream().subscribe(musicListener, AllKindsOfMusic.class);
 
     // only musicListener gets this message, since it listens to *all* kinds of music:
-    system.eventStream().publish(new Electronic("Parov Stelar"));
+    system.getEventStream().publish(new Electronic("Parov Stelar"));
 
     // jazzListener and musicListener will be notified about Jazz:
-    system.eventStream().publish(new Jazz("Sonny Rollins"));
+    system.getEventStream().publish(new Jazz("Sonny Rollins"));
 
     //#superclass-subscription-eventstream
     TestKit.shutdownActorSystem(system);
@@ -123,7 +123,7 @@ public class LoggingDocTest extends AbstractJavaTest {
     final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
 
     //#suppressed-deadletters
-    system.eventStream().subscribe(actor, SuppressedDeadLetter.class);
+    system.getEventStream().subscribe(actor, SuppressedDeadLetter.class);
     //#suppressed-deadletters
 
     TestKit.shutdownActorSystem(system);
@@ -134,7 +134,7 @@ public class LoggingDocTest extends AbstractJavaTest {
     final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
 
     //#all-deadletters
-    system.eventStream().subscribe(actor, AllDeadLetters.class);
+    system.getEventStream().subscribe(actor, AllDeadLetters.class);
     //#all-deadletters
 
     TestKit.shutdownActorSystem(system);
@@ -217,10 +217,10 @@ public class LoggingDocTest extends AbstractJavaTest {
           // ...
         })
         .match(Warning.class, msg -> {
-          // ...           
+          // ...
         })
         .match(Info.class, msg -> {
-          // ...           
+          // ...
         })
         .match(Debug.class, msg -> {
           // ...

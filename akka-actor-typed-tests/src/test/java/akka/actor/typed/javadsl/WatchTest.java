@@ -11,7 +11,6 @@ import akka.Done;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import org.junit.ClassRule;
 import org.scalatest.junit.JUnitSuite;
-import akka.util.Timeout;
 import org.junit.Test;
 
 import akka.actor.typed.*;
@@ -42,17 +41,17 @@ public class WatchTest extends JUnitSuite {
   static final class CustomTerminationMessage implements Message {
   }
 
-  final Timeout timeout = Timeout.create(Duration.ofSeconds(5));
+  final Duration timeout = Duration.ofSeconds(5);
 
-  final Behavior<Stop> exitingActor = receive((ctx, msg) -> {
+  final Behavior<Stop> exitingActor = receive((context, message) -> {
     System.out.println("Stopping!");
     return stopped();
   });
 
   private Behavior<RunTest> waitingForTermination(ActorRef<Done> replyWhenTerminated) {
     return receive(
-      (ctx, msg) -> unhandled(),
-      (ctx, sig) -> {
+      (context, message) -> unhandled(),
+      (context, sig) -> {
         if (sig instanceof Terminated) {
           replyWhenTerminated.tell(done());
         }
@@ -63,8 +62,8 @@ public class WatchTest extends JUnitSuite {
 
   private Behavior<Message> waitingForMessage(ActorRef<Done> replyWhenReceived) {
     return receive(
-      (ctx, msg) -> {
-        if (msg instanceof CustomTerminationMessage) {
+      (context, message) -> {
+        if (message instanceof CustomTerminationMessage) {
           replyWhenReceived.tell(done());
           return same();
         } else {
@@ -77,11 +76,11 @@ public class WatchTest extends JUnitSuite {
   @Test
   public void shouldWatchTerminatingActor() throws Exception {
     Behavior<RunTest> exiting = Behaviors.receive(RunTest.class)
-      .onMessage(RunTest.class, (ctx, msg) -> {
-        ActorRef<Stop> watched = ctx.spawn(exitingActor, "exitingActor");
-        ctx.watch(watched);
+      .onMessage(RunTest.class, (context, message) -> {
+        ActorRef<Stop> watched = context.spawn(exitingActor, "exitingActor");
+        context.watch(watched);
         watched.tell(new Stop());
-        return waitingForTermination(msg.replyTo);
+        return waitingForTermination(message.replyTo);
       }).build();
     ActorRef<RunTest> exitingRef = testKit.spawn(exiting);
 
@@ -92,11 +91,11 @@ public class WatchTest extends JUnitSuite {
   @Test
   public void shouldWatchWithCustomMessage() throws Exception {
     Behavior<Message> exiting = Behaviors.receive(Message.class)
-      .onMessage(RunTest.class, (ctx, msg) -> {
-        ActorRef<Stop> watched = ctx.spawn(exitingActor, "exitingActor");
-        ctx.watchWith(watched, new CustomTerminationMessage());
+      .onMessage(RunTest.class, (context, message) -> {
+        ActorRef<Stop> watched = context.spawn(exitingActor, "exitingActor");
+        context.watchWith(watched, new CustomTerminationMessage());
         watched.tell(new Stop());
-        return waitingForMessage(msg.replyTo);
+        return waitingForMessage(message.replyTo);
       }).build();
     ActorRef<Message> exitingRef = testKit.spawn(exiting);
 

@@ -139,14 +139,14 @@ object PersistentBehaviorSpec {
             .thenRun { (_: State) ⇒
               loggingActor ! firstLogging
             }
-            .andThenStop
+            .thenStop
 
         case IncrementTwiceThenLogThenStop ⇒
           Effect.persist(Incremented(1), Incremented(2))
             .thenRun { (_: State) ⇒
               loggingActor ! firstLogging
             }
-            .andThenStop
+            .thenStop
 
         case IncrementWithPersistAll(n) ⇒
           Effect.persist((0 until n).map(_ ⇒ Incremented(1)))
@@ -210,7 +210,7 @@ object PersistentBehaviorSpec {
             .thenRun { _ ⇒
               loggingActor ! firstLogging
             }
-            .andThenStop
+            .thenStop
       },
       eventHandler = (state, evt) ⇒ evt match {
         case Incremented(delta) ⇒

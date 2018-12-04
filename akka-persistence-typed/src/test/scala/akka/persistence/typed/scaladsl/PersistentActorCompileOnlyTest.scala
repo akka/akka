@@ -398,7 +398,7 @@ object PersistentActorCompileOnlyTest {
       case Enough ⇒
         Effect.persist(Done)
           .thenRun((_: State) ⇒ println("yay"))
-          .andThenStop
+          .thenStop
     }
 
     private val eventHandler: (State, Event) ⇒ State = {

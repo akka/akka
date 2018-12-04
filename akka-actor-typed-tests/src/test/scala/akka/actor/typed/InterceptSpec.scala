@@ -32,15 +32,15 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
   implicit val untypedSystem = system.toUntyped
 
   private def snitchingInterceptor(probe: ActorRef[String]) = new BehaviorInterceptor[String, String] {
-    override def aroundReceive(ctx: ActorContext[String], msg: String, target: ReceiveTarget[String]): Behavior[String] = {
-      probe ! ("before " + msg)
-      val b = target(ctx, msg)
-      probe ! ("after " + msg)
+    override def aroundReceive(context: ActorContext[String], message: String, target: ReceiveTarget[String]): Behavior[String] = {
+      probe ! ("before " + message)
+      val b = target(context, message)
+      probe ! ("after " + message)
       b
     }
 
-    override def aroundSignal(ctx: ActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] = {
-      target(ctx, signal)
+    override def aroundSignal(context: ActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] = {
+      target(context, signal)
     }
 
     // keeping the instance equality as "isSame" for these
@@ -176,19 +176,19 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
     "allow an interceptor to replace started behavior" in {
       val interceptor = new BehaviorInterceptor[String, String] {
 
-        override def aroundStart(ctx: ActorContext[String], target: PreStartTarget[String]): Behavior[String] = {
+        override def aroundStart(context: ActorContext[String], target: PreStartTarget[String]): Behavior[String] = {
           Behaviors.stopped
         }
 
-        def aroundReceive(ctx: ActorContext[String], msg: String, target: ReceiveTarget[String]): Behavior[String] =
-          target(ctx, msg)
+        def aroundReceive(context: ActorContext[String], message: String, target: ReceiveTarget[String]): Behavior[String] =
+          target(context, message)
 
-        def aroundSignal(ctx: ActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] =
-          target(ctx, signal)
+        def aroundSignal(context: ActorContext[String], signal: Signal, target: SignalTarget[String]): Behavior[String] =
+          target(context, signal)
       }
 
       val innerBehaviorStarted = new AtomicBoolean(false)
-      val ref = spawn(Behaviors.intercept(interceptor)(Behaviors.setup { ctx ⇒
+      val ref = spawn(Behaviors.intercept(interceptor)(Behaviors.setup { context ⇒
         innerBehaviorStarted.set(true)
         Behaviors.unhandled[String]
       }))
@@ -282,15 +282,15 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
     }
 
     val poisonInterceptor = new BehaviorInterceptor[Any, Msg] {
-      override def aroundReceive(ctx: ActorContext[Any], msg: Any, target: ReceiveTarget[Msg]): Behavior[Msg] =
-        msg match {
+      override def aroundReceive(context: ActorContext[Any], message: Any, target: ReceiveTarget[Msg]): Behavior[Msg] =
+        message match {
           case MyPoisonPill ⇒ Behaviors.stopped
-          case m: Msg       ⇒ target(ctx, m)
+          case m: Msg       ⇒ target(context, m)
           case _            ⇒ Behaviors.unhandled
         }
 
-      override def aroundSignal(ctx: ActorContext[Any], signal: Signal, target: SignalTarget[Msg]): Behavior[Msg] =
-        target.apply(ctx, signal)
+      override def aroundSignal(context: ActorContext[Any], signal: Signal, target: SignalTarget[Msg]): Behavior[Msg] =
+        target.apply(context, signal)
 
     }
 
@@ -304,7 +304,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit(
     ref ! Msg("hello", probe.ref)
     probe.expectMessage("hello-1")
 
-    ref.upcast[Any] ! MyPoisonPill
+    ref.unsafeUpcast[Any] ! MyPoisonPill
 
     probe.expectTerminated(ref, probe.remainingOrDefault)
   }
