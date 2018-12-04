@@ -175,7 +175,7 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
           "Detected possible incompatible versions on the classpath. " +
             s"Please note that a given $productName version MUST be the same across all modules of $productName " +
             "that you are using, e.g. if you use [{}] all other modules that are released together MUST be of the " +
-            "same version. Make sure you're using a compatible set of libraries." +
+            "same version. Make sure you're using a compatible set of libraries. " +
             "Possibly conflicting versions [{}] in libraries [{}]",
           highestVersion, conflictingVersions, fullInfo)
       }
