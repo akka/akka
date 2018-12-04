@@ -126,6 +126,18 @@ The `BehaviorTestkit` keeps track other effects you can verify, look at the sub-
  * Unwatched
  * Scheduled
 
+### Checking for Log Messages
+
+The `BehaviorTestkit` also keeps track of everything that is being logged. Here, you can see an example on how to check
+if the behavior logged certain messages:
+
+Scala
+:  @@snip [SyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/SyncTestingExampleSpec.scala) { #test-check-logging }
+
+Java
+:  @@snip [SyncTestingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/SyncTestingExampleTest.java) { #test-check-logging }
+
+
 See the other public methods and API documentation on `BehaviorTestkit` for other types of verification.
 
 ## Asynchronous testing

@@ -5,11 +5,13 @@
 package docs.akka.actor.testkit.typed.scaladsl
 
 //#imports
+import akka.actor.testkit.typed.CapturedLogEvent
 import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
+import akka.event.Logging
 //#imports
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
@@ -28,6 +30,7 @@ object SyncTestingExampleSpec {
   case class SayHelloToChild(childName: String) extends Cmd
   case object SayHelloToAnonymousChild extends Cmd
   case class SayHello(who: ActorRef[String]) extends Cmd
+  case class LogAndSayHello(who: ActorRef[String]) extends Cmd
 
   val myBehavior = Behaviors.receivePartial[Cmd] {
     case (context, CreateChild(name)) ⇒
@@ -45,6 +48,10 @@ object SyncTestingExampleSpec {
       child ! "hello stranger"
       Behaviors.same
     case (_, SayHello(who)) ⇒
+      who ! "hello"
+      Behaviors.same
+    case (context, LogAndSayHello(who)) ⇒
+      context.log.info("Saying hello to {}", who.path.name)
       who ! "hello"
       Behaviors.same
   }
@@ -101,6 +108,16 @@ class SyncTestingExampleSpec extends WordSpec with Matchers {
       val childInbox = testKit.childInbox(child.ref)
       childInbox.expectMessage("hello stranger")
       //#test-child-message-anonymous
+    }
+
+    "log a message to the logger" in {
+      //#test-check-logging
+      val testKit = BehaviorTestKit(myBehavior)
+      val inbox = TestInbox[String]("Inboxer")
+      testKit.run(LogAndSayHello(inbox.ref))
+
+      testKit.logEntries() shouldBe Seq(CapturedLogEvent(Logging.InfoLevel, "Saying hello to Inboxer"))
+      //#test-check-logging
     }
   }
 }

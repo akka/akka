@@ -46,7 +46,7 @@ public class SpawnProtocolDocTest {
     //#system-spawn
     final ActorSystem<SpawnProtocol> system =
       ActorSystem.create(HelloWorldMain.main, "hello");
-    final Timeout timeout = Timeout.create(Duration.ofSeconds(3));
+    final Duration timeout = Duration.ofSeconds(3);
 
     CompletionStage<ActorRef<HelloWorld.Greet>> greeter = AskPattern.ask(
         system,

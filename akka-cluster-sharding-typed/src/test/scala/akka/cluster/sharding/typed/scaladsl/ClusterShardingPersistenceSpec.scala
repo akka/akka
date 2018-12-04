@@ -68,7 +68,7 @@ object ClusterShardingPersistenceSpec {
 
       entityActorRefs.get(entityId) match {
         case null    ⇒
-        case promise ⇒ promise.trySuccess(ctx.self.upcast)
+        case promise ⇒ promise.trySuccess(ctx.self.unsafeUpcast)
       }
 
       PersistentEntity[Command, String, String](

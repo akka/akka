@@ -54,7 +54,7 @@ object LatencySpec extends MultiNodeConfig {
            # it is recommended to use external media driver
            # See akka-remote/src/test/resources/aeron.properties
            # advanced.embedded-media-driver = off
-           # advanced.aeron-dir = "target/aeron"
+           # advanced.aeron-dir = "akka-remote/target/aeron"
            # on linux, use directory on ram disk, instead
            # advanced.aeron-dir = "/dev/shm/aeron"
 
