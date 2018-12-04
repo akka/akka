@@ -23,8 +23,6 @@ import org.scalatest.junit.JUnitSuite;
 
 import java.util.concurrent.CompletionStage;
 
-import static org.junit.Assert.assertEquals;
-
 public class ClusterShardingPersistenceTest extends JUnitSuite {
 
   public static final Config config = ConfigFactory.parseString(
@@ -72,7 +70,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
 
 
 
-  static class TestPersistentEntity extends PersistentEntity<Command, String, String> {
+  static class TestPersistentEntity extends EventSourcedEntity<Command, String, String> {
 
     public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
       EntityTypeKey.create(Command.class, "HelloWorld");

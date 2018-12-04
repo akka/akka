@@ -14,10 +14,11 @@ import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.persistence.SnapshotMetadata
 import akka.persistence.typed.{ EventAdapter, _ }
 import akka.persistence.typed.internal._
+
 import scala.util.{ Failure, Success }
 
 @ApiMayChange
-abstract class PersistentBehavior[Command, Event, State >: Null] private[akka] (val persistenceId: PersistenceId, supervisorStrategy: Optional[BackoffSupervisorStrategy]) extends DeferredBehavior[Command] {
+abstract class EventSourcedBehavior[Command, Event, State >: Null] private[akka] (val persistenceId: PersistenceId, supervisorStrategy: Optional[BackoffSupervisorStrategy]) extends DeferredBehavior[Command] {
 
   def this(persistenceId: PersistenceId) = {
     this(persistenceId, Optional.empty[BackoffSupervisorStrategy])
@@ -110,7 +111,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private[akka] (
    * If this is overridden `shouldSnapshot` is not used.
    *
    * @return number of events between snapshots, should be greater than 0
-   * @see [[PersistentBehavior#shouldSnapshot]]
+   * @see [[EventSourcedBehavior#shouldSnapshot]]
    */
   def snapshotEvery(): Long = 0L
 
@@ -122,7 +123,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private[akka] (
    * receives the State, Event and the sequenceNr used for the Event
    *
    * @return `true` if snapshot should be saved for the given event
-   * @see [[PersistentBehavior#snapshotEvery]]
+   * @see [[EventSourcedBehavior#snapshotEvery]]
    */
   def shouldSnapshot(state: State, event: Event, sequenceNr: Long): Boolean = false
 
@@ -153,7 +154,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private[akka] (
       else tags.asScala.toSet
     }
 
-    val behavior = scaladsl.PersistentBehavior[Command, Event, State](
+    val behavior = scaladsl.EventSourcedBehavior[Command, Event, State](
       persistenceId,
       emptyState,
       (state, cmd) ⇒ commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
@@ -188,13 +189,13 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private[akka] (
 /**
  * FIXME This is not completed for javadsl yet. The compiler is not enforcing the replies yet.
  *
- * A [[PersistentBehavior]] that is enforcing that replies to commands are not forgotten.
+ * A [[EventSourcedBehavior]] that is enforcing that replies to commands are not forgotten.
  * There will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
  * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
  */
 @ApiMayChange
-abstract class PersistentBehaviorWithEnforcedReplies[Command, Event, State >: Null](persistenceId: PersistenceId, backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])
-  extends PersistentBehavior[Command, Event, State](persistenceId, backoffSupervisorStrategy) {
+abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State >: Null](persistenceId: PersistenceId, backoffSupervisorStrategy: Optional[BackoffSupervisorStrategy])
+  extends EventSourcedBehavior[Command, Event, State](persistenceId, backoffSupervisorStrategy) {
 
   def this(persistenceId: PersistenceId) = {
     this(persistenceId, Optional.empty[BackoffSupervisorStrategy])

@@ -20,7 +20,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
-object PersistentBehaviorReplySpec {
+object EventSourcedBehaviorReplySpec {
   def conf: Config = ConfigFactory.parseString(
     s"""
     akka.loglevel = INFO
@@ -47,8 +47,8 @@ object PersistentBehaviorReplySpec {
 
   def counter(
     ctx:           ActorContext[Command[_]],
-    persistenceId: PersistenceId): PersistentBehavior[Command[_], Event, State] = {
-    PersistentBehavior.withEnforcedReplies[Command[_], Event, State](
+    persistenceId: PersistenceId): EventSourcedBehavior[Command[_], Event, State] = {
+    EventSourcedBehavior.withEnforcedReplies[Command[_], Event, State](
       persistenceId,
       emptyState = State(0, Vector.empty),
       commandHandler = (state, cmd) ⇒ cmd match {
@@ -76,9 +76,9 @@ object PersistentBehaviorReplySpec {
   }
 }
 
-class PersistentBehaviorReplySpec extends ScalaTestWithActorTestKit(PersistentBehaviorSpec.conf) with WordSpecLike {
+class EventSourcedBehaviorReplySpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf) with WordSpecLike {
 
-  import PersistentBehaviorReplySpec._
+  import EventSourcedBehaviorReplySpec._
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
