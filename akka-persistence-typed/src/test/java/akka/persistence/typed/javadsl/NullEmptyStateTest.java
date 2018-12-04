@@ -26,7 +26,7 @@ public class NullEmptyStateTest extends JUnitSuite {
   @ClassRule
   public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
-  static class NullEmptyState extends PersistentBehavior<String, String, String> {
+  static class NullEmptyState extends EventSourcedBehavior<String, String, String> {
 
     private final ActorRef<String> probe;
 

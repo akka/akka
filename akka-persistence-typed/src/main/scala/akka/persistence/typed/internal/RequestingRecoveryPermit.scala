@@ -8,8 +8,8 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
-import akka.persistence.typed.internal.EventsourcedBehavior.MDC
+import akka.persistence.typed.internal.InternalBehavior.InternalProtocol
+import akka.persistence.typed.internal.InternalBehavior.MDC
 
 /**
  * INTERNAL API
@@ -19,19 +19,19 @@ import akka.persistence.typed.internal.EventsourcedBehavior.MDC
  * Requests a permit to start replaying this actor; this is tone to avoid
  * hammering the journal with too many concurrently replaying actors.
  *
- * See next behavior [[EventsourcedReplayingSnapshot]].
+ * See next behavior [[ReplayingSnapshot]].
  */
 @InternalApi
-private[akka] object EventsourcedRequestingRecoveryPermit {
+private[akka] object RequestingRecoveryPermit {
 
-  def apply[C, E, S](setup: EventsourcedSetup[C, E, S]): Behavior[InternalProtocol] =
-    new EventsourcedRequestingRecoveryPermit(setup.setMdc(MDC.AwaitingPermit)).createBehavior()
+  def apply[C, E, S](setup: BehaviorSetup[C, E, S]): Behavior[InternalProtocol] =
+    new RequestingRecoveryPermit(setup.setMdc(MDC.AwaitingPermit)).createBehavior()
 
 }
 
 @InternalApi
-private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](override val setup: EventsourcedSetup[C, E, S])
-  extends EventsourcedStashManagement[C, E, S] with EventsourcedJournalInteractions[C, E, S] {
+private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: BehaviorSetup[C, E, S])
+  extends StashManagement[C, E, S] with JournalInteractions[C, E, S] {
 
   def createBehavior(): Behavior[InternalProtocol] = {
     // request a permit, as only once we obtain one we can start replaying
@@ -66,7 +66,7 @@ private[akka] class EventsourcedRequestingRecoveryPermit[C, E, S](override val s
     setup.log.debug(s"Initializing snapshot recovery: {}", setup.recovery)
 
     setup.holdingRecoveryPermit = true
-    EventsourcedReplayingSnapshot(setup, receivedPoisonPill)
+    ReplayingSnapshot(setup, receivedPoisonPill)
   }
 
 }

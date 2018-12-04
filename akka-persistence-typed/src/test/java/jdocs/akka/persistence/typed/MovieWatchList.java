@@ -10,13 +10,13 @@ import akka.actor.typed.Behavior;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.PersistentBehavior;
+import akka.persistence.typed.javadsl.EventSourcedBehavior;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-public class MovieWatchList extends PersistentBehavior<MovieWatchList.Command, MovieWatchList.Event, MovieWatchList.MovieList> {
+public class MovieWatchList extends EventSourcedBehavior<MovieWatchList.Command, MovieWatchList.Event, MovieWatchList.MovieList> {
 
   interface Command {
   }

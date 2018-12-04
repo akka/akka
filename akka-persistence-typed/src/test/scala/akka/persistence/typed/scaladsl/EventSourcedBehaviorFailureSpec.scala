@@ -53,7 +53,7 @@ class ChaosJournal extends InmemJournal {
   }
 }
 
-object PersistentBehaviorFailureSpec {
+object EventSourcedBehaviorFailureSpec {
 
   val conf = ConfigFactory.parseString(
     s"""
@@ -66,23 +66,25 @@ object PersistentBehaviorFailureSpec {
     """).withFallback(ConfigFactory.load("reference.conf")).resolve()
 }
 
-class PersistentBehaviorFailureSpec extends ScalaTestWithActorTestKit(PersistentBehaviorFailureSpec.conf) with WordSpecLike {
+class EventSourcedBehaviorFailureSpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorFailureSpec.conf) with WordSpecLike {
 
   implicit val testSettings = TestKitSettings(system)
 
-  def failingPersistentActor(pid: PersistenceId, probe: ActorRef[String] = TestProbe[String].ref): PersistentBehavior[String, String, String] = PersistentBehavior[String, String, String](
-    pid, "",
-    (_, cmd) ⇒ {
-      probe.tell("persisting")
-      Effect.persist(cmd)
-    },
-    (state, event) ⇒ {
-      probe.tell(event)
-      state + event
-    }
-  ).onRecoveryCompleted { _ ⇒
-      probe.tell("starting")
-    }.onPersistFailure(SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1))
+  def failingPersistentActor(pid: PersistenceId, probe: ActorRef[String] = TestProbe[String].ref): EventSourcedBehavior[String, String, String] =
+    EventSourcedBehavior[String, String, String](
+
+      pid, "",
+      (_, cmd) ⇒ {
+        probe.tell("persisting")
+        Effect.persist(cmd)
+      },
+      (state, event) ⇒ {
+        probe.tell(event)
+        state + event
+      }
+    ).onRecoveryCompleted { _ ⇒
+        probe.tell("starting")
+      }.onPersistFailure(SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1))
 
   "A typed persistent actor (failures)" must {
 

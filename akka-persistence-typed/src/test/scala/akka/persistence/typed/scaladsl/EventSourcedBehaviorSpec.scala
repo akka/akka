@@ -30,7 +30,7 @@ import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import org.scalatest.WordSpecLike
 
-object PersistentBehaviorSpec {
+object EventSourcedBehaviorSpec {
 
   //#event-wrapper
   case class Wrapper[T](t: T)
@@ -106,19 +106,19 @@ object PersistentBehaviorSpec {
   def counter(persistenceId: PersistenceId, logging: ActorRef[String])(implicit system: ActorSystem[_]): Behavior[Command] =
     Behaviors.setup(ctx ⇒ counter(ctx, persistenceId, logging))
 
-  def counter(ctx: ActorContext[Command], persistenceId: PersistenceId)(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+  def counter(ctx: ActorContext[Command], persistenceId: PersistenceId)(implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(ctx, persistenceId, loggingActor = TestProbe[String].ref, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
 
-  def counter(ctx: ActorContext[Command], persistenceId: PersistenceId, logging: ActorRef[String])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+  def counter(ctx: ActorContext[Command], persistenceId: PersistenceId, logging: ActorRef[String])(implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(ctx, persistenceId, loggingActor = logging, probe = TestProbe[(State, Event)].ref, TestProbe[Try[Done]].ref)
 
-  def counterWithProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[(State, Event)], snapshotProbe: ActorRef[Try[Done]])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+  def counterWithProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[(State, Event)], snapshotProbe: ActorRef[Try[Done]])(implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(ctx, persistenceId, TestProbe[String].ref, probe, snapshotProbe)
 
-  def counterWithProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[(State, Event)])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+  def counterWithProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[(State, Event)])(implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(ctx, persistenceId, TestProbe[String].ref, probe, TestProbe[Try[Done]].ref)
 
-  def counterWithSnapshotProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[Try[Done]])(implicit system: ActorSystem[_]): PersistentBehavior[Command, Event, State] =
+  def counterWithSnapshotProbe(ctx: ActorContext[Command], persistenceId: PersistenceId, probe: ActorRef[Try[Done]])(implicit system: ActorSystem[_]): EventSourcedBehavior[Command, Event, State] =
     counter(ctx, persistenceId, TestProbe[String].ref, TestProbe[(State, Event)].ref, snapshotProbe = probe)
 
   def counter(
@@ -126,8 +126,8 @@ object PersistentBehaviorSpec {
     persistenceId: PersistenceId,
     loggingActor:  ActorRef[String],
     probe:         ActorRef[(State, Event)],
-    snapshotProbe: ActorRef[Try[Done]]): PersistentBehavior[Command, Event, State] = {
-    PersistentBehavior[Command, Event, State](
+    snapshotProbe: ActorRef[Try[Done]]): EventSourcedBehavior[Command, Event, State] = {
+    EventSourcedBehavior[Command, Event, State](
       persistenceId,
       emptyState = State(0, Vector.empty),
       commandHandler = (state, cmd) ⇒ cmd match {
@@ -225,9 +225,9 @@ object PersistentBehaviorSpec {
 
 }
 
-class PersistentBehaviorSpec extends ScalaTestWithActorTestKit(PersistentBehaviorSpec.conf) with WordSpecLike {
+class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf) with WordSpecLike {
 
-  import PersistentBehaviorSpec._
+  import EventSourcedBehaviorSpec._
 
   implicit val testSettings = TestKitSettings(system)
 

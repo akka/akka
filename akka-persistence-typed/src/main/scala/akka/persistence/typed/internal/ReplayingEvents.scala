@@ -10,11 +10,11 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.persistence.JournalProtocol._
 import akka.persistence._
-import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
-import akka.persistence.typed.internal.EventsourcedBehavior._
-import scala.util.control.NonFatal
-
+import akka.persistence.typed.internal.InternalBehavior.InternalProtocol._
+import akka.persistence.typed.internal.InternalBehavior._
 import akka.actor.typed.internal.PoisonPill
+
+import scala.util.control.NonFatal
 
 /***
  * INTERNAL API
@@ -28,10 +28,10 @@ import akka.actor.typed.internal.PoisonPill
  * and control is given to the user's handlers to drive the actors behavior from there.
  *
  * See next behavior [[EventsourcedRunning]].
- * See previous behavior [[EventsourcedReplayingSnapshot]].
+ * See previous behavior [[ReplayingSnapshot]].
  */
 @InternalApi
-private[persistence] object EventsourcedReplayingEvents {
+private[persistence] object ReplayingEvents {
 
   @InternalApi
   private[persistence] final case class ReplayingState[State](
@@ -43,17 +43,17 @@ private[persistence] object EventsourcedReplayingEvents {
   )
 
   def apply[C, E, S](
-    setup: EventsourcedSetup[C, E, S],
+    setup: BehaviorSetup[C, E, S],
     state: ReplayingState[S]
   ): Behavior[InternalProtocol] =
-    new EventsourcedReplayingEvents(setup.setMdc(MDC.ReplayingEvents)).createBehavior(state)
+    new ReplayingEvents(setup.setMdc(MDC.ReplayingEvents)).createBehavior(state)
 
 }
 
 @InternalApi
-private[persistence] class EventsourcedReplayingEvents[C, E, S](override val setup: EventsourcedSetup[C, E, S])
-  extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
-  import EventsourcedReplayingEvents.ReplayingState
+private[persistence] class ReplayingEvents[C, E, S](override val setup: BehaviorSetup[C, E, S])
+  extends JournalInteractions[C, E, S] with StashManagement[C, E, S] {
+  import ReplayingEvents.ReplayingState
 
   def createBehavior(state: ReplayingState[S]): Behavior[InternalProtocol] = {
     Behaviors.setup { _ ⇒

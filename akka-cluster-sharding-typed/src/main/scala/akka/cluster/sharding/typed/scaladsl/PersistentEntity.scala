@@ -6,7 +6,7 @@ package akka.cluster.sharding.typed.scaladsl
 
 import akka.actor.typed.Behavior
 import akka.persistence.typed.scaladsl.Effect
-import akka.persistence.typed.scaladsl.PersistentBehavior
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 
 object PersistentEntity {
 
@@ -16,7 +16,7 @@ object PersistentEntity {
    * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent
    * actors is very common and therefore this `PersistentEntity` is provided as convenience.
    *
-   * It is a [[PersistentBehavior]] and is implemented in the same way. It selects the `persistenceId`
+   * It is a [[EventSourcedBehavior]] and is implemented in the same way. It selects the `persistenceId`
    * automatically from the [[EntityTypeKey]] and `entityId` constructor parameters by using
    * [[EntityTypeKey.persistenceIdFrom]].
    */
@@ -25,6 +25,6 @@ object PersistentEntity {
     entityId:       String,
     emptyState:     State,
     commandHandler: (State, Command) ⇒ Effect[Event, State],
-    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
-    PersistentBehavior(entityTypeKey.persistenceIdFrom(entityId), emptyState, commandHandler, eventHandler)
+    eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] =
+    EventSourcedBehavior(entityTypeKey.persistenceIdFrom(entityId), emptyState, commandHandler, eventHandler)
 }

@@ -10,7 +10,7 @@ import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.CommandHandlerBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.PersistentBehavior;
+import akka.persistence.typed.javadsl.EventSourcedBehavior;
 
 import java.util.Objects;
 
@@ -117,7 +117,7 @@ public class NullBlogState {
     }
   }
 
-  public static class BlogBehavior extends PersistentBehavior<BlogCommand, BlogEvent, BlogState> {
+  public static class BlogBehavior extends EventSourcedBehavior<BlogCommand, BlogEvent, BlogState> {
 
     private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState> initialCommandHandler() {
       return commandHandlerBuilder(Objects::isNull)

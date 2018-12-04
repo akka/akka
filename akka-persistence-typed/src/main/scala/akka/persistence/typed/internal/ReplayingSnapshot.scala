@@ -4,15 +4,14 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.scaladsl.Behaviors.same
-import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
 import akka.annotation.InternalApi
 import akka.persistence.SnapshotProtocol.{ LoadSnapshotFailed, LoadSnapshotResult }
 import akka.persistence._
-import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol._
-import akka.persistence.typed.internal.EventsourcedBehavior._
+import akka.persistence.typed.internal.InternalBehavior.InternalProtocol._
+import akka.persistence.typed.internal.InternalBehavior._
 
 /**
  * INTERNAL API
@@ -24,22 +23,22 @@ import akka.persistence.typed.internal.EventsourcedBehavior._
  * and if it exists, we use it instead of the initial `emptyState`.
  *
  * Once snapshot recovery is done (or no snapshot was selected),
- * recovery of events continues in [[EventsourcedReplayingEvents]].
+ * recovery of events continues in [[ReplayingEvents]].
  *
- * See next behavior [[EventsourcedReplayingEvents]].
- * See previous behavior [[EventsourcedRequestingRecoveryPermit]].
+ * See next behavior [[ReplayingEvents]].
+ * See previous behavior [[RequestingRecoveryPermit]].
  */
 @InternalApi
-private[akka] object EventsourcedReplayingSnapshot {
+private[akka] object ReplayingSnapshot {
 
-  def apply[C, E, S](setup: EventsourcedSetup[C, E, S], receivedPoisonPill: Boolean): Behavior[InternalProtocol] =
-    new EventsourcedReplayingSnapshot(setup.setMdc(MDC.ReplayingSnapshot)).createBehavior(receivedPoisonPill)
+  def apply[C, E, S](setup: BehaviorSetup[C, E, S], receivedPoisonPill: Boolean): Behavior[InternalProtocol] =
+    new ReplayingSnapshot(setup.setMdc(MDC.ReplayingSnapshot)).createBehavior(receivedPoisonPill)
 
 }
 
 @InternalApi
-private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: EventsourcedSetup[C, E, S])
-  extends EventsourcedJournalInteractions[C, E, S] with EventsourcedStashManagement[C, E, S] {
+private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup[C, E, S])
+  extends JournalInteractions[C, E, S] with StashManagement[C, E, S] {
 
   def createBehavior(receivedPoisonPillInPreviousPhase: Boolean): Behavior[InternalProtocol] = {
     // protect against snapshot stalling forever because of journal overloaded and such
@@ -89,7 +88,7 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
       // we know we're in snapshotting mode; snapshot recovery timeout arrived
       val ex = new RecoveryTimedOut(s"Recovery timed out, didn't get snapshot within ${setup.settings.recoveryEventTimeout}")
       onRecoveryFailure(ex, None)
-    } else same // ignore, since we received the snapshot already
+    } else Behaviors.same // ignore, since we received the snapshot already
 
   def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
@@ -127,9 +126,9 @@ private[akka] class EventsourcedReplayingSnapshot[C, E, S](override val setup: E
   private def becomeReplayingEvents(state: S, lastSequenceNr: Long, toSnr: Long, receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
     setup.cancelRecoveryTimer()
 
-    EventsourcedReplayingEvents[C, E, S](
+    ReplayingEvents[C, E, S](
       setup,
-      EventsourcedReplayingEvents.ReplayingState(lastSequenceNr, state, eventSeenInInterval = false, toSnr, receivedPoisonPill)
+      ReplayingEvents.ReplayingState(lastSequenceNr, state, eventSeenInInterval = false, toSnr, receivedPoisonPill)
     )
   }
 

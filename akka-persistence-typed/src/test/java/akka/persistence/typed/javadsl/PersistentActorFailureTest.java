@@ -19,9 +19,9 @@ import org.scalatest.junit.JUnitSuite;
 
 import java.time.Duration;
 
-import static akka.persistence.typed.scaladsl.PersistentBehaviorFailureSpec.conf;
+import static akka.persistence.typed.scaladsl.EventSourcedBehaviorFailureSpec.conf;
 
-class FailingPersistentActor extends PersistentBehavior<String, String, String> {
+class FailingPersistentActor extends EventSourcedBehavior<String, String, String> {
 
     private final ActorRef<String> probe;
     private final ActorRef<Throwable> recoveryFailureProbe;

@@ -11,7 +11,7 @@ import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.CommandHandlerBuilder;
 import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.PersistentBehavior;
+import akka.persistence.typed.javadsl.EventSourcedBehavior;
 
 import static jdocs.akka.persistence.typed.auction.AuctionCommand.*;
 import static jdocs.akka.persistence.typed.auction.AuctionEvent.*;
@@ -24,7 +24,7 @@ import java.util.UUID;
 /**
  * Based on https://github.com/lagom/online-auction-java/blob/master/bidding-impl/src/main/java/com/example/auction/bidding/impl/AuctionEntity.java
  */
-public class AuctionEntity extends PersistentBehavior<AuctionCommand, AuctionEvent, AuctionState> {
+public class AuctionEntity extends EventSourcedBehavior<AuctionCommand, AuctionEvent, AuctionState> {
 
   private final UUID entityUUID;
 

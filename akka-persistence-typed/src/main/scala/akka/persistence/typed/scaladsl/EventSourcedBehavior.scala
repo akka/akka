@@ -7,16 +7,14 @@ package akka.persistence.typed.scaladsl
 import akka.Done
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior.DeferredBehavior
+import akka.annotation.DoNotInherit
 import akka.persistence._
-import akka.persistence.typed.EventAdapter
+import akka.persistence.typed.{ EventAdapter, ExpectingReply, PersistenceId }
 import akka.persistence.typed.internal._
+
 import scala.util.Try
 
-import akka.annotation.DoNotInherit
-import akka.persistence.typed.ExpectingReply
-import akka.persistence.typed.PersistenceId
-
-object PersistentBehavior {
+object EventSourcedBehavior {
 
   /**
    * Type alias for the command handler function that defines how to act on commands.
@@ -43,8 +41,8 @@ object PersistentBehavior {
     persistenceId:  PersistenceId,
     emptyState:     State,
     commandHandler: (State, Command) ⇒ Effect[Event, State],
-    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
-    PersistentBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
+    eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] =
+    EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
 
   /**
    * Create a `Behavior` for a persistent actor that is enforcing that replies to commands are not forgotten.
@@ -55,8 +53,8 @@ object PersistentBehavior {
     persistenceId:  PersistenceId,
     emptyState:     State,
     commandHandler: (State, Command) ⇒ ReplyEffect[Event, State],
-    eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
-    PersistentBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
+    eventHandler:   (State, Event) ⇒ State): EventSourcedBehavior[Command, Event, State] =
+    EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
 
   /**
    * The `CommandHandler` defines how to act on commands. A `CommandHandler` is
@@ -88,24 +86,24 @@ object PersistentBehavior {
  *
  * Not for user extension
  */
-@DoNotInherit trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command] {
+@DoNotInherit trait EventSourcedBehavior[Command, Event, State] extends DeferredBehavior[Command] {
 
   def persistenceId: PersistenceId
 
   /**
    * The `callback` function is called to notify that the recovery process has finished.
    */
-  def onRecoveryCompleted(callback: State ⇒ Unit): PersistentBehavior[Command, Event, State]
+  def onRecoveryCompleted(callback: State ⇒ Unit): EventSourcedBehavior[Command, Event, State]
   /**
    * The `callback` function is called to notify that recovery has failed. For setting a supervision
    * strategy `onPersistFailure`
    */
-  def onRecoveryFailure(callback: Throwable ⇒ Unit): PersistentBehavior[Command, Event, State]
+  def onRecoveryFailure(callback: Throwable ⇒ Unit): EventSourcedBehavior[Command, Event, State]
 
   /**
    * The `callback` function is called to notify when a snapshot is complete.
    */
-  def onSnapshot(callback: (SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
+  def onSnapshot(callback: (SnapshotMetadata, Try[Done]) ⇒ Unit): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Initiates a snapshot if the given function returns true.
@@ -114,23 +112,23 @@ object PersistentBehavior {
    *
    * `predicate` receives the State, Event and the sequenceNr used for the Event
    */
-  def snapshotWhen(predicate: (State, Event, Long) ⇒ Boolean): PersistentBehavior[Command, Event, State]
+  def snapshotWhen(predicate: (State, Event, Long) ⇒ Boolean): EventSourcedBehavior[Command, Event, State]
   /**
    * Snapshot every N events
    *
    * `numberOfEvents` should be greater than 0
    */
-  def snapshotEvery(numberOfEvents: Long): PersistentBehavior[Command, Event, State]
+  def snapshotEvery(numberOfEvents: Long): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Change the journal plugin id that this actor should use.
    */
-  def withJournalPluginId(id: String): PersistentBehavior[Command, Event, State]
+  def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Change the snapshot store plugin id that this actor should use.
    */
-  def withSnapshotPluginId(id: String): PersistentBehavior[Command, Event, State]
+  def withSnapshotPluginId(id: String): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Changes the snapshot selection criteria used by this behavior.
@@ -140,18 +138,18 @@ object PersistentBehavior {
    * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
    * performed by replaying all events -- which may take a long time.
    */
-  def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): PersistentBehavior[Command, Event, State]
+  def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State]
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query
    */
-  def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State]
+  def withTagger(tagger: Event ⇒ Set[String]): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Transform the event in another type before giving to the journal. Can be used to wrap events
    * in types Journals understand but is of a different type than `Event`.
    */
-  def eventAdapter(adapter: EventAdapter[Event, _]): PersistentBehavior[Command, Event, State]
+  def eventAdapter(adapter: EventAdapter[Event, _]): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Back off strategy for persist failures.
@@ -161,6 +159,6 @@ object PersistentBehavior {
    *
    * If not specified the actor will be stopped on failure.
    */
-  def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): PersistentBehavior[Command, Event, State]
+  def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State]
 }
 

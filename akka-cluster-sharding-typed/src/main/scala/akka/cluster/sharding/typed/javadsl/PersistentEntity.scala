@@ -11,13 +11,13 @@ import scala.compat.java8.OptionConverters._
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.javadsl.PersistentBehavior
+import akka.persistence.typed.javadsl.EventSourcedBehavior
 
 /**
  * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent
  * actors is very common and therefore this `PersistentEntity` class is provided as convenience.
  *
- * It is a [[PersistentBehavior]] and is implemented in the same way. It selects the `persistenceId`
+ * It is a [[EventSourcedBehavior]] and is implemented in the same way. It selects the `persistenceId`
  * automatically from the [[EntityTypeKey]] and `entityId` constructor parameters by using
  * [[EntityTypeKey.persistenceIdFrom]].
  */
@@ -25,7 +25,7 @@ abstract class PersistentEntity[Command, Event, State >: Null] private (
   val entityTypeKey: EntityTypeKey[Command],
   val entityId:      String,
   persistenceId:     PersistenceId, supervisorStrategy: Optional[BackoffSupervisorStrategy])
-  extends PersistentBehavior[Command, Event, State](persistenceId, supervisorStrategy) {
+  extends EventSourcedBehavior[Command, Event, State](persistenceId, supervisorStrategy) {
 
   def this(entityTypeKey: EntityTypeKey[Command], entityId: String) = {
     this(entityTypeKey, entityId,

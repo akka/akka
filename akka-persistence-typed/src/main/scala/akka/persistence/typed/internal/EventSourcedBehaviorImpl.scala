@@ -11,15 +11,15 @@ import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.{ EventAdapter, NoOpEventAdapter }
-import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
+import akka.persistence.typed.internal.InternalBehavior.{ InternalProtocol, WriterIdentity }
 import akka.persistence.typed.scaladsl._
+import akka.persistence.typed.PersistenceId
 import akka.util.ConstantFun
+
 import scala.util.{ Failure, Success, Try }
 
-import akka.persistence.typed.PersistenceId
-
 @InternalApi
-private[akka] object PersistentBehaviorImpl {
+private[akka] object EventSourcedBehaviorImpl {
 
   def defaultOnSnapshot[A](ctx: ActorContext[A], meta: SnapshotMetadata, result: Try[Done]): Unit = {
     result match {
@@ -32,37 +32,37 @@ private[akka] object PersistentBehaviorImpl {
 }
 
 @InternalApi
-private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
+private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   persistenceId:       PersistenceId,
   emptyState:          State,
-  commandHandler:      PersistentBehavior.CommandHandler[Command, Event, State],
-  eventHandler:        PersistentBehavior.EventHandler[State, Event],
-  journalPluginId:     Option[String]                                           = None,
-  snapshotPluginId:    Option[String]                                           = None,
-  recoveryCompleted:   State ⇒ Unit                                             = ConstantFun.scalaAnyToUnit,
-  tagger:              Event ⇒ Set[String]                                      = (_: Event) ⇒ Set.empty[String],
-  eventAdapter:        EventAdapter[Event, Any]                                 = NoOpEventAdapter.instance[Event],
-  snapshotWhen:        (State, Event, Long) ⇒ Boolean                           = ConstantFun.scalaAnyThreeToFalse,
-  recovery:            Recovery                                                 = Recovery(),
-  supervisionStrategy: SupervisorStrategy                                       = SupervisorStrategy.stop,
-  onSnapshot:          (SnapshotMetadata, Try[Done]) ⇒ Unit                     = ConstantFun.scalaAnyTwoToUnit,
-  onRecoveryFailure:   Throwable ⇒ Unit                                         = ConstantFun.scalaAnyToUnit
-) extends PersistentBehavior[Command, Event, State] with EventsourcedStashReferenceManagement {
+  commandHandler:      EventSourcedBehavior.CommandHandler[Command, Event, State],
+  eventHandler:        EventSourcedBehavior.EventHandler[State, Event],
+  journalPluginId:     Option[String]                                             = None,
+  snapshotPluginId:    Option[String]                                             = None,
+  recoveryCompleted:   State ⇒ Unit                                               = ConstantFun.scalaAnyToUnit,
+  tagger:              Event ⇒ Set[String]                                        = (_: Event) ⇒ Set.empty[String],
+  eventAdapter:        EventAdapter[Event, Any]                                   = NoOpEventAdapter.instance[Event],
+  snapshotWhen:        (State, Event, Long) ⇒ Boolean                             = ConstantFun.scalaAnyThreeToFalse,
+  recovery:            Recovery                                                   = Recovery(),
+  supervisionStrategy: SupervisorStrategy                                         = SupervisorStrategy.stop,
+  onSnapshot:          (SnapshotMetadata, Try[Done]) ⇒ Unit                       = ConstantFun.scalaAnyTwoToUnit,
+  onRecoveryFailure:   Throwable ⇒ Unit                                           = ConstantFun.scalaAnyToUnit
+) extends EventSourcedBehavior[Command, Event, State] with StashReferenceManagement {
 
   override def apply(context: typed.ActorContext[Command]): Behavior[Command] = {
     Behaviors.supervise {
       Behaviors.setup[Command] { ctx ⇒
-        val settings = EventsourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
+        val settings = EventSourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
 
         val internalStash = stashBuffer(settings)
 
         // the default impl needs context which isn't available until here, so we
         // use the anyTwoToUnit as a marker to use the default
         val actualOnSnapshot: (SnapshotMetadata, Try[Done]) ⇒ Unit =
-          if (onSnapshot == ConstantFun.scalaAnyTwoToUnit) PersistentBehaviorImpl.defaultOnSnapshot[Command](ctx, _, _)
+          if (onSnapshot == ConstantFun.scalaAnyTwoToUnit) EventSourcedBehaviorImpl.defaultOnSnapshot[Command](ctx, _, _)
           else onSnapshot
 
-        val eventsourcedSetup = new EventsourcedSetup(
+        val eventsourcedSetup = new BehaviorSetup(
           ctx.asInstanceOf[ActorContext[InternalProtocol]],
           persistenceId,
           emptyState,
@@ -97,7 +97,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
             target(ctx, signal)
           }
         }
-        val widened = EventsourcedRequestingRecoveryPermit(eventsourcedSetup).widen[Any] {
+        val widened = RequestingRecoveryPermit(eventsourcedSetup).widen[Any] {
           case res: JournalProtocol.Response           ⇒ InternalProtocol.JournalResponse(res)
           case res: SnapshotProtocol.Response          ⇒ InternalProtocol.SnapshotterResponse(res)
           case RecoveryPermitter.RecoveryPermitGranted ⇒ InternalProtocol.RecoveryPermitGranted
@@ -113,7 +113,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(callback: State ⇒ Unit): PersistentBehavior[Command, Event, State] =
+  def onRecoveryCompleted(callback: State ⇒ Unit): EventSourcedBehavior[Command, Event, State] =
     copy(recoveryCompleted = callback)
 
   /**
@@ -123,7 +123,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
    *
    * `predicate` receives the State, Event and the sequenceNr used for the Event
    */
-  def snapshotWhen(predicate: (State, Event, Long) ⇒ Boolean): PersistentBehavior[Command, Event, State] =
+  def snapshotWhen(predicate: (State, Event, Long) ⇒ Boolean): EventSourcedBehavior[Command, Event, State] =
     copy(snapshotWhen = predicate)
 
   /**
@@ -131,7 +131,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
    *
    * `numberOfEvents` should be greater than 0
    */
-  def snapshotEvery(numberOfEvents: Long): PersistentBehavior[Command, Event, State] = {
+  def snapshotEvery(numberOfEvents: Long): EventSourcedBehavior[Command, Event, State] = {
     require(numberOfEvents > 0, s"numberOfEvents should be positive: Was $numberOfEvents")
     copy(snapshotWhen = (_, _, seqNr) ⇒ seqNr % numberOfEvents == 0)
   }
@@ -139,7 +139,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   /**
    * Change the journal plugin id that this actor should use.
    */
-  def withJournalPluginId(id: String): PersistentBehavior[Command, Event, State] = {
+  def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State] = {
     require(id != null, "journal plugin id must not be null; use empty string for 'default' journal")
     copy(journalPluginId = if (id != "") Some(id) else None)
   }
@@ -147,7 +147,7 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
   /**
    * Change the snapshot store plugin id that this actor should use.
    */
-  def withSnapshotPluginId(id: String): PersistentBehavior[Command, Event, State] = {
+  def withSnapshotPluginId(id: String): EventSourcedBehavior[Command, Event, State] = {
     require(id != null, "snapshot plugin id must not be null; use empty string for 'default' snapshot store")
     copy(snapshotPluginId = if (id != "") Some(id) else None)
   }
@@ -160,27 +160,27 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
    * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
    * performed by replaying all events -- which may take a long time.
    */
-  def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): PersistentBehavior[Command, Event, State] = {
+  def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State] = {
     copy(recovery = Recovery(selection))
   }
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query
    */
-  def withTagger(tagger: Event ⇒ Set[String]): PersistentBehavior[Command, Event, State] =
+  def withTagger(tagger: Event ⇒ Set[String]): EventSourcedBehavior[Command, Event, State] =
     copy(tagger = tagger)
 
   /**
    * Adapt the event before sending to the journal e.g. wrapping the event in a type
    * the journal understands
    */
-  def eventAdapter(adapter: EventAdapter[Event, _]): PersistentBehavior[Command, Event, State] =
+  def eventAdapter(adapter: EventAdapter[Event, _]): EventSourcedBehavior[Command, Event, State] =
     copy(eventAdapter = adapter.asInstanceOf[EventAdapter[Event, Any]])
 
   /**
    * The `callback` function is called to notify the actor that a snapshot has finished
    */
-  def onSnapshot(callback: (SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State] =
+  def onSnapshot(callback: (SnapshotMetadata, Try[Done]) ⇒ Unit): EventSourcedBehavior[Command, Event, State] =
     copy(onSnapshot = callback)
 
   /**
@@ -191,13 +191,13 @@ private[akka] final case class PersistentBehaviorImpl[Command, Event, State](
    *
    * If not specified the actor will be stopped on failure.
    */
-  def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): PersistentBehavior[Command, Event, State] =
+  def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State] =
     copy(supervisionStrategy = backoffStrategy)
 
   /**
    * The `callback` function is called to notify that recovery has failed. For setting a supervision
    * strategy `onPersistFailure`
    */
-  def onRecoveryFailure(callback: Throwable ⇒ Unit): PersistentBehavior[Command, Event, State] =
+  def onRecoveryFailure(callback: Throwable ⇒ Unit): EventSourcedBehavior[Command, Event, State] =
     copy(onRecoveryFailure = callback)
 }

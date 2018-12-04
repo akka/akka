@@ -7,21 +7,19 @@ package akka.persistence.typed.internal
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.typed.Behavior
-import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.persistence.typed.PersistenceId
 
 /** INTERNAL API */
 @InternalApi
-private[akka] object EventsourcedBehavior {
+private[akka] object InternalBehavior {
 
   // ok to wrap around (2*Int.MaxValue restarts will not happen within a journal roundtrip)
   private[akka] val instanceIdCounter = new AtomicInteger(1)
 
   object WriterIdentity {
     def newIdentity(): WriterIdentity = {
-      val instanceId: Int = EventsourcedBehavior.instanceIdCounter.getAndIncrement()
+      val instanceId: Int = InternalBehavior.instanceIdCounter.getAndIncrement()
       val writerUuid: String = UUID.randomUUID.toString
       WriterIdentity(instanceId, writerUuid)
     }

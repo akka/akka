@@ -11,15 +11,15 @@ import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
 import akka.persistence._
-import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
+import akka.persistence.typed.internal.InternalBehavior.InternalProtocol
 
 import scala.collection.immutable
 
 /** INTERNAL API */
 @InternalApi
-private[akka] trait EventsourcedJournalInteractions[C, E, S] {
+private[akka] trait JournalInteractions[C, E, S] {
 
-  def setup: EventsourcedSetup[C, E, S]
+  def setup: BehaviorSetup[C, E, S]
 
   type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
 

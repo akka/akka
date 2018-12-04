@@ -6,17 +6,17 @@ package akka.persistence.typed.internal
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ Behavior, Signal }
-import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
-import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol.{ IncomingCommand, RecoveryPermitGranted }
+import akka.persistence.typed.internal.InternalBehavior.InternalProtocol
+import akka.persistence.typed.internal.InternalBehavior.InternalProtocol.{ IncomingCommand, RecoveryPermitGranted }
 import akka.actor.testkit.typed.scaladsl.TestProbe
 
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 
-class EventsourcedStashReferenceManagementTest extends ScalaTestWithActorTestKit with WordSpecLike {
+class StashReferenceManagementTest extends ScalaTestWithActorTestKit with WordSpecLike {
 
-  case class Impl() extends EventsourcedStashReferenceManagement
+  case class Impl() extends StashReferenceManagement
 
   "EventsourcedStashReferenceManagement instance" should {
     "initialize stash only once" in {
@@ -44,7 +44,7 @@ class EventsourcedStashReferenceManagementTest extends ScalaTestWithActorTestKit
     }
   }
 
-  object TestBehavior extends EventsourcedStashReferenceManagement {
+  object TestBehavior extends StashReferenceManagement {
 
     def apply(probe: TestProbe[Int]): Behavior[InternalProtocol] = {
       val settings = dummySettings()
@@ -65,7 +65,7 @@ class EventsourcedStashReferenceManagementTest extends ScalaTestWithActorTestKit
   }
 
   private def dummySettings(capacity: Int = 42) =
-    EventsourcedSettings(
+    EventSourcedSettings(
       stashCapacity = capacity,
       stashOverflowStrategyConfigurator = "akka.persistence.ThrowExceptionConfigurator",
       logOnStashing = false,
