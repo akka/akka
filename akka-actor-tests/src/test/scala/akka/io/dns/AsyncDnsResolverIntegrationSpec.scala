@@ -125,13 +125,13 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
     }
 
     "resolve SRV record" in {
-      val name = "service.tcp.foo.test"
-      val answer = resolve("service.tcp.foo.test", Srv)
+      val name = "_service._tcp.foo.test"
+      val answer = resolve(name, Srv)
 
       answer.name shouldEqual name
       answer.records.collect { case r: SRVRecord ⇒ r }.toSet shouldEqual Set(
-        SRVRecord("service.tcp.foo.test", Ttl.fromPositive(86400.seconds), 10, 65534, 5060, "a-single.foo.test"),
-        SRVRecord("service.tcp.foo.test", Ttl.fromPositive(86400.seconds), 65533, 40, 65535, "a-double.foo.test")
+        SRVRecord("_service._tcp.foo.test", Ttl.fromPositive(86400.seconds), 10, 65534, 5060, "a-single.foo.test"),
+        SRVRecord("_service._tcp.foo.test", Ttl.fromPositive(86400.seconds), 65533, 40, 65535, "a-double.foo.test")
       )
     }
 

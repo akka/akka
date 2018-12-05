@@ -1,3 +1,6 @@
+# Dns discovery custom resolver #25937 - Internal API
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.internal.AsyncDnsManager.ext")
+
 # Replaces DNS TTL primitive types with Duration #25850
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.SimpleDnsCache.put")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.SimpleDnsCache#Cache.put")
@@ -54,4 +57,3 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.TcpConnection.abort"
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.ChannelRegistration.cancel")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancelAndClose")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.SelectionHandler#ChannelRegistryImpl.this")
-

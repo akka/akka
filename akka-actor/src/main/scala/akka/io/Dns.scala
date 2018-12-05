@@ -5,11 +5,13 @@
 package akka.io
 
 import java.net.{ Inet4Address, Inet6Address, InetAddress, UnknownHostException }
+import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.typesafe.config.Config
-
+import java.util.function.{ Function ⇒ JFunction }
 import scala.collection.{ breakOut, immutable }
 
 abstract class Dns {
@@ -87,32 +89,77 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): DnsExt = super.get(system)
 }
 
-class DnsExt(val system: ExtendedActorSystem) extends IO.Extension {
+class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: String, managerName: String) extends IO.Extension {
 
-  val Settings = new Settings(system.settings.config.getConfig("akka.io.dns"))
+  private val asyncDns = new ConcurrentHashMap[String, ActorRef]
 
-  class Settings private[DnsExt] (_config: Config) {
+  /**
+   * INTERNAL API
+   *
+   * Load an additional async-dns resolver. Can be used to use async-dns even if inet-resolver is the configuerd
+   * default.
+   * Intentionally chosen not to support loading an arbitrary resolver as it required a specific constructor
+   * for the manager actor. The expected constructor for DNS plugins is just to take in a DnsExt which can't
+   * be used in this case
+   */
+  @InternalApi
+  private[akka] def loadAsyncDns(managerName: String): ActorRef = {
+    // This can't pass in `this` as then AsyncDns would pick up the system settings
+    asyncDns.computeIfAbsent(managerName, new JFunction[String, ActorRef] {
+      override def apply(r: String): ActorRef = {
+        val settings = new Settings(system.settings.config.getConfig("akka.io.dns"), "async-dns")
+        val provider = system.dynamicAccess.getClassFor[DnsProvider](settings.ProviderObjectName).get.newInstance()
+        system.log.info("Creating async dns resolver {} with manager name {}", settings.Resolver, managerName)
+        system.systemActorOf(
+          props = Props(provider.managerClass, settings.Resolver, system, settings.ResolverConfig, provider.cache, settings.Dispatcher, provider).withDeploy(Deploy.local).withDispatcher(settings.Dispatcher),
+          name = managerName)
+      }
+    })
+  }
 
-    import _config._
+  /**
+   * INTERNAL API
+   *
+   * Use IO(DNS) or Dns(system). Do not instantiate directly
+   *
+   * For binary compat as DnsExt constructor didn't used to have internal API on
+   */
+  @InternalApi
+  def this(system: ExtendedActorSystem) = this(system, system.settings.config.getString("akka.io.dns.resolver"), "IO-DNS")
 
-    val Dispatcher: String = getString("dispatcher")
-    val Resolver: String = getString("resolver")
-    val ResolverConfig: Config = getConfig(Resolver)
+  class Settings private[DnsExt] (config: Config, resolverName: String) {
+    /**
+     * Load the default resolver
+     */
+    def this(config: Config) = this(config, config.getString("resolver"))
+
+    val Dispatcher: String = config.getString("dispatcher")
+    val Resolver: String = resolverName
+    val ResolverConfig: Config = config.getConfig(Resolver)
     val ProviderObjectName: String = ResolverConfig.getString("provider-object")
 
     override def toString = s"Settings($Dispatcher, $Resolver, $ResolverConfig, $ProviderObjectName)"
   }
 
+  // Settings for the system resolver
+  val Settings: Settings = new Settings(system.settings.config.getConfig("akka.io.dns"), resolverName)
+
+  // System DNS resolver
   val provider: DnsProvider = system.dynamicAccess.getClassFor[DnsProvider](Settings.ProviderObjectName).get.newInstance()
+
+  // System DNS cache
   val cache: Dns = provider.cache
 
+  // System DNS manager
   val manager: ActorRef = {
     system.systemActorOf(
       props = Props(provider.managerClass, this).withDeploy(Deploy.local).withDispatcher(Settings.Dispatcher),
-      name = "IO-DNS")
+      name = managerName)
   }
 
+  // System DNS manager
   def getResolver: ActorRef = manager
+
 }
 
 object IpVersionSelector {

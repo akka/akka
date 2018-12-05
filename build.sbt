@@ -45,7 +45,8 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   actorTyped, actorTypedTests, actorTestkitTyped,
   persistenceTyped,
   clusterTyped, clusterShardingTyped,
-  streamTyped
+  streamTyped,
+  discovery
 )
 
 lazy val root = Project(
@@ -479,6 +480,16 @@ lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
 
+lazy val discovery = akkaModule("akka-discovery")
+  .dependsOn(
+    actor,
+    testkit % "test->test",
+    actorTests % "test->test"
+  )
+  .settings(Dependencies.discovery)
+  .settings(AkkaBuild.mayChangeSettings)
+  .settings(AutomaticModuleName.settings("akka.discovery"))
+  .settings(OSGi.discovery)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
