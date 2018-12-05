@@ -14,7 +14,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-object PersistentActorDeleteFailureSpec {
+object EventSourcedActorDeleteFailureSpec {
 
   case class DeleteTo(n: Long)
   class SimulatedException(msg: String) extends RuntimeException(msg) with NoStackTrace
@@ -44,11 +44,11 @@ object PersistentActorDeleteFailureSpec {
 
 }
 
-class PersistentActorDeleteFailureSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotFailureRobustnessSpec", extraConfig = Some(
+class EventSourcedActorDeleteFailureSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotFailureRobustnessSpec", extraConfig = Some(
   """
-  akka.persistence.journal.inmem.class = "akka.persistence.PersistentActorDeleteFailureSpec$DeleteFailingInmemJournal"
+  akka.persistence.journal.inmem.class = "akka.persistence.EventSourcedActorDeleteFailureSpec$DeleteFailingInmemJournal"
   """))) with ImplicitSender {
-  import PersistentActorDeleteFailureSpec._
+  import EventSourcedActorDeleteFailureSpec._
 
   system.eventStream.publish(TestEvent.Mute(EventFilter[akka.pattern.AskTimeoutException]()))
 

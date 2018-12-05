@@ -8,8 +8,8 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
-import akka.persistence.typed.scaladsl.PersistentBehavior
-import akka.persistence.typed.scaladsl.PersistentBehavior.CommandHandler
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 
 object MovieWatchList {
   sealed trait Command
@@ -44,7 +44,7 @@ object MovieWatchList {
   }
 
   def behavior(userId: String): Behavior[Command] = {
-    PersistentBehavior[Command, Event, MovieList](
+    EventSourcedBehavior[Command, Event, MovieList](
       persistenceId = PersistenceId(s"movies-$userId"),
       emptyState = MovieList(Set.empty),
       commandHandler,

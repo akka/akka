@@ -91,8 +91,8 @@ public class PersistentActorCompileOnlyTest {
 
 
     //#behavior
-    public static PersistentBehavior<SimpleCommand, SimpleEvent, SimpleState> pb =
-        new PersistentBehavior<SimpleCommand, SimpleEvent, SimpleState>(new PersistenceId("p1")) {
+    public static EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState> pb =
+        new EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState>(new PersistenceId("p1")) {
 
       @Override
       public SimpleState emptyState() {
@@ -161,8 +161,8 @@ public class PersistentActorCompileOnlyTest {
 
     //#commonChainedEffects
 
-    private PersistentBehavior<MyCommand, MyEvent, ExampleState> pa =
-        new PersistentBehavior<MyCommand, MyEvent, ExampleState>(new PersistenceId("pa")) {
+    private EventSourcedBehavior<MyCommand, MyEvent, ExampleState> pa =
+        new EventSourcedBehavior<MyCommand, MyEvent, ExampleState>(new PersistenceId("pa")) {
 
       @Override
       public ExampleState emptyState() {
@@ -281,7 +281,7 @@ public class PersistentActorCompileOnlyTest {
     // #actor-context
 
     // #actor-context
-    class MyPersistentBehavior extends PersistentBehavior<Command, Event, RecoveryComplete.EventsInFlight> {
+    class MyPersistentBehavior extends EventSourcedBehavior<Command, Event, RecoveryComplete.EventsInFlight> {
 
       // this makes the context available to the command handler etc.
       private final ActorContext<Command> ctx;

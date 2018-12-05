@@ -25,7 +25,7 @@ class PrimitiveStateSpec extends ScalaTestWithActorTestKit(PrimitiveStateSpec.co
   implicit val testSettings = TestKitSettings(system)
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[Int] =
-    PersistentBehavior[Int, Int, Int](
+    EventSourcedBehavior[Int, Int, Int](
       persistenceId,
       emptyState = 0,
       commandHandler = (_, command) ⇒ {

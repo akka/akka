@@ -6,16 +6,16 @@ package akka.persistence
 
 import akka.actor.{ OneForOneStrategy, _ }
 import akka.persistence.journal.AsyncWriteJournal
+import akka.persistence.journal.inmem.InmemJournal
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent, TestProbe }
 
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Try }
-import akka.persistence.journal.inmem.InmemJournal
 
 import scala.concurrent.Future
 
-object PersistentActorFailureSpec {
+object EventSourcedActorFailureSpec {
   import PersistentActorSpec.{ Cmd, Evt, ExamplePersistentActor }
 
   class SimulatedException(msg: String) extends RuntimeException(msg) with NoStackTrace
@@ -140,12 +140,12 @@ object PersistentActorFailureSpec {
   }
 }
 
-class PersistentActorFailureSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotFailureRobustnessSpec", extraConfig = Some(
+class EventSourcedActorFailureSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotFailureRobustnessSpec", extraConfig = Some(
   """
-  akka.persistence.journal.inmem.class = "akka.persistence.PersistentActorFailureSpec$FailingInmemJournal"
+  akka.persistence.journal.inmem.class = "akka.persistence.EventSourcedActorFailureSpec$FailingInmemJournal"
   """))) with ImplicitSender {
 
-  import PersistentActorFailureSpec._
+  import EventSourcedActorFailureSpec._
   import PersistentActorSpec._
 
   system.eventStream.publish(TestEvent.Mute(

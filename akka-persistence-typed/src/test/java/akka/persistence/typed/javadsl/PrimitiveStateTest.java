@@ -24,7 +24,7 @@ public class PrimitiveStateTest extends JUnitSuite {
   @ClassRule
   public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
-  static class PrimitiveState extends PersistentBehavior<Integer, Integer, Integer> {
+  static class PrimitiveState extends EventSourcedBehavior<Integer, Integer, Integer> {
 
     private final ActorRef<String> probe;
 

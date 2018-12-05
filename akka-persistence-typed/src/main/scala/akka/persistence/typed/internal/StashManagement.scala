@@ -4,21 +4,21 @@
 
 package akka.persistence.typed.internal
 
+import akka.{ actor ⇒ a }
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer }
 import akka.actor.{ DeadLetter, StashOverflowException }
 import akka.annotation.InternalApi
-import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol
 import akka.persistence._
 import akka.util.ConstantFun
-import akka.{ actor ⇒ a }
+import akka.util.OptionVal
 
 /** INTERNAL API: Stash management for persistent behaviors */
 @InternalApi
-private[akka] trait EventsourcedStashManagement[C, E, S] {
+private[akka] trait StashManagement[C, E, S] {
   import akka.actor.typed.scaladsl.adapter._
 
-  def setup: EventsourcedSetup[C, E, S]
+  def setup: BehaviorSetup[C, E, S]
 
   private def context: ActorContext[InternalProtocol] = setup.context
 
@@ -54,4 +54,25 @@ private[akka] trait EventsourcedStashManagement[C, E, S] {
     } else behavior
   }
 
+}
+
+/**
+ * INTERNAL API
+ * Main reason for introduction of this trait is stash buffer reference management
+ * in order to survive restart of internal behavior
+ */
+@InternalApi private[akka] trait StashReferenceManagement {
+
+  private var stashBuffer: OptionVal[StashBuffer[InternalProtocol]] = OptionVal.None
+
+  def stashBuffer(settings: EventSourcedSettings): StashBuffer[InternalProtocol] = {
+    val buffer: StashBuffer[InternalProtocol] = stashBuffer match {
+      case OptionVal.Some(value) ⇒ value
+      case _                     ⇒ StashBuffer(settings.stashCapacity)
+    }
+    this.stashBuffer = OptionVal.Some(buffer)
+    stashBuffer.get
+  }
+
+  def clearStashBuffer(): Unit = stashBuffer = OptionVal.None
 }

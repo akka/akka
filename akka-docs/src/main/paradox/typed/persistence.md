@@ -33,7 +33,7 @@ This module is currently marked as @ref:[may change](../common/may-change.md) in
 
 ## Example
 
-Let's start with a simple example. The minimum required for a `PersistentBehavior` is:
+Let's start with a simple example. The minimum required for a `EventSourcedBehavior` is:
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #structure }
@@ -45,7 +45,7 @@ The first important thing to notice is the `Behavior` of a persistent actor is t
 because this is the type of message a persistent actor should receive. In Akka Typed this is now enforced by the type system.
 The event and state are only used internally.
 
-The components that make up a PersistentBehavior are:
+The components that make up a EventSourcedBehavior are:
 
 * `persistenceId` is the stable unique identifier for the persistent actor.
 * `emptyState` defines the `State` when the entity is first created e.g. a Counter would start with 0 as state.
@@ -68,7 +68,7 @@ and can be one of:
 * `unhandled` the command is unhandled (not supported) in current state
 * `stop` stop this actor
 
-In addition to returning the primary `Effect` for the command `PersistentBehavior`s can also 
+In addition to returning the primary `Effect` for the command `EventSourcedBehavior`s can also 
 chain side effects (`SideEffect`s) are to be performed after successful persist which is achieved with the `andThen`  and `thenRun`
 function e.g @scala[`Effect.persist(..).andThen`]@java[`Effect().persist(..).andThen`]. The `thenRun` function
 is a convenience around creating a `SideEffect`.
@@ -122,7 +122,7 @@ Scala
 Java
 :  @@snip [PersistentActorCompileOnyTest.java](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #event-handler }
 
-These are used to create a `PersistentBehavior`:
+These are used to create a `EventSourcedBehavior`:
 
 Scala
 :  @@snip [PersistentActorCompileOnyTest.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #behavior }
@@ -137,7 +137,7 @@ where resilience is important so that if a node crashes the persistent actors ar
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
 cluster and address them by id.
 
-The `PersistentBehavior` can then be run as with any plain typed actor as described in [actors documentation](actors-typed.md),
+The `EventSourcedBehavior` can then be run as with any plain typed actor as described in [actors documentation](actors-typed.md),
 but since Akka Persistence is based on the single-writer principle the persistent actors are typically used together
 with Cluster Sharding. For a particular `persistenceId` only one persistent actor instance should be active at one time.
 If multiple instances were to persist events at the same time, the events would be interleaved and might not be
@@ -233,7 +233,7 @@ Scala
 Java
 :  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #event-handler }
 
-And finally the behavior is created @scala[from the `PersistentBehavior.apply`]:
+And finally the behavior is created @scala[from the `EventSourcedBehavior.apply`]:
 
 Scala
 :  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #behavior }
@@ -299,13 +299,13 @@ Java
 
 
 Since this is such a common pattern there is a reply effect for this purpose. It has the nice property that
-it can be used to enforce that replies are not forgotten when implementing the `PersistentBehavior`.
-If it's defined with @scala[`PersistentBehavior.withEnforcedReplies`]@java[`PersistentBehaviorWithEnforcedReplies`]
+it can be used to enforce that replies are not forgotten when implementing the `EventSourcedBehavior`.
+If it's defined with @scala[`EventSourcedBehavior.withEnforcedReplies`]@java[`EventSourcedBehaviorWithEnforcedReplies`]
 there will be compilation errors if the returned effect isn't a `ReplyEffect`, which can be
 created with @scala[`Effect.reply`]@java[`Effects().reply`], @scala[`Effect.noReply`]@java[`Effects().noReply`],
 @scala[`Effect.thenReply`]@java[`Effects().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effects().thenNoReply`].
 
-These effects will send the reply message even when @scala[`PersistentBehavior.withEnforcedReplies`]@java[`PersistentBehaviorWithEnforcedReplies`]
+These effects will send the reply message even when @scala[`EventSourcedBehavior.withEnforcedReplies`]@java[`EventSourcedBehaviorWithEnforcedReplies`]
 is not used, but then there will be no compilation errors if the reply decision is left out.
 
 Note that the `noReply` is a way of making conscious decision that a reply shouldn't be sent for a specific
@@ -363,13 +363,13 @@ Java
 
 ## Event adapters
 
-Event adapters can be programmatically added to your `PersistentBehavior`s that can convert from your `Event` type
+Event adapters can be programmatically added to your `EventSourcedBehavior`s that can convert from your `Event` type
 to another type that is then passed to the journal.
 
 Defining an event adapter is done by extending an EventAdapter:
 
 Scala
-:  @@snip [x](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentBehaviorSpec.scala) { #event-wrapper }
+:  @@snip [x](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/EventSourcedBehaviorSpec.scala) { #event-wrapper }
 
 Java
 :  @@snip [x](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #event-wrapper }
@@ -377,14 +377,14 @@ Java
 Then install it on a persistent behavior:
 
 Scala
-:  @@snip [x](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentBehaviorSpec.scala) { #install-event-adapter }
+:  @@snip [x](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/EventSourcedBehaviorSpec.scala) { #install-event-adapter }
 
 Java
 :  @@snip [x](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #install-event-adapter }
 
 ## Wrapping Persistent Behaviors
 
-When creating a `PersistentBehavior`, it is possible to wrap `PersistentBehavior` in
+When creating a `EventSourcedBehavior`, it is possible to wrap `EventSourcedBehavior` in
 other behaviors such as `Behaviors.setup` in order to access the `ActorContext` object. For instance
 to access the actor logging upon taking snapshots for debug purpose.
 
@@ -397,7 +397,7 @@ Java
 
 ## Journal failures
 
-By default a `PersistentBehavior` will stop if an exception is thrown from the journal. It is possible to override this with
+By default a `EventSourcedBehavior` will stop if an exception is thrown from the journal. It is possible to override this with
 any `BackoffSupervisorStrategy`. It is not possible to use the normal supervision wrapping for this as it isn't valid to
 `resume` a behavior on a journal failure as it is not known if the event was persisted.
 
@@ -412,5 +412,5 @@ Java
 
 Journals can reject events. The difference from a failure is that the journal must decide to reject an event before
 trying to persist it e.g. because of a serialization exception. If an event is rejected it definitely won't be in the journal. 
-This is signalled to a `PersistentBehavior` via a `EventRejectedException` and can be handled with a @ref[supervisor](fault-tolerance.md). 
+This is signalled to a `EventSourcedBehavior` via a `EventRejectedException` and can be handled with a @ref[supervisor](fault-tolerance.md). 
 
