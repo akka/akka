@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -81,7 +82,7 @@ object ClusterShardingPersistenceSpec {
 
           case cmd @ AddWithConfirmation(s) ⇒
             Effect.persist(s)
-              .thenReply(cmd)(newState ⇒ Done)
+              .thenReply(cmd)(_ ⇒ Done)
 
           case Get(replyTo) ⇒
             replyTo ! s"$entityId:$state"
@@ -90,7 +91,7 @@ object ClusterShardingPersistenceSpec {
           case cmd @ PassivateAndPersist(s) ⇒
             shard ! Passivate(ctx.self)
             Effect.persist(s)
-              .thenReply(cmd)(newState ⇒ Done)
+              .thenReply(cmd)(_ ⇒ Done)
 
           case Echo(msg, replyTo) ⇒
             Effect.none.thenRun(_ ⇒ replyTo ! msg)
