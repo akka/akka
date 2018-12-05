@@ -7,4 +7,4 @@ You can run them like:
    project akka-bench-jmh
    jmh:run -i 3 -wi 3 -f 1 .*ActorCreationBenchmark
 
-Use 'jmh:run -h' to get an overview of the availabe options.
+Use 'jmh:run -h' to get an overview of the available options.

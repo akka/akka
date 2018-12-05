@@ -7,14 +7,15 @@ package akka.io.dns.internal
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, Props, Timers }
+import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, ExtendedActorSystem, Props, Timers }
 import akka.annotation.InternalApi
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, DnsSettings }
 import akka.io.dns.internal.AsyncDnsManager.CacheCleanup
-import akka.io.{ Dns, DnsExt, PeriodicCacheCleanup }
+import akka.io.{ Dns, DnsExt, DnsProvider, PeriodicCacheCleanup }
 import akka.routing.FromConfig
 import akka.util.Timeout
+import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
 
@@ -30,33 +31,36 @@ private[io] object AsyncDnsManager {
  * INTERNAL API
  */
 @InternalApi
-private[io] final class AsyncDnsManager(val ext: DnsExt) extends Actor
+private[io] final class AsyncDnsManager(name: String, system: ExtendedActorSystem, resolverConfig: Config, cache: Dns, dispatcher: String, provider: DnsProvider) extends Actor
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] with ActorLogging with Timers {
   import akka.pattern.ask
   import akka.pattern.pipe
 
+  /**
+   * Ctr expected by the DnsExt for all DnsMangers
+   */
+  def this(ext: DnsExt) = this(ext.Settings.Resolver, ext.system, ext.Settings.ResolverConfig, ext.cache, ext.Settings.Dispatcher, ext.provider)
+
   implicit val ec = context.dispatcher
 
-  private var oldProtocolWarningLoggedTimes = 0
-
-  val settings = new DnsSettings(ext.system, ext.Settings.ResolverConfig)
+  val settings = new DnsSettings(system, resolverConfig)
   implicit val timeout = Timeout(settings.ResolveTimeout)
 
   private val resolver = {
-    val props: Props = FromConfig.props(Props(ext.provider.actorClass, settings, ext.cache, (factory: ActorRefFactory, dns: List[InetSocketAddress]) ⇒ {
+    val props: Props = FromConfig.props(Props(provider.actorClass, settings, cache, (factory: ActorRefFactory, dns: List[InetSocketAddress]) ⇒ {
       dns.map(ns ⇒ factory.actorOf(Props(new DnsClient(ns))))
-    }).withDeploy(Deploy.local).withDispatcher(ext.Settings.Dispatcher))
-    context.actorOf(props, ext.Settings.Resolver)
+    }).withDeploy(Deploy.local).withDispatcher(dispatcher))
+    context.actorOf(props, name)
   }
 
-  private val cacheCleanup = ext.cache match {
+  private val cacheCleanup = cache match {
     case cleanup: PeriodicCacheCleanup ⇒ Some(cleanup)
     case _                             ⇒ None
   }
 
   override def preStart(): Unit = {
     cacheCleanup.foreach { _ ⇒
-      val interval = Duration(ext.Settings.ResolverConfig.getDuration("cache-cleanup-interval", TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
+      val interval = Duration(resolverConfig.getDuration("cache-cleanup-interval", TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
       timers.startPeriodicTimer(CacheCleanup, CacheCleanup, interval)
     }
   }
