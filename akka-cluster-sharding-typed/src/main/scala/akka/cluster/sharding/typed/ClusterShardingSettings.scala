@@ -4,7 +4,7 @@
 
 package akka.cluster.sharding.typed
 
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi

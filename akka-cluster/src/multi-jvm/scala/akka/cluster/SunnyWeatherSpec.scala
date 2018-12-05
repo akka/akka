@@ -5,11 +5,9 @@
 package akka.cluster
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.duration._
 import java.util.concurrent.atomic.AtomicReference
 import scala.collection.immutable.SortedSet
 import akka.actor.Props

@@ -9,9 +9,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.actor.ExtendedActorSystem
 import akka.cluster.MultiNodeClusterSpec
-import akka.testkit.LongRunningTest
 import akka.cluster.MemberStatus
 
 trait ClusterMetricsCommonConfig extends MultiNodeConfig {
@@ -61,7 +59,6 @@ object ClusterMetricsDisabledConfig extends ClusterMetricsCommonConfig {
 }
 
 object ClusterMetricsEnabledConfig extends ClusterMetricsCommonConfig {
-  import ConfigFactory._
 
   commonConfig {
     Seq(
@@ -136,7 +133,6 @@ class ClusterMetricsDisabledMultiJvmNode5 extends ClusterMetricsDisabledSpec
 
 abstract class ClusterMetricsDisabledSpec extends MultiNodeSpec(ClusterMetricsDisabledConfig)
   with MultiNodeClusterSpec with RedirectLogging {
-  import akka.cluster.ClusterEvent.CurrentClusterState
 
   val metricsView = new ClusterMetricsView(cluster.system)
 

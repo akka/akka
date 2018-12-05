@@ -11,7 +11,7 @@ import akka.pattern._
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.scaladsl._
 import akka.stream._
-import akka.testkit.{ AkkaSpec, ImplicitSender, SocketUtil, TestKit, TestProbe }
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit, TestProbe }
 import akka.util.ByteString
 import com.typesafe.config._
 

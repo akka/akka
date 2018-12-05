@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.{ WordSpec, WordSpecLike }
+import org.scalatest.WordSpecLike
 
 object RemoteDeployNotAllowedSpec {
   def config = ConfigFactory.parseString(

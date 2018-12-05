@@ -14,7 +14,6 @@ import scala.concurrent._
 import scala.concurrent.duration._
 
 import akka.stream.impl.TraversalBuilder
-import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages.SingleSource
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import org.scalatest.exceptions.TestFailedException

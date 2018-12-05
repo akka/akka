@@ -16,10 +16,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import akka.actor.Actor
-import akka.actor.ActorRef
 import akka.actor.Props
-import akka.actor.RootActorPath
 import akka.cluster.MultiNodeClusterSpec.EndActor
 import akka.remote.RARP
 

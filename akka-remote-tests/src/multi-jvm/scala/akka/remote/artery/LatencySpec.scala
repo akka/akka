@@ -5,7 +5,7 @@
 package akka.remote.artery
 
 import java.util.concurrent.Executors
-import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLongArray }
+import java.util.concurrent.atomic.AtomicLongArray
 import java.util.concurrent.locks.LockSupport
 
 import scala.concurrent.duration._
@@ -13,8 +13,6 @@ import akka.actor._
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
 import akka.stream.ActorMaterializer
 import akka.testkit._
 import com.typesafe.config.ConfigFactory

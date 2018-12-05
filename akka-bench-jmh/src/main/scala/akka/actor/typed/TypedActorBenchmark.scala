@@ -4,7 +4,7 @@
 
 package akka.actor.typed
 
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._

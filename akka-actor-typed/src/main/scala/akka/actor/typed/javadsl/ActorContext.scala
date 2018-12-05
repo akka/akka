@@ -12,7 +12,6 @@ import akka.annotation.ApiMayChange
 import akka.actor.typed._
 import java.util.Optional
 
-import akka.util.Timeout
 import scala.concurrent.ExecutionContextExecutor
 
 /**
