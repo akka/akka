@@ -85,7 +85,7 @@ import akka.util.JavaDurationConverters._
   override def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
     import akka.actor.typed.scaladsl.AskPattern._
     (target ? createRequest)(responseTimeout, system.scheduler).onComplete(res ⇒
-      self.asInstanceOf[ActorRef[AnyRef]] ! new AskResponse(res, mapResponse)
+      self.asInstanceOf[ActorRef[AnyRef]] ! AdaptMessage(res, mapResponse)
     )
   }
 
