@@ -5,7 +5,6 @@
 package akka.remote.artery
 
 import java.util.concurrent.TimeUnit.SECONDS
-import java.util.concurrent.Executors
 
 class TestRateReporter(name: String) extends RateReporter(
   SECONDS.toNanos(1),

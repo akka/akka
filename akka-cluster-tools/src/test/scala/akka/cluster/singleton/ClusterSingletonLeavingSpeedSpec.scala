@@ -16,7 +16,6 @@ import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.singleton.ClusterSingletonLeavingSpeedSpec.TheSingleton
 import akka.testkit.AkkaSpec
-import akka.testkit.TestActors
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 

@@ -11,18 +11,15 @@ import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 import scala.concurrent.duration._
 import akka.testkit._
-import akka.testkit.TestEvent._
-import java.util.concurrent.ThreadLocalRandom
 
 import akka.remote.testconductor.RoleName
 import akka.actor.Props
 import akka.actor.Actor
 
 import scala.util.control.NoStackTrace
-import akka.remote.{ QuarantinedEvent, RARP, RemoteActorRefProvider }
+import akka.remote.{ QuarantinedEvent, RemoteActorRefProvider }
 import akka.actor.ExtendedActorSystem
 import akka.actor.ActorRef
-import akka.dispatch.sysmsg.Failed
 import akka.actor.PoisonPill
 import akka.actor.Terminated
 

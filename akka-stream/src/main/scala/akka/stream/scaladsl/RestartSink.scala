@@ -5,7 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.{ Attributes, Inlet, KillSwitch, SinkShape }
+import akka.stream.{ Attributes, Inlet, SinkShape }
 import akka.stream.stage.{ GraphStage, InHandler }
 
 import scala.concurrent.duration.FiniteDuration

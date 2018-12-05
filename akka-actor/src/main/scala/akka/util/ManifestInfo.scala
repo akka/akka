@@ -15,7 +15,6 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.annotation.InternalApi
 import akka.event.Logging
 
 /**

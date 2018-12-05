@@ -4,7 +4,6 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
-import akka.actor.typed.Behavior
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.PersistentBehavior
 

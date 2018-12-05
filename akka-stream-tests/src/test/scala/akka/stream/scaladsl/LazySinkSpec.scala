@@ -7,8 +7,6 @@ package akka.stream.scaladsl
 import java.util.concurrent.TimeoutException
 
 import akka.NotUsed
-import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.Supervision._
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }

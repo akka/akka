@@ -7,7 +7,6 @@ package akka.cluster
 import language.postfixOps
 import scala.collection.immutable
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
@@ -20,7 +19,6 @@ import akka.actor.Actor
 import akka.actor.RootActorPath
 import akka.cluster.MemberStatus._
 import akka.actor.Deploy
-import akka.remote.RARP
 
 object RestartFirstSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")

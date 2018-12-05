@@ -10,8 +10,7 @@ import language.postfixOps
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
-import akka.testkit._
+import testkit.MultiNodeConfig
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 
