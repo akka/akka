@@ -11,14 +11,10 @@ import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 object OrElseStubbedSpec {
 
   sealed trait Ping
-
-  case class Ping1(replyTo: ActorRef[Pong]) extends Ping
-
-  case class Ping2(replyTo: ActorRef[Pong]) extends Ping
-
-  case class Ping3(replyTo: ActorRef[Pong]) extends Ping
-
-  case class PingInfinite(replyTo: ActorRef[Pong]) extends Ping
+  final case class Ping1(replyTo: ActorRef[Pong]) extends Ping
+  final case class Ping2(replyTo: ActorRef[Pong]) extends Ping
+  final case class Ping3(replyTo: ActorRef[Pong]) extends Ping
+  final case class PingInfinite(replyTo: ActorRef[Pong]) extends Ping
 
   case class Pong(counter: Int)
 
