@@ -14,13 +14,13 @@ import akka.cluster.metrics._
 import akka.serialization.{ BaseSerializer, SerializationExtension, Serializers, SerializerWithStringManifest }
 import akka.util.ClassLoaderObjectInputStream
 import akka.protobuf.{ ByteString, MessageLite }
+import akka.util.ccompat._
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.{ asJavaIterableConverter, asScalaBufferConverter, setAsJavaSetConverter }
 import java.io.NotSerializableException
 
 import akka.dispatch.Dispatchers
-import scala.collection.compat._
 
 /**
  * Protobuf serializer for [[akka.cluster.metrics.ClusterMetricsMessage]] types.

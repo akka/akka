@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import java.util.NoSuchElementException
 import akka.annotation.InternalApi
-import scala.collection.compat._
+import akka.util.ccompat._
 
 object Serialization {
 
@@ -235,7 +235,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
                     val classManifestOption: Option[Class[_]] = Some(classManifest)
                     updateCache(cache, manifest, classManifestOption)
                     s1.fromBinary(bytes, classManifestOption)
-                  case Failure(e) ⇒
+                  case Failure(_) ⇒
                     throw new NotSerializableException(
                       s"Cannot find manifest class [$manifest] for serializer with id [${serializer.identifier}].")
                 }

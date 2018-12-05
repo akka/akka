@@ -29,7 +29,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 import scala.collection.immutable
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API

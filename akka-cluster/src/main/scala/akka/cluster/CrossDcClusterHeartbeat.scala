@@ -10,9 +10,9 @@ import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterSettings.DataCenter
 import akka.remote.FailureDetectorRegistry
 import akka.util.ConstantFun
+import akka.util.ccompat._
 
 import scala.collection.SortedSet
-import scala.collection.compat._
 
 /**
  * INTERNAL API

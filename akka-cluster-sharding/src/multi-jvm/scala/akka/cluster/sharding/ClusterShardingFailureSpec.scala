@@ -22,7 +22,7 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import akka.util.ccompat._
+import akka.util.ccompat.imm._
 
 object ClusterShardingFailureSpec {
   case class Get(id: String)

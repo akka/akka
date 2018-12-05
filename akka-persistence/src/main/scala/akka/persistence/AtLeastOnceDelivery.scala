@@ -11,7 +11,7 @@ import akka.persistence.serialization.Message
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
 import akka.persistence.AtLeastOnceDelivery.Internal.Delivery
-import scala.collection.compat._
+import akka.util.ccompat._
 
 object AtLeastOnceDelivery {
 

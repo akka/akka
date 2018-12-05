@@ -13,7 +13,7 @@ import akka.util.Helpers.Requiring
 import akka.util.ByteString
 import akka.actor._
 import scala.collection.immutable
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * UDP Extension for Akka’s IO layer.

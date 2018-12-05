@@ -19,7 +19,7 @@ import akka.event.{ LoggingAdapter, Logging }
 import java.net.{ InetSocketAddress, ConnectException }
 import akka.remote.transport.ThrottlerTransportAdapter.{ SetThrottle, TokenBucket, Blackhole, Unthrottled }
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
-import scala.collection.compat._
+import akka.util.ccompat._
 
 object Player {
 

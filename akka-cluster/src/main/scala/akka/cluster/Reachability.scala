@@ -7,7 +7,7 @@ package akka.cluster
 import akka.annotation.InternalApi
 
 import scala.collection.immutable
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API

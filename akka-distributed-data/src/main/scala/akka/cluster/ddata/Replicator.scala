@@ -53,7 +53,7 @@ import scala.collection.immutable.TreeSet
 import akka.cluster.MemberStatus
 import scala.annotation.varargs
 import akka.util.JavaDurationConverters._
-import scala.collection.compat._
+import akka.util.ccompat._
 
 object ReplicatorSettings {
 

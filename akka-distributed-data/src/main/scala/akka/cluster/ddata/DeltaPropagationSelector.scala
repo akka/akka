@@ -11,7 +11,7 @@ import akka.annotation.InternalApi
 import akka.cluster.ddata.Key.KeyId
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation.NoDeltaPlaceholder
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API: Used by the Replicator actor.

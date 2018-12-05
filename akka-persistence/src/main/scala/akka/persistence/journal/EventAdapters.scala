@@ -9,13 +9,13 @@ import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor.ExtendedActorSystem
 import akka.event.{ Logging, LoggingAdapter }
+import akka.util.ccompat._
 import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 import scala.util.Try
-import scala.collection.compat._
 
 /**
  * `EventAdapters` serves as a per-journal collection of bound event adapters.

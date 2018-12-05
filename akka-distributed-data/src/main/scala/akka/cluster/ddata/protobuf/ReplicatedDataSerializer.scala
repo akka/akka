@@ -27,7 +27,7 @@ import java.io.NotSerializableException
 import akka.actor.ActorRef
 import akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage
 import akka.serialization.Serialization
-import scala.collection.compat._
+import akka.util.ccompat._
 
 private object ReplicatedDataSerializer {
   /*

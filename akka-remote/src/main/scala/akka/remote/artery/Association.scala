@@ -48,7 +48,7 @@ import scala.util.control.NoStackTrace
 
 import akka.actor.Cancellable
 import akka.stream.StreamTcpException
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API

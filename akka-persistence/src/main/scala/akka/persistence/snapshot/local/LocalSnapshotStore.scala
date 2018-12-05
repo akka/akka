@@ -13,13 +13,13 @@ import akka.persistence.serialization._
 import akka.persistence.snapshot._
 import akka.serialization.SerializationExtension
 import akka.util.ByteString.UTF_8
+import akka.util.ccompat._
 import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util._
 import java.nio.file.Files
-import scala.collection.compat._
 
 /**
  * INTERNAL API

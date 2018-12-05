@@ -7,12 +7,12 @@ package akka.stream.io.compression
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import akka.util.ccompat._
 
 import scala.annotation.tailrec
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success }
-import scala.collection.compat._
 
 // a few useful helpers copied over from akka-http
 object CompressionTestingTools {

@@ -6,11 +6,10 @@ package akka.stream.scaladsl
 
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
+import akka.util.ccompat._
 
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
-
-import scala.collection.compat._
 
 class CollectionSinkSpec extends StreamSpec {
 

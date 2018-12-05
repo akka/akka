@@ -27,6 +27,7 @@ import akka.japi.Util.immutableSeq
 import akka.stream.IgnoreComplete
 import akka.stream.TLSClosing
 import akka.stream.TLSRole
+import akka.util.ccompat._
 import com.typesafe.config.Config
 import javax.net.ssl.KeyManager
 import javax.net.ssl.KeyManagerFactory
@@ -35,7 +36,6 @@ import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
-import scala.collection.compat._
 
 @ApiMayChange trait SSLEngineProvider {
 

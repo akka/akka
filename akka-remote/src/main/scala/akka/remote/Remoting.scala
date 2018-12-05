@@ -28,7 +28,7 @@ import akka.util.ByteString.UTF_8
 import akka.util.OptionVal
 import scala.collection.immutable
 import akka.actor.ActorInitializationException
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API

@@ -31,7 +31,7 @@ import akka.actor.Address
 import akka.cluster.ddata.VersionVector
 import akka.annotation.InternalApi
 import akka.cluster.ddata.PruningState.PruningPerformed
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API

@@ -22,7 +22,7 @@ import akka.util.{ Helpers, JavaDurationConverters, Timeout }
 import akka.dispatch.ExecutionContexts
 
 import scala.compat.java8.FutureConverters
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * An ActorSelection is a logical view of a section of an ActorSystem's tree of Actors,

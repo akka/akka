@@ -8,11 +8,11 @@ import java.util
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.util.ccompat._
 import com.typesafe.config.{ Config, ConfigFactory, ConfigValue }
 
 import scala.collection.JavaConverters._
 import scala.collection.{ immutable ⇒ im }
-import scala.collection.compat._
 
 abstract class JoinConfigCompatChecker {
 

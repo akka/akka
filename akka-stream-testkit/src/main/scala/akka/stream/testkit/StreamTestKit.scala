@@ -19,7 +19,7 @@ import java.util.concurrent.CountDownLatch
 
 import akka.testkit.TestActor.AutoPilot
 import akka.util.JavaDurationConverters
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * Provides factory methods for various Publishers.

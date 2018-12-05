@@ -20,7 +20,7 @@ import akka.dispatch.MessageDispatcher
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API

@@ -21,8 +21,8 @@ import akka.annotation.InternalApi
 import akka.cluster.InternalClusterAction._
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
 import akka.routing.Pool
+import akka.util.ccompat._
 import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
-import scala.collection.compat._
 
 /**
  * INTERNAL API

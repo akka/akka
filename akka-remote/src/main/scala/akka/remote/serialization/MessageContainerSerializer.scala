@@ -14,7 +14,7 @@ import akka.actor.SelectParent
 import akka.actor.SelectionPathElement
 import akka.remote.ContainerFormats
 import akka.serialization.{ BaseSerializer, SerializationExtension, Serializers }
-import scala.collection.compat._
+import akka.util.ccompat._
 
 class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 

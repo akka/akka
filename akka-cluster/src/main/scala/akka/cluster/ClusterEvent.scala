@@ -15,9 +15,9 @@ import akka.event.EventStream
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.actor.DeadLetterSuppression
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.util.ccompat._
 
 import scala.runtime.AbstractFunction5
-import scala.collection.compat._
 
 /**
  * Domain events published to the event bus.

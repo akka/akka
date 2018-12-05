@@ -14,7 +14,7 @@ import com.typesafe.config.Config
 import java.util.function.{ Function ⇒ JFunction }
 
 import scala.collection.immutable
-import scala.collection.compat._
+import akka.util.ccompat._
 
 abstract class Dns {
 

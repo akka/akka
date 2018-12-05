@@ -16,9 +16,9 @@ import scala.collection.JavaConverters._
 import akka.cluster.pubsub.DistributedPubSubMediator._
 import akka.cluster.pubsub.DistributedPubSubMediator.Internal._
 import akka.actor.ActorRef
+import akka.util.ccompat._
 import scala.collection.immutable.TreeMap
 import java.io.NotSerializableException
-import scala.collection.compat._
 
 /**
  * INTERNAL API: Protobuf serializer of DistributedPubSubMediator messages.

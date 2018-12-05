@@ -38,8 +38,8 @@ import com.typesafe.config.Config
 import akka.remote.DeadlineFailureDetector
 import akka.dispatch.Dispatchers
 import akka.util.MessageBuffer
+import akka.util.ccompat._
 import scala.collection.immutable.{ HashMap, HashSet }
-import scala.collection.compat._
 
 object ClusterClientSettings {
   /**

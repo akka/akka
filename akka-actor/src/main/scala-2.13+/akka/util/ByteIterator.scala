@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 import scala.collection.LinearSeq
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
-import scala.collection.compat._
+import akka.util.ccompat._
 
 object ByteIterator {
   object ByteArrayIterator {

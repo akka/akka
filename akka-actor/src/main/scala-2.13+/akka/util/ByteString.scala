@@ -11,13 +11,13 @@ import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable ⇒ JIterable }
 
 import scala.annotation.{ tailrec, varargs }
-import scala.collection.compat._
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.{ mutable, immutable }
 import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, StrictOptimizedSeqOps, VectorBuilder }
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
 import java.nio.charset.{ Charset, StandardCharsets }
+import akka.util.ccompat._
 
 object ByteString {
 

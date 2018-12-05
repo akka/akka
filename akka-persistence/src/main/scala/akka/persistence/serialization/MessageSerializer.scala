@@ -14,9 +14,9 @@ import akka.protobuf._
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration
 import akka.actor.Actor
+import akka.util.ccompat._
 import scala.concurrent.duration.Duration
 import java.io.NotSerializableException
-import scala.collection.compat._
 
 /**
  * Marker trait for all protobuf-serializable messages in `akka.persistence`.

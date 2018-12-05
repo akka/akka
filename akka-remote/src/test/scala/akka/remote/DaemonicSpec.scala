@@ -7,9 +7,9 @@ package akka.remote
 import akka.testkit._
 import scala.concurrent.duration._
 import akka.actor.{ Address, ActorSystem }
+import akka.util.ccompat._
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
-import scala.collection.compat._
 
 class DaemonicSpec extends AkkaSpec {
 

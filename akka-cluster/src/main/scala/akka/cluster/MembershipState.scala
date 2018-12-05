@@ -11,10 +11,10 @@ import scala.collection.SortedSet
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
 import akka.annotation.InternalApi
+import akka.util.ccompat._
 
 import scala.annotation.tailrec
 import scala.util.Random
-import scala.collection.compat._
 
 /**
  * INTERNAL API

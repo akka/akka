@@ -17,10 +17,10 @@ import akka.testkit._
 import akka.testkit.TestEvent._
 import akka.actor.{ Actor, ActorRef, ActorSystem, Address, Deploy, PoisonPill, Props, RootActorPath }
 import akka.event.Logging.ErrorLevel
+import akka.util.ccompat._
 
 import scala.concurrent.duration._
 import scala.collection.immutable
-import scala.collection.compat._
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.remote.DefaultFailureDetectorRegistry

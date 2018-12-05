@@ -25,7 +25,7 @@ import akka.actor.RootActorPath
 import akka.event.{ Logging, LoggingAdapter }
 import akka.remote.RemoteTransportException
 import org.jboss.netty.channel.ChannelException
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * Configure the role names and participants of the test, including configuration settings.

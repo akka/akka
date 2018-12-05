@@ -11,10 +11,10 @@ import akka.actor.{ Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
 import akka.remote.DaemonMsgCreate
 import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }
 import akka.routing.{ NoRouter, RouterConfig }
+import akka.util.ccompat._
 
 import scala.reflect.ClassTag
 import util.{ Failure, Success }
-import scala.collection.compat._
 
 /**
  * Serializes Akka's internal DaemonMsgCreate using protobuf

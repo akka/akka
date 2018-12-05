@@ -8,10 +8,10 @@ import scala.collection.immutable
 import scala.collection.JavaConverters._
 import akka.persistence._
 import akka.persistence.journal.{ AsyncWriteJournal ⇒ SAsyncWriteJournal }
+import akka.util.ccompat._
 import scala.concurrent.Future
 import scala.util.Try
 import scala.util.Failure
-import scala.collection.compat._
 
 /**
  * Java API: abstract journal, optimized for asynchronous, non-blocking writes.

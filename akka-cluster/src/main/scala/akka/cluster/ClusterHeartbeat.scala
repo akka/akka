@@ -14,7 +14,7 @@ import akka.cluster.ClusterEvent._
 import akka.remote.FailureDetectorRegistry
 import akka.remote.HeartbeatMessage
 import akka.annotation.InternalApi
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API.

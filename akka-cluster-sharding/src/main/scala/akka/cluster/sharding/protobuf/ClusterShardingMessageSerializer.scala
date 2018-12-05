@@ -19,10 +19,10 @@ import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 import akka.protobuf.MessageLite
+import akka.util.ccompat._
 import java.io.NotSerializableException
 
 import akka.cluster.sharding.ShardRegion._
-import scala.collection.compat._
 
 /**
  * INTERNAL API: Protobuf serializer of ClusterSharding messages.

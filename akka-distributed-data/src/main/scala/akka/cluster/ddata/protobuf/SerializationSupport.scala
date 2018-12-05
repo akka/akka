@@ -20,7 +20,7 @@ import akka.serialization._
 import akka.protobuf.ByteString
 import akka.protobuf.MessageLite
 import akka.cluster.ddata.VersionVector
-import scala.collection.compat._
+import akka.util.ccompat._
 
 /**
  * Some useful serialization helper methods.

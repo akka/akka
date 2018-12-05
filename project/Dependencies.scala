@@ -43,8 +43,6 @@ object Dependencies {
 
     val camelCore = "org.apache.camel" % "camel-core" % "2.17.7" exclude ("org.slf4j", "slf4j-api") // ApacheV2
 
-    val collectionCompat = "org.scala-lang.modules" %% "scala-collection-compat" % "0.2.1" // New BSD
-
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config = "com.typesafe" % "config" % "1.3.3" // ApacheV2
     val netty = "io.netty" % "netty" % "3.10.6.Final" // ApacheV2
@@ -148,7 +146,7 @@ object Dependencies {
   // TODO check if `l ++=` everywhere expensive?
   val l = libraryDependencies
 
-  val actor = l ++= Seq(config, java8Compat.value, collectionCompat)
+  val actor = l ++= Seq(config, java8Compat.value)
 
   val discovery = l ++= Seq(Test.junit, Test.scalatest.value)
 
