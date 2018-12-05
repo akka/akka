@@ -4,7 +4,6 @@
 
 package akka.persistence
 
-import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.testkit.ImplicitSender

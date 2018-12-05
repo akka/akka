@@ -20,7 +20,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.serialization.SerializerWithStringManifest
 import akka.testkit.SocketUtil.temporaryServerAddress
 
 object RemotingSpec {
@@ -73,7 +72,6 @@ object RemotingSpec {
       key-password = "changeme"
       trust-store-password = "changeme"
       protocol = "TLSv1.2"
-      random-number-generator = "AES128CounterSecureRNG"
       enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
     }
 

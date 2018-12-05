@@ -4,10 +4,10 @@
 
 package akka.actor.testkit.typed.javadsl
 
-import akka.actor.typed.{ Behavior, Signal, ActorRef }
-import akka.annotation.DoNotInherit
-import akka.actor.testkit.typed.Effect
 import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.typed.{ ActorRef, Behavior, Signal }
+import akka.annotation.DoNotInherit
 
 import java.util.concurrent.ThreadLocalRandom
 
@@ -127,4 +127,14 @@ abstract class BehaviorTestKit[T] {
    * Send the signal to the beheavior and record any [[Effect]]s
    */
   def signal(signal: Signal): Unit
+
+  /**
+   * Returns all the [[CapturedLogEvent]] issued by this behavior(s)
+   */
+  def getAllLogEntries(): java.util.List[CapturedLogEvent]
+
+  /**
+   * Clear the log entries
+   */
+  def clearLog(): Unit
 }

@@ -6,10 +6,7 @@ package akka.cluster.sharding.typed.javadsl
 
 import java.util.Optional
 
-import scala.compat.java8.OptionConverters._
-
 import akka.actor.typed.BackoffSupervisorStrategy
-import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.javadsl.PersistentBehavior
 

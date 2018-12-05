@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -68,7 +67,7 @@ object ClusterShardingPersistenceSpec {
 
       entityActorRefs.get(entityId) match {
         case null    ⇒
-        case promise ⇒ promise.trySuccess(ctx.self.upcast)
+        case promise ⇒ promise.trySuccess(ctx.self.unsafeUpcast)
       }
 
       PersistentEntity[Command, String, String](
@@ -183,7 +182,7 @@ class ClusterShardingPersistenceSpec extends ScalaTestWithActorTestKit(ClusterSh
       (1 to 10).foreach { n ⇒
         ref ! PassivateAndPersist(n.toString)(p1.ref)
         // recoveryCompleted each time, verifies that it was actually stopped
-        recoveryProbe.expectMessage("recoveryCompleted:" + (1 until n).map(_.toString).mkString("|"))
+        recoveryProbe.expectMessage(max = 10.seconds, "recoveryCompleted:" + (1 until n).map(_.toString).mkString("|"))
         p1.expectMessage(Done)
       }
 

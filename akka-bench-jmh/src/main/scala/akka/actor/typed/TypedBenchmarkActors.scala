@@ -4,12 +4,8 @@
 
 package akka.actor.typed
 
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
-
 import akka.Done
-import akka.actor.typed.scaladsl.{ Behaviors, AbstractBehavior }
-import akka.actor.typed.scaladsl.{ ActorContext ⇒ SActorContext }
-
+import akka.actor.typed.scaladsl.Behaviors
 import scala.concurrent.duration._
 
 object TypedBenchmarkActors {

@@ -7,29 +7,15 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.duration._
-import scala.util.Success
-import scala.util.Try
-
 import akka.Done
-import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
-import akka.actor.typed.SupervisorStrategy
-import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.ActorContext
-import akka.persistence.journal.inmem.InmemJournal
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.query.EventEnvelope
-import akka.persistence.query.PersistenceQuery
-import akka.persistence.query.Sequence
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike

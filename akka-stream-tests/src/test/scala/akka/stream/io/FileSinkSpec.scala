@@ -4,8 +4,7 @@
 
 package akka.stream.io
 
-import java.nio.channels.NonWritableChannelException
-import java.nio.file.StandardOpenOption.{ CREATE, READ, WRITE }
+import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
 import java.nio.file._
 
 import akka.actor.ActorSystem
@@ -24,7 +23,6 @@ import com.google.common.jimfs.{ Configuration, Jimfs }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 

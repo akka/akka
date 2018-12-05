@@ -5,8 +5,6 @@
 package akka.remote.artery
 
 import java.nio.ByteBuffer
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
@@ -15,9 +13,7 @@ import akka.actor._
 import akka.remote.{ RARP, RemoteActorRefProvider, RemotingMultiNodeSpec }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.PerfFlamesSupport
-import akka.remote.testkit.STMultiNodeSpec
 import akka.serialization.ByteBufferSerializer
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit._
@@ -31,7 +27,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
   val barrierTimeout = 5.minutes
 
   val cfg = ConfigFactory.parseString(s"""
-     # for serious measurements you should increase the totalMessagesFactor (20)
+     # for serious measurements you should increase the totalMessagesFactor (80)
      akka.test.MaxThroughputSpec.totalMessagesFactor = 10.0
      akka.test.MaxThroughputSpec.real-message = off
      akka.test.MaxThroughputSpec.actor-selection = off
@@ -62,7 +58,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
          # it is recommended to use external media driver
          # See akka-remote/src/test/resources/aeron.properties
          # advanced.embedded-media-driver = off
-         # advanced.aeron-dir = "target/aeron"
+         # advanced.aeron-dir = "akka-remote/target/aeron"
          # on linux, use directory on ram disk, instead
          # advanced.aeron-dir = "/dev/shm/aeron"
 

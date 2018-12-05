@@ -44,7 +44,6 @@ object WatchSpec {
 
 class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpecLike {
   // FIXME why systemActor? spawn?
-  import testKit.systemActor
 
   implicit def untypedSystem = system.toUntyped
 

@@ -8,7 +8,6 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
 import akka.actor.typed.internal.receptionist._
 import akka.annotation.DoNotInherit
 import scala.collection.JavaConverters._
-import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
 import akka.actor.typed.ExtensionSetup
