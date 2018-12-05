@@ -12,7 +12,7 @@ import akka.event.Logging
 import com.typesafe.config.Config
 
 import scala.collection.JavaConverters._
-import scala.collection.{ breakOut, immutable }
+import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
