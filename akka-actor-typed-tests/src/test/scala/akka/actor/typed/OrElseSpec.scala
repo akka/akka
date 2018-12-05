@@ -120,10 +120,10 @@ class OrElseSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   "handle nested OrElse" in {
 
     sealed trait Parent
-    case class Add(o: Any) extends Parent
-    case class Remove(o: Any) extends Parent
-    case class Stack(s: ActorRef[Array[StackTraceElement]]) extends Parent
-    case class Get(s: ActorRef[Set[Any]]) extends Parent
+    final case class Add(o: Any) extends Parent
+    final case class Remove(o: Any) extends Parent
+    final case class Stack(s: ActorRef[Array[StackTraceElement]]) extends Parent
+    final case class Get(s: ActorRef[Set[Any]]) extends Parent
 
     def dealer(set: Set[Any]): Behavior[Parent] = {
       val add = Behaviors.receiveMessage[Parent] {
