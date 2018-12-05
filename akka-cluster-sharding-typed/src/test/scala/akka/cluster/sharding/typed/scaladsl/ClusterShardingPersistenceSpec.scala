@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
