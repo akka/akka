@@ -6,8 +6,8 @@ package akka.actor.typed
 
 import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.BehaviorImpl
-import scala.annotation.tailrec
 
+import scala.annotation.tailrec
 import akka.actor.typed.internal.BehaviorImpl.OrElseBehavior
 import akka.actor.typed.internal.WrappingBehavior
 import akka.util.{ LineNumbers, OptionVal }
@@ -51,7 +51,9 @@ sealed abstract class Behavior[T] { behavior ⇒
    *
    *  @param that the fallback `Behavior`
    */
-  final def orElse(that: Behavior[T]): Behavior[T] = new OrElseBehavior[T](this, that)
+  final def orElse(that: Behavior[T]): Behavior[T] = Behavior.DeferredBehavior[T] { ctx ⇒
+    new OrElseBehavior[T](Behavior.start(this, ctx), Behavior.start(that, ctx))
+  }
 }
 
 /**
