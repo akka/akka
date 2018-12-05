@@ -20,7 +20,7 @@ import org.scalatest.junit.JUnitSuite;
 import static jdocs.akka.cluster.sharding.typed.HelloWorldPersistentEntityExample.*;
 import static org.junit.Assert.assertEquals;
 
-public class HelloWorldPersistentEntityExampleTest extends JUnitSuite {
+public class HelloWorldEventSourcedEntityExampleTest extends JUnitSuite {
 
   public static final Config config = ConfigFactory.parseString(
           "akka.actor.provider = cluster \n" +

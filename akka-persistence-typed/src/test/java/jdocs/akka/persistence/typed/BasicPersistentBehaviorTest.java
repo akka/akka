@@ -6,15 +6,13 @@ package jdocs.akka.persistence.typed;
 
 import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
-import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.PersistentBehavior;
+import akka.persistence.typed.javadsl.EventSourcedBehavior;
 import java.time.Duration;
 
-import java.util.Collections;
 import java.util.Set;
 
 public class BasicPersistentBehaviorTest {
@@ -25,7 +23,7 @@ public class BasicPersistentBehaviorTest {
   public static class State {}
 
   //#supervision
-  public static class MyPersistentBehavior extends PersistentBehavior<Command, Event, State> {
+  public static class MyPersistentBehavior extends EventSourcedBehavior<Command, Event, State> {
     public MyPersistentBehavior(PersistenceId persistenceId) {
       super(persistenceId, SupervisorStrategy.restartWithBackoff(Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2));
     }
@@ -65,7 +63,7 @@ public class BasicPersistentBehaviorTest {
     //#tagging
   }
 
-  static PersistentBehavior<Command, Event, State> persistentBehavior =
+  static EventSourcedBehavior<Command, Event, State> eventSourcedBehavior =
       new MyPersistentBehavior(new PersistenceId("pid"));
   //#structure
 

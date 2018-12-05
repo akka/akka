@@ -72,7 +72,7 @@ object ClusterShardingPersistenceSpec {
         case promise ⇒ promise.trySuccess(ctx.self.unsafeUpcast)
       }
 
-      PersistentEntity[Command, String, String](
+      EventSourcedEntity[Command, String, String](
         entityTypeKey = typeKey,
         entityId = entityId,
         emptyState = "",

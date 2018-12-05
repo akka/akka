@@ -19,14 +19,15 @@ import org.scalatest.junit.JUnitSuite;
 
 import java.time.Duration;
 
-import static akka.persistence.typed.scaladsl.PersistentBehaviorFailureSpec.conf;
+import static akka.persistence.typed.scaladsl.EventSourcedBehaviorFailureSpec.conf;
 
-class FailingPersistentActor extends PersistentBehavior<String, String, String> {
+class FailingEventSourcedActor extends EventSourcedBehavior<String, String, String> {
 
     private final ActorRef<String> probe;
     private final ActorRef<Throwable> recoveryFailureProbe;
 
-    FailingPersistentActor(PersistenceId persistenceId, ActorRef<String> probe, ActorRef<Throwable> recoveryFailureProbe) {
+    FailingEventSourcedActor(PersistenceId persistenceId, ActorRef<String> probe, ActorRef<Throwable> recoveryFailureProbe) {
+
         super(persistenceId, SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1));
         this.probe = probe;
         this.recoveryFailureProbe = recoveryFailureProbe;
@@ -64,7 +65,7 @@ class FailingPersistentActor extends PersistentBehavior<String, String, String> 
     }
 }
 
-public class PersistentActorFailureTest extends JUnitSuite {
+public class EventSourcedActorFailureTest extends JUnitSuite {
 
     public static final Config config = conf().withFallback(ConfigFactory.load());
 
@@ -72,7 +73,7 @@ public class PersistentActorFailureTest extends JUnitSuite {
     public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
     public static Behavior<String> fail(PersistenceId pid, ActorRef<String> probe, ActorRef<Throwable> recoveryFailureProbe) {
-        return new FailingPersistentActor(pid, probe, recoveryFailureProbe);
+        return new FailingEventSourcedActor(pid, probe, recoveryFailureProbe);
     }
     public static Behavior<String> fail(PersistenceId pid, ActorRef<String> probe) {
         return fail(pid, probe, testKit.<Throwable>createTestProbe().ref());

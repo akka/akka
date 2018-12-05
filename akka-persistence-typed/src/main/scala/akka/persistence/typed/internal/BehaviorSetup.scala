@@ -5,36 +5,32 @@
 package akka.persistence.typed.internal
 
 import scala.concurrent.ExecutionContext
+import scala.util.Try
 
 import akka.Done
-import akka.actor.typed.Logger
+import akka.actor.Cancellable
 import akka.actor.{ ActorRef, ExtendedActorSystem }
+import akka.actor.typed.Logger
 import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer }
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
-import akka.persistence.typed.internal.EventsourcedBehavior.MDC
-import akka.persistence.typed.internal.EventsourcedBehavior.{ InternalProtocol, WriterIdentity }
-import akka.persistence.typed.scaladsl.PersistentBehavior
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.persistence.typed.PersistenceId
 import akka.util.Collections.EmptyImmutableSeq
 import akka.util.OptionVal
-import scala.util.Try
-
-import akka.actor.Cancellable
-import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.internal.EventsourcedBehavior.InternalProtocol.RecoveryTickEvent
 
 /**
- * INTERNAL API: Carry state for the Persistent behavior implementation behaviors
+ * INTERNAL API: Carry state for the Persistent behavior implementation behaviors.
  */
 @InternalApi
-private[persistence] final class EventsourcedSetup[C, E, S](
+private[persistence] final class BehaviorSetup[C, E, S](
   val context:               ActorContext[InternalProtocol],
   val persistenceId:         PersistenceId,
   val emptyState:            S,
-  val commandHandler:        PersistentBehavior.CommandHandler[C, E, S],
-  val eventHandler:          PersistentBehavior.EventHandler[S, E],
-  val writerIdentity:        WriterIdentity,
+  val commandHandler:        EventSourcedBehavior.CommandHandler[C, E, S],
+  val eventHandler:          EventSourcedBehavior.EventHandler[S, E],
+  val writerIdentity:        EventSourcedBehaviorImpl.WriterIdentity,
   val recoveryCompleted:     S ⇒ Unit,
   val onRecoveryFailure:     Throwable ⇒ Unit,
   val onSnapshot:            (SnapshotMetadata, Try[Done]) ⇒ Unit,
@@ -43,10 +39,11 @@ private[persistence] final class EventsourcedSetup[C, E, S](
   val snapshotWhen:          (S, E, Long) ⇒ Boolean,
   val recovery:              Recovery,
   var holdingRecoveryPermit: Boolean,
-  val settings:              EventsourcedSettings,
+  val settings:              EventSourcedSettings,
   val internalStash:         StashBuffer[InternalProtocol]
 ) {
   import akka.actor.typed.scaladsl.adapter._
+  import InternalProtocol.RecoveryTickEvent
 
   val persistence: Persistence = Persistence(context.system.toUntyped)
 
@@ -74,14 +71,14 @@ private[persistence] final class EventsourcedSetup[C, E, S](
     }
   }
 
-  def setMdc(newMdc: Map[String, Any]): EventsourcedSetup[C, E, S] = {
+  def setMdc(newMdc: Map[String, Any]): BehaviorSetup[C, E, S] = {
     mdc = newMdc
     // mdc is changed often, for each persisted event, but logging is rare, so lazy init of Logger
     _log = OptionVal.None
     this
   }
 
-  def setMdc(phaseName: String): EventsourcedSetup[C, E, S] = {
+  def setMdc(phaseName: String): BehaviorSetup[C, E, S] = {
     setMdc(MDC.create(persistenceId, phaseName))
     this
   }
@@ -111,3 +108,19 @@ private[persistence] final class EventsourcedSetup[C, E, S](
 
 }
 
+object MDC {
+  // format: OFF
+  val AwaitingPermit    = "get-permit"
+  val ReplayingSnapshot = "replay-snap"
+  val ReplayingEvents   = "replay-evts"
+  val RunningCmds       = "running-cmnds"
+  val PersistingEvents  = "persist-evts"
+  // format: ON
+
+  def create(persistenceId: PersistenceId, phaseName: String): Map[String, Any] = {
+    Map(
+      "persistenceId" → persistenceId.id,
+      "phase" → phaseName
+    )
+  }
+}
