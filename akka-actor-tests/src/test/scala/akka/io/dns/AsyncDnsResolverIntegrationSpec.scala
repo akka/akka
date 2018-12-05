@@ -10,6 +10,7 @@ import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.{ Dns, IO }
 import CachePolicy.Ttl
 import akka.pattern.ask
+import akka.testkit.SocketUtil.Both
 import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, SocketUtil }
 import akka.util.Timeout
@@ -40,6 +41,8 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
     if (!dockerAvailable()) {
       system.log.error("Test not run as docker is not available")
       pending
+    } else {
+      system.log.info("Docker available. Running DNS tests")
     }
 
     "resolve single A record" in {
@@ -155,6 +158,7 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(
 
   }
 }
+
 object AsyncDnsResolverIntegrationSpec {
-  lazy val dockerDnsServerPort = SocketUtil.temporaryLocalPort()
+  lazy val dockerDnsServerPort: Int = SocketUtil.temporaryLocalPort(Both)
 }
