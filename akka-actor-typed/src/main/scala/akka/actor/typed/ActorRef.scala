@@ -5,11 +5,8 @@
 package akka.actor.typed
 
 import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
 import akka.{ actor ⇒ a }
 import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.Future
-import scala.util.Success
 
 import akka.actor.typed.internal.InternalRecipientRef
 
@@ -40,9 +37,10 @@ trait ActorRef[-T] extends RecipientRef[T] with java.lang.Comparable[ActorRef[_]
   /**
    * Unsafe utility method for widening the type accepted by this ActorRef;
    * provided to avoid having to use `asInstanceOf` on the full reference type,
-   * which would unfortunately also work on non-ActorRefs.
+   * which would unfortunately also work on non-ActorRefs. Use it with caution,it may cause a [[ClassCastException]] when you send a message
+   * to the widened [[ActorRef[U]]].
    */
-  def upcast[U >: T @uncheckedVariance]: ActorRef[U]
+  def unsafeUpcast[U >: T @uncheckedVariance]: ActorRef[U]
 
   /**
    * The hierarchical path name of the referenced Actor. The lifecycle of the

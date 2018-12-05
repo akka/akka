@@ -9,7 +9,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
-import akka.persistence.typed.scaladsl.PersistentBehavior
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 
 object BlogPostExample {
 
@@ -56,7 +56,7 @@ object BlogPostExample {
 
   //#behavior
   def behavior(entityId: String): Behavior[BlogCommand] =
-    PersistentBehavior[BlogCommand, BlogEvent, BlogState](
+    EventSourcedBehavior[BlogCommand, BlogEvent, BlogState](
       persistenceId = PersistenceId(s"Blog-$entityId"),
       emptyState = BlankState,
       commandHandler,

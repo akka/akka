@@ -12,7 +12,6 @@ import akka.annotation.ApiMayChange
 import akka.actor.typed._
 import java.util.Optional
 
-import akka.util.Timeout
 import scala.concurrent.ExecutionContextExecutor
 
 /**
@@ -186,7 +185,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
-  def setReceiveTimeout(d: Duration, msg: T): Unit
+  def setReceiveTimeout(timeout: Duration, msg: T): Unit
 
   /**
    * Cancel the sending of receive timeout notifications.
@@ -275,7 +274,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
   def ask[Req, Res](
     resClass:        Class[Res],
     target:          RecipientRef[Req],
-    responseTimeout: Timeout,
+    responseTimeout: Duration,
     createRequest:   java.util.function.Function[ActorRef[Res], Req],
     applyToResponse: BiFunction[Res, Throwable, T]): Unit
 

@@ -24,7 +24,6 @@ import akka.event.LogMarker
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
 import akka.japi.Util.immutableSeq
-import akka.remote.security.provider.DeprecatedAkkaProvider
 import akka.stream.IgnoreComplete
 import akka.stream.TLSClosing
 import akka.stream.TLSRole
@@ -232,16 +231,6 @@ object SSLEngineProviderSetup {
       case "" | "SecureRandom" ⇒
         log.debug("SSL random number generator set to [SecureRandom]")
         new SecureRandom
-
-      case r @ ("AES128CounterSecureRNG" | "AES256CounterSecureRNG") ⇒
-        log.warning("SSL random number generator set to deprecated [{}], using [SecureRandom] instead. " +
-          "The [{}] implementation can be enabled with configuration value [Deprecated{r}], " +
-          "but that is not recommended.", r, r, r)
-        new SecureRandom
-
-      case r @ ("DeprecatedAES128CounterSecureRNG" | "DeprecatedAES256CounterSecureRNG") ⇒
-        log.warning("SSL random number generator set to deprecated [{}]. Use [SecureRandom] instead.", r)
-        SecureRandom.getInstance(r, DeprecatedAkkaProvider)
 
       case unknown ⇒
         log.warning(LogMarker.Security, "Unknown SSL random number generator [{}] falling back to SecureRandom", unknown)

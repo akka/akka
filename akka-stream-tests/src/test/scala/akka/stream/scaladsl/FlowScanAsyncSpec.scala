@@ -16,7 +16,7 @@ import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
+import scala.util.Failure
 
 class FlowScanAsyncSpec extends StreamSpec {
 

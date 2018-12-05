@@ -13,7 +13,7 @@ import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.CommandHandlerBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.PersistentBehavior;
+import akka.persistence.typed.javadsl.EventSourcedBehavior;
 
 public class BlogPostExample {
 
@@ -147,7 +147,7 @@ public class BlogPostExample {
   //#commands
 
   //#behavior
-  public static class BlogBehavior extends PersistentBehavior<BlogCommand, BlogEvent, BlogState> {
+  public static class BlogBehavior extends EventSourcedBehavior<BlogCommand, BlogEvent, BlogState> {
     //#behavior
 
     private final ActorContext<BlogCommand> ctx;

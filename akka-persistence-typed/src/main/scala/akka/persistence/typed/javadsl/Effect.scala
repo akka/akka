@@ -4,14 +4,13 @@
 
 package akka.persistence.typed.javadsl
 
-import akka.annotation.DoNotInherit
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.japi.function
 import akka.persistence.typed.internal._
 import akka.persistence.typed.SideEffect
-import scala.collection.JavaConverters._
-
-import akka.annotation.InternalApi
 import akka.persistence.typed.ExpectingReply
+
+import scala.collection.JavaConverters._
 
 /**
  * INTERNAL API: see `class EffectFactories`
@@ -20,7 +19,7 @@ import akka.persistence.typed.ExpectingReply
 
 /**
  * Factory methods for creating [[Effect]] directives - how a persistent actor reacts on a command.
- * Created via [[PersistentBehavior.Effect]].
+ * Created via [[EventSourcedBehavior.Effect]].
  *
  * Not for user extension
  */
@@ -59,7 +58,7 @@ import akka.persistence.typed.ExpectingReply
    * This has the same semantics as `cmd.replyTo.tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
-   * when the `PersistentBehavior` is created with [[PersistentBehaviorWithEnforcedReplies]]. When
+   * when the `PersistentBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When
    * `withEnforcedReplies` is used there will be compilation errors if the returned effect isn't a [[ReplyEffect]].
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
@@ -70,7 +69,7 @@ import akka.persistence.typed.ExpectingReply
     })
 
   /**
-   * When [[PersistentBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
+   * When [[EventSourcedBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
    * isn't a [[ReplyEffect]]. This `noReply` can be used as a conscious decision that a reply shouldn't be
    * sent for a specific command or the reply will be sent later.
    */
@@ -83,7 +82,7 @@ import akka.persistence.typed.ExpectingReply
  *
  * Additional side effects can be performed in the callback `andThen`
  *
- * Instances of `Effect` are available through factories [[PersistentBehavior.Effect]].
+ * Instances of `Effect` are available through factories [[EventSourcedBehavior.Effect]].
  *
  * Not intended for user extension.
  */
@@ -116,7 +115,7 @@ import akka.persistence.typed.ExpectingReply
    * This has the same semantics as `cmd.replyTo().tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
-   * when the `PersistentBehavior` is created with [[PersistentBehaviorWithEnforcedReplies]]. When
+   * when the `PersistentBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When
    * `withEnforcedReplies` is used there will be compilation errors if the returned effect isn't a [[ReplyEffect]].
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
@@ -125,7 +124,7 @@ import akka.persistence.typed.ExpectingReply
     CompositeEffect(this, SideEffect[State](newState ⇒ cmd.replyTo ! replyWithMessage(newState)))
 
   /**
-   * When [[PersistentBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
+   * When [[EventSourcedBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
    * isn't a [[ReplyEffect]]. This `thenNoReply` can be used as a conscious decision that a reply shouldn't be
    * sent for a specific command or the reply will be sent later.
    */
@@ -134,7 +133,7 @@ import akka.persistence.typed.ExpectingReply
 }
 
 /**
- * [[PersistentBehaviorWithEnforcedReplies]] can be used to enforce that replies are not forgotten.
+ * [[EventSourcedBehaviorWithEnforcedReplies]] can be used to enforce that replies are not forgotten.
  * Then there will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
  * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
  */

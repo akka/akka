@@ -41,7 +41,7 @@ object HelloWorldPersistentEntityExample {
   //#persistent-entity
   import akka.actor.typed.Behavior
   import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-  import akka.cluster.sharding.typed.scaladsl.PersistentEntity
+  import akka.cluster.sharding.typed.scaladsl.EventSourcedEntity
   import akka.persistence.typed.scaladsl.Effect
 
   object HelloWorld {
@@ -80,7 +80,7 @@ object HelloWorldPersistentEntityExample {
     val entityTypeKey: EntityTypeKey[Command] =
       EntityTypeKey[Command]("HelloWorld")
 
-    def persistentEntity(entityId: String): Behavior[Command] = PersistentEntity(
+    def persistentEntity(entityId: String): Behavior[Command] = EventSourcedEntity(
       entityTypeKey = entityTypeKey,
       entityId = entityId,
       emptyState = KnownPeople(Set.empty),

@@ -7,10 +7,11 @@ package akka.actor.testkit.typed.scaladsl
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, Props }
-import akka.actor.testkit.typed.Effect
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Father }
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Father._
+import akka.event.Logging
 import org.scalatest.{ Matchers, WordSpec }
 
 import scala.reflect.ClassTag
@@ -35,6 +36,7 @@ object BehaviorTestKitSpec {
     case class SpawnAndWatchWith(name: String) extends Command
     case class SpawnSession(replyTo: ActorRef[ActorRef[String]], sessionHandler: ActorRef[String]) extends Command
     case class KillSession(session: ActorRef[String], replyTo: ActorRef[Done]) extends Command
+    case class Log(what: String) extends Command
 
     val init: Behavior[Command] = Behaviors.receive[Command] { (context, message) ⇒
       message match {
@@ -97,7 +99,9 @@ object BehaviorTestKitSpec {
         case CreateMessageAdapter(messageClass, f) ⇒
           context.messageAdapter(f)(ClassTag(messageClass))
           Behaviors.same
-
+        case Log(what) ⇒
+          context.log.info(what)
+          Behaviors.same
       }
     }
   }
@@ -173,6 +177,22 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
         case NoEffects ⇒ false
       }
       hasEffects should ===(false)
+    }
+
+    "allow retrieving log messages issued by behavior" in {
+      val what = "Hello!"
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      testkit.run(Log(what))
+      testkit.logEntries() shouldBe Seq(CapturedLogEvent(Logging.InfoLevel, what))
+    }
+
+    "allow clearing log messages issued by behavior" in {
+      val what = "Hello!"
+      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      testkit.run(Log(what))
+      testkit.logEntries() shouldBe Seq(CapturedLogEvent(Logging.InfoLevel, what))
+      testkit.clearLog()
+      testkit.logEntries() shouldBe Seq.empty
     }
   }
 

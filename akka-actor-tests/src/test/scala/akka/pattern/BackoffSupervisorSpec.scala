@@ -330,8 +330,10 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         awaitAssert(c3 should !==(c2))
         watch(c3)
         c3 ! "boom"
-        expectTerminated(c3)
-        expectTerminated(supervisor)
+        withClue("Expected child and supervisor to terminate") {
+          Set(expectMsgType[Terminated].actor, expectMsgType[Terminated].actor) shouldEqual Set(c3, supervisor)
+        }
+
       }
     }
 

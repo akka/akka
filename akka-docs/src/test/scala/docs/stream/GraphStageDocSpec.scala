@@ -90,8 +90,11 @@ class GraphStageDocSpec extends AkkaSpec {
 
   "Demonstrate creation of GraphStage Sink" in {
     //#custom-sink-example
+    import akka.stream.Attributes
+    import akka.stream.Inlet
     import akka.stream.SinkShape
     import akka.stream.stage.GraphStage
+    import akka.stream.stage.GraphStageLogic
     import akka.stream.stage.InHandler
 
     class StdoutSink extends GraphStage[SinkShape[Int]] {

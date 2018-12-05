@@ -10,7 +10,6 @@ import scala.concurrent.Future
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class GraphBalanceSpec extends StreamSpec {

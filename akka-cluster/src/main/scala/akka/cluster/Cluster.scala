@@ -72,7 +72,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     case c: ClusterActorRefProvider ⇒
       UniqueAddress(c.transport.defaultAddress, AddressUidExtension(system).longAddressUid)
     case other ⇒ throw new ConfigurationException(
-      s"ActorSystem [${system}] needs to have a 'ClusterActorRefProvider' enabled in the configuration, currently uses [${other.getClass.getName}]")
+      s"ActorSystem [${system}] needs to have 'akka.actor.provider' set to 'cluster' in the configuration, currently uses [${other.getClass.getName}]")
   }
 
   /**

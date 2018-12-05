@@ -189,6 +189,11 @@ abstract class ClusterSharding {
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M]
 
   /**
+   * Actor for querying Cluster Sharding state
+   */
+  def shardState: ActorRef[ClusterShardingQuery]
+
+  /**
    * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
    * given `settings`. This could be changed in the future.
    */
@@ -216,7 +221,7 @@ object Entity {
   }
 
   /**
-   * Defines how the [[PersistentEntity]] should be created. Used in [[ClusterSharding#init]]. Any [[Behavior]] can
+   * Defines how the [[EventSourcedEntity]] should be created. Used in [[ClusterSharding#init]]. Any [[Behavior]] can
    * be used as a sharded entity actor, but the combination of sharding and persistent actors is very common
    * and therefore this factory is provided as convenience.
    *
@@ -229,7 +234,7 @@ object Entity {
    */
   def ofPersistentEntity[Command, Event, State >: Null](
     typeKey:                EntityTypeKey[Command],
-    createPersistentEntity: JFunction[EntityContext[Command], PersistentEntity[Command, Event, State]]): Entity[Command, ShardingEnvelope[Command]] = {
+    createPersistentEntity: JFunction[EntityContext[Command], EventSourcedEntity[Command, Event, State]]): Entity[Command, ShardingEnvelope[Command]] = {
 
     of(typeKey, new JFunction[EntityContext[Command], Behavior[Command]] {
       override def apply(ctx: EntityContext[Command]): Behavior[Command] = {

@@ -9,7 +9,7 @@ import akka.actor.typed.Behavior
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
-import akka.persistence.typed.scaladsl.PersistentBehavior
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 
 /**
  * Bank account example illustrating:
@@ -140,7 +140,7 @@ object AccountExampleWithCommandHandlersInState {
     }
 
     def behavior(accountNumber: String): Behavior[AccountCommand[AccountCommandReply]] = {
-      PersistentBehavior.withEnforcedReplies[AccountCommand[AccountCommandReply], AccountEvent, Account](
+      EventSourcedBehavior.withEnforcedReplies[AccountCommand[AccountCommandReply], AccountEvent, Account](
         PersistenceId(s"Account|$accountNumber"),
         EmptyAccount,
         (state, cmd) ⇒ state.applyCommand(cmd),

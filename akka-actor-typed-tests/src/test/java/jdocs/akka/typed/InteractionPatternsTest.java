@@ -10,7 +10,6 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.*;
 import akka.actor.testkit.typed.javadsl.TestProbe;
-import akka.util.Timeout;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.Await;
@@ -382,7 +381,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
       // asking someone requires a timeout, if the timeout hits without response
       // the ask is failed with a TimeoutException
-      final Timeout timeout = Timeout.apply(3, TimeUnit.SECONDS);
+      final Duration timeout = Duration.ofSeconds(3);
 
       context.ask(
         HalResponse.class,
@@ -448,7 +447,7 @@ public class InteractionPatternsTest extends JUnitSuite {
       GiveMeCookies::new,
       // asking someone requires a timeout and a scheduler, if the timeout hits without response
       // the ask is failed with a TimeoutException
-      Timeout.apply(3, TimeUnit.SECONDS),
+      Duration.ofSeconds(3),
       system.scheduler());
 
     result.whenComplete((cookies, failure) -> {

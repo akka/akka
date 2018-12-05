@@ -4,22 +4,16 @@
 
 package akka.remote.artery
 
-import scala.concurrent.duration._
 import akka.actor._
 import akka.actor.ActorIdentity
 import akka.actor.Identify
-import akka.remote.{ QuarantinedEvent, RARP, RemotingMultiNodeSpec }
-import akka.remote.testconductor.RoleName
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
-import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.util.Try
 import scala.util.control.NoStackTrace
 
 object SurviveInboundStreamRestartWithCompressionInFlightSpec extends MultiNodeConfig {

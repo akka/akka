@@ -16,7 +16,7 @@ import akka.actor.Actor
 import akka.util.MessageBufferMap
 
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import akka.cluster.Cluster
 import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.ORSetKey
@@ -233,8 +233,9 @@ private[akka] class Shard(
       log.debug("HandOff shard [{}]", shardId)
 
       if (state.entities.nonEmpty) {
+        val entityHandOffTimeout = (settings.tuningParameters.handOffTimeout - 5.seconds).max(1.seconds)
         handOffStopper = Some(context.watch(context.actorOf(
-          handOffStopperProps(shardId, replyTo, idByRef.keySet, handOffStopMessage))))
+          handOffStopperProps(shardId, replyTo, idByRef.keySet, handOffStopMessage, entityHandOffTimeout))))
 
         //During hand off we only care about watching for termination of the hand off stopper
         context become {

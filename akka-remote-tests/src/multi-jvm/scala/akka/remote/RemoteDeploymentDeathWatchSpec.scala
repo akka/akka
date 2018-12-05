@@ -13,10 +13,7 @@ import akka.actor.Actor
 import akka.actor.ActorSystemImpl
 import akka.actor.Props
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import akka.testkit.TestEvent._
 
 class RemoteDeploymentDeathWatchMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")

@@ -34,34 +34,6 @@ class TlsTcpWithSHA1PRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
     }
     """))
 
-class TlsTcpWithAES128CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery.ssl.config-ssl-engine {
-      random-number-generator = "AES128CounterSecureRNG"
-      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
-    }
-    """))
-
-class TlsTcpWithDeprecatedAES128CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery.ssl.config-ssl-engine {
-      random-number-generator = "DeprecatedAES128CounterSecureRNG"
-      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
-    }
-    """))
-
-class TlsTcpWithAES256CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery.ssl.config-ssl-engine {
-      random-number-generator = "AES256CounterSecureRNG"
-      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
-    }
-    """))
-
-class TlsTcpWithDeprecatedAES256CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery.ssl.config-ssl-engine {
-      random-number-generator = "DeprecatedAES256CounterSecureRNG"
-      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
-    }
-    """))
-
 class TlsTcpWithDefaultRNGSecureSpec extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = ""
@@ -102,10 +74,7 @@ abstract class TlsTcpSpec(config: Config)
 
       val rng = provider.createSecureRandom()
       rng.nextInt() // Has to work
-      val sRng = provider.SSLRandomNumberGenerator match {
-        case "AES128CounterSecureRNG" | "AES256CounterSecureRNG" ⇒ ""
-        case other ⇒ other
-      }
+      val sRng = provider.SSLRandomNumberGenerator
       if (rng.getAlgorithm != sRng && sRng != "")
         throw new NoSuchAlgorithmException(sRng)
 

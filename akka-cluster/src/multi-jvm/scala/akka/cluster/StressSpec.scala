@@ -9,7 +9,6 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
-import java.util.concurrent.atomic.AtomicReference
 import org.scalatest.BeforeAndAfterEach
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
@@ -257,8 +256,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       immutable.SortedMap.empty[Address, CurrentInternalStats]
     }
 
-    import context.dispatcher
-
     def receive = {
       case PhiResult(from, phiValues) ⇒ phiValuesObservedByNode += from → phiValues
       case StatsResult(from, stats)   ⇒ clusterStatsObservedByNode += from → stats
@@ -290,7 +287,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     def formatPhi: String = {
       if (phiValuesObservedByNode.isEmpty) ""
       else {
-        import akka.cluster.Member.addressOrdering
         val lines =
           for {
             (monitor, phiValues) ← phiValuesObservedByNode
@@ -672,7 +668,6 @@ abstract class StressSpec
   }) with MultiNodeClusterSpec with BeforeAndAfterEach with ImplicitSender {
 
   import StressMultiJvmSpec._
-  import ClusterEvent._
 
   val settings = new Settings(system.settings.config)
   import settings._

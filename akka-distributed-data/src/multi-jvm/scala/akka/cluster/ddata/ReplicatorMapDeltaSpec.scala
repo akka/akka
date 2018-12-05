@@ -7,7 +7,7 @@ package akka.cluster.ddata
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.concurrent.duration._
-import akka.cluster.{ Cluster, ddata }
+import akka.cluster.Cluster
 import akka.cluster.ddata.Replicator._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig

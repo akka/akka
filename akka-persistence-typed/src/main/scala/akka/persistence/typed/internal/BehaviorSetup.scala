@@ -1,0 +1,126 @@
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package akka.persistence.typed.internal
+
+import scala.concurrent.ExecutionContext
+import scala.util.Try
+
+import akka.Done
+import akka.actor.Cancellable
+import akka.actor.{ ActorRef, ExtendedActorSystem }
+import akka.actor.typed.Logger
+import akka.actor.typed.scaladsl.{ ActorContext, StashBuffer }
+import akka.annotation.InternalApi
+import akka.persistence._
+import akka.persistence.typed.EventAdapter
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.persistence.typed.PersistenceId
+import akka.util.Collections.EmptyImmutableSeq
+import akka.util.OptionVal
+
+/**
+ * INTERNAL API: Carry state for the Persistent behavior implementation behaviors.
+ */
+@InternalApi
+private[persistence] final class BehaviorSetup[C, E, S](
+  val context:               ActorContext[InternalProtocol],
+  val persistenceId:         PersistenceId,
+  val emptyState:            S,
+  val commandHandler:        EventSourcedBehavior.CommandHandler[C, E, S],
+  val eventHandler:          EventSourcedBehavior.EventHandler[S, E],
+  val writerIdentity:        EventSourcedBehaviorImpl.WriterIdentity,
+  val recoveryCompleted:     S ⇒ Unit,
+  val onRecoveryFailure:     Throwable ⇒ Unit,
+  val onSnapshot:            (SnapshotMetadata, Try[Done]) ⇒ Unit,
+  val tagger:                E ⇒ Set[String],
+  val eventAdapter:          EventAdapter[E, _],
+  val snapshotWhen:          (S, E, Long) ⇒ Boolean,
+  val recovery:              Recovery,
+  var holdingRecoveryPermit: Boolean,
+  val settings:              EventSourcedSettings,
+  val internalStash:         StashBuffer[InternalProtocol]
+) {
+  import akka.actor.typed.scaladsl.adapter._
+  import InternalProtocol.RecoveryTickEvent
+
+  val persistence: Persistence = Persistence(context.system.toUntyped)
+
+  val journal: ActorRef = persistence.journalFor(settings.journalPluginId)
+  val snapshotStore: ActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
+
+  val internalStashOverflowStrategy: StashOverflowStrategy = {
+    val system = context.system.toUntyped.asInstanceOf[ExtendedActorSystem]
+    system.dynamicAccess.createInstanceFor[StashOverflowStrategyConfigurator](settings.stashOverflowStrategyConfigurator, EmptyImmutableSeq)
+      .map(_.create(system.settings.config)).get
+  }
+
+  def selfUntyped = context.self.toUntyped
+
+  private var mdc: Map[String, Any] = Map.empty
+  private var _log: OptionVal[Logger] = OptionVal.Some(context.log) // changed when mdc is changed
+  def log: Logger = {
+    _log match {
+      case OptionVal.Some(l) ⇒ l
+      case OptionVal.None ⇒
+        // lazy init if mdc changed
+        val l = context.log.withMdc(mdc)
+        _log = OptionVal.Some(l)
+        l
+    }
+  }
+
+  def setMdc(newMdc: Map[String, Any]): BehaviorSetup[C, E, S] = {
+    mdc = newMdc
+    // mdc is changed often, for each persisted event, but logging is rare, so lazy init of Logger
+    _log = OptionVal.None
+    this
+  }
+
+  def setMdc(phaseName: String): BehaviorSetup[C, E, S] = {
+    setMdc(MDC.create(persistenceId, phaseName))
+    this
+  }
+
+  private var recoveryTimer: OptionVal[Cancellable] = OptionVal.None
+
+  def startRecoveryTimer(snapshot: Boolean): Unit = {
+    cancelRecoveryTimer()
+    implicit val ec: ExecutionContext = context.executionContext
+    val timer =
+      if (snapshot)
+        context.system.scheduler.scheduleOnce(settings.recoveryEventTimeout, context.self.toUntyped,
+          RecoveryTickEvent(snapshot = true))
+      else
+        context.system.scheduler.schedule(settings.recoveryEventTimeout, settings.recoveryEventTimeout,
+          context.self.toUntyped, RecoveryTickEvent(snapshot = false))
+    recoveryTimer = OptionVal.Some(timer)
+  }
+
+  def cancelRecoveryTimer(): Unit = {
+    recoveryTimer match {
+      case OptionVal.Some(t) ⇒ t.cancel()
+      case OptionVal.None    ⇒
+    }
+    recoveryTimer = OptionVal.None
+  }
+
+}
+
+object MDC {
+  // format: OFF
+  val AwaitingPermit    = "get-permit"
+  val ReplayingSnapshot = "replay-snap"
+  val ReplayingEvents   = "replay-evts"
+  val RunningCmds       = "running-cmnds"
+  val PersistingEvents  = "persist-evts"
+  // format: ON
+
+  def create(persistenceId: PersistenceId, phaseName: String): Map[String, Any] = {
+    Map(
+      "persistenceId" → persistenceId.id,
+      "phase" → phaseName
+    )
+  }
+}

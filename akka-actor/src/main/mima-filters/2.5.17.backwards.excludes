@@ -14,4 +14,3 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.CNameRecord.writ
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.AAAARecord.write")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.ResourceRecord.write")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.SRVRecord.write")
-

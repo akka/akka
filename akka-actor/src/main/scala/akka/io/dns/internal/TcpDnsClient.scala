@@ -10,8 +10,8 @@ import akka.AkkaException
 import akka.actor.{ Actor, ActorLogging, ActorRef, Stash }
 import akka.annotation.InternalApi
 import akka.io.Tcp._
-import akka.io.dns.internal.DnsClient.{ Answer, DnsQuestion, Question4 }
-import akka.io.{ IO, Tcp }
+import akka.io.dns.internal.DnsClient.Answer
+import akka.io.Tcp
 import akka.util.ByteString
 
 /**
@@ -19,8 +19,6 @@ import akka.util.ByteString
  */
 @InternalApi private[akka] class TcpDnsClient(tcp: ActorRef, ns: InetSocketAddress, answerRecipient: ActorRef) extends Actor with ActorLogging with Stash {
   import TcpDnsClient._
-
-  import context.system
 
   override def receive: Receive = idle
 

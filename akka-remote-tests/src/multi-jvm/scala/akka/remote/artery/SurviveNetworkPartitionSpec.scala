@@ -9,10 +9,7 @@ import akka.actor._
 import akka.actor.ActorIdentity
 import akka.actor.Identify
 import akka.remote.{ RemotingMultiNodeSpec, QuarantinedEvent, RARP }
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 import com.typesafe.config.ConfigFactory

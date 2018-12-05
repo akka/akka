@@ -4,21 +4,17 @@
 
 package akka.remote
 
-import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.remote.testconductor.RoleName
 import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.actor.ActorIdentity
 import akka.remote.testconductor.RoleName
 import akka.actor.Identify
 import scala.concurrent.Await
-import akka.remote.transport.Transport.InvalidAssociationException
 import akka.remote.transport.AssociationHandle
 
 object Ticket15109Spec extends MultiNodeConfig {

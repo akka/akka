@@ -5,16 +5,10 @@
 package akka.cluster
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
-import scala.collection.immutable.SortedSet
-import scala.concurrent.duration._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import java.util.concurrent.atomic.AtomicReference
-import akka.actor.Props
-import akka.actor.Actor
 import akka.cluster.MemberStatus._
 
 object MinMembersBeforeUpMultiJvmSpec extends MultiNodeConfig {
@@ -108,8 +102,6 @@ abstract class MinMembersOfRoleBeforeUpSpec extends MinMembersBeforeUpBase(MinMe
 abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
   extends MultiNodeSpec(multiNodeConfig)
   with MultiNodeClusterSpec {
-
-  import ClusterEvent._
 
   def first: RoleName
   def second: RoleName

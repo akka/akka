@@ -217,6 +217,41 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   }
 
   /**
+   * Scala API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
+   * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
+   * for this type can later be retrieved with the [[shardRegion]] method.
+   *
+   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the roles of
+   * the current cluster node and the role specified in [[ClusterShardingSettings]] passed to this method.
+   *
+   * Some settings can be configured as described in the `akka.cluster.sharding` section
+   * of the `reference.conf`.
+   *
+   * @param typeName the name of the entity type
+   * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
+   * @param extractEntityId partial function to extract the entity id and the message to send to the
+   *   entity from the incoming message, if the partial function does not match the message will
+   *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
+   * @param extractShardId function to determine the shard id for an incoming message, only messages
+   *   that passed the `extractEntityId` will be used
+   * @param allocationStrategy possibility to use a custom shard allocation and
+   *   rebalancing logic
+   * @param handOffStopMessage the message that will be sent to entities when they are to be stopped
+   *   for a rebalance or graceful shutdown of a `ShardRegion`, e.g. `PoisonPill`.
+   * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
+   */
+  def start(
+    typeName:           String,
+    entityProps:        Props,
+    extractEntityId:    ShardRegion.ExtractEntityId,
+    extractShardId:     ShardRegion.ExtractShardId,
+    allocationStrategy: ShardAllocationStrategy,
+    handOffStopMessage: Any): ActorRef = {
+
+    start(typeName, entityProps, ClusterShardingSettings(system), extractEntityId, extractShardId, allocationStrategy, handOffStopMessage)
+  }
+
+  /**
    * INTERNAL API
    */
   @InternalApi private[akka] def internalStart(
@@ -286,6 +321,38 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     val allocationStrategy = defaultShardAllocationStrategy(settings)
 
     start(typeName, entityProps, settings, extractEntityId, extractShardId, allocationStrategy, PoisonPill)
+  }
+
+  /**
+   * Register a named entity type by defining the [[akka.actor.Props]] of the entity actor and
+   * functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
+   * for this type can later be retrieved with the [[shardRegion]] method.
+   *
+   * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
+   * is used. [[akka.actor.PoisonPill]] is used as `handOffStopMessage`.
+   *
+   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the
+   * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
+   *
+   * Some settings can be configured as described in the `akka.cluster.sharding` section
+   * of the `reference.conf`.
+   *
+   * @param typeName the name of the entity type
+   * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
+   * @param extractEntityId partial function to extract the entity id and the message to send to the
+   *   entity from the incoming message, if the partial function does not match the message will
+   *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
+   * @param extractShardId function to determine the shard id for an incoming message, only messages
+   *   that passed the `extractEntityId` will be used
+   * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
+   */
+  def start(
+    typeName:        String,
+    entityProps:     Props,
+    extractEntityId: ShardRegion.ExtractEntityId,
+    extractShardId:  ShardRegion.ExtractShardId): ActorRef = {
+
+    start(typeName, entityProps, ClusterShardingSettings(system), extractEntityId, extractShardId)
   }
 
   /**
@@ -362,6 +429,33 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     val allocationStrategy = defaultShardAllocationStrategy(settings)
 
     start(typeName, entityProps, settings, messageExtractor, allocationStrategy, PoisonPill)
+  }
+
+  /**
+   * Java/Scala API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
+   * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
+   * for this type can later be retrieved with the [[#shardRegion]] method.
+   *
+   * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
+   * is used. [[akka.actor.PoisonPill]] is used as `handOffStopMessage`.
+   *
+   * This method will start a [[ShardRegion]] in proxy mode in case if there is no match between the
+   * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
+   *
+   * Some settings can be configured as described in the `akka.cluster.sharding` section
+   * of the `reference.conf`.
+   *
+   * @param typeName the name of the entity type
+   * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
+   * @param messageExtractor functions to extract the entity id, shard id, and the message to send to the
+   *   entity from the incoming message
+   * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
+   */
+  def start(
+    typeName:         String,
+    entityProps:      Props,
+    messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
+    start(typeName, entityProps, ClusterShardingSettings(system), messageExtractor)
   }
 
   /**
