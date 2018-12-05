@@ -116,7 +116,7 @@ For our use case:
 that has been stopped in the meantime.
    * We can reach the deadline and receive a `CollectionTimeout`.
 
-In the first two cases, we need to keep track of the replies, which we now delegate to a method `receivedResponse`, which we will discuss later. In the case of timeout, we need to simply take all the actors that have not yet replied yet (the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply. Then we reply to the submitter of the query with the collected results and stop the query actor.
+In the first two cases, we need to keep track of the replies, which we now delegate to a method `receivedResponse`, which we will discuss later. In the case of timeout, we need to simply take all the actors that have not yet replied (the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply. Then we reply to the submitter of the query with the collected results and stop the query actor.
 
 To accomplish this, add the following to your `DeviceGroupQuery` source file:
 
