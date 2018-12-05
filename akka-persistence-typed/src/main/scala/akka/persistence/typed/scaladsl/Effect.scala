@@ -5,7 +5,7 @@
 package akka.persistence.typed.scaladsl
 
 import akka.annotation.DoNotInherit
-import akka.persistence.typed.{ SideEffect, Stop }
+import akka.persistence.typed.SideEffect
 import akka.persistence.typed.internal._
 import scala.collection.{ immutable ⇒ im }
 

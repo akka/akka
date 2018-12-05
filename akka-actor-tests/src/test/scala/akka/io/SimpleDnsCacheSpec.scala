@@ -7,7 +7,10 @@ package akka.io
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicLong
 
+import akka.io.dns.CachePolicy.Ttl
 import org.scalatest.{ Matchers, WordSpec }
+
+import scala.concurrent.duration._
 
 class SimpleDnsCacheSpec extends WordSpec with Matchers {
   "Cache" should {
@@ -17,7 +20,7 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
         override protected def clock() = localClock.get
       }
       val cacheEntry = Dns.Resolved("test.local", Seq(InetAddress.getByName("127.0.0.1")))
-      cache.put(cacheEntry, 5000)
+      cache.put(cacheEntry, Ttl.fromPositive(5000.millis))
 
       cache.cached("test.local") should ===(Some(cacheEntry))
       localClock.set(4999)
@@ -32,7 +35,7 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
         override protected def clock() = localClock.get
       }
       val cacheEntry = Dns.Resolved("test.local", Seq(InetAddress.getByName("127.0.0.1")))
-      cache.put(cacheEntry, 5000)
+      cache.put(cacheEntry, Ttl.fromPositive(5000.millis))
 
       cache.cached("test.local") should ===(Some(cacheEntry))
       localClock.set(5000)

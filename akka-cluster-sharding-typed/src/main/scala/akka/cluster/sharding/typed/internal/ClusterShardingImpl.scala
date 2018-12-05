@@ -123,7 +123,7 @@ import akka.util.Timeout
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted untyped actor systems can be used for cluster features")
 
   private val cluster = Cluster(system)
-  private val untypedSystem = system.toUntyped
+  private val untypedSystem: ExtendedActorSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
   private val untypedSharding = akka.cluster.sharding.ClusterSharding(untypedSystem)
   private val log: LoggingAdapter = Logging(untypedSystem, classOf[scaladsl.ClusterSharding])
 
@@ -214,7 +214,6 @@ import akka.util.Timeout
           val behv = behavior(new EntityContext(entityId, shardCommandDelegator))
           PropsAdapter(poisonPillInterceptor(behv), entityProps)
         }
-
         untypedSharding.internalStart(
           typeKey.name,
           untypedEntityPropsFactory,
@@ -262,6 +261,12 @@ import akka.util.Timeout
     val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
     val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
     new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+  }
+
+  override lazy val shardState: ActorRef[ClusterShardingQuery] = {
+    import akka.actor.typed.scaladsl.adapter._
+    val behavior = ShardingState.behavior(untypedSharding)
+    untypedSystem.systemActorOf(PropsAdapter(behavior), "typedShardState")
   }
 
 }

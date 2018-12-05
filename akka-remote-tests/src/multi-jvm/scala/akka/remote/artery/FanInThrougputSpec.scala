@@ -4,25 +4,16 @@
 
 package akka.remote.artery
 
-import java.nio.ByteBuffer
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit.NANOSECONDS
 
 import scala.concurrent.duration._
 import akka.actor._
-import akka.remote.{ RARP, RemoteActorRefProvider, RemotingMultiNodeSpec }
+import akka.remote.{ RemoteActorRefProvider, RemotingMultiNodeSpec }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.PerfFlamesSupport
-import akka.remote.testkit.STMultiNodeSpec
-import akka.serialization.ByteBufferSerializer
-import akka.serialization.SerializerWithStringManifest
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import akka.remote.artery.compress.CompressionProtocol.Events.ReceivedActorRefCompressionTable
 import akka.remote.artery.MaxThroughputSpec._
 
 object FanInThroughputSpec extends MultiNodeConfig {

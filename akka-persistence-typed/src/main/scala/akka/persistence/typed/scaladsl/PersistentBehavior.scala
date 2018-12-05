@@ -93,10 +93,14 @@ object PersistentBehavior {
   def persistenceId: PersistenceId
 
   /**
-   * The `callback` function is called to notify the actor that the recovery process
-   * is finished.
+   * The `callback` function is called to notify that the recovery process has finished.
    */
   def onRecoveryCompleted(callback: State ⇒ Unit): PersistentBehavior[Command, Event, State]
+  /**
+   * The `callback` function is called to notify that recovery has failed. For setting a supervision
+   * strategy `onPersistFailure`
+   */
+  def onRecoveryFailure(callback: Throwable ⇒ Unit): PersistentBehavior[Command, Event, State]
 
   /**
    * The `callback` function is called to notify when a snapshot is complete.

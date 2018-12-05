@@ -11,9 +11,7 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.duration._
-import akka.actor.Address
 import scala.concurrent.duration._
-import scala.collection.immutable
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
 final case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {

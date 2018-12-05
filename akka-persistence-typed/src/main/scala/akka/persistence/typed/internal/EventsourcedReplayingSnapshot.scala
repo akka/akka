@@ -5,7 +5,7 @@
 package akka.persistence.typed.internal
 
 import akka.actor.typed.scaladsl.Behaviors.same
-import akka.actor.typed.scaladsl.{ Behaviors, TimerScheduler }
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
 import akka.annotation.InternalApi

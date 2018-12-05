@@ -26,8 +26,6 @@ import scala.concurrent.{ Future, Promise }
 import akka.stream.stage.GraphStageWithMaterializedValue
 import scala.compat.java8.FutureConverters._
 
-import akka.stream.impl.fusing.GraphStageModule
-
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
  * any number of internal sources and transformations that are wired together, or it can be

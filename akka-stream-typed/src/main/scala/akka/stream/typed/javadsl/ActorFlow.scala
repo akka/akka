@@ -8,7 +8,6 @@ import java.util.function.BiFunction
 
 import akka.NotUsed
 import akka.actor.typed.ActorRef
-import akka.stream.ActorAttributes
 import akka.stream.javadsl.Flow
 import akka.util.JavaDurationConverters
 

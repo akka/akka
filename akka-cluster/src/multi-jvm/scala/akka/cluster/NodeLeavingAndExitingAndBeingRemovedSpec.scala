@@ -4,8 +4,6 @@
 
 package akka.cluster
 
-import scala.collection.immutable.SortedSet
-import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._

@@ -6,12 +6,12 @@ package akka.actor.typed
 
 import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.BehaviorImpl
-import scala.annotation.tailrec
 
+import scala.annotation.tailrec
 import akka.actor.typed.internal.BehaviorImpl.OrElseBehavior
 import akka.actor.typed.internal.WrappingBehavior
 import akka.util.{ LineNumbers, OptionVal }
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
 
 /**
@@ -34,7 +34,7 @@ import akka.actor.typed.scaladsl.{ ActorContext ⇒ SAC }
  *
  * Not for user extension.
  */
-@InternalApi
+@ApiMayChange
 @DoNotInherit
 sealed abstract class Behavior[T] { behavior ⇒
   /**
@@ -51,7 +51,9 @@ sealed abstract class Behavior[T] { behavior ⇒
    *
    *  @param that the fallback `Behavior`
    */
-  final def orElse(that: Behavior[T]): Behavior[T] = new OrElseBehavior[T](this, that)
+  final def orElse(that: Behavior[T]): Behavior[T] = Behavior.DeferredBehavior[T] { ctx ⇒
+    new OrElseBehavior[T](Behavior.start(this, ctx), Behavior.start(that, ctx))
+  }
 }
 
 /**

@@ -11,7 +11,6 @@ import akka.annotation.InternalApi
 import akka.cluster.{ Cluster, UniqueAddress }
 import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey }
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, EmptyORMultiMap, Entry }
-import akka.util.Timeout
 
 import scala.concurrent.duration.Deadline
 

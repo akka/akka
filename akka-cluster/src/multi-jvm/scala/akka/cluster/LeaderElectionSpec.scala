@@ -5,12 +5,10 @@
 package akka.cluster
 
 import language.postfixOps
-import com.typesafe.config.ConfigFactory
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
 import scala.concurrent.duration._
-import scala.collection.immutable
 
 final case class LeaderElectionMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val controller = role("controller")

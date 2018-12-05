@@ -10,7 +10,6 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 
-import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 class FlowWireTapSpec extends StreamSpec("akka.stream.materializer.debug.fuzzing-mode = off") {

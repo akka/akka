@@ -50,7 +50,7 @@ object Replicator {
      * Convenience for `ask`.
      */
     def apply[A <: ReplicatedData](key: Key[A], consistency: ReadConsistency): ActorRef[GetResponse[A]] ⇒ Get[A] =
-      (replyTo ⇒ Get(key, consistency, replyTo, None))
+      replyTo ⇒ Get(key, consistency, replyTo, None)
   }
 
   /**

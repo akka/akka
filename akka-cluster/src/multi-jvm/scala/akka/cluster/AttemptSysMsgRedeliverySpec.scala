@@ -12,7 +12,7 @@ import akka.actor.Identify
 import akka.actor.Props
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.actor.PoisonPill
 
 object AttemptSysMsgRedeliveryMultiJvmSpec extends MultiNodeConfig {

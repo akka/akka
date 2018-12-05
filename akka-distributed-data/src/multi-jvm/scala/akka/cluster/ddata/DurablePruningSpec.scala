@@ -7,8 +7,6 @@ package akka.cluster.ddata
 import scala.concurrent.duration._
 
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent.InitialStateAsEvents
-import akka.cluster.ClusterEvent.MemberUp
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -157,7 +155,7 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
         val cluster3 = Cluster(sys3)
         val replicator3 = startReplicator(sys3)
         val probe3 = TestProbe()(sys3)
-        Cluster(sys3).join(node(first).address)
+        cluster3.join(node(first).address)
 
         within(10.seconds) {
           var values = Set.empty[Int]

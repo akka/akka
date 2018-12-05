@@ -1,7 +1,11 @@
-import akka.{ParadoxSupport, AutomaticModuleName}
+import akka.{AutomaticModuleName, ParadoxSupport, ScalafixIgnoreFilePlugin}
 
-enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr)
+enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr,
+  ScalafixIgnoreFilePlugin)
 disablePlugins(MimaPlugin)
+addCommandAlias(
+  name  ="fix",
+  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile")
 
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
@@ -242,6 +246,7 @@ lazy val docs = akkaModule("akka-docs")
     StreamOperatorsIndexGenerator)
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
+  .disablePlugins(ScalafixPlugin)
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
@@ -481,4 +486,3 @@ def akkaModule(name: String): Project =
     .settings(akka.AkkaBuild.defaultSettings)
     .settings(akka.Formatting.formatSettings)
     .enablePlugins(BootstrapGenjavadoc)
-

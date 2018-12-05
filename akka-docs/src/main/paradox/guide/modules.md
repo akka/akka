@@ -57,7 +57,7 @@ Challenges that actors solve include the following:
   version=$akka.version$
 }
 
-Remoting enables actors that live on different computers, to seamlessly exchange messages.
+Remoting enables actors that live on different computers to seamlessly exchange messages.
 While distributed as a JAR artifact, Remoting resembles a module more than it does a library. You enable it mostly
 with configuration and it has only a few APIs. Thanks to the actor model, a remote and local message send looks exactly the
 same. The patterns that you use on local systems translate directly to remote systems.
@@ -213,9 +213,9 @@ party implementations of that standard.
 
 Streams solve the following challenges:
 
-* How to handle streams of events or large datasets with high performance, exploiting concurrency and keep resource usage tight.
+* How to handle streams of events or large datasets with high performance, exploiting concurrency and keeping resource usage tight.
 * How to assemble reusable pieces of event/data processing into flexible pipelines.
-* How to connect asynchronous services in a flexible way to each other, and have good performance.
+* How to connect asynchronous services in a flexible way to each other with high performance.
 * How to provide or consume Reactive Streams compliant interfaces to interface with a third party library.
 
 ### HTTP
@@ -237,4 +237,4 @@ Akka modules integrate together seamlessly. For example, think of a large set of
 operators and expose it as web socket connections served by a load balanced set of HTTP servers hosted by your cluster
 to power your real-time business analytics tool.
 
-We hope this preview caught your interest! The next topic introduces the example application we will build in the tutorial portion of this guide. 
+We hope this preview caught your interest! The next topic introduces the example application we will build in the tutorial portion of this guide.
