@@ -332,7 +332,7 @@ trait AtLeastOnceDeliveryLike extends Eventsourced {
   def getDeliverySnapshot: AtLeastOnceDeliverySnapshot =
     AtLeastOnceDeliverySnapshot(
       deliverySequenceNr,
-      unconfirmed.iterator.map { case (deliveryId, d) ⇒ UnconfirmedDelivery(deliveryId, d.destination, d.message) }.to(scala.collection.immutable.IndexedSeq))
+      unconfirmed.iterator.map { case (deliveryId, d) ⇒ UnconfirmedDelivery(deliveryId, d.destination, d.message) }.to(immutable.IndexedSeq))
 
   /**
    * If snapshot from [[#getDeliverySnapshot]] was saved it will be received during recovery

@@ -13,6 +13,7 @@ import akka.util.ConstantFun
 import akka.util.ccompat._
 
 import scala.collection.SortedSet
+import scala.collection.immutable
 
 /**
  * INTERNAL API
@@ -272,7 +273,7 @@ private[cluster] final case class CrossDcHeartbeatingState(
 
     allOtherNodes.flatMap(
       _.take(nrOfMonitoredNodesPerDc).iterator
-        .map(_.uniqueAddress).to(scala.collection.immutable.IndexedSeq)).toSet
+        .map(_.uniqueAddress).to(immutable.IndexedSeq)).toSet
   }
 
   /** Lists addresses in diven DataCenter that this node should send heartbeats to */
@@ -282,7 +283,7 @@ private[cluster] final case class CrossDcHeartbeatingState(
       val otherNodes = state.getOrElse(dc, emptyMembersSortedSet)
       otherNodes
         .take(nrOfMonitoredNodesPerDc).iterator
-        .map(_.uniqueAddress).to(scala.collection.immutable.Set)
+        .map(_.uniqueAddress).to(immutable.Set)
     }
 
   def allMembers: Iterable[Member] =

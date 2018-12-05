@@ -356,7 +356,7 @@ object TestSubscriber {
      * Expect multiple stream elements.
      */
     @annotation.varargs def expectNext(e1: I, e2: I, es: I*): Self =
-      expectNextN((e1 +: e2 +: es).iterator.map(identity).to(scala.collection.immutable.IndexedSeq))
+      expectNextN((e1 +: e2 +: es).iterator.map(identity).to(immutable.IndexedSeq))
 
     /**
      * Fluent DSL
@@ -364,7 +364,7 @@ object TestSubscriber {
      * Expect multiple stream elements in arbitrary order.
      */
     @annotation.varargs def expectNextUnordered(e1: I, e2: I, es: I*): Self =
-      expectNextUnorderedN((e1 +: e2 +: es).iterator.map(identity).to(scala.collection.immutable.IndexedSeq))
+      expectNextUnorderedN((e1 +: e2 +: es).iterator.map(identity).to(immutable.IndexedSeq))
 
     /**
      * Expect and return the next `n` stream elements.

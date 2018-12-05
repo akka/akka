@@ -12,6 +12,7 @@ import java.util.TreeSet
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.collection.immutable
 
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata._
@@ -481,7 +482,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
           ORSet.FullStateDeltaOp(orsetFromProto(entry.getUnderlying))
         else
           throw new NotSerializableException(s"Unknow ORSet delta operation ${entry.getOperation}")
-      }.to(scala.collection.immutable.Vector)
+      }.to(immutable.Vector)
     ORSet.DeltaGroup(ops)
   }
 
@@ -684,31 +685,31 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
           ORMap.UpdateDeltaOp(ORSet.AddDeltaOp(orsetFromProto(entry.getUnderlying)), map, zeroTagFromCode(entry.getZeroTag))
         } else
           throw new NotSerializableException(s"Unknown ORMap delta operation ${entry.getOperation}")
-      }.to(scala.collection.immutable.Vector)
+      }.to(immutable.Vector)
     ops
   }
 
   private def ormapPutToProto(deltaOp: ORMap.PutDeltaOp[_, _]): rd.ORMapDeltaGroup = {
-    ormapDeltaGroupOpsToProto(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
+    ormapDeltaGroupOpsToProto(immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
   }
 
   private def ormapRemoveToProto(deltaOp: ORMap.RemoveDeltaOp[_, _]): rd.ORMapDeltaGroup = {
-    ormapDeltaGroupOpsToProto(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
+    ormapDeltaGroupOpsToProto(immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
   }
 
   private def ormapRemoveKeyToProto(deltaOp: ORMap.RemoveKeyDeltaOp[_, _]): rd.ORMapDeltaGroup = {
-    ormapDeltaGroupOpsToProto(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
+    ormapDeltaGroupOpsToProto(immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
   }
 
   private def ormapUpdateToProto(deltaOp: ORMap.UpdateDeltaOp[_, _]): rd.ORMapDeltaGroup = {
-    ormapDeltaGroupOpsToProto(scala.collection.immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
+    ormapDeltaGroupOpsToProto(immutable.IndexedSeq(deltaOp.asInstanceOf[ORMap.DeltaOp]))
   }
 
   private def ormapDeltaGroupToProto(deltaGroup: ORMap.DeltaGroup[_, _]): rd.ORMapDeltaGroup = {
     ormapDeltaGroupOpsToProto(deltaGroup.ops)
   }
 
-  private def ormapDeltaGroupOpsToProto(deltaGroupOps: scala.collection.immutable.IndexedSeq[ORMap.DeltaOp]): rd.ORMapDeltaGroup = {
+  private def ormapDeltaGroupOpsToProto(deltaGroupOps: immutable.IndexedSeq[ORMap.DeltaOp]): rd.ORMapDeltaGroup = {
     def createEntry(opType: rd.ORMapDeltaOp, u: ORSet[_], m: Map[_, _], zt: Int) = {
       if (m.size > 1 && opType != rd.ORMapDeltaOp.ORMapUpdate)
         throw new IllegalArgumentException("Invalid size of ORMap delta map")

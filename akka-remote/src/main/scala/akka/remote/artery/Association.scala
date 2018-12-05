@@ -763,7 +763,7 @@ private[remote] class Association(
       val values: Vector[(SendQueue.QueueValue[OutboundEnvelope], Encoder.OutboundCompressionAccess, Future[Done])] =
         (0 until outboundLanes).iterator.map { _ ⇒
           lane.to(mergeHub).run()(materializer)
-        }.to(scala.collection.immutable.Vector)
+        }.to(Vector)
 
       val (queueValues, compressionAccessValues, laneCompletedValues) = values.unzip3
 

@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -349,7 +350,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
         val completedValues: Vector[Future[Done]] =
           (0 until inboundLanes).iterator.map { _ ⇒
             laneHub.toMat(lane)(Keep.right).run()(materializer)
-          }.to(scala.collection.immutable.Vector)
+          }.to(immutable.Vector)
 
         import system.dispatcher
 

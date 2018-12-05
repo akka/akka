@@ -276,7 +276,7 @@ import scala.util.Random
         latestGossip.members.iterator.collect {
           case m if m.dataCenter == state.selfDc && !latestGossip.seenByNode(m.uniqueAddress) && state.validNodeForGossip(m.uniqueAddress) ⇒
             m.uniqueAddress
-        }.to(scala.collection.immutable.Vector)
+        }.to(Vector)
       } else Vector.empty
 
     // Fall back to localGossip

@@ -234,7 +234,7 @@ object ByteIterator {
     }
 
     final override def clone: MultiByteArrayIterator = {
-      val clonedIterators: List[ByteArrayIterator] = iterators.iterator.map(_.clone).to(scala.collection.immutable.List)
+      val clonedIterators: List[ByteArrayIterator] = iterators.iterator.map(_.clone).to(List)
       new MultiByteArrayIterator(clonedIterators)
     }
 

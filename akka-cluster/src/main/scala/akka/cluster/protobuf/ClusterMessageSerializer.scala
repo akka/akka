@@ -449,9 +449,9 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
 
   private def gossipFromProto(gossip: cm.Gossip): Gossip = {
     val addressMapping: Vector[UniqueAddress] =
-      gossip.getAllAddressesList.asScala.iterator.map(uniqueAddressFromProto).to(scala.collection.immutable.Vector)
-    val roleMapping: Vector[String] = gossip.getAllRolesList.asScala.iterator.map(identity).to(scala.collection.immutable.Vector)
-    val hashMapping: Vector[String] = gossip.getAllHashesList.asScala.iterator.map(identity).to(scala.collection.immutable.Vector)
+      gossip.getAllAddressesList.asScala.iterator.map(uniqueAddressFromProto).to(immutable.Vector)
+    val roleMapping: Vector[String] = gossip.getAllRolesList.asScala.iterator.map(identity).to(immutable.Vector)
+    val hashMapping: Vector[String] = gossip.getAllHashesList.asScala.iterator.map(identity).to(immutable.Vector)
 
     def reachabilityFromProto(observerReachability: Iterable[cm.ObserverReachability]): Reachability = {
       val recordBuilder = new immutable.VectorBuilder[Reachability.Record]
@@ -492,10 +492,10 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Se
     def tombstoneFromProto(tombstone: cm.Tombstone): (UniqueAddress, Long) =
       (addressMapping(tombstone.getAddressIndex), tombstone.getTimestamp)
 
-    val members: immutable.SortedSet[Member] = gossip.getMembersList.asScala.iterator.map(memberFromProto).to(scala.collection.immutable.SortedSet)
+    val members: immutable.SortedSet[Member] = gossip.getMembersList.asScala.iterator.map(memberFromProto).to(immutable.SortedSet)
 
     val reachability = reachabilityFromProto(gossip.getOverview.getObserverReachabilityList.asScala)
-    val seen: Set[UniqueAddress] = gossip.getOverview.getSeenList.asScala.iterator.map(addressMapping(_)).to(scala.collection.immutable.Set)
+    val seen: Set[UniqueAddress] = gossip.getOverview.getSeenList.asScala.iterator.map(addressMapping(_)).to(immutable.Set)
     val overview = GossipOverview(seen, reachability)
     val tombstones: Map[UniqueAddress, Long] = gossip.getTombstonesList.asScala.iterator.map(tombstoneFromProto).toMap
 

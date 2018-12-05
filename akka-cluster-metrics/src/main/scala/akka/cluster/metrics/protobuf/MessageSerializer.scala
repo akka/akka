@@ -17,6 +17,7 @@ import akka.protobuf.{ ByteString, MessageLite }
 import akka.util.ccompat._
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.collection.JavaConverters.{ asJavaIterableConverter, asScalaBufferConverter, setAsJavaSetConverter }
 import java.io.NotSerializableException
 
@@ -172,7 +173,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
 
   private def metricsGossipEnvelopeToProto(envelope: MetricsGossipEnvelope): cm.MetricsGossipEnvelope = {
     val allNodeMetrics = envelope.gossip.nodes
-    val allAddresses: Vector[Address] = allNodeMetrics.iterator.map(_.address).to(scala.collection.immutable.Vector)
+    val allAddresses: Vector[Address] = allNodeMetrics.iterator.map(_.address).to(immutable.Vector)
     val addressMapping = allAddresses.zipWithIndex.toMap
     val allMetricNames: Vector[String] = allNodeMetrics.foldLeft(Set.empty[String])((s, n) ⇒ s ++ n.metrics.iterator.map(_.name)).toVector
     val metricNamesMapping = allMetricNames.zipWithIndex.toMap
@@ -222,7 +223,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
 
   private def metricsGossipEnvelopeFromProto(envelope: cm.MetricsGossipEnvelope): MetricsGossipEnvelope = {
     val mgossip = envelope.getGossip
-    val addressMapping: Vector[Address] = mgossip.getAllAddressesList.asScala.iterator.map(addressFromProto).to(scala.collection.immutable.Vector)
+    val addressMapping: Vector[Address] = mgossip.getAllAddressesList.asScala.iterator.map(addressFromProto).to(Vector)
     val metricNameMapping: Vector[String] = mgossip.getAllMetricNamesList.asScala.toVector
 
     def ewmaFromProto(ewma: cm.NodeMetrics.EWMA): Option[EWMA] =
@@ -251,9 +252,9 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
 
     def nodeMetricsFromProto(nodeMetrics: cm.NodeMetrics): NodeMetrics =
       NodeMetrics(addressMapping(nodeMetrics.getAddressIndex), nodeMetrics.getTimestamp,
-        nodeMetrics.getMetricsList.asScala.iterator.map(metricFromProto).to(scala.collection.immutable.Set))
+        nodeMetrics.getMetricsList.asScala.iterator.map(metricFromProto).to(immutable.Set))
 
-    val nodeMetrics: Set[NodeMetrics] = mgossip.getNodeMetricsList.asScala.iterator.map(nodeMetricsFromProto).to(scala.collection.immutable.Set)
+    val nodeMetrics: Set[NodeMetrics] = mgossip.getNodeMetricsList.asScala.iterator.map(nodeMetricsFromProto).to(immutable.Set)
 
     MetricsGossipEnvelope(addressFromProto(envelope.getFrom), MetricsGossip(nodeMetrics), envelope.getReply)
   }

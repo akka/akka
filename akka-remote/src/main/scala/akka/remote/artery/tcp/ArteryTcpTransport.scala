@@ -7,6 +7,7 @@ package tcp
 
 import java.net.InetSocketAddress
 
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
@@ -367,7 +368,7 @@ private[remote] class ArteryTcpTransport(_system: ExtendedActorSystem, _provider
         val completedValues: Vector[Future[Done]] =
           (0 until inboundLanes).iterator.map { _ ⇒
             laneHub.toMat(lane)(Keep.right).run()(materializer)
-          }.to(scala.collection.immutable.Vector)
+          }.to(immutable.Vector)
 
         import system.dispatcher
 

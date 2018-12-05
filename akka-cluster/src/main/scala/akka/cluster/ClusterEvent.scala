@@ -162,7 +162,7 @@ object ClusterEvent {
     /**
      * All data centers in the cluster
      */
-    def allDataCenters: Set[String] = members.iterator.map(_.dataCenter).to(scala.collection.immutable.Set)
+    def allDataCenters: Set[String] = members.iterator.map(_.dataCenter).to(immutable.Set)
 
     /**
      * Java API: All data centers in the cluster
@@ -383,7 +383,7 @@ object ClusterEvent {
       newState.dcReachabilityNoOutsideNodes.allUnreachableOrTerminated.iterator.collect {
         case node if !oldUnreachableNodes.contains(node) && node != newState.selfUniqueAddress ⇒
           UnreachableMember(newGossip.member(node))
-      }.to(scala.collection.immutable.IndexedSeq)
+      }.to(immutable.IndexedSeq)
     }
 
   /**
@@ -396,7 +396,7 @@ object ClusterEvent {
       oldState.dcReachabilityNoOutsideNodes.allUnreachable.iterator.collect {
         case node if newGossip.hasMember(node) && newState.dcReachabilityNoOutsideNodes.isReachable(node) && node != newState.selfUniqueAddress ⇒
           ReachableMember(newGossip.member(node))
-      }.to(scala.collection.immutable.IndexedSeq)
+      }.to(immutable.IndexedSeq)
     }
 
   /**
@@ -418,7 +418,7 @@ object ClusterEvent {
     if (newState eq oldState) Nil
     else {
       val otherDcs = (oldState.latestGossip.allDataCenters union newState.latestGossip.allDataCenters) - newState.selfDc
-      otherDcs.filterNot(isReachable(newState, oldState.dcReachability.allUnreachableOrTerminated)).iterator.map(UnreachableDataCenter).to(scala.collection.immutable.IndexedSeq)
+      otherDcs.filterNot(isReachable(newState, oldState.dcReachability.allUnreachableOrTerminated)).iterator.map(UnreachableDataCenter).to(immutable.IndexedSeq)
     }
   }
 
@@ -433,7 +433,7 @@ object ClusterEvent {
       val oldUnreachableDcs = otherDcs.filterNot(isReachable(oldState, Set()))
       val currentUnreachableDcs = otherDcs.filterNot(isReachable(newState, Set()))
 
-      (oldUnreachableDcs diff currentUnreachableDcs).iterator.map(ReachableDataCenter).to(scala.collection.immutable.IndexedSeq)
+      (oldUnreachableDcs diff currentUnreachableDcs).iterator.map(ReachableDataCenter).to(immutable.IndexedSeq)
     }
   }
 

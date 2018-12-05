@@ -7,6 +7,7 @@ package akka.cluster.ddata.protobuf
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
 import scala.collection.JavaConverters._
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import akka.actor.ExtendedActorSystem
 import akka.cluster.Member
@@ -491,7 +492,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
           } else
             PruningState.PruningInitialized(
               uniqueAddressFromProto(pruningEntry.getOwnerAddress),
-              pruningEntry.getSeenList.asScala.iterator.map(addressFromProto).to(scala.collection.immutable.Set))
+              pruningEntry.getSeenList.asScala.iterator.map(addressFromProto).to(immutable.Set))
         val removed = uniqueAddressFromProto(pruningEntry.getRemovedAddress)
         removed → state
       }.toMap

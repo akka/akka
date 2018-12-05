@@ -195,7 +195,7 @@ object ActorSelection {
         if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
         else if (x == "..") SelectParent
         else SelectChildName(x)
-    }).to(scala.collection.immutable.IndexedSeq)
+    }).to(immutable.IndexedSeq)
     new ActorSelection with ScalaActorSelection {
       override val anchor = anchorRef
       override val path = compiled

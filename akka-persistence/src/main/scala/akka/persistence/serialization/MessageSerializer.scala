@@ -11,6 +11,7 @@ import akka.persistence.fsm.PersistentFSM.{ PersistentFSMSnapshot, StateChangeEv
 import akka.persistence.serialization.{ MessageFormats ⇒ mf }
 import akka.serialization._
 import akka.protobuf._
+import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration
 import akka.actor.Actor
@@ -195,7 +196,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
 
   private def atomicWrite(atomicWrite: mf.AtomicWrite): AtomicWrite = {
     import scala.collection.JavaConverters._
-    AtomicWrite(atomicWrite.getPayloadList.asScala.iterator.map(persistent).to(scala.collection.immutable.IndexedSeq))
+    AtomicWrite(atomicWrite.getPayloadList.asScala.iterator.map(persistent).to(immutable.IndexedSeq))
   }
 
   private def payload(persistentPayload: mf.PersistentPayload): Any = {

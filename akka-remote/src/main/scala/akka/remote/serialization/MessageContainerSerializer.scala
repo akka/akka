@@ -75,7 +75,7 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
         case PARENT        ⇒ SelectParent
       }
 
-    }.to(scala.collection.immutable.IndexedSeq)
+    }.to(immutable.IndexedSeq)
     val wildcardFanOut = if (selectionEnvelope.hasWildcardFanOut) selectionEnvelope.getWildcardFanOut else false
     ActorSelectionMessage(msg, elements, wildcardFanOut)
   }

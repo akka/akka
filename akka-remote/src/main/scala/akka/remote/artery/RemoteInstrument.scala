@@ -10,6 +10,7 @@ import akka.util.OptionVal
 import akka.util.ccompat._
 import java.nio.ByteBuffer
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.util.control.NonFatal
 
 /**
@@ -297,6 +298,6 @@ private[remote] object RemoteInstruments {
         .dynamicAccess.createInstanceFor[RemoteInstrument](fqcn, Nil)
         .orElse(system.dynamicAccess.createInstanceFor[RemoteInstrument](fqcn, List(classOf[ExtendedActorSystem] → system)))
         .get
-    }.to(scala.collection.immutable.Vector)
+    }.to(immutable.Vector)
   }
 }

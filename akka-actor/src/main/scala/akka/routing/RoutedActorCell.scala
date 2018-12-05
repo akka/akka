@@ -110,7 +110,7 @@ private[akka] class RoutedActorCell(
       case group: Group ⇒
         val paths = group.paths(system)
         if (paths.nonEmpty)
-          addRoutees(paths.iterator.map(p ⇒ group.routeeFor(p, this)).to(scala.collection.immutable.IndexedSeq))
+          addRoutees(paths.iterator.map(p ⇒ group.routeeFor(p, this)).to(immutable.IndexedSeq))
       case _ ⇒
     }
     preSuperStart()

@@ -264,14 +264,14 @@ private[cluster] class Reachability private (
       case Some(observerRows) ⇒
         observerRows.iterator.collect {
           case (subject, record) if record.status == Unreachable ⇒ subject
-        }.to(scala.collection.immutable.Set)
+        }.to(immutable.Set)
     }
 
   def observersGroupedByUnreachable: Map[UniqueAddress, Set[UniqueAddress]] = {
     records.groupBy(_.subject).collect {
       case (subject, records) if records.exists(_.status == Unreachable) ⇒
         val observers: Set[UniqueAddress] =
-          records.iterator.collect { case r if r.status == Unreachable ⇒ r.observer }.to(scala.collection.immutable.Set)
+          records.iterator.collect { case r if r.status == Unreachable ⇒ r.observer }.to(immutable.Set)
         (subject → observers)
     }
   }

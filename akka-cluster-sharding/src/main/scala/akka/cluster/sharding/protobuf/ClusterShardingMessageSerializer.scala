@@ -10,6 +10,7 @@ import java.util.zip.GZIPOutputStream
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
+import scala.collection.immutable
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.cluster.sharding.Shard
@@ -223,7 +224,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     val regions: Map[ActorRef, Vector[String]] =
       shards.foldLeft(regionsZero) { case (acc, (shardId, regionRef)) ⇒ acc.updated(regionRef, acc(regionRef) :+ shardId) }
 
-    val proxies: Set[ActorRef] = state.getRegionProxiesList.asScala.iterator.map { resolveActorRef }.to(scala.collection.immutable.Set)
+    val proxies: Set[ActorRef] = state.getRegionProxiesList.asScala.iterator.map { resolveActorRef }.to(immutable.Set)
     val unallocatedShards: Set[String] = state.getUnallocatedShardsList.asScala.toSet
 
     State(shards, regions, proxies, unallocatedShards)

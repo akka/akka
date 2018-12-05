@@ -4,6 +4,8 @@
 
 package akka.remote.serialization
 
+import scala.collection.immutable
+
 import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.protobuf.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -166,7 +168,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
           // message from an older node, which only provides data and class name
           // and never any serializer ids
           (proto.getProps.getArgsList.asScala zip proto.getProps.getManifestsList.asScala).iterator
-            .map(oldDeserialize).to(scala.collection.immutable.Vector)
+            .map(oldDeserialize).to(immutable.Vector)
         }
       Props(deploy(proto.getProps.getDeploy), actorClass, args)
     }

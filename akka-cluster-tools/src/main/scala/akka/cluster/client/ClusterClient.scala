@@ -952,7 +952,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
       // is the same from all nodes (most of the time) and it also
       // load balances the client connections among the nodes in the cluster.
       if (numberOfContacts >= nodes.size) {
-        val contacts = Contacts(nodes.iterator.map(a ⇒ self.path.toStringWithAddress(a)).to(scala.collection.immutable.IndexedSeq))
+        val contacts = Contacts(nodes.iterator.map(a ⇒ self.path.toStringWithAddress(a)).to(immutable.IndexedSeq))
         if (log.isDebugEnabled)
           log.debug("Client [{}] gets contactPoints [{}] (all nodes)", sender().path, contacts.contactPoints.mkString(","))
         sender() ! contacts
@@ -965,7 +965,7 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
           if (first.size == numberOfContacts) first
           else first union nodes.take(numberOfContacts - first.size)
         }
-        val contacts = Contacts(slice.iterator.map(a ⇒ self.path.toStringWithAddress(a)).to(scala.collection.immutable.IndexedSeq))
+        val contacts = Contacts(slice.iterator.map(a ⇒ self.path.toStringWithAddress(a)).to(immutable.IndexedSeq))
         if (log.isDebugEnabled)
           log.debug("Client [{}] gets contactPoints [{}]", sender().path, contacts.contactPoints.mkString(","))
         sender() ! contacts
