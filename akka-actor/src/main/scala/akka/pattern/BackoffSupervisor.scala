@@ -430,15 +430,15 @@ private[akka] trait HandleBackoff { this: Actor ⇒
         }
       case None ⇒
         replyWhileStopped match {
-          case None ⇒ context.system.deadLetters.forward(msg)
-          case _    ⇒ replyWhileStopped.foreach(a ⇒ sender() ! a)
+          case None    ⇒ context.system.deadLetters.forward(msg)
+          case Some(r) ⇒ sender() ! r
         }
-        if (finalStopMessage.isDefined) {
-          if (finalStopMessage.get.apply(msg)) {
+        finalStopMessage match {
+          case None ⇒
+          case Some(fsm) ⇒
+            fsm(msg)
             context.stop(self)
-          }
         }
-
     }
   }
 }

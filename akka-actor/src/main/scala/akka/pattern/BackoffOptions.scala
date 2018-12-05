@@ -6,7 +6,7 @@ package akka.pattern
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.util.JavaDurationConverters._
-import akka.actor.{ ActorContext, ActorRef, OneForOneStrategy, Props, SupervisorStrategy }
+import akka.actor.{ OneForOneStrategy, Props, SupervisorStrategy }
 import akka.annotation.DoNotInherit
 
 /**
@@ -563,7 +563,7 @@ trait BackoffOptions {
    * the supervised actor is running then it will be forwarded to the supervised actor and
    * when the supervised actor stops its self the supervisor will stop its self.
    */
-  def withFinalStopMessage(action: Any ⇒ Boolean): BackoffOptions
+  def withFinalStopMessage(isFinalStopMessage: Any ⇒ Boolean): BackoffOptions
 
   /**
    * Returns a new BackoffOptions with a maximum number of retries to restart the child actor.
