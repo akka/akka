@@ -90,6 +90,11 @@ class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config)
   }
 
   "Dns discovery with the system resolver" must {
+    if (!dockerAvailable()) {
+      system.log.error("Test not run as docker is not available")
+      pending
+    }
+    
     "work with SRV records" in {
       val discovery = Discovery(systemWithAsyncDnsAsResolver).discovery
       val name = "_service._tcp.foo.test."
