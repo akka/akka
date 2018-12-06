@@ -440,7 +440,8 @@ Scala has proven the most viable way to do it, as long as you keep the following
    
 1. Traits that are part of the Java API should only be used to define pure interfaces, as soon as there are implementations of methods, prefer 
    `abstract class`.
-   
+      
+1. Any method definition in a class that will be part of the Java API should not use any default parameters, as they will show up ugly when using them from Java, use plain old method overloading instead.
    
 
 ### Overview of Scala types and their Java counterparts
