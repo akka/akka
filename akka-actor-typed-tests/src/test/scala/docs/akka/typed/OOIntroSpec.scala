@@ -11,8 +11,6 @@ import java.nio.charset.StandardCharsets
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, AbstractBehavior }
 
-import scala.concurrent.duration._
-import scala.concurrent.Await
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
 //#imports
@@ -44,17 +42,17 @@ object OOIntroSpec {
     //#chatroom-behavior
 
     def behavior(): Behavior[RoomCommand] =
-      Behaviors.setup[RoomCommand](ctx ⇒ new ChatRoomBehavior(ctx))
+      Behaviors.setup[RoomCommand](context ⇒ new ChatRoomBehavior(context))
 
-    class ChatRoomBehavior(ctx: ActorContext[RoomCommand]) extends AbstractBehavior[RoomCommand] {
+    class ChatRoomBehavior(context: ActorContext[RoomCommand]) extends AbstractBehavior[RoomCommand] {
       private var sessions: List[ActorRef[SessionCommand]] = List.empty
 
-      override def onMessage(msg: RoomCommand): Behavior[RoomCommand] = {
-        msg match {
+      override def onMessage(message: RoomCommand): Behavior[RoomCommand] = {
+        message match {
           case GetSession(screenName, client) ⇒
             // create a child actor for further interaction with the client
-            val ses = ctx.spawn(
-              session(ctx.self, screenName, client),
+            val ses = context.spawn(
+              session(context.self, screenName, client),
               name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
             client ! SessionGranted(ses)
             sessions = ses :: sessions
@@ -112,10 +110,10 @@ class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       //#chatroom-main
       val main: Behavior[String] =
-        Behaviors.setup { ctx ⇒
-          val chatRoom = ctx.spawn(ChatRoom.behavior(), "chatroom")
-          val gabblerRef = ctx.spawn(gabbler, "gabbler")
-          ctx.watch(gabblerRef)
+        Behaviors.setup { context ⇒
+          val chatRoom = context.spawn(ChatRoom.behavior(), "chatroom")
+          val gabblerRef = context.spawn(gabbler, "gabbler")
+          context.watch(gabblerRef)
 
           Behaviors.receiveMessagePartial[String] {
             case "go" ⇒

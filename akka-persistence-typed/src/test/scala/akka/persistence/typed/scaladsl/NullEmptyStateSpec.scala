@@ -25,12 +25,12 @@ class NullEmptyStateSpec extends ScalaTestWithActorTestKit(NullEmptyStateSpec.co
   implicit val testSettings = TestKitSettings(system)
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
-    PersistentBehavior[String, String, String](
+    EventSourcedBehavior[String, String, String](
       persistenceId,
       emptyState = null,
       commandHandler = (_, command) ⇒ {
         if (command == "stop")
-          Effect.stop
+          Effect.stop()
         else
           Effect.persist(command)
       },

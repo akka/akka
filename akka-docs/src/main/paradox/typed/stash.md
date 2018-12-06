@@ -53,6 +53,6 @@ stashed messages low. Actors that hog the message processing thread for too long
 of other actors.
 
 That can be mitigated by using the `StashBuffer.unstash` with `numberOfMessages` parameter and then send a
-message to @scala[`ctx.self`]@java[`ctx.getSelf`] before continuing unstashing more. That means that other
+message to @scala[`context.self`]@java[`context.getSelf`] before continuing unstashing more. That means that other
 new messages may arrive in-between and those must be stashed to keep the original order of messages. It
 becomes more complicated, so better keep the number of stashed messages low.

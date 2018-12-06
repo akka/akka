@@ -6,8 +6,8 @@ package akka.persistence.typed
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
-import akka.persistence.typed.scaladsl.PersistentBehavior.CommandHandler
-import akka.persistence.typed.scaladsl.{ Effect, PersistentBehavior }
+import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import akka.testkit.TestLatch
 import akka.actor.testkit.typed.scaladsl.TestProbe
 
@@ -25,8 +25,8 @@ object ManyRecoveriesSpec {
   def persistentBehavior(
     name:  String,
     probe: TestProbe[String],
-    latch: Option[TestLatch]): PersistentBehavior[Cmd, Evt, String] =
-    PersistentBehavior[Cmd, Evt, String](
+    latch: Option[TestLatch]): EventSourcedBehavior[Cmd, Evt, String] =
+    EventSourcedBehavior[Cmd, Evt, String](
       persistenceId = PersistenceId(name),
       emptyState = "",
       commandHandler = CommandHandler.command {

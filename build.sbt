@@ -1,7 +1,11 @@
-import akka.{ParadoxSupport, AutomaticModuleName}
+import akka.{AutomaticModuleName, ParadoxSupport, ScalafixIgnoreFilePlugin}
 
-enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr)
+enablePlugins(UnidocRoot, TimeStampede, UnidocWithPrValidation, NoPublish, CopyrightHeader, CopyrightHeaderInPr,
+  ScalafixIgnoreFilePlugin)
 disablePlugins(MimaPlugin)
+addCommandAlias(
+  name  ="fix",
+  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile")
 
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
@@ -41,7 +45,8 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   actorTyped, actorTypedTests, actorTestkitTyped,
   persistenceTyped,
   clusterTyped, clusterShardingTyped,
-  streamTyped
+  streamTyped,
+  discovery
 )
 
 lazy val root = Project(
@@ -242,6 +247,7 @@ lazy val docs = akkaModule("akka-docs")
     StreamOperatorsIndexGenerator)
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
+  .disablePlugins(ScalafixPlugin)
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
@@ -382,6 +388,7 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
   .dependsOn(actor)
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
+  .settings(OSGi.actorTyped)
   .settings(
     initialCommands := """
       import akka.actor.typed._
@@ -405,6 +412,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .settings(Dependencies.persistenceShared)
   .settings(AkkaBuild.mayChangeSettings)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
+  .settings(OSGi.persistenceTyped)
   .disablePlugins(MimaPlugin)
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
@@ -472,6 +480,16 @@ lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
 
+lazy val discovery = akkaModule("akka-discovery")
+  .dependsOn(
+    actor,
+    testkit % "test->test",
+    actorTests % "test->test"
+  )
+  .settings(Dependencies.discovery)
+  .settings(AkkaBuild.mayChangeSettings)
+  .settings(AutomaticModuleName.settings("akka.discovery"))
+  .settings(OSGi.discovery)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
@@ -479,4 +497,3 @@ def akkaModule(name: String): Project =
     .settings(akka.AkkaBuild.defaultSettings)
     .settings(akka.Formatting.formatSettings)
     .enablePlugins(BootstrapGenjavadoc)
-

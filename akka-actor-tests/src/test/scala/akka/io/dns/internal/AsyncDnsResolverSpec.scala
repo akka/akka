@@ -8,20 +8,24 @@ import java.net.{ Inet6Address, InetAddress }
 
 import akka.actor.Status.Failure
 import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
+import akka.io.dns.DnsProtocol._
+import akka.io.dns.internal.AsyncDnsResolver.ResolveFailedException
+import akka.io.dns.CachePolicy.Ttl
+import akka.io.dns.internal.DnsClient.{ Answer, Question4, Question6, SrvQuestion }
 import akka.io.dns.{ AAAARecord, ARecord, DnsSettings, SRVRecord }
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import com.typesafe.config.ConfigFactory
-import akka.io.dns.DnsProtocol._
-import akka.io.dns.internal.AsyncDnsResolver.ResolveFailedException
-import akka.io.dns.internal.DnsClient.{ Answer, Question4, Question6, SrvQuestion }
-import scala.concurrent.duration._
+import akka.testkit.WithLogCapturing
 
+import scala.concurrent.duration._
 import scala.collection.{ immutable ⇒ im }
+import scala.concurrent.duration._
 
 class AsyncDnsResolverSpec extends AkkaSpec(
   """
-    akka.loglevel = INFO
-  """) with ImplicitSender {
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+  """) with ImplicitSender with WithLogCapturing {
 
   "Async DNS Resolver" must {
 
@@ -66,10 +70,11 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       val r = resolver(List(dnsClient1.ref))
       r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = true))
       dnsClient1.expectMsg(Question4(1, "cats.com"))
-      val ipv4Record = ARecord("cats.com", 100, InetAddress.getByName("127.0.0.1"))
+      val ttl = Ttl.fromPositive(100.seconds)
+      val ipv4Record = ARecord("cats.com", ttl, InetAddress.getByName("127.0.0.1"))
       dnsClient1.reply(Answer(1, im.Seq(ipv4Record)))
       dnsClient1.expectMsg(Question6(2, "cats.com"))
-      val ipv6Record = AAAARecord("cats.com", 100, InetAddress.getByName("::1").asInstanceOf[Inet6Address])
+      val ipv6Record = AAAARecord("cats.com", ttl, InetAddress.getByName("::1").asInstanceOf[Inet6Address])
       dnsClient1.reply(Answer(2, im.Seq(ipv6Record)))
       expectMsg(Resolved("cats.com", im.Seq(ipv4Record, ipv6Record)))
     }
@@ -103,7 +108,7 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       dnsClient1.expectNoMessage(50.millis)
       val answer = expectMsgType[Resolved]
       answer.records.collect { case r: ARecord ⇒ r }.toSet shouldEqual Set(
-        ARecord("127.0.0.1", Int.MaxValue, InetAddress.getByName("127.0.0.1"))
+        ARecord("127.0.0.1", Ttl.effectivelyForever, InetAddress.getByName("127.0.0.1"))
       )
     }
 
@@ -114,7 +119,7 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       r ! Resolve(name)
       dnsClient1.expectNoMessage(50.millis)
       val answer = expectMsgType[Resolved]
-      val Seq(AAAARecord("1:2:3:0:0:0:0:0", Int.MaxValue, _)) = answer.records.collect { case r: AAAARecord ⇒ r }
+      val Seq(AAAARecord("1:2:3:0:0:0:0:0", Ttl.effectivelyForever, _)) = answer.records.collect { case r: AAAARecord ⇒ r }
     }
 
     "return additional records for SRV requests" in {
@@ -123,8 +128,8 @@ class AsyncDnsResolverSpec extends AkkaSpec(
       val r = resolver(List(dnsClient1.ref, dnsClient2.ref))
       r ! Resolve("cats.com", Srv)
       dnsClient1.expectMsg(SrvQuestion(1, "cats.com"))
-      val srvRecs = im.Seq(SRVRecord("cats.com", 5000, 1, 1, 1, "a.cats.com"))
-      val aRecs = im.Seq(ARecord("a.cats.com", 1, InetAddress.getByName("127.0.0.1")))
+      val srvRecs = im.Seq(SRVRecord("cats.com", Ttl.fromPositive(5000.seconds), 1, 1, 1, "a.cats.com"))
+      val aRecs = im.Seq(ARecord("a.cats.com", Ttl.fromPositive(1.seconds), InetAddress.getByName("127.0.0.1")))
       dnsClient1.reply(Answer(1, srvRecs, aRecs))
       dnsClient2.expectNoMessage(50.millis)
       expectMsg(Resolved("cats.com", srvRecs, aRecs))

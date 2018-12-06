@@ -9,7 +9,6 @@ import akka.actor.Status
 import akka.pattern.pipe
 import akka.stream._
 import akka.stream.impl.QueueSource
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ GraphStageMessages, StreamSpec, TestSourceStage, TestSubscriber }

@@ -11,14 +11,14 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-import akka.{ actor ⇒ a }
+import akka.{ actor ⇒ untyped }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends a.Actor with a.ActorLogging {
+@InternalApi private[typed] class ActorAdapter[T](_initialBehavior: Behavior[T]) extends untyped.Actor with untyped.ActorLogging {
   import Behavior._
 
   protected var behavior: Behavior[T] = _initialBehavior
@@ -32,12 +32,12 @@ import akka.util.OptionVal
    * Failures from failed children, that were stopped through untyped supervision, this is what allows us to pass
    * child exception in Terminated for direct children.
    */
-  private var failures: Map[a.ActorRef, Throwable] = Map.empty
+  private var failures: Map[untyped.ActorRef, Throwable] = Map.empty
 
-  def receive = running
+  def receive: Receive = running
 
   def running: Receive = {
-    case a.Terminated(ref) ⇒
+    case untyped.Terminated(ref) ⇒
       val msg =
         if (failures contains ref) {
           val ex = failures(ref)
@@ -45,10 +45,8 @@ import akka.util.OptionVal
           Terminated(ActorRefAdapter(ref))(ex)
         } else Terminated(ActorRefAdapter(ref))(null)
       next(Behavior.interpretSignal(behavior, ctx, msg), msg)
-    case a.ReceiveTimeout ⇒
+    case untyped.ReceiveTimeout ⇒
       next(Behavior.interpretMessage(behavior, ctx, ctx.receiveTimeoutMsg), ctx.receiveTimeoutMsg)
-    case wrapped: AskResponse[Any, T] @unchecked ⇒
-      withSafelyAdapted(() ⇒ wrapped.adapt())(handleMessage)
     case wrapped: AdaptMessage[Any, T] @unchecked ⇒
       withSafelyAdapted(() ⇒ wrapped.adapt()) {
         case AdaptWithRegisteredMessageAdapter(msg) ⇒
@@ -121,11 +119,11 @@ import akka.util.OptionVal
     case other               ⇒ super.unhandled(other)
   }
 
-  override val supervisorStrategy = a.OneForOneStrategy() {
+  override val supervisorStrategy = untyped.OneForOneStrategy() {
     case ex ⇒
       val ref = sender()
-      if (context.asInstanceOf[a.ActorCell].isWatching(ref)) failures = failures.updated(ref, ex)
-      a.SupervisorStrategy.Stop
+      if (context.asInstanceOf[untyped.ActorCell].isWatching(ref)) failures = failures.updated(ref, ex)
+      untyped.SupervisorStrategy.Stop
   }
 
   override def preStart(): Unit =

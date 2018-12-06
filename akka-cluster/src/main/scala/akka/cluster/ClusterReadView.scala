@@ -21,6 +21,7 @@ import akka.util.OptionVal
  * cluster events published on the event bus.
  */
 private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
+  import cluster.InfoLogger._
 
   /**
    * Current state
@@ -98,6 +99,15 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
               }
             case _ ⇒
           }
+
+          // once captured, optional verbose logging of event
+          e match {
+            case _: SeenChanged ⇒ // ignore
+            case event ⇒
+              if (cluster.settings.LogInfoVerbose)
+                logInfo(" - event {}", event)
+          }
+
         case s: CurrentClusterState ⇒ _state = s
       }
     }).withDispatcher(cluster.settings.UseDispatcher).withDeploy(Deploy.local), name = "clusterEventBusListener")

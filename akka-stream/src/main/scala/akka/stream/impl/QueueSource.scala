@@ -40,7 +40,9 @@ import scala.util.control.NonFatal
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val completion = Promise[Done]
 
-    val stageLogic = new GraphStageLogic(shape) with OutHandler with SourceQueueWithComplete[T] {
+    val stageLogic = new GraphStageLogic(shape) with OutHandler with SourceQueueWithComplete[T] with StageLogging {
+      override protected def logSource: Class[_] = classOf[QueueSource[_]]
+
       var buffer: Buffer[T] = _
       var pendingOffer: Option[Offer[T]] = None
       var terminating = false
@@ -62,23 +64,29 @@ import scala.util.control.NonFatal
         if (!buffer.isFull) {
           enqueueAndSuccess(offer)
         } else overflowStrategy match {
-          case DropHead ⇒
+          case s: DropHead ⇒
+            log.log(s.logLevel, "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
             buffer.dropHead()
             enqueueAndSuccess(offer)
-          case DropTail ⇒
+          case s: DropTail ⇒
+            log.log(s.logLevel, "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
             buffer.dropTail()
             enqueueAndSuccess(offer)
-          case DropBuffer ⇒
+          case s: DropBuffer ⇒
+            log.log(s.logLevel, "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
             buffer.clear()
             enqueueAndSuccess(offer)
-          case DropNew ⇒
+          case s: DropNew ⇒
+            log.log(s.logLevel, "Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
             offer.promise.success(QueueOfferResult.Dropped)
-          case Fail ⇒
+          case s: Fail ⇒
+            log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Fail]")
             val bufferOverflowException = BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
             offer.promise.success(QueueOfferResult.Failure(bufferOverflowException))
             completion.failure(bufferOverflowException)
             failStage(bufferOverflowException)
-          case Backpressure ⇒
+          case s: Backpressure ⇒
+            log.log(s.logLevel, "Backpressuring because buffer is full and overflowStrategy is: [Backpressure]")
             pendingOffer match {
               case Some(_) ⇒
                 offer.promise.failure(new IllegalStateException("You have to wait for previous offer to be resolved to send another request"))
@@ -102,17 +110,21 @@ import scala.util.control.NonFatal
           } else if (pendingOffer.isEmpty)
             pendingOffer = Some(offer)
           else overflowStrategy match {
-            case DropHead | DropBuffer ⇒
+            case s @ (_: DropHead | _: DropBuffer) ⇒
+              log.log(s.logLevel, "Dropping element because buffer is full and overflowStrategy is: [{}]", s)
               pendingOffer.get.promise.success(QueueOfferResult.Dropped)
               pendingOffer = Some(offer)
-            case DropTail | DropNew ⇒
+            case s @ (_: DropTail | _: DropNew) ⇒
+              log.log(s.logLevel, "Dropping element because buffer is full and overflowStrategy is: [{}]", s)
               promise.success(QueueOfferResult.Dropped)
-            case Fail ⇒
+            case s: Fail ⇒
+              log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Fail]")
               val bufferOverflowException = BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
               promise.success(QueueOfferResult.Failure(bufferOverflowException))
               completion.failure(bufferOverflowException)
               failStage(bufferOverflowException)
-            case Backpressure ⇒
+            case s: Backpressure ⇒
+              log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Backpressure]")
               promise.failure(new IllegalStateException("You have to wait for previous offer to be resolved to send another request"))
           }
 

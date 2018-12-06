@@ -11,8 +11,8 @@ import org.scalatest.{ Matchers, WordSpec }
 
 class ORMultiMapSpec extends WordSpec with Matchers {
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
-  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
+  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
 
   "A ORMultiMap" must {
 
@@ -32,6 +32,26 @@ class ORMultiMapSpec extends WordSpec with Matchers {
     "be able to replace an entry" in {
       val m = ORMultiMap().addBinding(node1, "a", "A").replaceBinding(node1, "a", "A", "B")
       m.entries should be(Map("a" → Set("B")))
+    }
+
+    "not handle concurrent updates to the same set" in {
+      val m = ORMultiMap().addBinding(node1, "a", "A")
+
+      val m1 = m.removeBinding(node1, "a", "A")
+
+      val m2 = m.addBinding(node2, "a", "B")
+
+      val merged1 = m1.merge(m2)
+      val merged2 = m2.merge(m1)
+
+      // more to document that the concurrent removal from the set may be lost
+      // than asserting anything
+      merged1.entries should be(Map(
+        "a" -> Set("A", "B")
+      ))
+      merged2.entries should be(Map(
+        "a" -> Set("A", "B")
+      ))
     }
 
     "be able to have its entries correctly merged with another ORMultiMap with other entries" in {

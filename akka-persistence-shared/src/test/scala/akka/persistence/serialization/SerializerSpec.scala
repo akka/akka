@@ -258,7 +258,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
         val expected = PersistentRepr(MyPayload(".a."), 13, "p1", "", true, Actor.noSender)
         val serializer = serialization.findSerializerFor(expected)
         val deserialized = serializer.fromBinary(bytes, None).asInstanceOf[PersistentRepr]
-        deserialized.sender should not be (null)
+        deserialized.sender should not be null
         val deserializedWithoutSender = deserialized.update(sender = Actor.noSender)
         deserializedWithoutSender should be(expected)
       }

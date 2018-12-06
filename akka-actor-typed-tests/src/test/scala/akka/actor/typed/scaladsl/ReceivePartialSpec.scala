@@ -9,8 +9,6 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import org.scalatest.WordSpecLike
 
-import scala.concurrent.duration._
-
 class ReceivePartialSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   implicit val ec = system.executionContext

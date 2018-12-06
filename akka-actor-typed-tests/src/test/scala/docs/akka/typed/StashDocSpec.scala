@@ -33,16 +33,16 @@ object StashDocSpec {
     private final case class DBError(cause: Throwable) extends Command
 
     def behavior(id: String, db: DB): Behavior[Command] =
-      Behaviors.setup[Command] { ctx ⇒
+      Behaviors.setup[Command] { context ⇒
 
         val buffer = StashBuffer[Command](capacity = 100)
 
         def init(): Behavior[Command] =
-          Behaviors.receive[Command] { (ctx, msg) ⇒
-            msg match {
+          Behaviors.receive[Command] { (context, message) ⇒
+            message match {
               case InitialState(value) ⇒
                 // now we are ready to handle stashed messages if any
-                buffer.unstashAll(ctx, active(value))
+                buffer.unstashAll(context, active(value))
               case DBError(cause) ⇒
                 throw cause
               case other ⇒
@@ -53,27 +53,27 @@ object StashDocSpec {
           }
 
         def active(state: String): Behavior[Command] =
-          Behaviors.receive { (ctx, msg) ⇒
-            msg match {
+          Behaviors.receive { (context, message) ⇒
+            message match {
               case Get(replyTo) ⇒
                 replyTo ! state
                 Behaviors.same
               case Save(value, replyTo) ⇒
-                import ctx.executionContext
+                import context.executionContext
                 db.save(id, value).onComplete {
-                  case Success(_)     ⇒ ctx.self ! SaveSuccess
-                  case Failure(cause) ⇒ ctx.self ! DBError(cause)
+                  case Success(_)     ⇒ context.self ! SaveSuccess
+                  case Failure(cause) ⇒ context.self ! DBError(cause)
                 }
                 saving(value, replyTo)
             }
           }
 
         def saving(state: String, replyTo: ActorRef[Done]): Behavior[Command] =
-          Behaviors.receive[Command] { (ctx, msg) ⇒
-            msg match {
+          Behaviors.receive[Command] { (context, message) ⇒
+            message match {
               case SaveSuccess ⇒
                 replyTo ! Done
-                buffer.unstashAll(ctx, active(state))
+                buffer.unstashAll(context, active(state))
               case DBError(cause) ⇒
                 throw cause
               case other ⇒
@@ -82,12 +82,12 @@ object StashDocSpec {
             }
           }
 
-        import ctx.executionContext
+        import context.executionContext
         db.load(id).onComplete {
           case Success(value) ⇒
-            ctx.self ! InitialState(value)
+            context.self ! InitialState(value)
           case Failure(cause) ⇒
-            ctx.self ! DBError(cause)
+            context.self ! DBError(cause)
         }
 
         init()

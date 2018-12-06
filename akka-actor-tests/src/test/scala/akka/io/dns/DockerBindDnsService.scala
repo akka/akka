@@ -11,6 +11,7 @@ import com.spotify.docker.client.DockerClient.LogsParam
 import com.spotify.docker.client.messages.{ ContainerConfig, HostConfig, PortBinding }
 import org.scalatest.concurrent.Eventually
 
+import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NonFatal
 
@@ -24,6 +25,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
   def dockerAvailable() = Try(client.ping()).isSuccess
 
   override def atStartup(): Unit = {
+    log.info("Running on port port {}", hostPort)
     self.atStartup()
 
     // https://github.com/sameersbn/docker-bind/pull/61
@@ -39,6 +41,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
     val containerConfig = ContainerConfig.builder()
       .image(image)
       .env("NO_CHOWN=true")
+      .cmd("-4") // only listen on ipv4
       .hostConfig(
         HostConfig.builder()
           .portBindings(Map(
@@ -56,7 +59,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec ⇒
 
     client.startContainer(creation.id())
 
-    eventually {
+    eventually(timeout(25.seconds)) {
       client.logs(creation.id(), LogsParam.stderr()).readFully() should include("all zones loaded")
     }
   }

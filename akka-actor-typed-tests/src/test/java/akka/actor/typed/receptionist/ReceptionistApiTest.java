@@ -8,17 +8,16 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.javadsl.AskPattern;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.util.Timeout;
 
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 public class ReceptionistApiTest {
 
   public void compileOnlyApiTest() {
     // some dummy prerequisites
-    final Timeout timeout = Timeout.apply(3, TimeUnit.SECONDS);
+    final Duration timeout = Duration.ofSeconds(3);
     final ActorRef<String> service = null;
     final ServiceKey<String> key = ServiceKey.create(String.class, "id");
     final ActorSystem<Void> system = null;
@@ -56,12 +55,12 @@ public class ReceptionistApiTest {
       }
     });
 
-    Behaviors.setup(ctx -> {
+    Behaviors.setup(context -> {
       // oneoff ask inside of actor
       // this is somewhat verbose, however this should be a rare use case
-      ctx.ask(
+      context.ask(
         Receptionist.Listing.class,
-        ctx.getSystem().receptionist(),
+        context.getSystem().receptionist(),
         timeout,
         resRef -> Receptionist.find(key, resRef),
         (listing, throwable) -> {
@@ -71,18 +70,18 @@ public class ReceptionistApiTest {
       );
 
       // this is a more "normal" use case which is clean
-      ctx.getSystem().receptionist().tell(Receptionist.subscribe(key, ctx.getSelf().narrow()));
+      context.getSystem().receptionist().tell(Receptionist.subscribe(key, context.getSelf().narrow()));
 
       // another more "normal" is subscribe using an adapter
-      ActorRef<Receptionist.Listing> listingAdapter = ctx.messageAdapter(
+      ActorRef<Receptionist.Listing> listingAdapter = context.messageAdapter(
         Receptionist.Listing.class,
         (listing) -> listing.serviceInstances(key)
       );
-      ctx.getSystem().receptionist().tell(Receptionist.subscribe(key, listingAdapter));
+      context.getSystem().receptionist().tell(Receptionist.subscribe(key, listingAdapter));
 
       // ofc this doesn't make sense to do in the same actor, this is just
       // to cover as much of the API as possible
-      ctx.getSystem().receptionist().tell(Receptionist.register(key, ctx.getSelf().narrow(), ctx.getSelf().narrow()));
+      context.getSystem().receptionist().tell(Receptionist.register(key, context.getSelf().narrow(), context.getSelf().narrow()));
 
       return Behaviors.receive(Object.class)
         // matching is done best using the predicate version

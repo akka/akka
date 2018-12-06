@@ -14,11 +14,11 @@ import akka.io.Tcp._
 import akka.stream._
 import akka.stream.scaladsl.Tcp.{ IncomingConnection, ServerBinding }
 import akka.stream.scaladsl.{ Flow, _ }
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.testkit.{ EventFilter, TestKit, TestLatch, TestProbe }
 import akka.testkit.SocketUtil.temporaryServerAddress
+import akka.testkit.WithLogCapturing
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.typesafe.config.ConfigFactory
@@ -28,12 +28,13 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
-import scala.util.control.NonFatal
 
 class TcpSpec extends StreamSpec("""
-    akka.loglevel = info
+    akka.loglevel = debug
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    akka.io.tcp.trace-logging = true
     akka.stream.materializer.subscription-timeout.timeout = 2s
-  """) with TcpHelper {
+  """) with TcpHelper with WithLogCapturing {
 
   "Outgoing TCP stream" must {
 
@@ -95,9 +96,7 @@ class TcpSpec extends StreamSpec("""
         .toMat(Sink.ignore)(Keep.left)
         .run()
 
-      whenReady(future.failed) { ex ⇒
-        ex.getMessage should ===("Connection failed.")
-      }
+      future.failed.futureValue shouldBe a[StreamTcpException]
     }
 
     "work when client closes write, then remote closes write" in assertAllStagesStopped {
@@ -453,6 +452,19 @@ class TcpSpec extends StreamSpec("""
       }
     }
 
+    "provide full exceptions when connection attempt fails because name cannot be resolved" in {
+      val unknownHostName = "abcdefghijklmnopkuh"
+
+      val test =
+        Source.maybe
+          .viaMat(Tcp().outgoingConnection(unknownHostName, 12345))(Keep.right)
+          .to(Sink.ignore)
+          .run()
+          .failed
+          .futureValue
+
+      test.getCause shouldBe a[UnknownHostException]
+    }
   }
 
   "TCP listen stream" must {

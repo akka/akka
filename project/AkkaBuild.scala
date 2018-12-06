@@ -4,12 +4,12 @@
 
 package akka
 
-import java.io.{ FileInputStream, InputStreamReader }
+import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
 
-import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 import sbt.Keys._
 import sbt._
+
 import scala.collection.breakOut
 
 object AkkaBuild {
@@ -83,7 +83,7 @@ object AkkaBuild {
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint")
+  final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint", "-Ywarn-unused")
 
   // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
@@ -98,16 +98,30 @@ object AkkaBuild {
       // invocation of 'ByteBuffer.clear()' in EnvelopeBuffer.class with 'javap -c': it should refer to
       // "java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer":
       scalacOptions in Compile ++= (
-        if (scalaBinaryVersion.value == "2.11" || System.getProperty("java.version").startsWith("1."))
-          Seq("-target:jvm-1.8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
+        if (System.getProperty("java.version").startsWith("1."))
+          Seq("-target:jvm-1.8")
         else
-          // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
-          Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
+          if (scalaBinaryVersion.value == "2.11")
+            Seq("-target:jvm-1.8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
+          else
+            // -release 8 is not enough, for some reason we need the 8 rt.jar explicitly #25330
+            Seq("-release", "8", "-javabootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")),
       scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
       scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt ⇒
-        opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-      javacOptions in compile ++= DefaultJavacOptions ++ Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar"),
-      javacOptions in test ++= DefaultJavacOptions ++ Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar"),
+        opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")) ++ Seq(
+        "-Ywarn-unused"),
+      javacOptions in compile ++= DefaultJavacOptions ++ (
+        if (System.getProperty("java.version").startsWith("1."))
+          Seq()
+        else
+          Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
+      ),
+      javacOptions in test ++= DefaultJavacOptions ++ (
+        if (System.getProperty("java.version").startsWith("1."))
+          Seq()
+        else
+          Seq("-source", "8", "-target", "8", "-bootclasspath", CrossJava.Keys.fullJavaHomes.value("8") + "/jre/lib/rt.jar")
+      ),
       javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
       javacOptions in doc ++= Seq(),
 

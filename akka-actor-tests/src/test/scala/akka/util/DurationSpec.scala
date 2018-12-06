@@ -23,7 +23,7 @@ class DurationSpec extends AkkaSpec {
       (2 * one) should ===(two)
       (three - two) should ===(one)
       (three / 3) should ===(one)
-      (two / one) should ===(2)
+      (two / one) should ===(2D)
       (one + zero) should ===(one)
       (one / 1000000) should ===(1.micro)
     }

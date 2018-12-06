@@ -10,7 +10,7 @@ import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.CommandHandlerBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
-import akka.persistence.typed.javadsl.PersistentBehavior;
+import akka.persistence.typed.javadsl.EventSourcedBehavior;
 
 import java.util.Objects;
 
@@ -105,9 +105,6 @@ public class NullBlogState {
       this.replyTo = replyTo;
     }
   }
-  public static class PassivatePost implements BlogCommand {
-
-  }
   public static class PostContent implements BlogCommand {
     final String postId;
     final String title;
@@ -120,26 +117,25 @@ public class NullBlogState {
     }
   }
 
-  public static class BlogBehavior extends PersistentBehavior<BlogCommand, BlogEvent, BlogState> {
+  public static class BlogBehavior extends EventSourcedBehavior<BlogCommand, BlogEvent, BlogState> {
 
     private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState> initialCommandHandler() {
       return commandHandlerBuilder(Objects::isNull)
           .matchCommand(AddPost.class, cmd -> {
             PostAdded event = new PostAdded(cmd.content.postId, cmd.content);
             return Effect().persist(event)
-                .andThen(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
-          })
-          .matchCommand(PassivatePost.class, cmd -> Effect().stop());
+                .thenRun(() -> cmd.replyTo.tell(new AddPostDone(cmd.content.postId)));
+          });
     }
 
     private CommandHandlerBuilder<BlogCommand, BlogEvent, BlogState, BlogState> postCommandHandler() {
       return commandHandlerBuilder(Objects::nonNull)
           .matchCommand(ChangeBody.class, (state, cmd) -> {
             BodyChanged event = new BodyChanged(state.postId(), cmd.newBody);
-            return Effect().persist(event).andThen(() -> cmd.replyTo.tell(Done.getInstance()));
+            return Effect().persist(event).thenRun(() -> cmd.replyTo.tell(Done.getInstance()));
           })
           .matchCommand(Publish.class, (state, cmd) -> Effect()
-              .persist(new Published(state.postId())).andThen(() -> {
+              .persist(new Published(state.postId())).thenRun(() -> {
                 System.out.println("Blog post published: " + state.postId());
                 cmd.replyTo.tell(Done.getInstance());
               }))
@@ -147,8 +143,7 @@ public class NullBlogState {
             cmd.replyTo.tell(state.postContent);
             return Effect().none();
           })
-          .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled())
-          .matchCommand(PassivatePost.class, cmd -> Effect().stop());
+          .matchCommand(AddPost.class, (state, cmd) -> Effect().unhandled());
     }
 
     public BlogBehavior(PersistenceId persistenceId) {

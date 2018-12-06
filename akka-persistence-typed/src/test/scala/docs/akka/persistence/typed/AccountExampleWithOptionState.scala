@@ -9,7 +9,7 @@ import akka.actor.typed.Behavior
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
-import akka.persistence.typed.scaladsl.PersistentBehavior
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 
 /**
  * Bank account example illustrating:
@@ -97,7 +97,7 @@ object AccountExampleWithOptionState {
           case Deposited(amount) ⇒ copy(balance = balance + amount)
           case Withdrawn(amount) ⇒ copy(balance = balance - amount)
           case AccountClosed     ⇒ ClosedAccount
-          case _                 ⇒ throw new IllegalStateException(s"unexpected event [$event] in state [OpenedAccount]")
+          case AccountCreated    ⇒ throw new IllegalStateException(s"unexpected event [$event] in state [OpenedAccount]")
         }
 
       def canWithdraw(amount: BigDecimal): Boolean = {
@@ -123,7 +123,7 @@ object AccountExampleWithOptionState {
     }
 
     def behavior(accountNumber: String): Behavior[AccountCommand[AccountCommandReply]] = {
-      PersistentBehavior.withEnforcedReplies[AccountCommand[AccountCommandReply], AccountEvent, Option[Account]](
+      EventSourcedBehavior.withEnforcedReplies[AccountCommand[AccountCommandReply], AccountEvent, Option[Account]](
         PersistenceId(s"Account|$accountNumber"),
         None,
         (state, cmd) ⇒ state match {

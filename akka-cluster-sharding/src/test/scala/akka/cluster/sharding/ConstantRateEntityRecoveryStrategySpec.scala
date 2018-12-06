@@ -4,14 +4,18 @@
 
 package akka.cluster.sharding
 
-import akka.testkit.AkkaSpec
+import akka.cluster.sharding.ShardRegion.EntityId
+import akka.testkit.{ AkkaSpec, TimingTest }
+
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
 
 class ConstantRateEntityRecoveryStrategySpec extends AkkaSpec {
 
-  /*
   val strategy = EntityRecoveryStrategy.constantStrategy(system, 1.second, 2)
   "ConstantRateEntityRecoveryStrategy" must {
     "recover entities" taggedAs TimingTest in {
+      import system.dispatcher
       val entities = Set[EntityId]("1", "2", "3", "4", "5")
       val startTime = System.nanoTime()
       val resultWithTimes = strategy.recoverEntities(entities).map(
@@ -40,5 +44,4 @@ class ConstantRateEntityRecoveryStrategySpec extends AkkaSpec {
       result.size should ===(0)
     }
   }
-  */
 }

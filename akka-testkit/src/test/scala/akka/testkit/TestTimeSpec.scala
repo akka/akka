@@ -12,7 +12,7 @@ class TestTimeSpec extends AkkaSpec(Map("akka.test.timefactor" → 2.0)) {
   "A TestKit" must {
 
     "correctly dilate times" taggedAs TimingTest in {
-      1.second.dilated.toNanos should ===(1000000000L * testKitSettings.TestTimeFactor)
+      1.second.dilated.toNanos should ===(1000000000L * testKitSettings.TestTimeFactor.toLong)
 
       val probe = TestProbe()
       val now = System.nanoTime

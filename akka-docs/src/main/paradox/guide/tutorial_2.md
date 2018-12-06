@@ -20,7 +20,7 @@ represent devices and dashboards at the top level. Instead, we recommend creatin
 
 We can define the first actor, the IotSupervisor, with a few simple lines of code. To start your tutorial application:
 
-1. Create a new `IotSupervisor` source file in the `com.lightbend.akka.sample` package.
+1. Create a new `IotSupervisor` source file in your appropriate package, e.g. in the `com.example` package
 1. Paste the following code into the new file to define the IotSupervisor.
 
 Scala

@@ -15,7 +15,7 @@ import java.util.concurrent.CompletionStage;
 
 //#persistent-entity-import
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
-import akka.cluster.sharding.typed.javadsl.PersistentEntity;
+import akka.cluster.sharding.typed.javadsl.EventSourcedEntity;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
@@ -42,11 +42,10 @@ public class HelloWorldPersistentEntityExample {
       this.system = system;
       sharding = ClusterSharding.get(system);
 
-      sharding.start(
+      sharding.init(
         Entity.ofPersistentEntity(
           HelloWorld.ENTITY_TYPE_KEY,
-          ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId()),
-          HelloWorld.Passivate.INSTANCE));
+          ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
     }
 
     // usage example
@@ -62,7 +61,7 @@ public class HelloWorldPersistentEntityExample {
 
   //#persistent-entity
 
-  public static class HelloWorld extends PersistentEntity<HelloWorld.Command, HelloWorld.Greeted, HelloWorld.KnownPeople> {
+  public static class HelloWorld extends EventSourcedEntity<HelloWorld.Command, HelloWorld.Greeted, HelloWorld.KnownPeople> {
 
     // Command
     interface Command {
@@ -76,10 +75,6 @@ public class HelloWorldPersistentEntityExample {
         this.whom = whom;
         this.replyTo = replyTo;
       }
-    }
-
-    enum Passivate implements Command {
-      INSTANCE
     }
 
     // Response
@@ -140,17 +135,12 @@ public class HelloWorldPersistentEntityExample {
     public CommandHandler<Command, Greeted, KnownPeople> commandHandler() {
       return commandHandlerBuilder(KnownPeople.class)
         .matchCommand(Greet.class, this::greet)
-        .matchCommand(Greet.class, this::passivate)
         .build();
-    }
-
-    private Effect<Greeted, KnownPeople> passivate(KnownPeople state, Command cmd) {
-      return Effect().stop();
     }
 
     private Effect<Greeted, KnownPeople> greet(KnownPeople state, Greet cmd) {
       return Effect().persist(new Greeted(cmd.whom))
-        .andThen(newState -> cmd.replyTo.tell(new Greeting(cmd.whom, newState.numberOfPeople())));
+        .thenRun(newState -> cmd.replyTo.tell(new Greeting(cmd.whom, newState.numberOfPeople())));
     }
 
     @Override

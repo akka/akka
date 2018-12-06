@@ -90,11 +90,11 @@ public class OOIntroTest {
     }
 
     public static class ChatRoomBehavior extends AbstractBehavior<RoomCommand> {
-      final ActorContext<RoomCommand> ctx;
+      final ActorContext<RoomCommand> context;
       final List<ActorRef<SessionCommand>> sessions = new ArrayList<>();
 
-      public ChatRoomBehavior(ActorContext<RoomCommand> ctx) {
-        this.ctx = ctx;
+      public ChatRoomBehavior(ActorContext<RoomCommand> context) {
+        this.context = context;
       }
 
       @Override
@@ -102,8 +102,8 @@ public class OOIntroTest {
         return receiveBuilder()
           .onMessage(GetSession.class, getSession -> {
             ActorRef<SessionEvent> client = getSession.replyTo;
-            ActorRef<SessionCommand> ses = ctx.spawn(
-                session(ctx.getSelf(), getSession.screenName, client),
+            ActorRef<SessionCommand> ses = context.spawn(
+                session(context.getSelf(), getSession.screenName, client),
                 URLEncoder.encode(getSession.screenName, StandardCharsets.UTF_8.name()));
             // narrow to only expose PostMessage
             client.tell(new SessionGranted(ses.narrow()));
@@ -125,12 +125,12 @@ public class OOIntroTest {
         String screenName,
         ActorRef<SessionEvent> client) {
       return Behaviors.receive(ChatRoom.SessionCommand.class)
-          .onMessage(PostMessage.class, (ctx, post) -> {
+          .onMessage(PostMessage.class, (context, post) -> {
             // from client, publish to others via the room
             room.tell(new PublishSessionMessage(screenName, post.message));
             return Behaviors.same();
           })
-          .onMessage(NotifyClient.class, (ctx, notification) -> {
+          .onMessage(NotifyClient.class, (context, notification) -> {
             // published from the room
             client.tell(notification.message);
             return Behaviors.same();
@@ -149,17 +149,17 @@ public class OOIntroTest {
 
     public static Behavior<ChatRoom.SessionEvent> behavior() {
       return Behaviors.receive(ChatRoom.SessionEvent.class)
-          .onMessage(ChatRoom.SessionDenied.class, (ctx, msg) -> {
-            System.out.println("cannot start chat room session: " + msg.reason);
+          .onMessage(ChatRoom.SessionDenied.class, (context, message) -> {
+            System.out.println("cannot start chat room session: " + message.reason);
             return Behaviors.stopped();
           })
-          .onMessage(ChatRoom.SessionGranted.class, (ctx, msg) -> {
-            msg.handle.tell(new ChatRoom.PostMessage("Hello World!"));
+          .onMessage(ChatRoom.SessionGranted.class, (context, message) -> {
+            message.handle.tell(new ChatRoom.PostMessage("Hello World!"));
             return Behaviors.same();
           })
-          .onMessage(ChatRoom.MessagePosted.class, (ctx, msg) -> {
+          .onMessage(ChatRoom.MessagePosted.class, (context, message) -> {
             System.out.println("message has been posted by '" +
-                msg.screenName +"': " + msg.message);
+                message.screenName +"': " + message.message);
             return Behaviors.stopped();
           })
           .build();
@@ -171,12 +171,12 @@ public class OOIntroTest {
   public static void runChatRoom() throws Exception {
 
     //#chatroom-main
-    Behavior<Void> main = Behaviors.setup(ctx -> {
+    Behavior<Void> main = Behaviors.setup(context -> {
       ActorRef<ChatRoom.RoomCommand> chatRoom =
-          ctx.spawn(ChatRoom.behavior(), "chatRoom");
+          context.spawn(ChatRoom.behavior(), "chatRoom");
       ActorRef<ChatRoom.SessionEvent> gabbler =
-          ctx.spawn(Gabbler.behavior(), "gabbler");
-      ctx.watch(gabbler);
+          context.spawn(Gabbler.behavior(), "gabbler");
+      context.watch(gabbler);
       chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
 
       return Behaviors.<Void>receiveSignal(

@@ -6,7 +6,6 @@ package akka.serialization
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
-import java.util.concurrent.TimeUnit
 
 import akka.actor.ExtendedActorSystem
 import akka.testkit.{ AkkaSpec, EventFilter }

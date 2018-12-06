@@ -13,9 +13,7 @@ import akka.actor.Address
 import akka.actor.Deploy
 import akka.actor.Props
 import akka.actor.RootActorPath
-import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
-import akka.remote.AddressUidExtension
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._

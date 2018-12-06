@@ -5,7 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.annotation.ApiMayChange
-import akka.stream.{ SinkRef, SourceRef, StreamRefAttributes }
+import akka.stream.{ SinkRef, SourceRef }
 import akka.stream.impl.streamref.{ SinkRefStageImpl, SourceRefStageImpl }
 import akka.util.OptionVal
 
@@ -23,7 +23,7 @@ object StreamRefs {
 
   /**
    * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),
-   * to consume data from this local stream, as if they were attached in the spot of the local Sink directly.
+   * to consume data from this local stream, as if they were attached directly in place of the local Sink.
    *
    * Adheres to [[StreamRefAttributes]].
    *
@@ -34,8 +34,8 @@ object StreamRefs {
     Sink.fromGraph(new SinkRefStageImpl[T](OptionVal.None))
 
   /**
-   * A local [[Sink]] which materializes a [[SourceRef]] which can be used by other streams (including remote ones),
-   * to consume data from this local stream, as if they were attached in the spot of the local Sink directly.
+   * A local [[Source]] which materializes a [[SinkRef]] which can be used by other streams (including remote ones),
+   * to publish data to this local stream, as if they were attached directly in place of the local Source.
    *
    * Adheres to [[StreamRefAttributes]].
    *

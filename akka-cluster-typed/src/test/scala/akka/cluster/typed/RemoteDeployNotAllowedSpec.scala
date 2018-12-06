@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.{ WordSpec, WordSpecLike }
+import org.scalatest.WordSpecLike
 
 object RemoteDeployNotAllowedSpec {
   def config = ConfigFactory.parseString(
@@ -24,8 +24,8 @@ object RemoteDeployNotAllowedSpec {
         warn-about-java-serializer-usage = off
         serialize-creators = off
       }
+      remote.netty.tcp.port = 0
       remote.artery {
-        enabled = on
         canonical {
           hostname = 127.0.0.1
           port = 0

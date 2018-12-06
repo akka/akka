@@ -98,7 +98,7 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
       latch.await(10, TimeUnit.SECONDS)
       system.stop(fastOne)
       system.stop(slowOne)
-      assert(latch.getCount() === 0)
+      assert(latch.getCount() === 0L)
     }
 
     "respect throughput deadline" in {

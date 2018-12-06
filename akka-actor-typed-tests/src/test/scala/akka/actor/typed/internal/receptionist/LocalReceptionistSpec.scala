@@ -27,8 +27,8 @@ object LocalReceptionistSpec {
   val behaviorB = Behaviors.empty[ServiceB]
 
   case object Stop extends ServiceA with ServiceB
-  val stoppableBehavior = Behaviors.receive[Any] { (_, msg) ⇒
-    msg match {
+  val stoppableBehavior = Behaviors.receive[Any] { (_, message) ⇒
+    message match {
       case Stop ⇒ Behavior.stopped
       case _    ⇒ Behavior.same
     }

@@ -23,8 +23,6 @@ class MultiNodeSpecSpecMultiJvmNode4 extends MultiNodeSpecSpec
 
 class MultiNodeSpecSpec extends RemotingMultiNodeSpec(MultiNodeSpecMultiJvmSpec) {
 
-  import MultiNodeSpecMultiJvmSpec._
-
   def initialParticipants = 4
 
   "A MultiNodeSpec" must {

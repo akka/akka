@@ -22,6 +22,8 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.internal.InternalRecipientRef
+import akka.actor.typed.internal.PoisonPill
+import akka.actor.typed.internal.PoisonPillInterceptor
 import akka.actor.typed.internal.adapter.ActorRefAdapter
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
@@ -121,7 +123,7 @@ import akka.util.Timeout
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted untyped actor systems can be used for cluster features")
 
   private val cluster = Cluster(system)
-  private val untypedSystem = system.toUntyped
+  private val untypedSystem: ExtendedActorSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
   private val untypedSharding = akka.cluster.sharding.ClusterSharding(untypedSystem)
   private val log: LoggingAdapter = Logging(untypedSystem, classOf[scaladsl.ClusterSharding])
 
@@ -131,7 +133,7 @@ import akka.util.Timeout
   private val shardCommandActors: ConcurrentHashMap[String, ActorRef[scaladsl.ClusterSharding.ShardCommand]] = new ConcurrentHashMap
 
   // scaladsl impl
-  override def start[M, E](entity: scaladsl.Entity[M, E]): ActorRef[E] = {
+  override def init[M, E](entity: scaladsl.Entity[M, E]): ActorRef[E] = {
     val settings = entity.settings match {
       case None    ⇒ ClusterShardingSettings(system)
       case Some(s) ⇒ s
@@ -142,20 +144,20 @@ import akka.util.Timeout
       case Some(e) ⇒ e
     }).asInstanceOf[ShardingMessageExtractor[E, M]]
 
-    internalStart(entity.createBehavior, entity.entityProps, entity.typeKey,
+    internalInit(entity.createBehavior, entity.entityProps, entity.typeKey,
       entity.stopMessage, settings, extractor, entity.allocationStrategy)
   }
 
   // javadsl impl
-  override def start[M, E](entity: javadsl.Entity[M, E]): ActorRef[E] = {
+  override def init[M, E](entity: javadsl.Entity[M, E]): ActorRef[E] = {
     import scala.compat.java8.OptionConverters._
-    start(new scaladsl.Entity(
+    init(new scaladsl.Entity(
       createBehavior = (ctx: EntityContext) ⇒ Behaviors.setup[M] { actorContext ⇒
         entity.createBehavior(
           new javadsl.EntityContext[M](ctx.entityId, ctx.shard, actorContext.asJava))
       },
       typeKey = entity.typeKey.asScala,
-      stopMessage = entity.stopMessage,
+      stopMessage = entity.stopMessage.asScala,
       entityProps = entity.entityProps,
       settings = entity.settings.asScala,
       messageExtractor = entity.messageExtractor.asScala,
@@ -163,11 +165,11 @@ import akka.util.Timeout
     ))
   }
 
-  private def internalStart[M, E](
+  private def internalInit[M, E](
     behavior:           EntityContext ⇒ Behavior[M],
     entityProps:        Props,
     typeKey:            scaladsl.EntityTypeKey[M],
-    stopMessage:        M,
+    stopMessage:        Option[M],
     settings:           ClusterShardingSettings,
     extractor:          ShardingMessageExtractor[E, M],
     allocationStrategy: Option[ShardAllocationStrategy]): ActorRef[E] = {
@@ -196,15 +198,22 @@ import akka.util.Timeout
               override def apply(t: String): ActorRef[scaladsl.ClusterSharding.ShardCommand] = {
                 // using untyped.systemActorOf to avoid the Future[ActorRef]
                 system.toUntyped.asInstanceOf[ExtendedActorSystem].systemActorOf(
-                  PropsAdapter(ShardCommandActor.behavior(stopMessage)),
+                  PropsAdapter(ShardCommandActor.behavior(stopMessage.getOrElse(PoisonPill))),
                   URLEncoder.encode(typeKey.name, ByteString.UTF_8) + "ShardCommandDelegator")
               }
             })
 
-        val untypedEntityPropsFactory: String ⇒ akka.actor.Props = { entityId ⇒
-          PropsAdapter(behavior(new EntityContext(entityId, shardCommandDelegator)), entityProps)
+        def poisonPillInterceptor(behv: Behavior[M]): Behavior[M] = {
+          stopMessage match {
+            case Some(_) ⇒ behv
+            case None    ⇒ Behaviors.intercept(new PoisonPillInterceptor[M])(behv)
+          }
         }
 
+        val untypedEntityPropsFactory: String ⇒ akka.actor.Props = { entityId ⇒
+          val behv = behavior(new EntityContext(entityId, shardCommandDelegator))
+          PropsAdapter(poisonPillInterceptor(behv), entityProps)
+        }
         untypedSharding.internalStart(
           typeKey.name,
           untypedEntityPropsFactory,
@@ -212,7 +221,7 @@ import akka.util.Timeout
           extractEntityId,
           extractShardId,
           allocationStrategy.getOrElse(defaultShardAllocationStrategy(settings)),
-          stopMessage)
+          stopMessage.getOrElse(PoisonPill))
       } else {
         log.info("Starting Shard Region Proxy [{}] (no actors will be hosted on this node) " +
           "for role [{}] and dataCenter [{}] ...", typeKey.name, settings.role, settings.dataCenter)
@@ -231,7 +240,7 @@ import akka.util.Timeout
 
     typeNames.putIfAbsent(typeKey.name, messageClassName) match {
       case spawnedMessageClassName: String if messageClassName != spawnedMessageClassName ⇒
-        throw new IllegalArgumentException(s"[${typeKey.name}] already started for [$spawnedMessageClassName]")
+        throw new IllegalArgumentException(s"[${typeKey.name}] already initialized for [$spawnedMessageClassName]")
       case _ ⇒ ()
     }
 
@@ -252,6 +261,12 @@ import akka.util.Timeout
     val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
     val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
     new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+  }
+
+  override lazy val shardState: ActorRef[ClusterShardingQuery] = {
+    import akka.actor.typed.scaladsl.adapter._
+    val behavior = ShardingState.behavior(untypedSharding)
+    untypedSystem.systemActorOf(PropsAdapter(behavior), "typedShardState")
   }
 
 }

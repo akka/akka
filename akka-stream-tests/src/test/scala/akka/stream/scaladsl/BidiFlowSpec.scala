@@ -6,7 +6,6 @@ package akka.stream.scaladsl
 
 import akka.NotUsed
 import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ByteString
 import akka.stream._
@@ -50,7 +49,7 @@ class BidiFlowSpec extends StreamSpec {
         ClosedShape
       }).run()
 
-      Await.result(top, 1.second) should ===(3)
+      Await.result(top, 1.second) should ===(3L)
       Await.result(bottom, 1.second) should ===(str)
     }
 

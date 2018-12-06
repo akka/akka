@@ -23,10 +23,9 @@ object HelloWorldPersistentEntityExample {
     // registration at startup
     private val sharding = ClusterSharding(system)
 
-    sharding.start(Entity(
+    sharding.init(Entity(
       typeKey = HelloWorld.entityTypeKey,
-      createBehavior = entityContext ⇒ HelloWorld.persistentEntity(entityContext.entityId),
-      stopMessage = HelloWorld.Passivate))
+      createBehavior = entityContext ⇒ HelloWorld.persistentEntity(entityContext.entityId)))
 
     private implicit val askTimeout: Timeout = Timeout(5.seconds)
 
@@ -42,7 +41,7 @@ object HelloWorldPersistentEntityExample {
   //#persistent-entity
   import akka.actor.typed.Behavior
   import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-  import akka.cluster.sharding.typed.scaladsl.PersistentEntity
+  import akka.cluster.sharding.typed.scaladsl.EventSourcedEntity
   import akka.persistence.typed.scaladsl.Effect
 
   object HelloWorld {
@@ -50,7 +49,6 @@ object HelloWorldPersistentEntityExample {
     // Command
     trait Command
     final case class Greet(whom: String)(val replyTo: ActorRef[Greeting]) extends Command
-    case object Passivate extends Command
     // Response
     final case class Greeting(whom: String, numberOfPeople: Int)
 
@@ -68,16 +66,12 @@ object HelloWorldPersistentEntityExample {
       (_, cmd) ⇒
         cmd match {
           case cmd: Greet ⇒ greet(cmd)
-          case Passivate  ⇒ passivate()
         }
     }
 
     private def greet(cmd: Greet): Effect[Greeted, KnownPeople] =
       Effect.persist(Greeted(cmd.whom))
         .thenRun(state ⇒ cmd.replyTo ! Greeting(cmd.whom, state.numberOfPeople))
-
-    private def passivate(): Effect[Greeted, KnownPeople] =
-      Effect.stop
 
     private val eventHandler: (KnownPeople, Greeted) ⇒ KnownPeople = {
       (state, evt) ⇒ state.add(evt.whom)
@@ -86,7 +80,7 @@ object HelloWorldPersistentEntityExample {
     val entityTypeKey: EntityTypeKey[Command] =
       EntityTypeKey[Command]("HelloWorld")
 
-    def persistentEntity(entityId: String): Behavior[Command] = PersistentEntity(
+    def persistentEntity(entityId: String): Behavior[Command] = EventSourcedEntity(
       entityTypeKey = entityTypeKey,
       entityId = entityId,
       emptyState = KnownPeople(Set.empty),

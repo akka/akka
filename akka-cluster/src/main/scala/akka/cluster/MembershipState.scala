@@ -180,6 +180,32 @@ import scala.util.Random
     mbrs.maxBy(m ⇒ if (m.upNumber == Int.MaxValue) 0 else m.upNumber)
   }
 
+  /**
+   * The Exiting change is gossiped to the two oldest nodes for quick dissemination to potential Singleton nodes
+   */
+  def gossipTargetsForExitingMembers(exitingMembers: Set[Member]): Set[Member] = {
+    if (exitingMembers.nonEmpty) {
+      val roles = exitingMembers.flatten(_.roles).filterNot(_.startsWith(ClusterSettings.DcRolePrefix))
+      val membersSortedByAge = latestGossip.members.toList.filter(_.dataCenter == selfDc).sorted(Member.ageOrdering)
+      var targets = Set.empty[Member]
+      if (membersSortedByAge.nonEmpty) {
+        targets += membersSortedByAge.head // oldest of all nodes (in DC)
+        if (membersSortedByAge.tail.nonEmpty)
+          targets += membersSortedByAge.tail.head // second oldest of all nodes (in DC)
+        roles.foreach { role ⇒
+          membersSortedByAge.find(_.hasRole(role)).foreach { first ⇒
+            targets += first // oldest with the role (in DC)
+            membersSortedByAge.find(m ⇒ m != first && m.hasRole(role)).foreach { next ⇒
+              targets += next // second oldest with the role (in DC)
+            }
+          }
+        }
+      }
+      targets
+    } else
+      Set.empty
+  }
+
 }
 
 /**

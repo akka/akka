@@ -37,7 +37,7 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 
-import static akka.persistence.typed.scaladsl.PersistentBehaviorSpec.*;
+import static akka.persistence.typed.scaladsl.EventSourcedBehaviorSpec.*;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
@@ -263,7 +263,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     EventAdapter<Incremented, A> transformer) {
 
     return Behaviors.setup(ctx -> {
-      return new PersistentBehavior<Command, Incremented, State>(persistentId, SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1)) {
+      return new EventSourcedBehavior<Command, Incremented, State>(persistentId, SupervisorStrategy.restartWithBackoff(Duration.ofMillis(1), Duration.ofMillis(5), 0.1)) {
         @Override
         public CommandHandler<Command, Incremented, State> commandHandler() {
           return commandHandlerBuilder(State.class)
@@ -292,14 +292,14 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
               .matchCommand(Timeout.class,
                   (state, msg) -> Effect().persist(timeoutEvent))
               .matchCommand(EmptyEventsListAndThenLog.class, (state, msg) -> Effect().persist(Collections.emptyList())
-                  .andThen(s -> loggingProbe.tell(loggingOne)))
+                  .thenRun(s -> loggingProbe.tell(loggingOne)))
               .matchCommand(StopThenLog.class,
                   (state, msg) -> Effect().stop()
-                      .andThen(s -> loggingProbe.tell(loggingOne)))
+                      .thenRun(s -> loggingProbe.tell(loggingOne)))
               .matchCommand(IncrementTwiceAndLog.class,
                   (state, msg) -> Effect().persist(
                       Arrays.asList(new Incremented(1), new Incremented(1)))
-                      .andThen(s -> loggingProbe.tell(loggingOne)))
+                      .thenRun(s -> loggingProbe.tell(loggingOne)))
               .build();
 
         }

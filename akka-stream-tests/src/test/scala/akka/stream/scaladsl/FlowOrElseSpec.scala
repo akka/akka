@@ -5,8 +5,6 @@
 package akka.stream.scaladsl
 
 //#or-else
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.Sink
 
 //#or-else
 import scala.concurrent.duration._

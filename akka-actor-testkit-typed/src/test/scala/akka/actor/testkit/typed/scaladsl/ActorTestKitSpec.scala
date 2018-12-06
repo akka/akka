@@ -40,7 +40,7 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "spawn an actor" in {
       val sawMessage = Promise[Boolean]()
-      val ref = spawn(Behaviors.setup[AnyRef] { ctx ⇒
+      val ref = spawn(Behaviors.setup[AnyRef] { context ⇒
         sawMessage.trySuccess(true)
         Behaviors.empty
       })
@@ -50,8 +50,8 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "spawn a named actor" in {
       val spawnedWithName = Promise[String]()
-      val ref = spawn(Behaviors.setup[AnyRef] { ctx ⇒
-        spawnedWithName.trySuccess(ctx.self.path.name)
+      val ref = spawn(Behaviors.setup[AnyRef] { context ⇒
+        spawnedWithName.trySuccess(context.self.path.name)
         Behaviors.empty
       }, "name")
 

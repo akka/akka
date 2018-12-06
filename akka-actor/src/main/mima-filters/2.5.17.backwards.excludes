@@ -1,0 +1,16 @@
+# #25848 - TTL seconds used when TTL milliseconds expected
+# Change of a field name with ApiMayChange
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.UnknownRecord.ttl")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.ARecord.ttl")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.CNameRecord.ttl")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.AAAARecord.ttl")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.ResourceRecord.ttl")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.SRVRecord.ttl")
+
+# Removal of internal methods #25760
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.UnknownRecord.write")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.ARecord.write")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.CNameRecord.write")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.AAAARecord.write")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.ResourceRecord.write")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.SRVRecord.write")

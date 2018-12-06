@@ -21,6 +21,6 @@ options {
 	dnssec-validation auto;
 
 	auth-nxdomain no;    # conform to RFC1035
-	listen-on-v6 { any; };
+	listen-on-v6 { none; };
 };
 

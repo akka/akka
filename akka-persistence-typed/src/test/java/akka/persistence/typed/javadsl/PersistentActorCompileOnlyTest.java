@@ -13,11 +13,10 @@ import akka.persistence.typed.EventAdapter;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.SideEffect;
-import akka.util.Timeout;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 import static akka.actor.typed.javadsl.AskPattern.ask;
 
@@ -92,8 +91,8 @@ public class PersistentActorCompileOnlyTest {
 
 
     //#behavior
-    public static PersistentBehavior<SimpleCommand, SimpleEvent, SimpleState> pb =
-        new PersistentBehavior<SimpleCommand, SimpleEvent, SimpleState>(new PersistenceId("p1")) {
+    public static EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState> pb =
+        new EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState>(new PersistenceId("p1")) {
 
       @Override
       public SimpleState emptyState() {
@@ -162,8 +161,8 @@ public class PersistentActorCompileOnlyTest {
 
     //#commonChainedEffects
 
-    private PersistentBehavior<MyCommand, MyEvent, ExampleState> pa =
-        new PersistentBehavior<MyCommand, MyEvent, ExampleState>(new PersistenceId("pa")) {
+    private EventSourcedBehavior<MyCommand, MyEvent, ExampleState> pa =
+        new EventSourcedBehavior<MyCommand, MyEvent, ExampleState>(new PersistenceId("pa")) {
 
       @Override
       public ExampleState emptyState() {
@@ -176,7 +175,7 @@ public class PersistentActorCompileOnlyTest {
      //#commonChainedEffects
      return commandHandlerBuilder(ExampleState.class)
        .matchCommand(Cmd.class, (state, cmd) -> Effect().persist(new Evt(cmd.data))
-         .andThen(() -> cmd.sender.tell(new Ack()))
+         .thenRun(() -> cmd.sender.tell(new Ack()))
          .andThen(commonChainedEffect)
        )
        .build();
@@ -266,7 +265,7 @@ public class PersistentActorCompileOnlyTest {
     }
 
     static ActorRef<Request> sideEffectProcessor = TestInbox.<Request>create().getRef();
-    static Timeout timeout = new Timeout(1, TimeUnit.SECONDS);
+    static Duration timeout = Duration.ofSeconds(1);
 
     private static void performSideEffect(ActorRef<AcknowledgeSideEffect> sender, int correlationId, String data, Scheduler scheduler) {
       CompletionStage<Response> what = ask(sideEffectProcessor, (ActorRef<Response> ar) -> new Request(correlationId, data, ar), timeout, scheduler);
@@ -282,7 +281,7 @@ public class PersistentActorCompileOnlyTest {
     // #actor-context
 
     // #actor-context
-    class MyPersistentBehavior extends PersistentBehavior<Command, Event, RecoveryComplete.EventsInFlight> {
+    class MyPersistentBehavior extends EventSourcedBehavior<Command, Event, RecoveryComplete.EventsInFlight> {
 
       // this makes the context available to the command handler etc.
       private final ActorContext<Command> ctx;
@@ -303,7 +302,7 @@ public class PersistentActorCompileOnlyTest {
         return commandHandlerBuilder(EventsInFlight.class)
           .matchCommand(DoSideEffect.class,
             (state, cmd) -> Effect().persist(new IntentRecord(state.nextCorrelationId, cmd.data))
-              .andThen(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data, ctx.getSystem().scheduler())))
+              .thenRun(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data, ctx.getSystem().scheduler())))
           .matchCommand(AcknowledgeSideEffect.class, (state, command) -> Effect().persist(new SideEffectAcknowledged(command.correlationId)))
           .build();
       }

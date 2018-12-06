@@ -259,7 +259,7 @@ The recommended approach to do deep serialization of internal actor state is to 
 ## Disabling the Java Serializer
 
 Since the `2.4.11` release of Akka it is possible to entirely disable the default Java Serialization mechanism.
-For compatibility reasons, the current (non-@ref:[Artery](remoting-artery.md)) remoting still uses Java
+For compatibility reasons, the current (non-Artery) @ref:[Remoting](remoting.md) still uses Java
 serialization for some classes, however you can disable it in this remoting implementation as well by following
 the steps below.
 

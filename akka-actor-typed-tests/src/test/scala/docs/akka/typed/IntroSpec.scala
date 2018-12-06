@@ -17,8 +17,6 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object IntroSpec {
   //format: OFF
@@ -29,14 +27,14 @@ object IntroSpec {
     final case class Greet(whom: String, replyTo: ActorRef[Greeted])
     final case class Greeted(whom: String, from: ActorRef[Greet])
 
-    val greeter: Behavior[Greet] = Behaviors.receive { (ctx, msg) ⇒
+    val greeter: Behavior[Greet] = Behaviors.receive { (context, message) ⇒
   //#fiddle_code
-      ctx.log.info("Hello {}!", msg.whom)
+      context.log.info("Hello {}!", message.whom)
   //#fiddle_code
   //#hello-world-actor
-      println(s"Hello ${msg.whom}!")
+      println(s"Hello ${message.whom}!")
   //#hello-world-actor
-      msg.replyTo ! Greeted(msg.whom, ctx.self)
+      message.replyTo ! Greeted(message.whom, context.self)
       Behaviors.same
     }
   }
@@ -46,18 +44,18 @@ object IntroSpec {
   object HelloWorldBot {
 
     def bot(greetingCounter: Int, max: Int): Behavior[HelloWorld.Greeted] =
-      Behaviors.receive { (ctx, msg) ⇒
+      Behaviors.receive { (context, message) ⇒
         val n = greetingCounter + 1
   //#fiddle_code
-        ctx.log.info("Greeting {} for {}", n, msg.whom)
+        context.log.info("Greeting {} for {}", n, message.whom)
   //#fiddle_code
   //#hello-world-bot
-        println(s"Greeting ${n} for ${msg.whom}")
+        println(s"Greeting ${n} for ${message.whom}")
   //#hello-world-bot
         if (n == max) {
           Behaviors.stopped
         } else {
-          msg.from ! HelloWorld.Greet(msg.whom, ctx.self)
+          message.from ! HelloWorld.Greet(message.whom, context.self)
           bot(n, max)
         }
       }
@@ -73,9 +71,9 @@ object IntroSpec {
       Behaviors.setup { context ⇒
         val greeter = context.spawn(HelloWorld.greeter, "greeter")
 
-        Behaviors.receiveMessage { msg ⇒
-          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name)
-          greeter ! HelloWorld.Greet(msg.name, replyTo)
+        Behaviors.receiveMessage { message ⇒
+          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), message.name)
+          greeter ! HelloWorld.Greet(message.name, replyTo)
           Behaviors.same
         }
       }
@@ -95,10 +93,10 @@ object IntroSpec {
         val props = DispatcherSelector.fromConfig(dispatcherPath)
         val greeter = context.spawn(HelloWorld.greeter, "greeter", props)
 
-        Behaviors.receiveMessage { msg ⇒
-          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), msg.name)
+        Behaviors.receiveMessage { message ⇒
+          val replyTo = context.spawn(HelloWorldBot.bot(greetingCounter = 0, max = 3), message.name)
 
-          greeter ! HelloWorld.Greet(msg.name, replyTo)
+          greeter ! HelloWorld.Greet(message.name, replyTo)
           Behaviors.same
         }
       }
@@ -133,12 +131,12 @@ object IntroSpec {
       chatRoom(List.empty)
 
     private def chatRoom(sessions: List[ActorRef[SessionCommand]]): Behavior[RoomCommand] =
-      Behaviors.receive { (ctx, msg) ⇒
-        msg match {
+      Behaviors.receive { (context, message) ⇒
+        message match {
           case GetSession(screenName, client) ⇒
             // create a child actor for further interaction with the client
-            val ses = ctx.spawn(
-              session(ctx.self, screenName, client),
+            val ses = context.spawn(
+              session(context.self, screenName, client),
               name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
             client ! SessionGranted(ses)
             chatRoom(ses :: sessions)
@@ -153,8 +151,8 @@ object IntroSpec {
       room:       ActorRef[PublishSessionMessage],
       screenName: String,
       client:     ActorRef[SessionEvent]): Behavior[SessionCommand] =
-      Behaviors.receive { (ctx, msg) ⇒
-        msg match {
+      Behaviors.receive { (context, message) ⇒
+        message match {
           case PostMessage(message) ⇒
             // from client, publish to others via the room
             room ! PublishSessionMessage(screenName, message)
@@ -216,10 +214,10 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       //#chatroom-main
       val main: Behavior[NotUsed] =
-        Behaviors.setup { ctx ⇒
-          val chatRoom = ctx.spawn(ChatRoom.behavior, "chatroom")
-          val gabblerRef = ctx.spawn(gabbler, "gabbler")
-          ctx.watch(gabblerRef)
+        Behaviors.setup { context ⇒
+          val chatRoom = context.spawn(ChatRoom.behavior, "chatroom")
+          val gabblerRef = context.spawn(gabbler, "gabbler")
+          context.watch(gabblerRef)
           chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
 
           Behaviors.receiveSignal {

@@ -50,9 +50,9 @@ public class IntroTest {
       }
     }
 
-    public static final Behavior<Greet> greeter = Behaviors.receive((ctx, msg) -> {
-      ctx.getLog().info("Hello {}!", msg.whom);
-      msg.replyTo.tell(new Greeted(msg.whom, ctx.getSelf()));
+    public static final Behavior<Greet> greeter = Behaviors.receive((context, message) -> {
+      context.getLog().info("Hello {}!", message.whom);
+      message.replyTo.tell(new Greeted(message.whom, context.getSelf()));
       return Behaviors.same();
     });
   }
@@ -64,13 +64,13 @@ public class IntroTest {
     }
 
     public static final Behavior<HelloWorld.Greeted> bot(int greetingCounter, int max) {
-      return Behaviors.receive((ctx, msg) -> {
+      return Behaviors.receive((context, message) -> {
         int n = greetingCounter + 1;
-        ctx.getLog().info("Greeting {} for {}", n, msg.whom);
+        context.getLog().info("Greeting {} for {}", n, message.whom);
         if (n == max) {
           return Behaviors.stopped();
         } else {
-          msg.from.tell(new HelloWorld.Greet(msg.whom, ctx.getSelf()));
+          message.from.tell(new HelloWorld.Greet(message.whom, context.getSelf()));
           return bot(n, max);
         }
       });
@@ -96,10 +96,10 @@ public class IntroTest {
         final ActorRef<HelloWorld.Greet> greeter =
             context.spawn(HelloWorld.greeter, "greeter");
 
-        return Behaviors.receiveMessage(msg -> {
+        return Behaviors.receiveMessage(message -> {
           ActorRef<HelloWorld.Greeted> replyTo =
-              context.spawn(HelloWorldBot.bot(0, 3), msg.name);
-          greeter.tell(new HelloWorld.Greet(msg.name, replyTo));
+              context.spawn(HelloWorldBot.bot(0, 3), message.name);
+          greeter.tell(new HelloWorld.Greet(message.name, replyTo));
           return Behaviors.same();
         });
       });
@@ -127,10 +127,10 @@ public class IntroTest {
         final ActorRef<HelloWorld.Greet> greeter =
             context.spawn(HelloWorld.greeter, "greeter", props);
 
-        return Behaviors.receiveMessage(msg -> {
+        return Behaviors.receiveMessage(message -> {
           ActorRef<HelloWorld.Greeted> replyTo =
-              context.spawn(HelloWorldBot.bot(0, 3), msg.name);
-          greeter.tell(new HelloWorld.Greet(msg.name, replyTo));
+              context.spawn(HelloWorldBot.bot(0, 3), message.name);
+          greeter.tell(new HelloWorld.Greet(message.name, replyTo));
           return Behaviors.same();
         });
       });
@@ -219,10 +219,10 @@ public class IntroTest {
 
     private static Behavior<RoomCommand> chatRoom(List<ActorRef<SessionCommand>> sessions) {
       return Behaviors.receive(RoomCommand.class)
-        .onMessage(GetSession.class, (ctx, getSession) -> {
+        .onMessage(GetSession.class, (context, getSession) -> {
           ActorRef<SessionEvent> client = getSession.replyTo;
-          ActorRef<SessionCommand> ses = ctx.spawn(
-              session(ctx.getSelf(), getSession.screenName, client),
+          ActorRef<SessionCommand> ses = context.spawn(
+              session(context.getSelf(), getSession.screenName, client),
               URLEncoder.encode(getSession.screenName, StandardCharsets.UTF_8.name()));
           // narrow to only expose PostMessage
           client.tell(new SessionGranted(ses.narrow()));
@@ -230,7 +230,7 @@ public class IntroTest {
           newSessions.add(ses);
           return chatRoom(newSessions);
         })
-        .onMessage(PublishSessionMessage.class, (ctx, pub) -> {
+        .onMessage(PublishSessionMessage.class, (context, pub) -> {
           NotifyClient notification =
               new NotifyClient((new MessagePosted(pub.screenName, pub.message)));
           sessions.forEach(s -> s.tell(notification));
@@ -244,12 +244,12 @@ public class IntroTest {
         String screenName,
         ActorRef<SessionEvent> client) {
       return Behaviors.receive(ChatRoom.SessionCommand.class)
-          .onMessage(PostMessage.class, (ctx, post) -> {
+          .onMessage(PostMessage.class, (context, post) -> {
             // from client, publish to others via the room
             room.tell(new PublishSessionMessage(screenName, post.message));
             return Behaviors.same();
           })
-          .onMessage(NotifyClient.class, (ctx, notification) -> {
+          .onMessage(NotifyClient.class, (context, notification) -> {
             // published from the room
             client.tell(notification.message);
             return Behaviors.same();
@@ -268,17 +268,17 @@ public class IntroTest {
 
     public static Behavior<ChatRoom.SessionEvent> behavior() {
       return Behaviors.receive(ChatRoom.SessionEvent.class)
-        .onMessage(ChatRoom.SessionDenied.class, (ctx, msg) -> {
-          System.out.println("cannot start chat room session: " + msg.reason);
+        .onMessage(ChatRoom.SessionDenied.class, (context, message) -> {
+          System.out.println("cannot start chat room session: " + message.reason);
           return Behaviors.stopped();
         })
-        .onMessage(ChatRoom.SessionGranted.class, (ctx, msg) -> {
-          msg.handle.tell(new ChatRoom.PostMessage("Hello World!"));
+        .onMessage(ChatRoom.SessionGranted.class, (context, message) -> {
+          message.handle.tell(new ChatRoom.PostMessage("Hello World!"));
           return Behaviors.same();
         })
-        .onMessage(ChatRoom.MessagePosted.class, (ctx, msg) -> {
+        .onMessage(ChatRoom.MessagePosted.class, (context, message) -> {
           System.out.println("message has been posted by '" +
-            msg.screenName +"': " + msg.message);
+            message.screenName +"': " + message.message);
           return Behaviors.stopped();
         })
         .build();
@@ -290,12 +290,12 @@ public class IntroTest {
   public static void runChatRoom() throws Exception {
 
     //#chatroom-main
-    Behavior<Void> main = Behaviors.setup(ctx -> {
+    Behavior<Void> main = Behaviors.setup(context -> {
       ActorRef<ChatRoom.RoomCommand> chatRoom =
-        ctx.spawn(ChatRoom.behavior(), "chatRoom");
+        context.spawn(ChatRoom.behavior(), "chatRoom");
       ActorRef<ChatRoom.SessionEvent> gabbler =
-          ctx.spawn(Gabbler.behavior(), "gabbler");
-      ctx.watch(gabbler);
+          context.spawn(Gabbler.behavior(), "gabbler");
+      context.watch(gabbler);
       chatRoom.tell(new ChatRoom.GetSession("ol’ Gabbler", gabbler));
 
       return Behaviors.<Void>receiveSignal(

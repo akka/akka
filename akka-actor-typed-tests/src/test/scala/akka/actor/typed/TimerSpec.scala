@@ -51,7 +51,7 @@ class TimerSpec extends ScalaTestWithActorTestKit(
       target(monitor, timer, nextCount)
     }
 
-    Behaviors.receive[Command] { (ctx, cmd) ⇒
+    Behaviors.receive[Command] { (context, cmd) ⇒
       cmd match {
         case Tick(n) ⇒
           monitor ! Tock(n)
@@ -74,10 +74,10 @@ class TimerSpec extends ScalaTestWithActorTestKit(
           throw e
       }
     } receiveSignal {
-      case (ctx, PreRestart) ⇒
+      case (context, PreRestart) ⇒
         monitor ! GotPreRestart(timer.isTimerActive("T"))
         Behaviors.same
-      case (ctx, PostStop) ⇒
+      case (context, PostStop) ⇒
         monitor ! GotPostStop(timer.isTimerActive("T"))
         Behaviors.same
     }
@@ -152,7 +152,7 @@ class TimerSpec extends ScalaTestWithActorTestKit(
         case _: Tock   ⇒ FishingOutcomes.continue
         // but we know that after we saw Cancelled we won't see any more
         case Cancelled ⇒ FishingOutcomes.complete
-        case msg       ⇒ FishingOutcomes.fail(s"unexpected msg: $msg")
+        case message   ⇒ FishingOutcomes.fail(s"unexpected message: $message")
       }
       probe.expectNoMessage(interval + 100.millis.dilated)
 
@@ -241,13 +241,13 @@ class TimerSpec extends ScalaTestWithActorTestKit(
     "allow for nested timers" in {
       val probe = TestProbe[String]()
       val ref = spawn(Behaviors.withTimers[String] { outerTimer ⇒
-        outerTimer.startPeriodicTimer("outer-key", "outer-msg", 50.millis)
+        outerTimer.startPeriodicTimer("outer-key", "outer-message", 50.millis)
         Behaviors.withTimers { innerTimer ⇒
-          innerTimer.startPeriodicTimer("inner-key", "inner-msg", 50.millis)
-          Behaviors.receiveMessage { msg ⇒
-            if (msg == "stop") Behaviors.stopped
+          innerTimer.startPeriodicTimer("inner-key", "inner-message", 50.millis)
+          Behaviors.receiveMessage { message ⇒
+            if (message == "stop") Behaviors.stopped
             else {
-              probe.ref ! msg
+              probe.ref ! message
               Behaviors.same
             }
           }
@@ -256,8 +256,8 @@ class TimerSpec extends ScalaTestWithActorTestKit(
 
       var seen = Set.empty[String]
       probe.fishForMessage(500.millis) {
-        case msg ⇒
-          seen += msg
+        case message ⇒
+          seen += message
           if (seen.size == 2) FishingOutcomes.complete
           else FishingOutcomes.continue
       }
@@ -268,11 +268,11 @@ class TimerSpec extends ScalaTestWithActorTestKit(
     "keep timers when behavior changes" in {
       val probe = TestProbe[String]()
       def newBehavior(n: Int): Behavior[String] = Behaviors.withTimers[String] { timers ⇒
-        timers.startPeriodicTimer(s"key${n}", s"msg${n}", 50.milli)
-        Behaviors.receiveMessage { msg ⇒
-          if (msg == "stop") Behaviors.stopped
+        timers.startPeriodicTimer(s"key${n}", s"message${n}", 50.milli)
+        Behaviors.receiveMessage { message ⇒
+          if (message == "stop") Behaviors.stopped
           else {
-            probe.ref ! msg
+            probe.ref ! message
             newBehavior(n + 1)
           }
         }
@@ -281,8 +281,8 @@ class TimerSpec extends ScalaTestWithActorTestKit(
       val ref = spawn(newBehavior(1))
       var seen = Set.empty[String]
       probe.fishForMessage(500.millis) {
-        case msg ⇒
-          seen += msg
+        case message ⇒
+          seen += message
           if (seen.size == 2) FishingOutcomes.complete
           else FishingOutcomes.continue
       }
@@ -293,7 +293,7 @@ class TimerSpec extends ScalaTestWithActorTestKit(
     "not grow stack when nesting withTimers" in {
       def next(n: Int, probe: ActorRef[Array[StackTraceElement]]): Behavior[String] = Behaviors.withTimers { timers ⇒
         timers.startSingleTimer("key", "tick", 1.millis)
-        Behaviors.receiveMessage { msg ⇒
+        Behaviors.receiveMessage { message ⇒
           if (n == 20) {
             val e = new RuntimeException().fillInStackTrace()
             val trace = e.getStackTrace

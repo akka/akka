@@ -6,7 +6,7 @@ package akka.cluster.typed
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.{ ActorRef, Behavior, Props }
-import akka.persistence.typed.scaladsl.{ Effect, PersistentBehavior }
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
@@ -16,7 +16,6 @@ object ClusterSingletonPersistenceSpec {
   val config = ConfigFactory.parseString(
     """
       akka.actor.provider = cluster
-      akka.remote.artery.enabled = true
       akka.remote.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
@@ -37,7 +36,7 @@ object ClusterSingletonPersistenceSpec {
   private final case object StopPlz extends Command
 
   val persistentActor: Behavior[Command] =
-    PersistentBehavior[Command, String, String](
+    EventSourcedBehavior[Command, String, String](
       persistenceId = PersistenceId("TheSingleton"),
       emptyState = "",
       commandHandler = (state, cmd) ⇒ cmd match {
@@ -45,7 +44,7 @@ object ClusterSingletonPersistenceSpec {
         case Get(replyTo) ⇒
           replyTo ! state
           Effect.none
-        case StopPlz ⇒ Effect.stop
+        case StopPlz ⇒ Effect.stop()
       },
       eventHandler = (state, evt) ⇒ if (state.isEmpty) evt else state + "|" + evt)
 

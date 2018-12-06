@@ -7,7 +7,7 @@ package akka.cluster.sharding
 import java.net.URLEncoder
 
 import akka.pattern.AskTimeoutException
-import akka.util.{ MessageBufferMap, Timeout }
+import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
 import akka.pattern.{ ask, pipe }
 import akka.actor._
 import akka.cluster.Cluster
@@ -329,10 +329,13 @@ object ShardRegion {
   /**
    * INTERNAL API. Sends stopMessage (e.g. `PoisonPill`) to the entities and when all of
    * them have terminated it replies with `ShardStopped`.
+   * If the entities don't terminate after `handoffTimeout` it will try stopping them forcefully.
    */
-  private[akka] class HandOffStopper(shard: String, replyTo: ActorRef, entities: Set[ActorRef], stopMessage: Any)
-    extends Actor {
+  private[akka] class HandOffStopper(shard: String, replyTo: ActorRef, entities: Set[ActorRef], stopMessage: Any, handoffTimeout: FiniteDuration)
+    extends Actor with ActorLogging {
     import ShardCoordinator.Internal.ShardStopped
+
+    context.setReceiveTimeout(handoffTimeout)
 
     entities.foreach { a ⇒
       context watch a
@@ -342,6 +345,15 @@ object ShardRegion {
     var remaining = entities
 
     def receive = {
+      case ReceiveTimeout ⇒
+        log.warning("HandOffStopMessage[{}] is not handled by some of the entities of the `{}` shard, " +
+          "stopping the remaining entities.", stopMessage.getClass.getName, shard)
+
+        remaining.foreach {
+          ref ⇒
+            context stop ref
+        }
+
       case Terminated(ref) ⇒
         remaining -= ref
         if (remaining.isEmpty) {
@@ -352,8 +364,8 @@ object ShardRegion {
   }
 
   private[akka] def handOffStopperProps(
-    shard: String, replyTo: ActorRef, entities: Set[ActorRef], stopMessage: Any): Props =
-    Props(new HandOffStopper(shard, replyTo, entities, stopMessage)).withDeploy(Deploy.local)
+    shard: String, replyTo: ActorRef, entities: Set[ActorRef], stopMessage: Any, handoffTimeout: FiniteDuration): Props =
+    Props(new HandOffStopper(shard, replyTo, entities, stopMessage, handoffTimeout)).withDeploy(Deploy.local)
 }
 
 /**
@@ -418,6 +430,8 @@ private[akka] class ShardRegion(
   // subscribe to MemberEvent, re-subscribe when restart
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
+    if (settings.passivateIdleEntityAfter > Duration.Zero)
+      log.info("Idle entities will be passivated after [{}]", PrettyDuration.format(settings.passivateIdleEntityAfter))
   }
 
   override def postStop(): Unit = {
@@ -640,7 +654,7 @@ private[akka] class ShardRegion(
         case (shardId, state) ⇒ ShardRegion.ShardState(shardId, state.entityIds)
       }.toSet)
     }.recover {
-      case x: AskTimeoutException ⇒ CurrentShardRegionState(Set.empty)
+      case _: AskTimeoutException ⇒ CurrentShardRegionState(Set.empty)
     }.pipeTo(ref)
   }
 

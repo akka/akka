@@ -12,7 +12,6 @@ import java.util.stream.{ Collector, Collectors }
 
 import akka.stream._
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.DefaultTimeout
@@ -228,22 +227,22 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       Source(1 to 100).runWith(StreamConverters
         .javaCollectorParallelUnordered(4)(
           () ⇒ Collectors.summingInt[Int](intIdentity)))
-        .futureValue should ===(5050)
+        .futureValue.toInt should ===(5050)
     }
 
     "be reusable" in {
       val sink = StreamConverters.javaCollector[Int, Integer](() ⇒ Collectors.summingInt[Int](intIdentity))
-      Source(1 to 4).runWith(sink).futureValue should ===(10)
+      Source(1 to 4).runWith(sink).futureValue.toInt should ===(10)
 
       // Collector has state so it preserves all previous elements that went though
-      Source(4 to 6).runWith(sink).futureValue should ===(15)
+      Source(4 to 6).runWith(sink).futureValue.toInt should ===(15)
     }
 
     "be reusable with parallel version" in {
       val sink = StreamConverters.javaCollectorParallelUnordered(4)(() ⇒ Collectors.summingInt[Int](intIdentity))
 
-      Source(1 to 4).runWith(sink).futureValue should ===(10)
-      Source(4 to 6).runWith(sink).futureValue should ===(15)
+      Source(1 to 4).runWith(sink).futureValue.toInt should ===(10)
+      Source(4 to 6).runWith(sink).futureValue.toInt should ===(15)
     }
 
     "fail if getting the supplier fails" in {

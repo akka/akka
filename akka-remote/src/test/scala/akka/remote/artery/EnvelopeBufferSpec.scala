@@ -82,7 +82,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       envelope.parseHeader(headerOut)
 
       headerOut.version should ===(version)
-      headerOut.uid should ===(42)
+      headerOut.uid should ===(42L)
       headerOut.inboundActorRefCompressionTableVersion should ===(28.toByte)
       headerOut.inboundClassManifestCompressionTableVersion should ===(35.toByte)
       headerOut.serializer should ===(4)
@@ -117,7 +117,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       envelope.parseHeader(headerOut)
 
       headerOut.version should ===(version)
-      headerOut.uid should ===(42)
+      headerOut.uid should ===(42L)
       headerOut.serializer should ===(4)
       headerOut.senderActorRefPath should ===(OptionVal.Some("akka://EnvelopeBufferSpec/uncompressable0"))
       headerOut.senderActorRef(originUid) should ===(OptionVal.None)
@@ -145,7 +145,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       envelope.parseHeader(headerOut)
 
       headerOut.version should ===(version)
-      headerOut.uid should ===(42)
+      headerOut.uid should ===(42L)
       headerOut.serializer should ===(4)
       headerOut.senderActorRef(originUid).get.path.toSerializationFormat should ===("akka://EnvelopeBufferSpec/reallylongcompressablestring")
       headerOut.senderActorRefPath should ===(OptionVal.None)
@@ -198,7 +198,7 @@ class EnvelopeBufferSpec extends AkkaSpec {
       envelope.parseHeader(headerOut)
 
       headerOut.version should ===(version)
-      headerOut.uid should ===(42)
+      headerOut.uid should ===(42L)
       headerOut.serializer should ===(4)
       headerOut.senderActorRef(originUid).get.path.toSerializationFormat should ===("akka://EnvelopeBufferSpec/reallylongcompressablestring")
       headerOut.senderActorRefPath should ===(OptionVal.None)

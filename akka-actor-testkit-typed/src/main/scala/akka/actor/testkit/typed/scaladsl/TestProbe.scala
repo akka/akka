@@ -29,7 +29,7 @@ object FishingOutcomes {
   /**
    * Fail fishing with a custom error message
    */
-  def fail(msg: String): FishingOutcome = FishingOutcome.Fail(msg)
+  def fail(message: String): FishingOutcome = FishingOutcome.Fail(message)
 }
 
 object TestProbe {
@@ -105,7 +105,7 @@ object TestProbe {
   protected def within_internal[T](min: FiniteDuration, max: FiniteDuration, f: ⇒ T): T
 
   /**
-   * Same as `expectMessage(remainingOrDefault, obj)`, but correctly treating the timeFactor.
+   * Same as `expectMessage(remainingOrDefault, obj)`, but using the default timeout as deadline.
    */
   def expectMessage[T <: M](obj: T): T
 
@@ -140,7 +140,7 @@ object TestProbe {
   def expectNoMessage(): Unit
 
   /**
-   * Same as `expectMessageType[T](remainingOrDefault)`, but correctly treating the timeFactor.
+   * Same as `expectMessageType[T](remainingOrDefault)`, but using the default timeout as deadline.
    */
   def expectMessageType[T <: M](implicit t: ClassTag[T]): T =
     expectMessageClass_internal(remainingOrDefault, t.runtimeClass.asInstanceOf[Class[T]])
@@ -154,6 +154,29 @@ object TestProbe {
   protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C
 
   /**
+   * Receive one message of type `M` within the default timeout as deadline.
+   */
+  def receiveOne(): M
+
+  /**
+   * Receive one message of type `M`. Wait time is bounded by the `max` duration,
+   * with an [[AssertionError]] raised in case of timeout.
+   */
+  def receiveOne(max: FiniteDuration): M
+
+  /**
+   * Same as `receiveN(n, remaining)` but using the default timeout as deadline.
+   */
+  def receiveN(n: Int): immutable.Seq[M] = receiveN_internal(n, remainingOrDefault)
+
+  /**
+   * Receive `n` messages in a row before the given deadline.
+   */
+  def receiveN(n: Int, max: FiniteDuration): immutable.Seq[M] = receiveN_internal(n, max.dilated)
+
+  protected def receiveN_internal(n: Int, max: FiniteDuration): immutable.Seq[M]
+
+  /**
    * Allows for flexible matching of multiple messages within a timeout, the fisher function is fed each incoming
    * message, and returns one of the following effects to decide on what happens next:
    *
@@ -162,8 +185,8 @@ object TestProbe {
    *  * [[FishingOutcomes.complete]] - successfully complete and return the message
    *  * [[FishingOutcomes.fail]] - fail the test with a custom message
    *
-   * Additionally failures includes the list of messages consumed. If a message of type `M` but not of type `T` is
-   * received this will also fail the test, additionally if the `fisher` function throws a match error the error
+   * Additionally failures includes the list of messages consumed.
+   * If the `fisher` function throws a match error the error
    * is decorated with some fishing details and the test is failed (making it convenient to use this method with a
    * partial function).
    *
