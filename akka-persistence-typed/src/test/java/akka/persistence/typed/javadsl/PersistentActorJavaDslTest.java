@@ -35,6 +35,7 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 
+import static akka.Done.done;
 import static akka.persistence.typed.scaladsl.EventSourcedBehaviorSpec.*;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -194,6 +195,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     return Behaviors.setup(ctx -> new CounterBehavior(persistenceId, ctx));
   }
 
+  @SuppressWarnings("unused")
   private static class CounterBehavior extends EventSourcedBehavior<Command, Incremented, State> {
     private final ActorContext<Command> ctx;
 
@@ -205,39 +207,72 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     @Override
     public CommandHandler<Command, Incremented, State> commandHandler() {
       return commandHandlerBuilder(State.class)
-          .matchCommand(Increment.class, (state, command) ->
-              Effect().persist(new Incremented(1)))
-          .matchCommand(IncrementWithConfirmation.class, (state, command) ->
-              Effect().persist(new Incremented(1))
-                  .thenReply(command, newState -> Done.getInstance()))
-          .matchCommand(GetValue.class, (state, command) ->
-              Effect().reply(command, state))
-          .matchCommand(IncrementLater.class, (state, command) -> {
-            ActorRef<Object> delay = ctx.spawnAnonymous(Behaviors.withTimers(timers -> {
-              timers.startSingleTimer(Tick.INSTANCE, Tick.INSTANCE, Duration.ofMillis(10));
-              return Behaviors.receive((context, o) -> Behaviors.stopped());
-            }));
-            ctx.watchWith(delay, DelayFinished.INSTANCE);
-            return Effect().none();
-          })
-          .matchCommand(DelayFinished.class, (state, finished) -> Effect().persist(new Incremented(10)))
-          .matchCommand(Increment100OnTimeout.class, (state, msg) -> {
-            ctx.setReceiveTimeout(Duration.ofMillis(10), Timeout.INSTANCE);
-            return Effect().none();
-          })
-          .matchCommand(Timeout.class,
-              (state, msg) -> Effect().persist(timeoutEvent))
-          .matchCommand(EmptyEventsListAndThenLog.class, (state, msg) -> Effect().persist(Collections.emptyList())
-              .thenRun(s -> log()))
-          .matchCommand(StopThenLog.class,
-              (state, msg) -> Effect().stop()
-                  .thenRun(s -> log()))
-          .matchCommand(IncrementTwiceAndLog.class,
-              (state, msg) -> Effect().persist(
-                  Arrays.asList(new Incremented(1), new Incremented(1)))
-                  .thenRun(s -> log()))
+          .matchCommand(Increment.class, this::increment)
+          .matchCommand(IncrementWithConfirmation.class, this::incrementWithConfirmation)
+          .matchCommand(GetValue.class, this::getValue)
+          .matchCommand(IncrementLater.class, this::incrementLater)
+          .matchCommand(DelayFinished.class, this::delayFinished)
+          .matchCommand(Increment100OnTimeout.class, this::increment100OnTimeout)
+          .matchCommand(Timeout.class, this::timeout)
+          .matchCommand(EmptyEventsListAndThenLog.class, this::emptyEventsListAndThenLog)
+          .matchCommand(StopThenLog.class, this::stopThenLog)
+          .matchCommand(IncrementTwiceAndLog.class, this::incrementTwiceAndLog)
           .build();
 
+    }
+
+    private Effect<Incremented, State> increment(State state, Increment command) {
+      return Effect().persist(new Incremented(1));
+    }
+
+    private ReplyEffect<Incremented, State> incrementWithConfirmation(State state, IncrementWithConfirmation command) {
+      return Effect()
+          .persist(new Incremented(1))
+          .thenReply(command, newState -> done());
+    }
+
+    private ReplyEffect<Incremented, State> getValue(State state, GetValue command) {
+      return Effect().reply(command, state);
+    }
+
+    private Effect<Incremented, State> incrementLater(State state, IncrementLater command) {
+      ActorRef<Object> delay = ctx.spawnAnonymous(Behaviors.withTimers(timers -> {
+        timers.startSingleTimer(Tick.INSTANCE, Tick.INSTANCE, Duration.ofMillis(10));
+        return Behaviors.receive((context, o) -> Behaviors.stopped());
+      }));
+      ctx.watchWith(delay, DelayFinished.INSTANCE);
+      return Effect().none();
+    }
+
+    private Effect<Incremented, State> delayFinished(State state, DelayFinished command) {
+      return Effect().persist(new Incremented(10));
+    }
+
+    private Effect<Incremented, State> increment100OnTimeout(State state, Increment100OnTimeout command) {
+      ctx.setReceiveTimeout(Duration.ofMillis(10), Timeout.INSTANCE);
+      return Effect().none();
+    }
+
+    private Effect<Incremented, State> timeout(State state, Timeout command) {
+      return Effect().persist(timeoutEvent);
+    }
+
+    private Effect<Incremented, State> emptyEventsListAndThenLog(State state, EmptyEventsListAndThenLog command) {
+      return Effect()
+          .persist(Collections.emptyList())
+          .thenRun(s -> log());
+    }
+
+    private Effect<Incremented, State> stopThenLog(State state, StopThenLog command) {
+      return Effect()
+          .stop()
+          .thenRun(s -> log());
+    }
+
+    private Effect<Incremented, State> incrementTwiceAndLog(State state, IncrementTwiceAndLog command) {
+      return Effect()
+          .persist(Arrays.asList(new Incremented(1), new Incremented(1)))
+          .thenRun(s -> log());
     }
 
     @Override
@@ -245,7 +280,6 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
       return eventHandlerBuilder()
           .matchEvent(Incremented.class, this::applyIncremented)
           .build();
-
     }
 
     @Override
