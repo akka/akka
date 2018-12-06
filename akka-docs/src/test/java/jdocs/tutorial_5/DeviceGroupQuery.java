@@ -76,17 +76,17 @@ public class DeviceGroupQuery extends AbstractActor {
               ActorRef deviceActor = getSender();
               DeviceGroup.TemperatureReading reading = r.value
                       .map(v -> (DeviceGroup.TemperatureReading) new DeviceGroup.Temperature(v))
-                      .orElse(new DeviceGroup.TemperatureNotAvailable());
+                      .orElse(DeviceGroup.TemperatureNotAvailable.INSTANCE);
               receivedResponse(deviceActor, reading, stillWaiting, repliesSoFar);
             })
             .match(Terminated.class, t -> {
-              receivedResponse(t.getActor(), new DeviceGroup.DeviceNotAvailable(), stillWaiting, repliesSoFar);
+              receivedResponse(t.getActor(), DeviceGroup.DeviceNotAvailable.INSTANCE, stillWaiting, repliesSoFar);
             })
             .match(CollectionTimeout.class, t -> {
               Map<String, DeviceGroup.TemperatureReading> replies = new HashMap<>(repliesSoFar);
               for (ActorRef deviceActor : stillWaiting) {
                 String deviceId = actorToDeviceId.get(deviceActor);
-                replies.put(deviceId, new DeviceGroup.DeviceTimedOut());
+                replies.put(deviceId, DeviceGroup.DeviceTimedOut.INSTANCE);
               }
               requester.tell(new DeviceGroup.RespondAllTemperatures(requestId, replies), getSelf());
               getContext().stop(getSelf());

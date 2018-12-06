@@ -207,14 +207,14 @@ abstract class TestProbe[M] {
    * Same as `expectMessageType(clazz, remainingOrDefault)`,but using the
    * default timeout as deadline.
    */
-  def expectMessageClass[T](clazz: Class[T]): T =
+  def expectMessageClass[T <: M](clazz: Class[T]): T =
     expectMessageClass_internal(getRemainingOrDefault.asScala, clazz)
 
   /**
    * Wait for a message of type M and return it when it arrives, or fail if the `max` timeout is hit.
    * The timeout is dilated.
    */
-  def expectMessageClass[T](clazz: Class[T], max: Duration): T =
+  def expectMessageClass[T <: M](clazz: Class[T], max: Duration): T =
     expectMessageClass_internal(max.asScala.dilated, clazz)
 
   /**
@@ -269,7 +269,7 @@ abstract class TestProbe[M] {
     fishForMessage(max, "", fisher)
 
   /**
-   * Same as the other `fishForMessageJava` but includes the provided hint in all error messages
+   * Same as the other `fishForMessage` but includes the provided hint in all error messages
    */
   def fishForMessage(max: Duration, hint: String, fisher: java.util.function.Function[M, FishingOutcome]): java.util.List[M] =
     fishForMessage_internal(max.asScala, hint, fisher.apply).asJava
@@ -278,5 +278,10 @@ abstract class TestProbe[M] {
    * INTERNAL API
    */
   @InternalApi protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): List[M]
+
+  /**
+   * Stops the [[TestProbe.getRef]], which is useful when testing watch and termination.
+   */
+  def stop(): Unit
 
 }

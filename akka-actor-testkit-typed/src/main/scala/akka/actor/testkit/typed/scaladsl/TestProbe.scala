@@ -224,4 +224,9 @@ object TestProbe {
    * which uses the configuration entry "akka.test.timefactor".
    */
   def awaitAssert[A](a: ⇒ A, max: Duration = Duration.Undefined, interval: Duration = 100.millis): A
+
+  /**
+   * Stops the [[TestProbe.ref]], which is useful when testing watch and termination.
+   */
+  def stop(): Unit
 }
