@@ -69,12 +69,8 @@ abstract class MultiDcClusterSingletonSpec extends MultiNodeSpec(MultiDcClusterS
     "be able to create and ping singleton in same DC" in {
       runOn(first) {
         val singleton = ClusterSingleton(typedSystem)
-        val pinger = singleton.spawn(
-          multiDcPinger,
-          "ping",
-          Props.empty,
-          ClusterSingletonSettings(typedSystem),
-          NoMore
+        val pinger = singleton.init(
+          SingletonActor(multiDcPinger, "ping").withStopMessage(NoMore)
         )
         val probe = TestProbe[Pong]
         pinger ! Ping(probe.ref)
@@ -89,12 +85,10 @@ abstract class MultiDcClusterSingletonSpec extends MultiNodeSpec(MultiDcClusterS
     "be able to ping singleton via proxy in another dc" in {
       runOn(second) {
         val singleton = ClusterSingleton(system.toTyped)
-        val pinger = singleton.spawn(
-          multiDcPinger,
-          "ping",
-          Props.empty,
-          ClusterSingletonSettings(typedSystem).withDataCenter("dc1"),
-          NoMore
+        val pinger = singleton.init(
+          SingletonActor(multiDcPinger, "ping").withStopMessage(NoMore).withSettings(
+            ClusterSingletonSettings(typedSystem).withDataCenter("dc1")
+          )
         )
         val probe = TestProbe[Pong]
         pinger ! Ping(probe.ref)
@@ -107,12 +101,8 @@ abstract class MultiDcClusterSingletonSpec extends MultiNodeSpec(MultiDcClusterS
     "be able to target singleton with the same name in own dc " in {
       runOn(second, third) {
         val singleton = ClusterSingleton(typedSystem)
-        val pinger = singleton.spawn(
-          multiDcPinger,
-          "ping",
-          Props.empty,
-          ClusterSingletonSettings(typedSystem),
-          NoMore
+        val pinger = singleton.init(
+          SingletonActor(multiDcPinger, "ping").withStopMessage(NoMore)
         )
         val probe = TestProbe[Pong]
         pinger ! Ping(probe.ref)
